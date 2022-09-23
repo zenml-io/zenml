@@ -17,7 +17,7 @@ from pipelines.mnist_pipeline import mnist_pipeline
 from steps.evaluators import evaluator
 from steps.importers import importer
 from steps.normalizers import normalizer
-from steps.trainers import TrainerConfig, trainer
+from steps.trainers import TrainerParameters, trainer
 
 
 @click.command()
@@ -29,7 +29,7 @@ def main(epochs: int, lr: float):
     pipeline_instance = mnist_pipeline(
         importer=importer(),
         normalizer=normalizer(),
-        trainer=trainer(config=TrainerConfig(epochs=epochs, lr=lr)),
+        trainer=trainer(params=TrainerParameters(epochs=epochs, lr=lr)),
         evaluator=evaluator(),
     )
     pipeline_instance.run()

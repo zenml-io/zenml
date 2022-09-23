@@ -102,16 +102,11 @@ zenml integration install gcp
 # Create and activate the stack and its components
 zenml container-registry register gcr_registry --flavor=gcp --uri=<PATH_TO_YOUR_CONTAINER_REGISTRY>
 
-zenml metadata-store register gcp_metadata_store --flavor=mysql \ 
-    --host=<DATABASE_HOST> --port=<DATABASE_PORT> --database=<DATABASE_NAME> \
-    --username=<DATABASE_USER> --password=<DATABASE_PASSWORD>
-
 zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YOUR_GCP_BUCKET>
 
 zenml orchestrator register gcp_tekton_orchestrator --flavor=tekton --kubernetes_context=<NAME_OF_GCP_KUBERNETES_CONTEXT>
 
 zenml stack register gcp_tekton_stack \
-    -m gcp_metadata_store \
     -a gcp_artifact_store \
     -o gcp_tekton_orchestrator \
     -c gcr_registry \

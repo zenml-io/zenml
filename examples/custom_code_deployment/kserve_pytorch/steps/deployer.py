@@ -15,12 +15,12 @@
 from zenml.integrations.kserve.services import KServeDeploymentConfig
 from zenml.integrations.kserve.steps import (
     CustomDeployParameters,
-    KServeDeployerStepConfig,
+    KServeDeployerStepParameters,
     kserve_custom_model_deployer_step,
 )
 
 kserve_pytorch_custom_deployment = kserve_custom_model_deployer_step(
-    config=KServeDeployerStepConfig(
+    params=KServeDeployerStepParameters(
         service_config=KServeDeploymentConfig(
             model_name="kserve-pytorch-custom-model",
             replicas=1,

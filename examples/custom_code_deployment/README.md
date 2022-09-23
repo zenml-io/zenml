@@ -165,7 +165,7 @@ zenml model-deployer register kserve_gke --flavor=kserve \
 zenml artifact-store register gcp_artifact_store --flavor=fcp --path gs://my-bucket
 zenml secrets-manager register local --flavor=local
 zenml container-registry register gcp_registry --flavor=gcp --uri=eu.gcr.io/container-registry
-zenml stack register local_gcp_kserve_stack -m default -a gcp_artifact_store -o default -d kserve_gke -c gcp_registry -x local --set
+zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d kserve_gke -c gcp_registry -x local --set
 ```
 
 The next sections cover how to setup the GCP Artifact Store credentials for the KServe model deployer. 
@@ -382,7 +382,7 @@ zenml model-deployer register seldon_eks --flavor=seldon \
 zenml artifact-store register gcp_artifact_store --flavor=fcp --path gs://my-bucket
 zenml secrets-manager register local --flavor=local
 zenml container-registry register gcp_registry --flavor=gcp --uri=eu.gcr.io/container-registry
-zenml stack register local_gcp_seldon_stack -m default -a gcp_artifact_store -o default -d seldon_eks -c gcp_registry -x local --set
+zenml stack register local_gcp_seldon_stack -a gcp_artifact_store -o default -d seldon_eks -c gcp_registry -x local --set
 ```
 
 The next sections cover how to set GCP Artifact Store credentials for the Seldon Core model deployer.  

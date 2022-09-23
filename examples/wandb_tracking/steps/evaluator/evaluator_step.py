@@ -15,13 +15,13 @@ import numpy as np
 import tensorflow as tf
 import wandb
 
-from zenml.integrations.wandb.wandb_step_decorator import enable_wandb
+from zenml.repository import Repository
 from zenml.steps import step
 
+experiment_tracker = Repository().active_stack.experiment_tracker
 
-# Define the step and enable wandb - order of decorators is important here
-@enable_wandb
-@step
+
+@step(experiment_tracker=experiment_tracker.name)
 def tf_evaluator(
     x_test: np.ndarray,
     y_test: np.ndarray,

@@ -16,12 +16,19 @@ import whylogs as why
 from sklearn import datasets
 from whylogs.core import DatasetProfileView  # type: ignore[import]
 
-from zenml.integrations.whylogs.whylabs_step_decorator import enable_whylabs
+from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
+    WhylogsDataValidatorSettings,
+)
 from zenml.steps import Output, step
 
 
-@enable_whylabs(dataset_id="model-1")
-@step
+@step(
+    settings={
+        "data_validator.whylogs": WhylogsDataValidatorSettings(
+            enable_whylabs=True, dataset_id="model-1"
+        )
+    }
+)
 def data_loader() -> Output(
     data=pd.DataFrame,
     profile=DatasetProfileView,

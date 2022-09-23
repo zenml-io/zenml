@@ -23,12 +23,13 @@ from rich import print
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
+from zenml.config import DockerSettings
 from zenml.integrations.constants import SELDON, SKLEARN, TENSORFLOW
 from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
 from zenml.integrations.seldon.services import SeldonDeploymentService
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
-from zenml.steps import BaseStepConfig, Output, step
+from zenml.steps import BaseParameters, Output, step
 
 logger = get_logger(__name__)
 
@@ -55,7 +56,7 @@ def normalizer(
     return x_train_normed, x_test_normed
 
 
-class TensorflowTrainerConfig(BaseStepConfig):
+class TensorflowTrainerParameters(BaseParameters):
     """Trainer params"""
 
     epochs: int = 1
@@ -64,7 +65,7 @@ class TensorflowTrainerConfig(BaseStepConfig):
 
 @step
 def tf_trainer(
-    config: TensorflowTrainerConfig,
+    params: TensorflowTrainerParameters,
     x_train: np.ndarray,
     y_train: np.ndarray,
 ) -> tf.keras.Model:
@@ -78,7 +79,7 @@ def tf_trainer(
     )
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(config.lr),
+        optimizer=tf.keras.optimizers.Adam(params.lr),
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=["accuracy"],
     )
@@ -86,7 +87,7 @@ def tf_trainer(
     model.fit(
         x_train,
         y_train,
-        epochs=config.epochs,
+        epochs=params.epochs,
     )
 
     # write model
@@ -105,7 +106,7 @@ def tf_evaluator(
     return test_acc
 
 
-class SklearnTrainerConfig(BaseStepConfig):
+class SklearnTrainerParameters(BaseParameters):
     """Trainer params"""
 
     solver: str = "saga"
@@ -116,13 +117,13 @@ class SklearnTrainerConfig(BaseStepConfig):
 
 @step
 def sklearn_trainer(
-    config: SklearnTrainerConfig,
+    params: SklearnTrainerParameters,
     x_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
     """Train SVC from sklearn."""
     clf = LogisticRegression(
-        penalty=config.penalty, solver=config.solver, tol=config.tol, C=config.C
+        penalty=params.penalty, solver=params.solver, tol=params.tol, C=params.C
     )
     clf.fit(x_train.reshape((x_train.shape[0], -1)), y_train)
     return clf
@@ -140,7 +141,7 @@ def sklearn_evaluator(
     return test_acc
 
 
-class DeploymentTriggerConfig(BaseStepConfig):
+class DeploymentTriggerParameters(BaseParameters):
     """Parameters that are used to trigger the deployment"""
 
     min_accuracy: float
@@ -149,16 +150,16 @@ class DeploymentTriggerConfig(BaseStepConfig):
 @step
 def deployment_trigger(
     accuracy: float,
-    config: DeploymentTriggerConfig,
+    params: DeploymentTriggerParameters,
 ) -> bool:
     """Implements a simple model deployment trigger that looks at the
     input model accuracy and decides if it is good enough to deploy"""
 
-    return accuracy > config.min_accuracy
+    return accuracy > params.min_accuracy
 
 
-class SeldonDeploymentLoaderStepConfig(BaseStepConfig):
-    """Seldon deployment loader configuration
+class SeldonDeploymentLoaderStepParameters(BaseParameters):
+    """Seldon deployment loader parameters.
 
     Attributes:
         pipeline_name: name of the pipeline that deployed the Seldon prediction
@@ -175,30 +176,30 @@ class SeldonDeploymentLoaderStepConfig(BaseStepConfig):
 
 @step(enable_cache=False)
 def prediction_service_loader(
-    config: SeldonDeploymentLoaderStepConfig,
+    params: SeldonDeploymentLoaderStepParameters,
 ) -> SeldonDeploymentService:
     """Get the prediction service started by the deployment pipeline"""
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
     services = model_deployer.find_model_server(
-        pipeline_name=config.pipeline_name,
-        pipeline_step_name=config.step_name,
-        model_name=config.model_name,
+        pipeline_name=params.pipeline_name,
+        pipeline_step_name=params.step_name,
+        model_name=params.model_name,
     )
     if not services:
         raise RuntimeError(
             f"No Seldon Core prediction server deployed by the "
-            f"'{config.step_name}' step in the '{config.pipeline_name}' "
-            f"pipeline for the '{config.model_name}' model is currently "
+            f"'{params.step_name}' step in the '{params.pipeline_name}' "
+            f"pipeline for the '{params.model_name}' model is currently "
             f"running."
         )
 
     if not services[0].is_running:
         raise RuntimeError(
             f"The Seldon Core prediction server last deployed by the "
-            f"'{config.step_name}' step in the '{config.pipeline_name}' "
-            f"pipeline for the '{config.model_name}' model is not currently "
+            f"'{params.step_name}' step in the '{params.pipeline_name}' "
+            f"pipeline for the '{params.model_name}' model is not currently "
             f"running."
         )
 
@@ -256,9 +257,12 @@ def predictor(
     return prediction
 
 
-@pipeline(
-    enable_cache=True, required_integrations=[SELDON, TENSORFLOW, SKLEARN]
+docker_settings = DockerSettings(
+    required_integrations=[SELDON, TENSORFLOW, SKLEARN]
 )
+
+
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def continuous_deployment_pipeline(
     importer,
     normalizer,
@@ -276,9 +280,7 @@ def continuous_deployment_pipeline(
     model_deployer(deployment_decision, model)
 
 
-@pipeline(
-    enable_cache=True, required_integrations=[SELDON, TENSORFLOW, SKLEARN]
-)
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def inference_pipeline(
     dynamic_importer,
     predict_preprocessor,

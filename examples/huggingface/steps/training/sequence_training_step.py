@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import tensorflow as tf
 from datasets import DatasetDict
-from steps.configuration import HuggingfaceConfig
+from steps.configuration import HuggingfaceParameters
 from transformers import (
     DataCollatorWithPadding,
     PreTrainedTokenizerBase,
@@ -27,7 +27,7 @@ from zenml.steps import step
 
 @step
 def sequence_trainer(
-    config: HuggingfaceConfig,
+    params: HuggingfaceParameters,
     tokenized_datasets: DatasetDict,
     tokenizer: PreTrainedTokenizerBase,
 ) -> TFPreTrainedModel:
@@ -38,18 +38,18 @@ def sequence_trainer(
 
     # Load pre-trained model from huggingface hub
     model = TFAutoModelForSequenceClassification.from_pretrained(
-        config.pretrained_model, num_labels=len(label_list)
+        params.pretrained_model, num_labels=len(label_list)
     )
 
     num_train_steps = (
-        len(tokenized_datasets["train"]) // config.batch_size
-    ) * config.epochs
+        len(tokenized_datasets["train"]) // params.batch_size
+    ) * params.epochs
 
     # Prepare optimizer
     optimizer, _ = create_optimizer(
-        init_lr=config.init_lr,
+        init_lr=params.init_lr,
         num_train_steps=num_train_steps,
-        weight_decay_rate=config.weight_decay_rate,
+        weight_decay_rate=params.weight_decay_rate,
         num_warmup_steps=num_train_steps * 0.1,
     )
 
@@ -62,13 +62,13 @@ def sequence_trainer(
     train_set = tokenized_datasets["train"].to_tf_dataset(
         columns=["attention_mask", "input_ids"],
         shuffle=True,
-        batch_size=config.batch_size,
+        batch_size=params.batch_size,
         collate_fn=DataCollatorWithPadding(tokenizer, return_tensors="tf"),
         label_cols="label",
     )
 
-    if config.dummy_run:
-        model.fit(train_set.take(10), epochs=config.epochs)
+    if params.dummy_run:
+        model.fit(train_set.take(10), epochs=params.epochs)
     else:
-        model.fit(train_set, epochs=config.epochs)
+        model.fit(train_set, epochs=params.epochs)
     return model

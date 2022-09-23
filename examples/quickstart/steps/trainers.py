@@ -3,10 +3,13 @@ import pandas as pd
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
+from zenml.repository import Repository
 from zenml.steps import step
 
+experiment_tracker = Repository().active_stack.experiment_tracker
 
-@step(enable_cache=False, experiment_tracker="mlflow_tracker")
+
+@step(enable_cache=False, experiment_tracker=experiment_tracker.name)
 def svc_trainer_mlflow(
     X_train: pd.DataFrame,
     y_train: pd.Series,

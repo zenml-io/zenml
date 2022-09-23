@@ -16,7 +16,8 @@
 import json
 from collections import OrderedDict
 from json import JSONDecodeError
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
+from uuid import UUID
 
 from ml_metadata import proto
 from ml_metadata.metadata_store import metadata_store
@@ -37,6 +38,31 @@ from zenml.steps.utils import (
 
 logger = get_logger(__name__)
 
+ZENML_CONTEXT_TYPE_NAME = "zenml"
+
+
+class MLMDPipelineRunModel(BaseModel):
+    """Class that models a pipeline run response from the metadata store."""
+
+    mlmd_id: int
+    name: str
+    project: UUID
+    user: UUID
+    pipeline_id: UUID
+    stack_id: UUID
+    pipeline_configuration: Dict[str, Any]
+
+
+class MLMDStepRunModel(BaseModel):
+    """Class that models a step run response from the metadata store."""
+
+    mlmd_id: int
+    mlmd_parent_step_ids: List[int]
+    entrypoint_name: str
+    name: str
+    parameters: Dict[str, str]
+    step_configuration: Dict[str, Any]
+
 
 class MLMDArtifactModel(BaseModel):
     """Class that models an artifact response from the metadata store."""
@@ -49,16 +75,6 @@ class MLMDArtifactModel(BaseModel):
     mlmd_parent_step_id: int
     mlmd_producer_step_id: int
     is_cached: bool
-
-
-class MLMDStepRunModel(BaseModel):
-    """Class that models a step run response from the metadata store."""
-
-    mlmd_id: int
-    mlmd_parent_step_ids: List[int]
-    entrypoint_name: str
-    name: str
-    parameters: Dict[str, str]
 
 
 class MetadataStore:
@@ -111,6 +127,20 @@ class MetadataStore:
                     return True
         return False
 
+    def _get_zenml_execution_context_properties(
+        self, execution: proto.Execution
+    ) -> Any:
+        associated_contexts = self.store.get_contexts_by_execution(execution.id)
+        for context in associated_contexts:
+            context_type = self.store.get_context_types_by_id(
+                [context.type_id]
+            )[0].name
+            if context_type == ZENML_CONTEXT_TYPE_NAME:
+                return context.custom_properties
+        raise RuntimeError(
+            f"Could not find 'zenml' context for execution {execution.name}."
+        )
+
     def _get_step_model_from_execution(
         self, execution: proto.Execution
     ) -> MLMDStepRunModel:
@@ -152,6 +182,13 @@ class MetadataStore:
                     # an internal one or one created by zenml. Therefore, we can
                     # ignore it
                     pass
+
+        step_context_properties = self._get_zenml_execution_context_properties(
+            execution=execution,
+        )
+        step_configuration = json.loads(
+            step_context_properties.get("step_configuration").string_value
+        )
 
         # TODO [ENG-222]: This is a lot of querying to the metadata store. We
         #  should refactor and make it nicer. Probably it makes more sense
@@ -199,9 +236,30 @@ class MetadataStore:
             entrypoint_name=impl_name,
             name=step_name,
             parameters=step_parameters,
+            step_configuration=step_configuration,
         )
 
-    def get_all_runs(self) -> Dict[str, int]:
+    def _get_pipeline_run_model_from_context(
+        self, context: proto.Context
+    ) -> MLMDPipelineRunModel:
+        context_properties = self._get_zenml_execution_context_properties(
+            self.store.get_executions_by_context(context_id=context.id)[-1]
+        )
+        model_ids = json.loads(context_properties.get("model_ids").string_value)
+        pipeline_configuration = json.loads(
+            context_properties.get("pipeline_configuration").string_value
+        )
+        return MLMDPipelineRunModel(
+            mlmd_id=context.id,
+            name=context.name,
+            project=model_ids["pipeline_id"],
+            user=model_ids["user_id"],
+            pipeline_id=model_ids["pipeline_id"],
+            stack_id=model_ids["stack_id"],
+            pipeline_configuration=pipeline_configuration,
+        )
+
+    def get_all_runs(self) -> Dict[str, MLMDPipelineRunModel]:
         """Gets a mapping run name -> ID for all runs registered in MLMD.
 
         Returns:
@@ -210,7 +268,10 @@ class MetadataStore:
         all_pipeline_runs = self.store.get_contexts_by_type(
             PIPELINE_RUN_CONTEXT_TYPE_NAME
         )
-        return {run.name: run.id for run in all_pipeline_runs}
+        return {
+            run.name: self._get_pipeline_run_model_from_context(run)
+            for run in all_pipeline_runs
+        }
 
     def get_pipeline_run_steps(
         self, run_id: int

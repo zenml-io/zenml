@@ -64,7 +64,6 @@ zenml experiment-tracker register wandb_tracker --type=wandb \
     --project_name=<WANDB_PROJECT_NAME>
 
 zenml stack register wandb_stack \
-    -m default \
     -a default \
     -o default \
     -e wandb_tracker \
@@ -102,15 +101,20 @@ For each run, you should see the following visualizations:
 ### Using `wandb.Settings`
 
 ZenML allows you to override the [wandb.Settings](https://github.com/wandb/client/blob/master/wandb/sdk/wandb_settings.py#L353) 
-class in the `enable_wandb` decorator to allow for even further control of the wandb integration. One feature that is super useful 
-is to enable `magic=True`, like so:
+class using the `WandbExperimentTrackerSettings` like this:
 
 ```python
 import wandb
+from zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor import WandbExperimentTrackerSettings
 
-
-@enable_wandb(settings=wandb.Settings(magic=True))
-@step
+@step(
+    experiment_tracker="<EXPERIMENT_TRACKER_NAME>",
+    settings={
+        "experiment_tracker.wandb": WandbExperimentTrackerSettings(
+            settings=wandb.Settings(magic=True)
+        )
+    }
+)
 def my_step(
         x_test: np.ndarray,
         y_test: np.ndarray,
@@ -120,11 +124,9 @@ def my_step(
     ...
 ```
 
-If you want to use this decorator with our class-based API, simply decorate your step class as follows:
-```python
-import wandb
+If you want to enable Wandb tracking when using the class-based API, simply configure your step as follows:
 
-@enable_wandb(settings=wandb.Settings(magic=True))
+```python
 class MyStep(BaseStep):
     def entrypoint(
         self,
@@ -132,8 +134,10 @@ class MyStep(BaseStep):
         y_test: np.ndarray,
         model: tf.keras.Model,
     ) -> float:
-        """Everything in this step is autologged"""
         ...
+
+step_instance = MyStep()
+step_instance.configure(experiment_tracker="<NAME_OF_EXPERIMENT_TRACKER>")
 ```
 
 Doing the above auto-magically logs all the data, metrics, and results within the step, no further action required!

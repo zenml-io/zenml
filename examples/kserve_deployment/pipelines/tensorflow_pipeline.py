@@ -11,15 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.config import DockerSettings
 from zenml.integrations.constants import KSERVE, TENSORFLOW
 from zenml.pipelines import pipeline
 
-
-@pipeline(
-    enable_cache=True,
-    required_integrations=[KSERVE, TENSORFLOW],
-    requirements=["Pillow"],
+docker_settings = DockerSettings(
+    requirements=["Pillow"], required_integrations=[KSERVE, TENSORFLOW]
 )
+
+
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def tensorflow_training_deployment_pipeline(
     importer,
     normalizer,
@@ -37,11 +38,7 @@ def tensorflow_training_deployment_pipeline(
     model_deployer(deployment_decision, model)
 
 
-@pipeline(
-    enable_cache=True,
-    required_integrations=[KSERVE, TENSORFLOW],
-    requirements=["Pillow"],
-)
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def tensorflow_inference_pipeline(
     predict_preprocessor,
     prediction_service_loader,

@@ -11,11 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.config import DockerSettings
 from zenml.integrations.constants import SKLEARN
 from zenml.pipelines import pipeline
 
+docker_settings = DockerSettings(required_integrations=[SKLEARN])
 
-@pipeline(required_integrations=[SKLEARN])
+
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def scipy_example_pipeline(importer, vectorizer, trainer, predictor):
     X_train, X_test, y_train, y_test = importer()
     vec_transformer, X_train_vec, X_test_vec = vectorizer(X_train, X_test)
