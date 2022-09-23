@@ -1092,22 +1092,6 @@ class RestZenStore(BaseZenStore):
     # Pipeline runs
     # --------------
 
-    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
-        """Creates a pipeline run.
-
-        Args:
-            pipeline_run: The pipeline run to create.
-
-        Returns:
-            The created pipeline run.
-        """
-        return self._create_resource(
-            resource=pipeline_run,
-            route=f"{PIPELINES}/{str(pipeline_run.pipeline_id)}{RUNS}",
-            # TODO[server]: add request model
-            # request_model=CreatePipelineRunRequest,
-        )
-
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
 
@@ -1187,30 +1171,6 @@ class RestZenStore(BaseZenStore):
             route=RUNS,
             resource_model=PipelineRunModel,
             **filters,
-        )
-
-    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
-        """Updates a pipeline run.
-
-        Args:
-            run: The pipeline run to use for the update.
-
-        Raises:
-            NotImplementedError: this is not implemented.
-        """
-        # TODO[server]: figure out if this should even be
-        # allowed or if we can remove it from the store interface
-        raise NotImplementedError
-
-    def delete_run(self, run_id: UUID) -> None:
-        """Deletes a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to delete.
-        """
-        self._delete_resource(
-            resource_id=run_id,
-            route=RUNS,
         )
 
     # ------------------

@@ -179,28 +179,3 @@ async def list_pipeline_runs(
         user_name_or_id=user_name_or_id,
         pipeline_id=pipeline_id,
     )
-
-
-@router.post(
-    "/{pipeline_id}" + RUNS,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@handle_exceptions
-async def create_pipeline_run(
-    pipeline_id: UUID, pipeline_run: PipelineRunModel
-) -> PipelineRunModel:
-    """Create a run for a pipeline.
-
-    This endpoint is not meant to be used explicitly once ZenML follows the
-    centralized paradigm where runs are authored by the ZenServer and not on the
-    user's machine.
-
-    Args:
-        pipeline_id: ID of the pipeline.
-        pipeline_run: The pipeline run to create.
-
-    Returns:
-        The created pipeline run.
-    """
-    pipeline_run.pipeline_id = pipeline_id
-    return zen_store.create_run(pipeline_run=pipeline_run)

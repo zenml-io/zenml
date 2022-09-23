@@ -975,20 +975,6 @@ class ZenStoreInterface(ABC):
     # --------------
 
     @abstractmethod
-    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
-        """Creates a pipeline run.
-
-        Args:
-            pipeline_run: The pipeline run to create.
-
-        Returns:
-            The created pipeline run.
-
-        Raises:
-            EntityExistsError: If an identical pipeline run already exists.
-        """
-
-    @abstractmethod
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
 
@@ -1062,31 +1048,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A list of all pipeline runs.
-        """
-
-    @abstractmethod
-    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
-        """Updates a pipeline run.
-
-        Args:
-            run: The pipeline run to use for the update.
-
-        Returns:
-            The updated pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    @abstractmethod
-    def delete_run(self, run_id: UUID) -> None:
-        """Deletes a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to delete.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
 
     # ------------------
