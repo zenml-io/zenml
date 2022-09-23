@@ -27,10 +27,10 @@ if not step_operator:
     )
 
 
-# setting the custom_step_operator param will tell ZenML
+# setting the step_operator param will tell ZenML
 # to run this step on a custom backend defined by the name
 # of the operator you provide.
-@step(custom_step_operator=step_operator.name)
+@step(step_operator=step_operator.name)
 def remote_trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,

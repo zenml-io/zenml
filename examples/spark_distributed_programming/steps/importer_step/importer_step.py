@@ -24,7 +24,7 @@ class ImporterParameters(BaseParameters):
     path: str
 
 
-@step(custom_step_operator=step_operator.name)
+@step(step_operator=step_operator.name)
 def importer_step(params: ImporterParameters) -> DataFrame:
     spark = SparkSession.builder.getOrCreate()
     return spark.read.csv(params.path, header=True)
