@@ -91,8 +91,14 @@ class AirflowOrchestrator(BaseOrchestrator):
         """
         if schedule:
             if schedule.cron_expression:
+                start_time = schedule.start_time or (
+                    datetime.datetime.now() - datetime.timedelta(1)
+                )
                 return {
                     "schedule_interval": schedule.cron_expression,
+                    "start_date": start_time,
+                    "end_date": schedule.end_time,
+                    "catchup": schedule.catchup,
                 }
             else:
                 return {
