@@ -116,7 +116,11 @@ class PipelineRunSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     name: str
 
-    # project_id - redundant since stack has this
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    )
+    project: "ProjectSchema" = Relationship(back_populates="runs")
+
     user_id: UUID = Field(
         nullable=False,
         sa_column=Column(ForeignKey("userschema.id", ondelete="CASCADE")),
@@ -163,6 +167,7 @@ class PipelineRunSchema(SQLModel, table=True):
             id=run.id,
             name=run.name,
             stack_id=run.stack_id,
+            project_id=run.project,
             user=run.user,
             pipeline_id=run.pipeline_id,
             pipeline_configuration=json.dumps(run.pipeline_configuration),
@@ -200,6 +205,7 @@ class PipelineRunSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             stack_id=self.stack_id,
+            project=self.project_id,
             user=self.user_id,
             pipeline_id=self.pipeline_id,
             pipeline_configuration=json.loads(self.pipeline_configuration),
