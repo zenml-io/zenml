@@ -14,7 +14,9 @@
 """ZenServer Terraform Deployment."""
 
 
-from zenml.zen_server.deploy.terraform.terraform_provider import TerraformServerProvider
+from zenml.zen_server.deploy.terraform.terraform_provider import (
+    TerraformServerProvider,
+)
 
 __all__ = [
     "TerraformServerProvider",
