@@ -138,3 +138,8 @@ class AnalyticsEventSource(StrEnum):
     """Enum to identify analytics events source."""
 
     ZENML_GO = "zenml go"
+
+class TerraformZenServerType(StrEnum):
+    """Types of Terraform ZenML Server Deployments."""
+
+    AWS = "aws"
