@@ -159,7 +159,7 @@ zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YO
 zenml orchestrator register vertex_orch --flavor=vertex --project=<PROJECT_ID> --location=<GCP_LOCATION>
 
 # For the secrets manager, all we'll need it the gcp PROJECT_ID
-zenml secrets-manager register gcp_secrets_manager --flavor=gcp_secrets_manager --project_id=<PROJECT_ID>
+zenml secrets-manager register gcp_secrets_manager --flavor=gcp --project_id=<PROJECT_ID>
 
 # Now we're ready to assemble our stack
 zenml stack register gcp_vertex_stack -m gcp_metadata_store -a gcp_artifact_store -o vertex_orch -c gcp_registry -x gcp_secrets_manager --set

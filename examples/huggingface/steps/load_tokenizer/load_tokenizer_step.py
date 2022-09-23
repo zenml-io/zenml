@@ -12,14 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from steps.configuration import HuggingfaceConfig
+from steps.configuration import HuggingfaceParameters
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from zenml.steps import step
 
 
 @step
-def load_tokenizer(config: HuggingfaceConfig) -> PreTrainedTokenizerBase:
+def load_tokenizer(params: HuggingfaceParameters) -> PreTrainedTokenizerBase:
     """Load pretrained tokenizer"""
-    tokenizer = AutoTokenizer.from_pretrained(config.pretrained_model)
+    tokenizer = AutoTokenizer.from_pretrained(params.pretrained_model)
     return tokenizer

@@ -70,7 +70,7 @@ secrets manager.
 ```shell
 zenml integration install gcp
 
-zenml secrets-manager register gcp_secrets_manager --flavor=gcp_secrets_manager --project_id=PROJECT_ID
+zenml secrets-manager register gcp_secrets_manager --flavor=gcp --project_id=PROJECT_ID
 zenml stack register secrets_stack -m default -o default -a default -x gcp_secrets_manager --set
 ```
 
@@ -83,7 +83,7 @@ with the correct credentials to access the Azure secrets manager.
 ```shell
 zenml integration install azure
 
-zenml secrets-manager register azure_key_vault --flavor=azure_key_vault --key_vault_name=<VAULT-NAME>
+zenml secrets-manager register azure_key_vault --flavor=azure --key_vault_name=<VAULT-NAME>
 zenml stack register secrets_stack -m default -o default -a default -x azure_key_vault --set
 ```
 
@@ -105,7 +105,7 @@ zenml stack register secrets_stack -m default -o default -a default -x vault --s
 ### Or stay on a local stack
 
 In case you run into issues with either of the clouds, feel free to use a local 
-secret manager. Just replace `--flavor=aws`/`--flavor=gcp_secrets_manager`/`--flavor=azure_key_vault`
+secret manager. Just replace `--flavor=aws`/`--flavor=gcp`/`--flavor=azure`
 with `--flavor=local` to use a file-based version of a secret manager. Be aware that this is not 
 a recommended location to store sensitive information.
 

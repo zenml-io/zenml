@@ -18,11 +18,10 @@ import requests
 from numpy import asarray
 from PIL import Image
 
-from zenml.steps import step
-from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps import BaseParameters, step
 
 
-class InferenceImageLoaderStepConfig(BaseStepConfig):
+class InferenceImageLoaderStepParameters(BaseParameters):
     """
     Configuration for the PyTorch inference preprocessor step.
     """
@@ -32,7 +31,7 @@ class InferenceImageLoaderStepConfig(BaseStepConfig):
 
 @step(enable_cache=False)
 def inference_image_loader(
-    config: InferenceImageLoaderStepConfig,
+    params: InferenceImageLoaderStepParameters,
 ) -> str:
     """Load an image and make it available for inference.
 
@@ -40,12 +39,12 @@ def inference_image_loader(
     dump it as a JSON string.
 
     Args:
-        config: The configuration for the step.
+        params: The parameters for the step.
 
     Returns:
         The request body includes a base64 coded image for the inference request.
     """
-    response = requests.get(config.img_url)
+    response = requests.get(params.img_url)
     img = Image.open(BytesIO(response.content))
     numpydata = asarray(img)
     input = numpydata.tolist()
