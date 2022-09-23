@@ -167,7 +167,9 @@ class AirflowOrchestrator(BaseOrchestrator):
                 # Extract run name for the kwargs that will be passed to the
                 # callable
                 run_name = kwargs["ti"].get_dagrun().run_id
+                self._prepare_run(deployment=deployment)
                 self.run_step(step=step_instance, run_name=run_name)
+                self._cleanup_run()
 
             # Create airflow python operator that contains the step callable
             airflow_operator = airflow_python.PythonOperator(
