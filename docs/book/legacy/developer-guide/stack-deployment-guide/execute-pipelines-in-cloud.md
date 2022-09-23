@@ -314,7 +314,7 @@ new stack with these components that you have just created.
 
     ```powershell
     zenml container-registry register cloud_registry --flavor=<aws/gcp/azure> --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
-    zenml orchestrator register cloud_orchestrator --flavor=kubeflow --custom_docker_base_image_name=YOUR_IMAGE
+    zenml orchestrator register cloud_orchestrator --flavor=kubeflow
     zenml artifact-store register cloud_artifact_store --flavor=<s3/gcp/azure> --path=$PATH_TO_YOUR_BUCKET
     zenml secrets-manager register cloud_secrets_manager --flavor=<aws/gcp/azure> 
 

@@ -143,9 +143,6 @@ For Kubernetes, there are also some additional important parameters:
 pods will run.
 - `service_account` is the service account that will be used by 
 various Spark components (to create and watch the pods).
-- `docker_parent_image` (which originally comes from the 
-`PipelineDockerImageBuilder` base class) indicates the name of a base image 
-that has Spark enabled.
 
 Additionally, the `_backend_configuration` method is adjusted to handle the 
 Kubernetes-specific configuration.
@@ -193,7 +190,6 @@ zenml step-operator register <NAME> \
 	--master=k8s://<API_SERVER_ENDPOINT> \
 	--namespace=<KUBERNETES_NAMESPACE> \
 	--service_account=<KUBERNETES_SERVICE_ACCOUNT> \
-	--docker_parent_image=<BASE_IMAGE_NAME>
 ```
 
 Once you added the step operator to your active stack, you can use it to
@@ -201,7 +197,7 @@ execute individual steps of your pipeline by specifying it in the `@step` decora
 ```python
 from zenml.steps import step
 
-@step(custom_step_operator=<NAME>)
+@step(step_operator=<NAME>)
 def preprocess(...) -> ...:
     """Preprocess your dataset."""
     # This step will be executed with Spark on Kubernetes.

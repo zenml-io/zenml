@@ -25,29 +25,20 @@ Putting all these considerations together, we end up with the following
 
 ```python
 from abc import ABC, abstractmethod
-from typing import ClassVar, List, Any
+from typing import Any
+from zenml.config.pipeline_deployment import PipelineDeployment
 
-from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
-
-from zenml.enums import StackComponentType
-from zenml.stack import StackComponent
-from zenml.steps import BaseStep
+from zenml.stack import StackComponent, Stack
 
 
 class BaseOrchestrator(StackComponent, ABC):
     """Base class for all ZenML orchestrators"""
 
-    # --- Class variables ---
-    TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
-
     @abstractmethod
     def prepare_or_run_pipeline(
-            self,
-            sorted_steps: List[BaseStep],
-            pipeline: "BasePipeline",
-            pb2_pipeline: Pb2Pipeline,
-            stack: "Stack",
-            runtime_configuration: "RuntimeConfiguration",
+        self,
+        deployment: PipelineDeployment,
+        stack: Stack,
     ) -> Any:
         """Prepares and runs the pipeline outright or returns an intermediate
         pipeline representation that gets deployed.
@@ -83,12 +74,12 @@ differentiate them.
 
 ## Direct Orchestration
 
-The implementation of a `local` orchestrator can be summarized in two lines of
+The implementation of a `local` orchestrator can be summarized in  lines of
 code:
 
 ```python
-for step in sorted_steps:
-    self.run_step(...)
+for step in deployment.steps.values():
+    self.run_step(step)
 ```
 
 The orchestrator basically iterates through each step and directly executes
@@ -127,7 +118,7 @@ to handle the configurations defined on each step:
 
 ```python
 def prepare_or_run_pipeline(...):
-    for step in sorted_steps:
+    for step in deployment.steps.values():
         if self.requires_resources_in_orchestration_environment(step):
             # make sure to handle the specified resources
             ...
@@ -136,10 +127,10 @@ def prepare_or_run_pipeline(...):
 ## Base Implementation of the Step Entrypoint Configuration
 
 Within the base Docker images that are used for container-based orchestration
-the `src.zenml.entrypoints.step_entrypoint.py` is the default entrypoint to run
+the `src.zenml.entrypoints.entrypoint.py` is the default entrypoint to run
 a specific step. It does so by loading an orchestrator specific
 `StepEntrypointConfiguration` object. This object is then used to parse all
-entrypoint arguments (e.g. --step_source <relative-path-to-step>). Finally, the
+entrypoint arguments (e.g. `--step_name <STEP_NAME>`). Finally, the
 `StepEntrypointConfiguration.run()` method is used to execute the step.
 Under the hood this will eventually also call the orchestrators `run_step()`
 method.
@@ -147,9 +138,7 @@ method.
 The `StepEntrypointConfiguration` is the base class that already implements
 most of the required functionality. Let's dive right into it:
 
-1. The `DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND` is the default
-   entrypoint command for the Docker container.
-2. Some arguments are mandatory for the step entrypoint. These are set as
+1. It defines some mandatory arguments for the step entrypoint. These are set as
    constants at the top of the file and used as the minimum required arguments.
 3. The `run()` method uses the parsed arguments to set up all required
    prerequisites before ultimately executing the step.
@@ -157,73 +146,76 @@ most of the required functionality. Let's dive right into it:
 Here is a schematic view of what the `StepEntrypointConfiguration` looks like:
 
 ```python
-from abc import ABC, abstractmethod
-from typing import Any, List, Set
+from tfx.orchestration.portable import data_types
 
-from zenml.steps import BaseStep
+from zenml.entrypoints import utils as entrypoint_utils
+from zenml.entrypoints.base_entrypoint_configuration import (
+    BaseEntrypointConfiguration,
+)
+from zenml.integrations.registry import integration_registry
+from zenml.repository import Repository
 
-DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND = [
-    "python",
-    "-m",
-    "zenml.entrypoints.step_entrypoint",
-]
-# Constants for all the ZenML default entrypoint options
-ENTRYPOINT_CONFIG_SOURCE_OPTION = "entrypoint_config_source"
-PIPELINE_JSON_OPTION = "pipeline_json"
-MAIN_MODULE_SOURCE_OPTION = "main_module_source"
-STEP_SOURCE_OPTION = "step_source"
-INPUT_SPEC_OPTION = "input_spec"
+if TYPE_CHECKING:
+    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.config.step_configurations import Step
+
+STEP_NAME_OPTION = "step_name"
 
 
-class StepEntrypointConfiguration(ABC):
+class StepEntrypointConfiguration(BaseEntrypointConfiguration):
+    """Base class for entrypoint configurations that run a single step."""
 
-    # --- This has to be implemented by the subclass ---
-    @abstractmethod
-    def get_run_name(self, pipeline_name: str) -> str:
-        """Returns the run name."""
-        
-    # --- These can be implemented by subclasses ---
-    @classmethod
-    def get_custom_entrypoint_options(cls) -> Set[str]:
-        """Custom options for this entrypoint configuration"""
-        return set()
+    def post_run(
+        self,
+        pipeline_name: str,
+        step_name: str,
+        execution_info: Optional[data_types.ExecutionInfo] = None,
+    ) -> None:
+        """Does cleanup or post-processing after the step finished running."""
 
     @classmethod
-    def get_custom_entrypoint_arguments(
-            cls, step: BaseStep, **kwargs: Any
+    def get_entrypoint_options(cls) -> Set[str]:
+        """Gets all options required for running with this configuration."""
+        return super().get_entrypoint_options() | {STEP_NAME_OPTION}
+
+    @classmethod
+    def get_entrypoint_arguments(
+        cls,
+        **kwargs: Any,
     ) -> List[str]:
-        """Custom arguments the entrypoint command should be called with."""
-        return []
-
-    # --- This will ultimately be called by the step entrypoint ---
+        """Gets all arguments that the entrypoint command should be called with."""
+        return super().get_entrypoint_arguments(**kwargs) + [
+            f"--{STEP_NAME_OPTION}",
+            kwargs[STEP_NAME_OPTION],
+        ]
 
     def run(self) -> None:
-       """Prepares execution and runs the step that is specified by the 
-       passed arguments"""
-       ...
+        """Prepares the environment and runs the configured step."""
+        ...
 ```
 
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
-and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/api_docs/orchestrators/#zenml.orchestrators.base_orchestrator.BaseOrchestrator).
+and get the complete docstrings, please check the [the source code on GitHub](https://github.com/zenml-io/zenml/blob/main/src/zenml/entrypoints/step_entrypoint_configuration.py).
 {% endhint %}
 
 ## Build your own Step Entrypoint Configuration
 
-There is only one mandatory method `get_run_name(...)` that you need to
-implement in order to get a functioning entrypoint. Inside this method you
-need to return a string which **has** to be the same for all steps that are
-executed as part of the same pipeline run.
+If you need to customize what happens when a step gets executed inside the entrypoint,
+you can subclass the `StepEntrypointConfiguration` class:
+
+If you want to provide a custom run name (this **has** to be the same for all steps that are
+executed as part of the same pipeline run), you can overwrite the `get_run_name(...)` method.
 
 If you need to pass additional arguments to the entrypoint, there are
 two methods that you need to implement:
 
-* `get_custom_entrypoint_options()`: This method should return all the
+* `get_entrypoint_options()`: This method should return all the
   additional options that you require in the entrypoint.
 
-* `get_custom_entrypoint_arguments(...)`: This method should return a list of
+* `get_entrypoint_arguments(...)`: This method should return a list of
   arguments that should be passed to the entrypoint. The arguments need to
   provide
-  values for all options defined in the `custom_entrypoint_options()` method
+  values for all options defined in the `get_entrypoint_options()` method
   mentioned above.

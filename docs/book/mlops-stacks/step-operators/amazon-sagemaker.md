@@ -62,7 +62,7 @@ execute individual steps of your pipeline by specifying it in the `@step` decora
 ```python
 from zenml.steps import step
 
-@step(custom_step_operator=<NAME>)
+@step(step_operator=<NAME>)
 def trainer(...) -> ...:
     """Train a model."""
     # This step will be executed in SageMaker.
