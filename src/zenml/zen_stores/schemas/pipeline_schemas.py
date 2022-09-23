@@ -27,7 +27,7 @@ from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
+    from zenml.zen_stores.schemas import ProjectSchema, UserSchema, StackSchema
 
 
 class PipelineSchema(SQLModel, table=True):
@@ -117,21 +117,32 @@ class PipelineRunSchema(SQLModel, table=True):
     name: str
 
     # project_id - redundant since stack has this
-    user: Optional[UUID] = Field(foreign_key="userschema.id", nullable=True)
+    user_id: UUID = Field(
+        nullable=False,
+        sa_column=Column(ForeignKey("userschema.id",
+                                    ondelete="CASCADE"))
+    )
+    user: "UserSchema" = Relationship(back_populates="runs")
+
     stack_id: Optional[UUID] = Field(
-        foreign_key="stackschema.id", nullable=True
+        nullable=True,
+        sa_column=Column(ForeignKey("stackschema.id",
+                                    ondelete="SET NULL"))
     )
+    stack: "StackSchema" = Relationship(back_populates="runs")
+
     pipeline_id: Optional[UUID] = Field(
-        foreign_key="pipelineschema.id", nullable=True
+        nullable=True,
+        sa_column=Column(ForeignKey("pipelineschema.id",
+                                    ondelete="SET NULL"))
     )
+    pipeline: PipelineSchema = Relationship(back_populates="runs")
 
     git_sha: Optional[str] = Field(nullable=True)
     zenml_version: str
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
-
-    pipeline: PipelineSchema = Relationship(back_populates="runs")
 
     mlmd_id: int = Field(default=None, nullable=True)
 
@@ -190,7 +201,7 @@ class PipelineRunSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             stack_id=self.stack_id,
-            user=self.user,
+            user=self.user_id,
             pipeline_id=self.pipeline_id,
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,

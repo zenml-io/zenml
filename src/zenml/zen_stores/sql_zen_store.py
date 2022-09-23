@@ -2296,7 +2296,7 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(PipelineRunSchema.pipeline_id is None)
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id)
-                query = query.where(PipelineRunSchema.user == user.id)
+                query = query.where(PipelineRunSchema.user_id == user.id)
             runs = session.exec(query).all()
             return [run.to_model() for run in runs]
 

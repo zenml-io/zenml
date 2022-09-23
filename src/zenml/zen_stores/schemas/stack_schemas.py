@@ -23,7 +23,8 @@ from sqlmodel import Field, Relationship, SQLModel
 from zenml.models import StackModel
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
+    from zenml.zen_stores.schemas import ProjectSchema, UserSchema, \
+    PipelineRunSchema
     from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 
 
@@ -61,6 +62,9 @@ class StackSchema(SQLModel, table=True):
 
     components: List["StackComponentSchema"] = Relationship(
         back_populates="stacks", link_model=StackCompositionSchema
+    )
+    runs: List["PipelineRunSchema"] = Relationship(
+        back_populates="stack",
     )
 
     @classmethod

@@ -28,8 +28,8 @@ if TYPE_CHECKING:
         StackComponentSchema,
         StackSchema,
         TeamRoleAssignmentSchema,
-        UserRoleAssignmentSchema,
-    )
+        UserRoleAssignmentSchema, PipelineRunSchema,
+)
 
 
 class ProjectSchema(SQLModel, table=True):
@@ -54,10 +54,10 @@ class ProjectSchema(SQLModel, table=True):
     components: List["StackComponentSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
-    pipelines: List["PipelineSchema"] = Relationship(
+    flavors: List["FlavorSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
-    flavors: List["FlavorSchema"] = Relationship(
+    pipelines: List["PipelineSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
 
