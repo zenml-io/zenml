@@ -622,7 +622,7 @@ This will create a FILENAME.yaml containing the config of your stack and all
 of its components, which you can then import again like this:
 
 ```bash
-zenml stack import STACK_NAME FILENAME.yaml
+zenml stack import STACK_NAME -f FILENAME.yaml
 ```
 
 If you wish to update a stack that you have already registered, first make sure

@@ -40,6 +40,7 @@ EXCLUDED_RECIPE_DIRS = [""]
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 VARIABLES_FILE = "values.tfvars.json"
+STACK_FILE_NAME = "stack-yaml-path"
 ALPHA_MESSAGE = (
     "The stack recipes CLI is in alpha and actively being developed. "
     "Please avoid running mission-critical workloads on resources deployed "
@@ -206,9 +207,7 @@ class Terraform:
         )
 
         # return the path of the stack yaml file
-        _, stack_file_path, _ = self.tf.output(
-            "stack-yaml-path", full_value=True
-        )
+        stack_file_path = self.tf.output(STACK_FILE_NAME, full_value=True)
         return str(stack_file_path)
 
     def _get_vars(self, path: str) -> Any:
