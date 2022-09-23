@@ -12,19 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Project Models for the API endpoint definitions."""
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import Field
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.enums import ExecutionStatus
 from zenml.models import (
     PipelineModel,
     PipelineRunModel,
     ProjectModel,
+    StackModel,
     UserModel,
-    StackModel
 )
-from zenml.enums import ExecutionStatus
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.zen_server.models.base_models import (
     ProjectScopedCreateRequest,
@@ -77,7 +77,6 @@ class HydratedPipelineModel(PipelineModel):
     user: UserModel = Field(  # type: ignore[assignment]
         title="The user that created this pipeline.",
     )
-
 
     @classmethod
     def from_model(
@@ -134,7 +133,8 @@ class HydratedPipelineRunModel(PipelineRunModel):
 
     @classmethod
     def from_model(
-        cls, run_model: PipelineRunModel,
+        cls,
+        run_model: PipelineRunModel,
     ) -> "HydratedPipelineRunModel":
         """Converts this model to a hydrated model.
 
@@ -161,5 +161,8 @@ class HydratedPipelineRunModel(PipelineRunModel):
 
         return cls(
             **run_model.dict(exclude={"user", "pipeline", "stack"}),
-            pipeline=pipeline, stack=stack, user=user, status=status
+            pipeline=pipeline,
+            stack=stack,
+            user=user,
+            status=status
         )

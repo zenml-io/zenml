@@ -24,12 +24,13 @@ from zenml.models import ProjectModel
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         FlavorSchema,
+        PipelineRunSchema,
         PipelineSchema,
         StackComponentSchema,
         StackSchema,
         TeamRoleAssignmentSchema,
-        UserRoleAssignmentSchema, PipelineRunSchema,
-)
+        UserRoleAssignmentSchema,
+    )
 
 
 class ProjectSchema(SQLModel, table=True):

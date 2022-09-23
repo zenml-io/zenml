@@ -23,8 +23,10 @@ from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import PipelineModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models import UpdatePipelineRequest
-from zenml.zen_server.models.pipeline_models import HydratedPipelineModel, \
-    HydratedPipelineRunModel
+from zenml.zen_server.models.pipeline_models import (
+    HydratedPipelineModel,
+    HydratedPipelineRunModel,
+)
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -148,7 +150,9 @@ async def delete_pipeline(pipeline_id: UUID) -> None:
 
 @router.get(
     "/{pipeline_id}" + RUNS,
-    response_model=Union[List[HydratedPipelineRunModel], List[PipelineRunModel]],
+    response_model=Union[
+        List[HydratedPipelineRunModel], List[PipelineRunModel]
+    ],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -159,7 +163,7 @@ async def list_pipeline_runs(
     run_name: Optional[str] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[UUID] = None,
-    hydrated: bool = False
+    hydrated: bool = False,
 ) -> Union[List[HydratedPipelineRunModel], List[PipelineRunModel]]:
     """Get pipeline runs according to query filters.
 

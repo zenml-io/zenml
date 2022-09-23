@@ -41,7 +41,9 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=Union[List[HydratedPipelineRunModel], List[PipelineRunModel]],
+    response_model=Union[
+        List[HydratedPipelineRunModel], List[PipelineRunModel]
+    ],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -53,7 +55,7 @@ async def list_runs(
     component_id: Optional[UUID] = None,
     pipeline_id: Optional[UUID] = None,
     unlisted: bool = False,
-    hydrated: bool = False
+    hydrated: bool = False,
 ) -> Union[List[HydratedPipelineRunModel], List[PipelineRunModel]]:
     """Get pipeline runs according to query filters.
 

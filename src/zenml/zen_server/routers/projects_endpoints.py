@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for projects."""
-from typing import List, Optional, Union, Dict
+from typing import Dict, List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -24,7 +24,8 @@ from zenml.constants import (
     ROLES,
     STACK_COMPONENTS,
     STACKS,
-    VERSION_1, STATISTICS,
+    STATISTICS,
+    VERSION_1,
 )
 from zenml.enums import StackComponentType
 from zenml.models import (
@@ -507,7 +508,6 @@ async def create_pipeline(
         return created_pipeline
 
 
-
 @router.get(
     "/{project_name_or_id}" + STATISTICS,
     response_model=Dict[str, str],  # type: ignore[arg-type]
@@ -531,12 +531,16 @@ async def get_project_statistics(
     #  use zen_store methods that just return counts
     zen_store.list_runs()
     return {
-        "stacks": len(zen_store.list_stacks(
-            project_name_or_id=project_name_or_id)),
-        "components": len(zen_store.list_stack_components(
-            project_name_or_id=project_name_or_id)),
-        "pipelines": len(zen_store.list_pipelines(
-            project_name_or_id=project_name_or_id)),
-        "runs": len(zen_store.list_runs(
-            project_name_or_id=project_name_or_id)),
+        "stacks": len(
+            zen_store.list_stacks(project_name_or_id=project_name_or_id)
+        ),
+        "components": len(
+            zen_store.list_stack_components(
+                project_name_or_id=project_name_or_id
+            )
+        ),
+        "pipelines": len(
+            zen_store.list_pipelines(project_name_or_id=project_name_or_id)
+        ),
+        "runs": len(zen_store.list_runs(project_name_or_id=project_name_or_id)),
     }
