@@ -21,9 +21,11 @@ from whylogs.core import DatasetProfileView  # type: ignore
 
 from zenml.integrations.whylogs.data_validators.whylogs_data_validator import (
     WhylogsDataValidator,
-    WhylogsDataValidatorSettings,
 )
 from zenml.integrations.whylogs.flavors import WhylogsDataValidatorFlavor
+from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
+    WhylogsDataValidatorSettings,
+)
 from zenml.steps.base_step import BaseStep
 from zenml.steps.step_interfaces.base_analyzer_step import (
     BaseAnalyzerParameters,

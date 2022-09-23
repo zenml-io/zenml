@@ -18,9 +18,9 @@ import pytest
 
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import PipelineRunConfiguration
+from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
-from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack
 
 
@@ -146,8 +146,13 @@ def test_stack_prepare_pipeline_run(
     methods of all its components."""
     pipeline = one_step_pipeline(empty_step())
     run_name = "some_unique_pipeline_run_name"
-    runtime_config = RuntimeConfiguration(run_name=run_name)
-    stack_with_mock_components.prepare_pipeline_run(pipeline, runtime_config)
+    deployment = PipelineDeployment(
+        run_name=run_name,
+        stack_id=uuid4(),
+        pipeline=pipeline.configuration,
+        proto_pipeline="",
+    )
+    stack_with_mock_components.prepare_pipeline_deployment(deployment)
     for component in stack_with_mock_components.components.values():
         component.prepare_pipeline_deployment.assert_called_once()
         component.prepare_pipeline_run.assert_called_once()

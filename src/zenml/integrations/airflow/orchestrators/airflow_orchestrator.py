@@ -51,7 +51,7 @@ if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.stack import Stack
 
-AIRFLOW_ROOT_DIR = "airflow_root"
+AIRFLOW_ROOT_DIR = "airflow"
 DAG_FILEPATH_OPTION_KEY = "dag_filepath"
 
 
@@ -91,8 +91,14 @@ class AirflowOrchestrator(BaseOrchestrator):
         """
         if schedule:
             if schedule.cron_expression:
+                start_time = schedule.start_time or (
+                    datetime.datetime.now() - datetime.timedelta(1)
+                )
                 return {
                     "schedule_interval": schedule.cron_expression,
+                    "start_date": start_time,
+                    "end_date": schedule.end_time,
+                    "catchup": schedule.catchup,
                 }
             else:
                 return {
@@ -167,7 +173,9 @@ class AirflowOrchestrator(BaseOrchestrator):
                 # Extract run name for the kwargs that will be passed to the
                 # callable
                 run_name = kwargs["ti"].get_dagrun().run_id
+                self._prepare_run(deployment=deployment)
                 self.run_step(step=step_instance, run_name=run_name)
+                self._cleanup_run()
 
             # Create airflow python operator that contains the step callable
             airflow_operator = airflow_python.PythonOperator(

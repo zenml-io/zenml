@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """WhyLabs whylogs data validator flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
+from zenml.config.base_settings import BaseSettings
 from zenml.data_validators.base_data_validator import (
     BaseDataValidatorConfig,
     BaseDataValidatorFlavor,
@@ -24,6 +25,20 @@ from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
     from zenml.integrations.whylogs.data_validators import WhylogsDataValidator
+
+
+class WhylogsDataValidatorSettings(BaseSettings):
+    """Settings for the Whylogs data validator.
+
+    Attributes:
+        enable_whylabs: If set to `True` for a step, all the whylogs data
+            profile views returned by the step will automatically be uploaded
+            to the Whylabs platform if Whylabs credentials are configured.
+        dataset_id: Dataset ID to use when uploading profiles to Whylabs.
+    """
+
+    enable_whylabs: bool = False
+    dataset_id: Optional[str] = None
 
 
 class WhylogsDataValidatorConfig(

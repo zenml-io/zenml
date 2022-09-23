@@ -14,6 +14,7 @@
 """Pipeline deployment."""
 import json
 from typing import Any, Dict, Optional, cast
+from uuid import UUID
 
 import yaml
 
@@ -30,8 +31,9 @@ class PipelineDeployment(StrictBaseModel):
     zenml_version: str = zenml.__version__
     run_name: str
     schedule: Optional[Schedule] = None
-    stack_name: str  # TODO: replace by stack ID
+    stack_id: UUID
     pipeline: PipelineConfiguration
+    pipeline_id: Optional[UUID] = None
     proto_pipeline: str
     steps: Dict[str, Step] = {}
 

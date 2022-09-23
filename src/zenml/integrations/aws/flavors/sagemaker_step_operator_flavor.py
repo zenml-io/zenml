@@ -20,7 +20,6 @@ from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
 )
-from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.aws.step_operators import SagemakerStepOperator
@@ -33,8 +32,6 @@ class SagemakerStepOperatorConfig(BaseStepOperatorConfig):
         role: The role that has to be assigned to the jobs which are
             running in Sagemaker.
         instance_type: The type of the compute instance where jobs will run.
-        base_image: The base image to use for building the docker
-            image that will be executed.
         bucket: Name of the S3 bucket to use for storing artifacts
             from the job run. If not provided, a default bucket will be created
             based on the following format: "sagemaker-{region}-{aws-account-id}".
@@ -45,15 +42,8 @@ class SagemakerStepOperatorConfig(BaseStepOperatorConfig):
 
     role: str
     instance_type: str
-    base_image: Optional[str] = None
     bucket: Optional[str] = None
     experiment_name: Optional[str] = None
-
-    docker_parent_image: Optional[str] = None
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "custom_docker_base_image_name", "docker_parent_image"
-    )
 
 
 class SagemakerStepOperatorFlavor(BaseStepOperatorFlavor):
