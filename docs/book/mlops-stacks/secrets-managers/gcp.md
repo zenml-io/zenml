@@ -33,7 +33,7 @@ To use the GCP secrets manager, we need:
 We can then register the secrets manager and use it in our active stack:
 ```shell
 zenml secrets-manager register <NAME> \
-    --flavor=gcp_secrets_manager \
+    --flavor=gcp \
     --project_id=<PROJECT_ID>
 
 # Add the secrets manager to the active stack

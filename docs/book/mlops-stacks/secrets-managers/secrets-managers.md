@@ -24,8 +24,8 @@ files. Additional cloud secrets managers are provided by integrations:
 |----------------|--------|-------------|-------------------|------------------|
 | [Local](./local.md) | `local` | _built-in_ | No | Uses local files to store secrets |
 | [AWS](./aws.md) | `aws` | `aws` | Yes | Uses AWS to store secrets |
-| [GCP](./gcp.md) | `gcp_secrets_manager` | `gcp` | Yes | Uses GCP to store secretes |
-| [Azure](./azure.md) | `azure_key_vault` | `azure` | Yes | Uses Azure Key Vaults to store secrets |
+| [GCP](./gcp.md) | `gcp` | `gcp` | Yes | Uses GCP to store secretes |
+| [Azure](./azure.md) | `azure` | `azure` | Yes | Uses Azure Key Vaults to store secrets |
 | [HashiCorp Vault](./hashicorp-vault.md) | `vault` | `vault` | Yes | Uses HashiCorp Vault to store secrets |
 | [Custom Implementation](./custom.md) | _custom_ | | No | Extend the secrets manager abstraction and provide your own implementation |
 
