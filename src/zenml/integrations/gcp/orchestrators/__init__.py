@@ -16,3 +16,5 @@
 from zenml.integrations.gcp.orchestrators.vertex_orchestrator import (  # noqa
     VertexOrchestrator,
 )
+
+__all__ = ["VertexOrchestrator"]

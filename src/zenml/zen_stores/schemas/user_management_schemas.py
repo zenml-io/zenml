@@ -36,9 +36,15 @@ class TeamAssignmentSchema(SQLModel, table=True):
 class UserSchema(SQLModel, table=True):
     """SQL Model for users."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
     name: str
-    created_at: datetime = Field(default_factory=datetime.now)
+    full_name: str
+    email: str
+    active: bool
+    password: Optional[str] = Field(nullable=True)
+    activation_token: Optional[str] = Field(nullable=True)
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     teams: List["TeamSchema"] = Relationship(
         back_populates="users", link_model=TeamAssignmentSchema
@@ -49,22 +55,68 @@ class UserSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(cls, model: UserModel) -> "UserSchema":
-        return cls(name=model.name)
+        """Create a `UserSchema` from a `UserModel`.
+
+        Args:
+            model: The `UserModel` from which to create the schema.
+
+        Returns:
+            The created `UserSchema`.
+        """
+        return cls(
+            id=model.id,
+            name=model.name,
+            full_name=model.full_name,
+            email=model.email,
+            active=model.active,
+            password=model.get_hashed_password(),
+            activation_token=model.get_hashed_activation_token(),
+        )
 
     def from_update_model(self, model: UserModel) -> "UserSchema":
+        """Update a `UserSchema` from a `UserModel`.
+
+        Args:
+            model: The `UserModel` from which to update the schema.
+
+        Returns:
+            The updated `UserSchema`.
+        """
         self.name = model.name
+        self.full_name = model.full_name
+        self.email = model.email
+        self.active = model.active
+        self.password = model.get_hashed_password()
+        self.activation_token = model.get_hashed_activation_token()
+        self.updated = datetime.now()
         return self
 
     def to_model(self) -> UserModel:
-        return UserModel(id=self.id, name=self.name, created_at=self.created_at)
+        """Convert a `UserSchema` to a `UserModel`.
+
+        Returns:
+            The converted `UserModel`.
+        """
+        return UserModel(
+            id=self.id,
+            name=self.name,
+            full_name=self.full_name,
+            email=self.email,
+            active=self.active,
+            password=self.password,
+            activation_token=self.activation_token,
+            created=self.created,
+            updated=self.updated,
+        )
 
 
 class TeamSchema(SQLModel, table=True):
     """SQL Model for teams."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
     name: str
-    created_at: datetime = Field(default_factory=datetime.now)
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     users: List["UserSchema"] = Relationship(
         back_populates="teams", link_model=TeamAssignmentSchema
@@ -75,18 +127,50 @@ class TeamSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(cls, model: TeamModel) -> "TeamSchema":
-        return cls(name=model.name)
+        """Create a `TeamSchema` from a `TeamModel`.
+
+        Args:
+            model: The `TeamModel` from which to create the schema.
+
+        Returns:
+            The created `TeamSchema`.
+        """
+        return cls(id=model.id, name=model.name)
+
+    def from_update_model(self, model: TeamModel) -> "TeamSchema":
+        """Update a `TeamSchema` from a `TeamModel`.
+
+        Args:
+            model: The `TeamModel` from which to update the schema.
+
+        Returns:
+            The updated `TeamSchema`.
+        """
+        self.name = model.name
+        self.updated = datetime.now()
+        return self
 
     def to_model(self) -> TeamModel:
-        return TeamModel(id=self.id, name=self.name, created_at=self.created_at)
+        """Convert a `TeamSchema` to a `TeamModel`.
+
+        Returns:
+            The converted `TeamModel`.
+        """
+        return TeamModel(
+            id=self.id,
+            name=self.name,
+            created=self.created,
+            updated=self.updated,
+        )
 
 
 class RoleSchema(SQLModel, table=True):
     """SQL Model for roles."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
     name: str
-    created_at: datetime = Field(default_factory=datetime.now)
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="role", sa_relationship_kwargs={"cascade": "delete"}
@@ -97,10 +181,41 @@ class RoleSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(cls, model: RoleModel) -> "RoleSchema":
-        return cls(name=model.name)
+        """Create a `RoleSchema` from a `RoleModel`.
+
+        Args:
+            model: The `RoleModel` from which to create the schema.
+
+        Returns:
+            The created `RoleSchema`.
+        """
+        return cls(id=model.id, name=model.name)
+
+    def from_update_model(self, model: RoleModel) -> "RoleSchema":
+        """Update a `RoleSchema` from a `RoleModel`.
+
+        Args:
+            model: The `RoleModel` from which to update the schema.
+
+        Returns:
+            The updated `RoleSchema`.
+        """
+        self.name = model.name
+        self.updated = datetime.now()
+        return self
 
     def to_model(self) -> RoleModel:
-        return RoleModel(id=self.id, name=self.name, created_at=self.created_at)
+        """Convert a `RoleSchema` to a `RoleModel`.
+
+        Returns:
+            The converted `RoleModel`.
+        """
+        return RoleModel(
+            id=self.id,
+            name=self.name,
+            created=self.created,
+            updated=self.updated,
+        )
 
 
 class UserRoleAssignmentSchema(SQLModel, table=True):
@@ -112,7 +227,8 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
     project_id: Optional[UUID] = Field(
         foreign_key="projectschema.id", nullable=True
     )
-    created_at: datetime = Field(default_factory=datetime.now)
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     role: RoleSchema = Relationship(back_populates="user_role_assignments")
     user: UserSchema = Relationship(back_populates="assigned_roles")
@@ -121,12 +237,18 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
     )
 
     def to_model(self) -> RoleAssignmentModel:
+        """Convert a `UserRoleAssignmentSchema` to a `RoleAssignmentModel`.
+
+        Returns:
+            The converted `RoleAssignmentModel`.
+        """
         return RoleAssignmentModel(
             id=self.id,
-            role_id=self.role_id,
-            user_id=self.user_id,
-            project_id=self.project_id,
-            created_at=self.created_at,
+            role=self.role_id,
+            user=self.user_id,
+            project=self.project_id,
+            created=self.created,
+            updated=self.updated,
         )
 
 
@@ -139,7 +261,8 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
     project_id: Optional[UUID] = Field(
         foreign_key="projectschema.id", nullable=True
     )
-    created_at: datetime = Field(default_factory=datetime.now)
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     role: RoleSchema = Relationship(back_populates="team_role_assignments")
     team: TeamSchema = Relationship(back_populates="assigned_roles")
@@ -148,10 +271,16 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
     )
 
     def to_model(self) -> RoleAssignmentModel:
+        """Convert a `TeamRoleAssignmentSchema` to a `RoleAssignmentModel`.
+
+        Returns:
+            The converted `RoleAssignmentModel`.
+        """
         return RoleAssignmentModel(
             id=self.id,
-            role_id=self.role_id,
-            team_id=self.team_id,
-            project_id=self.project_id,
-            created_at=self.created_at,
+            role=self.role_id,
+            team=self.team_id,
+            project=self.project_id,
+            created=self.created,
+            updated=self.updated,
         )

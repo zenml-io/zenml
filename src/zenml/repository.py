@@ -16,7 +16,7 @@
 import os
 from abc import ABCMeta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
@@ -26,6 +26,7 @@ from zenml.constants import (
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
+from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import (
     AlreadyExistsException,
@@ -34,16 +35,23 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
+from zenml.models import ComponentModel, FlavorModel, ProjectModel, StackModel
+from zenml.models.pipeline_models import PipelineModel
+from zenml.stack import Flavor
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.enums import StackComponentType
-    from zenml.models import ComponentModel, ProjectModel, StackModel, UserModel
-    from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Stack, StackComponent
+    from zenml.models import (
+        ComponentModel,
+        HydratedStackModel,
+        ProjectModel,
+        StackModel,
+        UserModel,
+    )
+    from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -263,8 +271,6 @@ class Repository(metaclass=RepositoryMetaClass):
         doesn't contain outdated information, such as an active stack or
         project that no longer exists.
         """
-        from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
-
         if not self._config:
             return
 
@@ -340,474 +346,6 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         return self._config is not None
 
-    @property
-    def zen_store(self) -> "BaseZenStore":
-        """Shortcut to return the global zen store.
-
-        Returns:
-            The global zen store.
-        """
-        return GlobalConfiguration().zen_store
-
-    @property
-    def root(self) -> Optional[Path]:
-        """The root directory of this repository.
-
-        Returns:
-            The root directory of this repository, or None, if the repository
-            has not been initialized.
-        """
-        return self._root
-
-    @property
-    def config_directory(self) -> Optional[Path]:
-        """The configuration directory of this repository.
-
-        Returns:
-            The configuration directory of this repository, or None, if the
-            repository doesn't have an active root.
-        """
-        if not self.root:
-            return None
-        return self.root / REPOSITORY_DIRECTORY_NAME
-
-    def activate_root(self, root: Optional[Path] = None) -> None:
-        """Set the active repository root directory.
-
-        Args:
-            root: The path to set as the active repository root. If not set,
-                the repository root is determined using the environment
-                variable `ZENML_REPOSITORY_PATH` (if set) and by recursively
-                searching in the parent directories of the current working
-                directory.
-        """
-        self._set_active_root(root)
-
-    @track(event=AnalyticsEvent.SET_PROJECT)
-    def set_active_project(
-        self, project_name_or_id: Union[str, UUID]
-    ) -> "ProjectModel":
-        """Set the project for the local repository.
-
-        Args:
-            project_name: The project name to set as active.
-
-        Returns:
-            The active project.
-        """
-        project = self.zen_store.get_project(
-            project_name_or_id=project_name_or_id
-        )  # raises KeyError
-        if self._config:
-            self._config.active_project_name = project.name
-        else:
-            # set the active project globally only if the repository doesn't use
-            # a local configuration
-            GlobalConfiguration().active_project_name = project.name
-
-        return project
-
-    @property
-    def active_project_name(self) -> str:
-        """The name of the active project for this repository.
-
-        If no active project is configured locally for the repository, the
-        active project in the global configuration is used instead.
-
-        Returns:
-            The name of the active project.
-
-        Raises:
-            RuntimeError: If the active project is not set.
-        """
-        project_name = None
-        if self._config:
-            project_name = self._config.active_project_name
-
-        if not project_name:
-            project_name = GlobalConfiguration().active_project_name
-
-        if not project_name:
-            raise RuntimeError(
-                "No active project is configured. Run "
-                "`zenml project set PROJECT_NAME` to set the active "
-                "project."
-            )
-
-        return project_name
-
-    @property
-    def active_project(self) -> "ProjectModel":
-        """Get the currently active project of the local repository.
-
-        If no active project is configured locally for the repository, the
-        active project in the global configuration is used instead.
-
-        Returns:
-            The active project.
-        """
-        return self.zen_store.get_project(self.active_project_name)
-
-    @property
-    def active_user(self) -> "UserModel":
-        """Get the user that is currently in use.
-
-        Returns:
-            The active user.
-        """
-        return self.zen_store.active_user
-
-    @property
-    def stack_models(self) -> List["StackModel"]:
-        """All stack models available in the current project and owned by the current user.
-
-        This property is intended as a quick way to get information about the
-        components of the registered stacks without loading all installed
-        integrations. The contained stack configurations might be invalid if
-        they were modified by hand, to ensure you get valid stacks use
-        `repo.stacks()` instead.
-
-        Returns:
-            A list of all stacks available in the current project and owned by
-            the current user.
-        """
-        return self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
-        )
-
-    @property
-    def stacks(self) -> List["Stack"]:
-        """All stacks available in the current project and owned by the current user.
-
-        Returns:
-            A list of all stacks available in the current project and owned by
-            the current user.
-        """
-        from zenml.stack.stack import Stack
-
-        return [
-            Stack.from_model(stack_model) for stack_model in self.stack_models
-        ]
-
-    @property
-    def stack_configurations(self) -> Dict[str, Dict[str, str]]:
-        """Configuration dicts for all stacks available in the current project and owned by the current user.
-
-        This property is intended as a quick way to get information about the
-        components of the registered stacks without loading all installed
-        integrations. The contained stack configurations might be invalid if
-        they were modified by hand, to ensure you get valid stacks use
-        `repo.stacks()` instead.
-
-        Modifying the contents of the returned dictionary does not actually
-        register/deregister stacks, use `repo.register_stack(...)` or
-        `repo.deregister_stack(...)` instead.
-
-        Returns:
-            A dictionary containing the configuration of all stacks available in
-            the current project and owned by the current user.
-        """
-        stacks = self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
-        )
-
-        dict_of_stacks = dict()
-        for stack in stacks:
-            dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
-            for component_type, component in stack.components.items():
-                dict_of_stacks[stack.name][str(component_type)] = component.name
-
-        return dict_of_stacks
-
-    @property
-    def active_stack_model(self) -> "StackModel":
-        """The model of the active stack for this repository.
-
-        If no active stack is configured locally for the repository, the active
-        stack in the global configuration is used instead.
-
-        Returns:
-            The model of the active stack for this repository.
-
-        Raise:
-            RuntimeError: If the active stack is not set.
-        """
-        stack_id = None
-        if self._config:
-            stack_id = self._config.active_stack_id
-
-        if not stack_id:
-            stack_id = GlobalConfiguration().active_stack_id
-
-        if not stack_id:
-            raise RuntimeError(
-                "No active stack is configured. Run "
-                "`zenml stack set STACK_NAME` to set the active stack."
-            )
-
-        return self.zen_store.get_stack(stack_id=stack_id)
-
-    @property
-    def active_stack(self) -> "Stack":
-        """The active stack for this repository.
-
-        Returns:
-            The active stack for this repository.
-        """
-        from zenml.stack.stack import Stack
-
-        return Stack.from_model(self.active_stack_model)
-
-    @track(event=AnalyticsEvent.SET_STACK)
-    def activate_stack(self, stack: "StackModel") -> None:
-        """Activates the stack for the given name.
-
-        Args:
-            stack: Model of the stack to activate.
-        """
-        if self._config:
-            self._config.active_stack_id = stack.id
-
-        else:
-            # set the active stack globally only if the repository doesn't use
-            # a local configuration
-            GlobalConfiguration().active_stack_id = stack.id
-
-    def get_stack_by_name(
-        self, name: str, is_shared: bool = False
-    ) -> "StackModel":
-        """Fetches a stack by name within the active project
-
-        Args:
-            name: The name of the stack to fetch.
-            is_shared: Boolean whether to get a shared stack or a private stack
-
-        Returns:
-            The stack with the given name.
-        """
-        if is_shared:
-            stacks = self.zen_store.list_stacks(
-                project_name_or_id=self.active_project.name,
-                name=name,
-                is_shared=True,
-            )
-        else:
-            stacks = self.zen_store.list_stacks(
-                project_name_or_id=self.active_project.name,
-                user_name_or_id=self.zen_store.active_user.name,
-                name=name,
-            )
-
-        # TODO: [server] this error handling could be improved
-        if not stacks:
-            raise KeyError(f"No stack with name '{name}' exists.")
-        elif len(stacks) > 1:
-            raise RuntimeError(
-                f"Multiple stacks have been found for name  '{name}'.", stacks
-            )
-
-        return stacks[0]
-
-    def register_stack(self, stack: "StackModel") -> "StackModel":
-        """Registers a stack and its components.
-
-        If any of the stack's components aren't registered in the repository
-        yet, this method will try to register them as well.
-
-        Args:
-            stack: The stack to register.
-        """
-        # TODO: [server] make sure the stack can be validated here
-        if stack.is_valid:
-            created_stack = self.zen_store.register_stack(
-                user_name_or_id=self.zen_store.active_user.name,
-                project_name_or_id=self.active_project.name,
-                stack=stack,
-            )
-            return created_stack
-        else:
-            raise RuntimeError(
-                "Stack configuration is invalid. A valid"
-                "stack must contain an Artifact Store and "
-                "an Orchestrator."
-            )
-
-    def update_stack(self, stack: "StackModel") -> None:
-        """Updates a stack and its components.
-
-        Args:
-            stack: The new stack to use as the updated version.
-        """
-        if stack.is_valid:
-            self.zen_store.update_stack(stack=stack)
-        else:
-            raise RuntimeError(
-                "Stack configuration is invalid. A valid"
-                "stack must contain an Artifact Store and "
-                "an Orchestrator."
-            )
-
-    def deregister_stack(self, stack: "StackModel") -> None:
-        """Deregisters a stack.
-
-        Args:
-            stack: The model of the stack to deregister.
-
-        Raises:
-            ValueError: If the stack is the currently active stack for this
-                repository.
-        """
-        assert stack.id is None
-
-        if stack.id == self.active_stack_model.id:
-            raise ValueError(
-                f"Unable to deregister active stack " f"'{stack.name}'."
-            )
-
-        try:
-            self.zen_store.delete_stack(stack_id=stack.id)
-            logger.info("Deregistered stack with name '%s'.", stack.name)
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack with name '%s': No stack  "
-                "with this name could be found.",
-                stack.name,
-            )
-
-    def update_stack_component(
-        self,
-        component: "ComponentModel",
-    ) -> None:
-        """Updates a stack component.
-
-        Args:
-            component: The new component to update with.
-        """
-        assert component.id is None
-
-        self.zen_store.update_stack_component(
-            component_id=component.id, component=component
-        )
-
-    def list_stack_components(
-        self, component_type: "StackComponentType"
-    ) -> List["ComponentModel"]:
-        """Fetches all registered stack components of the given type.
-
-        Args:
-            component_type: The type of the components to fetch.
-
-        Returns:
-            A list of all registered stack components of the given type.
-        """
-        return self.zen_store.list_stack_components(
-            project_name_or_id=self.active_project.name, type=component_type
-        )
-
-    def get_stack_component_by_name_and_type(
-        self, type: "StackComponentType", name: str, is_shared: bool = False
-    ) -> "ComponentModel":
-        """Fetches a stack by name within the active stack
-
-        Args:
-            type: The type of the stack component
-            name: The name of the stack to fetch.
-            is_shared: Boolean whether to get a shared stack or a private stack
-
-        Returns:
-            The stack with the given name.
-        """
-        if is_shared:
-            components = self.zen_store.list_stack_components(
-                project_name_or_id=self.active_project.name,
-                name=name,
-                type=type,
-                is_shared=True,
-            )
-        else:
-            components = self.zen_store.list_stack_components(
-                project_name_or_id=self.active_project.name,
-                name=name,
-                type=type,
-                user_name_or_id=self.zen_store.active_user.name,
-            )
-
-        # TODO: [server] this error handling could be improved
-        if not components:
-            raise KeyError(
-                f"No stack component of type '{type}' with the name '{name}' exists."
-            )
-        elif len(components) > 1:
-            raise RuntimeError(
-                "Multiple components have been found for this name.",
-                components,
-            )
-
-        return components[0]
-
-    def get_stack_component(self, component_id: UUID) -> "StackComponent":
-        """Fetches a registered stack component.
-
-        Args:
-            component_id: The id of the component to fetch.
-
-        Returns:
-            The registered stack component.
-        """
-        logger.debug(
-            "Fetching stack component with id '%s'.",
-            id,
-        )
-        return self.zen_store.get_stack_component(
-            component_id=component_id
-        ).to_component()
-
-    def register_stack_component(
-        self,
-        component: "StackComponent",
-    ) -> None:
-        """Registers a stack component.
-
-        Args:
-            component: The component to register.
-        """
-        from zenml.models import ComponentModel
-
-        self.zen_store.register_stack_component(
-            project_name_or_id=self.active_project.name,
-            user_name_or_id=self.zen_store.active_user.name,
-            component=ComponentModel.from_component(component),
-        )
-        if component.post_registration_message:
-            logger.info(component.post_registration_message)
-
-    def deregister_stack_component(
-        self, stack_component: "ComponentModel"
-    ) -> None:
-        """Deregisters a stack component.
-
-        Args:
-            id: The id of the component to deregister.
-        """
-        try:
-            self.zen_store.delete_stack_component(
-                component_id=stack_component.id
-            )
-            logger.info(
-                "Deregistered stack component (type: %s) with name '%s'.",
-                stack_component.type,
-                stack_component.name,
-            )
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack component (type: %s) with name "
-                "'%s': No stack component with this name could be found.",
-                stack_component.type,
-                stack_component.name,
-            )
-
     @staticmethod
     def is_repository_directory(path: Path) -> bool:
         """Checks whether a ZenML repository exists at the given path.
@@ -872,8 +410,7 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
         def _find_repo_helper(path_: Path) -> Optional[Path]:
-            """Helper function to recursively search parent directories for a
-            ZenML repository.
+            """Helper function to recursively search parent directories for a ZenML repository.
 
             Args:
                 path_: The path to search.
@@ -898,9 +435,643 @@ class Repository(metaclass=RepositoryMetaClass):
             logger.warning(warning_message)
         return None
 
-    def get_flavor(
-        self, name: str, component_type: "StackComponentType"
-    ) -> Type["StackComponent"]:
+    @property
+    def zen_store(self) -> "BaseZenStore":
+        """Shortcut to return the global zen store.
+
+        Returns:
+            The global zen store.
+        """
+        return GlobalConfiguration().zen_store
+
+    @property
+    def root(self) -> Optional[Path]:
+        """The root directory of this repository.
+
+        Returns:
+            The root directory of this repository, or None, if the repository
+            has not been initialized.
+        """
+        return self._root
+
+    @property
+    def config_directory(self) -> Optional[Path]:
+        """The configuration directory of this repository.
+
+        Returns:
+            The configuration directory of this repository, or None, if the
+            repository doesn't have an active root.
+        """
+        if not self.root:
+            return None
+        return self.root / REPOSITORY_DIRECTORY_NAME
+
+    def activate_root(self, root: Optional[Path] = None) -> None:
+        """Set the active repository root directory.
+
+        Args:
+            root: The path to set as the active repository root. If not set,
+                the repository root is determined using the environment
+                variable `ZENML_REPOSITORY_PATH` (if set) and by recursively
+                searching in the parent directories of the current working
+                directory.
+        """
+        self._set_active_root(root)
+
+    @track(event=AnalyticsEvent.SET_PROJECT)
+    def set_active_project(
+        self, project_name_or_id: Union[str, UUID]
+    ) -> "ProjectModel":
+        """Set the project for the local repository.
+
+        Args:
+            project_name_or_id: The name or ID of the project to set active.
+
+        Returns:
+            The model of the active project.
+        """
+        project = self.zen_store.get_project(
+            project_name_or_id=project_name_or_id
+        )  # raises KeyError
+        if self._config:
+            self._config.active_project_name = project.name
+        else:
+            # set the active project globally only if the repository doesn't use
+            # a local configuration
+            GlobalConfiguration().active_project_name = project.name
+
+        return project
+
+    @property
+    def active_project_name(self) -> str:
+        """The name of the active project for this repository.
+
+        If no active project is configured locally for the repository, the
+        active project in the global configuration is used instead.
+
+        Returns:
+            The name of the active project.
+
+        Raises:
+            RuntimeError: If the active project is not set.
+        """
+        project_name = None
+        if self._config:
+            project_name = self._config.active_project_name
+
+        if not project_name:
+            project_name = GlobalConfiguration().active_project_name
+
+        if not project_name:
+            raise RuntimeError(
+                "No active project is configured. Run "
+                "`zenml project set PROJECT_NAME` to set the active "
+                "project."
+            )
+
+        return project_name
+
+    @property
+    def active_project(self) -> "ProjectModel":
+        """Get the currently active project of the local repository.
+
+        If no active project is configured locally for the repository, the
+        active project in the global configuration is used instead.
+
+        Returns:
+            The active project.
+        """
+        return self.zen_store.get_project(self.active_project_name)
+
+    @property
+    def active_user(self) -> "UserModel":
+        """Get the user that is currently in use.
+
+        Returns:
+            The active user.
+        """
+        return self.zen_store.active_user
+
+    @property
+    def stacks(self) -> List["HydratedStackModel"]:
+        """All stack models in the current project, owned by the current user.
+
+        This property is intended as a quick way to get information about the
+        components of the registered stacks without loading all installed
+        integrations.
+
+        Returns:
+            A list of all stacks available in the current project and owned by
+            the current user.
+        """
+        stacks = self.zen_store.list_stacks(
+            project_name_or_id=self.active_project_name,
+            user_name_or_id=self.active_user.id,
+        )
+        return [s.to_hydrated_model() for s in stacks]
+
+    @property
+    def active_stack_model(self) -> "HydratedStackModel":
+        """The model of the active stack for this repository.
+
+        If no active stack is configured locally for the repository, the active
+        stack in the global configuration is used instead.
+
+        Returns:
+            The model of the active stack for this repository.
+
+        Raises:
+            RuntimeError: If the active stack is not set.
+        """
+        stack_id = None
+        if self._config:
+            stack_id = self._config.active_stack_id
+
+        if not stack_id:
+            stack_id = GlobalConfiguration().active_stack_id
+
+        if not stack_id:
+            raise RuntimeError(
+                "No active stack is configured. Run "
+                "`zenml stack set STACK_NAME` to set the active stack."
+            )
+
+        return self.zen_store.get_stack(stack_id=stack_id).to_hydrated_model()
+
+    @property
+    def active_stack(self) -> "Stack":
+        """The active stack for this repository.
+
+        Returns:
+            The active stack for this repository.
+        """
+        from zenml.stack.stack import Stack
+
+        return Stack.from_model(self.active_stack_model)
+
+    @track(event=AnalyticsEvent.SET_STACK)
+    def activate_stack(self, stack: "StackModel") -> None:
+        """Sets the stack as active.
+
+        Args:
+            stack: Model of the stack to activate.
+
+        Raises:
+            KeyError: If the stack is not registered.
+        """
+        # Make sure the stack is registered
+        try:
+            self.zen_store.get_stack(stack_id=stack.id)
+        except KeyError:
+            raise KeyError(
+                f"Stack '{stack.name}' cannot be activated since it is "
+                "not registered yet. Please register it first."
+            )
+
+        if self._config:
+            self._config.active_stack_id = stack.id
+
+        else:
+            # set the active stack globally only if the repository doesn't use
+            # a local configuration
+            GlobalConfiguration().active_stack_id = stack.id
+
+    def get_stack_by_name(
+        self, name: str, is_shared: bool = False
+    ) -> "StackModel":
+        """Fetches a stack by name within the active project.
+
+        Args:
+            name: The name of the stack to fetch.
+            is_shared: Boolean whether to get a shared stack or a private stack
+
+        Returns:
+            The stack with the given name.
+
+        Raises:
+            KeyError: If no stack with the given name exists.
+            RuntimeError: If multiple stacks with the given name exist.
+        """
+        if is_shared:
+            stacks = self.zen_store.list_stacks(
+                project_name_or_id=self.active_project.name,
+                name=name,
+                is_shared=True,
+            )
+        else:
+            stacks = self.zen_store.list_stacks(
+                project_name_or_id=self.active_project.name,
+                user_name_or_id=self.active_user.name,
+                name=name,
+            )
+
+        # TODO: [server] this error handling could be improved
+        if not stacks:
+            raise KeyError(f"No stack with name '{name}' exists.")
+        elif len(stacks) > 1:
+            raise RuntimeError(
+                f"Multiple stacks have been found for name  '{name}'.", stacks
+            )
+
+        return stacks[0]
+
+    def register_stack(self, stack: "StackModel") -> "StackModel":
+        """Registers a stack and its components.
+
+        Args:
+            stack: The stack to register.
+
+        Returns:
+            The model of the registered stack.
+
+        Raises:
+            KeyError: If one of the components is not registered.
+            RuntimeError: If the stack configuration is invalid.
+        """
+        for component_type, component_ids in stack.components.items():
+            for component_id in component_ids:
+                try:
+                    self.get_stack_component_by_id(component_id=component_id)
+                except KeyError:
+                    raise KeyError(
+                        f"Cannot register stack '{stack.name}' since it has an "
+                        f"unregistered {component_type} with id "
+                        f"'{component_id}'."
+                    )
+
+        if stack.is_valid:
+            created_stack = self.zen_store.create_stack(
+                stack=stack,
+            )
+            return created_stack
+        else:
+            raise RuntimeError(
+                "Stack configuration is invalid. A valid"
+                "stack must contain an Artifact Store and "
+                "an Orchestrator."
+            )
+
+    def update_stack(self, stack: "StackModel") -> None:
+        """Updates a stack and its components.
+
+        Args:
+            stack: The new stack to use as the updated version.
+
+        Raises:
+            RuntimeError: If the stack configuration is invalid.
+        """
+        if stack.is_valid:
+            self.zen_store.update_stack(stack=stack)
+        else:
+            raise RuntimeError(
+                "Stack configuration is invalid. A valid"
+                "stack must contain an Artifact Store and "
+                "an Orchestrator."
+            )
+
+    def deregister_stack(self, stack: "StackModel") -> None:
+        """Deregisters a stack.
+
+        Args:
+            stack: The model of the stack to deregister.
+
+        Raises:
+            ValueError: If the stack is the currently active stack for this
+                repository.
+        """
+        if stack.id == self.active_stack_model.id:
+            raise ValueError(
+                f"Unable to deregister active stack "
+                f"'{stack.name}'. Make "
+                f"sure to designate a new active stack before deleting this "
+                f"one."
+            )
+
+        try:
+            self.zen_store.delete_stack(stack_id=stack.id)
+            logger.info("Deregistered stack with name '%s'.", stack.name)
+        except KeyError:
+            logger.warning(
+                "Unable to deregister stack with name '%s': No stack  "
+                "with this name could be found.",
+                stack.name,
+            )
+
+    # .------------.
+    # | COMPONENTS |
+    # '------------'
+    @property
+    def stack_components(self) -> List[ComponentModel]:
+        """The list of registered stack components.
+
+        Returns:
+            The list of registered stack components.
+        """
+        return self.get_stack_components()
+
+    def register_stack_component(
+        self,
+        component: "ComponentModel",
+    ) -> "ComponentModel":
+        """Registers a stack component.
+
+        Args:
+            component: The component to register.
+
+        Returns:
+            The model of the registered component.
+        """
+        # Get the flavor model
+        flavor_model = self.get_flavor_by_name_and_type(
+            name=component.flavor, component_type=component.type
+        )
+
+        # Create and validate the configuration
+        flavor_class = Flavor.from_model(flavor_model)
+        configuration = flavor_class.config_class(
+            **component.configuration
+        ).dict()
+
+        # Update the configuration in the model
+        component.configuration = configuration
+
+        # Register the new model
+        return self.zen_store.create_stack_component(component=component)
+
+    def update_stack_component(
+        self,
+        component: "ComponentModel",
+    ) -> "ComponentModel":
+        """Updates a stack component.
+
+        Args:
+            component: The new component to update with.
+
+        Returns:
+            The updated component.
+
+        Raises:
+            ValueError: If another component already exists with the same name and type.
+        """
+        # Get the existing component model
+        existing_component_model = self.get_stack_component_by_id(
+            component.id,
+        )
+
+        # Make sure there is no other component with the same name
+        try:
+            other_component = self.get_stack_component_by_name_and_type(
+                name=component.name,
+                type=component.type,
+            )
+            if other_component != existing_component_model:
+                raise ValueError(
+                    f"Cannot update {component.type} '{component.name}' since "
+                    f"another component with the same name and type "
+                    f"already exists."
+                )
+        except KeyError:
+            pass  # No other component with the same name exists
+
+        # Get the flavor model of the existing component
+        flavor_model = self.get_flavor_by_name_and_type(
+            name=existing_component_model.flavor,
+            component_type=existing_component_model.type,
+        )
+
+        # Use the flavor class to validate the new configuration
+        flavor = Flavor.from_model(flavor_model)
+        _ = flavor.config_class(**component.configuration)
+
+        # Send the updated component to the ZenStore
+        return self.zen_store.update_stack_component(component=component)
+
+    def deregister_stack_component(self, component: ComponentModel) -> None:
+        """Deletes a registered stack component.
+
+        Args:
+            component: The model of the component to delete.
+        """
+        try:
+            self.zen_store.delete_stack_component(component_id=component.id)
+            logger.info(
+                "Deregistered stack component (type: %s) with name '%s'.",
+                component.type,
+                component.name,
+            )
+        except KeyError:
+            logger.warning(
+                "Unable to deregister stack component (type: %s) with name "
+                "'%s': No stack component with this name could be found.",
+                component.type,
+                component.name,
+            )
+
+    def get_stack_components(self) -> List[ComponentModel]:
+        """Gets all registered stack components.
+
+        Returns:
+            The list of registered stack components.
+        """
+        return self.zen_store.list_stack_components(
+            project_name_or_id=self.active_project.id,
+            user_name_or_id=self.active_user.id,
+        )
+
+    def get_stack_component_by_id(self, component_id: UUID) -> ComponentModel:
+        """Fetches a registered stack component.
+
+        Args:
+            component_id: The id of the component to fetch.
+
+        Returns:
+            The registered stack component.
+        """
+        logger.debug(
+            "Fetching stack component with id '%s'.",
+            id,
+        )
+        return self.zen_store.get_stack_component(component_id=component_id)
+
+    def get_stack_components_by_type(
+        self, type: StackComponentType, is_shared: bool = False
+    ) -> List[ComponentModel]:
+        """Fetches all registered stack components of a given type.
+
+        Args:
+            type: The type of the components to fetch.
+            is_shared: Whether to fetch shared components or not.
+
+        Returns:
+            The registered stack components.
+        """
+        if is_shared:
+            return self.zen_store.list_stack_components(
+                project_name_or_id=self.active_project.id,
+                type=type,
+                is_shared=True,
+            )
+        else:
+            return self.zen_store.list_stack_components(
+                project_name_or_id=self.active_project.id,
+                user_name_or_id=self.active_user.id,
+                type=type,
+            )
+
+    def get_stack_component_by_name_and_type(
+        self,
+        type: StackComponentType,
+        name: Optional[str],
+        is_shared: bool = False,
+    ) -> ComponentModel:
+        """Fetches a stack component by type and name.
+
+        If the name is not provided, the respective component in the active
+        stack is returned.
+
+        Args:
+            type: The type of the component to fetch.
+            name: The name of the component to fetch.
+            is_shared: Whether to fetch a shared component.
+
+        Returns:
+            A model of the requested stack component.
+
+        Raises:
+            KeyError: If no component with the given name and type exists.
+            RuntimeError: if multiple components with the given name and type
+                exist.
+        """
+        if name is None:
+            active_stack_components = self.active_stack_model.components
+            if type not in active_stack_components:
+                raise KeyError(
+                    f"No component of type '{type}' is registered in the "
+                    f"active stack and no component name was provided."
+                )
+            name = active_stack_components[type][0].name
+
+        if is_shared:
+            components = self.zen_store.list_stack_components(
+                project_name_or_id=self.active_project.name,
+                name=name,
+                type=type,
+                is_shared=True,
+            )
+        else:
+            components = self.zen_store.list_stack_components(
+                project_name_or_id=self.active_project.name,
+                name=name,
+                type=type,
+                user_name_or_id=self.active_user.name,
+            )
+
+        if not components:
+            raise KeyError(
+                f"No stack component of type '{type}' with the name "
+                f"'{name}' exists."
+            )
+        elif len(components) > 1:
+            raise RuntimeError(
+                "Multiple components have been found for this name.",
+                components,
+            )
+
+        return components[0]
+
+    # .---------.
+    # | FLAVORS |
+    # '---------'
+    @property
+    def flavors(self) -> List[FlavorModel]:
+        """Fetches all the flavor models.
+
+        Returns:
+            The list of flavor models.
+        """
+        return self.get_flavors()
+
+    def create_flavor(self, flavor: "FlavorModel") -> "FlavorModel":
+        """Creates a new flavor.
+
+        Args:
+            flavor: The flavor to create.
+
+        Returns:
+            The created flavor (in model form).
+        """
+        from zenml.utils.source_utils import validate_flavor_source
+
+        flavor_class = validate_flavor_source(
+            source=flavor.source,
+            component_type=flavor.type,
+        )
+
+        flavor_model = flavor_class().to_model()
+
+        return self.zen_store.create_flavor(flavor=flavor_model)
+
+    def delete_flavor(self, flavor: FlavorModel) -> None:
+        """Deletes a flavor.
+
+        Args:
+            flavor: The flavor to delete.
+        """
+        try:
+            self.zen_store.delete_flavor(flavor_id=flavor.id)
+            logger.info(
+                f"Deleted flavor '{flavor.name}' of type '{flavor.type}'.",
+            )
+        except KeyError:
+            logger.warning(
+                f"Unable to delete flavor '{flavor.name}' of type "
+                f"'{flavor.type}': No flavor with this name could be found.",
+            )
+
+    def get_flavors(self) -> List[FlavorModel]:
+        """Fetches all the flavor models.
+
+        Returns:
+            A list of all the flavor models.
+        """
+        from zenml.stack.flavor_registry import flavor_registry
+
+        zenml_flavors = flavor_registry.flavors
+        custom_flavors = self.zen_store.list_flavors(
+            user_name_or_id=self.active_user.id,
+            project_name_or_id=self.active_project.id,
+        )
+        return zenml_flavors + custom_flavors
+
+    def get_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorModel]:
+        """Fetches the list of flavor for a stack component type.
+
+        Args:
+            component_type: The type of the component to fetch.
+
+        Returns:
+            The list of flavors.
+        """
+        logger.debug(f"Fetching the flavors of type {component_type}.")
+
+        from zenml.stack.flavor_registry import flavor_registry
+
+        zenml_flavors = flavor_registry.get_flavors_by_type(
+            component_type=component_type
+        )
+
+        custom_flavors = self.zen_store.list_flavors(
+            project_name_or_id=self.active_project.id,
+            component_type=component_type,
+        )
+
+        return zenml_flavors + custom_flavors
+
+    def get_flavor_by_name_and_type(
+        self, name: str, component_type: StackComponentType
+    ) -> FlavorModel:
         """Fetches a registered flavor.
 
         Args:
@@ -914,46 +1085,65 @@ class Repository(metaclass=RepositoryMetaClass):
             KeyError: If no flavor exists for the given type and name.
         """
         logger.debug(
-            "Fetching the flavor of type '%s' with name '%s'.",
-            component_type,
-            name,
+            f"Fetching the flavor of type {component_type} with name {name}."
         )
 
         from zenml.stack.flavor_registry import flavor_registry
 
-        zenml_flavors = flavor_registry.get_flavors_by_type(
-            component_type=component_type
-        )
-
-        # Try to find if there are any custom flavor implementations
-        custom_flavors = self.zen_store.list_flavors(
-            project_name_or_id=self.active_project_name,
-            name=name,
-            component_type=component_type,
-        )
-
-        # If there is one, check whether the same flavor exists as a default
-        # flavor to give out a warning
-        if custom_flavors and name in zenml_flavors:
-            logger.warning(
-                f"There is a custom implementation for the flavor "
-                f"'{name}' of a {component_type}, which is currently "
-                f"overwriting the same flavor provided by ZenML."
+        try:
+            zenml_flavor = flavor_registry.get_flavor_by_name_and_type(
+                component_type=component_type,
+                name=name,
             )
+        except KeyError:
+            zenml_flavor = None
 
-        else:
-            if name in zenml_flavors:
-                flavor_wrapper = zenml_flavors[name]
-            else:
+        custom_flavors = self.zen_store.list_flavors(
+            project_name_or_id=self.active_project.id,
+            component_type=component_type,
+            name=name,
+        )
+
+        if custom_flavors:
+            if len(custom_flavors) > 1:
                 raise KeyError(
-                    f"There is no flavor '{name}' for the type "
-                    f"{component_type}"
+                    f"More than one flavor with name {name} and type "
+                    f"{component_type} exists."
                 )
 
-        return flavor_wrapper.to_flavor()
+            if zenml_flavor:
+                # If there is one, check whether the same flavor exists as
+                # a ZenML flavor to give out a warning
+                logger.warning(
+                    f"There is a custom implementation for the flavor "
+                    f"'{name}' of a {component_type}, which is currently "
+                    f"overwriting the same flavor provided by ZenML."
+                )
+            return custom_flavors[0]
+        else:
+            if zenml_flavor:
+                return zenml_flavor
+            else:
+                raise KeyError(
+                    f"No flavor with name '{name}' and type '{component_type}' "
+                    "exists."
+                )
+
+    def get_pipeline_by_name(self, name: str) -> PipelineModel:
+        """Fetches a pipeline by name.
+
+        Args:
+            name: The name of the pipeline to fetch.
+
+        Returns:
+            The pipeline model.
+        """
+        return self.zen_store.get_pipeline_in_project(
+            pipeline_name=name, project_name_or_id=self.active_project_name
+        )
 
     def _register_pipeline(
-        self, pipeline_name: str, pipeline_configuration: str
+        self, pipeline_name: str, pipeline_configuration: Dict[str, str]
     ) -> UUID:
         """Registers a pipeline in the ZenStore within the active project.
 
@@ -970,26 +1160,21 @@ class Repository(metaclass=RepositoryMetaClass):
             The id of the existing or newly registered pipeline.
 
         Raises:
-            AlreadyExistsError: If there is an existing pipeline in the project
-                with the same name but a different configuration.
+            AlreadyExistsException: If there is an existing pipeline in the
+                project with the same name but a different configuration.
         """
         try:
-            existing_pipeline = self.zen_store.get_pipeline_in_project(
-                pipeline_name=pipeline_name,
-                project_name_or_id=self.active_project.name,
-            )
+            existing_pipeline = self.get_pipeline_by_name(pipeline_name)
 
         # A) If there is no pipeline with this name, register a new pipeline.
         except KeyError:
             pipeline = PipelineModel(
+                project=self.active_project.id,
+                user=self.active_user.id,
                 name=pipeline_name,
-                owner=self.active_user.id,
-                project_id=self.active_project.id,
                 configuration=pipeline_configuration,
             )
-            pipeline = self.zen_store.create_pipeline(
-                project_name_or_id=self.active_project.name, pipeline=pipeline
-            )
+            pipeline = self.zen_store.create_pipeline(pipeline=pipeline)
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
             return pipeline.id
 
@@ -1017,47 +1202,51 @@ class Repository(metaclass=RepositoryMetaClass):
         )
         raise AlreadyExistsException(error_msg)
 
-    def register_pipeline_run(
-        self,
-        pipeline_name: str,
-        pipeline_configuration: Dict[str, str],
-        runtime_configuration: "RuntimeConfiguration",
-        stack_id: UUID,
-        unlisted: bool = False,
-    ) -> None:
-        """Registers a pipeline run in the ZenStore.
+    # def register_pipeline_run(
+    #     self,
+    #     pipeline_name: str,
+    #     pipeline_configuration: Dict[str, str],
+    #     runtime_configuration: "RuntimeConfiguration",
+    #     stack_id: UUID,
+    #     unlisted: bool = False,
+    # ) -> None:
+    #     """Registers a pipeline run in the ZenStore.
 
-        Args:
-            pipeline_name: The name of the pipeline.
-            pipeline_configuration: The configuration of the pipeline.
-            runtime_configuration: The runtime configuration of the pipeline.
-            stack_id: The ID of the stack that was used to run the pipeline.
-            unlisted: Whether the pipeline run should be unlisted (not assigned
-                to any pipeline).
-        """
-        # If `unlisted` is True, we don't assign the run to any pipeline
-        if unlisted:
-            pipeline_id = None
-        else:
-            pipeline_id = self._register_pipeline(
-                pipeline_name=pipeline_name,
-                pipeline_configuration=pipeline_configuration,
-            )
+    #     Args:
+    #         pipeline_name: The name of the pipeline.
+    #         pipeline_configuration: The configuration of the pipeline.
+    #         runtime_configuration: The runtime configuration of the pipeline.
+    #         stack_id: The ID of the stack that was used to run the pipeline.
+    #         unlisted: Whether the pipeline run should be unlisted (not assigned
+    #             to any pipeline).
+    #     """
+    #     # If `unlisted` is True, we don't assign the run to any pipeline
+    #     if unlisted:
+    #         pipeline_id = None
+    #     else:
+    #         pipeline_id = self._register_pipeline(
+    #             pipeline_name=pipeline_name,
+    #             pipeline_configuration=pipeline_configuration,
+    #         )
 
-        pipeline_run = PipelineRunModel(
-            name=runtime_configuration.run_name,
-            owner=self.active_user.id,
-            stack_id=stack_id,
-            pipeline_id=pipeline_id,
-            runtime_configuration=runtime_configuration,
-        )
-        self.zen_store.create_run(pipeline_run)
+    #     pipeline_run = PipelineRunModel(
+    #         name=runtime_configuration.run_name,
+    #         user=self.active_user.id,
+    #         project=self.active_project.id,
+    #         stack_id=stack_id,
+    #         pipeline_id=pipeline_id,
+    #         runtime_configuration=runtime_configuration,
+    #     )
+    #     self.zen_store.create_run(pipeline_run)
 
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.
 
         Args:
             user_name_or_id: The name or ID of the user to delete.
+
+        Raises:
+            IllegalOperationError: If the user to delete is the active user.
         """
         user = self.zen_store.get_user(user_name_or_id)
         if self.zen_store.active_user_name == user.name:
@@ -1072,6 +1261,10 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             project_name_or_id: The name or ID of the project to delete.
+
+        Raises:
+            IllegalOperationError: If the project to delete is the active
+                project.
         """
         project = self.zen_store.get_project(project_name_or_id)
         if self.active_project_name == project.name:

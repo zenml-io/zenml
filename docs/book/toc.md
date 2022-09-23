@@ -33,7 +33,8 @@
   * [Specify Step Resources](./developer-guide/advanced-usage/specify-step-resources.md)
   * [Manage External Services](./developer-guide/advanced-usage/manage-external-services.md)
   * [Manage Docker Images](./developer-guide/advanced-usage/docker.md)
-  * [Set Stacks with Environment Variables](./developer-guide/advanced-usage/stacks-environment-variables.md)
+  * [Set Stacks with Environment Variables](./developer-guide/advanced-usage/stack-environment-variables.md)
+  * [Configure Stack Components using Secrets](./developer-guide/advanced-usage/secret-references.md)
   * [Control the Step Execution Order](./developer-guide/advanced-usage/step-execution-order.md)
 
 ## MLOps Stacks
@@ -42,6 +43,7 @@
 * [Integration Overview](./mlops-stacks/integrations.md)
 * [Orchestrators](./mlops-stacks/orchestrators/orchestrators.md)
   * [Local Orchestrator](./mlops-stacks/orchestrators/local.md)
+  * [Local Docker Orchestrator](./mlops-stacks/orchestrators/local-docker.md)
   * [Kubeflow Orchestrator](./mlops-stacks/orchestrators/kubeflow.md)
   * [Kubernetes Orchestrator](./mlops-stacks/orchestrators/kubernetes.md)
   * [Google Cloud VertexAI Orchestrator](./mlops-stacks/orchestrators/gcloud-vertexai.md)
@@ -108,16 +110,18 @@
   * [Label Studio](./mlops-stacks/annotators/label-studio.md)
   * [Develop a Custom Annotator](./mlops-stacks/annotators/custom.md)
 
-## Cloud Guide
+## Stack Deployment Guide
 
-* [Overview: Options for Deploying Infrastructure](./cloud-guide/overview.md)
-* [Quick Deployments with Stack Recipes](./cloud-guide/stack-recipes.md)
-* [AWS](./cloud-guide/aws/aws.md)
-  * [Set Up a Minimal MLOps Stack on AWS](./cloud-guide/aws/aws-guide.md)
-* [GCP](./cloud-guide/gcp/gcp.md)
-  * [Set Up a Minimal MLOps Stack on GCP](./cloud-guide/gcp/gcp-guide.md)
-* [Azure](./cloud-guide/azure/azure.md)
-  * [Set Up a Minimal MLOps Stack on Azure](./cloud-guide/azure/azure-guide.md)
+* [Overview: Options for Deploying Infrastructure](./stack-deployment-guide/overview.md)
+* [One Click Deployments with Stack Recipes](./stack-deployment-guide/stack-recipes.md)
+* [Manual Deployments](./stack-deployment-guide/manual-deployments/)
+  * [AWS](./stack-deployment-guide/manual-deployments/aws/aws.md)
+    * [Set Up a Minimal MLOps Stack on AWS](./stack-deployment-guide/manual-deployments/aws/aws-guide.md)
+  * [GCP](./stack-deployment-guide/manual-deployments/gcp/gcp.md)
+    * [Set Up a Minimal MLOps Stack on GCP](./stack-deployment-guide/manual-deployments/gcp/gcp-guide.md)
+  * [Azure](./stack-deployment-guide/manual-deployments/azure/azure.md)
+    * [Set Up a Minimal MLOps Stack on Azure](./stack-deployment-guide/manual-deployments/azure/azure-guide.md)
+* [Deployments with Terraform](./stack-deployment-guide/deploy-terraform.md)
 
 ## Collaborate
 

@@ -14,9 +14,8 @@
 
 from pathlib import Path
 
-from zenml.config.docker_configuration import DockerConfiguration
+from zenml.config import DockerSettings
 from zenml.integrations.sklearn import SKLEARN, SklearnIntegration
-from zenml.stack import Stack
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
     PipelineDockerImageBuilder,
@@ -38,51 +37,69 @@ def test_including_global_config_in_build_context(tmp_path: Path):
     assert not config_path.exists()
 
 
-def test_requirements_file_generation(mocker, tmp_path: Path):
+def test_check_user_is_set():
+    """Tests the setting of the user if configured."""
+    config = DockerSettings(user=None)
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "image:tag", config
+        )
+    )
+    assert all(["USER" not in line for line in generated_dockerfile])
+
+    config = DockerSettings(user="test_user")
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "image:tag", config
+        )
+    )
+    assert "USER test_user" in generated_dockerfile
+
+
+def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
     """Tests that the requirements get included in the correct order and only
     when configured."""
     mocker.patch("subprocess.check_output", return_value=b"local_requirements")
 
-    stack = Stack.default_local_stack()
     mocker.patch.object(
-        stack, "requirements", return_value={"stack_requirements"}
+        local_stack, "requirements", return_value={"stack_requirements"}
     )
 
     # just local requirements
-    config = DockerConfiguration(
+    settings = DockerSettings(
         install_stack_requirements=False,
         requirements=None,
         required_integrations=[],
         replicate_local_python_environment="pip_freeze",
     )
     files = PipelineDockerImageBuilder._gather_requirements_files(
-        config, stack=stack
+        settings, stack=local_stack
     )
     assert len(files) == 1
     assert files[0][1] == "local_requirements"
 
     # just stack requirements
-    config = DockerConfiguration(
+    settings = DockerSettings(
         install_stack_requirements=True,
         requirements=None,
         required_integrations=[],
         replicate_local_python_environment=None,
     )
     files = PipelineDockerImageBuilder._gather_requirements_files(
-        config, stack=stack
+        settings, stack=local_stack
     )
     assert len(files) == 1
     assert files[0][1] == "stack_requirements"
 
     # just user requirements
-    config = DockerConfiguration(
+    settings = DockerSettings(
         install_stack_requirements=False,
         requirements=["user_requirements"],
         required_integrations=[],
         replicate_local_python_environment=None,
     )
     files = PipelineDockerImageBuilder._gather_requirements_files(
-        config, stack=stack
+        settings, stack=local_stack
     )
     assert len(files) == 1
     assert files[0][1] == "user_requirements"
@@ -90,14 +107,14 @@ def test_requirements_file_generation(mocker, tmp_path: Path):
     # all values set
     requirements_file = tmp_path / "requirements.txt"
     requirements_file.write_text("user_requirements")
-    config = DockerConfiguration(
+    settings = DockerSettings(
         install_stack_requirements=True,
         requirements=str(requirements_file),
         required_integrations=[SKLEARN],
         replicate_local_python_environment="pip_freeze",
     )
     files = PipelineDockerImageBuilder._gather_requirements_files(
-        config, stack=stack
+        settings, stack=local_stack
     )
     assert len(files) == 3
     # first up the local python requirements

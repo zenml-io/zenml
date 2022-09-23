@@ -157,10 +157,11 @@ class LocalStore(BaseModel):
         config_dict = yaml_utils.read_yaml(component_config_path)
         component_name = (prefix + name) if name != "default" else name
         config_dict["name"] = component_name
+        # TODO: [server] The Model needs to also set user and project correctly
         return ComponentModel(
             type=component_type,
             name=component_name,
-            flavor_id=flavor,
+            flavor=flavor,
             id=UUID(config_dict["uuid"]),
             configuration=base64.b64encode(yaml.dump(config_dict).encode()),
         )
@@ -237,10 +238,17 @@ class LocalStore(BaseModel):
             ):
                 zen_store = Repository().zen_store
                 # use the component in the active store
-                component = zen_store.get_default_stack(
-                    project_name_or_id=project,
-                    user_name_or_id=zen_store.active_user.id,
-                )[StackComponentType(component_type)]
+                # TODO: [server] make sure this is the intended use
+                #  of _get_default_stack
+                component = (
+                    zen_store._get_default_stack(
+                        project_name_or_id=project,
+                        user_name_or_id=zen_store.active_user.id,
+                    )
+                    .to_hydrated_model()
+                    .components[StackComponentType(component_type)][0]
+                )
+
             components[StackComponentType(component_type)] = component
 
         return StackModel(
@@ -501,7 +509,7 @@ def migrate_profiles(
     project: Optional[ProjectModel] = None
     if project_name:
         try:
-            project = repo.zen_store.get_project(project)
+            project = repo.zen_store.get_project(project_name)
         except KeyError:
             cli_utils.declare(f"Creating project {project_name}")
             project = repo.zen_store.create_project(
@@ -520,6 +528,7 @@ def migrate_profiles(
         cli_utils.error("No active project found.")
 
     user: UserModel = repo.zen_store.active_user
+    assert user.id is not None
 
     if flavors:
         if not store.stack_component_flavors:
@@ -562,29 +571,23 @@ def migrate_profiles(
             )
             for component in store.get_components(
                 prefix=prefix,
-                project=project.name,
             ):
                 try:
-                    repo.zen_store.register_stack_component(
-                        user_id=user.id,
-                        project_name_or_id=project.name,
-                        component=component,
-                    )
+                    repo.zen_store.create_stack_component(component=component)
                     cli_utils.declare(
                         f"Migrated {component.type} '{component.name}' with "
-                        f"flavor '{component.flavor_id}'."
+                        f"flavor '{component.flavor}'."
                     )
                 except StackComponentExistsError:
                     if overwrite:
+                        component.user = user.id
+                        component.project = project.id
                         repo.zen_store.update_stack_component(
-                            user_id=user.id,
-                            project_id=project.name,
-                            component_id=component.name,  # TODO: check if this correct
                             component=component,
                         )
                         cli_utils.declare(
                             f"Updated {component.type} '{component.name}' with "
-                            f"flavor '{component.flavor_id}'."
+                            f"flavor '{component.flavor}'."
                         )
                     else:
                         msg = (
@@ -604,14 +607,16 @@ def migrate_profiles(
             cli_utils.declare(f"Migrating stacks from {store.config_file}...")
             for stack in store.get_stacks(prefix=prefix, project=project.name):
                 try:
-                    repo.zen_store.register_stack(user.id, project.name, stack)
+                    stack.project = project.id
+                    stack.user = user.id
+                    repo.zen_store.create_stack(stack)
                     cli_utils.declare(f"Migrated stack '{stack.name}'.")
                 except StackExistsError:
                     if overwrite:
+                        assert stack.id is not None
+                        stack.project = project.id
+                        stack.user = user.id
                         repo.zen_store.update_stack(
-                            stack_id=stack.name,  # TODO: check if this correct
-                            user=user,
-                            project=project,
                             stack=stack,
                         )
                         cli_utils.declare(f"Updated stack '{stack.name}'.")

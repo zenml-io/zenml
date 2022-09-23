@@ -17,7 +17,7 @@ import base64
 import json
 from datetime import datetime
 from typing import List
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -32,21 +32,21 @@ from zenml.zen_stores.schemas.stack_schemas import (
 class StackComponentSchema(SQLModel, table=True):
     """SQL Model for stack components."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
 
     name: str
     is_shared: bool
 
     type: StackComponentType
-    flavor_name: str
-    # flavor_id: UUID = Field(foreign_key="flavorschema.id", nullable=True)
-    # TODO: Prefill flavors
-    owner: UUID = Field(foreign_key="userschema.id")
-    project_id: UUID = Field(foreign_key="projectschema.id")
+    flavor: str
+
+    user: UUID = Field(foreign_key="userschema.id")
+    project: UUID = Field(foreign_key="projectschema.id")
 
     configuration: bytes
 
-    created_at: datetime = Field(default_factory=datetime.now)
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
@@ -54,34 +54,42 @@ class StackComponentSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(
-        cls, user_id: UUID, project_id: UUID, component: ComponentModel
+        cls, component: ComponentModel
     ) -> "StackComponentSchema":
-        """Create a StackComponentSchema with `id` and `created_at` missing.
+        """Create a `StackComponentSchema`.
 
+        Args:
+            component: The component model from which to create the schema.
 
         Returns:
-            A StackComponentSchema
+            The created `StackComponentSchema`.
         """
         return cls(
+            id=component.id,
             name=component.name,
-            project_id=project_id,
-            owner=user_id,
+            project=component.project,
+            user=component.user,
             is_shared=component.is_shared,
             type=component.type,
-            flavor_name=component.flavor_name,
+            flavor=component.flavor,
             configuration=base64.b64encode(
                 json.dumps(component.configuration).encode("utf-8")
             ),
+            created=component.created,
+            updated=component.updated,
         )
 
     def from_update_model(
         self,
         component: ComponentModel,
     ) -> "StackComponentSchema":
-        """Update the updatable fields on an existing StackSchema.
+        """Update the updatable fields on an existing `StackSchema`.
+
+        Args:
+            component: The component model from which to update the schema.
 
         Returns:
-            A StackSchema
+            A `StackSchema`
         """
         self.name = component.name
         self.is_shared = component.is_shared
@@ -91,20 +99,22 @@ class StackComponentSchema(SQLModel, table=True):
         return self
 
     def to_model(self) -> "ComponentModel":
-        """Creates a ComponentModel from an instance of a StackSchema.
+        """Creates a `ComponentModel` from an instance of a `StackSchema`.
 
         Returns:
-            A ComponentModel
+            A `ComponentModel`
         """
         return ComponentModel(
             id=self.id,
             name=self.name,
             type=self.type,
-            flavor_name=self.flavor_name,
-            owner=self.owner,
-            project_id=self.project_id,
+            flavor=self.flavor,
+            user=self.user,
+            project=self.project,
             is_shared=self.is_shared,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
             ),
+            created=self.created,
+            updated=self.updated,
         )

@@ -14,7 +14,7 @@
 """Implementation of the KServe Model Deployer."""
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from kserve import KServeClient, V1beta1InferenceService, constants, utils
@@ -22,6 +22,10 @@ from kubernetes import client
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.kserve.constants import KSERVE_DOCKER_IMAGE_KEY
+from zenml.integrations.kserve.flavors.kserve_model_deployer_flavor import (
+    KServeModelDeployerConfig,
+)
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
     KServeDeploymentService,
@@ -37,46 +41,26 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.docker_configuration import DockerConfiguration
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
 
 DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
-class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
-    """KServe model deployer stack component implementation.
+class KServeModelDeployer(BaseModelDeployer):
+    """KServe model deployer stack component implementation."""
 
-    Attributes:
-        kubernetes_context: the Kubernetes context to use to contact the remote
-            KServe installation. If not specified, the current
-            configuration is used. Depending on where the KServe model deployer
-            is being used, this can be either a locally active context or an
-            in-cluster Kubernetes configuration (if running inside a pod).
-        kubernetes_namespace: the Kubernetes namespace where the KServe
-            inference service CRDs are provisioned and managed by ZenML. If not
-            specified, the namespace set in the current configuration is used.
-            Depending on where the KServe model deployer is being used, this can
-            be either the current namespace configured in the locally active
-            context or the namespace in the context of which the pod is running
-            (if running inside a pod).
-        base_url: the base URL of the Kubernetes ingress used to expose the
-            KServe inference services.
-        secret: the name of the secret containing the credentials for the
-            KServe inference services.
-    """
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = KSERVE_MODEL_DEPLOYER_FLAVOR
-
-    kubernetes_context: Optional[str]
-    kubernetes_namespace: Optional[str]
-    base_url: str
-    secret: Optional[str]
-    custom_domain: Optional[str]
-    # private attributes
     _client: Optional[KServeClient] = None
+
+    @property
+    def config(self) -> KServeModelDeployerConfig:
+        """Returns the `KServeModelDeployerConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(KServeModelDeployerConfig, self._config)
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
@@ -136,9 +120,26 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         """
         if not self._client:
             self._client = KServeClient(
-                context=self.kubernetes_context,
+                context=self.config.kubernetes_context,
             )
         return self._client
+
+    def prepare_pipeline_deployment(
+        self,
+        deployment: "PipelineDeployment",
+        stack: "Stack",
+    ) -> None:
+        """Build a Docker image and push it to the container registry.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
+        """
+        docker_image_builder = PipelineDockerImageBuilder()
+        repo_digest = docker_image_builder.build_and_push_docker_image(
+            deployment=deployment, stack=stack
+        )
+        deployment.add_extra(KSERVE_DOCKER_IMAGE_KEY, repo_digest)
 
     def _set_credentials(self) -> None:
         """Set the credentials for the given service instance.
@@ -151,7 +152,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
             secret_folder = Path(
                 GlobalConfiguration().config_directory,
                 "kserve-storage",
-                str(self.uuid),
+                str(self.id),
             )
             kserve_credentials = {}
             # Handle the secrets attributes
@@ -170,7 +171,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
 
             # We need to add the namespace to the kserve_credentials
             kserve_credentials["namespace"] = (
-                self.kubernetes_namespace
+                self.config.kubernetes_namespace
                 or utils.get_default_target_namespace()
             )
 
@@ -239,7 +240,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
 
         # if the secret is passed in the config, use it to set the credentials
         if config.secret_name:
-            self.secret = config.secret_name or self.secret
+            self.config.secret = config.secret_name or self.config.secret
         self._set_credentials()
 
         # if replace is True, find equivalent KServe deployments
@@ -285,7 +286,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         # differentiates between pure model and custom code deployments
         stack = Repository().active_stack
         stack_metadata = {
-            component_type.value: component.FLAVOR
+            component_type.value: component.flavor
             for component_type, component in stack.components.items()
         }
         metadata = {
@@ -316,7 +317,8 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         )
 
         namespace = (
-            self.kubernetes_namespace or utils.get_default_target_namespace()
+            self.config.kubernetes_namespace
+            or utils.get_default_target_namespace()
         )
 
         try:
@@ -506,7 +508,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         Raises:
             RuntimeError: if the secret object is not found or secrets_manager is not set.
         """
-        if self.secret:
+        if self.config.secret:
 
             secret_manager = Repository(  # type: ignore [call-arg]
                 skip_repository_check=True
@@ -518,58 +520,15 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
                 raise RuntimeError(
                     f"The active stack doesn't have a secret manager component. "
                     f"The ZenML secret specified in the KServe Model "
-                    f"Deployer configuration cannot be fetched: {self.secret}."
+                    f"Deployer configuration cannot be fetched: {self.config.secret}."
                 )
             try:
-                secret = secret_manager.get_secret(self.secret)
+                secret = secret_manager.get_secret(self.config.secret)
                 return secret
             except KeyError:
                 raise RuntimeError(
-                    f"The secret `{self.secret}` used for your KServe Model"
+                    f"The secret `{self.config.secret}` used for your KServe Model"
                     f"Deployer configuration does not exist in your secrets "
                     f"manager `{secret_manager.name}`."
                 )
         return None
-
-    def prepare_custom_deployment_image(
-        self,
-        pipeline_name: str,
-        stack: "Stack",
-        docker_configuration: "DockerConfiguration",
-        runtime_configuration: "RuntimeConfiguration",
-        entrypoint: List[str],
-    ) -> str:
-        """Prepare the custom deployment image for the KServe deployment.
-
-        This function is called by the deployment step of the pipeline.
-        It is responsible for the preparation of the custom deployment image
-        either by returning the image name in the case of a remote orchestrator
-        or by building a new image if only a local orchestrator is used.
-
-        Args:
-            pipeline_name: The pipeline to be deployed.
-            stack: The stack to be deployed.
-            docker_configuration: The Docker configuration to be used.
-            runtime_configuration: The runtime configuration to be used.
-            entrypoint: The entrypoint to be used.
-
-        Returns:
-            The name of the image to be used for the deployment.
-        """
-        # verify the flavor of the orchestrator.
-        # if the orchestrator is local, then we need to build a docker image with the repo
-        # and requirements and push it to the container registry.
-        # if the orchestrator is remote, then we can use the same image used to run the pipeline.
-        if stack.orchestrator.FLAVOR == "local":
-            # more information about stack ..
-            custom_docker_image_name = self.build_and_push_docker_image(
-                pipeline_name=pipeline_name,
-                docker_configuration=docker_configuration,
-                stack=stack,
-                runtime_configuration=runtime_configuration,
-                entrypoint=" ".join(entrypoint),
-            )
-        else:
-            custom_docker_image_name = runtime_configuration["docker_image"]
-
-        return custom_docker_image_name

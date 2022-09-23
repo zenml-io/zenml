@@ -30,6 +30,7 @@ from zenml.cli.utils import (
 from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.repository import Repository
+from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
@@ -53,16 +54,16 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
             ctx: The click context.
         """
         repo = Repository()
-        model_deployer_model = repo.active_stack_model.components[
+        model_deployer_models = repo.active_stack_model.components[
             StackComponentType.MODEL_DEPLOYER
         ]
-        if model_deployer_model is None:
+        if model_deployer_models is None:
             error(
                 "No active model deployer found. Please add a model_deployer to "
                 "your stack."
             )
             return
-        ctx.obj = model_deployer_model.to_component()
+        ctx.obj = StackComponent.from_model(model_deployer_models[0])
 
     @models.command(
         "list",

@@ -18,12 +18,13 @@ through AWS, a way to use the aws container registry. Additionally, the
 Sagemaker integration submodule provides a way to run ZenML steps in
 Sagemaker.
 """
-from typing import List
+from typing import List, Type
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import AWS
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 AWS_SECRET_MANAGER_FLAVOR = "aws"
 AWS_CONTAINER_REGISTRY_FLAVOR = "aws"
@@ -37,34 +38,22 @@ class AWSIntegration(Integration):
     REQUIREMENTS = ["boto3==1.21.0", "sagemaker==2.82.2"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the AWS integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
+        from zenml.integrations.aws.flavors import (
+            AWSContainerRegistryFlavor,
+            AWSSecretsManagerFlavor,
+            SagemakerStepOperatorFlavor,
+        )
+
         return [
-            FlavorModel(
-                name=AWS_SECRET_MANAGER_FLAVOR,
-                source="zenml.integrations.aws.secrets_managers"
-                ".AWSSecretsManager",
-                type=StackComponentType.SECRETS_MANAGER,
-                integration=cls.NAME,
-            ),
-            FlavorModel(
-                name=AWS_CONTAINER_REGISTRY_FLAVOR,
-                source="zenml.integrations.aws.container_registries"
-                ".AWSContainerRegistry",
-                type=StackComponentType.CONTAINER_REGISTRY,
-                integration=cls.NAME,
-            ),
-            FlavorModel(
-                name=AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR,
-                source="zenml.integrations.aws.step_operators"
-                ".SagemakerStepOperator",
-                type=StackComponentType.STEP_OPERATOR,
-                integration=cls.NAME,
-            ),
+            AWSSecretsManagerFlavor,
+            AWSContainerRegistryFlavor,
+            SagemakerStepOperatorFlavor,
         ]
 
 

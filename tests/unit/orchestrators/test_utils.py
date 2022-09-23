@@ -14,21 +14,18 @@
 
 
 import json
+import os
 
-from zenml.config.docker_configuration import DockerConfiguration
 from zenml.constants import (
-    MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME,
-    MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME,
+    MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME,
     MLMD_CONTEXT_STACK_PROPERTY_NAME,
-    MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME,
+    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME,
     ZENML_MLMD_CONTEXT_TYPE,
 )
-from zenml.materializers import BuiltInMaterializer
 from zenml.orchestrators.utils import get_cache_status
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
-from zenml.steps import ResourceConfiguration, step
-from zenml.utils import source_utils
+from zenml.steps import step
 
 
 def test_get_cache_status_raises_no_error_when_none_passed():
@@ -83,15 +80,11 @@ def test_get_cache_status_works_when_running_pipeline_twice(clean_repo, mocker):
 def test_pipeline_storing_context_in_the_metadata_store():
     """Tests that storing the ZenML context in the metadata store works."""
 
-    resource_config = ResourceConfiguration(gpu_count=1, memory="8GB")
-
-    @step(resource_configuration=resource_config)
+    @step
     def some_step_1() -> int:
         return 3
 
-    docker_config = DockerConfiguration(requirements=["test==0.12"])
-
-    @pipeline(docker_configuration=docker_config)
+    @pipeline
     def p(step_):
         step_()
 
@@ -108,16 +101,31 @@ def test_pipeline_storing_context_in_the_metadata_store():
     assert contexts[0].custom_properties[
         MLMD_CONTEXT_STACK_PROPERTY_NAME
     ].string_value == json.dumps(repo.active_stack.dict(), sort_keys=True)
-    assert contexts[0].custom_properties[
-        MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME
-    ].string_value == resource_config.json(sort_keys=True)
-    assert contexts[0].custom_properties[
-        MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME
-    ].string_value == docker_config.json(sort_keys=True)
 
-    expected_materializers = {
-        "output": source_utils.resolve_class(BuiltInMaterializer)
-    }
-    assert contexts[0].custom_properties[
-        MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME
-    ].string_value == json.dumps(expected_materializers, sort_keys=True)
+    from zenml.config.compiler import Compiler
+    from zenml.config.pipeline_configurations import PipelineRunConfiguration
+
+    compiled = Compiler().compile(
+        pipeline=pipeline_,
+        stack=repo.active_stack,
+        run_configuration=PipelineRunConfiguration(),
+    )
+    dag_filepath = os.path.abspath(__file__)
+    compiled.pipeline.extra["dag_filepath"] = dag_filepath
+    compiled.steps["step_"].config.extra["dag_filepath"] = dag_filepath
+
+    expected_pipeline_config = compiled.pipeline.json(sort_keys=True)
+    assert (
+        contexts[0]
+        .custom_properties[MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME]
+        .string_value
+        == expected_pipeline_config
+    )
+
+    expected_step_config = compiled.steps["step_"].json(sort_keys=True)
+    assert (
+        contexts[0]
+        .custom_properties[MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME]
+        .string_value
+        == expected_step_config
+    )

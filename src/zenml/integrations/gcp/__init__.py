@@ -25,12 +25,11 @@ The Vertex AI integration submodule provides a way to run ZenML pipelines in a
 Vertex AI environment.
 """
 
-from typing import List
+from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import GCP
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 GCP_ARTIFACT_STORE_FLAVOR = "gcp"
 GCP_SECRETS_MANAGER_FLAVOR = "gcp_secrets_manager"
@@ -50,41 +49,24 @@ class GcpIntegration(Integration):
     ]
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the GCP integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
+        from zenml.integrations.gcp.flavors import (
+            GCPArtifactStoreFlavor,
+            GCPSecretsManagerFlavor,
+            VertexOrchestratorFlavor,
+            VertexStepOperatorFlavor,
+        )
+
         return [
-            FlavorModel(
-                name=GCP_ARTIFACT_STORE_FLAVOR,
-                source="zenml.integrations.gcp.artifact_stores"
-                ".GCPArtifactStore",
-                type=StackComponentType.ARTIFACT_STORE,
-                integration=cls.NAME,
-            ),
-            FlavorModel(
-                name=GCP_SECRETS_MANAGER_FLAVOR,
-                source="zenml.integrations.gcp.secrets_manager."
-                "GCPSecretsManager",
-                type=StackComponentType.SECRETS_MANAGER,
-                integration=cls.NAME,
-            ),
-            FlavorModel(
-                name=GCP_VERTEX_ORCHESTRATOR_FLAVOR,
-                source="zenml.integrations.gcp.orchestrators"
-                ".VertexOrchestrator",
-                type=StackComponentType.ORCHESTRATOR,
-                integration=cls.NAME,
-            ),
-            FlavorModel(
-                name=GCP_VERTEX_STEP_OPERATOR_FLAVOR,
-                source="zenml.integrations.gcp.step_operators"
-                ".VertexStepOperator",
-                type=StackComponentType.STEP_OPERATOR,
-                integration=cls.NAME,
-            ),
+            VertexOrchestratorFlavor,
+            VertexStepOperatorFlavor,
+            GCPSecretsManagerFlavor,
+            GCPArtifactStoreFlavor,
         ]
 
 

@@ -16,3 +16,5 @@
 from zenml.integrations.azure.artifact_stores.azure_artifact_store import (  # noqa
     AzureArtifactStore,
 )
+
+__all__ = ["AzureArtifactStore"]

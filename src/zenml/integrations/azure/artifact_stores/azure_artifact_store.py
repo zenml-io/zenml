@@ -16,12 +16,10 @@
 from typing import (
     Any,
     Callable,
-    ClassVar,
     Dict,
     Iterable,
     List,
     Optional,
-    Set,
     Tuple,
     Union,
     cast,
@@ -30,7 +28,9 @@ from typing import (
 import adlfs
 
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
+from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
+    AzureArtifactStoreConfig,
+)
 from zenml.secret.schemas import AzureSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils.io_utils import convert_to_str
@@ -43,9 +43,14 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
     _filesystem: Optional[adlfs.AzureBlobFileSystem] = None
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = AZURE_ARTIFACT_STORE_FLAVOR
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"abfs://", "az://"}
+    @property
+    def config(self) -> AzureArtifactStoreConfig:
+        """Returns the `AzureArtifactStoreConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(AzureArtifactStoreConfig, self._config)
 
     @property
     def filesystem(self) -> adlfs.AzureBlobFileSystem:
@@ -67,8 +72,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
             )
         return self._filesystem
 
-    @classmethod
-    def _split_path(cls, path: PathType) -> Tuple[str, str]:
+    def _split_path(self, path: PathType) -> Tuple[str, str]:
         """Splits a path into the filesystem prefix and remainder.
 
         Example:
@@ -85,7 +89,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         path = convert_to_str(path)
         prefix = ""
-        for potential_prefix in cls.SUPPORTED_SCHEMES:
+        for potential_prefix in self.config.SUPPORTED_SCHEMES:
             if path.startswith(potential_prefix):
                 prefix = potential_prefix
                 path = path[len(potential_prefix) :]

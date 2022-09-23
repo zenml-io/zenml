@@ -17,12 +17,13 @@ The Vault secrets manager integration submodule provides a way
 to access the HashiCorp Vault secrets manager from within your ZenML 
 pipeline runs.
 """
-from typing import List
+from typing import List, Type
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import VAULT
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 VAULT_SECRETS_MANAGER_FLAVOR = "vault"
 
@@ -34,20 +35,15 @@ class VaultSecretsManagerIntegration(Integration):
     REQUIREMENTS = ["hvac>=0.11.2"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Vault integration.
 
         Returns:
             List of stack component flavors.
         """
-        return [
-            FlavorModel(
-                name=VAULT_SECRETS_MANAGER_FLAVOR,
-                source="zenml.integrations.vault.secrets_manager.VaultSecretsManager",
-                type=StackComponentType.SECRETS_MANAGER,
-                integration=cls.NAME,
-            )
-        ]
+        from zenml.integrations.vault.flavors import VaultSecretsManagerFlavor
+
+        return [VaultSecretsManagerFlavor]
 
 
 VaultSecretsManagerIntegration.check_installation()

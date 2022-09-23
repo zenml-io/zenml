@@ -14,6 +14,7 @@
 """Implementation of a post-execution step class."""
 
 from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from zenml.enums import ExecutionStatus
 from zenml.models import StepRunModel
@@ -34,31 +35,30 @@ class StepView:
         but retrieved from a `PipelineRunView` object instead.
 
         Args:
-            id_: The execution id of this step.
-            parents_step_ids: The execution ids of the parents of this step.
-            entrypoint_name: The name of this step.
-            name: The name of this step within the pipeline
+            model: The model to initialize this object from.
         """
         self._model = model
         self._inputs: Dict[str, ArtifactView] = {}
         self._outputs: Dict[str, ArtifactView] = {}
 
     @property
-    def id(self) -> int:
+    def id(self) -> UUID:
         """Returns the step id.
 
         Returns:
             The step id.
         """
-        return self._model.mlmd_id
+        assert self._model.id
+        return self._model.id
 
     @property
-    def parent_step_ids(self) -> List[int]:
+    def parent_step_ids(self) -> List[UUID]:
         """Returns a list of IDs of all parents of this step.
 
         Returns:
             A list of IDs of all parents of this step.
         """
+        assert self._model.parent_step_ids
         return self._model.parent_step_ids
 
     @property
@@ -159,7 +159,7 @@ class StepView:
         Returns:
             A dictionary of artifact names to artifact views.
         """
-        self._ensure_inputs_outputs_fetched()
+        self._ensure_inputs_fetched()
         return self._inputs
 
     @property
@@ -186,7 +186,7 @@ class StepView:
         Returns:
             A dictionary of artifact names to artifact views.
         """
-        self._ensure_inputs_outputs_fetched()
+        self._ensure_outputs_fetched()
         return self._outputs
 
     @property
@@ -206,18 +206,25 @@ class StepView:
             )
         return next(iter(self.outputs.values()))
 
-    def _ensure_inputs_outputs_fetched(self) -> None:
-        """Fetches all step inputs and outputs from the metadata store."""
-        if self._inputs or self._outputs:
-            # we already fetched inputs/outputs, no need to do anything
+    def _ensure_inputs_fetched(self) -> None:
+        """Fetches all step inputs from the ZenStore."""
+        if self._inputs:
+            # we already fetched inputs, no need to do anything
             return
 
-        repo = Repository()
-        inputs, outputs = repo.zen_store.get_run_step_artifacts(self._model)
+        inputs = Repository().zen_store.get_run_step_inputs(self.id)
         self._inputs = {
             input_name: ArtifactView(input)
             for input_name, input in inputs.items()
         }
+
+    def _ensure_outputs_fetched(self) -> None:
+        """Fetches all step outputs from the ZenStore."""
+        if self._outputs:
+            # we already fetched outputs, no need to do anything
+            return
+
+        outputs = Repository().zen_store.get_run_step_outputs(self.id)
         self._outputs = {
             output_name: ArtifactView(output)
             for output_name, output in outputs.items()

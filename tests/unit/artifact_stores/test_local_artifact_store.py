@@ -12,32 +12,91 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
+from datetime import datetime
+from uuid import uuid4
+
 import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
+from zenml.artifact_stores.local_artifact_store import (
+    LocalArtifactStore,
+    LocalArtifactStoreConfig,
+)
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
+from zenml.stack.stack_component import StackComponentType
 
 
 def test_local_artifact_store_attributes():
     """Tests that the basic attributes of the local artifact store are set
     correctly."""
-    artifact_store = LocalArtifactStore(name="", path="/tmp")
-    assert artifact_store.TYPE == StackComponentType.ARTIFACT_STORE
-    assert artifact_store.FLAVOR == "local"
+    artifact_store = LocalArtifactStore(
+        name="",
+        id=uuid4(),
+        config=LocalArtifactStoreConfig(),
+        flavor="default",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+    assert artifact_store.type == StackComponentType.ARTIFACT_STORE
+    assert artifact_store.flavor == "default"
 
 
 def test_local_artifact_store_only_supports_local_paths():
     """Checks that a local artifact store can only be initialized with a local
     path."""
     with pytest.raises(ArtifactStoreInterfaceError):
-        LocalArtifactStore(name="", path="gs://remote/path")
+        LocalArtifactStore(
+            name="",
+            id=uuid4(),
+            config=LocalArtifactStoreConfig(path="gs://remote/path"),
+            flavor="default",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
 
     with pytest.raises(ArtifactStoreInterfaceError):
-        LocalArtifactStore(name="", path="s3://remote/path")
+        LocalArtifactStore(
+            name="",
+            id=uuid4(),
+            config=LocalArtifactStoreConfig(path="s3://remote/path"),
+            flavor="default",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
 
     with pytest.raises(ArtifactStoreInterfaceError):
-        LocalArtifactStore(name="", path="hdfs://remote/path")
+        LocalArtifactStore(
+            name="",
+            id=uuid4(),
+            config=LocalArtifactStoreConfig(path="hdfs://remote/path"),
+            flavor="default",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
 
-    artifact_store = LocalArtifactStore(name="", path="/local/path")
-    assert artifact_store.path == "/local/path"
+    artifact_store = LocalArtifactStore(
+        name="",
+        id=uuid4(),
+        config=LocalArtifactStoreConfig(path=os.getcwd()),
+        flavor="default",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+    assert artifact_store.path == os.getcwd()

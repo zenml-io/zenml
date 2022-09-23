@@ -14,7 +14,6 @@
 """Utility functions for the CLI."""
 
 import datetime
-import json
 import os
 import subprocess
 import sys
@@ -47,11 +46,11 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StoreType
 from zenml.logger import get_logger
+from zenml.models.stack_models import HydratedStackModel
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.enums import StackComponentType
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
     from zenml.models import ComponentModel, FlavorModel
@@ -127,18 +126,6 @@ def warning(
     base_style = zenml_style_defaults["warning"]
     style = Style.chain(base_style, Style(bold=bold, italic=italic))
     console.print(text, style=style)
-
-
-def pretty_print(obj: Any) -> None:
-    """Pretty print an object on the CLI using `rich.print`.
-
-    Args:
-        obj: Any object with a __str__ method defined.
-
-    # TODO: [LOW] check whether this needs to be converted to a string first
-    # TODO: [LOW] use rich prettyprint for this instead
-    """
-    console.print(obj)
 
 
 def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
@@ -217,8 +204,11 @@ def print_pydantic_models(
             else {key: str(model.dict()[key]) for key in columns}
         )
         # prepend an active marker if a function to mark active was passed
+        marker = "active"
+        if marker in items:
+            marker = "current"
         return (
-            dict(active=":point_right:" if is_active(model) else "", **items)
+            {marker: ":point_right:" if is_active(model) else "", **items}
             if is_active is not None
             else items
         )
@@ -274,7 +264,7 @@ def print_stack_component_list(
         component_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": component.name,
-            "FLAVOR": component.flavor_name,
+            "FLAVOR": component.flavor,
             "UUID": component.id,
             **{
                 key.upper(): str(value)
@@ -285,17 +275,14 @@ def print_stack_component_list(
     print_table(configurations)
 
 
-def print_stack_configuration(
-    config: Dict[str, str], active: bool, stack_name: str
-) -> None:
+def print_stack_configuration(stack: HydratedStackModel, active: bool) -> None:
     """Prints the configuration options of a stack.
 
     Args:
-        config: Configuration options of the stack.
+        stack: Instance of a stack model.
         active: Whether the stack is active.
-        stack_name: Name of the stack.
     """
-    stack_caption = f"'{stack_name}' stack"
+    stack_caption = f"'{stack.name}' stack"
     if active:
         stack_caption += " (ACTIVE)"
     rich_table = table.Table(
@@ -306,9 +293,8 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
-    config.pop("shared")
-    for component_type, name in config.items():
-        rich_table.add_row(component_type, name)
+    for component_type, components in stack.components.items():
+        rich_table.add_row(component_type, components[0].name)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
@@ -318,71 +304,32 @@ def print_stack_configuration(
     console.print(rich_table)
 
 
-def print_flavor_list(
-    flavors: List["FlavorModel"],
-    component_type: "StackComponentType",
-) -> None:
+def print_flavor_list(flavors: List["FlavorModel"]) -> None:
     """Prints the list of flavors.
 
     Args:
         flavors: List of flavors to print.
-        component_type: Type of component the flavors belong to.
     """
-    from zenml.integrations.registry import integration_registry
-    from zenml.utils.source_utils import validate_flavor_source
-
     flavor_table = []
     for f in flavors:
-        reachable = False
-
-        if f.integration:
-            if f.integration == "built-in":
-                reachable = True
-            else:
-                reachable = integration_registry.is_installed(f.integration)
-
-        else:
-            try:
-                validate_flavor_source(f.source, component_type=component_type)
-                reachable = True
-            except (
-                AssertionError,
-                ModuleNotFoundError,
-                ImportError,
-                ValueError,
-            ):
-                pass
-
         flavor_table.append(
             {
                 "FLAVOR": f.name,
                 "INTEGRATION": f.integration,
-                "READY-TO-USE": ":white_check_mark:" if reachable else "",
                 "SOURCE": f.source,
             }
         )
 
     print_table(flavor_table)
-    warning(
-        "The flag 'READY-TO-USE' indicates whether you can directly "
-        "create/use/manage a stack component with that specific flavor. "
-        "You can bring a flavor to a state where it is 'READY-TO-USE' in two "
-        "different ways. If the flavor belongs to a ZenML integration, "
-        "you can use `zenml integration install <name-of-the-integration>` and "
-        "if it doesn't, you can make sure that you are using ZenML in an "
-        "environment where ZenML can import the flavor through its source "
-        "path (also shown in the list)."
-    )
 
 
 def print_stack_component_configuration(
-    component: "ComponentModel", display_name: str, active_status: bool
+    component: "ComponentModel", active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component.
 
     Args:
         component: The stack component to print.
-        display_name: The name of the stack component.
         active_status: Whether the stack component is active.
     """
     title = f"{component.type.value.upper()} Component Configuration"
@@ -423,15 +370,18 @@ def print_active_config() -> None:
         return
 
     if gc.store.type == StoreType.SQL:
-        declare("Using the default local database.")
+        if gc.store.url == gc.get_default_store().url:
+            declare("Using the default local database.")
+        else:
+            declare(f"Using the SQL database: '{gc.store.url}'.")
     elif gc.store.type == StoreType.REST:
-        declare(f"Connected to the ZenML server: {gc.store.url}")
-        if gc.active_project_name:
-            scope = "repository" if repo.uses_local_configuration else "global"
-            declare(
-                f"Running with active project: '{gc.active_project_name}' "
-                f"({scope})"
-            )
+        declare(f"Connected to the ZenML server: '{gc.store.url}'")
+    if gc.active_project_name:
+        scope = "repository" if repo.uses_local_configuration else "global"
+        declare(
+            f"Running with active project: '{gc.active_project_name}' "
+            f"({scope})"
+        )
 
 
 def print_active_stack() -> None:
@@ -536,6 +486,7 @@ def parse_unknown_options(
     Returns:
         Dict of parsed args.
     """
+    # TODO: Should we add the cli_utils.error here?
     warning_message = (
         "Please provide args with a proper "
         "identifier as the key and the following structure: "

@@ -14,8 +14,8 @@
 """SQL Model Implementations for Projects."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
-from uuid import UUID, uuid4
+from typing import TYPE_CHECKING, List
+from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -31,10 +31,11 @@ if TYPE_CHECKING:
 class ProjectSchema(SQLModel, table=True):
     """SQL Model for projects."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
     name: str
-    description: Optional[str] = Field(nullable=True)
-    created_at: datetime = Field(default_factory=datetime.now)
+    description: str
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
@@ -44,18 +45,37 @@ class ProjectSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_create_model(cls, model: ProjectModel) -> "ProjectSchema":
-        return cls(name=model.name, description=model.description)
+    def from_create_model(cls, project: ProjectModel) -> "ProjectSchema":
+        """Create a `ProjectSchema` from a `ProjectModel`.
+
+        Args:
+            project: The `ProjectModel` from which to create the schema.
+
+        Returns:
+            The created `ProjectSchema`.
+        """
+        return cls(
+            id=project.id, name=project.name, description=project.description
+        )
 
     def from_update_model(self, model: ProjectModel) -> "ProjectSchema":
+        """Update a `ProjectSchema` from a `ProjectModel`.
+
+        Args:
+            model: The `ProjectModel` from which to update the schema.
+
+        Returns:
+            The updated `ProjectSchema`.
+        """
         self.name = model.name
         self.description = model.description
+        self.updated = datetime.now()
         return self
 
     def to_model(self) -> ProjectModel:
-        return ProjectModel(
-            id=self.id,
-            name=self.name,
-            description=self.description,
-            created_at=self.created_at,
-        )
+        """Convert a `ProjectSchema` to a `ProjectModel`.
+
+        Returns:
+            The converted `ProjectModel`.
+        """
+        return ProjectModel.parse_obj(self)

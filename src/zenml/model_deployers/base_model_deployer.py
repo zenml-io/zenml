@@ -14,14 +14,20 @@
 """Base class for all ZenML model deployers."""
 
 from abc import ABC, abstractmethod
-from typing import ClassVar, Dict, Generator, List, Optional
+from typing import Dict, Generator, List, Optional, Type, cast
 from uuid import UUID
 
 from zenml.enums import StackComponentType
 from zenml.services import BaseService, ServiceConfig
 from zenml.stack import StackComponent
+from zenml.stack.flavor import Flavor
+from zenml.stack.stack_component import StackComponentConfig
 
 DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT = 300
+
+
+class BaseModelDeployerConfig(StackComponentConfig):
+    """Base config for all model deployers."""
 
 
 class BaseModelDeployer(StackComponent, ABC):
@@ -59,9 +65,14 @@ class BaseModelDeployer(StackComponent, ABC):
     (see `stop_model_server`, `start_model_server` and `delete_model_server`).
     """
 
-    # Class configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.MODEL_DEPLOYER
-    FLAVOR: ClassVar[str]
+    @property
+    def config(self) -> BaseModelDeployerConfig:
+        """Returns the `BaseModelDeployerConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(BaseModelDeployerConfig, self._config)
 
     @abstractmethod
     def deploy_model(
@@ -225,3 +236,30 @@ class BaseModelDeployer(StackComponent, ABC):
         if len(services) == 0:
             raise RuntimeError(f"No model server found with UUID {uuid}")
         return services[0].get_logs(follow=follow, tail=tail)
+
+
+class BaseModelDeployerFlavor(Flavor):
+    """Base class for model deployer flavors."""
+
+    @property
+    def type(self) -> StackComponentType:
+        """Returns the flavor type.
+
+        Returns:
+            The flavor type.
+        """
+        return StackComponentType.MODEL_DEPLOYER
+
+    @property
+    def config_class(self) -> Type[BaseModelDeployerConfig]:
+        """Returns `BaseModelDeployerConfig` config class.
+
+        Returns:
+                The config class.
+        """
+        return BaseModelDeployerConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type[BaseModelDeployer]:
+        """The class that implements the model deployer."""

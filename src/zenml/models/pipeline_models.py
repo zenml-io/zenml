@@ -11,17 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Pipeline models implementation."""
+"""Model definitions for pipelines, runs, steps, and artifacts."""
 
-from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml import __version__ as current_zenml_version
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.enums import ArtifactType
+from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
 def get_git_sha(clean: bool = True) -> Optional[str]:
@@ -54,50 +55,28 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
     return cast(str, repo.head.object.hexsha)
 
 
-class PipelineModel(AnalyticsTrackedModelMixin):
-    """Pydantic object representing a pipeline.
+class PipelineModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
+    """Domain model representing a pipeline."""
 
-    Attributes:
-        name: Pipeline name
-        docstring: Docstring of the pipeline
-        steps: List of steps in this pipeline
-    """
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project", "user"]
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project_id", "owner"]
-
-    id: Optional[UUID]
-    name: str
-
-    project_id: UUID
-    owner: UUID
+    name: str = Field(
+        title="The name of the pipeline.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
 
     docstring: Optional[str]
     configuration: Dict[str, str]
 
-    created_at: Optional[datetime]
 
+class PipelineRunModel(DomainModel, AnalyticsTrackedModelMixin):
+    """Domain Model representing a pipeline run."""
 
-class PipelineRunModel(BaseModel):
-    """Pydantic object representing a pipeline run.
+    name: str = Field(
+        title="The name of the pipeline run.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
 
-    Attributes:
-        name: Pipeline run name.
-        zenml_version: Version of ZenML that this pipeline run was performed
-            with.
-        git_sha: Git commit SHA that this pipeline run was performed on. This
-            will only be set if the pipeline code is in a git repository and
-            there are no uncommitted files when running the pipeline.
-        pipeline: Pipeline that this run is referring to.
-        stack: Stack that this run was performed on.
-        runtime_configuration: Runtime configuration that was used for this run.
-        owner: Id of the user that ran this pipeline.
-    """
-
-    id: Optional[UUID]  # ID in our DB
-    mlmd_id: Optional[int]  # ID in MLMD
-    name: str
-
-    owner: Optional[UUID]  # might not be set for scheduled runs
     stack_id: Optional[UUID]  # might not be set for scheduled runs
     pipeline_id: Optional[UUID]  # might not be set for scheduled runs
 
@@ -105,29 +84,47 @@ class PipelineRunModel(BaseModel):
 
     zenml_version: Optional[str] = current_zenml_version
     git_sha: Optional[str] = Field(default_factory=get_git_sha)
-    created_at: Optional[datetime]
+
+    # ID in MLMD - needed for some metadata store methods
+    mlmd_id: Optional[int]
+    user: Optional[UUID]  # might not be set for scheduled runs
 
 
-class StepRunModel(BaseModel):
-    """Pydantic object representing a step of a pipeline run."""
+class StepRunModel(DomainModel):
+    """Domain Model representing a step in a pipeline run."""
 
-    mlmd_id: int  # ID in MLMD
-    name: str
-    pipeline_run_id: Optional[UUID]  # TODO: make required
-    parent_step_ids: List[int]  # ID in MLMD
+    name: str = Field(
+        title="The name of the pipeline run step.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+
+    pipeline_run_id: UUID
+    parent_step_ids: List[UUID]
+
     docstring: Optional[str]
     parameters: Dict[str, str]
     entrypoint_name: str
 
+    # IDs in MLMD - needed for some metadata store methods
+    mlmd_id: int
+    mlmd_parent_step_ids: List[int]
 
-class ArtifactModel(BaseModel):
-    """Pydantic object representing an artifact."""
 
-    mlmd_id: int  # ID in MLMD
+class ArtifactModel(DomainModel):
+    """Domain Model representing an artifact."""
+
+    name: str  # Name of the output in the parent step
+
+    parent_step_id: UUID
+    producer_step_id: UUID
+
     type: ArtifactType
     uri: str
     materializer: str
     data_type: str
-    parent_step_id: int  # ID in MLMD
-    producer_step_id: int  # ID in MLMD
     is_cached: bool
+
+    # IDs in MLMD - needed for some metadata store methods
+    mlmd_id: int
+    mlmd_parent_step_id: int
+    mlmd_producer_step_id: int

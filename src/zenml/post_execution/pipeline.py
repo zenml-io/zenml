@@ -13,15 +13,17 @@
 #  permissions and limitations under the License.
 """Implementation of the post-execution pipeline."""
 
-from typing import Any, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Type, Union
 from uuid import UUID
 
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineModel
-from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import AnalyticsEvent, track
+
+if TYPE_CHECKING:
+    from zenml.pipelines.base_pipeline import BasePipeline
 
 logger = get_logger(__name__)
 
@@ -50,14 +52,16 @@ def get_pipeline(
 
     Use it in one of these ways:
     ```python
+    from zenml.post_execution import get_pipeline
+
     # Get the pipeline by name
-    Repository().get_pipeline("first_pipeline")
+    get_pipeline("first_pipeline")
 
     # Get the pipeline by supplying the original pipeline class
-    Repository().get_pipeline(first_pipeline)
+    get_pipeline(first_pipeline)
 
     # Get the pipeline by supplying an instance of the original pipeline class
-    Repository().get_pipeline(first_pipeline())
+    get_pipeline(first_pipeline())
     ```
 
     If the specified pipeline does not (yet) exist within the repository,
@@ -71,7 +75,12 @@ def get_pipeline(
     Returns:
         A post-execution pipeline view for the given pipeline or `None` if
         it doesn't exist.
+
+    Raises:
+        RuntimeError: If the pipeline was not specified correctly.
     """
+    from zenml.pipelines.base_pipeline import BasePipeline
+
     if isinstance(pipeline, str):
         pipeline_name = pipeline
     elif isinstance(pipeline, BasePipeline):
@@ -83,34 +92,38 @@ def get_pipeline(
     ):
         logger.warning(
             "Using 'pipeline_name' to get a pipeline from "
-            "'Repository().get_pipeline()' is deprecated and "
+            "'get_pipeline()' is deprecated and "
             "will be removed in the future. Instead please "
             "use 'pipeline' to access a pipeline in your Repository based "
             "on the name of the pipeline or even the class or instance "
             "of the pipeline. Learn more in our API docs: %s",
             get_apidocs_link(
-                "repository", "zenml.repository.Repository.get_pipeline"
+                "repository", "zenml.post_execution.pipeline.get_pipeline"
             ),
         )
 
         pipeline_name = kwargs.pop("pipeline_name")
     else:
         raise RuntimeError(
-            "No pipeline specified to get from "
-            "`Repository()`. Please set a `pipeline` "
+            "No pipeline specified. Please set a `pipeline` "
             "within the `get_pipeline()` method. Learn more "
             "in our API docs: %s",
             get_apidocs_link(
-                "repository", "zenml.repository.Repository.get_pipeline"
+                "repository", "zenml.post_execution.pipeline.get_pipeline"
             ),
         )
 
     repo = Repository()
-    pipeline = repo.zen_store.get_pipeline_in_project(
-        pipeline_name=pipeline_name,
-        project_name_or_id=repo.active_project.id,
-    )
-    return PipelineView(pipeline)
+    active_project_id = repo.active_project.id
+    assert active_project_id is not None
+    try:
+        pipeline_model = repo.zen_store.get_pipeline_in_project(
+            pipeline_name=pipeline_name,
+            project_name_or_id=active_project_id,
+        )
+        return PipelineView(pipeline_model)
+    except KeyError:
+        return None
 
 
 class PipelineView:
@@ -120,17 +133,22 @@ class PipelineView:
         """Initializes a post-execution pipeline object.
 
         In most cases `PipelineView` objects should not be created manually
-        but retrieved using the `get_pipelines()` method of a
-        `zenml.repository.Repository` instead.
+        but retrieved using the `get_pipelines()` utility from
+        `zenml.post_execution` instead.
 
         Args:
-            id_: The context id of this pipeline.
-            name: The name of this pipeline.
+            model: The model to initialize this pipeline view from.
         """
         self._model = model
 
     @property
     def id(self) -> UUID:
+        """Returns the ID of this pipeline.
+
+        Returns:
+            The ID of this pipeline.
+        """
+        assert self._model.id is not None
         return self._model.id
 
     @property
@@ -155,7 +173,7 @@ class PipelineView:
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
         runs = Repository().zen_store.list_runs(
-            project_name_or_id=self._model.project_id,
+            project_name_or_id=self._model.project,
             pipeline_id=self._model.id,
         )
         return [PipelineRunView(run) for run in runs]

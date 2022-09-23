@@ -16,12 +16,10 @@
 from typing import (
     Any,
     Callable,
-    ClassVar,
     Dict,
     Iterable,
     List,
     Optional,
-    Set,
     Tuple,
     Union,
     cast,
@@ -30,7 +28,10 @@ from typing import (
 import gcsfs
 
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
+from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
+    GCP_PATH_PREFIX,
+    GCPArtifactStoreConfig,
+)
 from zenml.secret.schemas import GCPSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils.io_utils import convert_to_str
@@ -38,17 +39,19 @@ from zenml.utils.io_utils import convert_to_str
 PathType = Union[bytes, str]
 
 
-GCP_PATH_PREFIX = "gs://"
-
-
 class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
     _filesystem: Optional[gcsfs.GCSFileSystem] = None
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = GCP_ARTIFACT_STORE_FLAVOR
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {GCP_PATH_PREFIX}
+    @property
+    def config(self) -> GCPArtifactStoreConfig:
+        """Returns the `GCPArtifactStoreConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(GCPArtifactStoreConfig, self._config)
 
     @property
     def filesystem(self) -> gcsfs.GCSFileSystem:

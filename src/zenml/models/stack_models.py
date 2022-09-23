@@ -11,95 +11,79 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Stack wrapper implementation."""
+"""Model definitions for stack."""
+
 import json
-from datetime import datetime
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
-from zenml.models.component_models import ComponentModel
+from zenml.models.base_models import ShareableProjectScopedDomainModel
+from zenml.models.component_model import ComponentModel
+from zenml.models.constants import (
+    MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
+    MODEL_NAME_FIELD_MAX_LENGTH,
+)
+from zenml.models.project_models import ProjectModel
+from zenml.models.user_management_models import UserModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class StackModel(AnalyticsTrackedModelMixin):
-    """Network Serializable Model describing the Stack.
-
-    name, description, components and is_shared can be specified explicitly by
-    the user through the user interface.
-
-    project, owner, created_at are added implicitly within domain logic
-
-    id is set when the database entry is created
-    """
+class StackModel(ShareableProjectScopedDomainModel, AnalyticsTrackedModelMixin):
+    """Domain Model describing the Stack."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
-        "project_id",
-        "owner",
+        "project",
+        "user",
         "is_shared",
     ]
 
-    id: Optional[UUID]
-    name: str
-    description: Optional[str] = Field(
-        default=None, title="The description of the stack", max_length=300
+    name: str = Field(
+        title="The name of the stack.", max_length=MODEL_NAME_FIELD_MAX_LENGTH
     )
-    components: Dict[StackComponentType, ComponentModel] = Field(
-        title="A mapping of stack component types to the id's of"
-        "instances of components of this type."
+    description: str = Field(
+        default="",
+        title="The description of the stack",
+        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
-    is_shared: bool = Field(
-        default=False,
-        title="Flag describing if this stack is shared.",
-    )
-    project_id: Optional[UUID] = Field(
-        default=None, title="The project that contains this stack."
-    )
-    owner: Optional[UUID] = Field(
-        default=None,
-        title="The id of the user, that created this stack.",
-    )
-    created_at: Optional[datetime] = Field(
-        default=None,
-        title="The time at which the stack was registered.",
+    components: Dict[StackComponentType, List[UUID]] = Field(
+        title=(
+            "A mapping of stack component types to the id's of"
+            "instances of components of this type."
+        )
     )
 
     class Config:
+        """Example of a json-serialized instance."""
+
         schema_extra = {
             "example": {
-                "id": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
-                "name": "prd_stack",
-                "description": "A stack for running pipelines in production.",
+                "id": "cbc7d4fd-8c88-49dd-ab12-d998e4fafe22",
+                "name": "default",
+                "description": "",
                 "components": {
-                    "alerter": "d3bbe238-d42a-42a2-b6a6-2319c4fbe5c9",
-                    "orchestrator": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
+                    "artifact_store": ["55a32b96-7995-4622-8474-12e7c94f3054"],
+                    "orchestrator": ["67441c8b-e4e7-439b-bad3-e5883659d387"],
                 },
-                "is_shared": "True",
-                "project_id": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
-                "owner": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
-                "created_at": "2022-08-12T07:12:45.931Z",
+                "is_shared": "False",
+                "project": "c5600721-8432-436d-ac59-a47aec6dec0f",
+                "user": "ae1fd828-fb3b-48e8-a31a-f3ecb3cdb294",
+                "created": "2022-09-15T11:43:29.994722",
+                "updated": "2022-09-15T11:43:29.994722",
             }
         }
 
-    def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Add the stack components to the stack analytics metadata.
+    @property
+    def is_valid(self) -> bool:
+        """Check if the stack is valid.
 
         Returns:
-            Dict of analytics metadata.
+            True if the stack is valid, False otherwise.
         """
-        metadata = super().get_analytics_metadata()
-        metadata.update(
-            {ct: c.flavor_name for ct, c in self.components.items()}
-        )
-        return metadata
-
-    @property
-    def is_valid(self):
-        # TODO: [server] the Model should validate if the stack configuration
-        #  is valid in theory
         if (
             StackComponentType.ARTIFACT_STORE
             and StackComponentType.ORCHESTRATOR in self.components.keys()
@@ -108,13 +92,132 @@ class StackModel(AnalyticsTrackedModelMixin):
         else:
             return False
 
-    def to_yaml(self):
-        """Create yaml representation of the Stack Model."""
+    def to_hydrated_model(self) -> "HydratedStackModel":
+        """Create a hydrated version of the stack model.
+
+        Returns:
+            A hydrated version of the stack model.
+        """
+        zen_store = GlobalConfiguration().zen_store
+
+        components = {}
+        for comp_type, comp_id_list in self.components.items():
+            components[comp_type] = [
+                zen_store.get_stack_component(c_id) for c_id in comp_id_list
+            ]
+
+        project = zen_store.get_project(self.project)
+        user = zen_store.get_user(self.user)
+
+        return HydratedStackModel(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            components=components,
+            project=project,
+            user=user,
+            is_shared=self.is_shared,
+            created=self.created,
+            updated=self.updated,
+        )
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the stack components to the stack analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        metadata.update({ct: c[0] for ct, c in self.components.items()})
+        return metadata
+
+
+class HydratedStackModel(StackModel):
+    """Stack model with Components, User and Project fully hydrated."""
+
+    components: Dict[StackComponentType, List[ComponentModel]] = Field(  # type: ignore[assignment]
+        title="A mapping of stack component types to the actual"
+        "instances of components of this type."
+    )
+    project: ProjectModel = Field(title="The project that contains this stack.")  # type: ignore[assignment]
+    user: UserModel = Field(  # type: ignore[assignment]
+        title="The user that created this stack.",
+    )
+
+    class Config:
+        """Example of a json-serialized instance."""
+
+        schema_extra = {
+            "example": {
+                "id": "cbc7d4fd-8c88-49dd-ab12-d998e4fafe22",
+                "name": "default",
+                "description": "",
+                "components": {
+                    "artifact_store": [
+                        {
+                            "id": "55a32b96-7995-4622-8474-12e7c94f3054",
+                            "name": "default",
+                            "type": "artifact_store",
+                            "flavor": "local",
+                            "configuration": {
+                                "path": "../zenml/local_stores/default_local_store"
+                            },
+                            "user": "ae1fd828-fb3b-48e8-a31a-f3ecb3cdb294",
+                            "is_shared": "False",
+                            "project": "c5600721-8432-436d-ac59-a47aec6dec0f",
+                            "created": "2022-09-15T11:43:29.987627",
+                            "updated": "2022-09-15T11:43:29.987627",
+                        }
+                    ],
+                    "orchestrator": [
+                        {
+                            "id": "67441c8b-e4e7-439b-bad3-e5883659d387",
+                            "name": "default",
+                            "type": "orchestrator",
+                            "flavor": "local",
+                            "configuration": {},
+                            "user": "ae1fd828-fb3b-48e8-a31a-f3ecb3cdb294",
+                            "is_shared": "False",
+                            "project": "c5600721-8432-436d-ac59-a47aec6dec0f",
+                            "created": "2022-09-15T11:43:29.987627",
+                            "updated": "2022-09-15T11:43:29.987627",
+                        }
+                    ],
+                },
+                "is_shared": "False",
+                "project": {
+                    "id": "c5600721-8432-436d-ac59-a47aec6dec0f",
+                    "name": "default",
+                    "description": "",
+                    "created": "2022-09-15T11:43:29.987627",
+                    "updated": "2022-09-15T11:43:29.987627",
+                },
+                "user": {
+                    "id": "ae1fd828-fb3b-48e8-a31a-f3ecb3cdb294",
+                    "name": "default",
+                    "full_name": "",
+                    "email": "",
+                    "active": "True",
+                    "created": "2022-09-15T11:43:29.987627",
+                    "updated": "2022-09-15T11:43:29.987627",
+                },
+                "created": "2022-09-15T11:43:29.987627",
+                "updated": "2022-09-15T11:43:29.987627",
+            }
+        }
+
+    def to_yaml(self) -> Dict[str, Any]:
+        """Create yaml representation of the Stack Model.
+
+        Returns:
+            The yaml representation of the Stack Model.
+        """
         component_data = {}
-        for component_type, component in self.components.items():
-            component_dict = json.loads(component.json())
-            component_dict.pop("project_id")  # Not needed in the yaml repr
-            component_dict.pop("created_at")  # Not needed in the yaml repr
+        for component_type, components_list in self.components.items():
+            component_dict = json.loads(components_list[0].json())
+            component_dict.pop("project")  # Not needed in the yaml repr
+            component_dict.pop("created")  # Not needed in the yaml repr
+            component_dict.pop("updated")  # Not needed in the yaml repr
             component_data[component_type.value] = component_dict
 
         # write zenml version and stack dict to YAML
@@ -124,3 +227,13 @@ class StackModel(AnalyticsTrackedModelMixin):
         }
 
         return yaml_data
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the stack components to the stack analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        metadata.update({ct: c[0].flavor for ct, c in self.components.items()})
+        return metadata

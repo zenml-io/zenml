@@ -15,16 +15,19 @@
 import os
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 from kfp import dsl
 from kfp_tekton.compiler import TektonCompiler
 from kubernetes import config as k8s_config
-from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
+from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
-from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
+from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
+    DEFAULT_TEKTON_UI_PORT,
+    TektonOrchestratorConfig,
+)
 from zenml.integrations.tekton.orchestrators.tekton_entrypoint_configuration import (
     TektonEntrypointConfiguration,
 )
@@ -36,37 +39,25 @@ from zenml.utils import io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.pipelines.base_pipeline import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
-    from zenml.steps import BaseStep, ResourceConfiguration
+    from zenml.steps import ResourceSettings
 
 
 logger = get_logger(__name__)
 
-DEFAULT_TEKTON_UI_PORT = 8080
 
+class TektonOrchestrator(BaseOrchestrator):
+    """Orchestrator responsible for running pipelines using Tekton."""
 
-class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
-    """Orchestrator responsible for running pipelines using Tekton.
+    @property
+    def config(self) -> TektonOrchestratorConfig:
+        """Returns the `TektonOrchestratorConfig` config.
 
-    Attributes:
-        kubernetes_context: Name of a kubernetes context to run
-            pipelines in.
-        kubernetes_namespace: Name of the kubernetes namespace in which the
-            pods that run the pipeline steps should be running.
-        tekton_ui_port: A local port to which the Tekton UI will be forwarded.
-        skip_ui_daemon_provisioning: If `True`, provisioning the Tekton UI
-            daemon will be skipped.
-    """
-
-    kubernetes_context: str
-    kubernetes_namespace: str = "zenml"
-    tekton_ui_port: int = DEFAULT_TEKTON_UI_PORT
-    skip_ui_daemon_provisioning: bool = False
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = TEKTON_ORCHESTRATOR_FLAVOR
+        Returns:
+            The configuration.
+        """
+        return cast(TektonOrchestratorConfig, self._config)
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:
         """Get the list of configured Kubernetes contexts and the active context.
@@ -101,13 +92,13 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
             contexts, _ = self.get_kubernetes_contexts()
 
-            if self.kubernetes_context not in contexts:
+            if self.config.kubernetes_context not in contexts:
                 return False, (
                     f"Could not find a Kubernetes context named "
-                    f"'{self.kubernetes_context}' in the local Kubernetes "
-                    f"configuration. Please make sure that the Kubernetes "
-                    f"cluster is running and that the kubeconfig file is "
-                    f"configured correctly. To list all configured "
+                    f"'{self.config.kubernetes_context}' in the local "
+                    f"Kubernetes configuration. Please make sure that the "
+                    f"Kubernetes cluster is running and that the kubeconfig "
+                    f"file is configured correctly. To list all configured "
                     f"contexts, run:\n\n"
                     f"  `kubectl config get-contexts`\n"
                 )
@@ -115,38 +106,38 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             # go through all stack components and identify those that
             # advertise a local path where they persist information that
             # they need to be available when running pipelines.
-            for stack_comp in stack.components.values():
-                local_path = stack_comp.local_path
-                if not local_path:
+            for stack_component in stack.components.values():
+                local_path = stack_component.local_path
+                if local_path is None:
                     continue
                 return False, (
                     f"The Tekton orchestrator is configured to run "
                     f"pipelines in a remote Kubernetes cluster designated "
-                    f"by the '{self.kubernetes_context}' configuration "
-                    f"context, but the '{stack_comp.name}' "
-                    f"{stack_comp.TYPE.value} is a local stack component "
+                    f"by the '{self.config.kubernetes_context}' configuration "
+                    f"context, but the '{stack_component.name}' "
+                    f"{stack_component.type.value} is a local stack component "
                     f"and will not be available in the Tekton pipeline "
                     f"step.\nPlease ensure that you always use non-local "
                     f"stack components with a Tekton orchestrator, "
                     f"otherwise you may run into pipeline execution "
                     f"problems. You should use a flavor of "
-                    f"{stack_comp.TYPE.value} other than "
-                    f"'{stack_comp.FLAVOR}'."
+                    f"{stack_component.type.value} other than "
+                    f"'{stack_component.flavor}'."
                 )
 
             if container_registry.is_local:
                 return False, (
                     f"The Tekton orchestrator is configured to run "
                     f"pipelines in a remote Kubernetes cluster designated "
-                    f"by the '{self.kubernetes_context}' configuration "
+                    f"by the '{self.config.kubernetes_context}' configuration "
                     f"context, but the '{container_registry.name}' "
-                    f"container registry URI '{container_registry.uri}' "
+                    f"container registry URI '{container_registry.config.uri}' "
                     f"points to a local container registry. Please ensure "
                     f"that you always use non-local stack components with "
                     f"a Tekton orchestrator, otherwise you will "
                     f"run into problems. You should use a flavor of "
                     f"container registry other than "
-                    f"'{container_registry.FLAVOR}'."
+                    f"'{container_registry.flavor}'."
                 )
 
             return True, ""
@@ -158,57 +149,51 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "BasePipeline",
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Builds and pushes a Docker image for the current environment.
+        """Build a Docker image and push it to the container registry.
 
         Args:
-            pipeline: The pipeline to be deployed.
-            stack: The stack to be deployed.
-            runtime_configuration: The runtime configuration to be used.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
         """
-        self.build_and_push_docker_image(
-            pipeline_name=pipeline.name,
-            docker_configuration=pipeline.docker_configuration,
-            stack=stack,
-            runtime_configuration=runtime_configuration,
+        docker_image_builder = PipelineDockerImageBuilder()
+        repo_digest = docker_image_builder.build_and_push_docker_image(
+            deployment=deployment, stack=stack
         )
+        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     @staticmethod
     def _configure_container_resources(
         container_op: dsl.ContainerOp,
-        resource_configuration: "ResourceConfiguration",
+        resource_settings: "ResourceSettings",
     ) -> None:
         """Adds resource requirements to the container.
 
         Args:
             container_op: The container operation to configure.
-            resource_configuration: The resource configuration to use for this
+            resource_settings: The resource settings to use for this
                 container.
         """
-        if resource_configuration.cpu_count is not None:
+        if resource_settings.cpu_count is not None:
             container_op = container_op.set_cpu_limit(
-                str(resource_configuration.cpu_count)
+                str(resource_settings.cpu_count)
             )
 
-        if resource_configuration.gpu_count is not None:
+        if resource_settings.gpu_count is not None:
             container_op = container_op.set_gpu_limit(
-                resource_configuration.gpu_count
+                resource_settings.gpu_count
             )
 
-        if resource_configuration.memory is not None:
-            memory_limit = resource_configuration.memory[:-1]
+        if resource_settings.memory is not None:
+            memory_limit = resource_settings.memory[:-1]
             container_op = container_op.set_memory_limit(memory_limit)
 
     def prepare_or_run_pipeline(
         self,
-        sorted_steps: List["BaseStep"],
-        pipeline: "BasePipeline",
-        pb2_pipeline: Pb2Pipeline,
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Runs the pipeline on Tekton.
 
@@ -216,12 +201,8 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         and then applies this configuration to run the pipeline.
 
         Args:
-            sorted_steps: A list of steps sorted by their order in the
-                pipeline.
-            pipeline: The pipeline object.
-            pb2_pipeline: The pipeline object in protobuf format.
-            stack: The stack object.
-            runtime_configuration: The runtime configuration object.
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
 
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook environment.
@@ -237,7 +218,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 "orchestrator."
             )
 
-        image_name = runtime_configuration["docker_image"]
+        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         def _construct_kfp_pipeline() -> None:
             """Create a container_op for each step.
@@ -251,17 +232,16 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
-            for step in sorted_steps:
+            for step_name, step in deployment.steps.items():
                 command = TektonEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     TektonEntrypointConfiguration.get_entrypoint_arguments(
-                        step=step,
-                        pb2_pipeline=pb2_pipeline,
+                        step_name=step_name,
                     )
                 )
 
                 container_op = dsl.ContainerOp(
-                    name=step.name,
+                    name=step.config.name,
                     image=image_name,
                     command=command,
                     arguments=arguments,
@@ -270,28 +250,24 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 if self.requires_resources_in_orchestration_environment(step):
                     self._configure_container_resources(
                         container_op=container_op,
-                        resource_configuration=step.resource_configuration,
+                        resource_settings=step.config.resource_settings,
                     )
 
                 # Find the upstream container ops of the current step and
                 # configure the current container op to run after them
-                upstream_step_names = self.get_upstream_step_names(
-                    step=step, pb2_pipeline=pb2_pipeline
-                )
-                for upstream_step_name in upstream_step_names:
+                for upstream_step_name in step.spec.upstream_steps:
                     upstream_container_op = step_name_to_container_op[
                         upstream_step_name
                     ]
                     container_op.after(upstream_container_op)
 
                 # Update dictionary of container ops with the current one
-                step_name_to_container_op[step.name] = container_op
+                step_name_to_container_op[step.config.name] = container_op
 
         # Get a filepath to use to save the finished yaml to
-        assert runtime_configuration.run_name
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{runtime_configuration.run_name}.yaml"
+            self.pipeline_directory, f"{deployment.run_name}.yaml"
         )
 
         # Set the run name, which Tekton reads from this attribute of the
@@ -299,11 +275,11 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         setattr(
             _construct_kfp_pipeline,
             "_component_human_name",
-            runtime_configuration.run_name,
+            deployment.run_name,
         )
         TektonCompiler().compile(_construct_kfp_pipeline, pipeline_file_path)
 
-        if runtime_configuration.schedule:
+        if deployment.schedule:
             logger.warning(
                 "The Tekton Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
@@ -313,17 +289,17 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         logger.info(
             "Running Tekton pipeline in kubernetes context '%s' and namespace "
             "'%s'.",
-            self.kubernetes_context,
-            self.kubernetes_namespace,
+            self.config.kubernetes_context,
+            self.config.kubernetes_namespace,
         )
         try:
             subprocess.check_call(
                 [
                     "kubectl",
                     "--context",
-                    self.kubernetes_context,
+                    self.config.kubernetes_context,
                     "--namespace",
-                    self.kubernetes_namespace,
+                    self.config.kubernetes_namespace,
                     "apply",
                     "-f",
                     pipeline_file_path,
@@ -333,8 +309,8 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             raise RuntimeError(
                 f"Failed to upload Tekton pipeline: {str(e)}. "
                 f"Please make sure your kubernetes config is present and the "
-                f"{self.kubernetes_context} kubernetes context is configured "
-                f"correctly.",
+                f"{self.config.kubernetes_context} kubernetes context is "
+                f"configured correctly.",
             )
 
     @property
@@ -347,7 +323,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         return os.path.join(
             io_utils.get_global_config_directory(),
             "tekton",
-            str(self.uuid),
+            str(self.id),
         )
 
     @property
@@ -393,7 +369,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         Returns:
             True if the local UI daemon for this orchestrator is running.
         """
-        if self.skip_ui_daemon_provisioning:
+        if self.config.skip_ui_daemon_provisioning:
             return True
 
         if sys.platform != "win32":
@@ -433,7 +409,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def start_ui_daemon(self) -> None:
         """Starts the UI forwarding daemon if possible."""
-        port = self.tekton_ui_port
+        port = self.config.tekton_ui_port
         if (
             port == DEFAULT_TEKTON_UI_PORT
             and not networking_utils.port_available(port)
@@ -445,7 +421,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         command = [
             "kubectl",
             "--context",
-            self.kubernetes_context,
+            self.config.kubernetes_context,
             "--namespace",
             "tekton-pipelines",
             "port-forward",

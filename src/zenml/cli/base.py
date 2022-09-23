@@ -27,10 +27,12 @@ from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
+from zenml.enums import AnalyticsEventSource
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.stack.stack_component import StackComponent
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     identify_user,
@@ -97,8 +99,10 @@ def _delete_local_files(force_delete: bool = False) -> None:
     repo = Repository()
     if repo.active_stack_model:
         stack_components = repo.active_stack_model.components
-        for _, component in stack_components.items():
-            local_path = component.local_path
+        for _, components in stack_components.items():
+            # TODO: [server] this needs to be adjusted as the ComponentModel
+            #  does not have the local_path property anymore
+            local_path = StackComponent.from_model(components[0]).local_path
             if local_path:
                 for path in Path(local_path).iterdir():
                     if fileio.isdir(str(path)):
@@ -283,6 +287,9 @@ def _prompt_email(gc: GlobalConfiguration) -> bool:
             console.print(zenml_go_thank_you_message, width=80)
 
             gc.user_metadata = {"email": email}
-            identify_user({"email": email})
+            # For now, hard-code to ZENML GO as the source
+            identify_user(
+                {"email": email, "source": AnalyticsEventSource.ZENML_GO}
+            )
             return True
     return False

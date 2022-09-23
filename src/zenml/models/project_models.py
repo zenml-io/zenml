@@ -11,31 +11,33 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Project model implementation."""
+"""Model definitions for code projects."""
 
-from datetime import datetime
-from typing import ClassVar, List, Optional
-from uuid import UUID
+from typing import ClassVar, List
 
+from pydantic import Field
 
+from zenml.models.base_models import DomainModel
+from zenml.models.constants import (
+    MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
+    MODEL_NAME_FIELD_MAX_LENGTH,
+)
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class ProjectModel(AnalyticsTrackedModelMixin):
-    """Pydantic object representing a project.
-
-    Attributes:
-        id: Id of the project.
-        created_at: Date when the project was created.
-        name: Name of the project.
-        description: Optional project description.
-    """
+class ProjectModel(DomainModel, AnalyticsTrackedModelMixin):
+    """Domain model for projects."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
     ]
 
-    id: Optional[UUID] = None
-    name: str
-    description: Optional[str] = None
-    created_at: Optional[datetime] = None
+    name: str = Field(
+        title="The unique name of the project.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    description: str = Field(
+        default="",
+        title="The description of the project.",
+        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
+    )

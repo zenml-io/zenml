@@ -13,20 +13,31 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML data validators."""
 
-from typing import Any, ClassVar, Optional, Sequence
+from typing import Any, ClassVar, Optional, Sequence, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.repository import Repository
-from zenml.stack import StackComponent
+from zenml.stack import Flavor, StackComponent
+from zenml.stack.stack_component import StackComponentConfig
+
+
+class BaseDataValidatorConfig(StackComponentConfig):
+    """Base config for all data validators."""
 
 
 class BaseDataValidator(StackComponent):
     """Base class for all ZenML data validators."""
 
-    # Class configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.DATA_VALIDATOR
-    FLAVOR: ClassVar[str]
     NAME: ClassVar[str]
+
+    @property
+    def config(self) -> BaseDataValidatorConfig:
+        """Returns the config of this data validator.
+
+        Returns:
+            The config of this data validator.
+        """
+        return cast(BaseDataValidatorConfig, self._config)
 
     @classmethod
     def get_active_data_validator(cls) -> "BaseDataValidator":
@@ -61,11 +72,11 @@ class BaseDataValidator(StackComponent):
                 f"actions with {cls.NAME}. You can create a new stack with "
                 f"a {cls.NAME} data validator component or update your "
                 f"active stack to add this component, e.g.:\n\n"
-                f"  `zenml data-validator register {cls.FLAVOR} "
-                f"--flavor={cls.FLAVOR} ...`\n"
-                f"  `zenml stack register <STACK-NAME> -dv {cls.FLAVOR} ...`\n"
+                f"  `zenml data-validator register {cls.flavor} "
+                f"--flavor={cls.flavor} ...`\n"
+                f"  `zenml stack register <STACK-NAME> -dv {cls.flavor} ...`\n"
                 f"  or:\n"
-                f"  `zenml stack update -dv {cls.FLAVOR}`\n\n"
+                f"  `zenml stack update -dv {cls.flavor}`\n\n"
             )
 
         return data_validator
@@ -212,3 +223,34 @@ class BaseDataValidator(StackComponent):
         raise NotImplementedError(
             f"Model validation not implemented for {self}."
         )
+
+
+class BaseDataValidatorFlavor(Flavor):
+    """Base class for data validator flavors."""
+
+    @property
+    def type(self) -> StackComponentType:
+        """The type of the component.
+
+        Returns:
+            The type of the component.
+        """
+        return StackComponentType.DATA_VALIDATOR
+
+    @property
+    def config_class(self) -> Type[BaseDataValidatorConfig]:
+        """Config class for data validator.
+
+        Returns:
+            Config class for data validator.
+        """
+        return BaseDataValidatorConfig
+
+    @property
+    def implementation_class(self) -> Type[BaseDataValidator]:
+        """Implementation for data validator.
+
+        Returns:
+            Implementation for data validator.
+        """
+        return BaseDataValidator

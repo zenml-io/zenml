@@ -16,20 +16,40 @@ import os
 import shutil
 import sys
 import tempfile
+from datetime import datetime
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 from py._builtin import execfile
 from pytest_mock import MockerFixture
 
 from tests.venv_clone_utils import clone_virtualenv
+from zenml.artifact_stores.local_artifact_store import (
+    LocalArtifactStore,
+    LocalArtifactStoreConfig,
+)
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_DEBUG
+from zenml.constants import ENV_ZENML_DEBUG, TEST_STEP_INPUT_INT
+from zenml.container_registries.base_container_registry import (
+    BaseContainerRegistry,
+    BaseContainerRegistryConfig,
+)
+from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
+    GCPArtifactStore,
+)
+from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
+    GCPArtifactStoreConfig,
+)
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.user_management_models import TeamModel
+from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
+from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
+from zenml.stack.stack import Stack
+from zenml.stack.stack_component import StackComponentConfig, StackComponentType
 from zenml.steps import StepContext, step
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.sql_zen_store import SqlZenStore, SqlZenStoreConfiguration
@@ -43,11 +63,6 @@ def base_repo(
 ):
     """Fixture to get a base clean global configuration and repository for all
     tests."""
-
-    # the global configuration and repository must not have been instantiated
-    # yet, otherwise the current working configuration might be affected
-    assert GlobalConfiguration.get_instance() is None
-    assert Repository.get_instance() is None
 
     # original working directory
     orig_cwd = os.getcwd()
@@ -182,18 +197,69 @@ def clean_repo(
 
 
 @pytest.fixture
-def fresh_sql_zen_store() -> BaseZenStore:
+def sql_store() -> BaseZenStore:
     with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
-        yield SqlZenStore(
+        store = SqlZenStore(
             config=SqlZenStoreConfiguration(
                 url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
             ),
             track_analytics=False,
         )
+        default_project = store.list_projects()[0]
+        default_stack = store.list_stacks()[0]
+        active_user = store.list_users()[0]
+        yield {
+            "store": store,
+            "default_project": default_project,
+            "default_stack": default_stack,
+            "active_user": active_user,
+        }
 
 
 @pytest.fixture
-def fresh_sql_store_with_team() -> BaseZenStore:
+def sql_store_with_run() -> BaseZenStore:
+    with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
+
+        GlobalConfiguration().set_store(
+            config=SqlZenStoreConfiguration(
+                url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
+            ),
+        )
+        store = GlobalConfiguration().zen_store
+
+        default_project = store.list_projects()[0]
+        default_stack = store.list_stacks()[0]
+        active_user = store.list_users()[0]
+
+        @step
+        def step_one() -> int:
+            return TEST_STEP_INPUT_INT
+
+        @step
+        def step_two(input: int) -> int:
+            return input + 1
+
+        @pipeline
+        def test_pipeline(step_one, step_two):
+            value = step_one()
+            step_two(value)
+
+        test_pipeline(step_one=step_one(), step_two=step_two()).run()
+        pipeline_run = store.list_runs()[0]
+        pipeline_step = store.list_run_steps(pipeline_run.id)[1]
+
+        yield {
+            "store": store,
+            "default_project": default_project,
+            "default_stack": default_stack,
+            "active_user": active_user,
+            "pipeline_run": pipeline_run,
+            "step": pipeline_step,
+        }
+
+
+@pytest.fixture
+def sql_store_with_team() -> BaseZenStore:
     with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
         store = SqlZenStore(
             config=SqlZenStoreConfiguration(
@@ -203,7 +269,17 @@ def fresh_sql_store_with_team() -> BaseZenStore:
         )
         new_team = TeamModel(name="arias_team")
         store.create_team(new_team)
-        yield store
+        default_project = store.list_projects()[0]
+        default_stack = store.list_stacks()[0]
+        active_user = store.list_users()[0]
+        default_team = store.list_teams()[0]
+        yield {
+            "store": store,
+            "default_project": default_project,
+            "default_stack": default_stack,
+            "active_user": active_user,
+            "default_team": default_team,
+        }
 
 
 @pytest.fixture
@@ -241,6 +317,119 @@ def files_dir(request: pytest.FixtureRequest, tmp_path: Path) -> Path:
             shutil.copytree(test_function_dir, tmp_path)
 
     return tmp_path
+
+
+@pytest.fixture
+def local_stack():
+    """Returns a local stack with local orchestrator and artifact store."""
+    orchestrator = LocalOrchestrator(
+        name="",
+        id=uuid4(),
+        config=StackComponentConfig(),
+        flavor="default",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+    artifact_store = LocalArtifactStore(
+        name="",
+        id=uuid4(),
+        config=LocalArtifactStoreConfig(),
+        flavor="default",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+    return Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=orchestrator,
+        artifact_store=artifact_store,
+    )
+
+
+@pytest.fixture
+def local_orchestrator():
+    """Returns a local orchestrator."""
+    return LocalOrchestrator(
+        name="",
+        id=uuid4(),
+        config=BaseOrchestratorConfig(),
+        flavor="local",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def local_artifact_store():
+    """Fixture that creates a local artifact store for testing."""
+    return LocalArtifactStore(
+        name="",
+        id=uuid4(),
+        config=LocalArtifactStoreConfig(),
+        flavor="local",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def remote_artifact_store():
+    """Fixture that creates a local artifact store for testing."""
+    return GCPArtifactStore(
+        name="",
+        id=uuid4(),
+        config=GCPArtifactStoreConfig(path="gs://bucket"),
+        flavor="gcp",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def local_container_registry():
+    """Fixture that creates a local container registry for testing."""
+    return BaseContainerRegistry(
+        name="",
+        id=uuid4(),
+        config=BaseContainerRegistryConfig(uri="localhost:5000"),
+        flavor="default",
+        type=StackComponentType.CONTAINER_REGISTRY,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def remote_container_registry():
+    """Fixture that creates a remote container registry for testing."""
+    return BaseContainerRegistry(
+        name="",
+        id=uuid4(),
+        config=BaseContainerRegistryConfig(uri="gcr.io/my-project"),
+        flavor="default",
+        type=StackComponentType.CONTAINER_REGISTRY,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
 
 
 @pytest.fixture

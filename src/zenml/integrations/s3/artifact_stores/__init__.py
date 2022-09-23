@@ -16,3 +16,5 @@
 from zenml.integrations.s3.artifact_stores.s3_artifact_store import (  # noqa
     S3ArtifactStore,
 )
+
+__all__ = ["S3ArtifactStore"]

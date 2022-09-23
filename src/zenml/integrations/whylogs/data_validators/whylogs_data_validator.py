@@ -14,16 +14,24 @@
 """Implementation of the whylogs data validator."""
 
 import datetime
-from typing import Any, ClassVar, Optional, Sequence, cast
+import os
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Sequence, Type, cast
 
 import pandas as pd
 import whylogs as why  # type: ignore
 from whylogs.api.writer.whylabs import WhyLabsWriter  # type: ignore
 from whylogs.core import DatasetProfileView  # type: ignore
 
+from zenml.config.base_settings import BaseSettings
 from zenml.data_validators import BaseDataValidator
 from zenml.environment import Environment
-from zenml.integrations.whylogs import WHYLOGS_DATA_VALIDATOR_FLAVOR
+from zenml.integrations.whylogs.constants import (
+    WHYLABS_DATASET_ID_ENV,
+    WHYLABS_LOGGING_ENABLED_ENV,
+)
+from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
+    WhylogsDataValidatorConfig,
+)
 from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
     WhylabsSecretSchema,
 )
@@ -31,7 +39,24 @@ from zenml.logger import get_logger
 from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 
+if TYPE_CHECKING:
+    from zenml.config.step_run_info import StepRunInfo
+
 logger = get_logger(__name__)
+
+
+class WhylogsDataValidatorSettings(BaseSettings):
+    """Settings for the Whylogs data validator.
+
+    Attributes:
+        enable_whylabs: If set to `True` for a step, all the whylogs data
+            profile views returned by the step will automatically be uploaded
+            to the Whylabs platform if Whylabs credentials are configured.
+        dataset_id: Dataset ID to use when uploading profiles to Whylabs.
+    """
+
+    enable_whylabs: bool = False
+    dataset_id: Optional[str] = None
 
 
 class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
@@ -44,9 +69,55 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
             stored in the ZenML Artifact Store.
     """
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = WHYLOGS_DATA_VALIDATOR_FLAVOR
     NAME: ClassVar[str] = "whylogs"
+
+    @property
+    def config(self) -> WhylogsDataValidatorConfig:
+        """Returns the `WhylogsDataValidatorConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(WhylogsDataValidatorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Whylogs data validator.
+
+        Returns:
+            The settings class.
+        """
+        return WhylogsDataValidatorSettings
+
+    def prepare_step_run(self, info: "StepRunInfo") -> None:
+        """Configures Whylabs logging.
+
+        Args:
+            info: Info about the step that will be executed.
+        """
+        settings = cast(
+            WhylogsDataValidatorSettings,
+            self.get_settings(info) or WhylogsDataValidatorSettings(),
+        )
+        if settings.enable_whylabs:
+            os.environ[WHYLABS_LOGGING_ENABLED_ENV] = "true"
+        if settings.dataset_id:
+            os.environ[WHYLABS_DATASET_ID_ENV] = settings.dataset_id
+
+    def cleanup_step_run(self, info: "StepRunInfo") -> None:
+        """Resets Whylabs configuration.
+
+        Args:
+            info: Info about the step that was executed.
+        """
+        settings = cast(
+            WhylogsDataValidatorSettings,
+            self.get_settings(info) or WhylogsDataValidatorSettings(),
+        )
+        if settings.enable_whylabs:
+            del os.environ[WHYLABS_LOGGING_ENABLED_ENV]
+        if settings.dataset_id:
+            del os.environ[WHYLABS_DATASET_ID_ENV]
 
     def data_profiling(
         self,
@@ -79,7 +150,9 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
         return profile.view()
 
     def upload_profile_view(
-        self, profile_view: DatasetProfileView, dataset_id: Optional[str] = None
+        self,
+        profile_view: DatasetProfileView,
+        dataset_id: Optional[str] = None,
     ) -> None:
         """Upload a whylogs data profile view to Whylabs, if configured to do so.
 

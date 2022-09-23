@@ -3,7 +3,7 @@ from typing import Dict, List
 import torch
 from steps.pytorch_trainer import LABEL_MAPPING, load_mobilenetv3_transforms
 
-from zenml.repository import Repository
+from zenml.post_execution import get_pipeline
 from zenml.steps import Output, step
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
@@ -22,9 +22,7 @@ class PredictionServiceLoaderConfig(BaseStepConfig):
 def prediction_service_loader(
     config: PredictionServiceLoaderConfig, context: StepContext
 ) -> torch.nn.Module:
-    train_run = (
-        Repository().get_pipeline(config.training_pipeline_name).runs[-1]
-    )
+    train_run = get_pipeline(config.training_pipeline_name).runs[-1]
     return train_run.get_step(config.training_pipeline_step_name).output.read()
 
 

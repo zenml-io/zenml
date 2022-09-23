@@ -22,7 +22,6 @@ from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineRunModel
 from zenml.post_execution.step import StepView
 from zenml.repository import Repository
-from zenml.runtime_configuration import RuntimeConfiguration
 
 logger = get_logger(__name__)
 
@@ -37,14 +36,24 @@ def get_run(name: str) -> "PipelineRunView":
         The post-execution view of the run with the given name.
 
     Raises:
-        KeyError: If there is no run with the given name in this project.
+        KeyError: If no run with the given name exists.
+        RuntimeError: If multiple runs with the given name exist.
     """
     repo = Repository()
-    run = repo.zen_store.get_run_in_project(
+    active_project_id = repo.active_project.id
+    runs = repo.zen_store.list_runs(
         run_name=name,
-        project_name_or_id=repo.active_project.id,
+        project_name_or_id=active_project_id,
     )
-    return PipelineRunView(run)
+
+    # TODO: [server] this error handling could be improved
+    if not runs:
+        raise KeyError(f"No run with name '{name}' exists.")
+    elif len(runs) > 1:
+        raise RuntimeError(
+            f"Multiple runs have been found for name  '{name}'.", runs
+        )
+    return PipelineRunView(runs[0])
 
 
 def get_unlisted_runs() -> List["PipelineRunView"]:
@@ -77,15 +86,19 @@ class PipelineRunView:
         but retrieved from a `PipelineView` object instead.
 
         Args:
-            id_: The context id of this pipeline run.
-            name: The name of this pipeline run.
-            executions: All executions associated with this pipeline run.
+            model: The model to initialize this object from.
         """
         self._model = model
         self._steps: Dict[str, StepView] = OrderedDict()
 
     @property
     def id(self) -> UUID:
+        """Returns the ID of this pipeline run.
+
+        Returns:
+            The ID of this pipeline run.
+        """
+        assert self._model.id is not None
         return self._model.id
 
     @property
@@ -117,17 +130,6 @@ class PipelineRunView:
             The git commit SHA that this pipeline run was performed on.
         """
         return self._model.git_sha
-
-    @property
-    def runtime_configuration(self) -> Optional["RuntimeConfiguration"]:
-        """Runtime configuration that was used for this pipeline run.
-
-        This will only be set if the pipeline run was tracked in a ZenStore.
-
-        Returns:
-            The runtime configuration that was used for this pipeline run.
-        """
-        return RuntimeConfiguration(**self._model.runtime_configuration)
 
     @property
     def status(self) -> ExecutionStatus:
@@ -241,10 +243,9 @@ class PipelineRunView:
             # we already fetched the steps, no need to do anything
             return
 
-        steps = Repository().zen_store.list_run_steps(self._model.mlmd_id)
-        self._steps = {
-            step_name: StepView(step) for step_name, step in steps.items()
-        }
+        assert self._model.id is not None
+        steps = Repository().zen_store.list_run_steps(self._model.id)
+        self._steps = {step.name: StepView(step) for step in steps}
 
     def __repr__(self) -> str:
         """Returns a string representation of this pipeline run.

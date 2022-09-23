@@ -24,8 +24,7 @@ details on ZenML integrations and how to install and use them.
 ## Visualizing Pipelines
 
 After a pipeline run has been started, we can access it using the 
-[Repository](../stacks-repositories/repository.md),
-as you learned in the last section on 
+post-execution utilities, as you learned in the last section on 
 [Inspecting Finished Pipeline Runs](./inspecting-pipeline-runs.md).
 
 We can then visualize a run using the `PipelineRunLineageVisualizer` class:
@@ -34,11 +33,10 @@ We can then visualize a run using the `PipelineRunLineageVisualizer` class:
 from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
     PipelineRunLineageVisualizer,
 )
-from zenml.repository import Repository
+from zenml.post_execution import get_pipeline
 
 
-repo = Repository()
-latest_run = repo.get_pipeline(<PIPELINE_NAME>).runs[-1]
+latest_run = get_pipeline(<PIPELINE_NAME>).runs[-1]
 PipelineRunLineageVisualizer().visualize(latest_run)
 ```
 
@@ -81,7 +79,6 @@ from zenml.pipelines import pipeline
 from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
     PipelineRunLineageVisualizer,
 )
-from zenml.repository import Repository
 
 
 @step

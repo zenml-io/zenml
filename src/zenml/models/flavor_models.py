@@ -11,103 +11,40 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import TYPE_CHECKING, Optional, Type
+"""Model definitions for stack component flavors."""
 
-from pydantic import BaseModel
+from typing import ClassVar, List, Optional
+
+from pydantic import Field
 
 from zenml.enums import StackComponentType
-from zenml.utils.source_utils import (
-    load_source_path_class,
-    validate_flavor_source,
-)
-
-if TYPE_CHECKING:
-    from zenml.stack import StackComponent
+from zenml.models.base_models import ProjectScopedDomainModel
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class FlavorModel(BaseModel):
-    """Network serializable wrapper.
+class FlavorModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
+    """Domain model representing the custom implementation of a flavor."""
 
-    This represents the custom implementation of a stack component flavor.
-    """
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "type",
+        "integration",
+        "project",
+        "user",
+    ]
 
-    id: Optional[str]
-    name: str
-    type: StackComponentType
-    source: str
-    integration: Optional[str]
-
-    @property
-    def reachable(self) -> bool:
-        """Indicates whether ZenML can import the module within the source.
-
-        Returns:
-            True if the source is reachable, False otherwise.
-        """
-        from zenml.integrations.registry import integration_registry
-
-        if self.integration:
-            if self.integration == "built-in":
-                return True
-            else:
-                return integration_registry.is_installed(self.integration)
-
-        else:
-            try:
-                validate_flavor_source(
-                    source=self.source, component_type=self.type
-                )
-                return True
-            except (AssertionError, ModuleNotFoundError, ImportError):
-                pass
-
-            return False
-
-    @classmethod
-    def from_flavor(cls, flavor: Type["StackComponent"]) -> "FlavorModel":
-        """Creates a FlavorModel from a flavor class.
-
-        Args:
-            flavor: the class which defines the flavor
-
-        Returns:
-            a FlavorModel
-        """
-        return FlavorModel(
-            name=flavor.FLAVOR,
-            type=flavor.TYPE,
-            source=flavor.__module__ + "." + flavor.__name__,
-        )
-
-    def to_flavor(self) -> Type["StackComponent"]:
-        """Imports and returns the class of the flavor.
-
-        Returns:
-            the class of the flavor
-
-        Raises:
-            ImportError: if the flavor is not able to be imported.
-        """
-        try:
-            return load_source_path_class(source=self.source)  # noqa
-        except (ModuleNotFoundError, ImportError, NotImplementedError):
-            if self.integration:
-                raise ImportError(
-                    f"The {self.type} flavor '{self.name}' is "
-                    f"a part of ZenML's '{self.integration}' "
-                    f"integration, which is currently not installed on your "
-                    f"system. You can install it by executing: 'zenml "
-                    f"integration install {self.integration}'."
-                )
-            else:
-                raise ImportError(
-                    f"The {self.type} that you are trying to register has "
-                    f"a custom flavor '{self.name}'. In order to "
-                    f"register it, ZenML needs to be able to import the flavor "
-                    f"through its source which is defined as: "
-                    f"{self.source}. Unfortunately, this is not "
-                    f"possible due to the current set of available modules/"
-                    f"working directory. Please make sure that this execution "
-                    f"is carried out in an environment where this source "
-                    f"is reachable as a module."
-                )
+    name: str = Field(
+        title="The name of the Flavor.",
+    )
+    type: StackComponentType = Field(
+        title="The type of the Flavor.",
+    )
+    config_schema: str = Field(
+        title="The JSON schema of this flavor's corresponding configuration."
+    )
+    source: str = Field(
+        title="The path to the module which contains this Flavor."
+    )
+    integration: Optional[str] = Field(
+        title="The name of the integration that the Flavor belongs to."
+    )

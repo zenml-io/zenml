@@ -368,11 +368,10 @@ pipeline steps by means of the ZenML Evidently Visualizer, e.g.:
 
 ```python
 from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
-from zenml.repository import Repository
+from zenml.post_execution import get_pipeline
 
 def visualize_results(pipeline_name: str, step_name: str) -> None:
-    repo = Repository()
-    pipeline = repo.get_pipeline(pipeline=pipeline_name)
+    pipeline = get_pipeline(pipeline=pipeline_name)
     evidently_outputs = pipeline.runs[-1].get_step(step=step_name)
     EvidentlyVisualizer().visualize(evidently_outputs)
 

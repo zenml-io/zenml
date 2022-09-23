@@ -15,14 +15,14 @@
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from pydantic import BaseModel
 from typing import Any, Callable, ClassVar, Dict, List, Optional, Union
+
+from pydantic import BaseModel
 
 from zenml import __version__
 from zenml.constants import IS_DEBUG_ENV, SEGMENT_KEY_DEV, SEGMENT_KEY_PROD
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
-from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
@@ -86,6 +86,7 @@ class AnalyticsEvent(str, Enum):
 
     # Teams
     CREATED_TEAM = "Team created"
+    UPDATED_TEAM = "Team updated"
     DELETED_TEAM = "Team deleted"
 
     # Projects
@@ -97,10 +98,13 @@ class AnalyticsEvent(str, Enum):
 
     # Role
     CREATED_ROLE = "Role created"
+    UPDATED_ROLE = "Role updated"
     DELETED_ROLE = "Role deleted"
 
     # Flavor
     CREATED_FLAVOR = "Flavor created"
+    UPDATED_FLAVOR = "Flavor updated"
+    DELETED_FLAVOR = "Flavor deleted"
 
     # Test event
     EVENT_TEST = "Test event"
@@ -360,13 +364,13 @@ def track(
 ) -> Callable[..., Any]:
     """Decorator to track event.
 
-    If the decorated function takes in a AnalyticsTrackedModelMixin object as an
-    argument or returns one, it will be called to track the event. The return
+    If the decorated function takes in a `AnalyticsTrackedModelMixin` object as
+    an argument or returns one, it will be called to track the event. The return
     value takes precedence over the argument when determining which object is
     called to track the event.
 
     If the decorated function is a method of a class that inherits from
-    AnalyticsTrackerMixin, the parent object will be used to intermediate
+    `AnalyticsTrackerMixin`, the parent object will be used to intermediate
     tracking analytics.
 
     Args:

@@ -109,7 +109,7 @@ is to enable `magic=True`, like so:
 import wandb
 
 
-@enable_wandb(wandb.Settings(magic=True))
+@enable_wandb(settings=wandb.Settings(magic=True))
 @step
 def my_step(
         x_test: np.ndarray,
@@ -124,7 +124,7 @@ If you want to use this decorator with our class-based API, simply decorate your
 ```python
 import wandb
 
-@enable_wandb(wandb.Settings(magic=True))
+@enable_wandb(settings=wandb.Settings(magic=True))
 class MyStep(BaseStep):
     def entrypoint(
         self,

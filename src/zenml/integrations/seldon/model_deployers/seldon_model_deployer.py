@@ -15,10 +15,14 @@
 
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.integrations.seldon import SELDON_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.seldon.constants import SELDON_DOCKER_IMAGE_KEY
+from zenml.integrations.seldon.flavors.seldon_model_deployer_flavor import (
+    SeldonModelDeployerConfig,
+)
 from zenml.integrations.seldon.seldon_client import SeldonClient
 from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentConfig,
@@ -34,48 +38,26 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.docker_configuration import DockerConfiguration
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
 
 DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
-class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
-    """Seldon Core model deployer stack component implementation.
+class SeldonModelDeployer(BaseModelDeployer):
+    """Seldon Core model deployer stack component implementation."""
 
-    Attributes:
-        kubernetes_context: the Kubernetes context to use to contact the remote
-            Seldon Core installation. If not specified, the current
-            configuration is used. Depending on where the Seldon model deployer
-            is being used, this can be either a locally active context or an
-            in-cluster Kubernetes configuration (if running inside a pod).
-        kubernetes_namespace: the Kubernetes namespace where the Seldon Core
-            deployment servers are provisioned and managed by ZenML. If not
-            specified, the namespace set in the current configuration is used.
-            Depending on where the Seldon model deployer is being used, this can
-            be either the current namespace configured in the locally active
-            context or the namespace in the context of which the pod is running
-            (if running inside a pod).
-        base_url: the base URL of the Kubernetes ingress used to expose the
-            Seldon Core deployment servers.
-        secret: the name of a ZenML secret containing the credentials used by
-            Seldon Core storage initializers to authenticate to the Artifact
-            Store (i.e. the storage backend where models are stored - see
-            https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials).
-    """
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = SELDON_MODEL_DEPLOYER_FLAVOR
-
-    kubernetes_context: Optional[str]
-    kubernetes_namespace: Optional[str]
-    base_url: str
-    secret: Optional[str]
-
-    # private attributes
     _client: Optional[SeldonClient] = None
+
+    @property
+    def config(self) -> SeldonModelDeployerConfig:
+        """Returns the `SeldonModelDeployerConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(SeldonModelDeployerConfig, self._config)
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
@@ -134,8 +116,8 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         """
         if not self._client:
             self._client = SeldonClient(
-                context=self.kubernetes_context,
-                namespace=self.kubernetes_namespace,
+                context=self.config.kubernetes_context,
+                namespace=self.config.kubernetes_namespace,
             )
         return self._client
 
@@ -152,13 +134,34 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
             The Seldon Core Kubernetes secret name, or None if no secret is
             configured.
         """
-        if not self.secret:
+        if not self.config.secret:
             return None
         return (
-            re.sub(r"[^0-9a-zA-Z-]+", "-", f"zenml-seldon-core-{self.secret}")
+            re.sub(
+                r"[^0-9a-zA-Z-]+",
+                "-",
+                f"zenml-seldon-core-{self.config.secret}",
+            )
             .strip("-")
             .lower()
         )
+
+    def prepare_pipeline_deployment(
+        self,
+        deployment: "PipelineDeployment",
+        stack: "Stack",
+    ) -> None:
+        """Build a Docker image and push it to the container registry.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
+        """
+        docker_image_builder = PipelineDockerImageBuilder()
+        repo_digest = docker_image_builder.build_and_push_docker_image(
+            deployment=deployment, stack=stack
+        )
+        deployment.add_extra(SELDON_DOCKER_IMAGE_KEY, repo_digest)
 
     def _create_or_update_kubernetes_secret(self) -> Optional[str]:
         """Create or update a Kubernetes secret.
@@ -175,7 +178,7 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         # if a ZenML secret was configured in the model deployer,
         # create a Kubernetes secret as a means to pass this information
         # to the Seldon Core deployment
-        if self.secret:
+        if self.config.secret:
 
             secret_manager = Repository(  # type: ignore [call-arg]
                 skip_repository_check=True
@@ -187,14 +190,14 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
                 raise RuntimeError(
                     f"The active stack doesn't have a secret manager component. "
                     f"The ZenML secret specified in the Seldon Core Model "
-                    f"Deployer configuration cannot be fetched: {self.secret}."
+                    f"Deployer configuration cannot be fetched: {self.config.secret}."
                 )
 
             try:
-                zenml_secret = secret_manager.get_secret(self.secret)
+                zenml_secret = secret_manager.get_secret(self.config.secret)
             except KeyError:
                 raise RuntimeError(
-                    f"The ZenML secret '{self.secret}' specified in the "
+                    f"The ZenML secret '{self.config.secret}' specified in the "
                     f"Seldon Core Model Deployer configuration was not found "
                     f"in the active stack's secret manager."
                 )
@@ -334,7 +337,7 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         # differentiates between pure model and custom code deployments
         stack = Repository().active_stack
         stack_metadata = {
-            component_type.value: component.FLAVOR
+            component_type.value: component.flavor
             for component_type, component in stack.components.items()
         }
         metadata = {
@@ -492,46 +495,3 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         # secret used to store the authentication information for the Seldon
         # Core model server storage initializer
         self._delete_kubernetes_secret()
-
-    def prepare_custom_deployment_image(
-        self,
-        pipeline_name: str,
-        stack: "Stack",
-        docker_configuration: "DockerConfiguration",
-        runtime_configuration: "RuntimeConfiguration",
-        entrypoint: List[str],
-    ) -> str:
-        """Prepare the custom deployment image for the Seldon deployment.
-
-        This function is called by the deployment step of the pipeline.
-        It is responsible for the preparation of the custom deployment image
-        either by returning the image name in the case of a remote orchestrator
-        or by building a new image if only a local orchestrator is used.
-
-        Args:
-            pipeline_name: The pipeline to be deployed.
-            stack: The stack to be deployed.
-            docker_configuration: The Docker configuration to be used.
-            runtime_configuration: The runtime configuration to be used.
-            entrypoint: The entrypoint to be used.
-
-        Returns:
-            The name of the image to be used for the deployment.
-        """
-        # verify the flavor of the orchestrator.
-        # if the orchestrator is local, then we need to build a docker image with the repo
-        # and requirements and push it to the container registry.
-        # if the orchestrator is remote, then we can use the same image used to run the pipeline.
-        if stack.orchestrator.FLAVOR == "local":
-            # more information about stack ..
-            custom_docker_image_name = self.build_and_push_docker_image(
-                pipeline_name=pipeline_name,
-                docker_configuration=docker_configuration,
-                stack=stack,
-                runtime_configuration=runtime_configuration,
-                entrypoint=" ".join(entrypoint),
-            )
-        else:
-            custom_docker_image_name = runtime_configuration["docker_image"]
-
-        return custom_docker_image_name

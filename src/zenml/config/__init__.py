@@ -23,10 +23,10 @@ configuration. This ``GlobalConfiguration`` object handles the serialization and
 deserialization of the configuration options that are stored in the file in
 order to persist the configuration across sessions.
 """
-from zenml.config.docker_configuration import DockerConfiguration
-from zenml.config.resource_configuration import ResourceConfiguration
+from zenml.config.docker_settings import DockerSettings
+from zenml.config.resource_settings import ResourceSettings
 
 __all__ = [
-    "DockerConfiguration",
-    "ResourceConfiguration",
+    "DockerSettings",
+    "ResourceSettings",
 ]

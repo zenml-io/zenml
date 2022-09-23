@@ -14,6 +14,8 @@
 """CLI functionality to interact with pipelines."""
 
 
+from uuid import UUID
+
 import click
 
 from zenml.cli import utils as cli_utils
@@ -62,7 +64,10 @@ def list_pipelines() -> None:
         cli_utils.declare("No piplines registered.")
         return
 
-    cli_utils.print_pydantic_models(pipelines)
+    cli_utils.print_pydantic_models(
+        pipelines,
+        exclude_columns=["id", "created", "updated", "user", "project"],
+    )
 
 
 @pipeline.command("delete")
@@ -74,14 +79,16 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
         pipeline_name_or_id: The name or ID of the pipeline to delete.
     """
     cli_utils.print_active_config()
+    active_project_id = Repository().active_project.id
+    assert active_project_id is not None
     try:
         repo = Repository()
         if is_valid_uuid(pipeline_name_or_id):
-            pipeline = repo.zen_store.get_pipeline(pipeline_name_or_id)
+            pipeline = repo.zen_store.get_pipeline(UUID(pipeline_name_or_id))
         else:
             pipeline = repo.zen_store.get_pipeline_in_project(
                 pipeline_name=pipeline_name_or_id,
-                project_name_or_id=repo.active_project.id,
+                project_name_or_id=active_project_id,
             )
     except KeyError as err:
         cli_utils.error(str(err))
@@ -90,5 +97,61 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
         "This will change all existing runs of this pipeline to become "
         "unlisted."
     )
+    assert pipeline.id is not None
     Repository().zen_store.delete_pipeline(pipeline_id=pipeline.id)
     cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
+
+
+@pipeline.group()
+def runs() -> None:
+    """Commands for pipeline runs."""
+
+
+@click.option("--pipeline", "-p", type=str, required=False)
+@click.option("--stack", "-s", type=str, required=False)
+@click.option("--user", "-u", type=str, required=False)
+@click.option("--unlisted", is_flag=True)
+@runs.command("list", help="List all registered pipeline runs.")
+def list_pipeline_runs(
+    pipeline: str, stack: str, user: str, unlisted: bool = False
+) -> None:
+    """List all registered pipeline runs.
+
+    Args:
+        pipeline: If provided, only return runs for this pipeline.
+        stack: If provided, only return runs for this stack.
+        user: If provided, only return runs for this user.
+        unlisted: If True, only return unlisted runs that are not
+            associated with any pipeline.
+    """
+    cli_utils.print_active_config()
+    try:
+        repo = Repository()
+        stack_model = repo.get_stack_by_name(stack)
+        pipeline_model = repo.get_pipeline_by_name(pipeline)
+        pipeline_runs = Repository().zen_store.list_runs(
+            project_name_or_id=Repository().active_project.id,
+            user_name_or_id=user,
+            pipeline_id=pipeline_model.id,
+            stack_id=stack_model.id,
+            unlisted=unlisted,
+        )
+    except KeyError as err:
+        cli_utils.error(str(err))
+    if not pipeline_runs:
+        cli_utils.declare("No pipeline runs registered.")
+        return
+
+    cli_utils.print_pydantic_models(
+        pipeline_runs,
+        exclude_columns=[
+            "id",
+            "created",
+            "updated",
+            "user",
+            "project",
+            "mlmd_id",
+            "stack_id",
+            "pipeline_id",
+        ],
+    )

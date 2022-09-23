@@ -21,13 +21,12 @@ from steps.drift_analyzer.drift_analyzer_step import analyze_drift
 from steps.drift_detector.drift_detector_step import drift_detector
 
 from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
-from zenml.repository import Repository
+from zenml.post_execution import get_pipeline
 
 
 def visualize_statistics():
-    repo = Repository()
-    pipe = repo.get_pipeline(pipeline="drift_detection_pipeline")
-    evidently_outputs = pipe.runs[-1].get_step(step="drift_detector")
+    pipeline = get_pipeline(pipeline="drift_detection_pipeline")
+    evidently_outputs = pipeline.runs[-1].get_step(step="drift_detector")
     EvidentlyVisualizer().visualize(evidently_outputs)
 
 

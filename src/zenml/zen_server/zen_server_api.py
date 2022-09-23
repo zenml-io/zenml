@@ -14,13 +14,19 @@
 """Zen Server API."""
 
 
-from fastapi import FastAPI
+import os
+from typing import Any
+
+from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 import zenml
-from zenml.enums import StoreType
-from zenml.repository import Repository
+from zenml.constants import ENV_ZENML_SERVER_ROOT_URL_PATH
 from zenml.zen_server.routers import (
+    artifacts_endpoints,
     auth_endpoints,
+    flavors_endpoints,
     metadata_config_endpoints,
     pipelines_endpoints,
     projects_endpoints,
@@ -29,22 +35,57 @@ from zenml.zen_server.routers import (
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
+    teams_endpoints,
     users_endpoints,
 )
 
-zen_store = Repository().zen_store
-# We override track_analytics=False because we do not
-# want to track anything server side.
-zen_store.track_analytics = False
+DASHBOARD_DIRECTORY = "dashboard"
 
-if zen_store.type == StoreType.REST:
-    raise ValueError(
-        "Server cannot be started with a REST store type. Make sure you "
-        "configure ZenML to use a non-networked store backend "
-        "when trying to start the ZenServer."
-    )
+ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "/")
 
-app = FastAPI(title="ZenML", version=zenml.__version__)
+
+def relative_path(rel: str) -> str:
+    """Get the absolute path of a path relative to the ZenML server module.
+
+    Args:
+        rel: Relative path.
+
+    Returns:
+        Absolute path.
+    """
+    return os.path.join(os.path.dirname(__file__), rel)
+
+
+app = FastAPI(
+    title="ZenML",
+    version=zenml.__version__,
+    root_path=ROOT_URL_PATH,
+)
+
+
+app.mount(
+    "/dashboard/static",
+    StaticFiles(
+        directory=relative_path(os.path.join(DASHBOARD_DIRECTORY, "static")),
+        check_dir=False,
+    ),
+)
+
+templates = Jinja2Templates(directory=relative_path(DASHBOARD_DIRECTORY))
+
+
+@app.get("/")
+async def dashboard(request: Request) -> Any:
+    """Dashboard endpoint.
+
+    Args:
+        request: Request object.
+
+    Returns:
+        The ZenML dashboard.
+    """
+    return templates.TemplateResponse("index.html", {"request": request})
+
 
 # Basic Health Endpoint
 @app.head("/health", include_in_schema=False)
@@ -66,12 +107,16 @@ app.include_router(auth_endpoints.router)
 app.include_router(metadata_config_endpoints.router)
 app.include_router(pipelines_endpoints.router)
 app.include_router(projects_endpoints.router)
+app.include_router(flavors_endpoints.router)
 app.include_router(roles_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(steps_endpoints.router)
+app.include_router(artifacts_endpoints.router)
+app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
+app.include_router(users_endpoints.activation_router)
 # For future use
 
 # app.include_router(repositories_endpoints.router)

@@ -22,12 +22,13 @@ dashboard (visualized as an html file or in your Jupyter notebook), or as a JSON
 file.
 """
 
-from typing import List
+from typing import List, Type
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import EVIDENTLY
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 EVIDENTLY_DATA_VALIDATOR_FLAVOR = "evidently"
 
@@ -45,20 +46,17 @@ class EvidentlyIntegration(Integration):
         from zenml.integrations.evidently import visualizers  # noqa
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Great Expectations integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        return [
-            FlavorModel(
-                name=EVIDENTLY_DATA_VALIDATOR_FLAVOR,
-                source="zenml.integrations.evidently.data_validators.EvidentlyDataValidator",
-                type=StackComponentType.DATA_VALIDATOR,
-                integration=cls.NAME,
-            ),
-        ]
+        from zenml.integrations.evidently.flavors import (
+            EvidentlyDataValidatorFlavor,
+        )
+
+        return [EvidentlyDataValidatorFlavor]
 
 
 EvidentlyIntegration.check_installation()

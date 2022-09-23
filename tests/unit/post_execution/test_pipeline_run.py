@@ -12,8 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from uuid import uuid4
+
 import pytest
 
+from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
 from zenml.post_execution import PipelineRunView, StepView
 from zenml.steps import BaseStep, step
 
@@ -33,11 +36,17 @@ def sample_step() -> "BaseStep":
 def sample_stepview(sample_step: "BaseStep") -> StepView:
     """Return sample step view for testing purposes"""
     return StepView(
-        id_=1,
-        name=sample_step.__name__,
-        parents_step_ids=[0],
-        entrypoint_name="sample_entrypoint",
-        parameters={},
+        StepRunModel(
+            id=uuid4(),
+            name=sample_step.__name__,
+            parents_step_ids=[0],
+            entrypoint_name="sample_entrypoint",
+            parameters={},
+            mlmd_id=1,
+            mlmd_parent_step_ids=[0],
+            pipeline_run_id=uuid4(),
+            parent_step_ids=[],
+        )
     )
 
 
@@ -45,9 +54,10 @@ def sample_stepview(sample_step: "BaseStep") -> StepView:
 def sample_pipeline_run_view(sample_stepview: StepView) -> PipelineRunView:
     """Return sample pipeline run view for testing purposes"""
     sample_pipeline_run_view = PipelineRunView(
-        id_=1,
-        name="sample_run_name",
-        executions=None,
+        PipelineRunModel(
+            id=uuid4(),
+            name="sample_run_name",
+        )
     )
     setattr(sample_pipeline_run_view, "_steps", {"some_step": sample_stepview})
     return sample_pipeline_run_view
@@ -61,8 +71,8 @@ def test_get_step_returns_stepview(
     """Test that the `get_step` method returns the correct step_view"""
 
     returned_sv = sample_pipeline_run_view.get_step(step="some_step")
-    assert sample_stepview._id == returned_sv._id
-    assert sample_stepview._name == returned_sv._name
+    assert sample_stepview.id == returned_sv.id
+    assert sample_stepview.name == returned_sv.name
 
 
 def test_get_step_raises_key_error(

@@ -36,11 +36,7 @@ from typing import Callable, Dict, List, MutableMapping, Optional
 from kfp import dsl
 from kubernetes import client as k8s_client
 from tfx.orchestration.portable import data_types
-from tfx.proto.orchestration.pipeline_pb2 import (
-    InputSpec,
-    OutputSpec,
-    PipelineNode,
-)
+from tfx.proto.orchestration.pipeline_pb2 import InputSpec, OutputSpec
 from tfx.types import artifact, channel, standard_artifacts
 
 from zenml.artifact_stores import LocalArtifactStore
@@ -183,7 +179,6 @@ def _render_artifact_as_mdstr(single_artifact: artifact.Artifact) -> str:
 
 
 def dump_ui_metadata(
-    node: PipelineNode,
     execution_info: data_types.ExecutionInfo,
     metadata_ui_path: str,
 ) -> None:
@@ -193,11 +188,14 @@ def dump_ui_metadata(
         exec_properties/inputs/outputs.
 
     Args:
-        node: associated TFX node.
         execution_info: runtime execution info for this component, including
             materialized inputs/outputs/execution properties and id.
         metadata_ui_path: path to dump ui metadata.
     """
+    node = execution_info.pipeline_node
+    if not node:
+        return
+
     exec_properties_list = [
         "**{}**: {}".format(
             _sanitize_underscore(name), _sanitize_underscore(exec_property)

@@ -11,65 +11,98 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from fastapi import APIRouter, Depends, HTTPException
+"""Endpoint definitions for authentication (login)."""
 
-from zenml.constants import LOGIN, LOGOUT, VERSION_1
-from zenml.zen_server.utils import (
-    authorize,
-    conflict,
-    error_detail,
-    error_response,
-    not_found,
-    zen_store,
-)
+from typing import Dict, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.param_functions import Form
+
+from zenml.constants import LOGIN, VERSION_1
+from zenml.zen_server.auth import authenticate_credentials
+from zenml.zen_server.utils import error_response
 
 router = APIRouter(
     prefix=VERSION_1,
     tags=["auth"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
 
+class PasswordRequestForm:
+    """OAuth2 password grant type request form.
+
+    This form is similar to `fastapi.security.OAuth2PasswordRequestForm`, with
+    the single difference being that it also allows an empty password.
+    """
+
+    def __init__(
+        self,
+        grant_type: str = Form(None, regex="password"),
+        username: str = Form(...),
+        password: Optional[str] = Form(""),
+        scope: str = Form(""),
+        client_id: Optional[str] = Form(None),
+        client_secret: Optional[str] = Form(None),
+    ):
+        """Initializes the form.
+
+        Args:
+            grant_type: The grant type.
+            username: The username.
+            password: The password.
+            scope: The scope.
+            client_id: The client ID.
+            client_secret: The client secret.
+        """
+        self.grant_type = grant_type
+        self.username = username
+        self.password = password
+        self.scope = scope
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.grant_type = grant_type
+        self.username = username
+        self.password = password
+        self.scopes = scope.split()
+        self.client_id = client_id
+        self.client_secret = client_secret
+
+
 @router.post(
     LOGIN,
-    responses={401: error_response, 404: error_response, 422: error_response},
+    responses={401: error_response},
 )
-async def login() -> None:
-    """Login as a user.
+async def token(
+    auth_form_data: PasswordRequestForm = Depends(),
+) -> Dict[str, str]:
+    """Returns an access token for the given user.
+
+    Args:
+        auth_form_data: The authentication form data.
+
+    Returns:
+        An access token.
 
     Raises:
-        conflict: when not authorized to login
-        not_found: when user does not exist
-        validation error: when unable to validate credentials
+        HTTPException: 401 if not authorized to login.
     """
-    try:
-        zen_store.login()
-    except NotAuthorizedError as error:
-        raise conflict(error) from error
-    except NotFoundError as error:
-        raise not_found(error) from error
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    auth_context = authenticate_credentials(
+        user_name_or_id=auth_form_data.username,
+        password=auth_form_data.password,
+    )
+    if not auth_context:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
+    access_token = auth_context.user.generate_access_token()
 
-@router.post(
-    LOGOUT,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def logout() -> None:
-    """Logout as a user.
-
-    Raises:
-        conflict: when not authorized to login
-        not_found: when user does not exist
-        validation error: when unable to validate credentials
-    """
-    try:
-        zen_store.logout()
-    except NotAuthorizedError as error:
-        raise conflict(error) from error
-    except NotFoundError as error:
-        raise not_found(error) from error
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    # The response of the token endpoint must be a JSON object with the
+    # following fields:
+    #
+    #   * token_type - the token type (must be "bearer" in our case)
+    #   * access_token - string containing the access token
+    return {"access_token": access_token, "token_type": "bearer"}

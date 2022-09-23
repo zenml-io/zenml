@@ -14,28 +14,28 @@
 """Implementation of a base container registry class."""
 
 import re
-from typing import ClassVar, Optional, Tuple
+from typing import Optional, Tuple, Type, cast
 
 from pydantic import validator
 
 from zenml.enums import StackComponentType
 from zenml.secret.schemas import BasicAuthSecretSchema
-from zenml.stack import StackComponent
-from zenml.stack.authentication_mixin import AuthenticationMixin
+from zenml.stack.authentication_mixin import (
+    AuthenticationConfigMixin,
+    AuthenticationMixin,
+)
+from zenml.stack.flavor import Flavor
 from zenml.utils import docker_utils
 
 
-class BaseContainerRegistry(StackComponent, AuthenticationMixin):
-    """Base class for all ZenML container registries.
+class BaseContainerRegistryConfig(AuthenticationConfigMixin):
+    """Base config for a container registry.
 
     Attributes:
         uri: The URI of the container registry.
     """
 
     uri: str
-
-    # Class Configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
 
     @validator("uri")
     def strip_trailing_slash(cls, uri: str) -> str:
@@ -49,6 +49,19 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
         """
         return uri.rstrip("/")
 
+
+class BaseContainerRegistry(AuthenticationMixin):
+    """Base class for all ZenML container registries."""
+
+    @property
+    def config(self) -> BaseContainerRegistryConfig:
+        """Returns the `BaseContainerRegistryConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(BaseContainerRegistryConfig, self._config)
+
     @property
     def requires_authentication(self) -> bool:
         """Returns whether the container registry requires authentication.
@@ -57,7 +70,7 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
             `True` if the container registry requires authentication,
             `False` otherwise.
         """
-        return bool(self.authentication_secret)
+        return bool(self.config.authentication_secret)
 
     @property
     def credentials(self) -> Optional[Tuple[str, str]]:
@@ -82,7 +95,7 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
         Returns:
             True if the container registry is local, False otherwise.
         """
-        return bool(re.fullmatch(r"localhost:[0-9]{4,5}", self.uri))
+        return bool(re.fullmatch(r"localhost:[0-9]{4,5}", self.config.uri))
 
     def prepare_image_push(self, image_name: str) -> None:
         """Preparation before an image gets pushed.
@@ -107,11 +120,42 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
             ValueError: If the image name is not associated with this
                 container registry.
         """
-        if not image_name.startswith(self.uri):
+        if not image_name.startswith(self.config.uri):
             raise ValueError(
                 f"Docker image `{image_name}` does not belong to container "
-                f"registry `{self.uri}`."
+                f"registry `{self.config.uri}`."
             )
 
         self.prepare_image_push(image_name)
         return docker_utils.push_image(image_name)
+
+
+class BaseContainerRegistryFlavor(Flavor):
+    """Base flavor for container registries."""
+
+    @property
+    def type(self) -> StackComponentType:
+        """Returns the flavor type.
+
+        Returns:
+            The flavor type.
+        """
+        return StackComponentType.CONTAINER_REGISTRY
+
+    @property
+    def config_class(self) -> Type[BaseContainerRegistryConfig]:
+        """Config class for this flavor.
+
+        Returns:
+            The config class.
+        """
+        return BaseContainerRegistryConfig
+
+    @property
+    def implementation_class(self) -> Type[BaseContainerRegistry]:
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """
+        return BaseContainerRegistry

@@ -26,29 +26,29 @@ container registry like the Elastic Container Registry at AWS in a more
 production setting.
 """
 from zenml.container_registries.azure_container_registry import (
-    AzureContainerRegistry,
+    AzureContainerRegistryFlavor,
 )
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
 from zenml.container_registries.default_container_registry import (
-    DefaultContainerRegistry,
+    DefaultContainerRegistryFlavor,
 )
 from zenml.container_registries.dockerhub_container_registry import (
-    DockerHubContainerRegistry,
+    DockerHubContainerRegistryFlavor,
 )
 from zenml.container_registries.gcp_container_registry import (
-    GCPContainerRegistry,
+    GCPContainerRegistryFlavor,
 )
 from zenml.container_registries.github_container_registry import (
-    GitHubContainerRegistry,
+    GitHubContainerRegistryFlavor,
 )
 
 __all__ = [
     "BaseContainerRegistry",
-    "DefaultContainerRegistry",
-    "AzureContainerRegistry",
-    "DockerHubContainerRegistry",
-    "GCPContainerRegistry",
-    "GitHubContainerRegistry",
+    "DefaultContainerRegistryFlavor",
+    "AzureContainerRegistryFlavor",
+    "DockerHubContainerRegistryFlavor",
+    "GCPContainerRegistryFlavor",
+    "GitHubContainerRegistryFlavor",
 ]

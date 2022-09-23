@@ -12,12 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Label Studio integration."""
-from typing import List
+from typing import List, Type
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import LABEL_STUDIO
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 LABEL_STUDIO_ANNOTATOR_FLAVOR = "label_studio"
 
@@ -29,20 +30,17 @@ class LabelStudioIntegration(Integration):
     REQUIREMENTS = ["label-studio", "label-studio-sdk"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Label Studio integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        return [
-            FlavorModel(
-                name=LABEL_STUDIO_ANNOTATOR_FLAVOR,
-                source="zenml.integrations.label_studio.annotators.LabelStudioAnnotator",
-                type=StackComponentType.ANNOTATOR,
-                integration=cls.NAME,
-            ),
-        ]
+        from zenml.integrations.label_studio.flavors import (
+            LabelStudioAnnotatorFlavor,
+        )
+
+        return [LabelStudioAnnotatorFlavor]
 
 
 LabelStudioIntegration.check_installation()

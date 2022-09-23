@@ -1,13 +1,6 @@
 name: Spellcheck
 
-on:
-  workflow_dispatch:
-    inputs:
-      tags:
-        description: "Use tmate session for debugging"
-        required: false
-        type: boolean
-  workflow_call:
+on: workflow_call
 
 jobs:
   spellcheck:

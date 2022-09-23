@@ -15,28 +15,28 @@
 
 from zenml.steps.step_interfaces.base_alerter_step import (
     BaseAlerterStep,
-    BaseAlerterStepConfig,
+    BaseAlerterStepParameters,
 )
 from zenml.steps.step_interfaces.base_analyzer_step import (
-    BaseAnalyzerConfig,
+    BaseAnalyzerParameters,
     BaseAnalyzerStep,
 )
 from zenml.steps.step_interfaces.base_datasource_step import (
-    BaseDatasourceConfig,
+    BaseDatasourceParameters,
     BaseDatasourceStep,
 )
 from zenml.steps.step_interfaces.base_drift_detection_step import (
-    BaseDriftDetectionConfig,
+    BaseDriftDetectionParameters,
     BaseDriftDetectionStep,
 )
 
 __all__ = [
-    "BaseAnalyzerConfig",
+    "BaseAnalyzerParameters",
     "BaseAnalyzerStep",
-    "BaseDatasourceConfig",
+    "BaseDatasourceParameters",
     "BaseDatasourceStep",
-    "BaseDriftDetectionConfig",
+    "BaseDriftDetectionParameters",
     "BaseDriftDetectionStep",
     "BaseAlerterStep",
-    "BaseAlerterStepConfig",
+    "BaseAlerterStepParameters",
 ]

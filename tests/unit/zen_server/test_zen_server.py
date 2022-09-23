@@ -16,14 +16,31 @@ import platform
 import pytest
 import requests
 
-from zenml.constants import STACK_CONFIGURATIONS, STACKS, USERS
-from zenml.services import ServiceState
+from zenml.constants import (
+    DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+    STACK_CONFIGURATIONS,
+    STACKS,
+    USERS,
+)
+from zenml.services import (
+    HTTPEndpointHealthMonitor,
+    HTTPEndpointHealthMonitorConfig,
+    LocalDaemonServiceEndpoint,
+    LocalDaemonServiceEndpointConfig,
+    ServiceEndpointProtocol,
+    ServiceState,
+)
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_server.deploy.local.local_zen_server import (
+    ZEN_SERVER_HEALTHCHECK_URL_PATH,
+    LocalDaemonServiceEndpoint,
+    LocalServerDeploymentConfig,
     LocalZenServer,
     LocalZenServerConfig,
 )
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
+
+SERVER_START_STOP_TIMEOUT = 15
 
 
 @pytest.fixture
@@ -32,12 +49,31 @@ def running_zen_server(
 ) -> LocalZenServer:
     """Spin up a ZenServer to do tests on."""
     port = scan_for_available_port(start=8003, stop=9000)
-    zen_server = LocalZenServer(LocalZenServerConfig(port=port))
+    zen_server = LocalZenServer(
+        config=LocalZenServerConfig(
+            server=LocalServerDeploymentConfig(name="", provider="local"),
+        ),
+        port=port,
+        endpoint=LocalDaemonServiceEndpoint(
+            config=LocalDaemonServiceEndpointConfig(
+                protocol=ServiceEndpointProtocol.HTTP,
+                ip_address=str(DEFAULT_LOCAL_SERVICE_IP_ADDRESS),
+                port=port,
+                allocate_port=False,
+            ),
+            monitor=HTTPEndpointHealthMonitor(
+                config=HTTPEndpointHealthMonitorConfig(
+                    healthcheck_uri_path=ZEN_SERVER_HEALTHCHECK_URL_PATH,
+                    use_head_request=True,
+                ),
+            ),
+        ),
+    )
 
-    zen_server.start(timeout=10)
+    zen_server.start(timeout=SERVER_START_STOP_TIMEOUT)
 
     yield zen_server
-    zen_server.stop(timeout=10)
+    zen_server.stop(timeout=SERVER_START_STOP_TIMEOUT)
 
     assert zen_server.check_status()[0] == ServiceState.INACTIVE
 
@@ -96,10 +132,10 @@ def test_server_up_down():
     )
     endpoint = f"http://127.0.0.1:{port}/"
     try:
-        zen_server.start(timeout=10)
+        zen_server.start(timeout=SERVER_START_STOP_TIMEOUT)
         assert zen_server.check_status()[0] == ServiceState.ACTIVE
         assert zen_server.endpoint.status.uri == endpoint
         assert requests.head(endpoint + "health").status_code == 200
     finally:
-        zen_server.stop(timeout=10)
+        zen_server.stop(timeout=SERVER_START_STOP_TIMEOUT)
     assert zen_server.check_status()[0] == ServiceState.INACTIVE

@@ -119,6 +119,31 @@ class StackRecipeService(TerraformService):
                 "https://docs.docker.com/engine/install/ "
                 "to install it."
             )
+        if not self._is_kubectl_installed():
+            raise RuntimeError(
+                "kubectl is not installed on your machine or not available on  "
+                "your $PATH. It is used by stack recipes to create some "
+                "resources on Kubernetes and to configure access to your "
+                "cluster. Please visit "
+                "https://kubernetes.io/docs/tasks/tools/#kubectl "
+                "to install it."
+            )
+        if not self._is_helm_installed():
+            raise RuntimeError(
+                "Helm is not installed on your machine or not available on  "
+                "your $PATH. It is required for stack recipes to create releases "
+                "on Kubernetes. Please visit "
+                "https://helm.sh/docs/intro/install/ "
+                "to install it."
+            )
+        if not self._is_docker_installed():
+            raise RuntimeError(
+                "Docker is not installed on your machine or not available on  "
+                "your $PATH. It is required for stack recipes to configure "
+                "access to the container registry. Please visit "
+                "https://docs.docker.com/engine/install/ "
+                "to install it."
+            )
 
     def _is_kubectl_installed(self) -> bool:
         """Checks if kubectl is installed on the host system.

@@ -100,7 +100,7 @@ class LocalServerProvider(BaseServerProvider):
             ),
             LocalDaemonServiceEndpointConfig(
                 protocol=ServiceEndpointProtocol.HTTP,
-                ip_address=str(server_config.address),
+                ip_address=str(server_config.ip_address),
                 port=server_config.port,
                 allocate_port=False,
             ),
@@ -232,6 +232,7 @@ class LocalServerProvider(BaseServerProvider):
             service: The service instance.
             timeout: The timeout in seconds to wait until the service is
                 stopped.
+
         Returns:
             The updated service instance.
         """

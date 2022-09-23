@@ -19,12 +19,13 @@ and an `io` module to handle file operations on Azure Blob Storage.
 The Azure Step Operator integration submodule provides a way to run ZenML steps
 in AzureML.
 """
-from typing import List
+from typing import List, Type
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import AZURE
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 AZURE_ARTIFACT_STORE_FLAVOR = "azure"
 AZURE_SECRETS_MANAGER_FLAVOR = "azure_key_vault"
@@ -44,34 +45,22 @@ class AzureIntegration(Integration):
     ]
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declares the flavors for the integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
+        from zenml.integrations.azure.flavors import (
+            AzureArtifactStoreFlavor,
+            AzureMLStepOperatorFlavor,
+            AzureSecretsManagerFlavor,
+        )
+
         return [
-            FlavorModel(
-                name=AZURE_ARTIFACT_STORE_FLAVOR,
-                source="zenml.integrations.azure.artifact_stores"
-                ".AzureArtifactStore",
-                type=StackComponentType.ARTIFACT_STORE,
-                integration=cls.NAME,
-            ),
-            FlavorModel(
-                name=AZURE_SECRETS_MANAGER_FLAVOR,
-                source="zenml.integrations.azure.secrets_managers"
-                ".AzureSecretsManager",
-                type=StackComponentType.SECRETS_MANAGER,
-                integration=cls.NAME,
-            ),
-            FlavorModel(
-                name=AZUREML_STEP_OPERATOR_FLAVOR,
-                source="zenml.integrations.azure.step_operators"
-                ".AzureMLStepOperator",
-                type=StackComponentType.STEP_OPERATOR,
-                integration=cls.NAME,
-            ),
+            AzureArtifactStoreFlavor,
+            AzureSecretsManagerFlavor,
+            AzureMLStepOperatorFlavor,
         ]
 
 

@@ -15,7 +15,7 @@
 
 from typing import Optional
 
-from zenml.repository import Repository
+from zenml.post_execution import get_pipeline
 from zenml.services.service import BaseService
 
 
@@ -44,7 +44,7 @@ def load_last_service_from_step(
         KeyError: if the pipeline or step name is not found in the execution.
         RuntimeError: if the artifact is not a service.
     """
-    pipeline = Repository().get_pipeline(pipeline_name)
+    pipeline = get_pipeline(pipeline_name)
     if pipeline is None:
         raise KeyError(f"No pipeline with name `{pipeline_name}` was found")
 

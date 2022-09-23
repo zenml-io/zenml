@@ -16,12 +16,13 @@
 The KServe integration allows you to use the KServe model serving
 platform to implement continuous model deployment.
 """
-from typing import List
+from typing import List, Type
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import KSERVE
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 KSERVE_MODEL_DEPLOYER_FLAVOR = "kserve"
 
@@ -44,20 +45,15 @@ class KServeIntegration(Integration):
         from zenml.integrations.kserve import steps  # noqa
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for KServe.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        return [
-            FlavorModel(
-                name=KSERVE_MODEL_DEPLOYER_FLAVOR,
-                source="zenml.integrations.kserve.model_deployers.KServeModelDeployer",
-                type=StackComponentType.MODEL_DEPLOYER,
-                integration=cls.NAME,
-            )
-        ]
+        from zenml.integrations.kserve.flavors import KServeModelDeployerFlavor
+
+        return [KServeModelDeployerFlavor]
 
 
 KServeIntegration.check_installation()

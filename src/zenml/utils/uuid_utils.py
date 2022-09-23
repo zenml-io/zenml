@@ -47,9 +47,12 @@ def parse_name_or_uuid(name_or_id: str) -> Union[str, UUID]:
     Returns:
         A UUID if name_or_id is a UUID, string otherwise.
     """
-    try:
-        return UUID(name_or_id)
-    except ValueError:
+    if name_or_id:
+        try:
+            return UUID(name_or_id)
+        except ValueError:
+            return name_or_id
+    else:
         return name_or_id
 
 

@@ -12,27 +12,38 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
+from uuid import uuid4
 
 import pytest
 
-from zenml.artifact_stores import LocalArtifactStore
-from zenml.container_registries import DefaultContainerRegistry
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
+from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
+    KubeflowOrchestratorConfig,
+)
 from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.stack import Stack
 
 
-def test_kubeflow_orchestrator_attributes():
-    """Tests that the basic attributes of the kubeflow orchestrator are set
-    correctly."""
-    orchestrator = KubeflowOrchestrator(name="")
+def _get_kubeflow_orchestrator() -> KubeflowOrchestrator:
+    """Helper function to get a Kubernetes orchestrator."""
+    return KubeflowOrchestrator(
+        name="",
+        id=uuid4(),
+        config=KubeflowOrchestratorConfig(),
+        flavor="kubeflow",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
 
-    assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
-    assert orchestrator.FLAVOR == "kubeflow"
 
-
-def test_kubeflow_orchestrator_stack_validation(mocker):
+def test_kubeflow_orchestrator_stack_validation(
+    mocker, local_artifact_store, local_container_registry
+):
     """Tests that the kubeflow orchestrator validates that it's stack has a
     container registry."""
     mocker.patch(
@@ -40,23 +51,23 @@ def test_kubeflow_orchestrator_stack_validation(mocker):
         return_value=([], ""),
     )
 
-    orchestrator = KubeflowOrchestrator(name="")
-    artifact_store = LocalArtifactStore(name="", path=".")
-    container_registry = DefaultContainerRegistry(name="", uri="localhost:5000")
+    orchestrator = _get_kubeflow_orchestrator()
 
     with pytest.raises(StackValidationError):
         # missing container registry
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
-            artifact_store=artifact_store,
+            artifact_store=local_artifact_store,
         ).validate()
 
     with does_not_raise():
         # valid stack with container registry
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
-            artifact_store=artifact_store,
-            container_registry=container_registry,
+            artifact_store=local_artifact_store,
+            container_registry=local_container_registry,
         ).validate()

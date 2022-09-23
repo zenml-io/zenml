@@ -19,12 +19,11 @@ from steps.trainer.trainer_step import trainer
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
-from zenml.repository import Repository
+from zenml.post_execution import get_pipeline
 
 
 def visualize_statistics():
-    repo = Repository()
-    pipe = repo.get_pipeline(pipeline="facets_pipeline")
+    pipe = get_pipeline(pipeline="facets_pipeline")
     importer_outputs = pipe.runs[-1].get_step(step="importer")
     FacetStatisticsVisualizer().visualize(importer_outputs)
 

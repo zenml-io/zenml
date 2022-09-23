@@ -187,7 +187,7 @@ Both pre- and post-processing are very essential for the model deployment proces
 The custom model deployment support is available only for the following integrations:
 
 * [KServe Custom Predictor](./kserve.md#custom-model-deployment)
-* [Seldon Core Custom Python Model](./seldon-core.md#custom-model-deployment)
+* [Seldon Core Custom Python Model](./seldon.md#custom-model-deployment)
 
 {% endhint %}
 ### How to Interact with model deployer after deployment?

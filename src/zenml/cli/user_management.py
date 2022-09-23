@@ -51,6 +51,7 @@ def list_users() -> None:
 
     cli_utils.print_pydantic_models(
         users,
+        exclude_columns=["id", "created", "updated"],
         is_active=lambda u: u.name == Repository().zen_store.active_user_name,
     )
 
@@ -58,16 +59,32 @@ def list_users() -> None:
 @user.command("create", help="Create a new user.")
 @click.argument("user_name", type=str, required=True)
 # @click.option("--email", type=str, required=True)
-# @click.password_option("--password", type=str, required=True)
-def create_user(user_name: str) -> None:
+@click.option(
+    "--password",
+    help=(
+        "The user password. If omitted, a prompt will be shown to enter the "
+        "password."
+    ),
+    required=False,
+    type=str,
+)
+def create_user(user_name: str, password: Optional[str] = None) -> None:
     """Create a new user.
 
     Args:
         user_name: The name of the user to create.
+        password: The password of the user to create.
     """
+    if not password:
+        password = click.prompt(
+            f"Password for user {user_name}",
+            hide_input=True,
+        )
+
     cli_utils.print_active_config()
+    user = UserModel(name=user_name, password=password)
     try:
-        Repository().zen_store.create_user(UserModel(name=user_name))
+        Repository().zen_store.create_user(user)
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created user '{user_name}'.")
@@ -103,7 +120,10 @@ def list_teams() -> None:
         cli_utils.declare("No teams registered.")
         return
 
-    cli_utils.print_pydantic_models(teams)
+    cli_utils.print_pydantic_models(
+        teams,
+        exclude_columns=["id", "created", "updated"],
+    )
 
 
 @team.command("describe", help="List all users in a team.")
@@ -144,6 +164,29 @@ def create_team(team_name: str) -> None:
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created team '{team_name}'.")
+
+
+@team.command("update", help="Update an existing team.")
+@click.argument("team_name", type=str, required=True)
+@click.option("--name", "-n", type=str, required=False, help="New team name.")
+def update_team(
+    team_name: str,
+    name: Optional[str] = None,
+) -> None:
+    """Update an existing team.
+
+    Args:
+        team_name: The name of the team.
+        name: The new name of the team.
+    """
+    cli_utils.print_active_config()
+    try:
+        team = Repository().zen_store.get_team(team_name)
+        team.name = name or team.name
+        Repository().zen_store.update_team(team)
+    except (EntityExistsError, KeyError) as err:
+        cli_utils.error(str(err))
+    cli_utils.declare(f"Updated team '{team_name}'.")
 
 
 @team.command("delete", help="Delete a team.")
@@ -232,7 +275,7 @@ def list_projects() -> None:
         active_project_id = active_project.id if active_project else None
         cli_utils.print_pydantic_models(
             projects,
-            columns=("name", "description", "created_at"),
+            exclude_columns=["id", "created", "updated"],
             is_active=(lambda p: p.id == active_project_id),
         )
     else:
@@ -241,10 +284,8 @@ def list_projects() -> None:
 
 @project.command("create", help="Create a new project.")
 @click.argument("project_name", type=str, required=True)
-@click.option("--description", "-d", type=str, required=False)
-def create_project(
-    project_name: str, description: Optional[str] = None
-) -> None:
+@click.option("--description", "-d", type=str, required=False, default="")
+def create_project(project_name: str, description: str) -> None:
     """Create a new project.
 
     Args:
@@ -261,22 +302,51 @@ def create_project(
     cli_utils.declare(f"Created project '{project_name}'.")
 
 
+@project.command("update", help="Update an existing project.")
+@click.argument("project_name", type=str, required=True)
+@click.option(
+    "--name", "-n", type=str, required=False, help="New project name."
+)
+@click.option(
+    "--description",
+    "-d",
+    type=str,
+    required=False,
+    help="New project description.",
+)
+def update_project(
+    project_name: str,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+) -> None:
+    """Update an existing project.
+
+    Args:
+        project_name: The name of the project.
+        name: The new name of the project.
+        description: The new description of the project.
+    """
+    cli_utils.print_active_config()
+    try:
+        project = Repository().zen_store.get_project(project_name)
+        project.name = name or project.name
+        project.description = description or project.description
+        Repository().zen_store.update_project(project)
+    except (EntityExistsError, KeyError) as err:
+        cli_utils.error(str(err))
+    cli_utils.declare(f"Updated project '{project_name}'.")
+
+
 @project.command("get")
 def get_project() -> None:
     """Get the currently active project."""
     active_project = Repository().active_project
-    if active_project:
-        description = (
-            "\nDescription: " + active_project.description
-            if active_project.description
-            else ""
-        )
-        cli_utils.declare(f"ACTIVE PROJECT: {active_project.name}{description}")
-    else:
-        cli_utils.warning(
-            "No project is configured as active. Run "
-            "`zenml project set <PROJECT_NAME>` to set an active project."
-        )
+    description = (
+        "\nDescription: " + active_project.description
+        if active_project.description
+        else ""
+    )
+    cli_utils.declare(f"ACTIVE PROJECT: {active_project.name}{description}")
 
 
 @project.command("set", help="Set the active project.")
@@ -329,7 +399,10 @@ def list_roles() -> None:
     if not roles:
         cli_utils.declare("No roles registered.")
         return
-    cli_utils.print_pydantic_models(roles)
+    cli_utils.print_pydantic_models(
+        roles,
+        exclude_columns=["id", "created", "updated"],
+    )
 
 
 @role.command("create", help="Create a new role.")
@@ -343,6 +416,29 @@ def create_role(role_name: str) -> None:
     cli_utils.print_active_config()
     Repository().zen_store.create_role(role=RoleModel(name=role_name))
     cli_utils.declare(f"Created role '{role_name}'.")
+
+
+@role.command("update", help="Update an existing role.")
+@click.argument("role_name", type=str, required=True)
+@click.option("--name", "-n", type=str, required=False, help="New role name.")
+def update_role(
+    role_name: str,
+    name: Optional[str] = None,
+) -> None:
+    """Update an existing role.
+
+    Args:
+        role_name: The name of the role.
+        name: The new name of the role.
+    """
+    cli_utils.print_active_config()
+    try:
+        role = Repository().zen_store.get_role(role_name)
+        role.name = name or role.name
+        Repository().zen_store.update_role(role)
+    except (EntityExistsError, KeyError) as err:
+        cli_utils.error(str(err))
+    cli_utils.declare(f"Updated role '{role_name}'.")
 
 
 @role.command("delete", help="Delete a role.")
@@ -472,10 +568,9 @@ def revoke_role(
     # Revoke the role from teams
     for team_name_or_id in team_names_or_ids:
         try:
-            team = Repository().zen_store.get_team(team_name_or_id)
             Repository().zen_store.revoke_role(
                 role_name_or_id=role_name_or_id,
-                user_or_team_name_or_id=team.id,
+                user_or_team_name_or_id=team_name_or_id,
                 is_user=False,
                 project_name_or_id=project_name_or_id,
             )
@@ -494,10 +589,39 @@ def assignment() -> None:
 
 
 @assignment.command("list")
-def list_role_assignments() -> None:
-    """List all role assignments."""
+@click.option("--role", "role_name_or_id", type=str, required=False)
+@click.option("--project", "project_name_or_id", type=str, required=False)
+@click.option(
+    "--user",
+    "user_name_or_id",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--team",
+    "team_name_or_id",
+    type=str,
+    required=False,
+)
+def list_role_assignments(
+    user_name_or_id: Optional[str] = None,
+    team_name_or_id: Optional[str] = None,
+    project_name_or_id: Optional[str] = None,
+) -> None:
+    """List all role assignments.
+
+    Args:
+        user_name_or_id: Name or ID of a user to list role assignments for.
+        team_name_or_id: Name or ID of a team to list role assignments for.
+        project_name_or_id: Name or ID of a project to list role assignments
+            for.
+    """
     cli_utils.print_active_config()
-    role_assignments = Repository().zen_store.role_assignments
+    role_assignments = Repository().zen_store.list_role_assignments(
+        user_name_or_id=user_name_or_id,
+        team_name_or_id=team_name_or_id,
+        project_name_or_id=project_name_or_id,
+    )
     if not role_assignments:
         cli_utils.declare("No roles assigned.")
         return

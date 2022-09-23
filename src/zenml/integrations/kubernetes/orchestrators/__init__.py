@@ -16,3 +16,5 @@
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (  # noqa
     KubernetesOrchestrator,
 )
+
+__all__ = ["KubernetesOrchestrator"]

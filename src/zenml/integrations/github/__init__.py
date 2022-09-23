@@ -16,12 +16,13 @@
 The GitHub integration provides a way to orchestrate pipelines using GitHub 
 Actions.
 """
-from typing import List
+from typing import List, Type
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import GITHUB
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 GITHUB_SECRET_MANAGER_FLAVOR = "github"
 GITHUB_ORCHESTRATOR_FLAVOR = "github"
@@ -34,26 +35,18 @@ class GitHubIntegration(Integration):
     REQUIREMENTS: List[str] = ["PyNaCl~=1.5.0"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the GitHub integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        return [
-            FlavorModel(
-                name=GITHUB_ORCHESTRATOR_FLAVOR,
-                source="zenml.integrations.github.orchestrators.GitHubActionsOrchestrator",
-                type=StackComponentType.ORCHESTRATOR,
-                integration=cls.NAME,
-            ),
-            FlavorModel(
-                name=GITHUB_SECRET_MANAGER_FLAVOR,
-                source="zenml.integrations.github.secrets_managers.GitHubSecretsManager",
-                type=StackComponentType.SECRETS_MANAGER,
-                integration=cls.NAME,
-            ),
-        ]
+        from zenml.integrations.github.flavors import (
+            GitHubActionsOrchestratorFlavor,
+            GitHubSecretsManagerFlavor,
+        )
+
+        return [GitHubActionsOrchestratorFlavor, GitHubSecretsManagerFlavor]
 
 
 GitHubIntegration.check_installation()

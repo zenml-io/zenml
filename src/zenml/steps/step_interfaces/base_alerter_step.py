@@ -15,11 +15,11 @@
 
 from abc import abstractmethod
 
-from zenml.steps import BaseStep, BaseStepConfig, StepContext
+from zenml.steps import BaseParameters, BaseStep, StepContext
 
 
-class BaseAlerterStepConfig(BaseStepConfig):
-    """Step config definition for all alerters."""
+class BaseAlerterStepParameters(BaseParameters):
+    """Step parameters definition for all alerters."""
 
 
 class BaseAlerterStep(BaseStep):
@@ -29,14 +29,14 @@ class BaseAlerterStep(BaseStep):
     def entrypoint(  # type: ignore[override]
         self,
         message: str,
-        config: BaseAlerterStepConfig,
+        params: BaseAlerterStepParameters,
         context: StepContext,
     ) -> bool:
         """Entrypoint for an Alerter step.
 
         Args:
             message: The message to send.
-            config: The configuration for the step.
+            params: The parameters for the step.
             context: The context for the step.
 
         Returns:

@@ -13,43 +13,39 @@
 #  permissions and limitations under the License.
 """Implementation of the Spark Step Operator."""
 
-import json
 import subprocess
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, cast
 
-from pydantic import validator
 from pyspark.conf import SparkConf
 
-from zenml.config.docker_configuration import DockerConfiguration
+from zenml.integrations.spark.flavors.spark_step_operator_flavor import (
+    SparkStepOperatorConfig,
+)
+from zenml.integrations.spark.step_operators.spark_entrypoint_configuration import (
+    SparkEntrypointConfiguration,
+)
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
-    from zenml.config.resource_configuration import ResourceConfiguration
+    from zenml.config import ResourceSettings
+    from zenml.config.step_configurations import StepConfiguration
+    from zenml.config.step_run_info import StepRunInfo
 
 
 class SparkStepOperator(BaseStepOperator):
-    """Base class for all Spark-related step operators.
+    """Base class for all Spark-related step operators."""
 
-    Attributes:
-        master: is the master URL for the cluster. You might see different
-            schemes for different cluster managers which are supported by Spark
-            like Mesos, YARN, or Kubernetes. Within the context of this PR,
-            the implementation supports Kubernetes as a cluster manager.
-        deploy_mode: can either be 'cluster' (default) or 'client' and it
-            decides where the driver node of the application will run.
-        submit_kwargs: is the JSON string of a dict, which will be used
-            to define additional params if required (Spark has quite a
-            lot of different parameters, so including them, all in the step
-            operator was not implemented).
-    """
+    @property
+    def config(self) -> SparkStepOperatorConfig:
+        """Returns the `SparkStepOperatorConfig` config.
 
-    # Instance parameters
-    master: str
-    deploy_mode: str = "cluster"
-    submit_kwargs: Optional[Dict[str, Any]] = None
+        Returns:
+            The configuration.
+        """
+        return cast(SparkStepOperatorConfig, self._config)
 
     @property
     def application_path(self) -> Optional[str]:
@@ -68,87 +64,50 @@ class SparkStepOperator(BaseStepOperator):
         """
         return None
 
-    @validator("submit_kwargs", pre=True)
-    def _convert_json_string(
-        cls, value: Union[None, str, Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
-        """Converts potential JSON strings passed via the CLI to dictionaries.
-
-        Args:
-            value: The value to convert.
-
-        Returns:
-            The converted value.
-
-        Raises:
-            TypeError: If the value is not a `str`, `Dict` or `None`.
-            ValueError: If the value is an invalid json string or a json string
-                that does not decode into a dictionary.
-        """
-        if isinstance(value, str):
-            try:
-                dict_ = json.loads(value)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid json string '{value}'") from e
-
-            if not isinstance(dict_, Dict):
-                raise ValueError(
-                    f"Json string '{value}' did not decode into a dictionary."
-                )
-
-            return dict_
-        elif isinstance(value, Dict) or value is None:
-            return value
-        else:
-            raise TypeError(f"{value} is not a json string or a dictionary.")
-
     def _resource_configuration(
         self,
         spark_config: SparkConf,
-        resource_configuration: "ResourceConfiguration",
+        resource_settings: "ResourceSettings",
     ) -> None:
-        """Configures Spark to handle the resource configuration.
+        """Configures Spark to handle the resource settings.
 
-        This should serve as the layer between our ResourceConfigurations
+        This should serve as the layer between our ResourceSettings
         and Spark's own ways of configuring its resources.
 
         Note: This is still work-in-progress. In the future, we would like to
         enable much more than executor cores and memory with a dedicated
-        ResourceConfiguration object.
+        ResourceSettings object.
 
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            resource_configuration: the resource configuration for this step
+            resource_settings: the resource settings for this step
         """
-        if resource_configuration.cpu_count:
+        if resource_settings.cpu_count:
             spark_config.set(
                 "spark.executor.cores",
-                str(int(resource_configuration.cpu_count)),
+                str(int(resource_settings.cpu_count)),
             )
 
-        if resource_configuration.memory:
+        if resource_settings.memory:
             # TODO[LOW]: Fix the conversion of the memory unit with a new
             #   type of resource configuration.
             spark_config.set(
                 "spark.executor.memory",
-                resource_configuration.memory.lower().strip("b"),
+                resource_settings.memory.lower().strip("b"),
             )
 
     def _backend_configuration(
         self,
         spark_config: SparkConf,
-        docker_configuration: "DockerConfiguration",
-        pipeline_name: str,
+        step_config: "StepConfiguration",
     ) -> None:
         """Configures Spark to handle backends like YARN, Mesos or Kubernetes.
 
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            pipeline_name: name of the pipeline which the step to be executed
-                is part of
-            docker_configuration: the Docker configuration for this step
+            step_config: Configuration of the step to run.
         """
 
     def _io_configuration(self, spark_config: SparkConf) -> None:
@@ -180,7 +139,7 @@ class SparkStepOperator(BaseStepOperator):
         from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 
         # If S3, preconfigure the spark session
-        if artifact_store.FLAVOR == S3_ARTIFACT_STORE_FLAVOR:
+        if artifact_store.flavor == S3_ARTIFACT_STORE_FLAVOR:
             (
                 key,
                 secret,
@@ -220,7 +179,7 @@ class SparkStepOperator(BaseStepOperator):
                 "using. That also means, that when you use this step operator "
                 "with certain artifact store flavor, ZenML can take care of "
                 "the pre-configuration. However, the artifact store flavor "
-                f"'{artifact_store.FLAVOR}' featured in this stack is not "
+                f"'{artifact_store.flavor}' featured in this stack is not "
                 f"known to this step operator and it might require additional "
                 f"configuration."
             )
@@ -233,8 +192,8 @@ class SparkStepOperator(BaseStepOperator):
                 configuration parameters
         """
         # Add the additional parameters
-        if self.submit_kwargs:
-            for k, v in self.submit_kwargs.items():
+        if self.config.submit_kwargs:
+            for k, v in self.config.submit_kwargs.items():
                 spark_config.set(k, v)
 
     def _launch_spark_job(
@@ -245,10 +204,7 @@ class SparkStepOperator(BaseStepOperator):
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            entrypoint_command: a list of strings which is normally used to
-                execute the step as a module. However, in the context of this
-                step operator, this list is used to form the application
-                parameters for spark-submit.
+            entrypoint_command: The entrypoint command to run.
 
         Raises:
             RuntimeError: if the spark-submit fails
@@ -256,8 +212,8 @@ class SparkStepOperator(BaseStepOperator):
         # Base spark-submit command
         command = [
             f"spark-submit "
-            f"--master {self.master} "
-            f"--deploy-mode {self.deploy_mode}"
+            f"--master {self.config.master} "
+            f"--deploy-mode {self.config.deploy_mode}"
         ]
 
         # Add the configuration parameters
@@ -266,15 +222,14 @@ class SparkStepOperator(BaseStepOperator):
         # Add the application path
         command.append(self.application_path)  # type: ignore[arg-type]
 
-        # Add the application parameters
-        for arg in [
-            "--main_module",
-            "--step_source_path",
-            "--execution_info_path",
-            "--input_artifact_types_path",
-        ]:
-            i = entrypoint_command.index(arg)
-            command.extend([arg, entrypoint_command[i + 1]])
+        # Update the default step operator command to use the spark entrypoint
+        # configuration
+        original_args = SparkEntrypointConfiguration._parse_arguments(
+            entrypoint_command
+        )
+        command += SparkEntrypointConfiguration.get_entrypoint_arguments(
+            **original_args
+        )
 
         final_command = " ".join(command)
 
@@ -294,22 +249,14 @@ class SparkStepOperator(BaseStepOperator):
 
     def launch(
         self,
-        pipeline_name: str,
-        run_name: str,
-        docker_configuration: "DockerConfiguration",
+        info: "StepRunInfo",
         entrypoint_command: List[str],
-        resource_configuration: "ResourceConfiguration",
     ) -> None:
-        """Launches the step on Spark.
+        """Launches a step on Spark.
 
         Args:
-            pipeline_name: Name of the pipeline which the step to be executed
-                is part of.
-            run_name: Name of the pipeline run which the step to be executed
-                is part of.
-            docker_configuration: The Docker configuration for this step.
+            info: Information about the step run.
             entrypoint_command: Command that executes the step.
-            resource_configuration: The resource configuration for this step.
         """
         # Start off with an empty configuration
         conf = SparkConf()
@@ -317,15 +264,11 @@ class SparkStepOperator(BaseStepOperator):
         # Add the resource configuration such as cores, memory.
         self._resource_configuration(
             spark_config=conf,
-            resource_configuration=resource_configuration,
+            resource_settings=info.config.resource_settings,
         )
 
         # Add the backend configuration such as namespace, docker images names.
-        self._backend_configuration(
-            spark_config=conf,
-            docker_configuration=docker_configuration,
-            pipeline_name=pipeline_name,
-        )
+        self._backend_configuration(spark_config=conf, step_config=info.config)
 
         # Add the IO configuration for the inputs and the outputs
         self._io_configuration(

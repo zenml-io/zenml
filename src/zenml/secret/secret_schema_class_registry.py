@@ -16,7 +16,6 @@
 from typing import ClassVar, Dict, Type, TypeVar
 
 from zenml.logger import get_logger
-from zenml.metadata_stores.mysql_secret_schema import MYSQLSecretSchema
 from zenml.secret import BaseSecretSchema
 from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.secret.schemas import (
@@ -126,4 +125,3 @@ SecretSchemaClassRegistry.register_class(AWSSecretSchema)
 SecretSchemaClassRegistry.register_class(AzureSecretSchema)
 SecretSchemaClassRegistry.register_class(BasicAuthSecretSchema)
 SecretSchemaClassRegistry.register_class(GCPSecretSchema)
-SecretSchemaClassRegistry.register_class(MYSQLSecretSchema)

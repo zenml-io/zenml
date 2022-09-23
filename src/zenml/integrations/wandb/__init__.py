@@ -16,12 +16,13 @@
 The wandb integrations currently enables you to use wandb tracking as a
 convenient way to visualize your experiment runs within the wandb ui.
 """
-from typing import List
+from typing import List, Type
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import WANDB
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 WANDB_EXPERIMENT_TRACKER_FLAVOR = "wandb"
 
@@ -33,20 +34,17 @@ class WandbIntegration(Integration):
     REQUIREMENTS = ["wandb>=0.12.12", "Pillow>=9.1.0"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Weights and Biases integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        return [
-            FlavorModel(
-                name=WANDB_EXPERIMENT_TRACKER_FLAVOR,
-                source="zenml.integrations.wandb.experiment_trackers.WandbExperimentTracker",
-                type=StackComponentType.EXPERIMENT_TRACKER,
-                integration=cls.NAME,
-            )
-        ]
+        from zenml.integrations.wandb.flavors import (
+            WandbExperimentTrackerFlavor,
+        )
+
+        return [WandbExperimentTrackerFlavor]
 
 
 WandbIntegration.check_installation()

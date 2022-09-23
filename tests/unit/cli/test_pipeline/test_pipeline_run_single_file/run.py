@@ -18,7 +18,7 @@ from zenml.artifacts import DataArtifact
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
-from zenml.steps import BaseStepConfig, Output, step
+from zenml.steps import BaseParameters, Output, step
 
 
 class SomeObj:
@@ -42,13 +42,13 @@ class SomeMaterializer(BaseMaterializer):
             f.write(my_obj.name)
 
 
-class StepConfig(BaseStepConfig):
+class StepParams(BaseParameters):
     some_option: int = 4
 
 
 @step
-def some_step(config: StepConfig) -> Output(output_1=SomeObj, output_2=int):
-    return SomeObj("Custom-Object"), config.some_option
+def some_step(params: StepParams) -> Output(output_1=SomeObj, output_2=int):
+    return SomeObj("Custom-Object"), params.some_option
 
 
 @pipeline(enable_cache=False)

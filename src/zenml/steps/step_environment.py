@@ -16,11 +16,10 @@
 from typing import TYPE_CHECKING
 
 from zenml.environment import BaseEnvironmentComponent
-from zenml.runtime_configuration import RuntimeConfiguration
 
 STEP_ENVIRONMENT_NAME = "step_environment"
 if TYPE_CHECKING:
-    from zenml.config.docker_configuration import DockerConfiguration
+    from zenml.config.step_run_info import StepRunInfo
 
 
 class StepEnvironment(BaseEnvironmentComponent):
@@ -50,8 +49,7 @@ class StepEnvironment(BaseEnvironmentComponent):
         pipeline_run_id: str,
         step_name: str,
         cache_enabled: bool,
-        docker_configuration: "DockerConfiguration",
-        runtime_configuration: "RuntimeConfiguration",
+        step_run_info: "StepRunInfo",
     ):
         """Initialize the environment of the currently running step.
 
@@ -60,18 +58,14 @@ class StepEnvironment(BaseEnvironmentComponent):
             pipeline_run_id: the ID of the currently running pipeline
             step_name: the name of the currently running step
             cache_enabled: whether cache is enabled for this step
-            docker_configuration: The Docker configuration of the currently
-                running pipeline.
-            runtime_configuration: The runtime configuration of the currently
-                running pipeline.
+            step_run_info: Info about the currently running step.
         """
         super().__init__()
         self._pipeline_name = pipeline_name
         self._pipeline_run_id = pipeline_run_id
         self._step_name = step_name
+        self._step_run_info = step_run_info
         self._cache_enabled = cache_enabled
-        self._docker_configuration = docker_configuration
-        self._runtime_configuration = runtime_configuration
 
     @property
     def pipeline_name(self) -> str:
@@ -101,6 +95,15 @@ class StepEnvironment(BaseEnvironmentComponent):
         return self._step_name
 
     @property
+    def step_run_info(self) -> "StepRunInfo":
+        """Info about the currently running step.
+
+        Returns:
+            Info about the currently running step.
+        """
+        return self._step_run_info
+
+    @property
     def cache_enabled(self) -> bool:
         """Returns whether cache is enabled for the step.
 
@@ -108,21 +111,3 @@ class StepEnvironment(BaseEnvironmentComponent):
             True if cache is enabled for the step, otherwise False.
         """
         return self._cache_enabled
-
-    @property
-    def docker_configuration(self) -> "DockerConfiguration":
-        """The Docker configuration of the currently running pipeline.
-
-        Returns:
-            A Docker configuration object.
-        """
-        return self._docker_configuration
-
-    @property
-    def runtime_configuration(self) -> "RuntimeConfiguration":
-        """The Runtime configuration of the currently running pipeline.
-
-        Returns:
-            A Runtime configuration object.
-        """
-        return self._runtime_configuration

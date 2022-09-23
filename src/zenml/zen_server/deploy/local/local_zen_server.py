@@ -19,6 +19,7 @@ import shutil
 from typing import Dict, List, Optional, Tuple, Union, cast
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_CONFIG_PATH,
@@ -63,9 +64,10 @@ class LocalServerDeploymentConfig(ServerDeploymentConfig):
     """
 
     port: int = 8237
-    address: Union[
+    ip_address: Union[
         ipaddress.IPv4Address, ipaddress.IPv6Address
     ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
+    store: Optional[StoreConfiguration] = None
 
 
 class LocalZenServerConfig(LocalDaemonServiceConfig):
@@ -100,16 +102,19 @@ class LocalZenServer(LocalDaemonService):
         """Copy the global configuration to the local ZenML server location.
 
         The local ZenML server global configuration is a copy of the local
-        global configuration with the store configuration set to point to the
-        local store.
+        global configuration. If a store configuration is explicitly set in
+        the server configuration, it will be used. Otherwise, the store
+        configuration is set to point to the local store.
         """
         gc = GlobalConfiguration()
 
-        # this creates a copy of the global configuration with the store
-        # set to the local store and saves it to the server configuration path
+        # this creates a copy of the global configuration with and saves it to
+        # the server configuration path. The store is set to the local store
+        # unless a custom store configuration is explicitly supplied with the
+        # server configuration.
         gc.copy_configuration(
             config_path=LOCAL_ZENML_SERVER_GLOBAL_CONFIG_PATH,
-            store_config=gc.get_default_store(),
+            store_config=self.config.server.store or gc.get_default_store(),
         )
 
     @classmethod

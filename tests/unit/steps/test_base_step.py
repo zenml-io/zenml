@@ -15,9 +15,6 @@ from contextlib import ExitStack as does_not_raise
 from typing import Dict, List, Optional
 
 import pytest
-from tfx.orchestration.portable.python_executor_operator import (
-    PythonExecutorOperator,
-)
 
 from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.environment import Environment
@@ -25,8 +22,8 @@ from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
-from zenml.step_operators.step_executor_operator import StepExecutorOperator
-from zenml.steps import BaseStepConfig, Output, StepContext, step
+from zenml.steps import BaseParameters, Output, StepContext, step
+from zenml.utils import source_utils
 
 
 def test_step_decorator_creates_class_in_same_module_as_decorated_function():
@@ -50,14 +47,14 @@ def test_define_step_with_shared_input_and_output_name():
             return shared_name
 
 
-def test_define_step_with_multiple_configs():
-    """Tests that defining a step with multiple configs raises
+def test_define_step_with_multiple_parameter_classes():
+    """Tests that defining a step with multiple parameter classes raises
     a StepInterfaceError."""
     with pytest.raises(StepInterfaceError):
 
         @step
         def some_step(
-            first_config: BaseStepConfig, second_config: BaseStepConfig
+            first_params: BaseParameters, second_params: BaseParameters
         ) -> None:
             pass
 
@@ -163,76 +160,78 @@ def test_initialize_step_with_unexpected_config():
     config raises an Exception."""
 
     @step
-    def step_without_config() -> None:
+    def step_without_params() -> None:
         pass
 
     with pytest.raises(StepInterfaceError):
-        step_without_config(config=BaseStepConfig())
+        step_without_params(params=BaseParameters())
 
 
-def test_initialize_step_with_config():
+def test_initialize_step_with_params():
     """Tests that a step can only be initialized with it's defined
-    config class."""
+    parameter class."""
 
-    class StepConfig(BaseStepConfig):
+    class StepParams(BaseParameters):
         pass
 
-    class DifferentConfig(BaseStepConfig):
+    class DifferentParams(BaseParameters):
         pass
 
     @step
-    def step_with_config(config: StepConfig) -> None:
+    def step_with_params(params: StepParams) -> None:
         pass
 
-    # initialize with wrong config classes
+    # initialize with wrong param classes
     with pytest.raises(StepInterfaceError):
-        step_with_config(config=BaseStepConfig())  # noqa
+        step_with_params(params=BaseParameters())  # noqa
 
     with pytest.raises(StepInterfaceError):
-        step_with_config(config=DifferentConfig())  # noqa
+        step_with_params(params=DifferentParams())  # noqa
 
     # initialize with wrong key
     with pytest.raises(StepInterfaceError):
-        step_with_config(wrong_config_key=StepConfig())  # noqa
+        step_with_params(wrong_params_key=StepParams())  # noqa
 
     # initializing with correct key should work
     with does_not_raise():
-        step_with_config(config=StepConfig())
+        step_with_params(params=StepParams())
 
     # initializing as non-kwarg should work as well
     with does_not_raise():
-        step_with_config(StepConfig())
+        step_with_params(StepParams())
 
     # initializing with multiple args or kwargs should fail
     with pytest.raises(StepInterfaceError):
-        step_with_config(StepConfig(), config=StepConfig())
+        step_with_params(StepParams(), params=StepParams())
 
     with pytest.raises(StepInterfaceError):
-        step_with_config(StepConfig(), StepConfig())
+        step_with_params(StepParams(), StepParams())
 
     with pytest.raises(StepInterfaceError):
-        step_with_config(config=StepConfig(), config2=StepConfig())
+        step_with_params(params=StepParams(), params2=StepParams())
+
+
+class CustomType:
+    pass
+
+
+class CustomTypeMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (CustomType,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
 
 def test_only_registered_output_artifact_types_are_allowed():
     """Tests that only artifact types which are registered for the output type
     are allowed as custom output artifact types."""
 
-    class CustomType:
-        pass
-
-    class CustomTypeMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = (CustomType,)
-        ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
-
-    @step(output_types={"output": DataArtifact})
+    @step(output_artifacts={"output": DataArtifact})
     def some_step() -> CustomType:
         pass
 
     with does_not_raise():
         some_step()
 
-    @step(output_types={"output": ModelArtifact})
+    @step(output_artifacts={"output": ModelArtifact})
     def some_other_step() -> CustomType:
         pass
 
@@ -245,7 +244,7 @@ def test_pass_invalid_type_as_output_artifact_type():
     output artifact type fails.
     """
 
-    @step(output_types={"output": int})
+    @step(output_artifacts={"output": int})
     def some_step() -> int:
         pass
 
@@ -257,7 +256,7 @@ def test_unrecognized_output_in_output_artifact_types():
     """Tests that passing an output artifact type for an output that doesn't
     exist raises an exception."""
 
-    @step(output_types={"non-existent": DataArtifact})
+    @step(output_artifacts={"non-existent": DataArtifact})
     def some_step() -> None:
         pass
 
@@ -273,31 +272,15 @@ def test_enabling_a_custom_step_operator_for_a_step():
     def step_without_step_operator() -> None:
         pass
 
-    @step(custom_step_operator="some_step_operator")
+    @step(step_operator="some_step_operator")
     def step_with_step_operator() -> None:
         pass
 
-    assert step_without_step_operator().custom_step_operator is None
+    assert step_without_step_operator().configuration.step_operator is None
     assert (
-        step_with_step_operator().custom_step_operator == "some_step_operator"
+        step_with_step_operator().configuration.step_operator
+        == "some_step_operator"
     )
-
-
-def test_step_executor_operator():
-    """Tests that the step returns the correct executor operator."""
-
-    @step(custom_step_operator=None)
-    def step_without_step_operator() -> None:
-        pass
-
-    @step(custom_step_operator="some_step_operator")
-    def step_with_step_operator() -> None:
-        pass
-
-    assert (
-        step_without_step_operator().executor_operator is PythonExecutorOperator
-    )
-    assert step_with_step_operator().executor_operator is StepExecutorOperator
 
 
 def test_pipeline_parameter_name_is_empty_when_initializing_a_step():
@@ -384,10 +367,18 @@ def test_setting_a_materializer_for_a_step_with_multiple_outputs():
         pass
 
     step_instance = some_step().with_return_materializers(BaseMaterializer)
-    assert step_instance.get_materializers()["some_output"] is BaseMaterializer
+
+    base_materializer_source = source_utils.resolve_class(BaseMaterializer)
+
     assert (
-        step_instance.get_materializers()["some_other_output"]
-        is BaseMaterializer
+        step_instance.configuration.outputs["some_output"].materializer_source
+        == base_materializer_source
+    )
+    assert (
+        step_instance.configuration.outputs[
+            "some_other_output"
+        ].materializer_source
+        == base_materializer_source
     )
 
 
@@ -395,47 +386,59 @@ def test_overwriting_step_materializers():
     """Tests that calling `with_return_materializers` multiple times allows
     overwriting of the step materializers."""
 
+    base_materializer_source = source_utils.resolve_class(BaseMaterializer)
+    builtin_materializer_source = source_utils.resolve_class(
+        BuiltInMaterializer
+    )
+
     @step
     def some_step() -> Output(some_output=int, some_other_output=str):
         pass
 
     step_instance = some_step()
-    assert not step_instance._explicit_materializers
+    assert not step_instance.configuration.outputs
 
     step_instance = step_instance.with_return_materializers(
         {"some_output": BaseMaterializer}
     )
     assert (
-        step_instance._explicit_materializers["some_output"] is BaseMaterializer
+        step_instance.configuration.outputs["some_output"].materializer_source
+        == base_materializer_source
     )
-    assert "some_other_output" not in step_instance._explicit_materializers
+    assert "some_other_output" not in step_instance.configuration.outputs
 
     step_instance = step_instance.with_return_materializers(
         {"some_other_output": BuiltInMaterializer}
     )
     assert (
-        step_instance._explicit_materializers["some_other_output"]
-        is BuiltInMaterializer
+        step_instance.configuration.outputs[
+            "some_other_output"
+        ].materializer_source
+        == builtin_materializer_source
     )
     assert (
-        step_instance._explicit_materializers["some_output"] is BaseMaterializer
+        step_instance.configuration.outputs["some_output"].materializer_source
+        == base_materializer_source
     )
 
     step_instance = step_instance.with_return_materializers(
         {"some_output": BuiltInMaterializer}
     )
     assert (
-        step_instance._explicit_materializers["some_output"]
-        is BuiltInMaterializer
+        step_instance.configuration.outputs["some_output"].materializer_source
+        == builtin_materializer_source
     )
 
     step_instance.with_return_materializers(BaseMaterializer)
     assert (
-        step_instance._explicit_materializers["some_output"] is BaseMaterializer
+        step_instance.configuration.outputs["some_output"].materializer_source
+        == base_materializer_source
     )
     assert (
-        step_instance._explicit_materializers["some_other_output"]
-        is BaseMaterializer
+        step_instance.configuration.outputs[
+            "some_other_output"
+        ].materializer_source
+        == base_materializer_source
     )
 
 
@@ -529,6 +532,10 @@ def test_step_source_execution_parameter_changes_when_function_body_changes():
     )
 
 
+class MyCustomMaterializer(BuiltInMaterializer):
+    pass
+
+
 def test_materializer_source_execution_parameter_changes_when_materializer_changes():
     """Tests that changing the step materializer changes the materializer
     source execution parameter."""
@@ -536,9 +543,6 @@ def test_materializer_source_execution_parameter_changes_when_materializer_chang
     @step
     def some_step() -> int:
         return 1
-
-    class MyCustomMaterializer(BuiltInMaterializer):
-        pass
 
     step_1 = some_step().with_return_materializers(BuiltInMaterializer)
     step_2 = some_step().with_return_materializers(MyCustomMaterializer)
@@ -645,15 +649,17 @@ def test_call_step_with_missing_materializer_for_type():
         some_step()()
 
 
+class MyType:
+    pass
+
+
+class MyTypeMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (MyType,)
+
+
 def test_call_step_with_default_materializer_registered():
     """Tests that calling a step with a registered default materializer for the
     output works."""
-
-    class MyType:
-        pass
-
-    class MyTypeMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = (MyType,)
 
     @step
     def some_step() -> MyType:
@@ -664,57 +670,57 @@ def test_call_step_with_default_materializer_registered():
 
 
 def test_step_uses_config_class_default_values_if_no_config_is_passed():
-    """Tests that a step falls back to the config class default values if
-    no config object is passed at initialization."""
+    """Tests that a step falls back to the param class default values if
+    no params object is passed at initialization."""
 
-    class ConfigWithDefaultValues(BaseStepConfig):
+    class ParamsWithDefaultValues(BaseParameters):
         some_parameter: int = 1
 
     @step
-    def some_step(config: ConfigWithDefaultValues) -> None:
+    def some_step(params: ParamsWithDefaultValues) -> None:
         pass
 
     # don't pass the config when initializing the step
     step_instance = some_step()
-    step_instance._update_and_verify_parameter_spec()
+    step_instance._finalize_configuration({})
 
-    assert step_instance.PARAM_SPEC["some_parameter"] == 1
+    assert step_instance.configuration.parameters["some_parameter"] == 1
 
 
 def test_step_fails_if_config_parameter_value_is_missing():
     """Tests that a step fails if no config object is passed at
     initialization and the config class misses some default values."""
 
-    class ConfigWithoutDefaultValues(BaseStepConfig):
+    class ParamsWithoutDefaultValues(BaseParameters):
         some_parameter: int
 
     @step
-    def some_step(config: ConfigWithoutDefaultValues) -> None:
+    def some_step(params: ParamsWithoutDefaultValues) -> None:
         pass
 
     # don't pass the config when initializing the step
     step_instance = some_step()
 
     with pytest.raises(MissingStepParameterError):
-        step_instance._update_and_verify_parameter_spec()
+        step_instance._finalize_function_parameters()
 
 
 def test_step_config_allows_none_as_default_value():
     """Tests that `None` is allowed as a default value for a
     step config field."""
 
-    class ConfigWithNoneDefaultValue(BaseStepConfig):
+    class ParamsWithNoneDefaultValue(BaseParameters):
         some_parameter: Optional[int] = None
 
     @step
-    def some_step(config: ConfigWithNoneDefaultValue) -> None:
+    def some_step(params: ParamsWithNoneDefaultValue) -> None:
         pass
 
     # don't pass the config when initializing the step
     step_instance = some_step()
 
     with does_not_raise():
-        step_instance._update_and_verify_parameter_spec()
+        step_instance._finalize_function_parameters()
 
 
 def test_calling_a_step_twice_raises_an_exception():

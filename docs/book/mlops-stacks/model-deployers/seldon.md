@@ -40,7 +40,7 @@ ZenML provides a Seldon Core flavor build on top of the Seldon Core Integration 
 Model deployer with ZenML and add it to your stack:
 
 ```bash
-zenml integration install seldon-core -y
+zenml integration install seldon -y
 ```
 
 To deploy and make use of the Seldon Core integration we need to have the following prerequisites:
@@ -50,7 +50,7 @@ command line argument. This Kubernetes context needs to point to the Kubernetes
 cluster where Seldon Core model servers will be deployed. If the context is not
 explicitly supplied to the example, it defaults to using the locally active
 context. You can find more information about setup and usage of the Kubernetes
-cluster in the [ZenML Cloud Guide](../../cloud-guide/overview.md)
+cluster in the [ZenML Cloud Guide](../../stack-deployment-guide/overview.md)
 
 2. Seldon Core needs to be preinstalled and running in the target Kubernetes
 cluster. Check out the [official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup)).
@@ -280,4 +280,4 @@ to achieve this.
 
 Example of the [custom class](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.seldon.custom_deployer.zenml_custom_model.ZenMLCustomModel)
 
-The built-in Seldon Core custom deployment step responsible for packaging, preparing and deploying to Seldon Core can be found [here](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step)
+The built-in Seldon Core custom deployment step responsible for packaging, preparing and deploying to Seldon Core can be found [here](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step)
