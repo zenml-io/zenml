@@ -15,8 +15,10 @@ import mlflow  # type: ignore [import]
 import numpy as np  # type: ignore [import]
 import tensorflow as tf  # type: ignore [import]
 
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+from zenml.repository import Repository
 from zenml.steps import BaseParameters, step
+
+experiment_tracker = Repository().active_stack.experiment_tracker
 
 
 class TrainerParameters(BaseParameters):
@@ -26,9 +28,7 @@ class TrainerParameters(BaseParameters):
     lr: float = 0.001
 
 
-# Define the step and enable MLflow (n.b. order of decorators is important here)
-@enable_mlflow
-@step
+@step(experiment_tracker=experiment_tracker.name)
 def tf_trainer(
     params: TrainerParameters,
     x_train: np.ndarray,

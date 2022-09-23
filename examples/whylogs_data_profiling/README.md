@@ -22,8 +22,6 @@ Instantiating this type of step is simplified even further through the
 use of the `whylogs_profiler_step` utility function.
 * a `WhylogsVisualizer` ZenML visualizer that can be used to display whylogs
 profile artifacts produced during the execution of pipelines.
-* an `enable_whylabs` ZenML pipeline step decorator that enhances an
-existing ZenML step with Whylabs profiling capabilities.
 
 ## 🧰 How the example is implemented
 The ZenML pipeline in this example is rather simple, consisting of a couple
@@ -37,19 +35,26 @@ The first step in the pipeline shows how whylogs data profiles can be generated
 and returned as step artifacts which will be versioned and persisted in the
 Artifact Store just as any other artifacts.
 
-It also shows how the `enable_whylabs` decorator can be applied to an existing
-to automatically log all returned whylogs data profiles to the Whylabs platform.
-This needs to be combined with configuring secrets in the whylogs Data Validator
-stack component to work, as detailed in the [Run it locally](#-run-it-locally)
-section.
+It also shows how to automatically log all returned whylogs data profiles to
+the Whylabs platform. This needs to be combined with configuring secrets 
+in the whylogs Data Validator stack component to work, as detailed in the
+[Run it locally](#-run-it-locally) section.
 
 ```python
-from zenml.integrations.whylogs.whylabs_step_decorator import enable_whylabs
 from zenml.steps import Output, step
 from whylogs.core import DatasetProfileView
+from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
+    WhylogsDataValidatorSettings,
+)
 
-@enable_whylabs
-@step
+
+@step(
+    settings={
+        "data_validator.whylogs": WhylogsDataValidatorSettings(
+            enable_whylabs=True, dataset_id="model-1"
+        )
+    }
+)
 def data_loader() -> Output(data=pd.DataFrame, profile=DatasetProfileView,):
     ...
 
@@ -60,13 +65,11 @@ def data_loader() -> Output(data=pd.DataFrame, profile=DatasetProfileView,):
     return dataset, profile
 ```
 
-If you want to use this decorator with our class-based API, simply decorate your step class as follows:
+If you want to enable Whylabs logging when using the class-based API, simply configure your step as follows:
 ```python
-from zenml.integrations.whylogs.whylabs_step_decorator import enable_whylabs
 from zenml.steps import Output, BaseStep
 from whylogs.core import DatasetProfileView
 
-@enable_whylabs(dataset_id="model-1")
 class DataLoader(BaseStep):
     def entrypoint(
         self,
@@ -78,6 +81,15 @@ class DataLoader(BaseStep):
         ...
         profile = why.log(pandas=dataset).profile().view()
         return dataset, profile
+
+step_instance = DataLoader()
+step_instance.configure(
+    settings={
+        "data_validator.whylogs": WhylogsDataValidatorSettings(
+            enable_whylabs=True, dataset_id="model-1"
+        )
+    }
+)
 ```
 
 Additional whylogs profiling steps can also be created using the
@@ -143,7 +155,7 @@ visualize_statistics("train_data_profiler", "test_data_profiler")
 ![whylogs visualizer](assets/whylogs-visualizer.png)
 
 Furthermore, all the generated profiles are uploaded to WhyLabs automatically
-for steps where the `enable_whylabs` decorator was used and if the Whylabs
+for steps with whylabs logging enabled if the Whylabs
 credentials have been configured in the whylogs Data Validator stack component:
 
 
