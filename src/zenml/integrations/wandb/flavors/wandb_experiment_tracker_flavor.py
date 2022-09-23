@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 """Weights & Biases experiment tracker flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 
+from pydantic import validator
+
+from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTrackerConfig,
     BaseExperimentTrackerFlavor,
@@ -23,9 +26,44 @@ from zenml.integrations.wandb import WANDB_EXPERIMENT_TRACKER_FLAVOR
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
+    import wandb
+
     from zenml.integrations.wandb.experiment_trackers import (
         WandbExperimentTracker,
     )
+
+
+class WandbExperimentTrackerSettings(BaseSettings):
+    """Settings for the Wandb experiment tracker.
+
+    Attributes:
+        run_name: The Wandb run name.
+        tags: Tags for the Wandb run.
+        settings: Settings for the Wandb run.
+    """
+
+    run_name: Optional[str] = None
+    tags: List[str] = []
+    settings: Dict[str, Any] = {}
+
+    @validator("settings", pre=True)
+    def _convert_settings(
+        cls, value: Union[Dict[str, Any], "wandb.Settings"]
+    ) -> Dict[str, Any]:
+        """Converts settings to a dictionary.
+
+        Args:
+            value: The settings.
+
+        Returns:
+            Dict representation of the settings.
+        """
+        import wandb
+
+        if isinstance(value, wandb.Settings):
+            return cast(Dict[str, Any], value.make_static())
+        else:
+            return value
 
 
 class WandbExperimentTrackerConfig(BaseExperimentTrackerConfig):

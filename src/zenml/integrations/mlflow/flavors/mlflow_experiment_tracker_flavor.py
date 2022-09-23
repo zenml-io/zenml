@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from pydantic import root_validator
 
+from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTrackerConfig,
     BaseExperimentTrackerFlavor,
@@ -55,6 +56,20 @@ def is_databricks_tracking_uri(tracking_uri: str) -> bool:
         otherwise.
     """
     return tracking_uri == "databricks"
+
+
+class MLFlowExperimentTrackerSettings(BaseSettings):
+    """Settings for the MLflow experiment tracker.
+
+    Attributes:
+        experiment_name: The MLflow experiment name.
+        nested: If `True`, will create a nested sub-run for the step.
+        tags: Tags for the Mlflow run.
+    """
+
+    experiment_name: Optional[str] = None
+    nested: bool = False
+    tags: Dict[str, Any] = {}
 
 
 class MLFlowExperimentTrackerConfig(BaseExperimentTrackerConfig):

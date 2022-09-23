@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
-from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.kubernetes.orchestrators import (
@@ -29,14 +28,6 @@ class KubernetesOrchestratorConfig(BaseOrchestratorConfig):
     """Configuration for the Kubernetes orchestrator.
 
     Attributes:
-        custom_docker_base_image_name: Name of a Docker image that should be
-            used as the base for the image that will be run on Kubernetes pods.
-            If no custom image is given, a basic image of the active ZenML
-            version will be used.
-            **Note**: This image needs to have ZenML installed,
-            otherwise the pipeline execution will fail. For that reason, you
-            might want to extend the ZenML Docker images found here:
-            https://hub.docker.com/r/zenmldocker/zenml/
         kubernetes_context: Optional name of a Kubernetes context to run
             pipelines in. If not set, the current active context will be used.
             You can find the active context by running `kubectl config
@@ -49,16 +40,10 @@ class KubernetesOrchestratorConfig(BaseOrchestratorConfig):
             clients. This is only useful for unit testing.
     """
 
-    custom_docker_base_image_name: Optional[str] = None
     kubernetes_context: Optional[str] = None
     kubernetes_namespace: str = "zenml"
     synchronous: bool = False
     skip_config_loading: bool = False
-    docker_parent_image: Optional[str] = None
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "custom_docker_base_image_name", "docker_parent_image"
-    )
 
 
 class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):

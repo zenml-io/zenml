@@ -15,10 +15,10 @@
 import numpy as np
 import tensorflow as tf
 
-from zenml.steps import BaseStepConfig, StepContext, step
+from zenml.steps import BaseParameters, StepContext, step
 
 
-class TrainerConfig(BaseStepConfig):
+class TrainerParameters(BaseParameters):
     """Trainer params"""
 
     epochs: int = 5
@@ -30,7 +30,7 @@ def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
     context: StepContext,
-    config: TrainerConfig,
+    params: TrainerParameters,
 ) -> tf.keras.Model:
     """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner"""
@@ -43,7 +43,7 @@ def trainer(
     )
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(config.lr),
+        optimizer=tf.keras.optimizers.Adam(params.lr),
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=["accuracy"],
     )
@@ -51,7 +51,7 @@ def trainer(
     model.fit(
         X_train,
         y_train,
-        epochs=config.epochs,
+        epochs=params.epochs,
     )
 
     return model

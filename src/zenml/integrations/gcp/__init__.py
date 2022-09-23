@@ -32,7 +32,7 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 GCP_ARTIFACT_STORE_FLAVOR = "gcp"
-GCP_SECRETS_MANAGER_FLAVOR = "gcp_secrets_manager"
+GCP_SECRETS_MANAGER_FLAVOR = "gcp"
 GCP_VERTEX_ORCHESTRATOR_FLAVOR = "vertex"
 GCP_VERTEX_STEP_OPERATOR_FLAVOR = "vertex"
 

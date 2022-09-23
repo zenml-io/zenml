@@ -132,11 +132,11 @@ class DockerSettings(BaseSettings):
             If this is set to `False`, ZenML will not copy any of your files
             into the Docker image and you're responsible that all the files
             to run your pipeline exist in the right place.
-        copy_profile: If `True`, the configuration of the active profile and
-            stack will be copied into the Docker image. If this is set to
-            `False`, ZenML will not copy this configuration and you're
-            responsible for making sure the right stack is active inside the
-            Docker image.
+        copy_global_config: If `True`, the global configuration (contains
+            connection info for your ZenStore) will be copied into the Docker
+            image. If this is set to `False`, ZenML will not copy this
+            configuration and you're responsible for making sure ZenML can
+            access the ZenStore in the Docker image.
         user: If not `None`, will use the USER instruction to set the username and
             run the commands of the dockerfile as `user` instead of root.
             Specifically,  the specified user is used for RUN instructions
@@ -162,7 +162,7 @@ class DockerSettings(BaseSettings):
     environment: Dict[str, Any] = {}
     dockerignore: Optional[str] = None
     copy_files: bool = True
-    copy_profile: bool = True
+    copy_global_config: bool = True
     user: Optional[str] = None
 
     class Config:

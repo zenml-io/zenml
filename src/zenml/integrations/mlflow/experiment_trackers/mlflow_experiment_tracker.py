@@ -29,6 +29,7 @@ from zenml.experiment_trackers.base_experiment_tracker import (
 from zenml.integrations.mlflow import mlflow_utils
 from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import (
     MLFlowExperimentTrackerConfig,
+    MLFlowExperimentTrackerSettings,
     is_databricks_tracking_uri,
     is_remote_mlflow_tracking_uri,
 )
@@ -51,20 +52,6 @@ DATABRICKS_HOST = "DATABRICKS_HOST"
 DATABRICKS_USERNAME = "DATABRICKS_USERNAME"
 DATABRICKS_PASSWORD = "DATABRICKS_PASSWORD"
 DATABRICKS_TOKEN = "DATABRICKS_TOKEN"
-
-
-class MLFlowExperimentTrackerSettings(BaseSettings):
-    """Settings for the MLflow experiment tracker.
-
-    Attributes:
-        experiment_name: The MLflow experiment name.
-        nested: If `True`, will create a nested sub-run for the step.
-        tags: Tags for the Mlflow run.
-    """
-
-    experiment_name: Optional[str] = None
-    nested: bool = False
-    tags: Dict[str, Any] = {}
 
 
 class MLFlowExperimentTracker(BaseExperimentTracker):

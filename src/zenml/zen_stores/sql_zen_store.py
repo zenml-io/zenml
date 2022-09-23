@@ -143,7 +143,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             The validated values.
 
         Raises:
-            ValueError: If the URL is invalid or the SQL driver is not supported.
+            ValueError: If the URL is invalid or the SQL driver is not
+            supported.
         """
         url = values.get("url")
         if url is None:
@@ -154,7 +155,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         except ArgumentError as e:
             raise ValueError(
                 "Invalid SQL URL `%s`: %s. The URL must be in the format "
-                "`driver://[[username:password@]hostname:port]/database[?<extra-args>]`.",
+                "`driver://[[username:password@]hostname:port]/database["
+                "?<extra-args>]`.",
                 url,
                 str(e),
             )
@@ -228,7 +230,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             match = re.match(regexp, database)
             if not match:
                 raise ValueError(
-                    f"The database name does not conform to the required format "
+                    f"The database name does not conform to the required "
+                    f"format "
                     f"rules ({regexp}): {database}"
                 )
 
@@ -312,7 +315,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             NotImplementedError: If the SQL driver is not supported.
         """
         sql_url = make_url(self.url)
-        sqlalchemy_connect_args = {}
+        # The following default value is needed for sqlite to avoid the Error:
+        #   sqlite3.ProgrammingError: SQLite objects created in a thread can
+        #   only be used in that same thread.
+        # TODO: [server] verify this is also true for mysql
+        sqlalchemy_connect_args = {"check_same_thread": False}
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             assert self.database is not None
         elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
@@ -522,8 +529,8 @@ class SqlZenStore(BaseZenStore):
             existing_domain_stack = session.exec(
                 select(StackSchema)
                 .where(StackSchema.name == stack.name)
-                .where(StackSchema.project == stack.project)
-                .where(StackSchema.user == stack.user)
+                .where(StackSchema.project_id == stack.project)
+                .where(StackSchema.user_id == stack.user)
             ).first()
             if existing_domain_stack is not None:
                 raise StackExistsError(
@@ -614,10 +621,10 @@ class SqlZenStore(BaseZenStore):
             # TODO: prettify
             if project_name_or_id:
                 project = self._get_project_schema(project_name_or_id)
-                query = query.where(StackSchema.project == project.id)
+                query = query.where(StackSchema.project_id == project.id)
             if user_name_or_id:
                 user = self._get_user_schema(user_name_or_id)
-                query = query.where(StackSchema.user == user.id)
+                query = query.where(StackSchema.user_id == user.id)
             if component_id:
                 query = query.where(
                     StackCompositionSchema.stack_id == StackSchema.id
@@ -727,8 +734,8 @@ class SqlZenStore(BaseZenStore):
             existing_domain_component = session.exec(
                 select(StackComponentSchema)
                 .where(StackComponentSchema.name == component.name)
-                .where(StackComponentSchema.project == component.project)
-                .where(StackComponentSchema.user == component.user)
+                .where(StackComponentSchema.project_id == component.project)
+                .where(StackComponentSchema.user_id == component.user)
                 .where(StackComponentSchema.type == component.type)
             ).first()
             if existing_domain_component is not None:
@@ -818,10 +825,12 @@ class SqlZenStore(BaseZenStore):
             query = select(StackComponentSchema)
             if project_name_or_id:
                 project = self._get_project_schema(project_name_or_id)
-                query = query.where(StackComponentSchema.project == project.id)
+                query = query.where(
+                    StackComponentSchema.project_id == project.id
+                )
             if user_name_or_id:
                 user = self._get_user_schema(user_name_or_id)
-                query = query.where(StackComponentSchema.user == user.id)
+                query = query.where(StackComponentSchema.user_id == user.id)
             if type:
                 query = query.where(StackComponentSchema.type == type)
             if flavor_name:
@@ -880,7 +889,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack component doesn't exist.
-            IllegalOperationError: if the stack component is part of one or more stacks.
+            IllegalOperationError: if the stack component is part of one or
+            more stacks.
         """
         with Session(self.engine) as session:
             try:
@@ -951,8 +961,8 @@ class SqlZenStore(BaseZenStore):
                 select(FlavorSchema)
                 .where(FlavorSchema.name == flavor.name)
                 .where(FlavorSchema.type == flavor.type)
-                .where(FlavorSchema.project == flavor.project)
-                .where(FlavorSchema.user == flavor.user)
+                .where(FlavorSchema.project_id == flavor.project)
+                .where(FlavorSchema.user_id == flavor.user)
             ).first()
 
             if existing_flavor is not None:
@@ -1017,14 +1027,14 @@ class SqlZenStore(BaseZenStore):
             query = select(FlavorSchema)
             if project_name_or_id:
                 project = self._get_project_schema(project_name_or_id)
-                query = query.where(FlavorSchema.project == project.id)
+                query = query.where(FlavorSchema.project_id == project.id)
             if component_type:
                 query = query.where(FlavorSchema.type == component_type)
             if name:
                 query = query.where(FlavorSchema.name == name)
             if user_name_or_id:
                 user = self._get_user_schema(user_name_or_id)
-                query = query.where(FlavorSchema.user == user.id)
+                query = query.where(FlavorSchema.user_id == user.id)
 
             list_of_flavors_in_db = session.exec(query).all()
 
@@ -1941,7 +1951,7 @@ class SqlZenStore(BaseZenStore):
                     project_name_or_id, session=session
                 )
 
-                session.delete(project)  # TODO: cascade delete
+                session.delete(project)
                 session.commit()
             except NoResultFound as error:
                 raise KeyError from error
@@ -1975,7 +1985,7 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.project == pipeline.project)
+                .where(PipelineSchema.project_id == pipeline.project)
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
@@ -2040,11 +2050,11 @@ class SqlZenStore(BaseZenStore):
             query = select(PipelineSchema)
             if project_name_or_id is not None:
                 project = self._get_project_schema(project_name_or_id)
-                query = query.where(PipelineSchema.project == project.id)
+                query = query.where(PipelineSchema.project_id == project.id)
 
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id)
-                query = query.where(PipelineSchema.user == user.id)
+                query = query.where(PipelineSchema.user_id == user.id)
 
             if name:
                 query = query.where(PipelineSchema.name == name)
@@ -2266,7 +2276,7 @@ class SqlZenStore(BaseZenStore):
             query = select(PipelineRunSchema)
             if project_name_or_id is not None:
                 project = self._get_project_schema(project_name_or_id)
-                query = query.where(StackSchema.project == project.id).where(
+                query = query.where(StackSchema.project_id == project.id).where(
                     PipelineRunSchema.stack_id == StackSchema.id
                 )
             if stack_id is not None:
@@ -2514,13 +2524,15 @@ class SqlZenStore(BaseZenStore):
                 "provided."
             )
         if uuid_utils.is_valid_uuid(object_name_or_id):
-            filter = schema_class.id == object_name_or_id  # type: ignore[attr-defined]
+            filter = schema_class.id == object_name_or_id  # type: ignore[
+            # attr-defined]
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': No {schema_name} with this ID found."
             )
         else:
-            filter = schema_class.name == object_name_or_id  # type: ignore[attr-defined]
+            filter = schema_class.name == object_name_or_id  # type: ignore[
+            # attr-defined]
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': '{object_name_or_id}' is not a valid "

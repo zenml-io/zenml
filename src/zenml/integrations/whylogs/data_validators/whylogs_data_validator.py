@@ -31,6 +31,7 @@ from zenml.integrations.whylogs.constants import (
 )
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorConfig,
+    WhylogsDataValidatorSettings,
 )
 from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
     WhylabsSecretSchema,
@@ -43,20 +44,6 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
 
 logger = get_logger(__name__)
-
-
-class WhylogsDataValidatorSettings(BaseSettings):
-    """Settings for the Whylogs data validator.
-
-    Attributes:
-        enable_whylabs: If set to `True` for a step, all the whylogs data
-            profile views returned by the step will automatically be uploaded
-            to the Whylabs platform if Whylabs credentials are configured.
-        dataset_id: Dataset ID to use when uploading profiles to Whylabs.
-    """
-
-    enable_whylabs: bool = False
-    dataset_id: Optional[str] = None
 
 
 class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):

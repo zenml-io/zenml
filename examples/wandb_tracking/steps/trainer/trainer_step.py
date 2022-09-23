@@ -16,10 +16,10 @@ import tensorflow as tf
 from wandb.integration.keras import WandbCallback
 
 from zenml.integrations.wandb.wandb_step_decorator import enable_wandb
-from zenml.steps import BaseStepConfig, step
+from zenml.steps import BaseParameters, step
 
 
-class TrainerConfig(BaseStepConfig):
+class TrainerParameters(BaseParameters):
     """Trainer params"""
 
     epochs: int = 1
@@ -30,7 +30,7 @@ class TrainerConfig(BaseStepConfig):
 @enable_wandb
 @step
 def tf_trainer(
-    config: TrainerConfig,
+    params: TrainerParameters,
     x_train: np.ndarray,
     y_train: np.ndarray,
     x_val: np.ndarray,
@@ -46,7 +46,7 @@ def tf_trainer(
     )
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(config.lr),
+        optimizer=tf.keras.optimizers.Adam(params.lr),
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=["accuracy"],
     )
@@ -54,7 +54,7 @@ def tf_trainer(
     model.fit(
         x_train,
         y_train,
-        epochs=config.epochs,
+        epochs=params.epochs,
         validation_data=(x_val, y_val),
         callbacks=[
             WandbCallback(

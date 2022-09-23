@@ -28,7 +28,7 @@ from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 AZURE_ARTIFACT_STORE_FLAVOR = "azure"
-AZURE_SECRETS_MANAGER_FLAVOR = "azure_key_vault"
+AZURE_SECRETS_MANAGER_FLAVOR = "azure"
 AZUREML_STEP_OPERATOR_FLAVOR = "azureml"
 
 

@@ -19,7 +19,7 @@ from zenml.integrations.label_studio.label_studio_utils import (
 )
 from zenml.io import fileio
 from zenml.post_execution import get_pipeline
-from zenml.steps import BaseStepConfig, step
+from zenml.steps import BaseParameters, step
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils
 
@@ -188,7 +188,7 @@ def load_mobilenetv3_transforms():
     return transforms.Compose([transforms.ToTensor(), weights.transforms()])
 
 
-class PytorchModelTrainerConfig(BaseStepConfig):
+class PytorchModelTrainerParameters(BaseParameters):
     batch_size = 1
     num_epochs = 2
     learning_rate = 5e-3
@@ -202,7 +202,7 @@ class PytorchModelTrainerConfig(BaseStepConfig):
 def pytorch_model_trainer(
     image_urls: List[str],
     labels: List[Dict[str, str]],
-    config: PytorchModelTrainerConfig,
+    params: PytorchModelTrainerParameters,
     context: StepContext,
 ) -> nn.Module:
     """ZenML step which finetunes or loads a pretrained mobilenetv3 model."""
@@ -233,7 +233,7 @@ def pytorch_model_trainer(
     train_dataset, val_dataset = torch.utils.data.random_split(
         dataset=dataset,
         lengths=[train_size, val_size],
-        generator=torch.Generator().manual_seed(config.seed),
+        generator=torch.Generator().manual_seed(params.seed),
     )
     dataset_dict = {
         "train": train_dataset,
@@ -244,16 +244,16 @@ def pytorch_model_trainer(
     dataloaders_dict = {
         dataset_type: torch.utils.data.DataLoader(
             dataset,
-            batch_size=config.batch_size,
-            shuffle=config.shuffle,
-            num_workers=config.num_workers,
+            batch_size=params.batch_size,
+            shuffle=params.shuffle,
+            num_workers=params.num_workers,
         )
         for dataset_type, dataset in dataset_dict.items()
     }
 
     # Define optimizer
     optimizer_ft = optim.Adam(
-        params=model.classifier[-1].parameters(), lr=config.learning_rate
+        params=model.classifier[-1].parameters(), lr=params.learning_rate
     )
 
     # Define loss
@@ -265,7 +265,7 @@ def pytorch_model_trainer(
         dataloaders_dict,
         criterion,
         optimizer_ft,
-        num_epochs=config.num_epochs,
-        device=config.device,
+        num_epochs=params.num_epochs,
+        device=params.device,
     )
     return model
