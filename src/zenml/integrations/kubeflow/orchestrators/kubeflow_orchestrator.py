@@ -31,17 +31,7 @@
 """Implementation of the Kubeflow orchestrator."""
 import os
 import sys
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
 import kfp
@@ -53,7 +43,7 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.config.base_settings import BaseSettings, ConfigurationLevel
+from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
@@ -62,6 +52,7 @@ from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
     DEFAULT_KFP_UI_PORT,
     KubeflowOrchestratorConfig,
+    KubeflowOrchestratorSettings,
 )
 from zenml.integrations.kubeflow.orchestrators import (
     local_deployment_utils,
@@ -100,21 +91,6 @@ SINGLE_RUN_RUN_NAME_PLACEHOLDER = (
     "{{workflow.annotations.pipelines.kubeflow.org/run_name}}"
 )
 SCHEDULED_RUN_NAME_PLACEHOLDER = "{{workflow.name}}"
-
-
-class KubeflowOrchestratorSettings(BaseSettings):
-    """Settings for the Kubeflow orchestrator.
-
-    Attributes:
-        client_args: Arguments to pass when initializing the KFP client.
-        user_namespace: The user namespace to use when creating experiments
-            and runs.
-    """
-
-    LEVEL: ClassVar[ConfigurationLevel] = ConfigurationLevel.PIPELINE
-
-    client_args: Dict[str, Any] = {}
-    user_namespace: Optional[str] = None
 
 
 class KubeflowOrchestrator(BaseOrchestrator):

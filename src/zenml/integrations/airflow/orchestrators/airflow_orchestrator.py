@@ -51,7 +51,7 @@ if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.stack import Stack
 
-AIRFLOW_ROOT_DIR = "airflow_root"
+AIRFLOW_ROOT_DIR = "airflow"
 DAG_FILEPATH_OPTION_KEY = "dag_filepath"
 
 

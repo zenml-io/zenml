@@ -17,7 +17,6 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 
 import wandb
-from pydantic import validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -25,6 +24,7 @@ from zenml.experiment_trackers.base_experiment_tracker import (
 )
 from zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor import (
     WandbExperimentTrackerConfig,
+    WandbExperimentTrackerSettings,
 )
 from zenml.logger import get_logger
 
@@ -35,37 +35,6 @@ logger = get_logger(__name__)
 
 
 WANDB_API_KEY = "WANDB_API_KEY"
-
-
-class WandbExperimentTrackerSettings(BaseSettings):
-    """Settings for the Wandb experiment tracker.
-
-    Attributes:
-        run_name: The Wandb run name.
-        tags: Tags for the Wandb run.
-        settings: Settings for the Wandb run.
-    """
-
-    run_name: Optional[str] = None
-    tags: List[str] = []
-    settings: Dict[str, Any] = {}
-
-    @validator("settings", pre=True)
-    def _convert_settings(
-        cls, value: Union[Dict[str, Any], wandb.Settings]
-    ) -> Dict[str, Any]:
-        """Converts settings to a dictionary.
-
-        Args:
-            value: The settings.
-
-        Returns:
-            Dict representation of the settings.
-        """
-        if isinstance(value, wandb.Settings):
-            return cast(Dict[str, Any], value.make_static())
-        else:
-            return value
 
 
 class WandbExperimentTracker(BaseExperimentTracker):

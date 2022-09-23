@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Kubeflow orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type
 
+from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils import deprecation_utils
@@ -24,6 +25,21 @@ if TYPE_CHECKING:
 
 
 DEFAULT_KFP_UI_PORT = 8080
+
+
+class KubeflowOrchestratorSettings(BaseSettings):
+    """Settings for the Kubeflow orchestrator.
+
+    Attributes:
+        client_args: Arguments to pass when initializing the KFP client.
+        user_namespace: The user namespace to use when creating experiments
+            and runs.
+    """
+
+    LEVEL: ClassVar[ConfigurationLevel] = ConfigurationLevel.PIPELINE
+
+    client_args: Dict[str, Any] = {}
+    user_namespace: Optional[str] = None
 
 
 class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
