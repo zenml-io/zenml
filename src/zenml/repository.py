@@ -500,7 +500,6 @@ class Repository(metaclass=RepositoryMetaClass):
             # set the active project globally only if the repository doesn't use
             # a local configuration
             GlobalConfiguration().active_project_name = project.name
-
         return project
 
     @property
