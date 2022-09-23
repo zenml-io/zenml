@@ -17,7 +17,7 @@
   * [Stack Components and Flavors](./starter-guide/stacks/stacks-components.md)
   * [Managing stacks](./starter-guide/stacks/managing-stacks.md)
 * [Collaboration](./starter-guide/collaborate/collaborate.md)
-  * [Deploy ZenML on the Cloud](./starter-guide/collaborate/zenml-deployment.md)
+  * [Collaborate with deployed ZenML](./starter-guide/collaborate/zenml-deployment.md)
   * [Invite users](./starter-guide/collaborate/users.md)
 
 ## Advanced Guide
@@ -41,13 +41,10 @@
   * [Manage Stack Component States](./advanced-guide/stacks/stack-state-management.md)
   * [Manage External Services](./advanced-guide/stacks/manage-external-services.md)
   * [Set Stacks with Environment Variables](./advanced-guide/stacks/stack-environment-variables.md)
-
-## Using ZenML
-
-* [Deploying ZenML](using-zenml/deploying-zenml.md)
-* [Global Configuration](using-zenml/global-config.md)
-* [Best Practices](using-zenml/best-practices.md)
-* [System Environmental Variables](using-zenml/system-environmental-variables.md)
+* [Deploying ZenML](advanced-guide/deploying-zenml/deploying-zenml.md)
+  * [AWS](./advanced-guide/deploying-zenml/aws.md)
+  * [GCP](./advanced-guide/deploying-zenml/gcp.md)
+  * [Azure](./advanced-guide/deploying-zenml/azure.md)
 
 ## Component Gallery
 
@@ -125,6 +122,12 @@
   * [Basic GCP Stack](./popular-stack-guides/gcp/basic-stack.md)
 * [Azure](./popular-stack-guides/azure/azure.md)
   * [Basic Azure Stack](./popular-stack-guides/azure/basic-stack.md)
+
+## Misc
+
+* [Best Practices](misc/best-practices.md)
+* [Global Configuration](misc/global-config.md)
+* [System Environmental Variables](misc/system-environmental-variables.md)
 
 ## Resources
 
