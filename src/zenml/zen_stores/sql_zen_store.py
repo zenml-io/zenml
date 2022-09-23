@@ -2161,15 +2161,6 @@ class SqlZenStore(BaseZenStore):
 
             return run.to_model()
 
-    def get_run_dag(self, run_id: UUID) -> str:
-        """Gets the DAG for a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-        """
-        # TODO: raise KeyError if run doesn't exist
-        pass  # TODO
-
     def get_run_component_side_effects(
         self,
         run_id: UUID,
@@ -2238,6 +2229,24 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(PipelineRunSchema.user == user.id)
             runs = session.exec(query).all()
             return [run.to_model() for run in runs]
+
+    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
+        """Gets the execution status of a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get the status for.
+
+        Returns:
+            The status of the pipeline run.
+        """
+        steps = self.list_run_steps(run_id)
+        for step in steps:
+            step_status = self.get_run_step_status(step.id)
+            if step_status == ExecutionStatus.FAILED:
+                return ExecutionStatus.FAILED
+            if step_status == ExecutionStatus.RUNNING:
+                return ExecutionStatus.RUNNING
+        return ExecutionStatus.SUCCEEDED
 
     # ------------------
     # Pipeline run steps

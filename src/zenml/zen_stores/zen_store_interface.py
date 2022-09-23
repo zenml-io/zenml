@@ -988,20 +988,6 @@ class ZenStoreInterface(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
 
-    @abstractmethod
-    def get_run_dag(self, run_id: UUID) -> str:
-        """Gets the DAG for a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The DAG for the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
     # TODO: Figure out what exactly gets returned from this
     @abstractmethod
     def get_run_component_side_effects(
@@ -1048,6 +1034,17 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A list of all pipeline runs.
+        """
+
+    @abstractmethod
+    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
+        """Gets the execution status of a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get the status for.
+
+        Returns:
+            The status of the pipeline run.
         """
 
     # ------------------
