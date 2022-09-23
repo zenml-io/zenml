@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import FileResponse
 
 from zenml.constants import (
     COMPONENT_SIDE_EFFECTS,
@@ -26,6 +25,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
+from zenml.post_execution.lineage.lineage_graph import LineageGraph
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -74,6 +74,7 @@ async def list_runs(
         component_id=component_id,
         user_name_or_id=user_name_or_id,
         pipeline_id=pipeline_id,
+        unlisted=unlisted,
     )
 
 
@@ -95,29 +96,15 @@ async def get_run(run_id: UUID) -> PipelineRunModel:
     return zen_store.get_run(run_id=run_id)
 
 
-@router.delete(
-    "/{run_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-async def delete_run(run_id: UUID) -> None:
-    """Delete a pipeline run using its ID.
-
-    Args:
-        run_id: ID of the pipeline run to get.
-    """
-    zen_store.delete_run(run_id=run_id)
-
-
 @router.get(
     "/{run_id}" + GRAPH,
-    response_model=str,  # TODO: Use file type / image type
+    response_model=LineageGraph,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 async def get_run_dag(
     run_id: UUID,
-) -> FileResponse:  # TODO: use file type / image type
+) -> LineageGraph:
     """Get the DAG for a given pipeline run.
 
     Args:
@@ -126,10 +113,12 @@ async def get_run_dag(
     Returns:
         The DAG for a given pipeline run.
     """
-    image_object_path = zen_store.get_run_dag(
-        run_id=run_id
-    )  # TODO: ZenStore should return a path
-    return FileResponse(image_object_path)
+    from zenml.post_execution.pipeline_run import PipelineRunView
+
+    run = zen_store.get_run(run_id=run_id)
+    graph = LineageGraph()
+    graph.generate_run_nodes_and_edges(PipelineRunView(run))
+    return graph
 
 
 @router.get(

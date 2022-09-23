@@ -170,7 +170,7 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
             node_data = node_dict.pop("data")
             node_dict = {**node_dict, **node_data}
             node_dict["label"] = node_dict["name"]
-            classes = self.STATUS_CLASS_MAPPING[node.status]
+            classes = self.STATUS_CLASS_MAPPING[node.data.status]
             if isinstance(node, ArtifactNode):
                 classes = "rectangle " + classes
                 node_dict["label"] += f" ({node_dict['artifact_data_type']})"
@@ -195,7 +195,7 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
             if is_input_artifact and artifact_is_cached:
                 edge_status = self.STATUS_CLASS_MAPPING[ExecutionStatus.CACHED]
             else:
-                edge_status = self.STATUS_CLASS_MAPPING[step_node.status]
+                edge_status = self.STATUS_CLASS_MAPPING[step_node.data.status]
             edge_style = "dashed" if artifact_node.data.is_cached else "solid"
             edges.append(
                 {
@@ -350,13 +350,7 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
                             text += f"**{k}**: {v}" + "\n\n"
                     if data["configuration"]:
                         text += "#### Configuration:" + "\n\n"
-                        config = {
-                            k: v
-                            for k, v in data["configuration"].items()
-                            if k not in ["inputs", "outputs", "parameters"]
-                            and v
-                        }
-                        for k, v in config.items():
+                        for k, v in data["configuration"].items():
                             text += f"**{k}**: {v}" + "\n\n"
             return text
 

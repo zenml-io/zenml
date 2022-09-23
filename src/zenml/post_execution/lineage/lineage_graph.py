@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Class for lineage graph generation."""
 
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -21,7 +21,6 @@ from zenml.post_execution.lineage.edge import Edge
 from zenml.post_execution.lineage.node import (
     ArtifactNode,
     ArtifactNodeDetails,
-    BaseNode,
     StepNode,
     StepNodeDetails,
 )
@@ -35,7 +34,7 @@ STEP_PREFIX = "step_"
 class LineageGraph(BaseModel):
     """A lineage graph representation of a PipelineRunView."""
 
-    nodes: List[BaseNode] = []
+    nodes: List[Union[StepNode, ArtifactNode]] = []
     edges: List[Edge] = []
     root_step_id: Optional[str]
 
@@ -45,25 +44,26 @@ class LineageGraph(BaseModel):
         Args:
             step: The step to generate the nodes and edges for.
         """
-        step_output_artifacts = list(step.outputs.values())
-        execution_id = str(
-            step_output_artifacts[0].producer_step_id
-            if step_output_artifacts
-            else step.id
-        )
         step_id = STEP_PREFIX + str(step.id)
         if self.root_step_id is None:
             self.root_step_id = step_id
+        step_config = step.step_configuration.get("config", {})
+        if step_config:
+            step_config = {
+                key: value
+                for key, value in step_config.items()
+                if key not in ["inputs", "outputs", "parameters"] and value
+            }
         self.nodes.append(
             StepNode(
                 id=step_id,
-                status=step.status,
                 data=StepNodeDetails(
-                    execution_id=execution_id,
-                    entrypoint_name=step.entrypoint_name,  # redundant for consistency
+                    execution_id=str(step.id),
                     name=step.name,  # redundant for consistency
+                    status=step.status,
+                    entrypoint_name=step.entrypoint_name,  # redundant for consistency
                     parameters=step.parameters,
-                    configuration=step.step_configuration.get("config", None),
+                    configuration=step_config,
                     inputs={k: v.uri for k, v in step.inputs.items()},
                     outputs={k: v.uri for k, v in step.outputs.items()},
                 ),
@@ -75,10 +75,10 @@ class LineageGraph(BaseModel):
             self.nodes.append(
                 ArtifactNode(
                     id=artifact_id,
-                    status=step.status,
                     data=ArtifactNodeDetails(
                         execution_id=str(artifact.id),
                         name=artifact_name,
+                        status=step.status,
                         is_cached=artifact.is_cached,
                         artifact_type=artifact.type,
                         artifact_data_type=artifact.data_type,

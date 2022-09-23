@@ -13,21 +13,20 @@
 #  permissions and limitations under the License.
 """Class for all lineage step nodes."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from pydantic import BaseModel
+from zenml.post_execution.lineage.node.base_node import (
+    BaseNode,
+    BaseNodeDetails,
+)
 
-from zenml.post_execution.lineage.node.base_node import BaseNode
 
-
-class StepNodeDetails(BaseModel):
+class StepNodeDetails(BaseNodeDetails):
     """Captures all artifact details for the node."""
 
-    execution_id: str
     entrypoint_name: str
-    name: str
     parameters: Dict[str, Any]
-    configuration: Optional[Dict[str, Any]]
+    configuration: Dict[str, Any]
     inputs: Dict[str, Any]
     outputs: Dict[str, Any]
 
@@ -35,6 +34,5 @@ class StepNodeDetails(BaseModel):
 class StepNode(BaseNode):
     """A class that represents a step node in a lineage graph."""
 
-    id: str
     type: str = "step"
     data: StepNodeDetails
