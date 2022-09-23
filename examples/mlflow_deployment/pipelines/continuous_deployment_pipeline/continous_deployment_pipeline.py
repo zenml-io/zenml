@@ -11,11 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.config import DockerSettings
 from zenml.integrations.constants import MLFLOW, TENSORFLOW
 from zenml.pipelines import pipeline
 
+docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
 
-@pipeline(enable_cache=True, required_integrations=[MLFLOW, TENSORFLOW])
+
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def continuous_deployment_pipeline(
     importer,
     normalizer,

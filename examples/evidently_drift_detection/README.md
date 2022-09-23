@@ -34,13 +34,13 @@ to illustrate how it works.
 ```python
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
-    EvidentlyProfileConfig,
+    EvidentlyProfileParameters,
     evidently_profile_step,
 )
 
 drift_detector = evidently_profile_step(
     step_name="drift_detector",
-    config=EvidentlyProfileConfig(
+    params=EvidentlyProfileParameters(
         column_mapping=EvidentlyColumnMapping(
             target="class", prediction="class"
         ),
@@ -99,7 +99,7 @@ easily accomplished:
 
 ```shell
 zenml data-validator register evidently -f evidently
-zenml stack register evidently_stack -o default -a default -m default -dv evidently --set
+zenml stack register evidently_stack -o default -a default -dv evidently --set
 ```
 
 ### ▶️ Run the Code

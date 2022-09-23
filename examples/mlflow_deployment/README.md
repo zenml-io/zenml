@@ -69,7 +69,7 @@ This example contains two very important aspects that should be highlighted.
 ```python
 from zenml.steps import BaseParameters
 from zenml.integrations.mlflow.steps import mlflow_deployer_step
-from zenml.integrations.mlflow.steps import MLFlowDeployerConfig
+from zenml.integrations.mlflow.steps import MLFlowDeployerParameters
 
 ...
 
@@ -96,7 +96,7 @@ model_deployer = mlflow_deployer_step(name="model_deployer")
 deployment = continuous_deployment_pipeline(
     ...,
     # as a last step to our pipeline the model deployer step is run with it config in place
-    model_deployer=model_deployer(config=MLFlowDeployerConfig(workers=3)),
+    model_deployer=model_deployer(params=MLFlowDeployerParameters(workers=3)),
 )
 ```
 
@@ -203,7 +203,6 @@ zenml integration install mlflow
 zenml model-deployer register mlflow_deployer --flavor=mlflow
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml stack register local_mlflow_stack \
-  -m default \
   -a default \
   -o default \
   -d mlflow_deployer \

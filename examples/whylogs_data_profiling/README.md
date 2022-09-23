@@ -84,17 +84,17 @@ Additional whylogs profiling steps can also be created using the
 `whylogs_profiler_step` shortcut:
 
 ```python
-from zenml.integrations.whylogs.steps import WhylogsProfilerConfig, whylogs_profiler_step
+from zenml.integrations.whylogs.steps import WhylogsProfilerParameters, whylogs_profiler_step
 
 train_data_profiler = whylogs_profiler_step(
     step_name="train_data_profiler",
-    config=WhylogsProfilerConfig(),
+    params=WhylogsProfilerParameters(),
     log_to_whylabs=True,
     dataset_id="model-2",
 )
 test_data_profiler = whylogs_profiler_step(
     step_name="test_data_profiler",
-    config=WhylogsProfilerConfig(),
+    params=WhylogsProfilerParameters(),
     log_to_whylabs=True,
     dataset_id="model-3",
 )
@@ -185,7 +185,7 @@ easily accomplished:
 
 ```shell
 zenml data-validator register whylogs -f whylogs
-zenml stack register whylogs_stack -o default -a default -m default -dv whylogs --set
+zenml stack register whylogs_stack -o default -a default -dv whylogs --set
 ```
 
 Adding Whylabs logging capabilities to that is just a bit more complicated, as you
@@ -194,7 +194,7 @@ also require a Secrets Manager in your stack:
 ```shell
 zenml data-validator register whylogs -f whylogs --authentication_secret=whylabs_secret
 zenml secrets-manager register local -f local
-zenml stack register whylogs_stack -o default -a default -m default -x local -dv whylogs --set
+zenml stack register whylogs_stack -o default -a default -x local -dv whylogs --set
 
 zenml secrets-manager secret register whylabs_secret -s whylogs \
     --whylabs_default_org_id=<your-whylogs-organization-id> \

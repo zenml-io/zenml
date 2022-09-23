@@ -54,7 +54,7 @@ set up properly.
 zenml integration install aws
 
 zenml secrets-manager register aws_secrets_manager --flavor=aws
-zenml stack register secrets_stack -m default -o default -a default -x aws_secrets_manager --set
+zenml stack register secrets_stack -o default -a default -x aws_secrets_manager --set
 ```
 
 ### 🥞 Set up your stack for GCP
@@ -71,7 +71,7 @@ secrets manager.
 zenml integration install gcp
 
 zenml secrets-manager register gcp_secrets_manager --flavor=gcp --project_id=PROJECT_ID
-zenml stack register secrets_stack -m default -o default -a default -x gcp_secrets_manager --set
+zenml stack register secrets_stack -o default -a default -x gcp_secrets_manager --set
 ```
 
 ### 🥞 Set up your stack for Azure
@@ -84,7 +84,7 @@ with the correct credentials to access the Azure secrets manager.
 zenml integration install azure
 
 zenml secrets-manager register azure_key_vault --flavor=azure --key_vault_name=<VAULT-NAME>
-zenml stack register secrets_stack -m default -o default -a default -x azure_key_vault --set
+zenml stack register secrets_stack -o default -a default -x azure_key_vault --set
 ```
 
 ### 🥞 Set up your stack for HashiCorp Vault
@@ -99,7 +99,7 @@ and save the path which will be used for the `mount_point` parameter.
 zenml integration install vault
 
 zenml secrets-manager register vault --flavor=vault  --url=<YOUR_VAULT_URL> --token=<YOUR_VAULT_TOKEN> --mount_point=<PATH_TO_KV_V2_ENGINE>
-zenml stack register secrets_stack -m default -o default -a default -x vault --set
+zenml stack register secrets_stack -o default -a default -x vault --set
 ```
 
 ### Or stay on a local stack

@@ -17,12 +17,12 @@ from zenml.integrations.seldon.services.seldon_deployment import (
 )
 from zenml.integrations.seldon.steps.seldon_deployer import (
     CustomDeployParameters,
-    SeldonDeployerStepConfig,
+    SeldonDeployerStepParameters,
     seldon_custom_model_deployer_step,
 )
 
 seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step(
-    config=SeldonDeployerStepConfig(
+    params=SeldonDeployerStepParameters(
         service_config=SeldonDeploymentConfig(
             model_name="seldon-tensorflow-custom-model",
             replicas=1,

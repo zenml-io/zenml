@@ -64,7 +64,6 @@ zenml experiment-tracker register wandb_tracker --type=wandb \
     --project_name=<WANDB_PROJECT_NAME>
 
 zenml stack register wandb_stack \
-    -m default \
     -a default \
     -o default \
     -e wandb_tracker \

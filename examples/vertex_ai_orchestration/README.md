@@ -141,13 +141,6 @@ zenml integration install gcp
 
 # The CONTAINER_REGISTRY_URI will have a format like this: eu.gcr.io/xxx/xxx
 zenml container-registry register gcp_registry --flavor=gcp --uri=<CONTAINER_REGISTRY_URI>
-
-# The DB_HOST_IP is the public IP Address of your Database: xx.xx.xxx.xxx
-#  The DB_PORT is 3306 by default - set this in case this default does not apply
-#  The DB_NAME is the name of the database that you have created in GCP as the
-#  metadata store. The `mysql_secret` will be created once the secrets manager
-#  is created and the stack is active.
-zenml metadata-store register gcp_metadata_store --flavor=mysql --host=<DB_HOST_IP> --port=<DB_PORT> --database=<DB_NAME> --secret=mysql_secret
   
 # The PATH_TO_YOUR_GCP_BUCKET is the path to your GCP bucket: gs://xxx
 zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YOUR_GCP_BUCKET>
@@ -162,15 +155,7 @@ zenml orchestrator register vertex_orch --flavor=vertex --project=<PROJECT_ID> -
 zenml secrets-manager register gcp_secrets_manager --flavor=gcp --project_id=<PROJECT_ID>
 
 # Now we're ready to assemble our stack
-zenml stack register gcp_vertex_stack -m gcp_metadata_store -a gcp_artifact_store -o vertex_orch -c gcp_registry -x gcp_secrets_manager --set
-
-# With the stack up and running, we can now supply the credentials for the 
-#  mysql metadata store. The SSL certificates have to be generated and downloaded
-#  from within the CloudSQL UI
-zenml secrets-manager secret register mysql_secret --schema=mysql --user=<DB_USER> --password=<PWD> \
-  --ssl_ca=@</PATH/TO/DOWNLOADED/SERVER-CERT> \
-  --ssl_cert=@</PATH/TO/DOWNLOADED/CLIENT-CERT> \
-  --ssl_key=@</PATH/TO/DOWNLOADED/CLIENT-KEY>
+zenml stack register gcp_vertex_stack -a gcp_artifact_store -o vertex_orch -c gcp_registry -x gcp_secrets_manager --set
 ```
 
 Your stack should look something like this when you're done:
