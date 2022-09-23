@@ -15,11 +15,12 @@ from typing import cast
 
 from zenml.integrations.kserve.model_deployers import KServeModelDeployer
 from zenml.integrations.kserve.services import KServeDeploymentService
-from zenml.steps import BaseStepConfig, step
+from zenml.steps import BaseParameters, step
 
 
-class PredectionServiceLoaderStepConfig(BaseStepConfig):
-    """KServe deployment loader configuration.
+class PredectionServiceLoaderStepParameters(BaseParameters):
+    """KServe deployment loader parameters.
+
     Attributes:
         pipeline_name: name of the pipeline that deployed the KServe prediction
             server
@@ -35,30 +36,30 @@ class PredectionServiceLoaderStepConfig(BaseStepConfig):
 
 @step(enable_cache=False)
 def prediction_service_loader(
-    config: PredectionServiceLoaderStepConfig,
+    params: PredectionServiceLoaderStepParameters,
 ) -> KServeDeploymentService:
     """Get the prediction service started by the deployment pipeline"""
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
     services = model_deployer.find_model_server(
-        pipeline_name=config.pipeline_name,
-        pipeline_step_name=config.step_name,
-        model_name=config.model_name,
+        pipeline_name=params.pipeline_name,
+        pipeline_step_name=params.step_name,
+        model_name=params.model_name,
     )
     if not services:
         raise RuntimeError(
             f"No KServe prediction server deployed by the "
-            f"'{config.step_name}' step in the '{config.pipeline_name}' "
-            f"pipeline for the '{config.model_name}' model is currently "
+            f"'{params.step_name}' step in the '{params.pipeline_name}' "
+            f"pipeline for the '{params.model_name}' model is currently "
             f"running."
         )
 
     if not services[0].is_running:
         raise RuntimeError(
             f"The KServe prediction server last deployed by the "
-            f"'{config.step_name}' step in the '{config.pipeline_name}' "
-            f"pipeline for the '{config.model_name}' model is not currently "
+            f"'{params.step_name}' step in the '{params.pipeline_name}' "
+            f"pipeline for the '{params.model_name}' model is not currently "
             f"running."
         )
 

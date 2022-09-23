@@ -10,11 +10,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.config import DockerSettings
 from zenml.integrations.constants import AWS
 from zenml.pipelines import pipeline
 
 
-@pipeline(required_integrations=[AWS])
+@pipeline(settings={"docker": DockerSettings(required_integrations=[AWS])})
 def secret_loading_pipeline(
     secret_loader,
 ):

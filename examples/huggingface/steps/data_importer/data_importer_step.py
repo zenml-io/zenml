@@ -13,14 +13,14 @@
 #  permissions and limitations under the License.
 
 from datasets import DatasetDict, load_dataset
-from steps.configuration import HuggingfaceConfig
+from steps.configuration import HuggingfaceParameters
 
 from zenml.steps import step
 
 
 @step
-def data_importer(config: HuggingfaceConfig) -> DatasetDict:
+def data_importer(params: HuggingfaceParameters) -> DatasetDict:
     """Load dataset using huggingface datasets"""
-    datasets = load_dataset(config.dataset_name)
+    datasets = load_dataset(params.dataset_name)
     print("Sample Example :", datasets["train"][7])
     return datasets

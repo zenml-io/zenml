@@ -19,14 +19,14 @@ import torch.optim as optim
 from rich import print
 from torch.utils.data import DataLoader
 
-from zenml.steps import BaseStepConfig, step
+from zenml.steps import BaseParameters, step
 
 from .pytorch_net import Net
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-class PytorchTrainerConfig(BaseStepConfig):
+class PytorchTrainerParameters(BaseParameters):
     """Trainer params"""
 
     epochs: int = 2
@@ -36,15 +36,15 @@ class PytorchTrainerConfig(BaseStepConfig):
 
 @step
 def pytorch_trainer(
-    config: PytorchTrainerConfig, train_loader: DataLoader
+    params: PytorchTrainerParameters, train_loader: DataLoader
 ) -> nn.Module:
     """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner"""
 
     model = Net().to(DEVICE)
-    optimizer = optim.Adadelta(model.parameters(), lr=config.lr)
+    optimizer = optim.Adadelta(model.parameters(), lr=params.lr)
 
-    for epoch in range(1, config.epochs + 1):
+    for epoch in range(1, params.epochs + 1):
         model.train()
         for batch_idx, (data, target) in enumerate(train_loader):
             data, target = data.to(DEVICE), target.to(DEVICE)

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import tensorflow as tf
 from datasets import DatasetDict
-from steps.configuration import HuggingfaceConfig
+from steps.configuration import HuggingfaceParameters
 from transformers import (
     DataCollatorWithPadding,
     PreTrainedTokenizerBase,
@@ -25,7 +25,7 @@ from zenml.steps import step
 
 @step
 def sequence_evaluator(
-    config: HuggingfaceConfig,
+    params: HuggingfaceParameters,
     model: TFPreTrainedModel,
     tokenized_datasets: DatasetDict,
     tokenizer: PreTrainedTokenizerBase,
@@ -42,14 +42,14 @@ def sequence_evaluator(
     validation_set = tokenized_datasets["test"].to_tf_dataset(
         columns=["attention_mask", "input_ids"],
         shuffle=False,
-        batch_size=config.batch_size,
+        batch_size=params.batch_size,
         collate_fn=DataCollatorWithPadding(tokenizer, return_tensors="tf"),
         label_cols="label",
     )
 
     # Calculate loss
 
-    if config.dummy_run:
+    if params.dummy_run:
         test_loss, test_acc = model.evaluate(validation_set.take(10), verbose=1)
     else:
         test_loss, test_acc = model.evaluate(validation_set, verbose=1)

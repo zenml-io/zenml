@@ -296,7 +296,7 @@ def test_secrets_shared_at_scope_level(
     # to just wait until it is phased out.
     if (
         secrets_manager.scope == SecretsManagerScope.NONE
-        and secrets_manager.FLAVOR in ["gcp_secrets_manager", "azure_key_vault"]
+        and secrets_manager.FLAVOR in ["gcp", "azure"]
     ):
         new_secret.arbitrary_kv_pairs = secret.arbitrary_kv_pairs.copy()
         new_secret.arbitrary_kv_pairs[

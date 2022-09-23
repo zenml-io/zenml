@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datasets import DatasetDict
-from steps.configuration import HuggingfaceConfig
+from steps.configuration import HuggingfaceParameters
 from transformers import PreTrainedTokenizerBase
 
 from zenml.steps import step
@@ -20,7 +20,7 @@ from zenml.steps import step
 
 @step
 def token_classification_tokenization(
-    config: HuggingfaceConfig,
+    params: HuggingfaceParameters,
     tokenizer: PreTrainedTokenizerBase,
     datasets: DatasetDict,
 ) -> DatasetDict:
@@ -28,13 +28,13 @@ def token_classification_tokenization(
 
     def tokenize_and_align_labels(examples):
         tokenized_inputs = tokenizer(
-            examples[config.text_column],
+            examples[params.text_column],
             truncation=True,
             is_split_into_words=True,
         )
 
         labels = []
-        for i, label in enumerate(examples[config.label_column]):
+        for i, label in enumerate(examples[params.label_column]):
             word_ids = tokenized_inputs.word_ids(batch_index=i)
             previous_word_idx = None
             label_ids = []
@@ -52,7 +52,7 @@ def token_classification_tokenization(
                 #  flag.
                 else:
                     label_ids.append(
-                        label[word_idx] if config.label_all_tokens else -100
+                        label[word_idx] if params.label_all_tokens else -100
                     )
                 previous_word_idx = word_idx
 

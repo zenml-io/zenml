@@ -14,10 +14,10 @@
 import numpy as np
 import tensorflow as tf
 
-from zenml.steps import BaseStepConfig, step
+from zenml.steps import BaseParameters, step
 
 
-class TensorflowTrainerConfig(BaseStepConfig):
+class TensorflowTrainerParameters(BaseParameters):
     """Trainer params"""
 
     epochs: int = 1
@@ -27,7 +27,7 @@ class TensorflowTrainerConfig(BaseStepConfig):
 # Define the step and enable MLflow (n.b. order of decorators is important here)
 @step
 def tf_trainer(
-    config: TensorflowTrainerConfig,
+    params: TensorflowTrainerParameters,
     x_train: np.ndarray,
     y_train: np.ndarray,
 ) -> tf.keras.Model:
@@ -44,7 +44,7 @@ def tf_trainer(
     )
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(config.lr),
+        optimizer=tf.keras.optimizers.Adam(params.lr),
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=["accuracy"],
     )
@@ -52,7 +52,7 @@ def tf_trainer(
     model.fit(
         x_train,
         y_train,
-        epochs=config.epochs,
+        epochs=params.epochs,
     )
 
     # write model

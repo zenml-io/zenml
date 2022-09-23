@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 import lightgbm as lgb
 
-from zenml.steps import BaseStepConfig, step
+from zenml.steps import BaseParameters, step
 
 
-class LightGBMConfig(BaseStepConfig):
+class LightGBMParameters(BaseParameters):
     boosting_type: str = "gbdt"
     objective: str = "regression"
     num_leaves: int = 31
@@ -29,18 +29,18 @@ class LightGBMConfig(BaseStepConfig):
 
 @step
 def trainer(
-    config: LightGBMConfig, mat_train: lgb.Dataset, mat_test: lgb.Dataset
+    params: LightGBMParameters, mat_train: lgb.Dataset, mat_test: lgb.Dataset
 ) -> lgb.Booster:
     """Trains a LightGBM model on the data."""
     params = {
-        "boosting_type": config.boosting_type,
-        "objective": config.objective,
-        "num_leaves": config.num_leaves,
-        "learning_rate": config.learning_rate,
-        "feature_fraction": config.feature_fraction,
-        "bagging_fraction": config.bagging_fraction,
-        "bagging_freq": config.bagging_freq,
-        "verbose": config.verbose,
+        "boosting_type": params.boosting_type,
+        "objective": params.objective,
+        "num_leaves": params.num_leaves,
+        "learning_rate": params.learning_rate,
+        "feature_fraction": params.feature_fraction,
+        "bagging_fraction": params.bagging_fraction,
+        "bagging_freq": params.bagging_freq,
+        "verbose": params.verbose,
     }
     gbm = lgb.train(
         params,
