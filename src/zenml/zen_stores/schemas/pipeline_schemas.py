@@ -55,7 +55,6 @@ class PipelineSchema(SQLModel, table=True):
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
-        sa_relationship_kwargs={"cascade": "all, delete"},
     )
 
     @classmethod

@@ -38,8 +38,10 @@ spec:
               value: {{ .Values.zenml.debug | quote }}
             - name: ZENML_AUTH_TYPE
               value: {{ .Values.zenml.authType | quote }}
+            {{- if .Values.zenml.rootUrlPath }}
             - name: ZENML_SERVER_ROOT_URL_PATH
               value: {{ .Values.zenml.rootUrlPath | quote }}
+            {{- end }}
             - name: ZENML_DEFAULT_PROJECT_NAME
               value: {{ .Values.zenml.defaultProject | quote }}
             - name: ZENML_DEFAULT_USER_NAME

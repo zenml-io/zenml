@@ -21,6 +21,6 @@ from zenml.steps import step
 step_operator = Repository().active_stack.step_operator
 
 
-@step(custom_step_operator=step_operator.name)
+@step(step_operator=step_operator.name)
 def statistics_step(dataset: DataFrame) -> pd.DataFrame:
     return dataset.describe().toPandas()  # noqa

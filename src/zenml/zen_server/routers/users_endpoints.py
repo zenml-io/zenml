@@ -55,7 +55,7 @@ activation_router = APIRouter(
 
 
 @router.get(
-    "/",
+    "",
     response_model=List[UserModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -70,7 +70,7 @@ async def list_users() -> List[UserModel]:
 
 
 @router.post(
-    "/",
+    "",
     response_model=CreateUserResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )

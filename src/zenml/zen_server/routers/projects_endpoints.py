@@ -58,7 +58,7 @@ router = APIRouter(
 
 
 @router.get(
-    "/",
+    "",
     response_model=List[ProjectModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -73,7 +73,7 @@ async def list_projects() -> List[ProjectModel]:
 
 
 @router.post(
-    "/",
+    "",
     response_model=ProjectModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )

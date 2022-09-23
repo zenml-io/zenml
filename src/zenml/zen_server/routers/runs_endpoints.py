@@ -40,7 +40,7 @@ router = APIRouter(
 
 
 @router.get(
-    "/",
+    "",
     response_model=Union[
         List[HydratedPipelineRunModel], List[PipelineRunModel]
     ],

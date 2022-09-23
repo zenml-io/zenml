@@ -160,6 +160,18 @@ def config() -> None:
     type=str,
 )
 @click.option(
+    "--no-verify-ssl",
+    is_flag=True,
+    help="Whether we verify the server's TLS certificate",
+)
+@click.option(
+    "--ssl-ca-cert",
+    help="A path to a CA bundle to use to verify the server's TLS certificate "
+    "or the CA bundle value itself",
+    required=False,
+    type=str,
+)
+@click.option(
     "--local-store",
     is_flag=True,
     help="Configure ZenML to use the stacks stored on your local filesystem.",
@@ -175,6 +187,8 @@ def config_set_command(
     username: Optional[str] = None,
     password: Optional[str] = None,
     project: Optional[str] = None,
+    no_verify_ssl: bool = False,
+    ssl_ca_cert: Optional[str] = None,
     local_store: bool = False,
     config: Optional[str] = None,
 ) -> None:
@@ -189,6 +203,9 @@ def config_set_command(
             server.
         project: The active project that is used to connect to the ZenML
             server.
+        no_verify_ssl: Whether we verify the server's TLS certificate.
+        ssl_ca_cert: A path to a CA bundle to use to verify the server's TLS
+            certificate or the CA bundle value itself.
         config: A YAML or JSON configuration or configuration file to use.
     """
     from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
@@ -234,6 +251,10 @@ def config_set_command(
         store_config = RestZenStoreConfiguration(
             url=url,
             username=username,
+            password=password,
+            verify_ssl=ssl_ca_cert
+            if ssl_ca_cert is not None
+            else not no_verify_ssl,
         )
         GlobalConfiguration().set_store(store_config)
 

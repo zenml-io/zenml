@@ -23,7 +23,7 @@ from zenml.steps import Output, step
 step_operator = Repository().active_stack.step_operator
 
 
-@step(custom_step_operator=step_operator.name)
+@step(step_operator=step_operator.name)
 def transformer_step(
     train: DataFrame,
 ) -> Output(train_xf=DataFrame, scaler=Transformer, encoder=Transformer,):

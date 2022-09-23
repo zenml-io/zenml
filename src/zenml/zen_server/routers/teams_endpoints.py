@@ -28,7 +28,7 @@ from zenml.zen_server.models.user_management_models import (
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1,
+    prefix=VERSION_1 + TEAMS,
     tags=["teams"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
@@ -36,7 +36,7 @@ router = APIRouter(
 
 
 @router.get(
-    TEAMS,
+    "",
     response_model=List[TeamModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -51,7 +51,7 @@ async def list_teams() -> List[TeamModel]:
 
 
 @router.post(
-    TEAMS,
+    "",
     response_model=TeamModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -71,7 +71,7 @@ async def create_team(team: CreateTeamRequest) -> TeamModel:
 
 
 @router.get(
-    TEAMS + "/{team_name_or_id}",
+    "/{team_name_or_id}",
     response_model=TeamModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -89,7 +89,7 @@ async def get_team(team_name_or_id: Union[str, UUID]) -> TeamModel:
 
 
 @router.put(
-    TEAMS + "/{team_name_or_id}",
+    "/{team_name_or_id}",
     response_model=TeamModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -113,7 +113,7 @@ async def update_team(
 
 
 @router.delete(
-    TEAMS + "/{team_name_or_id}",
+    "/{team_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

@@ -39,7 +39,7 @@ from zenml.zen_server.routers import (
 
 DASHBOARD_DIRECTORY = "dashboard"
 
-ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "/")
+ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "")
 
 
 def relative_path(rel: str) -> str:
