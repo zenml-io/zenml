@@ -318,7 +318,10 @@ def list_servers(
     else:
         servers = deployer.list_servers()
 
-    cli_utils.print_server_deployment_list(servers)
+    if servers:
+        cli_utils.print_server_deployment_list(servers)
+    else:
+        cli_utils.declare("No servers found.")
 
 
 @server.command("connect", help="Connect to a ZenML server.")

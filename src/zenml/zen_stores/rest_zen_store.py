@@ -29,7 +29,6 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ARTIFACTS,
     FLAVORS,
-    GRAPH,
     INPUTS,
     LOGIN,
     METADATA_CONFIG,
@@ -1137,22 +1136,6 @@ class RestZenStore(BaseZenStore):
     # Pipeline runs
     # --------------
 
-    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
-        """Creates a pipeline run.
-
-        Args:
-            pipeline_run: The pipeline run to create.
-
-        Returns:
-            The created pipeline run.
-        """
-        return self._create_resource(
-            resource=pipeline_run,
-            route=f"{PIPELINES}/{str(pipeline_run.pipeline_id)}{RUNS}",
-            # TODO[server]: add request model
-            # request_model=CreatePipelineRunRequest,
-        )
-
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
 
@@ -1167,25 +1150,6 @@ class RestZenStore(BaseZenStore):
             route=RUNS,
             resource_model=PipelineRunModel,
         )
-
-    def get_run_dag(self, run_id: UUID) -> str:
-        """Gets the DAG for a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The DAG for the pipeline run.
-
-        Raises:
-            ValueError: if the response from the API is not a string.
-        """
-        body = self.get(f"{RUNS}/{str(run_id)}{GRAPH}")
-        if not isinstance(body, str):
-            raise ValueError(
-                f"Invalid response from server: {body}. Expected string."
-            )
-        return body
 
     # TODO: Figure out what exactly gets returned from this
     def get_run_component_side_effects(
@@ -1234,29 +1198,17 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
-    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
-        """Updates a pipeline run.
+    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
+        """Gets the execution status of a pipeline run.
 
         Args:
-            run: The pipeline run to use for the update.
+            run_id: The ID of the pipeline run to get the status for.
 
-        Raises:
-            NotImplementedError: this is not implemented.
+        Returns:
+            The status of the pipeline run.
         """
-        # TODO[server]: figure out if this should even be
-        # allowed or if we can remove it from the store interface
+        # TODO
         raise NotImplementedError
-
-    def delete_run(self, run_id: UUID) -> None:
-        """Deletes a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to delete.
-        """
-        self._delete_resource(
-            resource_id=run_id,
-            route=RUNS,
-        )
 
     # ------------------
     # Pipeline run steps

@@ -183,7 +183,7 @@ class HydratedPipelineModel(PipelineModel):
             user=user,
             runs=runs[:num_runs],
             docstring=pipeline_model.docstring,
-            configuration=pipeline_model.configuration,
+            spec=pipeline_model.spec,
             created=pipeline_model.created,
             updated=pipeline_model.updated,
         )

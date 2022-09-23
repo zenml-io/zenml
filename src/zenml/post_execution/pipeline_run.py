@@ -111,6 +111,15 @@ class PipelineRunView:
         return self._model.name
 
     @property
+    def pipeline_configuration(self) -> Dict[str, Any]:
+        """Returns the pipeline configuration.
+
+        Returns:
+            The pipeline configuration.
+        """
+        return self._model.pipeline_configuration
+
+    @property
     def zenml_version(self) -> Optional[str]:
         """Version of ZenML that this pipeline run was performed with.
 

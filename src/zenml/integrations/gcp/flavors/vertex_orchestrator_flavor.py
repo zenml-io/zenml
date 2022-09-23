@@ -20,7 +20,6 @@ from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
-from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.gcp.orchestrators import VertexOrchestrator
@@ -33,13 +32,6 @@ class VertexOrchestratorConfig(
     """Configuration for the Vertex orchestrator.
 
     Attributes:
-        custom_docker_base_image_name: Name of the Docker image that should be
-            used as the base for the image that will be used to execute each of
-            the steps. If no custom base image is given, a basic image of the
-            active ZenML version will be used. **Note**: This image needs to
-            have ZenML installed, otherwise the pipeline execution will fail.
-            For that reason, you might want to extend the ZenML Docker images found
-            here: https://hub.docker.com/r/zenmldocker/zenml/
         project: GCP project name. If `None`, the project will be inferred from
             the environment.
         location: Name of GCP region where the pipeline job will be executed.
@@ -92,7 +84,6 @@ class VertexOrchestratorConfig(
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus
     """
 
-    custom_docker_base_image_name: Optional[str] = None
     project: Optional[str] = None
     location: str
     pipeline_root: Optional[str] = None
@@ -106,12 +97,6 @@ class VertexOrchestratorConfig(
     memory_limit: Optional[str] = None
     node_selector_constraint: Optional[Tuple[str, str]] = None
     gpu_limit: Optional[int] = None
-
-    docker_parent_image: Optional[str] = None
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "custom_docker_base_image_name", "docker_parent_image"
-    )
 
 
 class VertexOrchestratorFlavor(BaseOrchestratorFlavor):

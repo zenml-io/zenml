@@ -11,11 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.steps import BaseStepConfig
+from zenml.steps import BaseParameters
 
 
-class HuggingfaceConfig(BaseStepConfig):
-    """Config for the token-classification"""
+class HuggingfaceParameters(BaseParameters):
+    """Parameters for the token-classification"""
 
     pretrained_model = "distilbert-base-uncased"
     batch_size = 16

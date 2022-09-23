@@ -12,11 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.config import DockerSettings
 from zenml.integrations.constants import TENSORFLOW
 from zenml.pipelines import pipeline
 
+docker_settings = DockerSettings(required_integrations=[TENSORFLOW])
 
-@pipeline(required_integrations=[TENSORFLOW], enable_cache=True)
+
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def mnist_pipeline(
     importer,
     normalizer,

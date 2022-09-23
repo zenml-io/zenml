@@ -22,7 +22,11 @@ from sqlmodel import Field, Relationship, SQLModel
 from zenml.models import ProjectModel
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.user_management_schemas import (
+    from zenml.zen_stores.schemas import (
+        FlavorSchema,
+        PipelineSchema,
+        StackComponentSchema,
+        StackSchema,
         TeamRoleAssignmentSchema,
         UserRoleAssignmentSchema,
     )
@@ -41,6 +45,19 @@ class ProjectSchema(SQLModel, table=True):
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
     team_role_assignments: List["TeamRoleAssignmentSchema"] = Relationship(
+        back_populates="project",
+        sa_relationship_kwargs={"cascade": "all, delete"},
+    )
+    stacks: List["StackSchema"] = Relationship(
+        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    components: List["StackComponentSchema"] = Relationship(
+        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    pipelines: List["PipelineSchema"] = Relationship(
+        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    flavors: List["FlavorSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
 

@@ -10,7 +10,6 @@ setup_stack () {
     msg "${WARNING}Reusing preexisting experiment tracker ${NOFORMAT}mlflow_tracker"
   zenml data-validator register evidently_validator --flavor=evidently
   zenml stack register quickstart_stack \
-      -m default \
       -a default \
       -o default \
       -dv evidently_validator \

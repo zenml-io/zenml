@@ -6,7 +6,6 @@ setup_stack () {
   zenml data-validator register evidently_validator --flavor=evidently || \
     msg "${WARNING}Reusing preexisting data-validator ${NOFORMAT}evidently_validator"
   zenml stack register evidently_stack \
-      -m default \
       -a default \
       -o default \
       -dv evidently_validator || \

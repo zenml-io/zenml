@@ -13,11 +13,10 @@
 #  permissions and limitations under the License.
 """GitHub Actions orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Type
 
 from zenml.integrations.github import GITHUB_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
-from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.github.orchestrators import (
@@ -29,13 +28,6 @@ class GitHubActionsOrchestratorConfig(BaseOrchestratorConfig):
     """Configuration for the GitHub Actions orchestrator.
 
     Attributes:
-        custom_docker_base_image_name: Name of a docker image that should be
-            used as the base for the image that will be run on GitHub Action
-            runners. If no custom image is given, a basic image of the active
-            ZenML version will be used. **Note**: This image needs to have
-            ZenML installed, otherwise the pipeline execution will fail. For
-            that reason, you might want to extend the ZenML docker images
-            found here: https://hub.docker.com/r/zenmldocker/zenml/
         skip_dirty_repository_check: If `True`, this orchestrator will not
             raise an exception when trying to run a pipeline while there are
             still untracked/uncommitted files in the git repository.
@@ -47,16 +39,9 @@ class GitHubActionsOrchestratorConfig(BaseOrchestratorConfig):
             be committed and pushed manually.
     """
 
-    custom_docker_base_image_name: Optional[str] = None
     skip_dirty_repository_check: bool = False
     skip_github_repository_check: bool = False
     push: bool = False
-
-    docker_parent_image: Optional[str] = None
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "custom_docker_base_image_name", "docker_parent_image"
-    )
 
 
 class GitHubActionsOrchestratorFlavor(BaseOrchestratorFlavor):

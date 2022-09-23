@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.great_expectations.steps import (
-    GreatExpectationsProfilerConfig,
+    GreatExpectationsProfilerParameters,
     GreatExpectationsProfilerStep,
 )
 
-ge_profiler_config = GreatExpectationsProfilerConfig(
+ge_profiler_params = GreatExpectationsProfilerParameters(
     expectation_suite_name="steel_plates_suite",
     data_asset_name="steel_plates_train_df",
 )
-ge_profiler_step = GreatExpectationsProfilerStep(config=ge_profiler_config)
+ge_profiler_step = GreatExpectationsProfilerStep(params=ge_profiler_params)

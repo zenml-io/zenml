@@ -31,18 +31,14 @@ documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflo
 for details.
 
 ## 🧰 How the example is implemented
-Adding MLflow tracking to a step is a simple as adding the mlflow decorator. Now you're free to log anything from within 
+Adding MLflow tracking to a step is a enabling the experiment tracker for a step. Now you're free to log anything from within 
 the step to mlflow. 
 
 ZenML ties all the logs from all steps within a pipeline run together into one mlflow run so that you can see everything
 in one place.
 
  ```python
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
-
-# Define the step and enable mlflow - order of decorators is important here
-@enable_mlflow
-@step
+@step(experiment_tracker="<NAME_OF_EXPERIMENT_TRACKER>")
 def tf_trainer(
     x_train: np.ndarray,
     y_train: np.ndarray,
@@ -59,14 +55,19 @@ def tf_trainer(
     return model
 ```
 You can also log parameters, metrics and artifacts into nested runs, which 
-will be children of the pipeline run. You only need to add the parameter 
-`nested=True` to the decorator, like so:
+will be children of the pipeline run. To do so, enable it in the settings like this:
 
 ```python
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import MLFlowExperimentTrackerSettings
 
-@enable_mlflow(nested=True)
-@step
+@step(
+    experiment_tracker="<NAME_OF_EXPERIMENT_TRACKER>",
+    settings={
+        "experiment_tracker.mlflow": MLFlowExperimentTrackerSettings(
+            nested=True
+        )
+    }
+)
 def tf_trainer(
     x_train: np.ndarray,
     y_train: np.ndarray,
@@ -82,12 +83,9 @@ def tf_trainer(
     
     return model
 ```
-If you want to use this decorator with our class-based API, simply decorate your step class as follows:
+If you want to enable MLflow tracking when using the class-based API, simply configure your step as follows:
 
 ```python
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
-
-@enable_mlflow
 class TFTrainer(BaseStep):
     def entrypoint(
         self,
@@ -96,6 +94,9 @@ class TFTrainer(BaseStep):
     ) -> tf.keras.Model:
         mlflow.tensorflow.autolog()
         ...
+
+step_instance = TFTrainer()
+step_instance.configure(experiment_tracker="<NAME_OF_EXPERIMENT_TRACKER>")
 ```
 # 🖥 Run it locally
 
@@ -129,7 +130,6 @@ zenml init
 # Create and activate the stack with the mlflow experiment tracker component
 zenml experiment-tracker register mlflow_tracker --type=mlflow
 zenml stack register mlflow_stack \
-    -m default \
     -a default \
     -o default \
     -e mlflow_tracker

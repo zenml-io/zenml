@@ -77,6 +77,7 @@ ENV_ZENML_DEFAULT_USER_NAME = "ZENML_DEFAULT_USER_NAME"
 ENV_ZENML_DEFAULT_USER_PASSWORD = "ZENML_DEFAULT_USER_PASSWORD"
 ENV_ZENML_DEFAULT_PROJECT_NAME = "ZENML_DEFAULT_PROJECT_NAME"
 ENV_ZENML_STORE_PREFIX = "ZENML_STORE_"
+ENV_ZENML_SKIP_PIPELINE_REGISTRATION = "ZENML_SKIP_PIPELINE_REGISTRATION"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -157,8 +158,9 @@ PIPELINES = "/pipelines"
 TRIGGERS = "/triggers"
 RUNS = "/runs"
 DEFAULT_STACK = "/default-stack"
-RUNTIME_CONFIGURATION = "/runtime-configuration"
+PIPELINE_SPEC = "/pipeline-spec"
 PIPELINE_CONFIGURATION = "/pipeline-configuration"
+STEP_CONFIGURATION = "/step-configuration"
 GRAPH = "/graph"
 STEPS = "/steps"
 ARTIFACTS = "/artifacts"
@@ -174,12 +176,6 @@ VERSION_1 = "/v1"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
-
-# MLMD context constants
-ZENML_MLMD_CONTEXT_TYPE = "zenml"
-MLMD_CONTEXT_STACK_PROPERTY_NAME = "stack"
-MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME = "pipeline_configuration"
-MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME = "step_configuration"
 
 
 # model metadata yaml file name

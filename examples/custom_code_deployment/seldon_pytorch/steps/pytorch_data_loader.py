@@ -17,7 +17,7 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader
 
-from zenml.steps import BaseStepConfig, Output, step
+from zenml.steps import BaseParameters, Output, step
 
 
 def build_data_loader(
@@ -42,7 +42,7 @@ def build_data_loader(
     return data_loader
 
 
-class PytorchDataLoaderConfig(BaseStepConfig):
+class PytorchDataLoaderParameters(BaseParameters):
     """DataLoader params"""
 
     train_shuffle: bool = True
@@ -53,16 +53,16 @@ class PytorchDataLoaderConfig(BaseStepConfig):
 
 @step
 def pytorch_data_loader(
-    config: PytorchDataLoaderConfig,
+    params: PytorchDataLoaderParameters,
 ) -> Output(train_loader=DataLoader, test_loader=DataLoader):
     train_loader = build_data_loader(
         is_train=True,
-        batch_size=config.train_batch_size,
-        shuffle=config.train_shuffle,
+        batch_size=params.train_batch_size,
+        shuffle=params.train_shuffle,
     )
     test_loader = build_data_loader(
         is_train=False,
-        batch_size=config.test_batch_size,
-        shuffle=config.test_shuffle,
+        batch_size=params.test_batch_size,
+        shuffle=params.test_shuffle,
     )
     return train_loader, test_loader

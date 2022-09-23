@@ -1,6 +1,6 @@
 import tensorflow as tf
 from datasets import DatasetDict
-from steps.configuration import HuggingfaceConfig
+from steps.configuration import HuggingfaceParameters
 from transformers import (
     DataCollatorForTokenClassification,
     PreTrainedTokenizerBase,
@@ -12,7 +12,7 @@ from zenml.steps import step
 
 @step
 def token_evaluator(
-    config: HuggingfaceConfig,
+    params: HuggingfaceParameters,
     model: TFPreTrainedModel,
     tokenized_datasets: DatasetDict,
     tokenizer: PreTrainedTokenizerBase,
@@ -25,14 +25,14 @@ def token_evaluator(
     validation_set = tokenized_datasets["validation"].to_tf_dataset(
         columns=["attention_mask", "input_ids", "labels"],
         shuffle=False,
-        batch_size=config.batch_size,
+        batch_size=params.batch_size,
         collate_fn=DataCollatorForTokenClassification(
             tokenizer, return_tensors="tf"
         ),
     )
 
     # Calculate loss
-    if config.dummy_run:
+    if params.dummy_run:
         test_loss = model.evaluate(validation_set.take(10), verbose=1)
     else:
         test_loss = model.evaluate(validation_set, verbose=1)

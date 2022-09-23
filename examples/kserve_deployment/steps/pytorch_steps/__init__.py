@@ -11,24 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from .pytorch_data_loader import PytorchDataLoaderConfig, pytorch_data_loader
+from .pytorch_data_loader import (
+    PytorchDataLoaderParameters,
+    pytorch_data_loader,
+)
 from .pytorch_evaluator import pytorch_evaluator
 from .pytorch_inference_processor import (
-    PyTorchInferenceProcessorStepConfig,
+    PyTorchInferenceProcessorStepParameters,
     pytorch_inference_processor,
 )
 from .pytorch_model_deployer import pytorch_model_deployer
 from .pytorch_predictor import pytorch_predictor
-from .pytorch_trainer import PytorchTrainerConfig, pytorch_trainer
+from .pytorch_trainer import PytorchTrainerParameters, pytorch_trainer
 
 __all__ = [
-    "PytorchDataLoaderConfig",
+    "PytorchDataLoaderParameters",
     "pytorch_data_loader",
-    "PytorchTrainerConfig",
+    "PytorchTrainerParameters",
     "pytorch_trainer",
     "pytorch_evaluator",
     "pytorch_model_deployer",
     "pytorch_inference_processor",
-    "PyTorchInferenceProcessorStepConfig",
+    "PyTorchInferenceProcessorStepParameters",
     "pytorch_predictor",
 ]

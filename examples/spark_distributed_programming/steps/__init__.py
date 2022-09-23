@@ -26,17 +26,17 @@ if not step_operator or not isinstance(step_operator, SparkStepOperator):
         "example to work."
     )
 
-from .importer_step.importer_step import ImporterConfig, importer_step
-from .split_step.split_step import SplitConfig, split_step
+from .importer_step.importer_step import ImporterParameters, importer_step
+from .split_step.split_step import SplitParameters, split_step
 from .statistics_step.statistics_step import statistics_step
 from .trainer_step.trainer_step import trainer_step
 from .transformer_step.transformer_step import transformer_step
 
 __all__ = [
     "importer_step",
-    "ImporterConfig",
+    "ImporterParameters",
     "split_step",
-    "SplitConfig",
+    "SplitParameters",
     "statistics_step",
     "transformer_step",
     "trainer_step",

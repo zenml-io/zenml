@@ -16,10 +16,11 @@
 import os
 from abc import ABCMeta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
@@ -499,7 +500,6 @@ class Repository(metaclass=RepositoryMetaClass):
             # set the active project globally only if the repository doesn't use
             # a local configuration
             GlobalConfiguration().active_project_name = project.name
-
         return project
 
     @property
@@ -1142,8 +1142,8 @@ class Repository(metaclass=RepositoryMetaClass):
             pipeline_name=name, project_name_or_id=self.active_project_name
         )
 
-    def _register_pipeline(
-        self, pipeline_name: str, pipeline_configuration: Dict[str, str]
+    def register_pipeline(
+        self, pipeline_name: str, pipeline_spec: PipelineSpec
     ) -> UUID:
         """Registers a pipeline in the ZenStore within the active project.
 
@@ -1154,7 +1154,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             pipeline_name: The name of the pipeline to register.
-            pipeline_configuration: The configuration of the pipeline.
+            pipeline_spec: The spec of the pipeline.
 
         Returns:
             The id of the existing or newly registered pipeline.
@@ -1172,14 +1172,14 @@ class Repository(metaclass=RepositoryMetaClass):
                 project=self.active_project.id,
                 user=self.active_user.id,
                 name=pipeline_name,
-                configuration=pipeline_configuration,
+                spec=pipeline_spec,
             )
             pipeline = self.zen_store.create_pipeline(pipeline=pipeline)
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
             return pipeline.id
 
         # B) If a pipeline exists that has the same config, use that pipeline.
-        if pipeline_configuration == existing_pipeline.configuration:
+        if pipeline_spec == existing_pipeline.spec:
             logger.debug("Did not register pipeline since it already exists.")
             return existing_pipeline.id
 
@@ -1188,9 +1188,8 @@ class Repository(metaclass=RepositoryMetaClass):
             f"Cannot run pipeline '{pipeline_name}' since this name has "
             "already been registered with a different pipeline "
             "configuration. You have three options to resolve this issue: "
-            "1) You can register a new pipeline by changing the 'name' "
-            "argument of your pipeline, e.g., via "
-            '`my_pipeline(step1=..., ..., name="My New Pipeline Name")`. '
+            "1) You can register a new pipeline by changing the name "
+            "of your pipeline, e.g., via `@pipeline(name='new_pipeline_name')."
             "2) You can execute the current run without linking it to any "
             "pipeline by setting the 'unlisted' argument to `True`, e.g., "
             "via `my_pipeline_instance.run(unlisted=True)`. "
@@ -1201,43 +1200,6 @@ class Repository(metaclass=RepositoryMetaClass):
             "change all existing runs of this pipeline to become unlisted."
         )
         raise AlreadyExistsException(error_msg)
-
-    # def register_pipeline_run(
-    #     self,
-    #     pipeline_name: str,
-    #     pipeline_configuration: Dict[str, str],
-    #     runtime_configuration: "RuntimeConfiguration",
-    #     stack_id: UUID,
-    #     unlisted: bool = False,
-    # ) -> None:
-    #     """Registers a pipeline run in the ZenStore.
-
-    #     Args:
-    #         pipeline_name: The name of the pipeline.
-    #         pipeline_configuration: The configuration of the pipeline.
-    #         runtime_configuration: The runtime configuration of the pipeline.
-    #         stack_id: The ID of the stack that was used to run the pipeline.
-    #         unlisted: Whether the pipeline run should be unlisted (not assigned
-    #             to any pipeline).
-    #     """
-    #     # If `unlisted` is True, we don't assign the run to any pipeline
-    #     if unlisted:
-    #         pipeline_id = None
-    #     else:
-    #         pipeline_id = self._register_pipeline(
-    #             pipeline_name=pipeline_name,
-    #             pipeline_configuration=pipeline_configuration,
-    #         )
-
-    #     pipeline_run = PipelineRunModel(
-    #         name=runtime_configuration.run_name,
-    #         user=self.active_user.id,
-    #         project=self.active_project.id,
-    #         stack_id=stack_id,
-    #         pipeline_id=pipeline_id,
-    #         runtime_configuration=runtime_configuration,
-    #     )
-    #     self.zen_store.create_run(pipeline_run)
 
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.

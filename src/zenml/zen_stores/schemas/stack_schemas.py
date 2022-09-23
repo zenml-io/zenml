@@ -17,11 +17,13 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List
 from uuid import UUID
 
+from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import StackModel
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
     from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 
 
@@ -46,12 +48,16 @@ class StackSchema(SQLModel, table=True):
 
     name: str
     is_shared: bool
-    project: UUID = Field(
-        foreign_key="projectschema.id",
+
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
     )
-    user: UUID = Field(
-        foreign_key="userschema.id",
+    project: "ProjectSchema" = Relationship(back_populates="stacks")
+
+    user_id: UUID = Field(
+        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
     )
+    user: "UserSchema" = Relationship(back_populates="stacks")
 
     components: List["StackComponentSchema"] = Relationship(
         back_populates="stacks", link_model=StackCompositionSchema
@@ -75,8 +81,8 @@ class StackSchema(SQLModel, table=True):
         return cls(
             id=stack.id,
             name=stack.name,
-            project=stack.project,
-            user=stack.user,
+            project_id=stack.project,
+            user_id=stack.user,
             is_shared=stack.is_shared,
             components=defined_components,
         )
@@ -112,8 +118,8 @@ class StackSchema(SQLModel, table=True):
         return StackModel(
             id=self.id,
             name=self.name,
-            user=self.user,
-            project=self.project,
+            user=self.user_id,
+            project=self.project_id,
             is_shared=self.is_shared,
             components={c.type: [c.id] for c in self.components},
             created=self.created,

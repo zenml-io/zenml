@@ -16,13 +16,13 @@ from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
 )
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
 from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
-from zenml.steps import BaseStepConfig, step
+from zenml.steps import BaseParameters, step
 
 model_deployer = mlflow_model_deployer_step
 
 
-class MLFlowDeploymentLoaderStepConfig(BaseStepConfig):
-    """MLflow deployment getter configuration
+class MLFlowDeploymentLoaderStepParameters(BaseParameters):
+    """MLflow deployment getter parameters
 
     Attributes:
         pipeline_name: name of the pipeline that deployed the MLflow prediction
@@ -41,7 +41,7 @@ class MLFlowDeploymentLoaderStepConfig(BaseStepConfig):
 
 @step(enable_cache=False)
 def prediction_service_loader(
-    config: MLFlowDeploymentLoaderStepConfig,
+    params: MLFlowDeploymentLoaderStepParameters,
 ) -> MLFlowDeploymentService:
     """Get the prediction service started by the deployment pipeline"""
 
@@ -50,17 +50,17 @@ def prediction_service_loader(
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
-        pipeline_name=config.pipeline_name,
-        pipeline_step_name=config.pipeline_step_name,
-        model_name=config.model_name,
-        running=config.running,
+        pipeline_name=params.pipeline_name,
+        pipeline_step_name=params.pipeline_step_name,
+        model_name=params.model_name,
+        running=params.running,
     )
 
     if not existing_services:
         raise RuntimeError(
             f"No MLflow prediction service deployed by the "
-            f"{config.pipeline_step_name} step in the {config.pipeline_name} "
-            f"pipeline for the '{config.model_name}' model is currently "
+            f"{params.pipeline_step_name} step in the {params.pipeline_name} "
+            f"pipeline for the '{params.model_name}' model is currently "
             f"running."
         )
 

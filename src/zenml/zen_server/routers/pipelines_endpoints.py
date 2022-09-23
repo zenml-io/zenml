@@ -17,7 +17,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import PIPELINES, RUNS, VERSION_1
+from zenml.config.pipeline_configurations import PipelineSpec
+from zenml.constants import PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import PipelineModel
 from zenml.zen_server.auth import authorize
@@ -181,26 +182,19 @@ async def list_pipeline_runs(
     )
 
 
-@router.post(
-    "/{pipeline_id}" + RUNS,
-    responses={401: error_response, 409: error_response, 422: error_response},
+@router.get(
+    "/{pipeline_id}" + PIPELINE_SPEC,
+    response_model=PipelineSpec,
+    responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def create_pipeline_run(
-    pipeline_id: UUID, pipeline_run: PipelineRunModel
-) -> PipelineRunModel:
-    """Create a run for a pipeline.
-
-    This endpoint is not meant to be used explicitly once ZenML follows the
-    centralized paradigm where runs are authored by the ZenServer and not on the
-    user's machine.
+async def get_pipeline_spec(pipeline_id: UUID) -> PipelineSpec:
+    """Gets the spec of a specific pipeline using its unique id.
 
     Args:
-        pipeline_id: ID of the pipeline.
-        pipeline_run: The pipeline run to create.
+        pipeline_id: ID of the pipeline to get.
 
     Returns:
-        The created pipeline run.
+        The spec of the pipeline.
     """
-    pipeline_run.pipeline_id = pipeline_id
-    return zen_store.create_run(pipeline_run=pipeline_run)
+    return zen_store.get_pipeline(pipeline_id).spec

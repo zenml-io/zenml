@@ -15,14 +15,19 @@
 
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
+from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
+from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType
 from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
 
 
 class PipelineSchema(SQLModel, table=True):
@@ -32,17 +37,25 @@ class PipelineSchema(SQLModel, table=True):
 
     name: str
 
-    project: UUID = Field(foreign_key="projectschema.id")
-    user: UUID = Field(foreign_key="userschema.id")
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    )
+    project: "ProjectSchema" = Relationship(back_populates="pipelines")
+
+    user_id: UUID = Field(
+        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    )
+    user: "UserSchema" = Relationship(back_populates="pipelines")
 
     docstring: Optional[str] = Field(nullable=True)
-    configuration: str
+    spec: str
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
+        sa_relationship_kwargs={"cascade": "all, delete"},
     )
 
     @classmethod
@@ -58,10 +71,10 @@ class PipelineSchema(SQLModel, table=True):
         return cls(
             id=pipeline.id,
             name=pipeline.name,
-            project=pipeline.project,
-            user=pipeline.user,
+            project_id=pipeline.project,
+            user_id=pipeline.user,
             docstring=pipeline.docstring,
-            configuration=json.dumps(pipeline.configuration),
+            spec=pipeline.spec.json(sort_keys=True),
         )
 
     def from_update_model(self, model: PipelineModel) -> "PipelineSchema":
@@ -76,7 +89,7 @@ class PipelineSchema(SQLModel, table=True):
         self.name = model.name
         self.updated = datetime.now()
         self.docstring = model.docstring
-        self.configuration = json.dumps(model.configuration)
+        self.spec = model.spec.json(sort_keys=True)
         return self
 
     def to_model(self) -> "PipelineModel":
@@ -88,10 +101,10 @@ class PipelineSchema(SQLModel, table=True):
         return PipelineModel(
             id=self.id,
             name=self.name,
-            project=self.project,
-            user=self.user,
+            project=self.project_id,
+            user=self.user_id,
             docstring=self.docstring,
-            configuration=json.loads(self.configuration),
+            spec=PipelineSpec.parse_raw(self.spec),
             created=self.created,
             updated=self.updated,
         )
@@ -103,8 +116,8 @@ class PipelineRunSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     name: str
 
-    # project_id - redundant since stack has this
-    user: Optional[UUID] = Field(foreign_key="userschema.id", nullable=True)
+    project: UUID = Field(foreign_key="projectschema.id")
+    user: UUID = Field(foreign_key="userschema.id")
     stack_id: Optional[UUID] = Field(
         foreign_key="stackschema.id", nullable=True
     )
@@ -112,9 +125,9 @@ class PipelineRunSchema(SQLModel, table=True):
         foreign_key="pipelineschema.id", nullable=True
     )
 
-    runtime_configuration: Optional[str] = Field(nullable=True)
-    git_sha: Optional[str] = Field(nullable=True)
+    pipeline_configuration: str
     zenml_version: str
+    git_sha: Optional[str] = Field(nullable=True)
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -142,9 +155,10 @@ class PipelineRunSchema(SQLModel, table=True):
             id=run.id,
             name=run.name,
             stack_id=run.stack_id,
+            project=run.project,
             user=run.user,
             pipeline_id=run.pipeline_id,
-            runtime_configuration=json.dumps(run.runtime_configuration),
+            pipeline_configuration=json.dumps(run.pipeline_configuration),
             git_sha=run.git_sha,
             zenml_version=run.zenml_version,
             pipeline=pipeline,
@@ -161,7 +175,6 @@ class PipelineRunSchema(SQLModel, table=True):
             The updated `PipelineRunSchema`.
         """
         self.name = model.name
-        self.runtime_configuration = json.dumps(model.runtime_configuration)
         self.git_sha = model.git_sha
         if model.zenml_version is not None:
             self.zenml_version = model.zenml_version
@@ -176,16 +189,14 @@ class PipelineRunSchema(SQLModel, table=True):
         Returns:
             The created `PipelineRunModel`.
         """
-        config = self.runtime_configuration
-        if config is not None:
-            config = json.loads(config)
         return PipelineRunModel(
             id=self.id,
             name=self.name,
             stack_id=self.stack_id,
+            project=self.project,
             user=self.user,
             pipeline_id=self.pipeline_id,
-            runtime_configuration=config,
+            pipeline_configuration=json.loads(self.pipeline_configuration),
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,
             mlmd_id=self.mlmd_id,
@@ -202,9 +213,10 @@ class StepRunSchema(SQLModel, table=True):
 
     pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
 
-    docstring: Optional[str]
-    parameters: str
     entrypoint_name: str
+    parameters: str
+    step_configuration: str
+    docstring: Optional[str]
 
     mlmd_id: int = Field(default=None, nullable=True)
 
@@ -226,9 +238,10 @@ class StepRunSchema(SQLModel, table=True):
             id=model.id,
             name=model.name,
             pipeline_run_id=model.pipeline_run_id,
-            docstring=model.docstring,
-            parameters=json.dumps(model.parameters),
             entrypoint_name=model.entrypoint_name,
+            parameters=json.dumps(model.parameters),
+            step_configuration=json.dumps(model.step_configuration),
+            docstring=model.docstring,
             mlmd_id=model.mlmd_id,
         )
 
@@ -249,9 +262,10 @@ class StepRunSchema(SQLModel, table=True):
             name=self.name,
             pipeline_run_id=self.pipeline_run_id,
             parent_step_ids=parent_step_ids,
-            docstring=self.docstring,
-            parameters=json.loads(self.parameters),
             entrypoint_name=self.entrypoint_name,
+            parameters=json.loads(self.parameters),
+            step_configuration=json.loads(self.step_configuration),
+            docstring=self.docstring,
             mlmd_id=self.mlmd_id,
             mlmd_parent_step_ids=mlmd_parent_step_ids,
             created=self.created,

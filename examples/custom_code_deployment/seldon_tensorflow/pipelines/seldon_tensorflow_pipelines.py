@@ -13,15 +13,16 @@
 #  permissions and limitations under the License.
 
 
+from zenml.config import DockerSettings
 from zenml.integrations.constants import SELDON, TENSORFLOW
 from zenml.pipelines import pipeline
 
-
-@pipeline(
-    enable_cache=True,
-    requirements=["Pillow"],
-    required_integrations=[SELDON, TENSORFLOW],
+docker_settings = DockerSettings(
+    requirements=["Pillow"], required_integrations=[SELDON, TENSORFLOW]
 )
+
+
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def tensorflow_custom_code_pipeline(
     data_loader,
     trainer,
@@ -36,11 +37,7 @@ def tensorflow_custom_code_pipeline(
     deployer(deployment_decision, model)
 
 
-@pipeline(
-    enable_cache=True,
-    requirements=["Pillow"],
-    required_integrations=[SELDON, TENSORFLOW],
-)
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def tensorflow_inference_pipeline(
     inference_image_loader,
     prediction_service_loader,
