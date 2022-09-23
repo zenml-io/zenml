@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Zen Server terraform deployer implementation."""
 
+import os
 from typing import ClassVar, List, Optional, Tuple, Type, cast
 
 from zenml.enums import ServerProviderType
@@ -32,8 +33,10 @@ from zenml.zen_server.deploy.docker.docker_zen_server import (
     ZEN_SERVER_HEALTHCHECK_URL_PATH,
 )
 from zenml.zen_server.deploy.terraform.terraform_zen_server import (
+    TERRAFORM_VALUES_FILE_PATH,
     TERRAFORM_ZENML_SERVER_CONFIG_PATH,
     TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT,
+    TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH,
     TerraformServerDeploymentConfig,
     TerraformZenServer,
     TerraformZenServerConfig,
@@ -46,7 +49,7 @@ class TerraformServerProvider(BaseServerProvider):
     """Docker ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.TERRAFORM
-    CONFIG_TYPE: ClassVar[
+    CONFIG_TYPE: ClassVar[  # TODO How do I handle individual recipe configs here?
         Type[ServerDeploymentConfig]
     ] = TerraformServerDeploymentConfig
 
@@ -73,9 +76,11 @@ class TerraformServerProvider(BaseServerProvider):
             TerraformZenServerConfig(
                 root_runtime_path=TERRAFORM_ZENML_SERVER_CONFIG_PATH,
                 singleton=True,
-                directory_path=server_config.directory_path,
+                directory_path=os.path.join(
+                    TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH, server_config.type
+                ),
                 log_level=server_config.log_level,
-                variables_file_path=server_config.variables_file_path,
+                variables_file_path=TERRAFORM_VALUES_FILE_PATH,
                 server=server_config,
             ),
             ServiceEndpointConfig(
@@ -111,7 +116,6 @@ class TerraformServerProvider(BaseServerProvider):
         if timeout is None:
             timeout = TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT
 
-        service = TerraformZenServer.get_service()
         existing_service = TerraformZenServer.get_service()
         if existing_service:
             raise RuntimeError(

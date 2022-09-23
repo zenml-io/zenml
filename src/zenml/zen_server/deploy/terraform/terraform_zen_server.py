@@ -16,16 +16,14 @@
 import os
 from typing import Optional, cast
 
-from zenml.config.global_config import GlobalConfiguration
+from zenml.enums import TerraformZenServerType
 from zenml.logger import get_logger
 from zenml.services import ServiceType, TerraformService, TerraformServiceConfig
 from zenml.services.container.container_service import (
     SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
-    SERVICE_CONTAINER_GLOBAL_CONFIG_PATH,
 )
 from zenml.utils.io_utils import get_global_config_directory
 from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
-from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
 
@@ -46,7 +44,8 @@ TERRAFORM_ZENML_SERVER_CONFIG_FILENAME = os.path.join(
 TERRAFORM_ZENML_SERVER_GLOBAL_CONFIG_PATH = os.path.join(
     TERRAFORM_ZENML_SERVER_CONFIG_PATH, SERVICE_CONTAINER_GLOBAL_CONFIG_DIR
 )
-TERRAFORM_ZENML_SERVER_DEFAULT_IMAGE = "zenmlterraform/zenml-server"
+TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH = "path to terraform_zenml_server"
+TERRAFORM_VALUES_FILE_PATH = "values.tfvars.json"
 
 TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
@@ -55,15 +54,12 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     """Terraform server deployment configuration.
 
     Attributes:
-        directory_path: the path to the directory that hosts all the HCL files.
         log_level: the log level to set the terraform client to. Choose one of
             TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
-        variables_file_path: the path to the file that stores all variable values.
     """
 
-    directory_path: str
+    type: TerraformZenServerType
     log_level: str = "ERROR"
-    variables_file_path: str = "values.tfvars.json"
 
 
 class TerraformZenServerConfig(TerraformServiceConfig):
@@ -93,27 +89,6 @@ class TerraformZenServer(TerraformService):
 
     config: TerraformZenServerConfig
 
-    def _copy_global_configuration(self) -> None:
-        """Copy the global configuration to the terraform ZenML server location.
-
-        The terraform ZenML server global configuration is a copy of the terraform
-        global configuration with the store configuration set to point to the
-        local store.
-        """
-        gc = GlobalConfiguration()
-
-        # this creates a copy of the global configuration with the store
-        # set to where the default local store is mounted in the terraform
-        # container and saves it to the server configuration path
-        store_config = gc.get_default_store()
-        store_config.url = SqlZenStore.get_local_url(
-            SERVICE_CONTAINER_GLOBAL_CONFIG_PATH
-        )
-        gc.copy_configuration(
-            config_path=TERRAFORM_ZENML_SERVER_GLOBAL_CONFIG_PATH,
-            store_config=store_config,
-        )
-
     @classmethod
     def get_service(cls) -> Optional["TerraformZenServer"]:
         """Load and return the terraform ZenML server service, if present.
@@ -132,8 +107,3 @@ class TerraformZenServer(TerraformService):
                 )
         except FileNotFoundError:
             return None
-
-    def provision(self) -> None:
-        """Provision the service."""
-        self._copy_global_configuration()
-        super().provision()
