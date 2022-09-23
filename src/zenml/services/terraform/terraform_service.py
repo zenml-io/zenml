@@ -19,9 +19,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Generator, Optional, Tuple
 
-import docker.errors as docker_errors
-import python_terraform
-from docker.models.containers import Container
+import python_terraform  # type: ignore
 from pydantic import Field
 
 from zenml.io import fileio
@@ -186,15 +184,13 @@ class TerraformService(BaseService):
         Returns:
             A message providing information about the current operational
             state of the service.
+
+        Raises:
+            NotImplementedError: not implemented.
         """
-        msg = super().get_service_status_message()
-        msg += f"  Container ID: `{self.container_id}`\n"
-        if self.status.log_file:
-            msg += (
-                f"For more information on the service status, please see the "
-                f"following log file: {self.status.log_file}\n"
-            )
-        return msg
+        raise NotImplementedError(
+            "This method is not available for Terraform services."
+        )
 
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the the current operational state of the docker container.
@@ -203,28 +199,13 @@ class TerraformService(BaseService):
             The operational state of the docker container and a message
             providing additional information about that state (e.g. a
             description of the error, if one is encountered).
-        """
-        container: Optional[Container] = None
-        try:
-            container = self.docker_client.containers.get(self.container_id)
-        except docker_errors.NotFound:
-            # container doesn't exist yet or was removed
-            pass
 
-        if container is None:
-            return ServiceState.INACTIVE, "Docker container is not present"
-        elif container.status == "running":
-            return ServiceState.ACTIVE, "Docker container is running"
-        elif container.status == "exited":
-            return (
-                ServiceState.ERROR,
-                "Docker container has exited.",
-            )
-        else:
-            return (
-                ServiceState.INACTIVE,
-                f"Docker container is {container.status}",
-            )
+        Raises:
+            NotImplementedError: not implemented.
+        """
+        raise NotImplementedError(
+            "This method is not available for Terraform services."
+        )
 
     def _init_and_apply(self) -> None:
         """Function to call terraform init and terraform apply.
@@ -352,6 +333,7 @@ class TerraformService(BaseService):
         # in case of singleton services, this will remove the config
         # path as a whole and otherwise, this removes the specific UUID
         # directory
+        assert self.status.config_file is not None
         shutil.rmtree(Path(self.status.config_file).parent)
 
     # overwriting the start/stop function to remove the progress indicator
@@ -376,7 +358,7 @@ class TerraformService(BaseService):
                     + self.get_service_status_message()
                 )
 
-    def stop(self, timeout: int = 0) -> None:
+    def stop(self, timeout: int = 0, force: bool = False) -> None:
         """Stop the service and optionally wait for it to shutdown.
 
         Args:
@@ -406,7 +388,13 @@ class TerraformService(BaseService):
         Args:
             follow: if True, the logs will be streamed as they are written
             tail: only retrieve the last NUM lines of log output.
+
+        Raises:
+            NotImplementedError: not implemented.
         """
+        raise NotImplementedError(
+            "This method is not available for Terraform services."
+        )
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.
