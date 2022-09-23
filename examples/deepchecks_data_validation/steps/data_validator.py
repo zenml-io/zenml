@@ -12,7 +12,7 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.deepchecks.steps import (
-    DeepchecksDataIntegrityCheckStepConfig,
+    DeepchecksDataIntegrityCheckStepParameters,
     deepchecks_data_integrity_check_step,
 )
 
@@ -20,7 +20,7 @@ LABEL_COL = "target"
 
 data_validator = deepchecks_data_integrity_check_step(
     step_name="data_validator",
-    config=DeepchecksDataIntegrityCheckStepConfig(
+    params=DeepchecksDataIntegrityCheckStepParameters(
         dataset_kwargs=dict(label=LABEL_COL, cat_features=[]),
     ),
 )

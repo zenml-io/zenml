@@ -13,15 +13,16 @@
 #  permissions and limitations under the License.
 
 
+from zenml.config import DockerSettings
 from zenml.integrations.constants import KSERVE, PYTORCH
 from zenml.pipelines import pipeline
 
-
-@pipeline(
-    enable_cache=True,
-    requirements=["torchvision"],
-    required_integrations=[KSERVE, PYTORCH],
+docker_settings = DockerSettings(
+    requirements=["torchvision"], required_integrations=[KSERVE, PYTORCH]
 )
+
+
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def pytorch_training_deployment_pipeline(
     data_loader,
     trainer,
@@ -36,11 +37,7 @@ def pytorch_training_deployment_pipeline(
     deployer(deployment_decision, model)
 
 
-@pipeline(
-    enable_cache=True,
-    required_integrations=[KSERVE, PYTORCH],
-    requirements=["torchvision"],
-)
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def pytorch_inference_pipeline(
     pytorch_inference_processor,
     prediction_service_loader,

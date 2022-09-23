@@ -248,18 +248,6 @@ zenml artifact-store register spark_artifact_store \
     --authentication_secret=s3_authentication
 ```
 
-Similar to the artifact store, for our **metadata store** on RDS, we will be 
-using an authentication secret.
-
-```bash
-# Register the metadata store using the secret
-zenml metadata-store register spark_metadata_store \
-    --flavor=mysql \
-    --database=zenml \
-    --secret=rds_authentication \
-    --host=$RDS_MYSQL_ENDPOINT
-```
-
 We also register the **container registry** on ECR as follows:
 
 ```bash
@@ -278,7 +266,6 @@ zenml stack register spark_stack \
     -s spark_step_operator \
     -x spark_secrets_manager \
     -a spark_artifact_store \
-    -m spark_metadata_store \
     -c spark_container_registry \
     --set
 ```

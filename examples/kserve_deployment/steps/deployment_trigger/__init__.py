@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from .deployment_trigger import DeploymentTriggerConfig, deployment_trigger
+from .deployment_trigger import DeploymentTriggerParameters, deployment_trigger
 
 __all__ = [
-    "DeploymentTriggerConfig",
+    "DeploymentTriggerParameters",
     "deployment_trigger",
 ]

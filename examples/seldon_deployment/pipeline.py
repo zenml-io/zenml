@@ -23,6 +23,7 @@ from rich import print
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
+from zenml.config import DockerSettings
 from zenml.integrations.constants import SELDON, SKLEARN, TENSORFLOW
 from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
 from zenml.integrations.seldon.services import SeldonDeploymentService
@@ -256,9 +257,12 @@ def predictor(
     return prediction
 
 
-@pipeline(
-    enable_cache=True, required_integrations=[SELDON, TENSORFLOW, SKLEARN]
+docker_settings = DockerSettings(
+    required_integrations=[SELDON, TENSORFLOW, SKLEARN]
 )
+
+
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def continuous_deployment_pipeline(
     importer,
     normalizer,
@@ -276,9 +280,7 @@ def continuous_deployment_pipeline(
     model_deployer(deployment_decision, model)
 
 
-@pipeline(
-    enable_cache=True, required_integrations=[SELDON, TENSORFLOW, SKLEARN]
-)
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def inference_pipeline(
     dynamic_importer,
     predict_preprocessor,

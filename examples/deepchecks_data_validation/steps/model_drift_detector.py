@@ -12,7 +12,7 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.deepchecks.steps import (
-    DeepchecksModelDriftCheckStepConfig,
+    DeepchecksModelDriftCheckStepParameters,
     deepchecks_model_drift_check_step,
 )
 
@@ -20,7 +20,7 @@ LABEL_COL = "target"
 
 model_drift_detector = deepchecks_model_drift_check_step(
     step_name="model_drift_detector",
-    config=DeepchecksModelDriftCheckStepConfig(
+    params=DeepchecksModelDriftCheckStepParameters(
         dataset_kwargs=dict(label=LABEL_COL, cat_features=[]),
     ),
 )

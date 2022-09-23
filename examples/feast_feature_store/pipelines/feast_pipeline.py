@@ -12,14 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.config import DockerSettings
 from zenml.integrations.constants import FEAST
-from zenml.logger import get_logger
 from zenml.pipelines import pipeline
 
-logger = get_logger(__name__)
+docker_settings = DockerSettings(required_integrations=[FEAST])
 
 
-@pipeline(required_integrations=[FEAST])
+@pipeline(enable_cache=False, settings={"docker": docker_settings})
 def feast_pipeline(
     get_features,
     feature_printer,

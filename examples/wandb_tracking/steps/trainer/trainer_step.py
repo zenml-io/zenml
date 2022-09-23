@@ -15,8 +15,10 @@ import numpy as np
 import tensorflow as tf
 from wandb.integration.keras import WandbCallback
 
-from zenml.integrations.wandb.wandb_step_decorator import enable_wandb
+from zenml.repository import Repository
 from zenml.steps import BaseParameters, step
+
+experiment_tracker = Repository().active_stack.experiment_tracker
 
 
 class TrainerParameters(BaseParameters):
@@ -26,9 +28,7 @@ class TrainerParameters(BaseParameters):
     lr: float = 0.001
 
 
-# Define the step and enable wandb - order of decorators is important here
-@enable_wandb
-@step
+@step(experiment_tracker=experiment_tracker.name)
 def tf_trainer(
     params: TrainerParameters,
     x_train: np.ndarray,

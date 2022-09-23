@@ -131,22 +131,6 @@ zenml orchestrator register k8s_orchestrator
     --synchronous=True
 ```
 
-### Setup and Register Metadata Store
-
-If you want to store your metadata locally within the Kubernetes cluster, you
-can use the `KubernetesMetadataStore`, which automatically spins up a MySQL 
-deployment in your cluster if you call `zenml stack up`.
-
-We can register this metadata store as follows:
-
-```bash
-zenml metadata-store register k8s_store 
-    --flavor=kubernetes
-    --kubernetes_context==<KUBE_CONTEXT>
-    --kubernetes_namespace=zenml
-    --deployment_name=mysql
-```
-
 ### Register Container Registry
 Next, we need to register a container registry where the Docker images for all
 Kubernetes pods will be stored.
@@ -185,7 +169,6 @@ Finally, let us bring everything together and register our stack:
 
 ```bash
 zenml stack register k8s_stack 
-    -m k8s_store 
     -a s3_store 
     -o k8s_orchestrator 
     -c ecr_registry

@@ -12,11 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.config import DockerSettings
 from zenml.integrations.constants import PYTORCH
 from zenml.pipelines import pipeline
 
+docker_settings = DockerSettings(required_integrations=[PYTORCH])
 
-@pipeline(required_integrations=[PYTORCH])
+
+@pipeline(settings={"docker": docker_settings})
 def fashion_mnist_pipeline(
     importer,
     trainer,

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from zenml.integrations.whylogs.steps import (
-    WhylogsProfilerConfig,
+    WhylogsProfilerParameters,
     whylogs_profiler_step,
 )
 
@@ -23,11 +23,11 @@ from zenml.integrations.whylogs.steps import (
 
 train_data_profiler = whylogs_profiler_step(
     step_name="train_data_profiler",
-    config=WhylogsProfilerConfig(),
+    params=WhylogsProfilerParameters(),
     dataset_id="model-2",
 )
 test_data_profiler = whylogs_profiler_step(
     step_name="test_data_profiler",
-    config=WhylogsProfilerConfig(),
+    params=WhylogsProfilerParameters(),
     dataset_id="model-3",
 )

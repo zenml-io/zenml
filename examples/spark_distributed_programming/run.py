@@ -15,8 +15,8 @@ import os
 
 from pipelines import spark_pipeline
 from steps import (
-    ImporterConfig,
-    SplitConfig,
+    ImporterParameters,
+    SplitParameters,
     importer_step,
     split_step,
     statistics_step,
@@ -27,11 +27,11 @@ from steps import (
 if __name__ == "__main__":
     pipeline = spark_pipeline(
         importer=importer_step(
-            config=ImporterConfig(path=os.getenv("SPARK_DEMO_DATASET"))
+            paras=ImporterParameters(path=os.getenv("SPARK_DEMO_DATASET"))
         ),
         analyzer=statistics_step(),
         splitter=split_step(
-            config=SplitConfig(
+            params=SplitParameters(
                 train_ratio=0.7,
                 test_ratio=0.2,
                 eval_ratio=0.1,
