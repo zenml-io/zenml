@@ -142,18 +142,14 @@ and its configuration, you can have a look at [the API docs](https://apidocs.zen
 ## How do you use it?
 
 To be able to log information from a ZenML pipeline step using the MLflow
-Experiment Tracker component in the active stack, you need to use the
-`enable_mlflow` step decorator on all pipeline steps where you plan on doing
-that. Then use MLflow's logging or auto-logging capabilities as you would
-normally do, e.g.:
+Experiment Tracker component in the active stack, you need to enable an
+experiment tracker using the `@step` decorator. Then use MLflow's logging
+or auto-logging capabilities as you would normally do, e.g.:
 
 ```python
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
 import mlflow
 
-# Define the step and enable mlflow - order of decorators is important here
-@enable_mlflow
-@step
+@step(experiment_tracker="<MLFLOW_TRACKER_STACK_COMPONENT_NAME>")
 def tf_trainer(
     x_train: np.ndarray,
     y_train: np.ndarray,
@@ -176,24 +172,26 @@ def tf_trainer(
     return model
 ```
 
-The `enable_mlflow` decorator accepts additional parameters. An especially
-useful argument is `nested=True`. When supplied, it will log the parameters,
-metrics and artifacts of each step into nested runs, e.g.:
+For additional configuration of the MLflow experiment tracker, you can pass
+`MLflowExperimentTrackerSettings` to create nested runs or add additional tags
+to your MLflow runs:
 
 ```python
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
 import mlflow
+from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import MLFlowExperimentTrackerSettings
 
-@enable_mlflow(nested=True)
-@step
+mlflow_settings = MLFlowExperimentTrackerSettings(
+    nested=True,
+    tags={"key": "value"}
+)
+
+@step(
+    experiment_tracker="<MLFLOW_TRACKER_STACK_COMPONENT_NAME>",
+    settings={
+        "experiment_tracker.mlflow": mlflow_settings
+    }
+)
 def step_one(
-    data: np.ndarray,
-) -> np.ndarray:
-    ...
-
-@enable_mlflow(nested=True)
-@step
-def step_two(
     data: np.ndarray,
 ) -> np.ndarray:
     ...
