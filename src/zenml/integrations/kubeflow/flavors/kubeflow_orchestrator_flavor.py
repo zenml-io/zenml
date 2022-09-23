@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
-from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
@@ -46,13 +45,6 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
     """Configuration for the Kubeflow orchestrator.
 
     Attributes:
-        custom_docker_base_image_name: Name of a docker image that should be
-            used as the base for the image that will be run on KFP pods. If no
-            custom image is given, a basic image of the active ZenML version
-            will be used. **Note**: This image needs to have ZenML installed,
-            otherwise the pipeline execution will fail. For that reason, you
-            might want to extend the ZenML docker images found here:
-            https://hub.docker.com/r/zenmldocker/zenml/
         kubeflow_pipelines_ui_port: A local port to which the KFP UI will be
             forwarded.
         kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
@@ -74,7 +66,6 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
             will be skipped.
     """
 
-    custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
@@ -83,12 +74,6 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
     skip_local_validations: bool = False
     skip_cluster_provisioning: bool = False
     skip_ui_daemon_provisioning: bool = False
-
-    docker_parent_image: Optional[str] = None
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "custom_docker_base_image_name", "docker_parent_image"
-    )
 
 
 class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):

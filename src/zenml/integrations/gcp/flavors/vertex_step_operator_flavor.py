@@ -23,7 +23,6 @@ from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
 )
-from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.gcp.step_operators import VertexStepOperator
@@ -43,7 +42,6 @@ class VertexStepOperatorConfig(
         accelerator_count: Defines number of accelerators to be
             used for the job.
         machine_type: Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
-        base_image: Base image for building the custom job container.
         encryption_spec_key_name: Encryption spec key name.
     """
 
@@ -52,17 +50,10 @@ class VertexStepOperatorConfig(
     accelerator_type: Optional[str] = None
     accelerator_count: int = 0
     machine_type: str = "n1-standard-4"
-    base_image: Optional[str] = None
 
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set
     encryption_spec_key_name: Optional[str] = None
-
-    docker_parent_image: Optional[str] = None
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "custom_docker_base_image_name", "docker_parent_image"
-    )
 
 
 class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
