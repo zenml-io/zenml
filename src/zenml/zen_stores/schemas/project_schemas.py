@@ -23,11 +23,10 @@ from zenml.models import ProjectModel
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
+        FlavorSchema,
         PipelineSchema,
         StackComponentSchema,
-        StackSchema, FlavorSchema,
-)
-    from zenml.zen_stores.schemas.user_management_schemas import (
+        StackSchema,
         TeamRoleAssignmentSchema,
         UserRoleAssignmentSchema,
     )
