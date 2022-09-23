@@ -13,17 +13,7 @@
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
 import os
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -54,9 +44,6 @@ from zenml.utils.analytics_utils import (
     track_event,
 )
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface
-
-if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineSpec
 
 logger = get_logger(__name__)
 
@@ -592,18 +579,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 f"{project_name_or_id}"
             )
         return pipelines[0]
-
-    # TODO: is this really needed ?
-    def get_pipeline_spec(self, pipeline_id: UUID) -> "PipelineSpec":
-        """Gets the pipeline spec.
-
-        Args:
-            pipeline_id: The ID of the pipeline to get.
-
-        Returns:
-            The pipeline spec.
-        """
-        return self.get_pipeline(pipeline_id).spec
 
     # -------------
     # Pipeline runs

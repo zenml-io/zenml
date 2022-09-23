@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends
 from zenml.constants import (
     COMPONENT_SIDE_EFFECTS,
     GRAPH,
+    PIPELINE_CONFIGURATION,
     RUNS,
     STEPS,
     VERSION_1,
@@ -162,3 +163,21 @@ async def get_run_component_side_effects(
         run_id=run_id,
         component_id=component_id,
     )
+
+
+@router.get(
+    "/{run_id}" + PIPELINE_CONFIGURATION,
+    response_model=Dict[str, Any],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+async def get_pipeline_configuration(run_id: UUID) -> Dict[str, Any]:
+    """Get the pipeline configuration of a specific pipeline run using its ID.
+
+    Args:
+        run_id: ID of the pipeline run to get.
+
+    Returns:
+        The pipeline configuration of the pipeline run.
+    """
+    return zen_store.get_run(run_id=run_id).pipeline_configuration

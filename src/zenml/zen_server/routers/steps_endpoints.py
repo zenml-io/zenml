@@ -13,12 +13,18 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Dict
+from typing import Any, Dict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import INPUTS, OUTPUTS, STEPS, VERSION_1
+from zenml.constants import (
+    INPUTS,
+    OUTPUTS,
+    STEP_CONFIGURATION,
+    STEPS,
+    VERSION_1,
+)
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -83,3 +89,21 @@ async def get_step_inputs(step_id: UUID) -> Dict[str, ArtifactModel]:
         All inputs of the step, mapping from input name to artifact model.
     """
     return zen_store.get_run_step_inputs(step_id)
+
+
+@router.get(
+    "/{step_id}" + STEP_CONFIGURATION,
+    response_model=Dict[str, Any],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+async def get_step_configuration(step_id: UUID) -> Dict[str, Any]:
+    """Get the configuration of a specific step.
+
+    Args:
+        step_id: ID of the step to get.
+
+    Returns:
+        The step configuration.
+    """
+    return zen_store.get_run_step(step_id).step_configuration

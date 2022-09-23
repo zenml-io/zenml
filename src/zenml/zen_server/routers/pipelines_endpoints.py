@@ -17,7 +17,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import PIPELINES, RUNS, VERSION_1
+from zenml.config.pipeline_configurations import PipelineSpec
+from zenml.constants import PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import PipelineModel
 from zenml.zen_server.auth import authorize
@@ -179,3 +180,21 @@ async def list_pipeline_runs(
         user_name_or_id=user_name_or_id,
         pipeline_id=pipeline_id,
     )
+
+
+@router.get(
+    "/{pipeline_id}" + PIPELINE_SPEC,
+    response_model=PipelineSpec,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+async def get_pipeline_spec(pipeline_id: UUID) -> PipelineSpec:
+    """Gets the spec of a specific pipeline using its unique id.
+
+    Args:
+        pipeline_id: ID of the pipeline to get.
+
+    Returns:
+        The spec of the pipeline.
+    """
+    return zen_store.get_pipeline(pipeline_id).spec
