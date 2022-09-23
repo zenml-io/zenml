@@ -113,11 +113,15 @@ class RestZenStoreConfiguration(StoreConfiguration):
     Attributes:
         username: The username to use to connect to the Zen server.
         password: The password to use to connect to the Zen server.
+        verify_ssl: Either a boolean, in which case it controls whether we
+            verify the server's TLS certificate, or a string, in which case it
+            must be a path to a CA bundle to use or the CA bundle value itself.
     """
 
     type: StoreType = StoreType.REST
     username: str
     password: str = ""
+    verify_ssl: Union[bool, str] = True
 
     @validator("url")
     def validate_url(cls, url: str) -> str:
@@ -1336,6 +1340,7 @@ class RestZenStore(BaseZenStore):
                         "username": self.config.username,
                         "password": self.config.password,
                     },
+                    verify=self.config.verify_ssl,
                 )
             )
             if not isinstance(response, dict) or "access_token" not in response:
@@ -1355,6 +1360,7 @@ class RestZenStore(BaseZenStore):
         """
         if self._session is None:
             self._session = requests.Session()
+            self._session.verify = self.config.verify_ssl
             token = self._get_auth_token()
             self._session.headers.update({"Authorization": "Bearer " + token})
             logger.debug("Authenticated to ZenML server.")
@@ -1453,7 +1459,7 @@ class RestZenStore(BaseZenStore):
         params = {k: str(v) for k, v in params.items()} if params else {}
         try:
             return self._handle_response(
-                self.session.request(method, url, params=params, **kwargs)
+                self.session.request(method, url, params=params, verify=self.config.verify_ssl, **kwargs)
             )
         except AuthorizationException:
             # The authentication token could have expired; refresh it and try

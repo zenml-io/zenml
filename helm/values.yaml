@@ -89,6 +89,7 @@ ingress:
   path: /
   tls:
     enabled: false
+    generateCerts: false
     secretName: zenml-tls-certs
 
 resources: {}
