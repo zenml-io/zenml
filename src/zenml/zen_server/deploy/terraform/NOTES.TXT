@@ -1,0 +1,8 @@
+- where do I keep the individual recipe configs?
+- do I make the config_type of terraform provider a union of all recipe configs?
+- then when I convert the config (overwrite convert_config) from the base service 
+  config I choose the right class based on config.type
+- overwrite provision of TerraformService in the TerraformZenServer class. 
+  this provision function will take the recipe-specific server deployment config 
+  and then update the locals.tf file at the directory_path with these values. 
+  Then call super.provision()
