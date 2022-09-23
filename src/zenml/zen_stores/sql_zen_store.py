@@ -2244,7 +2244,7 @@ class SqlZenStore(BaseZenStore):
                 return ExecutionStatus.FAILED
             if step_status == ExecutionStatus.RUNNING:
                 return ExecutionStatus.RUNNING
-        return ExecutionStatus.SUCCEEDED
+        return ExecutionStatus.COMPLETED
 
     # ------------------
     # Pipeline run steps
