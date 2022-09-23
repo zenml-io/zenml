@@ -27,7 +27,7 @@ from zenml.zen_server.models.user_management_models import (
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1,
+    prefix=VERSION_1 + ROLES,
     tags=["roles"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
@@ -35,7 +35,7 @@ router = APIRouter(
 
 
 @router.get(
-    ROLES,
+    "",
     response_model=List[RoleModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -50,7 +50,7 @@ async def list_roles() -> List[RoleModel]:
 
 
 @router.post(
-    ROLES,
+    "",
     response_model=RoleModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -70,7 +70,7 @@ async def create_role(role: CreateRoleRequest) -> RoleModel:
 
 
 @router.get(
-    ROLES + "/{role_name_or_id}",
+    "/{role_name_or_id}",
     response_model=RoleModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -88,7 +88,7 @@ async def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
 
 
 @router.put(
-    ROLES + "/{role_name_or_id}",
+    "/{role_name_or_id}",
     response_model=RoleModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -112,7 +112,7 @@ async def update_role(
 
 
 @router.delete(
-    ROLES + "/{role_name_or_id}",
+    "/{role_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

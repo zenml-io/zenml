@@ -28,7 +28,7 @@ router = APIRouter(
 
 
 @router.get(
-    "/",
+    "",
     response_model=str,
     responses={401: error_response, 404: error_response, 422: error_response},
 )

@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """REST Zen Store implementation."""
 
+import os
 import re
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
@@ -23,6 +24,7 @@ from google.protobuf.json_format import Parse
 from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 from pydantic import BaseModel, validator
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ARTIFACTS,
@@ -51,6 +53,7 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactModel,
@@ -145,6 +148,44 @@ class RestZenStoreConfiguration(StoreConfiguration):
             )
 
         return url
+
+    @validator("verify_ssl")
+    def validate_verify_ssl(
+        cls, verify_ssl: Union[bool, str]
+    ) -> Union[bool, str]:
+        """Validates that the verify_ssl field either points to a file or is a bool.
+
+        Args:
+            verify_ssl: The verify_ssl value to be validated.
+
+        Returns:
+            The validated verify_ssl value.
+
+        Raises:
+            ValueError: If the verify_ssl value points to a non-existing file.
+        """
+
+        secret_folder = Path(
+            GlobalConfiguration().local_stores_path,
+            "certificates",
+        )
+        if isinstance(verify_ssl, bool) or verify_ssl.startswith(
+            str(secret_folder)
+        ):
+            return verify_ssl
+
+        if os.path.isfile(verify_ssl):
+            with open(verify_ssl, "r") as f:
+                verify_ssl = f.read()
+
+        fileio.makedirs(str(secret_folder))
+        file_path = Path(secret_folder, "ca_bundle.pem")
+        with open(file_path, "w") as f:
+            f.write(verify_ssl)
+        file_path.chmod(0o600)
+        verify_ssl = str(file_path)
+
+        return verify_ssl
 
     class Config:
         """Pydantic configuration class."""
@@ -1459,7 +1500,13 @@ class RestZenStore(BaseZenStore):
         params = {k: str(v) for k, v in params.items()} if params else {}
         try:
             return self._handle_response(
-                self.session.request(method, url, params=params, verify=self.config.verify_ssl, **kwargs)
+                self.session.request(
+                    method,
+                    url,
+                    params=params,
+                    verify=self.config.verify_ssl,
+                    **kwargs,
+                )
             )
         except AuthorizationException:
             # The authentication token could have expired; refresh it and try
@@ -1578,7 +1625,7 @@ class RestZenStore(BaseZenStore):
         request: BaseModel = resource
         if request_model is not None:
             request = request_model.from_model(resource)
-        response_body = self.post(f"{route}/", body=request)
+        response_body = self.post(f"{route}", body=request)
         if response_model is not None:
             response = response_model.parse_obj(response_body)
             created_resource = response.to_model()
@@ -1657,7 +1704,7 @@ class RestZenStore(BaseZenStore):
         """
         # leave out filter params that are not supplied
         params = dict(filter(lambda x: x[1] is not None, filters.items()))
-        body = self.get(f"{route}/", params=params)
+        body = self.get(f"{route}", params=params)
         if not isinstance(body, list):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
