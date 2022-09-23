@@ -26,17 +26,16 @@ class SparkStepOperator(BaseStepOperator):
     def _resource_configuration(
         self,
         spark_config: SparkConf,
-        resource_configuration: "ResourceConfiguration",
+        resource_configuration: "ResourceSettings",
     ) -> None:
 				"""Configures Spark to handle the resource configuration."""
 
     def _backend_configuration(
         self,
         spark_config: SparkConf,
-        docker_configuration: "DockerConfiguration",
-        pipeline_name: str,
+        step_config: "StepConfiguration",
     ) -> None:
-        """Configures Spark to handle backends like YARN, Mesos, Kubernetes."""
+        """Configures Spark to handle backends like YARN, Mesos or Kubernetes."""
 
     def _io_configuration(
 				self, 
@@ -57,11 +56,8 @@ class SparkStepOperator(BaseStepOperator):
 
     def launch(
         self,
-        pipeline_name: str,
-        run_name: str,
-        docker_configuration: "DockerConfiguration",
+        info: "StepRunInfo",
         entrypoint_command: List[str],
-        resource_configuration: "ResourceConfiguration",
     ) -> None:
         """Launches the step on Spark."""
 ```
@@ -78,11 +74,11 @@ define additional params if required (Spark has a wide variety of parameters,
 thus including them all in a single class was deemed unnecessary.).
 
 In addition to these parameters, the `launch` method of the step operator 
-gets additional configuration parameters from the `DockerConfiguration` and 
-`ResourceConfiguration`. As a result, the overall configuration happens in 4 
+gets additional configuration parameters from the `DockerSettings` and 
+`ResourceSettings`. As a result, the overall configuration happens in 4 
 base methods:
 
-- `_resource_configuration` translates the ZenML `ResourceConfiguration` object 
+- `_resource_configuration` translates the ZenML `ResourceSettings` object 
 to Spark's own resource configuration.
 - `_backend_configuration` is responsible for cluster-manager-specific 
 configuration.
@@ -108,14 +104,12 @@ be required to provide additional configuration through the `submit_args`.
 ## Stack Component: `KubernetesSparkStepOperator`
 
 The `KubernetesSparkStepOperator` is implemented by subclassing the 
-base `SparkStepOperator` and the `PipelineDockerImageBuilder`. While 
-`SparkStepOperator` will provide us a base to start with and the 
-`PipelineDockerImageBuilder` will give this class the functionality to build 
+base `SparkStepOperator` and uses the `PipelineDockerImageBuilder` class to build 
 and push the required docker images. 
 
 ```python
 class KubernetesSparkStepOperator(
-    SparkStepOperator, PipelineDockerImageBuilder
+    SparkStepOperator, 
 ):
 		"""Step operator which runs Steps with Spark on Kubernetes."""
     # Parameters for Kubernetes
@@ -125,12 +119,12 @@ class KubernetesSparkStepOperator(
     def _backend_configuration(
         self,
         spark_config: SparkConf,
-        docker_configuration: "DockerConfiguration",
-        pipeline_name: str,
+        step_config: "StepConfiguration",
     ) -> None:
         """Configures Spark to run on Kubernetes."""
         # Build and push the image
-        image_name = self.build_and_push_docker_image(...)
+        docker_image_builder = PipelineDockerImageBuilder()
+        image_name = docker_image_builder.build_and_push_docker_image(...)
 
         # Adjust the spark configuration
         spark_config.set("spark.kubernetes.container.image", image_name)

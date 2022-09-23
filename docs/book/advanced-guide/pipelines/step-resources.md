@@ -16,21 +16,21 @@ required resources for steps as follows:
 {% tab title="Functional API" %}
 
 ```python
-from zenml.steps import step, ResourceConfiguration
+from zenml.steps import step, ResourceSettings
 
-@step(resource_configuration=ResourceConfiguration(cpu_count=8, gpu_count=2))
+@step(settings={"resources": ResourceSettings(cpu_count=8, gpu_count=2)})
 def training_step(...) -> ...:
     # train a model
 ```
 {% endtab %}
 {% tab title="Class-based API" %}
 ```python
-from zenml.steps import BaseStep, ResourceConfiguration
+from zenml.steps import BaseStep, ResourceSettings
 
 class TrainingStep(BaseStep):
     ...
 
-step = TrainingStep(resource_configuration=ResourceConfiguration(cpu_count=8, gpu_count=2))
+step = TrainingStep(settings = {"resources": ResourceSettings(cpu_count=8, gpu_count=2)})
 ```
 {% endtab %}
 {% endtabs %}
