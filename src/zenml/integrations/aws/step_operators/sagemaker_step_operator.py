@@ -82,7 +82,8 @@ class SagemakerStepOperator(BaseStepOperator):
         if not steps_to_run:
             return
 
-        image_digest = PipelineDockerImageBuilder().build_and_push_docker_image(
+        docker_image_builder = PipelineDockerImageBuilder()
+        image_digest = docker_image_builder.build_and_push_docker_image(
             deployment=deployment,
             stack=stack,
             entrypoint=f"${_ENTRYPOINT_ENV_VARIABLE}",

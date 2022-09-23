@@ -110,7 +110,7 @@ class Compiler:
 
         deployment = PipelineDeployment(
             run_name=run_name,
-            stack_name=stack.name,
+            stack_id=stack.id,
             schedule=run_configuration.schedule,
             pipeline=pipeline.configuration,
             proto_pipeline=encoded_pb2_pipeline,

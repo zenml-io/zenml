@@ -17,8 +17,10 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+from zenml.repository import Repository
 from zenml.steps import step
+
+experiment_tracker = Repository().active_stack.experiment_tracker
 
 
 @step
@@ -32,8 +34,7 @@ def svc_trainer(
     return model
 
 
-@enable_mlflow
-@step(enable_cache=False)
+@step(enable_cache=False, experiment_tracker=experiment_tracker.name)
 def svc_trainer_mlflow(
     X_train: np.ndarray,
     y_train: np.ndarray,

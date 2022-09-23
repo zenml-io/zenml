@@ -59,15 +59,6 @@ zenml container-registry register github_container_registry \
     --automatic_token_authentication=true \
     --uri=<GITHUB_CONTAINER_REGISTRY_URI>
 
-# Register a metadata store (we will create the authentication secret later)
-# - HOST is the public IP address of your MySQL database
-# - DATABASE_NAME is the name of the database in which ZenML should store metadata
-zenml metadata-store register cloud_metadata_store \
-    --flavor=mysql \
-    --secret=mysql_secret \
-    --host=<HOST> \
-    --database=<DATABASE_NAME> \
-
 # Register one of the three following artifact stores (we will create the authentication secrets later)
 # AWS:
 zenml artifact-store register cloud_artifact_store \
@@ -90,18 +81,8 @@ zenml stack register github_stack \
     -o github_orchestrator \
     -s github_secrets_manager \
     -c github_container_registry \
-    -m cloud_metadata_store \
     -a cloud_artifact_store \
     --set
-
-# Now that the stack is active, we can register the secrets needed to connect to our metadata and artifact store:
-zenml secrets-manager secret register mysql_secret \
-    --schema=mysql \
-    --user=<USERNAME> \
-    --password=<PASSWORD> \
-    --ssl_ca=@<PATH_TO_SSL_SERVER_CERTIFICATE> \
-    --ssl_cert=@<PATH_TO_SSL_CLIENT_CERTIFICATE> \
-    --ssl_key=@<PATH_TO_SSL_CLIENT_KEY>
 
 # Register one of the following secrets depending on the flavor of artifact store that you've registered:
 # AWS: See https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html for how to

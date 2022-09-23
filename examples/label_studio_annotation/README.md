@@ -70,7 +70,7 @@ zenml stack copy default <ANNOTATION_STACK_NAME>
 
 zenml stack set <ANNOTATION_STACK_NAME>
 
-zenml secrets-manager register <YOUR_SECRETS_MANAGER> --key_vault_name=<YOUR_KEY_VAULT_NAME> -f azure_key_vault
+zenml secrets-manager register <YOUR_SECRETS_MANAGER> --key_vault_name=<YOUR_KEY_VAULT_NAME> -f azure
 
 zenml stack update <ANNOTATION_STACK_NAME> -x <YOUR_SECRETS_MANAGER>
 
@@ -128,7 +128,7 @@ zenml stack copy default <YOUR_ANNOTATION_STACK_NAME>
 
 zenml stack set <YOUR_ANNOTATION_STACK_NAME>
 
-zenml secrets-manager register <YOUR_SECRETS_MANAGER> -f gcp_secrets_manager --project_id="<YOUR_GCP_PROJECT_NAME>"
+zenml secrets-manager register <YOUR_SECRETS_MANAGER> -f gcp --project_id="<YOUR_GCP_PROJECT_NAME>"
 
 zenml stack update <YOUR_ANNOTATION_STACK_NAME> -x <YOUR_SECRETS_MANAGER>
 

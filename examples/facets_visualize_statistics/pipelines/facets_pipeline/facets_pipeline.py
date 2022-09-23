@@ -11,11 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.config import DockerSettings
 from zenml.integrations.constants import FACETS, TENSORFLOW
 from zenml.pipelines import pipeline
 
+docker_settings = DockerSettings(required_integrations=[FACETS, TENSORFLOW])
 
-@pipeline(required_integrations=[FACETS, TENSORFLOW], enable_cache=False)
+
+@pipeline(enable_cache=False, settings={"docker": docker_settings})
 def facets_pipeline(
     importer,
     trainer,

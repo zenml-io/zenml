@@ -44,7 +44,7 @@ your pipeline:
 
 ```python
 from zenml.integrations.deepchecks.steps import (
-    DeepchecksDataIntegrityCheckStepConfig,
+    DeepchecksDataIntegrityCheckStepParameters,
     deepchecks_data_integrity_check_step,
 )
 
@@ -52,7 +52,7 @@ LABEL_COL = "target"
 
 data_validator = deepchecks_data_integrity_check_step(
     step_name="data_validator",
-    config=DeepchecksDataIntegrityCheckStepConfig(
+    params=DeepchecksDataIntegrityCheckStepParameters(
         dataset_kwargs=dict(label=LABEL_COL, cat_features=[]),
     ),
 )
@@ -95,7 +95,7 @@ easily accomplished:
 
 ```shell
 zenml data-validator register deepchecks -f deepchecks
-zenml stack register deepchecks_stack -o default -a default -m default -dv deepchecks --set
+zenml stack register deepchecks_stack -o default -a default -dv deepchecks --set
 ```
 
 ### ▶️ Run the Code

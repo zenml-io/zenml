@@ -20,7 +20,6 @@ from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
 )
-from zenml.utils import deprecation_utils
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
@@ -40,8 +39,7 @@ class AzureMLStepOperatorConfig(BaseStepOperatorConfig):
             exist already.
         environment_name: The name of the environment if there
             already exists one.
-        docker_base_image: The custom docker base image that the
-            environment should use.
+
         tenant_id: The Azure Tenant ID.
         service_principal_id: The ID for the service principal that is created
             to allow apps to access secure resources.
@@ -55,19 +53,12 @@ class AzureMLStepOperatorConfig(BaseStepOperatorConfig):
 
     # Environment
     environment_name: Optional[str] = None
-    docker_base_image: Optional[str] = None
 
     # Service principal authentication
     # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
     tenant_id: Optional[str] = SecretField()
     service_principal_id: Optional[str] = SecretField()
     service_principal_password: Optional[str] = SecretField()
-
-    docker_parent_image: Optional[str] = None
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        "custom_docker_base_image_name", "docker_parent_image"
-    )
 
 
 class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):

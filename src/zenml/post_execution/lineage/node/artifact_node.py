@@ -13,16 +13,16 @@
 #  permissions and limitations under the License.
 """Class for all lineage artifact nodes."""
 
-from pydantic import BaseModel
 
-from zenml.post_execution.lineage.node.base_node import BaseNode
+from zenml.post_execution.lineage.node.base_node import (
+    BaseNode,
+    BaseNodeDetails,
+)
 
 
-class ArtifactNodeDetails(BaseModel):
+class ArtifactNodeDetails(BaseNodeDetails):
     """Captures all artifact details for the node."""
 
-    execution_id: str
-    name: str
     is_cached: bool
     artifact_type: str
     artifact_data_type: str
@@ -34,6 +34,5 @@ class ArtifactNodeDetails(BaseModel):
 class ArtifactNode(BaseNode):
     """A class that represents an artifact node in a lineage graph."""
 
-    id: str
     type: str = "artifact"
     data: ArtifactNodeDetails

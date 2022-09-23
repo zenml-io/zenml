@@ -125,6 +125,18 @@ def explain_server() -> None:
     help="The password to use to connect to the server",
 )
 @click.option(
+    "--no-verify-ssl",
+    is_flag=True,
+    help="Whether to verify the server's TLS certificate when connecting to it",
+)
+@click.option(
+    "--ssl-ca-cert",
+    help="A path to a CA bundle to use to verify the server's TLS certificate "
+    "when connecting to it, or the CA bundle value itself",
+    required=False,
+    type=str,
+)
+@click.option(
     "--timeout",
     "-t",
     type=click.INT,
@@ -146,6 +158,8 @@ def up_server(
     connect: bool = False,
     username: Optional[str] = None,
     password: Optional[str] = None,
+    no_verify_ssl: bool = False,
+    ssl_ca_cert: Optional[str] = None,
     name: Optional[str] = None,
     ip_address: Union[
         ipaddress.IPv4Address, ipaddress.IPv6Address, None
@@ -164,6 +178,9 @@ def up_server(
         port: The port to bind the server to.
         username: The username to use for authentication.
         password: The password to use for authentication.
+        no_verify_ssl: Whether we verify the server's TLS certificate.
+        ssl_ca_cert: A path to a CA bundle to use to verify the server's TLS
+            certificate or the CA bundle value itself.
         timeout: Time in seconds to wait for the server to start.
         config: A YAML or JSON configuration or configuration file to use.
     """
@@ -208,7 +225,14 @@ def up_server(
     if connect:
         username = username or "default"
         password = password or ""
-        deployer.connect_to_server(server_config.name, username, password)
+        deployer.connect_to_server(
+            server_config.name,
+            username,
+            password,
+            verify_ssl=ssl_ca_cert
+            if ssl_ca_cert is not None
+            else not no_verify_ssl,
+        )
 
 
 @server.command("down", help="Shut down and remove a ZenML server instance.")
@@ -294,7 +318,10 @@ def list_servers(
     else:
         servers = deployer.list_servers()
 
-    cli_utils.print_server_deployment_list(servers)
+    if servers:
+        cli_utils.print_server_deployment_list(servers)
+    else:
+        cli_utils.declare("No servers found.")
 
 
 @server.command("connect", help="Connect to a ZenML server.")

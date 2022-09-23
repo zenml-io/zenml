@@ -14,13 +14,17 @@
 """SQL Model Implementations for Flavors."""
 
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from sqlmodel import Field, SQLModel
+from sqlalchemy import Column, ForeignKey
+from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import StackComponentType
 from zenml.models import FlavorModel
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
 
 
 class FlavorSchema(SQLModel, table=True):
@@ -33,8 +37,8 @@ class FlavorSchema(SQLModel, table=True):
         source: The source of the flavor.
         config_schema: The config schema of the flavor.
         integration: The integration associated with the flavor.
-        user: The user associated with the flavor.
-        project: The project associated with the flavor.
+        user_id: The user associated with the flavor.
+        project_id: The project associated with the flavor.
         created: The creation time of the flavor.
         updated: The last update time of the flavor.
     """
@@ -46,8 +50,15 @@ class FlavorSchema(SQLModel, table=True):
     integration: Optional[str] = Field(default="")
     config_schema: str
 
-    project: UUID = Field(foreign_key="projectschema.id")
-    user: UUID = Field(foreign_key="userschema.id")
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    )
+    project: "ProjectSchema" = Relationship(back_populates="flavors")
+
+    user_id: UUID = Field(
+        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    )
+    user: "UserSchema" = Relationship(back_populates="flavors")
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -69,8 +80,8 @@ class FlavorSchema(SQLModel, table=True):
             source=flavor.source,
             config_schema=flavor.config_schema,
             integration=flavor.integration,
-            user=flavor.user,
-            project=flavor.project,
+            user_id=flavor.user,
+            project_id=flavor.project,
         )
 
     def from_update_model(
@@ -100,8 +111,8 @@ class FlavorSchema(SQLModel, table=True):
             source=self.source,
             config_schema=self.config_schema,
             integration=self.integration,
-            user=self.user,
-            project=self.project,
+            user=self.user_id,
+            project=self.project_id,
             created=self.created,
             updated=self.updated,
         )

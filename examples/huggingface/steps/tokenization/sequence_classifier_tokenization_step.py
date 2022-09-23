@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datasets import DatasetDict
-from steps.configuration import HuggingfaceConfig
+from steps.configuration import HuggingfaceParameters
 from transformers import PreTrainedTokenizerBase
 
 from zenml.steps import step
@@ -20,7 +20,7 @@ from zenml.steps import step
 
 @step
 def sequence_classifier_tokenization(
-    config: HuggingfaceConfig,
+    params: HuggingfaceParameters,
     tokenizer: PreTrainedTokenizerBase,
     datasets: DatasetDict,
 ) -> DatasetDict:
@@ -28,11 +28,11 @@ def sequence_classifier_tokenization(
 
     def preprocess_function(examples):
         result = tokenizer(
-            examples[config.text_column],
-            max_length=config.max_seq_length,
+            examples[params.text_column],
+            max_length=params.max_seq_length,
             truncation=True,
         )
-        result["label"] = examples[config.label_column]
+        result["label"] = examples[params.label_column]
         return result
 
     tokenized_datasets = datasets.map(preprocess_function, batched=True)

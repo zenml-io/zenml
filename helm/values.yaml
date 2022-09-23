@@ -36,7 +36,7 @@ zenml:
   #   host:
   #   path: /zenml/?(.*)
   # ```
-  rootUrlPath: /
+  rootUrlPath:
 
   defaultProject: "default"
   defaultUsername: admin
@@ -89,6 +89,7 @@ ingress:
   path: /zenml/?(.*)
   tls:
     enabled: false
+    generateCerts: false
     secretName: zenml-tls-certs
 
 resources: {}

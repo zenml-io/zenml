@@ -580,18 +580,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             )
         return pipelines[0]
 
-    # TODO: is this really needed ?
-    def get_pipeline_configuration(self, pipeline_id: UUID) -> Dict[str, str]:
-        """Gets the pipeline configuration.
-
-        Args:
-            pipeline_id: The ID of the pipeline to get.
-
-        Returns:
-            The pipeline configuration.
-        """
-        return self.get_pipeline(pipeline_id).configuration
-
     # -------------
     # Pipeline runs
     # -------------

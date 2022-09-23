@@ -34,7 +34,7 @@ router = APIRouter(
 
 
 @router.get(
-    "/",
+    "",
     response_model=Union[List[ComponentModel], List[HydratedComponentModel]],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )

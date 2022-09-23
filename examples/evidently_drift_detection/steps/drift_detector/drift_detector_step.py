@@ -12,13 +12,13 @@
 #  permissions and limitations under the License.
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
-    EvidentlyProfileConfig,
+    EvidentlyProfileParameters,
     evidently_profile_step,
 )
 
 drift_detector = evidently_profile_step(
     step_name="drift_detector",
-    config=EvidentlyProfileConfig(
+    params=EvidentlyProfileParameters(
         column_mapping=EvidentlyColumnMapping(
             target="class", prediction="class"
         ),

@@ -18,14 +18,14 @@ from .tensorflow_model_deployer import kserve_tensorflow_deployer
 from .tf_evaluator import tf_evaluator
 from .tf_predict_preprocessor import tf_predict_preprocessor
 from .tf_predictor import tf_predictor
-from .tf_trainer import TensorflowTrainerConfig, tf_trainer
+from .tf_trainer import TensorflowTrainerParameters, tf_trainer
 
 __all__ = [
     "dynamic_importer",
     "importer_mnist",
     "normalizer",
     "kserve_tensorflow_deployer",
-    "TensorflowTrainerConfig",
+    "TensorflowTrainerParameters",
     "tf_evaluator",
     "tf_trainer",
     "tf_predict_preprocessor",

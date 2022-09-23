@@ -70,3 +70,16 @@ class PipelineSpec(StrictBaseModel):
 
     version: str = "0.1"
     steps: List[StepSpec]
+
+    def __eq__(self, other: Any) -> bool:
+        """Returns whether the other object is referring to the same pipeline.
+
+        Args:
+            other: The other object to compare to.
+
+        Returns:
+            True if the other object is referring to the same pipeline.
+        """
+        if isinstance(other, PipelineSpec):
+            return self.steps == other.steps
+        return NotImplemented

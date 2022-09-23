@@ -41,6 +41,7 @@ from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
     PipelineRunConfiguration,
+    PipelineSpec,
 )
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.schedule import Schedule
@@ -487,6 +488,24 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline=self, stack=stack, run_configuration=run_config
         )
 
+        skip_pipeline_registration = constants.handle_bool_env_var(
+            constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
+        )
+        register_pipeline = not (skip_pipeline_registration or unlisted)
+        if register_pipeline:
+            step_specs = [
+                step.spec for step in pipeline_deployment.steps.values()
+            ]
+            pipeline_spec = PipelineSpec(steps=step_specs)
+
+            pipeline_id = Repository().register_pipeline(
+                pipeline_name=pipeline_deployment.pipeline.name,
+                pipeline_spec=pipeline_spec,
+            )
+            pipeline_deployment = pipeline_deployment.copy(
+                update={"pipeline_id": pipeline_id}
+            )
+
         logger.info(
             "Creating run for pipeline `%s` (Caching %s)",
             self.name,
@@ -500,14 +519,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
         stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
-
-        # Repository().register_pipeline_run(
-        #     pipeline_name=self.name,
-        #     pipeline_configuration={},  # TODO[Server]: Add pipeline config
-        #     runtime_configuration=runtime_configuration,
-        #     stack_id=stack.id,
-        #     unlisted=unlisted,
-        # )
 
         # Prevent execution of nested pipelines which might lead to unexpected
         # behavior
