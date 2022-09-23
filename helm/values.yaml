@@ -81,12 +81,12 @@ ingress:
   enabled: true
   className: "nginx"
   annotations:
-    # nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
     # cert-manager.io/cluster-issuer: "letsencrypt"
   host:
-  path: /
+  path: /zenml/?(.*)
   tls:
     enabled: false
     secretName: zenml-tls-certs
