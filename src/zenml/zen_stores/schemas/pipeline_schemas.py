@@ -27,7 +27,7 @@ from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, UserSchema, StackSchema
+    from zenml.zen_stores.schemas import ProjectSchema, StackSchema, UserSchema
 
 
 class PipelineSchema(SQLModel, table=True):
@@ -119,22 +119,19 @@ class PipelineRunSchema(SQLModel, table=True):
     # project_id - redundant since stack has this
     user_id: UUID = Field(
         nullable=False,
-        sa_column=Column(ForeignKey("userschema.id",
-                                    ondelete="CASCADE"))
+        sa_column=Column(ForeignKey("userschema.id", ondelete="CASCADE")),
     )
     user: "UserSchema" = Relationship(back_populates="runs")
 
     stack_id: Optional[UUID] = Field(
         nullable=True,
-        sa_column=Column(ForeignKey("stackschema.id",
-                                    ondelete="SET NULL"))
+        sa_column=Column(ForeignKey("stackschema.id", ondelete="SET NULL")),
     )
     stack: "StackSchema" = Relationship(back_populates="runs")
 
     pipeline_id: Optional[UUID] = Field(
         nullable=True,
-        sa_column=Column(ForeignKey("pipelineschema.id",
-                                    ondelete="SET NULL"))
+        sa_column=Column(ForeignKey("pipelineschema.id", ondelete="SET NULL")),
     )
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 

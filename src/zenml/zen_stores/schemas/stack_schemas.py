@@ -23,8 +23,11 @@ from sqlmodel import Field, Relationship, SQLModel
 from zenml.models import StackModel
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, UserSchema, \
-    PipelineRunSchema
+    from zenml.zen_stores.schemas import (
+        PipelineRunSchema,
+        ProjectSchema,
+        UserSchema,
+    )
     from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 
 

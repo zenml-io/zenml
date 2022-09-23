@@ -28,8 +28,8 @@ if TYPE_CHECKING:
         StackComponentSchema,
         StackSchema,
         TeamRoleAssignmentSchema,
-        UserRoleAssignmentSchema, PipelineRunSchema,
-)
+        UserRoleAssignmentSchema,
+    )
 
 
 class ProjectSchema(SQLModel, table=True):

@@ -25,11 +25,12 @@ from zenml.models import RoleAssignmentModel, RoleModel, TeamModel, UserModel
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         FlavorSchema,
+        PipelineRunSchema,
         PipelineSchema,
         ProjectSchema,
         StackComponentSchema,
-        StackSchema, PipelineRunSchema,
-)
+        StackSchema,
+    )
 
 
 class TeamAssignmentSchema(SQLModel, table=True):
