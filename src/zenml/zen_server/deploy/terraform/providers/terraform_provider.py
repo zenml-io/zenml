@@ -46,7 +46,7 @@ logger = get_logger(__name__)
 
 
 class TerraformServerProvider(BaseServerProvider):
-    """Docker ZenML server provider."""
+    """Terraform ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.TERRAFORM
     CONFIG_TYPE: ClassVar[  # TODO How do I handle individual recipe configs here?
@@ -276,5 +276,3 @@ class TerraformServerProvider(BaseServerProvider):
         server = cast(TerraformZenServer, service)
         return server.config.server
 
-
-TerraformServerProvider.register_as_provider()
