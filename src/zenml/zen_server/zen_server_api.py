@@ -15,6 +15,7 @@
 
 
 import os
+from time import sleep
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -98,6 +99,21 @@ async def health() -> str:
     """
     return "OK"
 
+
+# def run_test():
+#     import aiofiles
+#     async with aiofiles.open("/dev/zero", "r") as f:
+#         for i in range(10):
+#             await f.read(100)
+#             sleep(1)
+# Basic Health Endpoint
+@app.get("/test")
+def test() -> str:
+    with open("/dev/zero", "r") as f:
+        for i in range(10):
+            f.read(100)
+            sleep(1)
+    return "OK"
 
 # to run this file locally, execute:
 # uvicorn zenml.zen_server.zen_server_api:app --reload

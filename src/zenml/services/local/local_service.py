@@ -55,11 +55,16 @@ class LocalDaemonServiceConfig(ServiceConfig):
             directly in the `root_runtime_path` directory instead of creating
             a subdirectory for each service instance. Only has effect if the
             `root_runtime_path` is also set.
+        blocking: set to True to run the service the context of the current
+            process and block until the service is stopped instead of running
+            the service as a daemon process. Useful for operating systems
+            that do not support daemon processes.
     """
 
     silent_daemon: bool = False
     root_runtime_path: Optional[str] = None
     singleton: bool = False
+    blocking: bool = False
 
 
 class LocalDaemonServiceStatus(ServiceStatus):
@@ -402,6 +407,22 @@ class LocalDaemonService(BaseService):
             force: if True, the service daemon will be forcefully stopped
         """
         self._stop_daemon(force)
+
+    def start(self, timeout: int = 0) -> None:
+        """Start the service and optionally wait for it to become active.
+
+        Args:
+            timeout: amount of time to wait for the service to become active.
+                If set to 0, the method will return immediately after checking
+                the service status.
+
+        Raises:
+            RuntimeError: if the service cannot be started
+        """
+        if not self.config.blocking:
+            super().start(timeout)
+        else:
+            self.run()
 
     def get_logs(
         self, follow: bool = False, tail: Optional[int] = None

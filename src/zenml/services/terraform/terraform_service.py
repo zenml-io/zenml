@@ -97,63 +97,16 @@ class TerraformServiceStatus(ServiceStatus):
 
 
 class TerraformService(BaseService):
-    """A service represented by a containerized process.
+    """A service represented by a set of resources deployed using a terraform recipe.
 
     This class extends the base service class with functionality concerning
-    the life-cycle management and tracking of external services implemented as
-    docker containers.
+    the life-cycle management and tracking of external services managed using
+    terraform recipes.
 
-    To define a containerized service, subclass this class and implement the
-    `run` method. Upon `start`, the service will spawn a container that
-    ends up calling the `run` method.
-
-    Example:
-
-    ```python
-
-    from zenml.services import ServiceType, ContainerService, ContainerServiceConfig
-    import time
-
-    class SleepingServiceConfig(ContainerServiceConfig):
-
-        wake_up_after: int
-
-    class SleepingService(ContainerService):
-
-        SERVICE_TYPE = ServiceType(
-            name="sleeper",
-            description="Sleeping container",
-            type="container",
-            flavor="sleeping",
-        )
-        config: SleepingServiceConfig
-
-        def run(self) -> None:
-            time.sleep(self.config.wake_up_after)
-
-    service = SleepingService(config=SleepingServiceConfig(wake_up_after=10))
-    service.start()
-    ```
-
-    NOTE: the `SleepingService` class and its parent module have to be
-    discoverable as part of a ZenML `Integration`, otherwise the daemon will
-    fail with the following error:
-
-    ```
-    TypeError: Cannot load service with unregistered service type:
-    name='sleeper' type='container' flavor='sleeping' description='Sleeping container'
-    ```
 
     Attributes:
         config: service configuration
         status: service status
-        endpoint: optional service endpoint
-
-
-
-    - start/apply
-    - destroy
-    - status
     """
 
     config: TerraformServiceConfig = Field(
@@ -177,35 +130,6 @@ class TerraformService(BaseService):
                 working_dir=str(self.config.directory_path)
             )
         return self._terraform_client
-
-    def get_service_status_message(self) -> str:
-        """Get a message about the current operational state of the service.
-
-        Returns:
-            A message providing information about the current operational
-            state of the service.
-
-        Raises:
-            NotImplementedError: not implemented.
-        """
-        raise NotImplementedError(
-            "This method is not available for Terraform services."
-        )
-
-    def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the docker container.
-
-        Returns:
-            The operational state of the docker container and a message
-            providing additional information about that state (e.g. a
-            description of the error, if one is encountered).
-
-        Raises:
-            NotImplementedError: not implemented.
-        """
-        raise NotImplementedError(
-            "This method is not available for Terraform services."
-        )
 
     def _init_and_apply(self) -> None:
         """Function to call terraform init and terraform apply.

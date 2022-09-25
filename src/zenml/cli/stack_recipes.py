@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, ClassVar, List, Optional, cast
+from typing import Any, ClassVar, List, Optional, Tuple, cast
 
 import click
 from packaging.version import Version, parse
@@ -32,6 +32,8 @@ from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.services.service_type import ServiceType
+from zenml.services.service_status import ServiceState
+
 from zenml.services.terraform.terraform_service import (
     SERVICE_CONFIG_FILE_NAME,
     TerraformService,
@@ -85,6 +87,36 @@ class StackRecipeService(TerraformService):
         io_utils.get_global_config_directory(),
         "stack_recipes",
     )
+
+    def check_status(self) -> Tuple[ServiceState, str]:
+        """Check the the current operational state of the terraform deployment.
+
+        Returns:
+            The operational state of the terraform deployment and a message
+            providing additional information about that state (e.g. a
+            description of the error, if one is encountered).
+
+        Raises:
+            NotImplementedError: not implemented.
+        """
+        raise NotImplementedError(
+            "This method is not available for Terraform recipes."
+        )
+
+
+    def get_service_status_message(self) -> str:
+        """Get a message about the current operational state of the service.
+
+        Returns:
+            A message providing information about the current operational
+            state of the service.
+
+        Raises:
+            NotImplementedError: not implemented.
+        """
+        raise NotImplementedError(
+            "This method is not available for Terraform services."
+        )
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.
@@ -1053,13 +1085,16 @@ if terraform_installed:  # noqa: C901
                     "exist on your cloud account."
                 ):
                     from zenml.cli.stack_recipes import StackRecipeService
+
                     # Telemetry
                     track_event(
                         AnalyticsEvent.RUN_STACK_RECIPE,
                         {"stack_recipe_name": stack_recipe_name},
                     )
                     terraform_config = TerraformServiceConfig(
-                        root_runtime_path=str(StackRecipeService.STACK_RECIPES_CONFIG_PATH),
+                        root_runtime_path=str(
+                            StackRecipeService.STACK_RECIPES_CONFIG_PATH
+                        ),
                         directory_path=str(local_stack_recipe.path),
                         log_level=log_level,
                         variables_file_path=VARIABLES_FILE,
