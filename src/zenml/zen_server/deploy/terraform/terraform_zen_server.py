@@ -14,7 +14,7 @@
 """Service implementation for the ZenML terraform server deployment."""
 
 import os
-from typing import Optional, cast
+from typing import Any, Optional, cast
 
 from zenml.enums import TerraformZenServerType
 from zenml.logger import get_logger
@@ -107,3 +107,40 @@ class TerraformZenServer(TerraformService):
                 )
         except FileNotFoundError:
             return None
+
+    def _copy_config_values(self) -> None:
+        """Copy values from the server config to the locals.tf file."""
+        # get the contents of the values.tfvars.json file as a dictionary
+        variables = self.get_vars(self.config.directory_path)
+
+        # get the contents of the server deploymen config as dict
+        server_config = self.config.server.dict()
+
+        # update the variables dict with values from the server
+        # deployment config
+        for key in server_config.keys() & variables.keys():
+            variables[key] = server_config[key]
+
+        self._write_to_variables_file(variables)
+
+    def _write_to_variables_file(self, variables: Any) -> None:
+        """Write the dictionary into the values.tfvars.json file.
+
+        Args:
+            variables: the variables dict with the user-provided
+            config values
+        """
+        import json
+
+        with open(
+            os.path.join(
+                self.config.directory_path, self.config.variables_file_path
+            ),
+            "w",
+        ) as fp:
+            json.dump(variables, fp=fp)
+
+    def provision(self) -> None:
+        """Provision the service."""
+        self._copy_config_values()
+        super().provision()

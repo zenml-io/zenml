@@ -232,7 +232,7 @@ class TerraformService(BaseService):
             fileio.mkdir(previous_run_dir)
 
         # get variables from the recipe as a python dictionary
-        vars = self._get_vars(self.terraform_client.working_dir)
+        vars = self.get_vars(self.terraform_client.working_dir)
 
         # once init is successful, call terraform apply
         self.terraform_client.apply(
@@ -248,7 +248,7 @@ class TerraformService(BaseService):
         with open(self.status.config_file, "w") as f:
             f.write(self.json(indent=4))
 
-    def _get_vars(self, path: str) -> Any:
+    def get_vars(self, path: str) -> Any:
         """Get variables as a dictionary from values.tfvars.json.
 
         Args:
