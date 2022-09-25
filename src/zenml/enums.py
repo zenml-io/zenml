@@ -132,6 +132,7 @@ class ServerProviderType(StrEnum):
     LOCAL = "local"
     DOCKER = "docker"
     TERRAFORM = "terraform"
+    AWS = "aws"
 
 
 class AnalyticsEventSource(StrEnum):
