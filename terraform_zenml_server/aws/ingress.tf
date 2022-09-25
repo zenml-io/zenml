@@ -1,5 +1,4 @@
-# set up the nginx ingress controller and the ingress with basic auth
-
+# set up the nginx ingress controller
 resource "kubernetes_namespace" "nginx-ns" {
   metadata {
     name = "ingress-nginx"

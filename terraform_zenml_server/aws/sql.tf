@@ -1,15 +1,15 @@
 module "metadata_store" {
   source = "terraform-aws-modules/rds/aws"
-  count  = local.rds.create_rds? 1 : 0
+  count  = var.create_rds? 1 : 0
 
-  identifier = "${local.prefix}-${local.rds.rds_name}"
+  identifier = "${var.prefix}-${var.rds_name}"
 
-  engine            = local.rds.db_type
-  engine_version    = local.rds.db_version
-  instance_class    = "db.t3.micro"
-  allocated_storage = 5
+  engine            = var.db_type
+  engine_version    = var.db_version
+  instance_class    = var.db_instance_class
+  allocated_storage = var.db_allocated_storage
 
-  db_name                = local.rds.db_name
+  db_name                = var.db_name
   username               = var.metadata-db-username
   password               = var.metadata-db-password
   create_random_password = var.metadata-db-password == "" ? true : false

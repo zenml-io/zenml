@@ -1,34 +1,36 @@
 # create the ZenServer deployment
 resource "helm_release" "zen-server" {
 
-  name       = "zenml-server"
-  repository = "../../helm"
-  chart      = "zenml"
+  name             = "zenml-server"
+  repository       = "../../helm"
+  chart            = "zenml"
+  namespace        = var.zenmlserver_namespace
+  create_namespace = true
 
   # set workload identity annotations for the mlflow 
   # kubernetes service account
   set {
     name  = "zenml.database.url"
-    value = local.rds.create_rds? module.metadata_store.db_instance_address : local.rds.hostname
+    value = var.create_rds? module.metadata_store[0].db_instance_address : var.rds_url
   }
 
   # set proxied access to artifact storage
   set {
     name  = "zenml.database.sslCa"
-    value = local.rds.create_rds? "./ca.pem" : local.rds.server_ca
+    value = var.create_rds? "./ca.pem" : var.rds_sslCa
   }
 
   # set values for S3 artifact store
   set {
     name  = "zenml.database.sslCert"
-    value = local.rds.create_rds? "./cert.pem" : local.rds.client_cert
+    value = var.create_rds? "./cert.pem" : var.rds_sslCert
   }
   set {
     name  = "zenml.database.sslKey"
-    value = local.rds.create_rds? "./key.pem" : local.rds.client_key
+    value = var.create_rds? "./key.pem" : var.rds_sslKey
   }
   set {
     name  = "zenml.database.sslVerifyServerCert"
-    value = true
+    value = var.create_rds? false : true
   }
 }
