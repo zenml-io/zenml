@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Project Models for the API endpoint definitions."""
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import Field
 
