@@ -571,9 +571,9 @@ class Repository(metaclass=RepositoryMetaClass):
         shared_stacks = self.zen_store.list_stacks(
             project_name_or_id=self.active_project_name,
             is_shared=True,
-
         )
-        return [s.to_hydrated_model() for s in owned_stacks+shared_stacks]
+
+        return [s.to_hydrated_model() for s in set(owned_stacks+shared_stacks)]
 
     @property
     def active_stack_model(self) -> "HydratedStackModel":

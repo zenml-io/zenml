@@ -29,6 +29,15 @@ class DomainModel(BaseModel):
       * have a creation timestamp and a last modified timestamp
     """
 
+    def __hash__(self):
+        return hash((type(self),) + tuple([self.id]))
+
+    def __eq__(self, other):
+        if isinstance(other, DomainModel):
+            return self.id == other.id
+
+        return False
+
     id: UUID = Field(default_factory=uuid4, title="The unique resource id.")
     created: datetime = Field(
         default_factory=datetime.now,
