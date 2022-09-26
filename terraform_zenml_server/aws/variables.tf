@@ -12,7 +12,7 @@ variable "region" {
 
 variable "zenmlserver_namespace" {
   description = "The namespace to install the ZenML server Helm chart in"
-  default     = "zenml-server"
+  default     = "terraform-server"
   type        = string
 }
 
@@ -95,6 +95,20 @@ variable "rds_sslKey" {
 }
 variable "rds_sslVerifyServerCert" {
   description = "Should SSL be verified?"
+  default     = true
+  type        = bool
+}
+
+variable "ingress_path" {
+  description = "The path on the Ingress URL to expose ZenML at"
+  default     = "zenmlhihi"
+  type        = string
+}
+
+# set to true if you don't already have an nginx ingress
+# controller in your cluster
+variable "create_ingress_controller" {
+  description = "set to true  if you want the recipe to create an ingress controller in your cluster"  
   default     = true
   type        = bool
 }
