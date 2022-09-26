@@ -2,7 +2,7 @@ module "metadata_store" {
   source = "terraform-aws-modules/rds/aws"
   count  = var.create_rds? 1 : 0
 
-  identifier = "${var.prefix}-${var.rds_name}"
+  identifier = "${var.prefix}${var.rds_name}"
 
   engine            = var.db_type
   engine_version    = var.db_version
