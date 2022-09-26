@@ -255,8 +255,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         values["url"] = str(sql_url)
         return values
 
-    def get_metadata_config(self) -> ConnectionConfig:
+    def get_metadata_config(self, expand_certs: bool = False) -> ConnectionConfig:
         """Get the metadata configuration for the SQL ZenML store.
+
+        Args:
+            expand_certs: Whether to expand the certificate paths to their
+                contents.
 
         Returns:
             The metadata configuration.
@@ -289,6 +293,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             # Handle certificate params
             for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
                 ssl_setting = getattr(self, key)
+                if expand_certs:
+                    with open(ssl_setting, "r") as f:
+                        ssl_setting = f.read()
                 if ssl_setting and os.path.isfile(ssl_setting):
                     mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
 
