@@ -79,10 +79,9 @@ zenml secrets-manager secret register whylabs_secret -s whylogs \
     --whylabs_api_key=<YOUR-WHYLOGS-API-KEY>
 ```
 
-You'll have to remember to also add the `enable_whylogs` decorator to your
-custom pipeline steps if you want to upload the whylogs data profiles that
-they return as artifacts to the WhyLabs platform. This is enabled by default
-for the standard whylog step.
+You'll also need to enable whylabs logging for your custom pipeline steps if
+you want to upload the whylogs data profiles that they return as artifacts
+to the WhyLabs platform. This is enabled by default for the standard whylog step.
 
 ## How do you use it?
 
@@ -121,18 +120,18 @@ upload to identify the model in the context of which the profile is uploaded, e.
 
 ```python
 from zenml.integrations.whylogs.steps import (
-    WhylogsProfilerConfig,
+    WhylogsProfilerParameters,
     whylogs_profiler_step,
 )
 
 train_data_profiler = whylogs_profiler_step(
     step_name="train_data_profiler",
-    config=WhylogsProfilerConfig(),
+    config=WhylogsProfilerParameters(),
     dataset_id="model-2",
 )
 test_data_profiler = whylogs_profiler_step(
     step_name="test_data_profiler",
-    config=WhylogsProfilerConfig(),
+    config=WhylogsProfilerParameters(),
     dataset_id="model-3",
 )
 ```
@@ -141,10 +140,9 @@ The step can then be inserted into your pipeline where it can take in a `pandas.
 dataset, e.g.:
 
 ```python
-from zenml.integrations.constants import SKLEARN, WHYLOGS
 from zenml.pipelines import pipeline
 
-@pipeline(required_integrations=[SKLEARN, WHYLOGS])
+@pipeline
 def data_profiling_pipeline(
     data_loader,
     data_splitter,
@@ -176,7 +174,7 @@ class WhylogsProfilerStep(BaseAnalyzerStep):
     @staticmethod
     def entrypoint(  # type: ignore[override]
         dataset: pd.DataFrame,
-        config: WhylogsProfilerConfig,
+        params: WhylogsProfilerParameters,
     ) -> DatasetProfileView:
         ...
 ```
@@ -200,8 +198,8 @@ with the overall Data Validator abstraction, which guarantees an easier
 migration in case you decide to switch to another Data Validator.
 
 All you have to do is call the whylogs Data Validator methods when you need
-to interact with whylogs to generate data profiles. You may optionally use
-the `enable_whylabs` decorator to automatically upload the returned whylogs
+to interact with whylogs to generate data profiles. You may optionally enable
+whylabs loggingg to automatically upload the returned whylogs
 profile to WhyLabs, e.g.:
 
 ```python
@@ -211,11 +209,20 @@ from whylogs.core import DatasetProfileView
 from zenml.integrations.whylogs.data_validators.whylogs_data_validator import (
     WhylogsDataValidator,
 )
-from zenml.integrations.whylogs.whylabs_step_decorator import enable_whylabs
+from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
+    WhylogsDataValidatorSettings,
+)
 from zenml.steps import step
 
-@enable_whylabs(dataset_id="model-1")
-@step
+whylogs_settings = WhylogsDataValidatorSettings(
+    enable_whylabs=True, dataset_id="<WHYLABS_DATASET_ID>"
+)
+
+@step(
+    settings = {
+        "data_validator.whylogs": whylogs_settings
+    }
+)
 def data_profiler(
     dataset: pd.DataFrame,
 ) -> DatasetProfileView:
@@ -248,20 +255,28 @@ Have a look at [the complete list of methods and parameters available in the `Wh
 
 You can use the whylogs library directly in your custom pipeline steps, and
 only leverage ZenML's capability of serializing, versioning and storing the
-`DatasetProfileView` objects in its Artifact Store. You may optionally use
-the `enable_whylabs` decorator to automatically upload the returned whylogs
-profile to WhyLabs, e.g.:
+`DatasetProfileView` objects in its Artifact Store. You may optionally enable
+whylabs logging to automatically upload the returned whylogs profile to WhyLabs, e.g.:
 
 ```python
 
 import pandas as pd
 from whylogs.core import DatasetProfileView
 import whylogs as why
-from zenml.integrations.whylogs.whylabs_step_decorator import enable_whylabs
 from zenml.steps import step
+from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
+    WhylogsDataValidatorSettings,
+)
 
-@enable_whylabs(dataset_id="model-1")
-@step
+whylogs_settings = WhylogsDataValidatorSettings(
+    enable_whylabs=True, dataset_id="<WHYLABS_DATASET_ID>"
+)
+
+@step(
+    settings = {
+        "data_validator.whylogs": whylogs_settings
+    }
+)
 def data_profiler(
     dataset: pd.DataFrame,
 ) -> DatasetProfileView:

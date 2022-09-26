@@ -36,7 +36,7 @@ follow the [deployment guide](#how-do-you-deploy-it) to create one.
 We can then register the secrets manager and use it in our active stack:
 ```shell
 zenml secrets-manager register <NAME> \
-    --flavor=azure_key_vault \
+    --flavor=azure \
     --key_vault_name=<KEY_VAULT_NAME>
 
 # Add the secrets manager to the active stack

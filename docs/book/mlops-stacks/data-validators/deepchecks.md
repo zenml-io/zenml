@@ -148,11 +148,11 @@ Then, place the following snippet above your pipeline definition. Note that the 
 ```python
 import zenml
 from zenml.pipelines import pipeline
-from zenml.config import DockerConfiguration
+from zenml.config import DockerSettings
 from pathlib import Path 
 import sys 
 
-docker_config = DockerConfiguration(
+docker_settings = DockerSettings(
     dockerfile="deepchecks-zenml.Dockerfile",
     build_options={
         "buildargs": {
@@ -161,7 +161,7 @@ docker_config = DockerConfiguration(
     },
 )
 
-@pipeline(docker_configuration=docker_config)
+@pipeline(settings={"docker": docker_settings})
 def my_pipeline(...):
     # same code as always
     ...

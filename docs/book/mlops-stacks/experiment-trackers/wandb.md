@@ -101,18 +101,15 @@ implementation and its configuration, you can have a look at [the API docs](http
 ## How do you use it?
 
 To be able to log information from a ZenML pipeline step using the Weights &
-Biases Experiment Tracker component in the active stack, you need to use the
-`enable_wandb` step decorator on all pipeline steps where you plan on doing
-that. Then use the Weights & Biases logging or auto-logging capabilities
-as you would normally do, e.g.:
+Biases Experiment Tracker component in the active stack, you need to enable an
+experiment tracker using the `@step` decorator. Then use Weights & Biases logging
+or auto-logging capabilities as you would normally do, e.g.:
 
 ```python
 import wandb
 from wandb.integration.keras import WandbCallback
-from zenml.integrations.wandb.wandb_step_decorator import enable_wandb
 
-@enable_wandb
-@step
+@step(experiment_tracker="<WANDB_TRACKER_STACK_COMPONENT_NAME>")
 def tf_trainer(
     config: TrainerConfig,
     x_train: np.ndarray,
@@ -140,16 +137,25 @@ def tf_trainer(
     ...
 ```
 
-ZenML allows you to override the [wandb.Settings](https://github.com/wandb/client/blob/master/wandb/sdk/wandb_settings.py#L353) 
-class in the `enable_wandb` decorator to allow for even further control of the
-Weights & Biases integration. One feature that is super useful is to enable
-`magic=True`, like so:
+For additional configuration of the Weights & Biases experiment tracker, you can pass
+`WandbExperimentTrackerSettings` to overwrite the [wandb.Settings](https://github.com/wandb/client/blob/master/wandb/sdk/wandb_settings.py#L353) or pass additional tags for your
+runs:
 
 ```python
 import wandb
+from zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor import WandbExperimentTrackerSettings
 
-@enable_wandb(settings=wandb.Settings(magic=True))
-@step
+wandb_settings = WandbExperimentTrackerSettings(
+    settings=wandb.Settings(magic=True),
+    tags=["some_tag"]
+)
+
+@step(
+    experiment_tracker="<WANDB_TRACKER_STACK_COMPONENT_NAME>",
+    settings={
+        "experiment_tracker.wandb": wandb_settings
+    }
+)
 def my_step(
         x_test: np.ndarray,
         y_test: np.ndarray,

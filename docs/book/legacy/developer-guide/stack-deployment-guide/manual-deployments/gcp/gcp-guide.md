@@ -370,7 +370,7 @@ zenml orchestrator register vertex_orchestrator --flavor=vertex \
       --project=$PROJECT_NUMBER --location=$GCP_LOCATION \
       --workload_service_account=$SERVICE_ACCOUNT
 zenml secrets-manager register gcp_secrets_manager \
-      --flavor=gcp_secrets_manager --project_id=$PROJECT_NUMBER
+      --flavor=gcp --project_id=$PROJECT_NUMBER
 zenml container-registry register gcp_registry --flavor=gcp \
       --uri=$CONTAINER_REGISTRY_URI
 zenml artifact-store register gcp_artifact_store --flavor=gcp \
@@ -571,7 +571,7 @@ zenml orchestrator register $ORCHESTRATOR_NAME --flavor=vertex \
 zenml container-registry register $CONTAINER_REGISTRY_NAME --flavor=gcp \
       --uri=$CONTAINER_REGISTRY_URI
 zenml secrets-manager register $SECRET_MANAGER_NAME \
-      --flavor=gcp_secrets_manager --project_id=$PROJECT_NUMBER
+      --flavor=gcp --project_id=$PROJECT_NUMBER
 zenml artifact-store register $ARTIFACT_STORE_NAME --flavor=gcp \
       --path=$GSUTIL_URI
 zenml metadata-store register $METADATA_STORE_NAME --flavor=mysql \

@@ -58,7 +58,7 @@ you can simply specify it in the `@step `decorator of your
 ```python
 from zenml.steps import step
 
-@step(custom_step_operator=<STEP_OPERATOR_NAME>)
+@step(step_operator=<STEP_OPERATOR_NAME>)
 def my_step(...) -> ...:
     ...
 ```
