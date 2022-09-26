@@ -77,7 +77,7 @@ class TerraformServerProvider(BaseServerProvider):
                 root_runtime_path=TERRAFORM_ZENML_SERVER_CONFIG_PATH,
                 singleton=True,
                 directory_path=os.path.join(
-                    TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH, server_config.type
+                    TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH, server_config.provider
                 ),
                 log_level=server_config.log_level,
                 variables_file_path=TERRAFORM_VALUES_FILE_PATH,

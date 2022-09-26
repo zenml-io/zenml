@@ -48,6 +48,7 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
     rds_sslCert: Optional[str] = ""
     rds_sslKey: Optional[str] = ""
     rds_sslVerifyServerCert: Optional[bool] = True
+    ingress_path: Optional[str] = "zenmlhihi"
 
 class AWSServerProvider(TerraformServerProvider):
     """AWS ZenML server provider."""
