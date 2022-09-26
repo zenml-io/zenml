@@ -105,36 +105,6 @@ def config() -> None:
 
 
 
-@config.command(
-    "describe",
-    help="Show details about the active global configuration.",
-)
-def config_describe() -> None:
-    """Show details about the active global configuration."""
-    gc = GlobalConfiguration()
-    repo = Repository()
-
-    store_cfg = gc.store
-
-    if repo.root:
-        cli_utils.declare(f"Active repository root: {repo.root}")
-    if store_cfg is not None:
-        store_cfg_dict = store_cfg.dict()
-        store_cfg_dict.pop("type")
-        store_cfg_dict.pop("password", None)
-        cli_utils.declare(f"The global configuration is ({gc._config_file()}):")
-        for key, value in store_cfg_dict.items():
-            cli_utils.declare(f" - {key}: '{value}'")
-
-    scope = "repository" if repo.uses_local_configuration else "global"
-    cli_utils.declare(
-        f"The active project is: '{repo.active_project_name}' " f"({scope})"
-    )
-    cli_utils.declare(
-        f"The active stack is: '{repo.active_stack_model.name}' ({scope})"
-    )
-
-
 @config.command("explain")
 def explain_config() -> None:
     """Explains the concept of ZenML configurations."""

@@ -162,74 +162,58 @@ def up(
             )
 
 
-
 @cli.command("down", help="Shut down the local ZenML dashboard.")
-def down_server() -> None:
+def down() -> None:
     """Shut down the local ZenML dashboard."""
     server = get_active_deployment(local=True)
     if not server:
         cli_utils.declare("The local ZenML dashboard is not running.")
         return
-   
+
     deployer = ServerDeployer()
     deployer.remove_server(server.config.name)
     cli_utils.declare("The local ZenML dashboard has been shut down.")
 
 
-
 @cli.command("deploy", help="Deploy ZenML in the cloud.")
-@click.option("--name", type=str, help="Name for the ZenML server deployment.")
 @click.option(
     "--provider",
     "-p",
-    type=click.Choice(
-        [p.value for p in ServerProviderType], case_sensitive=True
-    ),
+    type=click.Choice([ServerProviderType.AWS.value], case_sensitive=True),
     default=None,
     help="Server deployment provider.",
 )
 @click.option(
-    "--connect",
-    is_flag=True,
-    help="Connect the client to the ZenML server after it's deployed.",
-    type=click.BOOL,
+    "--name",
+    type=str,
+    help="A name for the ZenML server deployment. This is used as a prefix for "
+    "the names of deployed resources, such as database services and Kubernetes "
+    "resources.",
 )
-@click.option("--port", type=int, default=None)
-@click.option("--ip-address", type=IP_ADDRESS, default=None)
 @click.option(
     "--username",
     type=str,
     default=None,
-    help="The username to use to connect to the server",
+    help="The username to use for the provisioned admin account.",
+)
+@click.option(
+    "--email",
+    type=str,
+    default=None,
+    help="The email address to use for the provisioned admin account.",
 )
 @click.option(
     "--password",
     type=str,
     default=None,
-    help="The password to use to connect to the server",
-)
-@click.option(
-    "--no-verify-ssl",
-    is_flag=True,
-    help="Whether to verify the server's TLS certificate when connecting to it",
-)
-@click.option(
-    "--ssl-ca-cert",
-    help="A path to a CA bundle to use to verify the server's TLS certificate "
-    "when connecting to it, or the CA bundle value itself",
-    required=False,
-    type=str,
+    help="The initial password to use for the provisioned admin account.",
 )
 @click.option(
     "--timeout",
     "-t",
     type=click.INT,
     default=None,
-    help=(
-        "Time in seconds to wait for the server to start. Set to 0 to "
-        "return immediately after starting the server, without waiting for it "
-        "to be ready."
-    ),
+    help=("Time in seconds to wait for the server to be deployed."),
 )
 @click.option(
     "--config",
@@ -241,39 +225,27 @@ def deploy(
     provider: Optional[str] = None,
     connect: bool = False,
     username: Optional[str] = None,
+    email: Optional[str] = None,
     password: Optional[str] = None,
-    no_verify_ssl: bool = False,
-    ssl_ca_cert: Optional[str] = None,
     name: Optional[str] = None,
-    ip_address: Union[
-        ipaddress.IPv4Address, ipaddress.IPv6Address, None
-    ] = None,
     timeout: Optional[int] = None,
-    port: Optional[int] = None,
     config: Optional[str] = None,
 ) -> None:
-    """Provisions resources for a ZenML server.
+    """Deploy the ZenML server in a cloud provider.
 
     Args:
         name: Name for the ZenML server deployment.
         provider: ZenML server provider name.
         connect: Connecting the client to the ZenML server.
-        ip_address: The IP address to bind the server to.
-        port: The port to bind the server to.
-        username: The username to use for authentication.
-        password: The password to use for authentication.
-        no_verify_ssl: Whether we verify the server's TLS certificate.
-        ssl_ca_cert: A path to a CA bundle to use to verify the server's TLS
-            certificate or the CA bundle value itself.
+        username: The username for the provisioned admin account.
+        email: The email address for the provisioned admin account.
+        password: The initial password to use for the provisioned admin account.
         timeout: Time in seconds to wait for the server to start.
         config: A YAML or JSON configuration or configuration file to use.
     """
+    config_dict: Dict[str, Any] = {}
+
     if config:
-        if provider or name or ip_address or port:
-            cli_utils.error(
-                "You cannot pass a config file and pass other configuration "
-                "options as command line arguments at the same time."
-            )
         if os.path.isfile(config):
             config_dict = yaml_utils.read_yaml(config)
         else:
@@ -283,21 +255,49 @@ def deploy(
                 "The configuration argument must be JSON/YAML content or "
                 "point to a valid configuration file."
             )
-        server_config = ServerDeploymentConfig.parse_obj(config_dict)
-    else:
-        provider = provider or ServerProviderType.LOCAL.value
 
-        name = name or provider
-        config_attrs: Dict[str, Any] = dict(
-            name=name,
-            provider=ServerProviderType(provider),
+        name = config_dict.get("name", name)
+        provider = config_dict.get("provider", provider)
+        username = config_dict.get("username", username)
+        password = config_dict.get("password", password)
+        email = config_dict.get("email", email)
+
+    if not name:
+        name = click.prompt(
+            "ZenML server name (used as a prefix for the names of deployed "
+            "resources",
+            default="zenml",
         )
-        if port is not None:
-            config_attrs["port"] = port
-        if ip_address is not None:
-            config_attrs["ip_address"] = ip_address
+    config_dict["name"] = name
 
-        server_config = ServerDeploymentConfig(**config_attrs)
+    if not provider:
+        provider = click.prompt(
+            "ZenML server provider",
+            type=click.Choice(
+                [ServerProviderType.AWS.value], case_sensitive=True
+            ),
+            default=ServerProviderType.AWS.value,
+        )
+    config_dict["provider"] = provider
+
+    if not username:
+        username = click.prompt("ZenML admin account username", default="admin")
+    config_dict["username"] = username
+
+    password = password or config_dict.get("password", None)
+    if not password:
+        password = click.prompt("ZenML admin account password", hide_input=True)
+    config_dict["password"] = password
+
+    email = email or config_dict.get("email", None)
+    if not email:
+        email = click.prompt(
+            "ZenML admin account email address",
+            default="",
+        )
+    config_dict["email"] = email
+
+    server_config = ServerDeploymentConfig.parse_obj(config_dict)
 
     deployer = ServerDeployer()
 
@@ -306,74 +306,73 @@ def deploy(
         cli_utils.declare(
             f"ZenML server '{name}' running at '{server.status.url}'."
         )
+
     if connect:
-        username = username or "default"
-        password = password or ""
         deployer.connect_to_server(
             server_config.name,
             username,
             password,
-            verify_ssl=ssl_ca_cert
-            if ssl_ca_cert is not None
-            else not no_verify_ssl,
         )
 
 
-
-# @cli.command("down", help="Shut down and remove a ZenML server instance.")
-# @click.option(
-#     "--timeout",
-#     "-t",
-#     type=click.INT,
-#     default=None,
-#     help=(
-#         "Time in seconds to wait for the server to stop. Set to 0 to "
-#         "return immediately after stopping the server, without waiting for it "
-#         "to shut down."
-#     ),
-# )
-# @click.argument(
-#     "server_name",
-#     type=str,
-#     required=False,
-# )
-# def down_server(
-#     server_name: Optional[str], timeout: Optional[int] = None
-# ) -> None:
-#     """Shut down a ZenML server instance.
-
-#     Args:
-#         server_name: Name of the ZenML server deployment.
-#         timeout: Time in seconds to wait for the server to stop.
-#     """
-#     server = get_one_server(server_name)
-#     server_name = server.config.name
-#     deployer = ServerDeployer()
-
-#     try:
-#         deployer.remove_server(server_name, timeout=timeout)
-#     except ServerDeploymentNotFoundError as e:
-#         cli_utils.error(f"Server not found: {e}")
-
-#     cli_utils.declare(f"Removed the '{server_name}' ZenML server.")
-
-
-@cli.command("status", help="Get the status of a ZenML server.")
-@click.argument(
-    "server_name",
-    type=str,
-    required=False,
+@cli.command(
+    "destroy", help="Tear down and clean up the cloud ZenML deployment."
 )
+def destroy() -> None:
+    """Tear down and clean up a cloud ZenML deployment."""
+    server = get_active_deployment(local=False)
+    if not server:
+        cli_utils.declare("No cloud ZenML server has been deployed.")
+        return
+
+    deployer = ServerDeployer()
+    deployer.remove_server(server.config.name)
+    cli_utils.declare(
+        "The ZenML server has been torn down and all resources removed."
+    )
+
+
+@cli.command("status", help="Show information about the current configuration.")
 def status_server(server_name: Optional[str] = None) -> None:
     """Get the status of a ZenML server.
 
     Args:
         server_name: Name of the ZenML server deployment.
     """
-    server = get_one_server(server_name)
-    server_name = server.config.name
+    """Show details about the active global configuration."""
+    gc = GlobalConfiguration()
+    repo = Repository()
 
-    cli_utils.print_server_deployment(server)
+    store_cfg = gc.store
+
+    if repo.root:
+        cli_utils.declare(f"Active repository root: {repo.root}")
+    if store_cfg is not None:
+        if store_cfg == gc.get_default_store():
+            cli_utils.declare(f"Using the local database ('{store_cfg.url}')")
+        else:
+            cli_utils.declare(f"Connected to a ZenML server: '{store_cfg.url}'")
+
+    scope = "repository" if repo.uses_local_configuration else "global"
+    cli_utils.declare(
+        f"The current user is: '{repo.active_user.name}'"
+    )
+    cli_utils.declare(
+        f"The active project is: '{repo.active_project_name}' " f"({scope})"
+    )
+    cli_utils.declare(
+        f"The active stack is: '{repo.active_stack_model.name}' ({scope})"
+    )
+
+    server = get_active_deployment(local=False)
+    if server:
+        cli_utils.declare("The status for the local ZenML server:")
+        cli_utils.print_server_deployment(server)
+
+    server = get_active_deployment(local=True)
+    if server:
+        cli_utils.declare("The status for the cloud ZenML deployment:")
+        cli_utils.print_server_deployment(server)
 
 
 @cli.command(
@@ -548,11 +547,11 @@ def disconnect_server() -> None:
     deployer.disconnect_from_server()
 
 
-@cli.command("logs", help="Show the logs for a ZenML server.")
-@click.argument(
-    "server_name",
-    type=click.STRING,
-    required=False,
+@cli.command("logs", help="Show the logs for the local or cloud ZenML server.")
+@click.option(
+    "--local",
+    is_flag=True,
+    help="Show the logs for the local ZenML server.",
 )
 @click.option(
     "--follow",
@@ -573,24 +572,37 @@ def disconnect_server() -> None:
     is_flag=True,
     help="Show raw log contents (don't pretty-print logs).",
 )
-def get_server_logs(
-    follow: bool,
-    raw: bool,
+def logs(
+    local: bool = False,
+    follow: bool = False,
+    raw: bool = False,
     tail: Optional[int] = None,
     server_name: Optional[str] = None,
 ) -> None:
     """Display the logs for a ZenML server.
 
     Args:
-        server_name: The name of the ZenML server instance.
+        local: Whether to show the logs for the local ZenML server.
         follow: Continue to output new log data as it becomes available.
         tail: Only show the last NUM lines of log output.
         raw: Show raw log contents (don't pretty-print logs).
     """
-    server = get_one_server(server_name)
+    server = get_active_deployment(local=True)
+    if not local:
+        remote_server = get_active_deployment(local=False)
+        if remote_server is not None:
+            server = remote_server
+
+    if server is None:
+        cli_utils.error(
+            "The local ZenML dashboard is not running. Please call `zenml "
+            "up` first to start the ZenML dashboard locally."
+        )
+
     server_name = server.config.name
     deployer = ServerDeployer()
 
+    cli_utils.declare(f"Showing logs for server: {server_name}")
     try:
         logs = deployer.get_server_logs(server_name, follow=follow, tail=tail)
     except ServerDeploymentNotFoundError as e:

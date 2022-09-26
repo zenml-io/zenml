@@ -73,6 +73,11 @@ class LocalServerDeploymentConfig(ServerDeploymentConfig):
     blocking: bool = False
     store: Optional[StoreConfiguration] = None
 
+    class Config:
+        """Pydantic configuration."""
+
+        extra = "forbid"
+
 
 class LocalZenServerConfig(LocalDaemonServiceConfig):
     """Local Zen server configuration.
@@ -187,7 +192,9 @@ class LocalZenServer(LocalDaemonService):
                 GlobalConfiguration()._reset_instance()
                 Repository()._reset_instance()
                 config_path = os.environ.get(ENV_ZENML_CONFIG_PATH)
-                os.environ[ENV_ZENML_CONFIG_PATH] = LOCAL_ZENML_SERVER_GLOBAL_CONFIG_PATH
+                os.environ[
+                    ENV_ZENML_CONFIG_PATH
+                ] = LOCAL_ZENML_SERVER_GLOBAL_CONFIG_PATH
                 self.run()
             finally:
                 if config_path:

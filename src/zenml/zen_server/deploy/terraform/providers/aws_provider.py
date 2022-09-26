@@ -19,7 +19,9 @@ from typing import ClassVar, List, Optional, Tuple, Type, cast
 from zenml.enums import ServerProviderType
 from zenml.logger import get_logger
 from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
-from zenml.zen_server.deploy.terraform import TerraformServerProvider
+from zenml.zen_server.deploy.terraform.providers.terraform_provider import (
+    TerraformServerProvider,
+)
 from zenml.zen_server.deploy.terraform.terraform_zen_server import (
     TerraformServerDeploymentConfig,
 )
@@ -32,6 +34,7 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
 
     Attributes:
     """
+
     prefix: Optional[str] = "zenmlserver"
     region: Optional[str] = "eu-west-1"
     zenmlserver_namespace: Optional[str] = "terraform-server"
@@ -49,6 +52,7 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
     rds_sslKey: Optional[str] = ""
     rds_sslVerifyServerCert: Optional[bool] = True
     ingress_path: Optional[str] = "zenmlhihi"
+
 
 class AWSServerProvider(TerraformServerProvider):
     """AWS ZenML server provider."""

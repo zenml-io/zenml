@@ -14,10 +14,15 @@
 """Service implementation for the ZenML terraform server deployment."""
 
 import os
-from typing import Any, Optional, cast
+from typing import Any, Optional, Tuple, cast
 
 from zenml.logger import get_logger
-from zenml.services import ServiceType, TerraformService, TerraformServiceConfig
+from zenml.services import (
+    ServiceState,
+    ServiceType,
+    TerraformService,
+    TerraformServiceConfig,
+)
 from zenml.services.container.container_service import (
     SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
 )
@@ -40,10 +45,9 @@ TERRAFORM_ZENML_SERVER_CONFIG_PATH = os.path.join(
 TERRAFORM_ZENML_SERVER_CONFIG_FILENAME = os.path.join(
     TERRAFORM_ZENML_SERVER_CONFIG_PATH, "service.json"
 )
-TERRAFORM_ZENML_SERVER_GLOBAL_CONFIG_PATH = os.path.join(
-    TERRAFORM_ZENML_SERVER_CONFIG_PATH, SERVICE_CONTAINER_GLOBAL_CONFIG_DIR
+TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH = (
+    "/mnt/w/apps/zenml/terraform_zenml_server"
 )
-TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH = "/mnt/w/apps/zenml/terraform_zenml_server"
 TERRAFORM_VALUES_FILE_PATH = "values.tfvars.json"
 TERRAFORM_DEPLOYED_ZENSERVER_URL_OUTPUT = "zenml_server_url"
 
@@ -59,6 +63,11 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     """
 
     log_level: str = "ERROR"
+
+    class Config:
+        """Pydantic configuration."""
+
+        extra = "forbid"
 
 
 class TerraformZenServerConfig(TerraformServiceConfig):
@@ -107,6 +116,21 @@ class TerraformZenServer(TerraformService):
         except FileNotFoundError:
             return None
 
+    def check_status(self) -> Tuple[ServiceState, str]:
+        """Check the the current operational state of the terraform deployment.
+
+        Returns:
+            The operational state of the terraform deployment and a message
+            providing additional information about that state (e.g. a
+            description of the error, if one is encountered).
+
+        Raises:
+            NotImplementedError: not implemented.
+        """
+        raise NotImplementedError(
+            "This method is not available for Terraform recipes."
+        )
+
     def _copy_config_values(self) -> None:
         """Copy values from the server config to the locals.tf file."""
         # get the contents of the values.tfvars.json file as a dictionary
@@ -153,7 +177,7 @@ class TerraformZenServer(TerraformService):
             )
         else:
             logger.info(
-                "Your ZenML server is now deployed on AWS with URL:\n"
+                f"Your ZenML server is now deployed on AWS with URL:\n"
                 f"${zenml_server_url}"
             )
 
