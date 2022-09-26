@@ -14,6 +14,7 @@
 """Utility functions for the CLI."""
 
 import datetime
+import json
 import os
 import subprocess
 import sys
@@ -31,7 +32,7 @@ from typing import (
     TypeVar,
     Union,
 )
-import json
+
 import click
 from dateutil import tz
 from pydantic import BaseModel
@@ -40,7 +41,7 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from rich.style import Style
 from rich.text import Text
-import textwrap
+
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
@@ -791,7 +792,7 @@ def describe_pydantic_object(schema_json: str):
     schema = json.loads(schema_json)
 
     # Extract values with defaults
-    schema_title = schema['title']
+    schema_title = schema["title"]
     required = schema.get("required", [])
     description = schema.get("description", "")
     properties = schema.get("properties", {})
