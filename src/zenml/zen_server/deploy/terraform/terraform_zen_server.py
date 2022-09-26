@@ -16,7 +16,6 @@
 import os
 from typing import Any, Optional, cast
 
-from zenml.enums import TerraformZenServerType
 from zenml.logger import get_logger
 from zenml.services import ServiceType, TerraformService, TerraformServiceConfig
 from zenml.services.container.container_service import (
@@ -44,7 +43,7 @@ TERRAFORM_ZENML_SERVER_CONFIG_FILENAME = os.path.join(
 TERRAFORM_ZENML_SERVER_GLOBAL_CONFIG_PATH = os.path.join(
     TERRAFORM_ZENML_SERVER_CONFIG_PATH, SERVICE_CONTAINER_GLOBAL_CONFIG_DIR
 )
-TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH = "path to terraform_zenml_server"
+TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH = "/mnt/w/apps/zenml/terraform_zenml_server"
 TERRAFORM_VALUES_FILE_PATH = "values.tfvars.json"
 
 TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT = 60
@@ -58,7 +57,6 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
             TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
     """
 
-    type: TerraformZenServerType
     log_level: str = "ERROR"
 
 
