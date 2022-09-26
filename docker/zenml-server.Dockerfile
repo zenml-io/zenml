@@ -10,7 +10,7 @@ ENV PYTHONFAULTHANDLER=1 \
 
 WORKDIR /zenml
 
-COPY pyproject.toml ./
+COPY README.md pyproject.toml ./
 # The existence of this __init__.py file allows the pip install before actually 
 # copying our source files which would invalidate caching
 COPY src/zenml/__init__.py ./src/zenml/
