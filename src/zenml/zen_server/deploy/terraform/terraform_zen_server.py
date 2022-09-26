@@ -14,9 +14,8 @@
 """Service implementation for the ZenML terraform server deployment."""
 
 import os
-from typing import Optional, cast
+from typing import Any, Optional, cast
 
-from zenml.enums import TerraformZenServerType
 from zenml.logger import get_logger
 from zenml.services import ServiceType, TerraformService, TerraformServiceConfig
 from zenml.services.container.container_service import (
@@ -44,8 +43,9 @@ TERRAFORM_ZENML_SERVER_CONFIG_FILENAME = os.path.join(
 TERRAFORM_ZENML_SERVER_GLOBAL_CONFIG_PATH = os.path.join(
     TERRAFORM_ZENML_SERVER_CONFIG_PATH, SERVICE_CONTAINER_GLOBAL_CONFIG_DIR
 )
-TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH = "path to terraform_zenml_server"
+TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH = "/mnt/w/apps/zenml/terraform_zenml_server"
 TERRAFORM_VALUES_FILE_PATH = "values.tfvars.json"
+TERRAFORM_DEPLOYED_ZENSERVER_URL_OUTPUT = "zenml_server_url"
 
 TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
@@ -58,7 +58,6 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
             TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
     """
 
-    type: TerraformZenServerType
     log_level: str = "ERROR"
 
 
@@ -107,3 +106,59 @@ class TerraformZenServer(TerraformService):
                 )
         except FileNotFoundError:
             return None
+
+    def _copy_config_values(self) -> None:
+        """Copy values from the server config to the locals.tf file."""
+        # get the contents of the values.tfvars.json file as a dictionary
+        variables = self.get_vars(self.config.directory_path)
+
+        # get the contents of the server deploymen config as dict
+        server_config = self.config.server.dict()
+
+        # update the variables dict with values from the server
+        # deployment config
+        for key in server_config.keys() & variables.keys():
+            variables[key] = server_config[key]
+
+        self._write_to_variables_file(variables)
+
+    def _write_to_variables_file(self, variables: Any) -> None:
+        """Write the dictionary into the values.tfvars.json file.
+
+        Args:
+            variables: the variables dict with the user-provided
+            config values
+        """
+        import json
+
+        with open(
+            os.path.join(
+                self.config.directory_path, self.config.variables_file_path
+            ),
+            "w",
+        ) as fp:
+            json.dump(variables, fp=fp)
+
+    def provision(self) -> None:
+        """Provision the service."""
+        self._copy_config_values()
+        super().provision()
+        zenml_server_url = self._get_server_url()
+        if zenml_server_url == "":
+            logger.info(
+                "It looks like you chose not to deploy an ingress "
+                "controller through ZenML. You can access ZenML "
+                "at the URL for your controller with a path you "
+                "configured while deploying ZenML (default: /zenml)."
+            )
+        else:
+            logger.info(
+                "Your ZenML server is now deployed on AWS with URL:\n"
+                f"${zenml_server_url}"
+            )
+
+    def _get_server_url(self) -> str:
+        """Returns the deployed ZenML server's URL"""
+        return self.terraform_client.output(
+            TERRAFORM_DEPLOYED_ZENSERVER_URL_OUTPUT, full_value=True
+        )

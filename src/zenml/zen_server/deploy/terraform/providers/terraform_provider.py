@@ -46,10 +46,10 @@ logger = get_logger(__name__)
 
 
 class TerraformServerProvider(BaseServerProvider):
-    """Docker ZenML server provider."""
+    """Terraform ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.TERRAFORM
-    CONFIG_TYPE: ClassVar[  # TODO How do I handle individual recipe configs here?
+    CONFIG_TYPE: ClassVar[
         Type[ServerDeploymentConfig]
     ] = TerraformServerDeploymentConfig
 
@@ -77,7 +77,7 @@ class TerraformServerProvider(BaseServerProvider):
                 root_runtime_path=TERRAFORM_ZENML_SERVER_CONFIG_PATH,
                 singleton=True,
                 directory_path=os.path.join(
-                    TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH, server_config.type
+                    TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH, server_config.provider
                 ),
                 log_level=server_config.log_level,
                 variables_file_path=TERRAFORM_VALUES_FILE_PATH,
@@ -276,5 +276,3 @@ class TerraformServerProvider(BaseServerProvider):
         server = cast(TerraformZenServer, service)
         return server.config.server
 
-
-TerraformServerProvider.register_as_provider()

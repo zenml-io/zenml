@@ -156,7 +156,7 @@ class TerraformService(BaseService):
             fileio.mkdir(previous_run_dir)
 
         # get variables from the recipe as a python dictionary
-        vars = self._get_vars(self.terraform_client.working_dir)
+        vars = self.get_vars(self.terraform_client.working_dir)
 
         # once init is successful, call terraform apply
         self.terraform_client.apply(
@@ -172,7 +172,7 @@ class TerraformService(BaseService):
         with open(self.status.config_file, "w") as f:
             f.write(self.json(indent=4))
 
-    def _get_vars(self, path: str) -> Any:
+    def get_vars(self, path: str) -> Any:
         """Get variables as a dictionary from values.tfvars.json.
 
         Args:
@@ -275,12 +275,6 @@ class TerraformService(BaseService):
         """
         self.admin_state = ServiceState.ACTIVE
         self.provision()
-        if timeout > 0:
-            if not self.poll_service_status(timeout):
-                raise RuntimeError(
-                    f"Failed to start service {self}\n"
-                    + self.get_service_status_message()
-                )
 
     def stop(self, timeout: int = 0, force: bool = False) -> None:
         """Stop the service and optionally wait for it to shutdown.
@@ -295,14 +289,6 @@ class TerraformService(BaseService):
         """
         self.admin_state = ServiceState.INACTIVE
         self.deprovision()
-        if timeout > 0:
-            self.poll_service_status(timeout)
-            if not self.is_stopped:
-                raise RuntimeError(
-                    f"Failed to stop service {self}. Last state: "
-                    f"'{self.status.state.value}'. Last error: "
-                    f"'{self.status.last_error}'"
-                )
 
     def get_logs(
         self, follow: bool = False, tail: Optional[int] = None

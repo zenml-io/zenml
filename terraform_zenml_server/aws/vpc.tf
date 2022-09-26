@@ -2,12 +2,12 @@
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 3.0"
-  count   = local.rds.create_rds? 1 : 0
+  count   = var.create_rds? 1 : 0
 
-  name = "${local.prefix}-${local.vpc.name}"
+  name = "${var.prefix}-vpc"
   cidr = "10.10.0.0/16"
 
-  azs             = ["${local.region}a", "${local.region}b", "${local.region}c"]
+  azs             = ["${var.region}a", "${var.region}b", "${var.region}c"]
   private_subnets = ["10.10.8.0/21", "10.10.16.0/21", "10.10.24.0/21"]
   public_subnets  = ["10.10.128.0/21", "10.10.136.0/21", "10.10.144.0/21"]
 
@@ -44,5 +44,4 @@ module "vpc" {
     }
   ]
 
-  tags = local.tags
 }

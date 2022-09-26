@@ -39,7 +39,7 @@ zenml:
   rootUrlPath:
 
   defaultProject: "default"
-  defaultUsername: admin
+  defaultUsername: default
   # Use your own password here
   defaultPassword: zenml
 
@@ -86,7 +86,6 @@ ingress:
     # kubernetes.io/tls-acme: "true"
     # cert-manager.io/cluster-issuer: "letsencrypt"
   host:
-  # path: /zenml/?(.*)
   path: /
   tls:
     enabled: false
