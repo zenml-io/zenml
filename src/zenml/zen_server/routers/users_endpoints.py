@@ -60,7 +60,7 @@ activation_router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def list_users() -> List[UserModel]:
+def list_users() -> List[UserModel]:
     """Returns a list of all users.
 
     Returns:
@@ -75,7 +75,7 @@ async def list_users() -> List[UserModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def create_user(user: CreateUserRequest) -> CreateUserResponse:
+def create_user(user: CreateUserRequest) -> CreateUserResponse:
     """Creates a user.
 
     # noqa: DAR401
@@ -111,7 +111,7 @@ async def create_user(user: CreateUserRequest) -> CreateUserResponse:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
+def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
     """Returns a specific user.
 
     Args:
@@ -129,7 +129,7 @@ async def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def update_user(
+def update_user(
     user_name_or_id: Union[str, UUID], user: UpdateUserRequest
 ) -> UserModel:
     """Updates a specific user.
@@ -152,7 +152,7 @@ async def update_user(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def activate_user(
+def activate_user(
     user_name_or_id: Union[str, UUID], user: ActivateUserRequest
 ) -> UserModel:
     """Activates a specific user.
@@ -188,7 +188,7 @@ async def activate_user(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def deactivate_user(user_name_or_id: Union[str, UUID]) -> UserModel:
+def deactivate_user(user_name_or_id: Union[str, UUID]) -> UserModel:
     """Deactivates a user and generates a new activation token for it.
 
     Args:
@@ -211,7 +211,7 @@ async def deactivate_user(user_name_or_id: Union[str, UUID]) -> UserModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_user(
+def delete_user(
     user_name_or_id: Union[str, UUID],
     auth_context: AuthContext = Depends(authorize),
 ) -> None:
@@ -240,7 +240,7 @@ async def delete_user(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_role_assignments_for_user(
+def get_role_assignments_for_user(
     user_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
 ) -> List[RoleAssignmentModel]:
@@ -265,7 +265,7 @@ async def get_role_assignments_for_user(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def assign_role(
+def assign_role(
     user_name_or_id: Union[str, UUID],
     role_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -292,7 +292,7 @@ async def assign_role(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def unassign_role(
+def unassign_role(
     user_name_or_id: Union[str, UUID],
     role_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]],

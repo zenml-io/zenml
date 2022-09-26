@@ -43,7 +43,7 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_step(step_id: UUID) -> StepRunModel:
+def get_step(step_id: UUID) -> StepRunModel:
     """Get one specific step.
 
     Args:
@@ -61,7 +61,7 @@ async def get_step(step_id: UUID) -> StepRunModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_step_outputs(step_id: UUID) -> Dict[str, ArtifactModel]:
+def get_step_outputs(step_id: UUID) -> Dict[str, ArtifactModel]:
     """Get the outputs of a specific step.
 
     Args:
@@ -79,7 +79,7 @@ async def get_step_outputs(step_id: UUID) -> Dict[str, ArtifactModel]:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_step_inputs(step_id: UUID) -> Dict[str, ArtifactModel]:
+def get_step_inputs(step_id: UUID) -> Dict[str, ArtifactModel]:
     """Get the inputs of a specific step.
 
     Args:
@@ -97,7 +97,7 @@ async def get_step_inputs(step_id: UUID) -> Dict[str, ArtifactModel]:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_step_configuration(step_id: UUID) -> Dict[str, Any]:
+def get_step_configuration(step_id: UUID) -> Dict[str, Any]:
     """Get the configuration of a specific step.
 
     Args:
