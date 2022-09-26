@@ -18,6 +18,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.cors import CORSMiddleware
 
 import zenml
 from zenml.constants import ENV_ZENML_SERVER_ROOT_URL_PATH
@@ -60,6 +61,12 @@ app = FastAPI(
     root_path=ROOT_URL_PATH,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_headers=["*"],
+)
 
 app.mount(
     "/dashboard/static",
