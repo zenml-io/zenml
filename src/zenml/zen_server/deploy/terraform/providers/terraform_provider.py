@@ -49,7 +49,7 @@ class TerraformServerProvider(BaseServerProvider):
     """Terraform ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.TERRAFORM
-    CONFIG_TYPE: ClassVar[  # TODO How do I handle individual recipe configs here?
+    CONFIG_TYPE: ClassVar[
         Type[ServerDeploymentConfig]
     ] = TerraformServerDeploymentConfig
 
