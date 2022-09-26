@@ -130,9 +130,9 @@ def handle_exceptions(func: F) -> F:
     """
 
     @wraps(func)
-    async def decorated(*args: Any, **kwargs: Any) -> Any:
+    def decorated(*args: Any, **kwargs: Any) -> Any:
         try:
-            return await func(*args, **kwargs)
+            return func(*args, **kwargs)
         except NotAuthorizedError as error:
             logger.exception("Authorization error")
             raise not_authorized(error) from error

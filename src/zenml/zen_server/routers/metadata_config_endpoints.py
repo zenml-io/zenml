@@ -33,7 +33,7 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_metadata_config() -> str:
+def get_metadata_config() -> str:
     """Gets the metadata config.
 
     Returns:
