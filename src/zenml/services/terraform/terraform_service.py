@@ -351,12 +351,6 @@ class TerraformService(BaseService):
         """
         self.admin_state = ServiceState.ACTIVE
         self.provision()
-        if timeout > 0:
-            if not self.poll_service_status(timeout):
-                raise RuntimeError(
-                    f"Failed to start service {self}\n"
-                    + self.get_service_status_message()
-                )
 
     def stop(self, timeout: int = 0, force: bool = False) -> None:
         """Stop the service and optionally wait for it to shutdown.
@@ -371,14 +365,6 @@ class TerraformService(BaseService):
         """
         self.admin_state = ServiceState.INACTIVE
         self.deprovision()
-        if timeout > 0:
-            self.poll_service_status(timeout)
-            if not self.is_stopped:
-                raise RuntimeError(
-                    f"Failed to stop service {self}. Last state: "
-                    f"'{self.status.state.value}'. Last error: "
-                    f"'{self.status.last_error}'"
-                )
 
     def get_logs(
         self, follow: bool = False, tail: Optional[int] = None
