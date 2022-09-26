@@ -25,11 +25,7 @@ from fastapi.security import (
 )
 from pydantic import BaseModel
 
-from zenml.constants import (
-    ENV_ZENML_AUTH_TYPE,
-    LOGIN,
-    VERSION_1,
-)
+from zenml.constants import ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
 from zenml.logger import get_logger
 from zenml.models.user_management_models import UserModel
 from zenml.utils.enum_utils import StrEnum

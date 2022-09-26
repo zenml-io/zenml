@@ -255,7 +255,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         values["url"] = str(sql_url)
         return values
 
-    def get_metadata_config(self, expand_certs: bool = False) -> ConnectionConfig:
+    def get_metadata_config(
+        self, expand_certs: bool = False
+    ) -> ConnectionConfig:
         """Get the metadata configuration for the SQL ZenML store.
 
         Args:
@@ -293,11 +295,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             # Handle certificate params
             for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
                 ssl_setting = getattr(self, key)
-                if expand_certs:
+                if not ssl_setting:
+                    continue
+                if expand_certs and os.path.isfile(ssl_setting):
                     with open(ssl_setting, "r") as f:
                         ssl_setting = f.read()
-                if ssl_setting and os.path.isfile(ssl_setting):
-                    mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
+                mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
 
             # Handle additional params
             if mlmd_ssl_options:
@@ -509,13 +512,19 @@ class SqlZenStore(BaseZenStore):
     # TFX Metadata
     # ------------
 
-    def get_metadata_config(self) -> ConnectionConfig:
+    def get_metadata_config(
+        self, expand_certs: bool = False
+    ) -> ConnectionConfig:
         """Get the TFX metadata config of this ZenStore.
+
+        Args:
+            expand_certs: Whether to expand the certificate paths in the
+                connection config to their value.
 
         Returns:
             The TFX metadata config of this ZenStore.
         """
-        return self.config.get_metadata_config()
+        return self.config.get_metadata_config(expand_certs=expand_certs)
 
     # ------
     # Stacks

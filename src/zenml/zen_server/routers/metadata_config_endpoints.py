@@ -41,5 +41,5 @@ def get_metadata_config() -> str:
     """
     from google.protobuf.json_format import MessageToJson
 
-    config = zen_store.get_metadata_config()
+    config = zen_store.get_metadata_config(expand_certs=True)
     return MessageToJson(config)

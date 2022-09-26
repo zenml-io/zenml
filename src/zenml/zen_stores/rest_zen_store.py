@@ -270,14 +270,20 @@ class RestZenStore(BaseZenStore):
     # TFX Metadata
     # ------------
 
-    def get_metadata_config(self) -> ConnectionConfig:
+    def get_metadata_config(
+        self, expand_certs: bool = False
+    ) -> ConnectionConfig:
         """Get the TFX metadata config of this ZenStore.
 
-        Returns:
-            The TFX metadata config of this ZenStore.
+        Args:
+            expand_certs: Whether to expand the certificate paths in the
+                connection config to their value.
 
         Raises:
             ValueError: if the server response is invalid.
+
+        Returns:
+            The TFX metadata config of this ZenStore.
         """
         body = self.get(f"{METADATA_CONFIG}")
         if not isinstance(body, str):
@@ -285,6 +291,36 @@ class RestZenStore(BaseZenStore):
                 f"Invalid response from server: {body}. Expected string."
             )
         metadata_config_pb = Parse(body, ConnectionConfig())
+
+        if not expand_certs:
+            if metadata_config_pb.HasField(
+                "mysql"
+            ) and metadata_config_pb.mysql.HasField("ssl_options"):
+                # Save the certificates in a secure location on disk
+                secret_folder = Path(
+                    GlobalConfiguration().local_stores_path,
+                    "certificates",
+                )
+                for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+                    if not metadata_config_pb.mysql.ssl_options.HasField(
+                        key.lstrip("ssl_")
+                    ):
+                        continue
+                    content = getattr(
+                        metadata_config_pb.mysql.ssl_options, key.lstrip("ssl_")
+                    )
+                    if content and not os.path.isfile(content):
+                        fileio.makedirs(str(secret_folder))
+                        file_path = Path(secret_folder, f"{key}.pem")
+                        with open(file_path, "w") as f:
+                            f.write(content)
+                        file_path.chmod(0o600)
+                        setattr(
+                            metadata_config_pb.mysql.ssl_options,
+                            key.lstrip("ssl_"),
+                            str(file_path),
+                        )
+
         return metadata_config_pb
 
     # ------
