@@ -264,7 +264,7 @@ class RestZenStore(BaseZenStore):
             The store configuration of the copied store.
         """
         assert isinstance(config, RestZenStoreConfiguration)
-        if isinstance(config.verify_ssl, bool) and os.path.isfile(
+        if isinstance(config.verify_ssl, str) and os.path.isfile(
             config.verify_ssl
         ):
             config = config.copy(deep=True)
