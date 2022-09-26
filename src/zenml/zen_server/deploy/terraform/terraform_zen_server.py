@@ -45,6 +45,7 @@ TERRAFORM_ZENML_SERVER_GLOBAL_CONFIG_PATH = os.path.join(
 )
 TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH = "/mnt/w/apps/zenml/terraform_zenml_server"
 TERRAFORM_VALUES_FILE_PATH = "values.tfvars.json"
+TERRAFORM_DEPLOYED_ZENSERVER_URL_OUTPUT = "zenml_server_url"
 
 TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
@@ -142,3 +143,22 @@ class TerraformZenServer(TerraformService):
         """Provision the service."""
         self._copy_config_values()
         super().provision()
+        zenml_server_url = self._get_server_url()
+        if zenml_server_url == "":
+            logger.info(
+                "It looks like you chose not to deploy an ingress "
+                "controller through ZenML. You can access ZenML "
+                "at the URL for your controller with a path you "
+                "configured while deploying ZenML (default: /zenml)."
+            )
+        else:
+            logger.info(
+                "Your ZenML server is now deployed on AWS with URL:\n"
+                f"${zenml_server_url}"
+            )
+
+    def _get_server_url(self) -> str:
+        """Returns the deployed ZenML server's URL"""
+        return self.terraform_client.output(
+            TERRAFORM_DEPLOYED_ZENSERVER_URL_OUTPUT, full_value=True
+        )
