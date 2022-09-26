@@ -48,7 +48,7 @@ class PipelineSchema(SQLModel, table=True):
     user: "UserSchema" = Relationship(back_populates="pipelines")
 
     docstring: Optional[str] = Field(nullable=True)
-    spec: str
+    spec: str = Field(max_length=4096)
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
