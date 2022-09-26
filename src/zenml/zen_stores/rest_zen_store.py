@@ -189,9 +189,10 @@ class RestZenStoreConfiguration(StoreConfiguration):
     class Config:
         """Pydantic configuration class."""
 
-        # Validate attributes when assigning them. We need to set this in order
-        # to have a mix of mutable and immutable attributes
-        validate_assignment = True
+        # Don't validate attributes when assigning them. This is necessary
+        # because the `verify_ssl` attribute can be expanded to the contents
+        # of the certificate file.
+        validate_assignment = False
         # Forbid extra attributes set in the class.
         extra = "forbid"
 
