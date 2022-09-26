@@ -27,7 +27,7 @@ from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
+    from zenml.zen_stores.schemas import ProjectSchema, StackSchema, UserSchema
 
 
 class PipelineSchema(SQLModel, table=True):
@@ -48,14 +48,13 @@ class PipelineSchema(SQLModel, table=True):
     user: "UserSchema" = Relationship(back_populates="pipelines")
 
     docstring: Optional[str] = Field(nullable=True)
-    spec: str
+    spec: str = Field(max_length=4096)
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
-        sa_relationship_kwargs={"cascade": "all, delete"},
     )
 
     @classmethod
@@ -116,23 +115,35 @@ class PipelineRunSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     name: str
 
-    project: UUID = Field(foreign_key="projectschema.id")
-    user: UUID = Field(foreign_key="userschema.id")
-    stack_id: Optional[UUID] = Field(
-        foreign_key="stackschema.id", nullable=True
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
     )
-    pipeline_id: Optional[UUID] = Field(
-        foreign_key="pipelineschema.id", nullable=True
-    )
+    project: "ProjectSchema" = Relationship(back_populates="runs")
 
-    pipeline_configuration: str
+    user_id: UUID = Field(
+        nullable=False,
+        sa_column=Column(ForeignKey("userschema.id", ondelete="CASCADE")),
+    )
+    user: "UserSchema" = Relationship(back_populates="runs")
+
+    stack_id: Optional[UUID] = Field(
+        nullable=True,
+        sa_column=Column(ForeignKey("stackschema.id", ondelete="SET NULL")),
+    )
+    stack: "StackSchema" = Relationship(back_populates="runs")
+
+    pipeline_id: Optional[UUID] = Field(
+        nullable=True,
+        sa_column=Column(ForeignKey("pipelineschema.id", ondelete="SET NULL")),
+    )
+    pipeline: PipelineSchema = Relationship(back_populates="runs")
+
+    pipeline_configuration: str = Field(max_length=4096)
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
-
-    pipeline: PipelineSchema = Relationship(back_populates="runs")
 
     mlmd_id: int = Field(default=None, nullable=True)
 
@@ -155,8 +166,8 @@ class PipelineRunSchema(SQLModel, table=True):
             id=run.id,
             name=run.name,
             stack_id=run.stack_id,
-            project=run.project,
-            user=run.user,
+            project_id=run.project,
+            user_id=run.user,
             pipeline_id=run.pipeline_id,
             pipeline_configuration=json.dumps(run.pipeline_configuration),
             git_sha=run.git_sha,
@@ -193,8 +204,8 @@ class PipelineRunSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             stack_id=self.stack_id,
-            project=self.project,
-            user=self.user,
+            project=self.project_id,
+            user=self.user_id,
             pipeline_id=self.pipeline_id,
             pipeline_configuration=json.loads(self.pipeline_configuration),
             git_sha=self.git_sha,
@@ -215,7 +226,7 @@ class StepRunSchema(SQLModel, table=True):
 
     entrypoint_name: str
     parameters: str
-    step_configuration: str
+    step_configuration: str = Field(max_length=4096)
     docstring: Optional[str]
 
     mlmd_id: int = Field(default=None, nullable=True)

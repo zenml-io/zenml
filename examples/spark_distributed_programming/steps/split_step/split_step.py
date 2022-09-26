@@ -26,7 +26,7 @@ class SplitParameters(BaseParameters):
     eval_ratio: float
 
 
-@step(custom_step_operator=step_operator.name)
+@step(step_operator=step_operator.name)
 def split_step(
     dataset: DataFrame, params: SplitParameters
 ) -> Output(train=DataFrame, test=DataFrame, eval=DataFrame,):

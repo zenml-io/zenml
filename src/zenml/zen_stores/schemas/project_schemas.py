@@ -24,6 +24,7 @@ from zenml.models import ProjectModel
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         FlavorSchema,
+        PipelineRunSchema,
         PipelineSchema,
         StackComponentSchema,
         StackSchema,
@@ -54,10 +55,13 @@ class ProjectSchema(SQLModel, table=True):
     components: List["StackComponentSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
+    flavors: List["FlavorSchema"] = Relationship(
+        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+    )
     pipelines: List["PipelineSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
-    flavors: List["FlavorSchema"] = Relationship(
+    runs: List["PipelineRunSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
 

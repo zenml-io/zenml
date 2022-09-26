@@ -16,7 +16,7 @@
 import json
 from collections import OrderedDict
 from json import JSONDecodeError
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from ml_metadata import proto
@@ -48,7 +48,7 @@ class MLMDPipelineRunModel(BaseModel):
     name: str
     project: UUID
     user: UUID
-    pipeline_id: UUID
+    pipeline_id: Optional[UUID]
     stack_id: UUID
     pipeline_configuration: Dict[str, Any]
 
@@ -252,7 +252,7 @@ class MetadataStore:
         return MLMDPipelineRunModel(
             mlmd_id=context.id,
             name=context.name,
-            project=model_ids["pipeline_id"],
+            project=model_ids["project_id"],
             user=model_ids["user_id"],
             pipeline_id=model_ids["pipeline_id"],
             stack_id=model_ids["stack_id"],

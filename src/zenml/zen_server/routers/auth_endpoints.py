@@ -73,7 +73,7 @@ class PasswordRequestForm:
     LOGIN,
     responses={401: error_response},
 )
-async def token(
+def token(
     auth_form_data: PasswordRequestForm = Depends(),
 ) -> Dict[str, str]:
     """Returns an access token for the given user.

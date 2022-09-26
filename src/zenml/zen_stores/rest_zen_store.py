@@ -189,9 +189,10 @@ class RestZenStoreConfiguration(StoreConfiguration):
     class Config:
         """Pydantic configuration class."""
 
-        # Validate attributes when assigning them. We need to set this in order
-        # to have a mix of mutable and immutable attributes
-        validate_assignment = True
+        # Don't validate attributes when assigning them. This is necessary
+        # because the `verify_ssl` attribute can be expanded to the contents
+        # of the certificate file.
+        validate_assignment = False
         # Forbid extra attributes set in the class.
         extra = "forbid"
 
@@ -263,21 +264,33 @@ class RestZenStore(BaseZenStore):
         Returns:
             The store configuration of the copied store.
         """
-        # REST zen stores are not backed by local files
+        assert isinstance(config, RestZenStoreConfiguration)
+        if isinstance(config.verify_ssl, str) and os.path.isfile(
+            config.verify_ssl
+        ):
+            config = config.copy(deep=True)
+            with open(config.verify_ssl, "r") as f:
+                config.verify_ssl = f.read()
         return config
 
     # ------------
     # TFX Metadata
     # ------------
 
-    def get_metadata_config(self) -> ConnectionConfig:
+    def get_metadata_config(
+        self, expand_certs: bool = False
+    ) -> ConnectionConfig:
         """Get the TFX metadata config of this ZenStore.
 
-        Returns:
-            The TFX metadata config of this ZenStore.
+        Args:
+            expand_certs: Whether to expand the certificate paths in the
+                connection config to their value.
 
         Raises:
             ValueError: if the server response is invalid.
+
+        Returns:
+            The TFX metadata config of this ZenStore.
         """
         body = self.get(f"{METADATA_CONFIG}")
         if not isinstance(body, str):
@@ -285,6 +298,36 @@ class RestZenStore(BaseZenStore):
                 f"Invalid response from server: {body}. Expected string."
             )
         metadata_config_pb = Parse(body, ConnectionConfig())
+
+        if not expand_certs:
+            if metadata_config_pb.HasField(
+                "mysql"
+            ) and metadata_config_pb.mysql.HasField("ssl_options"):
+                # Save the certificates in a secure location on disk
+                secret_folder = Path(
+                    GlobalConfiguration().local_stores_path,
+                    "certificates",
+                )
+                for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+                    if not metadata_config_pb.mysql.ssl_options.HasField(
+                        key.lstrip("ssl_")
+                    ):
+                        continue
+                    content = getattr(
+                        metadata_config_pb.mysql.ssl_options, key.lstrip("ssl_")
+                    )
+                    if content and not os.path.isfile(content):
+                        fileio.makedirs(str(secret_folder))
+                        file_path = Path(secret_folder, f"{key}.pem")
+                        with open(file_path, "w") as f:
+                            f.write(content)
+                        file_path.chmod(0o600)
+                        setattr(
+                            metadata_config_pb.mysql.ssl_options,
+                            key.lstrip("ssl_"),
+                            str(file_path),
+                        )
+
         return metadata_config_pb
 
     # ------

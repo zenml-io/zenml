@@ -491,6 +491,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
         skip_pipeline_registration = constants.handle_bool_env_var(
             constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
         )
+        caching_status = (
+            "enabled"
+            if pipeline_deployment.pipeline.enable_cache
+            else "disabled"
+        )
         register_pipeline = not (skip_pipeline_registration or unlisted)
         if register_pipeline:
             step_specs = [
@@ -505,14 +510,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline_deployment = pipeline_deployment.copy(
                 update={"pipeline_id": pipeline_id}
             )
-
-        logger.info(
-            "Creating run for pipeline `%s` (Caching %s)",
-            self.name,
-            "enabled"
-            if pipeline_deployment.pipeline.enable_cache
-            else "disabled",
-        )
+            logger.info(
+                "Creating run `%s` for pipeline `%s` (Caching %s)",
+                pipeline_deployment.run_name,
+                self.name,
+                caching_status,
+            )
+        else:
+            logger.info(
+                "Creating unlisted run `%s` (Caching %s)",
+                pipeline_deployment.run_name,
+                caching_status,
+            )
 
         self._track_pipeline_deployment(
             deployment=pipeline_deployment, stack=stack

@@ -29,7 +29,7 @@ from zenml.constants import ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
 from zenml.logger import get_logger
 from zenml.models.user_management_models import UserModel
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_server.utils import zen_store
+from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
@@ -138,7 +138,9 @@ def http_authentication(
 
 
 def oauth2_password_bearer_authentication(
-    token: str = Depends(OAuth2PasswordBearer(tokenUrl=VERSION_1 + LOGIN)),
+    token: str = Depends(
+        OAuth2PasswordBearer(tokenUrl=ROOT_URL_PATH + VERSION_1 + LOGIN)
+    ),
 ) -> AuthContext:
     """Authenticates any request to the ZenML server with OAuth2 password bearer JWT tokens.
 

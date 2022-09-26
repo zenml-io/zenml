@@ -28,6 +28,7 @@ from zenml.constants import (
 from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
 from zenml.zen_server.auth import authorize
+from zenml.zen_server.models.pipeline_models import HydratedPipelineRunModel
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -40,11 +41,13 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[PipelineRunModel],
+    response_model=Union[
+        List[HydratedPipelineRunModel], List[PipelineRunModel]
+    ],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def list_runs(
+def list_runs(
     project_name_or_id: Optional[Union[str, UUID]] = None,
     stack_id: Optional[UUID] = None,
     run_name: Optional[str] = None,
@@ -52,7 +55,8 @@ async def list_runs(
     component_id: Optional[UUID] = None,
     pipeline_id: Optional[UUID] = None,
     unlisted: bool = False,
-) -> List[PipelineRunModel]:
+    hydrated: bool = False,
+) -> Union[List[HydratedPipelineRunModel], List[PipelineRunModel]]:
     """Get pipeline runs according to query filters.
 
     Args:
@@ -64,11 +68,13 @@ async def list_runs(
         pipeline_id: ID of the pipeline for which to filter runs.
         unlisted: If True, only return unlisted runs that are not
             associated with any pipeline.
+        hydrated: Defines if stack, user and pipeline will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The pipeline runs according to query filters.
     """
-    return zen_store.list_runs(
+    runs = zen_store.list_runs(
         project_name_or_id=project_name_or_id,
         run_name=run_name,
         stack_id=stack_id,
@@ -77,24 +83,37 @@ async def list_runs(
         pipeline_id=pipeline_id,
         unlisted=unlisted,
     )
+    if hydrated:
+        return [HydratedPipelineRunModel.from_model(run) for run in runs]
+    else:
+        return runs
 
 
 @router.get(
     "/{run_id}",
-    response_model=PipelineRunModel,
+    response_model=Union[HydratedPipelineRunModel, PipelineRunModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_run(run_id: UUID) -> PipelineRunModel:
+def get_run(
+    run_id: UUID,
+    hydrated: bool = False,
+) -> Union[HydratedPipelineRunModel, PipelineRunModel]:
     """Get a specific pipeline run using its ID.
 
     Args:
         run_id: ID of the pipeline run to get.
+        hydrated: Defines if stack, user and pipeline will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The pipeline run.
     """
-    return zen_store.get_run(run_id=run_id)
+    run = zen_store.get_run(run_id=run_id)
+    if hydrated:
+        return HydratedPipelineRunModel.from_model(run)
+    else:
+        return run
 
 
 @router.get(
@@ -103,7 +122,7 @@ async def get_run(run_id: UUID) -> PipelineRunModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_run_dag(
+def get_run_dag(
     run_id: UUID,
 ) -> LineageGraph:
     """Get the DAG for a given pipeline run.
@@ -128,7 +147,7 @@ async def get_run_dag(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_run_steps(run_id: UUID) -> List[StepRunModel]:
+def get_run_steps(run_id: UUID) -> List[StepRunModel]:
     """Get all steps for a given pipeline run.
 
     Args:
@@ -146,7 +165,7 @@ async def get_run_steps(run_id: UUID) -> List[StepRunModel]:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_run_component_side_effects(
+def get_run_component_side_effects(
     run_id: UUID, component_id: Optional[UUID] = None
 ) -> Dict[str, Any]:
     """Get the component side-effects for a given pipeline run.
@@ -171,7 +190,7 @@ async def get_run_component_side_effects(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_pipeline_configuration(run_id: UUID) -> Dict[str, Any]:
+def get_pipeline_configuration(run_id: UUID) -> Dict[str, Any]:
     """Get the pipeline configuration of a specific pipeline run using its ID.
 
     Args:

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for projects."""
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -24,6 +24,7 @@ from zenml.constants import (
     ROLES,
     STACK_COMPONENTS,
     STACKS,
+    STATISTICS,
     VERSION_1,
 )
 from zenml.enums import StackComponentType
@@ -62,7 +63,7 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def list_projects() -> List[ProjectModel]:
+def list_projects() -> List[ProjectModel]:
     """Lists all projects in the organization.
 
     Returns:
@@ -77,7 +78,7 @@ async def list_projects() -> List[ProjectModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def create_project(project: CreateProjectRequest) -> ProjectModel:
+def create_project(project: CreateProjectRequest) -> ProjectModel:
     """Creates a project based on the requestBody.
 
     # noqa: DAR401
@@ -97,7 +98,7 @@ async def create_project(project: CreateProjectRequest) -> ProjectModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_project(project_name_or_id: Union[str, UUID]) -> ProjectModel:
+def get_project(project_name_or_id: Union[str, UUID]) -> ProjectModel:
     """Get a project for given name.
 
     # noqa: DAR401
@@ -117,7 +118,7 @@ async def get_project(project_name_or_id: Union[str, UUID]) -> ProjectModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def update_project(
+def update_project(
     project_name_or_id: Union[str, UUID], project_update: UpdateProjectRequest
 ) -> ProjectModel:
     """Get a project for given name.
@@ -143,7 +144,7 @@ async def update_project(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_project(project_name_or_id: Union[str, UUID]) -> None:
+def delete_project(project_name_or_id: Union[str, UUID]) -> None:
     """Deletes a project.
 
     Args:
@@ -158,7 +159,7 @@ async def delete_project(project_name_or_id: Union[str, UUID]) -> None:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_role_assignments_for_project(
+def get_role_assignments_for_project(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     team_name_or_id: Optional[Union[str, UUID]] = None,
@@ -188,7 +189,7 @@ async def get_role_assignments_for_project(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def list_project_stacks(
+def list_project_stacks(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[UUID] = None,
@@ -231,7 +232,7 @@ async def list_project_stacks(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def create_stack(
+def create_stack(
     project_name_or_id: Union[str, UUID],
     stack: CreateStackRequest,
     hydrated: bool = False,
@@ -268,7 +269,7 @@ async def create_stack(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def list_project_stack_components(
+def list_project_stack_components(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     type: Optional[str] = None,
@@ -314,7 +315,7 @@ async def list_project_stack_components(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def create_stack_component(
+def create_stack_component(
     project_name_or_id: Union[str, UUID],
     component: CreateComponentModel,
     hydrated: bool = False,
@@ -356,7 +357,7 @@ async def create_stack_component(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def list_project_flavors(
+def list_project_flavors(
     project_name_or_id: Optional[Union[str, UUID]] = None,
     component_type: Optional[StackComponentType] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -400,7 +401,7 @@ async def list_project_flavors(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def create_flavor(
+def create_flavor(
     project_name_or_id: Union[str, UUID],
     flavor: FlavorModel,
     hydrated: bool = False,
@@ -437,7 +438,7 @@ async def create_flavor(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def list_project_pipelines(
+def list_project_pipelines(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
@@ -477,7 +478,7 @@ async def list_project_pipelines(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def create_pipeline(
+def create_pipeline(
     project_name_or_id: Union[str, UUID],
     pipeline: CreatePipelineRequest,
     hydrated: bool = False,
@@ -505,3 +506,41 @@ async def create_pipeline(
         return HydratedPipelineModel.from_model(created_pipeline)
     else:
         return created_pipeline
+
+
+@router.get(
+    "/{project_name_or_id}" + STATISTICS,
+    response_model=Dict[str, str],  # type: ignore[arg-type]
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_project_statistics(
+    project_name_or_id: Union[str, UUID]
+) -> Dict[str, int]:
+    """Gets statistics of a project.
+
+    # noqa: DAR401
+
+    Args:
+        project_name_or_id: Name or ID of the project to get statistics for.
+
+    Returns:
+        All pipelines within the project.
+    """
+    # TODO: [server] instead of actually querying all the rows, we should
+    #  use zen_store methods that just return counts
+    zen_store.list_runs()
+    return {
+        "stacks": len(
+            zen_store.list_stacks(project_name_or_id=project_name_or_id)
+        ),
+        "components": len(
+            zen_store.list_stack_components(
+                project_name_or_id=project_name_or_id
+            )
+        ),
+        "pipelines": len(
+            zen_store.list_pipelines(project_name_or_id=project_name_or_id)
+        ),
+        "runs": len(zen_store.list_runs(project_name_or_id=project_name_or_id)),
+    }

@@ -385,13 +385,6 @@ def register_stack(
     type=str,
     required=False,
 )
-@click.option(
-    "--share",
-    "share",
-    is_flag=True,
-    help="Use this flag to share this stack with other users.",
-    type=click.BOOL,
-)
 def update_stack(
     stack_name: Optional[str],
     artifact_store_name: Optional[str] = None,
@@ -529,15 +522,50 @@ def update_stack(
                 ).id
             ]
 
-        if share:
-            # This allows users to switch stacks from private to shared
-            #  the opposite switch is currently unsupported
-            current_stack.is_shared = share
-
         current_stack.components = stack_components
 
         repo.update_stack(current_stack)
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
+
+@stack.command(
+    "share",
+    context_settings=dict(ignore_unknown_options=True),
+    help="Share a stack and all its components.",
+)
+@click.argument("stack_name", type=str, required=False)
+def share_stack(
+    stack_name: Optional[str],
+) -> None:
+    """Share a stack with your team."""
+    cli_utils.print_active_config()
+
+    repo = Repository()
+
+    active_stack_name = repo.active_stack_model.name
+    stack_name = stack_name or active_stack_name
+
+    repo = Repository()
+    try:
+        current_stack = repo.get_stack_by_name(stack_name)
+    except KeyError:
+        cli_utils.error(
+            f"Stack `{stack_name}` cannot be updated as it does not exist.",
+        )
+    else:
+        for c_t, c in current_stack.to_hydrated_model().components.items():
+            only_component = c[0]  # For future compatibility
+            with console.status(f"Sharing component `{only_component.name}`"
+                                f"...\n"):
+                if not only_component:
+                    only_component.is_shared = True
+
+                    repo.update_stack_component(component=only_component)
+        with console.status(f"Sharing stack `{current_stack.name}` ...\n"):
+
+            current_stack.is_shared = True
+
+            repo.update_stack(current_stack)
+            cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 
 @stack.command(
@@ -756,7 +784,8 @@ def list_stacks() -> None:
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,
-            "SHARED": "Yes" if stack.is_shared else "No",
+            "SHARED": ":white_check_mark:" if stack.is_shared else ":x:",
+            "OWNER": stack.user.name,
             **{
                 component_type.upper(): components[0].name
                 for component_type, components in stack.components.items()

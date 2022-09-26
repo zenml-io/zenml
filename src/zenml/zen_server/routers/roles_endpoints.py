@@ -40,7 +40,7 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def list_roles() -> List[RoleModel]:
+def list_roles() -> List[RoleModel]:
     """Returns a list of all roles.
 
     Returns:
@@ -55,7 +55,7 @@ async def list_roles() -> List[RoleModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def create_role(role: CreateRoleRequest) -> RoleModel:
+def create_role(role: CreateRoleRequest) -> RoleModel:
     """Creates a role.
 
     # noqa: DAR401
@@ -75,7 +75,7 @@ async def create_role(role: CreateRoleRequest) -> RoleModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
+def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
     """Returns a specific role.
 
     Args:
@@ -93,7 +93,7 @@ async def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def update_role(
+def update_role(
     role_name_or_id: Union[str, UUID], role_update: UpdateRoleRequest
 ) -> RoleModel:
     """Updates a role.
@@ -116,7 +116,7 @@ async def update_role(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_role(role_name_or_id: Union[str, UUID]) -> None:
+def delete_role(role_name_or_id: Union[str, UUID]) -> None:
     """Deletes a specific role.
 
     Args:

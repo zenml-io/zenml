@@ -564,11 +564,16 @@ class Repository(metaclass=RepositoryMetaClass):
             A list of all stacks available in the current project and owned by
             the current user.
         """
-        stacks = self.zen_store.list_stacks(
+        owned_stacks = self.zen_store.list_stacks(
             project_name_or_id=self.active_project_name,
             user_name_or_id=self.active_user.id,
         )
-        return [s.to_hydrated_model() for s in stacks]
+        shared_stacks = self.zen_store.list_stacks(
+            project_name_or_id=self.active_project_name,
+            is_shared=True,
+
+        )
+        return [s.to_hydrated_model() for s in owned_stacks+shared_stacks]
 
     @property
     def active_stack_model(self) -> "HydratedStackModel":
@@ -1008,6 +1013,9 @@ class Repository(metaclass=RepositoryMetaClass):
         )
 
         flavor_model = flavor_class().to_model()
+
+        flavor_model.project = self.active_project.id
+        flavor_model.user = self.active_user.id
 
         return self.zen_store.create_flavor(flavor=flavor_model)
 
