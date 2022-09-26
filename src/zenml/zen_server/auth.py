@@ -27,19 +27,16 @@ from pydantic import BaseModel
 
 from zenml.constants import (
     ENV_ZENML_AUTH_TYPE,
-    ENV_ZENML_SERVER_ROOT_URL_PATH,
     LOGIN,
     VERSION_1,
 )
 from zenml.logger import get_logger
 from zenml.models.user_management_models import UserModel
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_server.utils import zen_store
+from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
-
-ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "")
 
 
 class AuthScheme(StrEnum):
