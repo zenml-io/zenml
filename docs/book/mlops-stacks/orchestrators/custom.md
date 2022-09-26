@@ -74,7 +74,7 @@ differentiate them.
 
 ## Direct Orchestration
 
-The implementation of a `local` orchestrator can be summarized in  lines of
+The implementation of a `local` orchestrator can be summarized as follows:
 code:
 
 ```python
