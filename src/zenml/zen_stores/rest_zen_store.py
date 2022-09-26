@@ -263,7 +263,13 @@ class RestZenStore(BaseZenStore):
         Returns:
             The store configuration of the copied store.
         """
-        # REST zen stores are not backed by local files
+        assert isinstance(config, RestZenStoreConfiguration)
+        if isinstance(config.verify_ssl, bool) and os.path.isfile(
+            config.verify_ssl
+        ):
+            config = config.copy(deep=True)
+            with open(config.verify_ssl, "r") as f:
+                config.verify_ssl = f.read()
         return config
 
     # ------------
