@@ -14,12 +14,14 @@
 """Util functions for the ZenServer."""
 
 from functools import wraps
+import os
 from typing import Any, Callable, List, TypeVar, cast
 
 from fastapi import HTTPException
 from pydantic import BaseModel
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import ENV_ZENML_SERVER_ROOT_URL_PATH
 from zenml.enums import StoreType
 from zenml.exceptions import (
     EntityExistsError,
@@ -31,6 +33,10 @@ from zenml.logger import get_logger
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
+
+
+ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "")
+
 
 # TODO(Stefan): figure out how not to populate the ZenStore with default
 # user/stack and make this a method instead of a global variable

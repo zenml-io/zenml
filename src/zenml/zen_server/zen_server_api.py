@@ -21,7 +21,6 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.cors import CORSMiddleware
 
 import zenml
-from zenml.constants import ENV_ZENML_SERVER_ROOT_URL_PATH
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
@@ -37,10 +36,9 @@ from zenml.zen_server.routers import (
     teams_endpoints,
     users_endpoints,
 )
+from zenml.zen_server.utils import ROOT_URL_PATH
 
 DASHBOARD_DIRECTORY = "dashboard"
-
-ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "")
 
 
 def relative_path(rel: str) -> str:
@@ -134,4 +132,3 @@ app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(users_endpoints.activation_router)
-
