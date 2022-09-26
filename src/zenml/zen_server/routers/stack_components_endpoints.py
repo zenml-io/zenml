@@ -17,7 +17,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import STACK_COMPONENTS, TYPES, VERSION_1
+from zenml.constants import STACK_COMPONENTS, COMPONENT_TYPES, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
 from zenml.models.component_model import HydratedComponentModel
@@ -32,6 +32,12 @@ router = APIRouter(
     responses={401: error_response},
 )
 
+types_router = APIRouter(
+    prefix=VERSION_1 + COMPONENT_TYPES,
+    tags=["stack_components"],
+    dependencies=[Depends(authorize)],
+    responses={401: error_response},
+)
 
 @router.get(
     "",
@@ -150,9 +156,9 @@ async def deregister_stack_component(component_id: UUID) -> None:
     zen_store.delete_stack_component(component_id)
 
 
-@router.get(
-    TYPES,
-    response_model=List[StackComponentType],
+@types_router.get(
+    "",
+    response_model=List[str],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -162,4 +168,5 @@ async def get_stack_component_types() -> List[str]:
     Returns:
         List of stack components.
     """
+    print(StackComponentType.values())
     return StackComponentType.values()
