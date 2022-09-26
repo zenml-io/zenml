@@ -132,5 +132,6 @@ app.include_router(steps_endpoints.router)
 app.include_router(artifacts_endpoints.router)
 app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
+app.include_router(users_endpoints.current_user_router)
 app.include_router(users_endpoints.activation_router)
 

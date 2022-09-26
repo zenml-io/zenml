@@ -54,6 +54,14 @@ activation_router = APIRouter(
 )
 
 
+current_user_router = APIRouter(
+    prefix=VERSION_1 ,
+    tags=["users"],
+    dependencies=[Depends(authorize)],
+    responses={401: error_response},
+)
+
+
 @router.get(
     "",
     response_model=List[UserModel],
@@ -311,3 +319,20 @@ def unassign_role(
         is_user=True,
         project_name_or_id=project_name_or_id,
     )
+
+
+@current_user_router.get(
+    "/current-user",
+    response_model=UserModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+async def get_current_user(
+    auth_context: AuthContext = Depends(authorize),
+) -> UserModel:
+    """Returns the model of the authenticated user.
+
+    Args:
+        auth_context: The authentication context.
+    """
+    return auth_context.user
