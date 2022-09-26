@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """REST Zen Store implementation."""
 
+import os
 import re
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
@@ -23,11 +24,11 @@ from google.protobuf.json_format import Parse
 from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 from pydantic import BaseModel, validator
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ARTIFACTS,
     FLAVORS,
-    GRAPH,
     INPUTS,
     LOGIN,
     METADATA_CONFIG,
@@ -51,6 +52,7 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactModel,
@@ -113,11 +115,15 @@ class RestZenStoreConfiguration(StoreConfiguration):
     Attributes:
         username: The username to use to connect to the Zen server.
         password: The password to use to connect to the Zen server.
+        verify_ssl: Either a boolean, in which case it controls whether we
+            verify the server's TLS certificate, or a string, in which case it
+            must be a path to a CA bundle to use or the CA bundle value itself.
     """
 
     type: StoreType = StoreType.REST
     username: str
     password: str = ""
+    verify_ssl: Union[bool, str] = True
 
     @validator("url")
     def validate_url(cls, url: str) -> str:
@@ -141,6 +147,44 @@ class RestZenStoreConfiguration(StoreConfiguration):
             )
 
         return url
+
+    @validator("verify_ssl")
+    def validate_verify_ssl(
+        cls, verify_ssl: Union[bool, str]
+    ) -> Union[bool, str]:
+        """Validates that the verify_ssl field either points to a file or is a bool.
+
+        Args:
+            verify_ssl: The verify_ssl value to be validated.
+
+        Returns:
+            The validated verify_ssl value.
+
+        Raises:
+            ValueError: If the verify_ssl value points to a non-existing file.
+        """
+
+        secret_folder = Path(
+            GlobalConfiguration().local_stores_path,
+            "certificates",
+        )
+        if isinstance(verify_ssl, bool) or verify_ssl.startswith(
+            str(secret_folder)
+        ):
+            return verify_ssl
+
+        if os.path.isfile(verify_ssl):
+            with open(verify_ssl, "r") as f:
+                verify_ssl = f.read()
+
+        fileio.makedirs(str(secret_folder))
+        file_path = Path(secret_folder, "ca_bundle.pem")
+        with open(file_path, "w") as f:
+            f.write(verify_ssl)
+        file_path.chmod(0o600)
+        verify_ssl = str(file_path)
+
+        return verify_ssl
 
     class Config:
         """Pydantic configuration class."""
@@ -1092,22 +1136,6 @@ class RestZenStore(BaseZenStore):
     # Pipeline runs
     # --------------
 
-    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
-        """Creates a pipeline run.
-
-        Args:
-            pipeline_run: The pipeline run to create.
-
-        Returns:
-            The created pipeline run.
-        """
-        return self._create_resource(
-            resource=pipeline_run,
-            route=f"{PIPELINES}/{str(pipeline_run.pipeline_id)}{RUNS}",
-            # TODO[server]: add request model
-            # request_model=CreatePipelineRunRequest,
-        )
-
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
 
@@ -1122,25 +1150,6 @@ class RestZenStore(BaseZenStore):
             route=RUNS,
             resource_model=PipelineRunModel,
         )
-
-    def get_run_dag(self, run_id: UUID) -> str:
-        """Gets the DAG for a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The DAG for the pipeline run.
-
-        Raises:
-            ValueError: if the response from the API is not a string.
-        """
-        body = self.get(f"{RUNS}/{str(run_id)}{GRAPH}")
-        if not isinstance(body, str):
-            raise ValueError(
-                f"Invalid response from server: {body}. Expected string."
-            )
-        return body
 
     # TODO: Figure out what exactly gets returned from this
     def get_run_component_side_effects(
@@ -1189,29 +1198,17 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
-    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
-        """Updates a pipeline run.
+    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
+        """Gets the execution status of a pipeline run.
 
         Args:
-            run: The pipeline run to use for the update.
+            run_id: The ID of the pipeline run to get the status for.
 
-        Raises:
-            NotImplementedError: this is not implemented.
+        Returns:
+            The status of the pipeline run.
         """
-        # TODO[server]: figure out if this should even be
-        # allowed or if we can remove it from the store interface
+        # TODO
         raise NotImplementedError
-
-    def delete_run(self, run_id: UUID) -> None:
-        """Deletes a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to delete.
-        """
-        self._delete_resource(
-            resource_id=run_id,
-            route=RUNS,
-        )
 
     # ------------------
     # Pipeline run steps
@@ -1336,6 +1333,7 @@ class RestZenStore(BaseZenStore):
                         "username": self.config.username,
                         "password": self.config.password,
                     },
+                    verify=self.config.verify_ssl,
                 )
             )
             if not isinstance(response, dict) or "access_token" not in response:
@@ -1355,6 +1353,7 @@ class RestZenStore(BaseZenStore):
         """
         if self._session is None:
             self._session = requests.Session()
+            self._session.verify = self.config.verify_ssl
             token = self._get_auth_token()
             self._session.headers.update({"Authorization": "Bearer " + token})
             logger.debug("Authenticated to ZenML server.")
@@ -1453,7 +1452,13 @@ class RestZenStore(BaseZenStore):
         params = {k: str(v) for k, v in params.items()} if params else {}
         try:
             return self._handle_response(
-                self.session.request(method, url, params=params, **kwargs)
+                self.session.request(
+                    method,
+                    url,
+                    params=params,
+                    verify=self.config.verify_ssl,
+                    **kwargs,
+                )
             )
         except AuthorizationException:
             # The authentication token could have expired; refresh it and try
@@ -1572,7 +1577,7 @@ class RestZenStore(BaseZenStore):
         request: BaseModel = resource
         if request_model is not None:
             request = request_model.from_model(resource)
-        response_body = self.post(f"{route}/", body=request)
+        response_body = self.post(f"{route}", body=request)
         if response_model is not None:
             response = response_model.parse_obj(response_body)
             created_resource = response.to_model()
@@ -1651,7 +1656,7 @@ class RestZenStore(BaseZenStore):
         """
         # leave out filter params that are not supplied
         params = dict(filter(lambda x: x[1] is not None, filters.items()))
-        body = self.get(f"{route}/", params=params)
+        body = self.get(f"{route}", params=params)
         if not isinstance(body, list):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"

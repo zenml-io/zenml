@@ -11,11 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.config import DockerSettings
 from zenml.integrations.constants import SKLEARN
 from zenml.pipelines import pipeline
 
+docker_settings = DockerSettings(required_integrations=[SKLEARN])
 
-@pipeline(required_integrations=[SKLEARN])
+
+@pipeline(settings={"docker": docker_settings})
 def step_operator_pipeline(
     importer,
     trainer,

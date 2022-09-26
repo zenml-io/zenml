@@ -73,7 +73,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         Raises:
             ValueError: If the tracking uri is not valid.
         """
-        tracking_uri = self.get_tracking_uri()
+        tracking_uri = self.config.tracking_uri
         if tracking_uri:
             valid_schemes = DATABASE_ENGINES + ["http", "https", "file"]
             if not any(

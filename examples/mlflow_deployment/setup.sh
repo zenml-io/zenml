@@ -8,7 +8,6 @@ setup_stack () {
   zenml experiment-tracker register mlflow_tracker  --type=mlflow || \
     msg "${WARNING}Reusing preexisting experiment tracker ${NOFORMAT}mlflow_tracker"
   zenml stack register local_mlflow_stack \
-      -m default \
       -a default \
       -o default \
       -d mlflow_deployer \

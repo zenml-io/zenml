@@ -19,15 +19,15 @@ from steps.convert_annotations_step import convert_annotations
 from steps.deployment_triggers import deployment_trigger
 from steps.get_labeled_data import get_labeled_data_step
 from steps.get_or_create_dataset import get_or_create_the_dataset
-from steps.load_image_data_step import LoadImageDataConfig, load_image_data
+from steps.load_image_data_step import LoadImageDataParameters, load_image_data
 from steps.model_deployers import model_deployer
 from steps.prediction_steps import (
-    PredictionServiceLoaderConfig,
+    PredictionServiceLoaderParameters,
     prediction_service_loader,
     predictor,
 )
 from steps.pytorch_trainer import (
-    PytorchModelTrainerConfig,
+    PytorchModelTrainerParameters,
     pytorch_model_trainer,
 )
 from steps.sync_new_data_to_label_studio import (
@@ -75,7 +75,9 @@ def main(cloud_platform, pipeline, rerun):
             get_or_create_dataset=get_or_create_the_dataset,
             get_labeled_data=get_labeled_data_step,
             convert_annotations=convert_annotations(),
-            model_trainer=pytorch_model_trainer(PytorchModelTrainerConfig()),
+            model_trainer=pytorch_model_trainer(
+                PytorchModelTrainerParameters()
+            ),
             deployment_trigger=deployment_trigger(),
             model_deployer=model_deployer,
         ).run()
@@ -83,12 +85,12 @@ def main(cloud_platform, pipeline, rerun):
         inference_pipeline(
             get_or_create_dataset=get_or_create_the_dataset,
             inference_data_loader=load_image_data(
-                config=LoadImageDataConfig(
+                params=LoadImageDataParameters(
                     dir_name="batch_2" if rerun else "batch_1"
                 )
             ).with_return_materializers({"images": PillowImageMaterializer}),
             prediction_service_loader=prediction_service_loader(
-                PredictionServiceLoaderConfig()
+                PredictionServiceLoaderParameters()
             ),
             predictor=predictor(),
             data_syncer=sync_function,

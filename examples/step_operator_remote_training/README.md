@@ -95,7 +95,6 @@ zenml container-registry register ecr_registry --flavor=aws --uri=<ACCOUNT_ID>.d
 
 # register and activate the sagemaker stack
 zenml stack register sagemaker_stack \
-    -m default \
     -o default \
     -c ecr_registry \
     -a s3_store \
@@ -142,7 +141,6 @@ zenml step-operator register azureml \
     --environment_name=<AZURE_ENVIRONMENT_NAME>
 
 zenml stack register azureml_stack \
-    -m default \
     -o default \
     -a azure_store \
     -s azureml \
@@ -194,7 +192,6 @@ zenml container-registry register gcr_registry --flavor=gcp --uri=gcr.io/<PROJEC
 
 # register and activate the vertex ai stack
 zenml stack register vertex_training_stack \
-    -m default \
     -o default \
     -c gcr_registry \
     -a gcp_store \

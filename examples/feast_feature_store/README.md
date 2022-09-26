@@ -105,7 +105,7 @@ part of your current working stack:
 zenml feature-store register feast_store --flavor=feast --feast_repo="./feast_feature_repo"
 
 # register and activate the feature store stack
-zenml stack register fs_stack -m default -o default -a default -f feast_store --set
+zenml stack register fs_stack -o default -a default -f feast_store --set
 
 # view the current active stack
 zenml stack describe

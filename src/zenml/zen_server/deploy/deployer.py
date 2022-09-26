@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML server deployer singleton implementation."""
 
-from typing import ClassVar, Dict, Generator, List, Optional, Type
+from typing import ClassVar, Dict, Generator, List, Optional, Type, Union
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import ServerProviderType, StoreType
@@ -209,6 +209,7 @@ class ServerDeployer(metaclass=SingletonMetaClass):
         server_name: str,
         username: str,
         password: str,
+        verify_ssl: Union[bool, str] = True,
     ) -> None:
         """Connect to a ZenML server instance.
 
@@ -216,7 +217,10 @@ class ServerDeployer(metaclass=SingletonMetaClass):
             server_name: The server deployment name.
             username: The username to use to connect to the server.
             password: The password to use to connect to the server.
-
+            verify_ssl: Either a boolean, in which case it controls whether we
+                verify the server's TLS certificate, or a string, in which case
+                it must be a path to a CA bundle to use or the CA bundle value
+                itself.
         Raises:
             ServerDeploymentError: If the ZenML server is not running or
                 is unreachable.
@@ -234,7 +238,10 @@ class ServerDeployer(metaclass=SingletonMetaClass):
             )
 
         store_config = RestZenStoreConfiguration(
-            url=server.status.url, username=username, password=password
+            url=server.status.url,
+            username=username,
+            password=password,
+            verify_ssl=verify_ssl,
         )
 
         if gc.store == store_config:

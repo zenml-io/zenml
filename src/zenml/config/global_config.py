@@ -500,8 +500,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 env_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
         if len(env_config):
             logger.debug(
-                f"Using environment variables to configure the default store: "
-                f"{env_config}"
+                "Using environment variables to configure the default store"
             )
             return StoreConfiguration(**env_config)
 

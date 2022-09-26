@@ -2135,67 +2135,6 @@ class SqlZenStore(BaseZenStore):
     # Pipeline runs
     # --------------
 
-    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
-        """Creates a pipeline run.
-
-        Args:
-            pipeline_run: The pipeline run to create.
-
-        Returns:
-            The created pipeline run.
-
-        Raises:
-            EntityExistsError: If an identical pipeline run already exists.
-            KeyError: If the pipeline does not exist.
-        """
-        # TODO: fix for when creating without associating to a project
-        with Session(self.engine) as session:
-            # Check if pipeline run already exists
-            existing_domain_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.name == pipeline_run.name
-                )
-            ).first()
-            if existing_domain_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run {pipeline_run.name}: "
-                    f"A pipeline run with this name already exists."
-                )
-            existing_id_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.id == pipeline_run.id
-                )
-            ).first()
-            if existing_id_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run {pipeline_run.id}: "
-                    f"A pipeline run with this id already exists."
-                )
-
-            # Query pipeline
-            if pipeline_run.pipeline_id is not None:
-                pipeline = session.exec(
-                    select(PipelineSchema).where(
-                        PipelineSchema.id == pipeline_run.pipeline_id
-                    )
-                ).first()
-                if pipeline is None:
-                    raise KeyError(
-                        f"Unable to create pipeline run: {pipeline_run.name}: "
-                        f"No pipeline with ID {pipeline_run.pipeline_id} found."
-                    )
-                new_run = PipelineRunSchema.from_create_model(
-                    run=pipeline_run, pipeline=pipeline
-                )
-            else:
-                new_run = PipelineRunSchema.from_create_model(run=pipeline_run)
-
-            # Create the pipeline run
-            session.add(new_run)
-            session.commit()
-
-            return new_run.to_model()
-
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
 
@@ -2221,15 +2160,6 @@ class SqlZenStore(BaseZenStore):
                 )
 
             return run.to_model()
-
-    def get_run_dag(self, run_id: UUID) -> str:
-        """Gets the DAG for a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-        """
-        # TODO: raise KeyError if run doesn't exist
-        pass  # TODO
 
     def get_run_component_side_effects(
         self,
@@ -2300,49 +2230,23 @@ class SqlZenStore(BaseZenStore):
             runs = session.exec(query).all()
             return [run.to_model() for run in runs]
 
-    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
-        """Updates a pipeline run.
+    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
+        """Gets the execution status of a pipeline run.
 
         Args:
-            run: The pipeline run to use for the update.
+            run_id: The ID of the pipeline run to get the status for.
 
         Returns:
-            The updated pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
+            The status of the pipeline run.
         """
-        with Session(self.engine) as session:
-            # Check if pipeline run with the given ID exists
-            existing_run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run.id)
-            ).first()
-            if existing_run is None:
-                raise KeyError(
-                    f"Unable to update pipeline run with ID {run.id}: "
-                    f"No pipeline run with this ID found."
-                )
-
-            # Update the pipeline run
-            existing_run.from_update_model(run)
-
-            session.add(existing_run)
-            session.commit()
-
-            return existing_run.to_model()
-
-    def delete_run(self, run_id: UUID) -> None:
-        """Deletes a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to delete.
-
-        Raises:
-            NotImplementedError: this method is not implemented.
-        """
-        raise NotImplementedError(
-            "Deleting pipeline runs is currently not supported."
-        )
+        steps = self.list_run_steps(run_id)
+        for step in steps:
+            step_status = self.get_run_step_status(step.id)
+            if step_status == ExecutionStatus.FAILED:
+                return ExecutionStatus.FAILED
+            if step_status == ExecutionStatus.RUNNING:
+                return ExecutionStatus.RUNNING
+        return ExecutionStatus.SUCCEEDED
 
     # ------------------
     # Pipeline run steps
@@ -2524,15 +2428,13 @@ class SqlZenStore(BaseZenStore):
                 "provided."
             )
         if uuid_utils.is_valid_uuid(object_name_or_id):
-            filter = schema_class.id == object_name_or_id  # type: ignore[
-            # attr-defined]
+            filter = schema_class.id == object_name_or_id  # type: ignore[attr-defined]
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': No {schema_name} with this ID found."
             )
         else:
-            filter = schema_class.name == object_name_or_id  # type: ignore[
-            # attr-defined]
+            filter = schema_class.name == object_name_or_id  # type: ignore[attr-defined]
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': '{object_name_or_id}' is not a valid "
@@ -2718,7 +2620,11 @@ class SqlZenStore(BaseZenStore):
             return artifact.id
 
     def _sync_runs(self) -> None:
-        """Sync runs from the database with those registered in MLMD."""
+        """Sync runs from MLMD into the database.
+
+        This queries all runs from MLMD, checks for each whether it already
+        exists in the database, and if not, creates it.
+        """
         # Get all runs from ZenML.
         with Session(self.engine) as session:
             zenml_runs_list = session.exec(select(PipelineRunSchema)).all()
@@ -2727,23 +2633,22 @@ class SqlZenStore(BaseZenStore):
         # Get all runs from MLMD.
         mlmd_runs = self.metadata_store.get_all_runs()
 
-        for run_name, mlmd_id in mlmd_runs.items():
+        # Sync all MLMD runs that don't exist in ZenML.
+        for run_name, mlmd_run in mlmd_runs.items():
 
             # If the run is in MLMD but not in ZenML, we create it
             if run_name not in zenml_runs:
-                new_run = PipelineRunModel(name=run_name, mlmd_id=mlmd_id)
-                new_run = self.create_run(new_run)
-                assert new_run.id is not None
+                new_run = PipelineRunModel(
+                    name=run_name,
+                    mlmd_id=mlmd_run.mlmd_id,
+                    project=mlmd_run.project,
+                    user=mlmd_run.user,
+                    stack_id=mlmd_run.stack_id,
+                    pipeline_id=mlmd_run.pipeline_id,
+                    pipeline_configuration=mlmd_run.pipeline_configuration,
+                )
+                new_run = self._create_run(new_run)
                 self._sync_run_steps(new_run.id)
-                continue
-
-            # If an existing run in ZenML had no MLMD ID, we update it
-            existing_run = zenml_runs[run_name]
-            if not existing_run.mlmd_id:
-                existing_run.mlmd_id = mlmd_id
-                assert existing_run.id is not None
-                self._update_run(run=existing_run)
-                self._sync_run_steps(existing_run.id)
 
     def _sync_run_steps(self, run_id: UUID) -> None:
         """Sync run steps from MLMD into the database.
@@ -2788,6 +2693,7 @@ class SqlZenStore(BaseZenStore):
                     mlmd_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
                     entrypoint_name=mlmd_step.entrypoint_name,
                     parameters=mlmd_step.parameters,
+                    step_configuration=mlmd_step.step_configuration,
                     pipeline_run_id=run_id,
                     parent_step_ids=[
                         self._resolve_mlmd_step_id(parent_step_id)
@@ -2866,6 +2772,67 @@ class SqlZenStore(BaseZenStore):
                     artifact_id=artifact_id,
                     name=input_name,
                 )
+
+    def _create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            EntityExistsError: If an identical pipeline run already exists.
+            KeyError: If the pipeline does not exist.
+        """
+        # TODO: fix for when creating without associating to a project
+        with Session(self.engine) as session:
+            # Check if pipeline run already exists
+            existing_domain_run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.name == pipeline_run.name
+                )
+            ).first()
+            if existing_domain_run is not None:
+                raise EntityExistsError(
+                    f"Unable to create pipeline run {pipeline_run.name}: "
+                    f"A pipeline run with this name already exists."
+                )
+            existing_id_run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.id == pipeline_run.id
+                )
+            ).first()
+            if existing_id_run is not None:
+                raise EntityExistsError(
+                    f"Unable to create pipeline run {pipeline_run.id}: "
+                    f"A pipeline run with this id already exists."
+                )
+
+            # Query pipeline
+            if pipeline_run.pipeline_id is not None:
+                pipeline = session.exec(
+                    select(PipelineSchema).where(
+                        PipelineSchema.id == pipeline_run.pipeline_id
+                    )
+                ).first()
+                if pipeline is None:
+                    raise KeyError(
+                        f"Unable to create pipeline run: {pipeline_run.name}: "
+                        f"No pipeline with ID {pipeline_run.pipeline_id} found."
+                    )
+                new_run = PipelineRunSchema.from_create_model(
+                    run=pipeline_run, pipeline=pipeline
+                )
+            else:
+                new_run = PipelineRunSchema.from_create_model(run=pipeline_run)
+
+            # Create the pipeline run
+            session.add(new_run)
+            session.commit()
+
+            return new_run.to_model()
 
     def _update_run(self, run: PipelineRunModel) -> PipelineRunModel:
         """Updates a pipeline run.

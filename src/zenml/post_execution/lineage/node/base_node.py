@@ -18,9 +18,17 @@ from pydantic import BaseModel
 from zenml.enums import ExecutionStatus
 
 
+class BaseNodeDetails(BaseModel):
+    """Captures all details for the node."""
+
+    execution_id: str
+    name: str
+    status: ExecutionStatus
+
+
 class BaseNode(BaseModel):
     """A class that represents a node in a lineage graph."""
 
     id: str
     type: str
-    status: ExecutionStatus
+    data: BaseNodeDetails

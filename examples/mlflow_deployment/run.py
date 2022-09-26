@@ -17,14 +17,14 @@ import click
 from pipelines import continuous_deployment_pipeline, inference_pipeline
 from rich import print
 from steps.deployment_trigger.deployment_trigger_step import (
-    DeploymentTriggerConfig,
+    DeploymentTriggerParameters,
     deployment_trigger,
 )
 from steps.dynamic_importer.dynamic_importer_step import dynamic_importer
 from steps.importer.importer_step import importer_mnist
 from steps.normalizer.normalizer_step import normalizer
 from steps.prediction_service_loader.prediction_service_loader_step import (
-    MLFlowDeploymentLoaderStepConfig,
+    MLFlowDeploymentLoaderStepParameters,
     model_deployer,
     prediction_service_loader,
 )
@@ -33,14 +33,14 @@ from steps.tf_evaluator.tf_evaluator_step import tf_evaluator
 from steps.tf_predict_preprocessor.tf_predict_preprocessor_step import (
     tf_predict_preprocessor,
 )
-from steps.tf_trainer.tf_trainer_step import TrainerConfig, tf_trainer
+from steps.tf_trainer.tf_trainer_step import TrainerParameters, tf_trainer
 
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
-from zenml.integrations.mlflow.steps import MLFlowDeployerConfig
+from zenml.integrations.mlflow.steps import MLFlowDeployerParameters
 
 DEPLOY = "deploy"
 PREDICT = "predict"
@@ -81,15 +81,15 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
         deployment = continuous_deployment_pipeline(
             importer=importer_mnist(),
             normalizer=normalizer(),
-            trainer=tf_trainer(config=TrainerConfig(epochs=epochs, lr=lr)),
+            trainer=tf_trainer(params=TrainerParameters(epochs=epochs, lr=lr)),
             evaluator=tf_evaluator(),
             deployment_trigger=deployment_trigger(
-                config=DeploymentTriggerConfig(
+                params=DeploymentTriggerParameters(
                     min_accuracy=min_accuracy,
                 )
             ),
             model_deployer=model_deployer(
-                config=MLFlowDeployerConfig(workers=3, timeout=10)
+                params=MLFlowDeployerParameters(workers=3, timeout=10)
             ),
         )
 
@@ -101,7 +101,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
             dynamic_importer=dynamic_importer(),
             predict_preprocessor=tf_predict_preprocessor(),
             prediction_service_loader=prediction_service_loader(
-                MLFlowDeploymentLoaderStepConfig(
+                MLFlowDeploymentLoaderStepParameters(
                     pipeline_name="continuous_deployment_pipeline",
                     pipeline_step_name="mlflow_model_deployer_step",
                     running=False,

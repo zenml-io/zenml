@@ -47,9 +47,16 @@ validation slices. We then use the training dataset to generate an Expectations
 Suite that we later on use to check that the validation dataset is not skewed.
 
 ```python
-@pipeline(
+from zenml.config import DockerSettings
+from zenml.integrations.constants import GREAT_EXPECTATIONS, SKLEARN
+from zenml.pipelines import pipeline
+
+docker_settings = DockerSettings(
     required_integrations=[SKLEARN, GREAT_EXPECTATIONS]
 )
+
+
+@pipeline(settings={"docker": docker_settings})
 def validation_pipeline(
     importer, splitter, profiler, prevalidator, train_validator, test_validator
 ):
@@ -102,7 +109,7 @@ to store its persistent state, a data validator stack component of flavor
 
 ```shell
 zenml data-validator register great_expectations --flavor=great_expectations
-zenml stack register ge_stack -m default -o default -a default -dv great_expectations --set
+zenml stack register ge_stack -o default -a default -dv great_expectations --set
 ```
 
 ### ▶️ Run the Code

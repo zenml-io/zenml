@@ -14,8 +14,10 @@ from zenml.config import DockerSettings
 from zenml.integrations.constants import AWS
 from zenml.pipelines import pipeline
 
+docker_settings = DockerSettings(required_integrations=[AWS])
 
-@pipeline(settings={"docker": DockerSettings(required_integrations=[AWS])})
+
+@pipeline(settings={"docker": docker_settings})
 def secret_loading_pipeline(
     secret_loader,
 ):
