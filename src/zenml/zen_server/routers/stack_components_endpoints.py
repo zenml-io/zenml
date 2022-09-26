@@ -17,7 +17,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import STACK_COMPONENTS, COMPONENT_TYPES, VERSION_1
+from zenml.constants import COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
 from zenml.models.component_model import HydratedComponentModel
@@ -38,6 +38,7 @@ types_router = APIRouter(
     dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
+
 
 @router.get(
     "",
