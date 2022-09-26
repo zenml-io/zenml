@@ -14,10 +14,15 @@
 """ZenServer Terraform Deployment."""
 
 
-from zenml.zen_server.deploy.terraform.terraform_provider import (
+from zenml.zen_server.deploy.terraform.providers.terraform_provider import (
     TerraformServerProvider,
+)
+from zenml.zen_server.deploy.terraform.providers.aws_provider import (
+    AWSServerProvider, AWSServerDeploymentConfig
 )
 
 __all__ = [
     "TerraformServerProvider",
+    "AWSServerProvider",
+    "AWSServerDeploymentConfig"
 ]
