@@ -58,7 +58,8 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """Gets authentication credentials.
 
         If an authentication secret is configured, the secret values are
-        returned. Otherwise we fallback to the plain text component attributes.
+        returned. Otherwise, we fall back to the plain text component
+        attributes.
 
         Returns:
             Tuple (key, secret, token) of credentials used to authenticate with

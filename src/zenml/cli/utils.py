@@ -31,7 +31,7 @@ from typing import (
     TypeVar,
     Union,
 )
-
+import json
 import click
 from dateutil import tz
 from pydantic import BaseModel
@@ -40,7 +40,7 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from rich.style import Style
 from rich.text import Text
-
+import textwrap
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
@@ -86,6 +86,7 @@ def declare(
     text: Union[str, Text],
     bold: Optional[bool] = None,
     italic: Optional[bool] = None,
+    **kwargs,
 ) -> None:
     """Echo a declaration on the CLI.
 
@@ -96,7 +97,7 @@ def declare(
     """
     base_style = zenml_style_defaults["info"]
     style = Style.chain(base_style, Style(bold=bold, italic=italic))
-    console.print(text, style=style)
+    console.print(text, style=style, **kwargs)
 
 
 def error(text: str) -> NoReturn:
@@ -115,6 +116,7 @@ def warning(
     text: str,
     bold: Optional[bool] = None,
     italic: Optional[bool] = None,
+    **kwargs,
 ) -> None:
     """Echo a warning string on the CLI.
 
@@ -125,7 +127,7 @@ def warning(
     """
     base_style = zenml_style_defaults["warning"]
     style = Style.chain(base_style, Style(bold=bold, italic=italic))
-    console.print(text, style=style)
+    console.print(text, style=style, **kwargs)
 
 
 def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
@@ -776,3 +778,37 @@ def print_server_deployment(server: "ServerDeployment") -> None:
         rich_table.add_row(*item)
 
     console.print(rich_table)
+
+
+def describe_pydantic_object(schema_json: str):
+    """Describes a pydantic object based on the json of its schema.
+
+    Attributes:
+        schema_json: str, represents the schema of a pydantic object, which
+            can be obtained through BaseModelCLass.schema_json()
+    """
+    # Get the schema dict
+    schema = json.loads(schema_json)
+
+    # Extract values with defaults
+    schema_title = schema['title']
+    required = schema.get("required", [])
+    description = schema.get("description", "")
+    properties = schema.get("properties", {})
+
+    # Pretty print the schema
+    warning(f"Configuration class: {schema_title}\n", bold=True)
+
+    if description:
+        declare(f"{description}\n")
+
+    if properties:
+        warning("Properties", bold=True)
+        for prop, prop_schema in properties.items():
+            warning(
+                f"{prop}, {prop_schema['type']}"
+                f"{', required' if prop_schema in required else ''}:"
+            )
+
+            if "description" in prop_schema:
+                declare(f"{prop_schema['description']}", width=80)
