@@ -756,7 +756,7 @@ def list_stacks() -> None:
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,
-            "SHARED": ":white_check_mark:" if stack.is_shared else ":x: ",
+            "SHARED": ":white_check_mark:" if stack.is_shared else ":x:",
             "OWNER": stack.user.name,
             **{
                 component_type.upper(): components[0].name
