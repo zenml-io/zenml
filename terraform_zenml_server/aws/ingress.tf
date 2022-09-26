@@ -3,10 +3,6 @@ resource "kubernetes_namespace" "nginx-ns" {
   metadata {
     name = "ingress-nginx"
   }
-
-  depends_on = [
-    null_resource.configure-local-kubectl
-  ]
 }
 
 resource "helm_release" "nginx-controller" {
