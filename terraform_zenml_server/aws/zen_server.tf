@@ -2,32 +2,40 @@
 resource "helm_release" "zen-server" {
 
   name             = "zenml-server"
-  repository       = "../../helm"
-  chart            = "zenml"
+  chart            = "../../helm/"
   namespace        = var.zenmlserver_namespace
   create_namespace = true
 
-  # set workload identity annotations for the mlflow 
-  # kubernetes service account
+  # set up the right path for ZenML
+  set {
+    name  = "zenml.rootUrlPath"
+    value = "/${var.ingress_path}"
+  }
+  set {
+    name = "ingress.path"
+    value = "/${var.ingress_path}/?(.*)"
+  }
+  set {
+    name = "ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/rewrite-target"
+    value = "/$1"
+  }
+
+  # set parameters for the mysql database
   set {
     name  = "zenml.database.url"
-    value = var.create_rds? module.metadata_store[0].db_instance_address : var.rds_url
+    value = var.create_rds? "mysql://${module.metadata_store[0].db_instance_username}:${module.metadata_store[0].db_instance_password}@${module.metadata_store[0].db_instance_address}:3306/${var.db_name}" : var.rds_url
   }
-
-  # set proxied access to artifact storage
   set {
     name  = "zenml.database.sslCa"
-    value = var.create_rds? "./ca.pem" : var.rds_sslCa
+    value = var.create_rds? "" : var.rds_sslCa
   }
-
-  # set values for S3 artifact store
   set {
     name  = "zenml.database.sslCert"
-    value = var.create_rds? "./cert.pem" : var.rds_sslCert
+    value = var.create_rds? "" : var.rds_sslCert
   }
   set {
     name  = "zenml.database.sslKey"
-    value = var.create_rds? "./key.pem" : var.rds_sslKey
+    value = var.create_rds? "" : var.rds_sslKey
   }
   set {
     name  = "zenml.database.sslVerifyServerCert"
