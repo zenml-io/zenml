@@ -17,6 +17,7 @@ from typing import Dict, List, Optional
 from pydantic import Field
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ExecutionStatus
 from zenml.models import (
     PipelineModel,
@@ -43,7 +44,7 @@ class CreatePipelineRequest(ProjectScopedCreateRequest[PipelineModel]):
     )
 
     docstring: Optional[str]
-    configuration: Dict[str, str]
+    spec: PipelineSpec
 
 
 class UpdatePipelineRequest(UpdateRequest[PipelineModel]):
@@ -57,9 +58,7 @@ class UpdatePipelineRequest(UpdateRequest[PipelineModel]):
     )
 
     docstring: Optional[str]
-    # TODO: [server] have another look at this to figure out if adding a
-    #  single k:v pair overwrites the existing k:v pairs
-    configuration: Optional[Dict[str, str]]
+    spec: PipelineSpec
 
 
 class HydratedPipelineModel(PipelineModel):
