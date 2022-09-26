@@ -15,6 +15,7 @@
 
 from abc import abstractmethod
 from typing import Optional, Type, cast
+from uuid import UUID
 
 from zenml.enums import StackComponentType
 from zenml.models import FlavorModel
@@ -92,13 +93,13 @@ class Flavor:
         Returns:
             The model.
         """
-        from zenml.repository import Repository
-
-        repo = Repository()
-
+        # NOTE: we set the project and user to a zero UUID here because
+        # built-in and integration flavors are not tied to a project or user.
+        # The Repository is responsible for setting the project and user
+        # correctly for custom flavors.
         model = FlavorModel(
-            user=repo.active_user.id,
-            project=repo.active_project.id,
+            user=UUID(int=0),
+            project=UUID(int=0),
             name=self.name,
             type=self.type,
             source=resolve_class(self.__class__),  # noqa

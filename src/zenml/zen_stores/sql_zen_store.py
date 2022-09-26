@@ -127,6 +127,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     ssl_cert: Optional[str] = None
     ssl_key: Optional[str] = None
     ssl_verify_server_cert: bool = False
+    pool_size: int = 20
+    max_overflow: int = 20
 
     @root_validator
     def _validate_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -305,7 +307,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return mlmd_config
 
-    def get_sqlmodel_config(self) -> Tuple[str, Dict[str, Any]]:
+    def get_sqlmodel_config(self) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
         """Get the SQLModel engine configuration for the SQL ZenML store.
 
         Returns:
@@ -315,19 +317,26 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             NotImplementedError: If the SQL driver is not supported.
         """
         sql_url = make_url(self.url)
-        # The following default value is needed for sqlite to avoid the Error:
-        #   sqlite3.ProgrammingError: SQLite objects created in a thread can
-        #   only be used in that same thread.
-        # TODO: [server] verify this is also true for mysql
-        sqlalchemy_connect_args = {"check_same_thread": False}
+        sqlalchemy_connect_args = {}
+        engine_args = {}
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             assert self.database is not None
+            # The following default value is needed for sqlite to avoid the Error:
+            #   sqlite3.ProgrammingError: SQLite objects created in a thread can
+            #   only be used in that same thread.
+            sqlalchemy_connect_args = {"check_same_thread": False}
         elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
             # all these are guaranteed by our root validator
             assert self.database is not None
             assert self.username is not None
             assert self.password is not None
             assert sql_url.host is not None
+
+            engine_args = {
+                "pool_size": self.pool_size,
+                "max_overflow": self.max_overflow,
+            }
+
             sql_url = sql_url._replace(
                 drivername="mysql+pymysql",
                 username=self.username,
@@ -348,7 +357,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 f"SQL driver `{sql_url.drivername}` is not supported."
             )
 
-        return str(sql_url), sqlalchemy_connect_args
+        return str(sql_url), sqlalchemy_connect_args, engine_args
 
     class Config:
         """Pydantic configuration class."""
@@ -421,8 +430,10 @@ class SqlZenStore(BaseZenStore):
         metadata_config = self.config.get_metadata_config()
         self._metadata_store = MetadataStore(config=metadata_config)
 
-        url, connect_args = self.config.get_sqlmodel_config()
-        self._engine = create_engine(url=url, connect_args=connect_args)
+        url, connect_args, engine_args = self.config.get_sqlmodel_config()
+        self._engine = create_engine(
+            url=url, connect_args=connect_args, **engine_args
+        )
         SQLModel.metadata.create_all(self._engine)
 
     @staticmethod
@@ -521,8 +532,8 @@ class SqlZenStore(BaseZenStore):
                 by this user in this project.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(stack.project)
-            user = self._get_user_schema(stack.user)
+            project = self._get_project_schema(stack.project, session=session)
+            user = self._get_user_schema(stack.user, session=session)
 
             # Check if stack with the domain key (name, project, owner) already
             #  exists
@@ -620,10 +631,12 @@ class SqlZenStore(BaseZenStore):
             query = select(StackSchema)
             # TODO: prettify
             if project_name_or_id:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(StackSchema.project_id == project.id)
             if user_name_or_id:
-                user = self._get_user_schema(user_name_or_id)
+                user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(StackSchema.user_id == user.id)
             if component_id:
                 query = query.where(
@@ -726,8 +739,10 @@ class SqlZenStore(BaseZenStore):
                 and type is already owned by this user in this project.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(component.project)
-            user = self._get_user_schema(component.user)
+            project = self._get_project_schema(
+                component.project, session=session
+            )
+            user = self._get_user_schema(component.user, session=session)
 
             # Check if component with the same domain key (name, type, project,
             # owner) already exists
@@ -824,12 +839,14 @@ class SqlZenStore(BaseZenStore):
             # Get a list of all stacks
             query = select(StackComponentSchema)
             if project_name_or_id:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(
                     StackComponentSchema.project_id == project.id
                 )
             if user_name_or_id:
-                user = self._get_user_schema(user_name_or_id)
+                user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(StackComponentSchema.user_id == user.id)
             if type:
                 query = query.where(StackComponentSchema.type == type)
@@ -1026,14 +1043,16 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             query = select(FlavorSchema)
             if project_name_or_id:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(FlavorSchema.project_id == project.id)
             if component_type:
                 query = query.where(FlavorSchema.type == component_type)
             if name:
                 query = query.where(FlavorSchema.name == name)
             if user_name_or_id:
-                user = self._get_user_schema(user_name_or_id)
+                user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(FlavorSchema.user_id == user.id)
 
             list_of_flavors_in_db = session.exec(query).all()
@@ -1161,7 +1180,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The requested user, if it was found.
         """
-        user = self._get_user_schema(user_name_or_id)
+        with Session(self.engine) as session:
+            user = self._get_user_schema(user_name_or_id, session=session)
         return user.to_model()
 
     def list_users(self) -> List[UserModel]:
@@ -1257,7 +1277,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The requested team.
         """
-        team = self._get_team_schema(team_name_or_id)
+        with Session(self.engine) as session:
+            team = self._get_team_schema(team_name_or_id, session=session)
         return team.to_model()
 
     def list_teams(self) -> List[TeamModel]:
@@ -1339,7 +1360,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all users that are part of the team.
         """
-        team = self._get_team_schema(team_name_or_id)
+        with Session(self.engine) as session:
+            team = self._get_team_schema(team_name_or_id, session=session)
         return [user.to_model() for user in team.users]
 
     def get_teams_for_user(
@@ -1354,7 +1376,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all teams that the user is part of.
         """
-        user = self._get_user_schema(user_name_or_id)
+        with Session(self.engine) as session:
+            user = self._get_user_schema(user_name_or_id, session=session)
         return [team.to_model() for team in user.teams]
 
     def add_user_to_team(
@@ -1455,7 +1478,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The requested role.
         """
-        role = self._get_role_schema(role_name_or_id)
+        with Session(self.engine) as session:
+            role = self._get_role_schema(role_name_or_id, session=session)
         return role.to_model()
 
     def list_roles(self) -> List[RoleModel]:
@@ -1568,12 +1592,14 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             query = select(UserRoleAssignmentSchema)
             if project_name_or_id is not None:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(
                     UserRoleAssignmentSchema.project_id == project.id
                 )
             if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id)
+                user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(UserRoleAssignmentSchema.user_id == user.id)
             assignments = session.exec(query).all()
             return [assignment.to_model() for assignment in assignments]
@@ -1596,7 +1622,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             query = select(TeamRoleAssignmentSchema)
             if project_name_or_id is not None:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(
                     TeamRoleAssignmentSchema.project_id == project.id
                 )
@@ -1792,14 +1820,18 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             project: Optional[ProjectSchema] = None
             if project_name_or_id:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
 
-            role = self._get_role_schema(role_name_or_id)
+            role = self._get_role_schema(role_name_or_id, session=session)
 
             role_assignment: Optional[SQLModel] = None
 
             if is_user:
-                user = self._get_user_schema(user_or_team_name_or_id)
+                user = self._get_user_schema(
+                    user_or_team_name_or_id, session=session
+                )
                 assignee_name = user.name
                 user_role_query = (
                     select(UserRoleAssignmentSchema)
@@ -1813,7 +1845,9 @@ class SqlZenStore(BaseZenStore):
 
                 role_assignment = session.exec(user_role_query).first()
             else:
-                team = self._get_team_schema(user_or_team_name_or_id)
+                team = self._get_team_schema(
+                    user_or_team_name_or_id, session=session
+                )
                 assignee_name = team.name
                 team_role_query = (
                     select(TeamRoleAssignmentSchema)
@@ -1886,7 +1920,10 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The requested project if one was found.
         """
-        project = self._get_project_schema(project_name_or_id)
+        with Session(self.engine) as session:
+            project = self._get_project_schema(
+                project_name_or_id, session=session
+            )
         return project.to_model()
 
     def list_projects(self) -> List[ProjectModel]:
@@ -2049,11 +2086,13 @@ class SqlZenStore(BaseZenStore):
             # Check if project with the given name exists
             query = select(PipelineSchema)
             if project_name_or_id is not None:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(PipelineSchema.project_id == project.id)
 
             if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id)
+                user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(PipelineSchema.user_id == user.id)
 
             if name:
@@ -2205,10 +2244,10 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             query = select(PipelineRunSchema)
             if project_name_or_id is not None:
-                project = self._get_project_schema(project_name_or_id)
-                query = query.where(StackSchema.project_id == project.id).where(
-                    PipelineRunSchema.stack_id == StackSchema.id
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
                 )
+                query = query.where(StackSchema.project_id == project.id)
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
             if component_id:
@@ -2225,8 +2264,8 @@ class SqlZenStore(BaseZenStore):
             elif unlisted:
                 query = query.where(PipelineRunSchema.pipeline_id is None)
             if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id)
-                query = query.where(PipelineRunSchema.user == user.id)
+                user = self._get_user_schema(user_name_or_id, session=session)
+                query = query.where(PipelineRunSchema.user_id == user.id)
             runs = session.exec(query).all()
             return [run.to_model() for run in runs]
 
@@ -2246,7 +2285,7 @@ class SqlZenStore(BaseZenStore):
                 return ExecutionStatus.FAILED
             if step_status == ExecutionStatus.RUNNING:
                 return ExecutionStatus.RUNNING
-        return ExecutionStatus.SUCCEEDED
+        return ExecutionStatus.COMPLETED
 
     # ------------------
     # Pipeline run steps
@@ -2404,7 +2443,7 @@ class SqlZenStore(BaseZenStore):
         object_name_or_id: Union[str, UUID],
         schema_class: Type[SQLModel],
         schema_name: str,
-        session: Optional[Session] = None,
+        session: Session,
     ) -> SQLModel:
         """Query a schema by its 'name' or 'id' field.
 
@@ -2440,14 +2479,8 @@ class SqlZenStore(BaseZenStore):
                 f"'{object_name_or_id}': '{object_name_or_id}' is not a valid "
                 f" UUID and no {schema_name} with this name exists."
             )
-        session = session or Session(self.engine)
-        if session is None:
-            with Session(self.engine):
-                schema = session.exec(
-                    select(schema_class).where(filter)
-                ).first()
-        else:
-            schema = session.exec(select(schema_class).where(filter)).first()
+
+        schema = session.exec(select(schema_class).where(filter)).first()
 
         if schema is None:
             raise KeyError(error_msg)
@@ -2456,7 +2489,7 @@ class SqlZenStore(BaseZenStore):
     def _get_project_schema(
         self,
         project_name_or_id: Union[str, UUID],
-        session: Optional[Session] = None,
+        session: Session,
     ) -> ProjectSchema:
         """Gets a project schema by name or ID.
 
@@ -2483,7 +2516,7 @@ class SqlZenStore(BaseZenStore):
     def _get_user_schema(
         self,
         user_name_or_id: Union[str, UUID],
-        session: Optional[Session] = None,
+        session: Session,
     ) -> UserSchema:
         """Gets a user schema by name or ID.
 
@@ -2510,7 +2543,7 @@ class SqlZenStore(BaseZenStore):
     def _get_team_schema(
         self,
         team_name_or_id: Union[str, UUID],
-        session: Optional[Session] = None,
+        session: Session,
     ) -> TeamSchema:
         """Gets a team schema by name or ID.
 
@@ -2537,7 +2570,7 @@ class SqlZenStore(BaseZenStore):
     def _get_role_schema(
         self,
         role_name_or_id: Union[str, UUID],
-        session: Optional[Session] = None,
+        session: Session,
     ) -> RoleSchema:
         """Gets a role schema by name or ID.
 

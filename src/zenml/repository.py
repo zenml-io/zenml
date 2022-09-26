@@ -1009,6 +1009,9 @@ class Repository(metaclass=RepositoryMetaClass):
 
         flavor_model = flavor_class().to_model()
 
+        flavor_model.project = self.active_project.id
+        flavor_model.user = self.active_user.id
+
         return self.zen_store.create_flavor(flavor=flavor_model)
 
     def delete_flavor(self, flavor: FlavorModel) -> None:

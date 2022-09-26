@@ -25,6 +25,7 @@ from zenml.models import RoleAssignmentModel, RoleModel, TeamModel, UserModel
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         FlavorSchema,
+        PipelineRunSchema,
         PipelineSchema,
         ProjectSchema,
         StackComponentSchema,
@@ -64,10 +65,13 @@ class UserSchema(SQLModel, table=True):
     components: List["StackComponentSchema"] = Relationship(
         back_populates="user",
     )
+    flavors: List["FlavorSchema"] = Relationship(
+        back_populates="user",
+    )
     pipelines: List["PipelineSchema"] = Relationship(
         back_populates="user",
     )
-    flavors: List["FlavorSchema"] = Relationship(
+    runs: List["PipelineRunSchema"] = Relationship(
         back_populates="user",
     )
 

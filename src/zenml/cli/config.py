@@ -14,7 +14,7 @@
 """CLI for manipulating ZenML local and global config file."""
 
 import os
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 import click
 import yaml
