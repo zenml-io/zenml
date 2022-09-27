@@ -112,6 +112,12 @@ variable "create_ingress_controller" {
   default     = true
   type        = bool
 }
+# if you already have an ingress controller, supply it's URL
+variable "ingress_controller_url" {
+  description = "The URL for the ingress controller on your cluster"
+  default     = ""
+  type        = string
+}
 
 # variables for creating a ZenML stack configuration file
 variable "zenml-version" {

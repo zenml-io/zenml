@@ -19,6 +19,10 @@ resource "helm_release" "zen-server" {
     name = "ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/rewrite-target"
     value = "/$1"
   }
+  set {
+    name = "ingress.host"
+    value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller.status.0.load_balancer.0.ingress.0.hostname}" : var.ingress_controller_url
+  }
 
   # set parameters for the mysql database
   set {
