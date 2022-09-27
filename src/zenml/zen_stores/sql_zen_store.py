@@ -552,22 +552,16 @@ class SqlZenStore(BaseZenStore):
             user = self._get_user_schema(stack.user, session=session)
 
             self.fail_if_stack_with_id_already_exists(
-                stack=stack,
-                session=session
+                stack=stack, session=session
             )
 
             self.fail_if_stack_with_name_exists_for_user(
-                stack=stack,
-                project=project,
-                user=user,
-                session=session
+                stack=stack, project=project, user=user, session=session
             )
 
             if stack.is_shared:
                 self.fail_if_stack_with_name_already_shared(
-                    stack=stack,
-                    project=project,
-                    session=session
+                    stack=stack, project=project, session=session
                 )
 
             # Get the Schemas of all components mentioned
@@ -690,18 +684,13 @@ class SqlZenStore(BaseZenStore):
             # with that name
             if existing_stack.name != stack.name:
                 project = self._get_project_schema(
-                    project_name_or_id=stack.project,
-                    session=session
+                    project_name_or_id=stack.project, session=session
                 )
                 user = self._get_user_schema(
-                    user_name_or_id=stack.user,
-                    session=session
+                    user_name_or_id=stack.user, session=session
                 )
                 self.fail_if_stack_with_name_exists_for_user(
-                    stack=stack,
-                    project=project,
-                    user=user,
-                    session=session
+                    stack=stack, project=project, user=user, session=session
                 )
 
             # Check if stack update makes the stack a shared stack,
@@ -709,13 +698,10 @@ class SqlZenStore(BaseZenStore):
             # already shared within the project
             if not existing_stack.is_shared and stack.is_shared:
                 project = self._get_project_schema(
-                    project_name_or_id=stack.project,
-                    session=session
+                    project_name_or_id=stack.project, session=session
                 )
                 self.fail_if_stack_with_name_already_shared(
-                    stack=stack,
-                    project=project,
-                    session=session
+                    stack=stack, project=project, session=session
                 )
 
             # Get the Schemas of all components mentioned
@@ -760,8 +746,7 @@ class SqlZenStore(BaseZenStore):
 
     @staticmethod
     def fail_if_stack_with_id_already_exists(
-        stack: StackModel,
-        session: Session
+        stack: StackModel, session: Session
     ) -> None:
         """Raise an exception if a Stack with the same id already exists.
 
@@ -788,7 +773,7 @@ class SqlZenStore(BaseZenStore):
         stack: StackModel,
         project: ProjectSchema,
         session: Session,
-        user: UserSchema
+        user: UserSchema,
     ):
         """Raise an exception if a Component with same name exists for user.
 
@@ -818,10 +803,7 @@ class SqlZenStore(BaseZenStore):
         return None
 
     def fail_if_stack_with_name_already_shared(
-        self,
-        stack: StackModel,
-        project: ProjectSchema,
-        session: Session
+        self, stack: StackModel, project: ProjectSchema, session: Session
     ) -> None:
         """Raise an exception if a Stack with same name is already shared.
 
@@ -844,7 +826,8 @@ class SqlZenStore(BaseZenStore):
         ).first()
         if existing_shared_stack is not None:
             owner_of_shared = self._get_user_schema(
-                existing_shared_stack.user_id, session=session)
+                existing_shared_stack.user_id, session=session
+            )
 
             raise StackComponentExistsError(
                 f"Unable to share stack with name '{stack.name}': Found an "
@@ -875,31 +858,23 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             project = self._get_project_schema(
-                project_name_or_id=component.project,
-                session=session
+                project_name_or_id=component.project, session=session
             )
             user = self._get_user_schema(
-                user_name_or_id=component.user,
-                session=session
+                user_name_or_id=component.user, session=session
             )
 
             self.fail_if_component_with_id_already_exists(
-                component=component,
-                session=session
+                component=component, session=session
             )
 
             self.fail_if_component_with_name_type_exists_for_user(
-                component=component,
-                project=project,
-                user=user,
-                session=session
+                component=component, project=project, user=user, session=session
             )
 
             if component.is_shared:
                 self.fail_if_component_with_name_type_already_shared(
-                    component=component,
-                    project=project,
-                    session=session
+                    component=component, project=project, session=session
                 )
 
             # Create the component
@@ -1023,18 +998,16 @@ class SqlZenStore(BaseZenStore):
             # type already exists with that name
             if existing_component.name != component.name:
                 project = self._get_project_schema(
-                    project_name_or_id=component.project,
-                    session=session
+                    project_name_or_id=component.project, session=session
                 )
                 user = self._get_user_schema(
-                    user_name_or_id=component.user,
-                    session=session
+                    user_name_or_id=component.user, session=session
                 )
                 self.fail_if_component_with_name_type_exists_for_user(
                     component=component,
                     project=project,
                     user=user,
-                    session=session
+                    session=session,
                 )
 
             # Check if component update makes the component a shared component,
@@ -1042,13 +1015,10 @@ class SqlZenStore(BaseZenStore):
             # already shared within the project
             if not existing_component.is_shared and component.is_shared:
                 project = self._get_project_schema(
-                    project_name_or_id=component.project,
-                    session=session
+                    project_name_or_id=component.project, session=session
                 )
                 self.fail_if_component_with_name_type_already_shared(
-                    component=component,
-                    project=project,
-                    session=session
+                    component=component, project=project, session=session
                 )
 
             existing_component.from_update_model(component=component)
@@ -1113,8 +1083,7 @@ class SqlZenStore(BaseZenStore):
 
     @staticmethod
     def fail_if_component_with_id_already_exists(
-        component: ComponentModel,
-        session: Session
+        component: ComponentModel, session: Session
     ) -> None:
         """Raise an exception if a Component with the same id already exists.
 
@@ -1143,7 +1112,7 @@ class SqlZenStore(BaseZenStore):
         component: ComponentModel,
         project: ProjectSchema,
         session: Session,
-        user: UserSchema
+        user: UserSchema,
     ):
         """Raise an exception if a Component with same name/type exists for user.
 
@@ -1180,7 +1149,7 @@ class SqlZenStore(BaseZenStore):
         self,
         component: ComponentModel,
         project: ProjectSchema,
-        session: Session
+        session: Session,
     ) -> None:
         """Raise an exception if a Component with same name/type already shared.
 
@@ -1204,7 +1173,8 @@ class SqlZenStore(BaseZenStore):
         ).first()
         if existing_shared_component is not None:
             owner_of_shared = self._get_user_schema(
-                existing_shared_component.user_id, session=session)
+                existing_shared_component.user_id, session=session
+            )
 
             raise StackComponentExistsError(
                 f"Unable to shared component of type '{component.type.value}' "

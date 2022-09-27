@@ -779,7 +779,6 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         return self.get_stack_components()
 
-
     def register_stack_component(
         self,
         component: "ComponentModel",
