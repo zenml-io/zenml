@@ -643,14 +643,13 @@ class Repository(metaclass=RepositoryMetaClass):
             # a local configuration
             GlobalConfiguration().active_stack_id = stack.id
 
-    def get_stack_by_name(
-        self, name: str, is_shared: bool = False
+    def get_stack_by_name_or_partial_id(
+        self, name_or_partial_id: str,
     ) -> "StackModel":
         """Fetches a stack by name within the active project.
 
         Args:
-            name: The name of the stack to fetch.
-            is_shared: Boolean whether to get a shared stack or a private stack
+            name_or_partial_id: The name or partial id of the stack to fetch.
 
         Returns:
             The stack with the given name.
@@ -659,31 +658,44 @@ class Repository(metaclass=RepositoryMetaClass):
             KeyError: If no stack with the given name exists.
             RuntimeError: If multiple stacks with the given name exist.
         """
-        if is_shared:
-            stacks = self.zen_store.list_stacks(
-                project_name_or_id=self.active_project.name,
-                name=name,
-                is_shared=True,
+        stacks = self.zen_store.list_stacks(
+            project_name_or_id=self.active_project.name,
+            user_name_or_id=self.active_user.name,
+            name=name_or_partial_id,
+        )
+        if len(stacks) > 1:
+            raise RuntimeError(
+                f"Multiple stacks have been found for name "
+                f"'{name_or_partial_id}'. The following stacks all share this "
+                f"name {[s.id for s in stacks]}. Please specify the stack "
+                f"by full or partial id."
             )
+        elif len(stacks) == 1:
+            return stacks[0]
         else:
+            logger.debug(f"No stack with name '{name_or_partial_id}' "
+                         f"exists. Trying to resolve as partial_id")
             stacks = self.zen_store.list_stacks(
                 project_name_or_id=self.active_project.name,
                 user_name_or_id=self.active_user.name,
-                name=name,
             )
 
-        # TODO: [server] this error handling could be improved
-        if not stacks:
-            raise KeyError(f"No stack with name '{name}' exists.")
-        elif len(stacks) > 1:
-            raise RuntimeError(
-                f"Multiple stacks have been found for name  '{name}'. This is "
-                f"not supported and can lead to unpredictable behaviour. "
-                f"Please delete one of the following stacks by id to resolve "
-                f"this issue: {[s.id for s in stacks]}"
-            )
-
-        return stacks[0]
+            filtered_stacks =[stack for stack in stacks
+                              if str(stack.id).startswith(name_or_partial_id)]
+            if len(filtered_stacks) > 1:
+                raise RuntimeError(
+                    f"Multiple stack IDs found with provided partial id, "
+                    f"please provide more characters to uniquely identify one "
+                    f"stack. \n"
+                    f"Returned stacks: "
+                    f"{[stack.id for stack in filtered_stacks]}"
+                )
+            elif len(filtered_stacks) == 1:
+                return filtered_stacks[0]
+            else:
+                raise KeyError(f"No stack with name or id prefix "
+                               f"'{name_or_partial_id}' exists. Trying to "
+                               f"resolve as partial_id.")
 
     def register_stack(self, stack: "StackModel") -> "StackModel":
         """Registers a stack and its components.

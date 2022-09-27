@@ -146,7 +146,7 @@ def test_updating_non_active_stack_succeeds(clean_repo) -> None:
     assert result.exit_code == 0
 
     updated_stack = Stack.from_model(
-        clean_repo.get_stack_by_name("arias_new_stack").to_hydrated_model()
+        clean_repo.get_stack_by_name_or_partial_id("arias_new_stack").to_hydrated_model()
     )
     assert updated_stack.orchestrator == new_orchestrator
 
@@ -163,7 +163,7 @@ def test_adding_to_stack_succeeds(clean_repo) -> None:
     )
 
     active_stack = Stack.from_model(
-        clean_repo.get_stack_by_name("default").to_hydrated_model()
+        clean_repo.get_stack_by_name_or_partial_id("default").to_hydrated_model()
     )
     assert result.exit_code == 0
     assert active_stack.secrets_manager is not None
@@ -190,7 +190,7 @@ def test_renaming_nonexistent_stack_fails(clean_repo) -> None:
     result = runner.invoke(rename_stack, ["not_a_stack", "a_new_stack"])
     assert result.exit_code == 1
     with pytest.raises(KeyError):
-        clean_repo.get_stack_by_name("not_a_stack")
+        clean_repo.get_stack_by_name_or_partial_id("not_a_stack")
 
 
 def test_renaming_stack_to_same_name_as_existing_stack_fails(
@@ -200,7 +200,7 @@ def test_renaming_stack_to_same_name_as_existing_stack_fails(
     result = runner.invoke(rename_stack, ["not_a_stack", "default"])
     assert result.exit_code == 1
     with pytest.raises(KeyError):
-        clean_repo.get_stack_by_name("not_a_stack")
+        clean_repo.get_stack_by_name_or_partial_id("not_a_stack")
 
 
 def test_renaming_active_stack_succeeds(clean_repo) -> None:
@@ -208,8 +208,8 @@ def test_renaming_active_stack_succeeds(clean_repo) -> None:
     runner = CliRunner()
     result = runner.invoke(rename_stack, ["default", "arias_default"])
     assert result.exit_code == 0
-    assert clean_repo.get_stack_by_name("arias_default") is not None
-    assert clean_repo.get_stack_by_name("arias_default").name == "arias_default"
+    assert clean_repo.get_stack_by_name_or_partial_id("arias_default") is not None
+    assert clean_repo.get_stack_by_name_or_partial_id("arias_default").name == "arias_default"
 
 
 def test_renaming_non_active_stack_succeeds(clean_repo) -> None:
@@ -229,9 +229,9 @@ def test_renaming_non_active_stack_succeeds(clean_repo) -> None:
     runner = CliRunner()
     result = runner.invoke(rename_stack, ["arias_stack", "arias_renamed_stack"])
     assert result.exit_code == 0
-    assert clean_repo.get_stack_by_name("arias_renamed_stack") is not None
+    assert clean_repo.get_stack_by_name_or_partial_id("arias_renamed_stack") is not None
     assert (
-        clean_repo.get_stack_by_name("arias_renamed_stack").name
+        clean_repo.get_stack_by_name_or_partial_id("arias_renamed_stack").name
         == "arias_renamed_stack"
     )
 
@@ -265,7 +265,7 @@ def test_remove_non_core_component_from_stack_succeeds(clean_repo) -> None:
     assert clean_repo.active_stack.secrets_manager is not None
     assert (
         Stack.from_model(
-            clean_repo.get_stack_by_name(
+            clean_repo.get_stack_by_name_or_partial_id(
                 clean_repo.active_stack.name
             ).to_hydrated_model()
         ).secrets_manager
@@ -294,7 +294,7 @@ def test_deleting_stack_with_flag_succeeds(clean_repo) -> None:
     result = runner.invoke(delete_stack, ["arias_new_stack", "-y"])
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_repo.get_stack_by_name("arias_new_stack")
+        clean_repo.get_stack_by_name_or_partial_id("arias_new_stack")
 
 
 def test_stack_export(clean_repo) -> None:
@@ -338,9 +338,9 @@ def test_stack_export_delete_import(clean_repo) -> None:
     clean_repo.deregister_stack_component(orchestrator.to_model())
     clean_repo.deregister_stack_component(artifact_store.to_model())
     with pytest.raises(KeyError):
-        clean_repo.get_stack_by_name("arias_new_stack")
+        clean_repo.get_stack_by_name_or_partial_id("arias_new_stack")
 
     # import stack
     result = runner.invoke(import_stack, [stack_name, "--filename", file_name])
     assert result.exit_code == 0
-    assert clean_repo.get_stack_by_name("arias_new_stack") is not None
+    assert clean_repo.get_stack_by_name_or_partial_id("arias_new_stack") is not None
