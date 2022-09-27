@@ -193,6 +193,7 @@ def generate_stack_component_register_command(
         "-f",
         "flavor",
         help=f"The flavor of the {display_name} to register.",
+        required=True,
         type=str,
     )
     @click.option(
