@@ -53,7 +53,7 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
     rds_sslVerifyServerCert: Optional[bool] = True
     ingress_path: Optional[str] = "zenmlhihi"
     create_ingress_controller: Optional[bool] = True
-    ingress_controller_url: Optional[str] = ""
+    ingress_controller_hostname: Optional[str] = ""
 
 
 class AWSServerProvider(TerraformServerProvider):
