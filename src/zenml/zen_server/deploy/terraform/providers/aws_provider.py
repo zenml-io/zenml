@@ -14,6 +14,7 @@
 """Zen Server AWS Terraform deployer implementation."""
 
 import os
+from pathlib import Path
 from typing import ClassVar, List, Optional, Tuple, Type, cast
 
 from zenml.enums import ServerProviderType
@@ -38,6 +39,11 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
     prefix: Optional[str] = "zenmlserver"
     region: Optional[str] = "eu-west-1"
     zenmlserver_namespace: Optional[str] = "terraform-server"
+    kubectl_config_path: Optional[str] = os.path.join(
+        str(Path.home()),
+        ".kube",
+        "config"
+    )
     rds_db_username: Optional[str] = "admin"
     rds_db_password: Optional[str] = ""
     create_rds: Optional[bool] = True

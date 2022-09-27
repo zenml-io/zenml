@@ -15,6 +15,11 @@ variable "zenmlserver_namespace" {
   default     = "terraform-server"
   type        = string
 }
+variable "kubectl_config_path" {
+  description = "The path to the kube config"
+  default     = ""
+  type        = string
+}
 
 # If you want a new RDS, choose a name and a password. If you already
 # have an instance, provide the name and the password here too.
