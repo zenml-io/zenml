@@ -527,6 +527,7 @@ def update_stack(
         repo.update_stack(current_stack)
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
+
 @stack.command(
     "share",
     context_settings=dict(ignore_unknown_options=True),
@@ -554,8 +555,9 @@ def share_stack(
     else:
         for c_t, c in current_stack.to_hydrated_model().components.items():
             only_component = c[0]  # For future compatibility
-            with console.status(f"Sharing component `{only_component.name}`"
-                                f"...\n"):
+            with console.status(
+                f"Sharing component `{only_component.name}`" f"...\n"
+            ):
                 if not only_component:
                     only_component.is_shared = True
 
