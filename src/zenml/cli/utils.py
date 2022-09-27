@@ -783,7 +783,7 @@ def print_server_deployment(server: "ServerDeployment") -> None:
 def _resolve_stack_name_or_id(
     repo: Repository, stack_name_or_id: str
 ) -> "StackModel":
-    """Returns Stack Model for a given name or id
+    """Returns Stack Model for a given name or id.
 
     Args:
         repo: Instance of the Repository singleton

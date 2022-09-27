@@ -159,11 +159,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         Returns:
             The validated verify_ssl value.
-
-        Raises:
-            ValueError: If the verify_ssl value points to a non-existing file.
         """
-
         secret_folder = Path(
             GlobalConfiguration().local_stores_path,
             "certificates",
@@ -1247,8 +1243,8 @@ class RestZenStore(BaseZenStore):
         Args:
             run_id: The ID of the pipeline run to get the status for.
 
-        Returns:
-            The status of the pipeline run.
+        Raises:
+            NotImplementedError: since it is not implemented.
         """
         # TODO
         raise NotImplementedError

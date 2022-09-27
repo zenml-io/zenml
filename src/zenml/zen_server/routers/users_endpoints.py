@@ -334,5 +334,8 @@ def get_current_user(
 
     Args:
         auth_context: The authentication context.
+
+    Returns:
+        The model of the authenticated user.
     """
     return auth_context.user

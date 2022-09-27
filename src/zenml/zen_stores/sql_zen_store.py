@@ -146,7 +146,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         Raises:
             ValueError: If the URL is invalid or the SQL driver is not
-            supported.
+                supported.
         """
         url = values.get("url")
         if url is None:
@@ -542,10 +542,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The registered stack.
-
-        Raises:
-            StackExistsError: If a stack with the same name is already owned
-                by this user in this project.
         """
         with Session(self.engine) as session:
             project = self._get_project_schema(stack.project, session=session)
@@ -774,7 +770,7 @@ class SqlZenStore(BaseZenStore):
         project: ProjectSchema,
         session: Session,
         user: UserSchema,
-    ):
+    ) -> None:
         """Raise an exception if a Component with same name exists for user.
 
         Args:
@@ -782,6 +778,9 @@ class SqlZenStore(BaseZenStore):
             project: The project scope within which to check
             user: The user that owns the Stack
             session: The Session
+
+        Returns:
+            None
 
         Raises:
             StackExistsError: If a Stack with the given name is already
@@ -829,7 +828,7 @@ class SqlZenStore(BaseZenStore):
                 existing_shared_stack.user_id, session=session
             )
 
-            raise StackComponentExistsError(
+            raise StackExistsError(
                 f"Unable to share stack with name '{stack.name}': Found an "
                 f"existing stack with the same name in project "
                 f"'{project.name}' shared by '{owner_of_shared.name}'."
@@ -851,10 +850,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created stack component.
-
-        Raises:
-            StackComponentExistsError: If a stack component with the same name
-                and type is already owned by this user in this project.
         """
         with Session(self.engine) as session:
             project = self._get_project_schema(
@@ -1038,7 +1033,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component doesn't exist.
             IllegalOperationError: if the stack component is part of one or
-            more stacks.
+                more stacks.
         """
         with Session(self.engine) as session:
             try:
@@ -1113,7 +1108,7 @@ class SqlZenStore(BaseZenStore):
         project: ProjectSchema,
         session: Session,
         user: UserSchema,
-    ):
+    ) -> None:
         """Raise an exception if a Component with same name/type exists for user.
 
         Args:
@@ -1121,6 +1116,9 @@ class SqlZenStore(BaseZenStore):
             project: The project scope within which to check
             user: The user that owns the Component
             session: The Session
+
+        Returns:
+            None
 
         Raises:
             StackComponentExistsError: If a component with the given name and

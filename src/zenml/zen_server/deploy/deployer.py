@@ -221,6 +221,7 @@ class ServerDeployer(metaclass=SingletonMetaClass):
                 verify the server's TLS certificate, or a string, in which case
                 it must be a path to a CA bundle to use or the CA bundle value
                 itself.
+
         Raises:
             ServerDeploymentError: If the ZenML server is not running or
                 is unreachable.

@@ -417,7 +417,6 @@ def update_stack(
         alerter_name: Name of the new alerter for this stack.
         annotator_name: Name of the new annotator for this stack.
         data_validator_name: Name of the new data validator for this stack.
-        share: Allows sharing the stack with other users.
     """
     cli_utils.print_active_config()
 
@@ -540,7 +539,11 @@ def update_stack(
 def share_stack(
     stack_name_or_id: Optional[str],
 ) -> None:
-    """Share a stack with your team."""
+    """Share a stack with your team.
+
+    Args:
+        stack_name_or_id: Name or id of the stack to share.
+    """
     cli_utils.print_active_config()
 
     repo = Repository()
