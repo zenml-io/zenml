@@ -110,7 +110,7 @@ Have a look at the [MLflow Integration](https://github.com/zenml-io/zenml/blob/m
 
 As said above, each Integration can have implementations for multiple ZenML stack components. Generally the outer repository structure `src/zenml/<stack-component>/<base-component-impl.py` is reflected inside the integration folder: `integrations/<name-of-integration>/<stack-component>/<custom-component-impl.py`
 
-Here, you can now copy the code you created in [Step 2](./integrating.md#step-2-create-individual-stack-components) above.&#x20;
+Here, you can now copy the code you created in [Step 2](integrating.mdtep-2-create-individual-stack-components) above.&#x20;
 
 ### Import in all the right places
 

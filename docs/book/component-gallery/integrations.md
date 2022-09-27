@@ -4,14 +4,12 @@ description: Overview of third-party ZenML integrations
 
 # Integrating with best-in-breed tools
 
-[Categorizing the MLOps stack](./categories.md) is a good way to write abstractions for 
-a MLOps pipeline and standardize your processes. But ZenML goes further and also provides 
-concrete implementations of these categories by **integrating** with many different  
-tools for each category. Once code is organized into a ZenML pipeline, you can supercharge 
-your ML workflows with the best-in-class solutions from various MLOps areas.
-
-In short, an integration in ZenML utilizes a third-party tool to implement 
-one or more [Stack Component](../developer-guide/stacks-repositories/stack.md#stack-components) abstractions.
+[Categorizing the MLOps stack](./categories.md) is a good way to write 
+abstractions for a MLOps pipeline and standardize your processes. But ZenML
+goes further and also provides concrete implementations of these categories 
+by **integrating** with various tools for each category. Once code is organized 
+into a ZenML pipeline, you can supercharge your ML workflows with the 
+best-in-class solutions from various MLOps areas.
 
 For example, you can orchestrate your ML pipeline workflows using
 [Airflow](./orchestrators/airflow.md) or [Kubeflow](./orchestrators/kubeflow.md),
@@ -31,11 +29,11 @@ can easily switch out tools as soon as your requirements change.
 
 ## Available Integrations
 
-We have a [dedicated webpage](https://zenml.io/integrations) that indexes all supported 
-ZenML integrations and their categories.
+We have a [dedicated webpage](https://zenml.io/integrations) that indexes all 
+supported ZenML integrations and their categories.
 
-Another easy way of seeing a list of integrations is to see the list of directories in the 
-[integrations directory](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations) 
+Another easy way of seeing a list of integrations is to see the list of 
+directories in the [integrations directory](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations) 
 on our GitHub.
 
 ## Installing ZenML Integrations
@@ -75,6 +73,7 @@ There are countless tools in the ML / MLOps field. We have made an initial
 prioritization of which tools to support with integrations that is visible on 
 our public [roadmap](https://zenml.io/roadmap).
 
-We also welcome community contributions. Check our [Contribution Guide](../resources/contributing.md)
-and [External Integration Guide](../resources/integrating.md) for more details
+We also welcome community contributions. Check our 
+[Contribution Guide](../guidelines/contributing.md) and 
+[External Integration Guide](../guidelines/integrating.md) for more details
 on how to best contribute new integrations.

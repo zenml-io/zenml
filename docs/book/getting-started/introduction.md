@@ -68,7 +68,7 @@ Share not only your code but also your ZenML stacks with your team. Find out how
 
 ## **Resources** - Learn ZenML with Tutorials, Examples, and Guides
 
-The ZenML team and community have put together resources to learn about the framework. Learn more in [resources](../resources/index.md).
+The ZenML team and community have put together resources to learn about the framework. Learn more in [resources](../guidelines/index.md).
 
 ## **Community** - Be Part of the ZenML Family
 

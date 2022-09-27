@@ -49,9 +49,8 @@
 
 ## Component Gallery
 
-
-* [Integration Overview](./mlops-stacks/integrations.md)
 * [Categories of MLOps Tools](./mlops-stacks/categories.md)
+* [Integration Overview](./mlops-stacks/integrations.md)
 * [Orchestrators](./mlops-stacks/orchestrators/orchestrators.md)
   * [Local Orchestrator](./mlops-stacks/orchestrators/local.md)
   * [Local Docker Orchestrator](./mlops-stacks/orchestrators/local-docker.md)
@@ -59,7 +58,7 @@
   * [Kubernetes Orchestrator](./mlops-stacks/orchestrators/kubernetes.md)
   * [Google Cloud VertexAI Orchestrator](./mlops-stacks/orchestrators/gcloud-vertexai.md)
   * [Tekton Orchestrator](./mlops-stacks/orchestrators/tekton.md)
-  * [Github Actions Orchestrator](./mlops-stacks/orchestrators/github-actions.md)
+  * [GithHub Actions Orchestrator](./mlops-stacks/orchestrators/github-actions.md)
   * [Airflow Orchestrator](./mlops-stacks/orchestrators/airflow.md)
   * [Develop a Custom Orchestrator](./mlops-stacks/orchestrators/custom.md)
 * [Artifact Stores](./mlops-stacks/artifact-stores/artifact-stores.md)
@@ -81,7 +80,7 @@
   * [AWS Secrets Manager](./mlops-stacks/secrets-managers/aws.md)
   * [Google Cloud Secrets Manager](./mlops-stacks/secrets-managers/gcp.md)
   * [Azure Secrets Manager](./mlops-stacks/secrets-managers/azure.md)
-  * [Github Secrets Manager](./mlops-stacks/secrets-managers/github.md)
+  * [GitHub Secrets Manager](./mlops-stacks/secrets-managers/github.md)
   * [HashiCorp Vault Secrets Manager](./mlops-stacks/secrets-managers/hashicorp-vault.md)
   * [Develop a Custom Secrets Manager](./mlops-stacks/secrets-managers/custom.md)
 * [Data Validators](mlops-stacks/data-validators/data-validators.md)
@@ -128,16 +127,16 @@
 
 ## Guidelines
 
-* [Best Practices](misc/best-practices.md)
-* [Global Configuration](misc/global-config.md)
-* [System Environmental Variables](misc/system-environmental-variables.md)
-* [Usage Analytics](resources/usage-analytics.md)
-* [Contribution Guide](resources/contributing.md)
-* [External Integration Guide](resources/integrating.md)
+* [Best Practices](guidelines/best-practices.md)
+* [Global Configuration](guidelines/global-config.md)
+* [System Environmental Variables](guidelines/system-environmental-variables.md)
+* [Usage Analytics](guidelines/usage-analytics.md)
+* [Contribution Guide](guidelines/contributing.md)
+* [External Integration Guide](guidelines/integrating.md)
 
 ## Reference
 
-* Community & Content
+* [Community & Content](reference/community-and-content.md)
   * [Join the Slack Community](https://zenml.io/slack-invite/)
   * [Roadmap](https://zenml.io/roadmap)
   * [Blog](https://blog.zenml.io/)
@@ -146,7 +145,7 @@
   * [Newsletter](https://zenml.substack.com/)
   * [Community Events](https://www.eventbrite.de/o/zenml-44751230043)
 * [Glossary](reference/glossary.md)
-* [FAQ](resources/faq.md)
+* [FAQ](reference/faq.md)
 * [CLI Cheat Sheet](reference/cheat-sheet.md)
 * [CLI Reference](https://apidocs.zenml.io/latest/cli/)
 * [API Reference](https://apidocs.zenml.io/latest/)

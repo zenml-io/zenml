@@ -62,7 +62,7 @@ How this guide is organized:
 ## Support
 - [Roadmap](support/roadmap.md)
 - [Slack](https://zenml.io/slack-invite)
-- [Contributing Guide](../resources/contributing.md)
+- [Contributing Guide](../guidelines/contributing.md)
 
 ZenBytes -> A mlops course using ZenML?
 ZenFiles -> Production-ready pipelines (ZenTemplates?)
