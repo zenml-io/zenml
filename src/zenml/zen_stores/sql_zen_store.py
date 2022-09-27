@@ -812,8 +812,8 @@ class SqlZenStore(BaseZenStore):
             raise StackExistsError(
                 f"Unable to register stack with name "
                 f"'{stack.name}': Found an existing stack with the same "
-                f"name in the same '{project.name}' project owned by the "
-                f"same '{user.name}' user."
+                f"name in the active project, '{project.name}', owned by the "
+                f"same user, '{user.name}'."
             )
         return None
 
@@ -838,9 +838,9 @@ class SqlZenStore(BaseZenStore):
         # within the project
         existing_shared_stack = session.exec(
             select(StackSchema)
-            .where(StackComponentSchema.name == stack.name)
-            .where(StackComponentSchema.project_id == stack.project)
-            .where(StackComponentSchema.is_shared == stack.is_shared)
+            .where(StackSchema.name == stack.name)
+            .where(StackSchema.project_id == stack.project)
+            .where(StackSchema.is_shared == stack.is_shared)
         ).first()
         if existing_shared_stack is not None:
             owner_of_shared = self._get_user_schema(

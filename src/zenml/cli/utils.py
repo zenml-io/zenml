@@ -31,6 +31,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from uuid import UUID
 
 import click
 from dateutil import tz
@@ -47,13 +48,14 @@ from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StoreType
 from zenml.logger import get_logger
 from zenml.models.stack_models import HydratedStackModel
+from zenml.repository import Repository
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
-    from zenml.models import ComponentModel, FlavorModel
+    from zenml.models import ComponentModel, FlavorModel, StackModel
     from zenml.secret import BaseSecretSchema
     from zenml.services import BaseService, ServiceState
     from zenml.zen_server.deploy.deployment import ServerDeployment
@@ -776,3 +778,28 @@ def print_server_deployment(server: "ServerDeployment") -> None:
         rich_table.add_row(*item)
 
     console.print(rich_table)
+
+
+def _resolve_stack_name_or_id(
+        repo: Repository,
+        stack_name_or_id: str
+) -> "StackModel":
+    """Returns Stack Model for a given name or id
+
+    Args:
+        repo: Instance of the Repository singleton
+        stack_name_or_id: Name or id in from of a string
+
+    Returns:
+        The Model of the referenced stack.
+    """
+    try:
+        stack_id = UUID(stack_name_or_id)
+        return repo.zen_store.get_stack(stack_id)
+    except ValueError:
+        try:
+            return repo.get_stack_by_name(stack_name_or_id)
+        except KeyError:
+            error(
+                f"Stack `{stack_name_or_id}` does not exist.",
+            )

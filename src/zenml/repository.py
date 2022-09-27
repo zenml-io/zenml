@@ -677,7 +677,10 @@ class Repository(metaclass=RepositoryMetaClass):
             raise KeyError(f"No stack with name '{name}' exists.")
         elif len(stacks) > 1:
             raise RuntimeError(
-                f"Multiple stacks have been found for name  '{name}'.", stacks
+                f"Multiple stacks have been found for name  '{name}'. This is "
+                f"not supported and can lead to unpredictable behaviour. "
+                f"Please delete one of the following stacks by id to resolve "
+                f"this issue: {[s.id for s in stacks]}"
             )
 
         return stacks[0]
