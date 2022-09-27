@@ -91,18 +91,6 @@ to ensure that your data can be passed from step to step in this way. We use our
 to do the disk operations without needing to be concerned with whether we're
 operating on a local or cloud machine.
 
-## Metadata
-
-Metadata are the pieces of information tracked about the pipelines, experiments
-and configurations that you are running with ZenML. Metadata are stored inside
-the metadata store.
-
-## Metadata Store
-
-The configuration of each pipeline, step and produced artifacts are all tracked
-within the metadata store. The metadata store is an SQL database, and can be
-`sqlite` or `mysql`.
-
 ## Orchestrator
 
 An orchestrator manages the running of each step of the pipeline, administering
