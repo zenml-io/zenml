@@ -250,7 +250,9 @@ def test_getting_a_stack(clean_repo):
         assert isinstance(stack, StackModel)
 
     with pytest.raises(KeyError):
-        clean_repo.get_stack_by_name_or_partial_id("stack_name_that_hopefully_does_not_exist")
+        clean_repo.get_stack_by_name_or_partial_id(
+            "stack_name_that_hopefully_does_not_exist"
+        )
 
 
 def test_registering_a_stack(clean_repo):

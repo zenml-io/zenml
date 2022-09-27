@@ -838,7 +838,8 @@ def describe_stack(stack_name_or_id: Optional[str]) -> None:
 
     if stack_name_or_id:
         stack_to_describe = _resolve_stack_name_or_id(
-                                repo, stack_name_or_id).to_hydrated_model()
+            repo, stack_name_or_id
+        ).to_hydrated_model()
     else:
         stack_to_describe = active_stack
 

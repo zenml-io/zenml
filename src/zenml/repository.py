@@ -644,7 +644,8 @@ class Repository(metaclass=RepositoryMetaClass):
             GlobalConfiguration().active_stack_id = stack.id
 
     def get_stack_by_name_or_partial_id(
-        self, name_or_partial_id: str,
+        self,
+        name_or_partial_id: str,
     ) -> "StackModel":
         """Fetches a stack by name within the active project.
 
@@ -673,15 +674,20 @@ class Repository(metaclass=RepositoryMetaClass):
         elif len(stacks) == 1:
             return stacks[0]
         else:
-            logger.debug(f"No stack with name '{name_or_partial_id}' "
-                         f"exists. Trying to resolve as partial_id")
+            logger.debug(
+                f"No stack with name '{name_or_partial_id}' "
+                f"exists. Trying to resolve as partial_id"
+            )
             stacks = self.zen_store.list_stacks(
                 project_name_or_id=self.active_project.name,
                 user_name_or_id=self.active_user.name,
             )
 
-            filtered_stacks =[stack for stack in stacks
-                              if str(stack.id).startswith(name_or_partial_id)]
+            filtered_stacks = [
+                stack
+                for stack in stacks
+                if str(stack.id).startswith(name_or_partial_id)
+            ]
             if len(filtered_stacks) > 1:
                 raise RuntimeError(
                     f"Multiple stack IDs found with provided partial id, "
@@ -693,9 +699,11 @@ class Repository(metaclass=RepositoryMetaClass):
             elif len(filtered_stacks) == 1:
                 return filtered_stacks[0]
             else:
-                raise KeyError(f"No stack with name or id prefix "
-                               f"'{name_or_partial_id}' exists. Trying to "
-                               f"resolve as partial_id.")
+                raise KeyError(
+                    f"No stack with name or id prefix "
+                    f"'{name_or_partial_id}' exists. Trying to "
+                    f"resolve as partial_id."
+                )
 
     def register_stack(self, stack: "StackModel") -> "StackModel":
         """Registers a stack and its components.
