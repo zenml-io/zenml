@@ -21,7 +21,7 @@ resource "helm_release" "zen-server" {
   }
   set {
     name = "ingress.host"
-    value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller.status.0.load_balancer.0.ingress.0.hostname}" : var.ingress_controller_url
+    value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller.status.0.load_balancer.0.ingress.0.hostname}" : var.ingress_controller_hostname
   }
 
   # set parameters for the mysql database

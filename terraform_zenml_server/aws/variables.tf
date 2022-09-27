@@ -113,7 +113,7 @@ variable "create_ingress_controller" {
   type        = bool
 }
 # if you already have an ingress controller, supply it's URL
-variable "ingress_controller_url" {
+variable "ingress_controller_hostname" {
   description = "The URL for the ingress controller on your cluster"
   default     = ""
   type        = string
