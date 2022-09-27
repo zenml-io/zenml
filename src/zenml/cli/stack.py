@@ -398,7 +398,7 @@ def update_stack(
     experiment_tracker_name: Optional[str] = None,
     alerter_name: Optional[str] = None,
     annotator_name: Optional[str] = None,
-    data_validator_name: Optional[str] = None
+    data_validator_name: Optional[str] = None,
 ) -> None:
     """Update a stack.
 
@@ -526,8 +526,9 @@ def update_stack(
         stack_to_update.components = stack_components
 
         repo.update_stack(stack_to_update)
-        cli_utils.declare(f"Stack `{stack_to_update.name}` successfully "
-                          f"updated!")
+        cli_utils.declare(
+            f"Stack `{stack_to_update.name}` successfully " f"updated!"
+        )
 
 
 @stack.command(
@@ -571,8 +572,9 @@ def share_stack(
             stack_to_rename.is_shared = True
 
             repo.update_stack(stack_to_rename)
-            cli_utils.declare(f"Stack `{stack_to_rename.name}` successfully"
-                              f" updated!")
+            cli_utils.declare(
+                f"Stack `{stack_to_rename.name}` successfully" f" updated!"
+            )
 
 
 @stack.command(
@@ -703,8 +705,9 @@ def remove_stack_component(
             )
 
         if step_operator_flag:
-            stack_to_update.components.pop(StackComponentType.STEP_OPERATOR,
-                                           None)
+            stack_to_update.components.pop(
+                StackComponentType.STEP_OPERATOR, None
+            )
 
         if secrets_manager_flag:
             stack_to_update.components.pop(
@@ -712,8 +715,9 @@ def remove_stack_component(
             )
 
         if feature_store_flag:
-            stack_to_update.components.pop(StackComponentType.FEATURE_STORE,
-                                           None)
+            stack_to_update.components.pop(
+                StackComponentType.FEATURE_STORE, None
+            )
 
         if model_deployer_flag:
             stack_to_update.components.pop(
@@ -757,7 +761,8 @@ def rename_stack(
         repo = Repository()
         try:
             stack_to_rename = _resolve_stack_name_or_id(
-                repo, current_stack_name_or_id)
+                repo, current_stack_name_or_id
+            )
         except KeyError:
             cli_utils.error(
                 f"Stack `{current_stack_name_or_id}` cannot be renamed as it "
@@ -1237,8 +1242,9 @@ def copy_stack(
 
     with console.status(f"Copying stack `{source_stack_name_or_id}`...\n"):
         try:
-            stack_to_copy = _resolve_stack_name_or_id(repo,
-                                                      source_stack_name_or_id)
+            stack_to_copy = _resolve_stack_name_or_id(
+                repo, source_stack_name_or_id
+            )
         except KeyError:
             cli_utils.error(
                 f"Stack `{source_stack_name_or_id}` cannot be copied as it "
@@ -1380,5 +1386,3 @@ def register_secrets(
         cli_utils.declare(f"Updating secret `{secret.name}`:")
         cli_utils.pretty_print_secret(secret=secret, hide_secret=True)
         secrets_manager.update_secret(secret)
-
-
