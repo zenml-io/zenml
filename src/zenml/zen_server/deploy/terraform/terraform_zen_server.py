@@ -27,6 +27,7 @@ from zenml.services.container.container_service import (
     SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
 )
 from zenml.utils.io_utils import get_global_config_directory
+from zenml.utils.typed_model import BaseTypedModel
 from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
 logger = get_logger(__name__)
@@ -54,7 +55,7 @@ TERRAFORM_DEPLOYED_ZENSERVER_URL_OUTPUT = "zenml_server_url"
 TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
 
-class TerraformServerDeploymentConfig(ServerDeploymentConfig):
+class TerraformServerDeploymentConfig(ServerDeploymentConfig, BaseTypedModel):
     """Terraform server deployment configuration.
 
     Attributes:
@@ -67,7 +68,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     class Config:
         """Pydantic configuration."""
 
-        extra = "forbid"
+        extra = "allow"
 
 
 class TerraformZenServerConfig(TerraformServiceConfig):
@@ -161,25 +162,16 @@ class TerraformZenServer(TerraformService):
             ),
             "w",
         ) as fp:
-            json.dump(variables, fp=fp)
+            json.dump(variables, fp=fp, indent=4)
 
     def provision(self) -> None:
         """Provision the service."""
         self._copy_config_values()
         super().provision()
-        zenml_server_url = self._get_server_url()
-        if zenml_server_url == "":
-            logger.info(
-                "It looks like you chose not to deploy an ingress "
-                "controller through ZenML. You can access ZenML "
-                "at the URL for your controller with a path you "
-                "configured while deploying ZenML (default: /zenml)."
-            )
-        else:
-            logger.info(
-                f"Your ZenML server is now deployed on AWS with URL:\n"
-                f"${zenml_server_url}"
-            )
+        logger.info(
+            f"Your ZenML server is now deployed on AWS with URL:\n"
+            f"${self._get_server_url()}"
+        )
 
     def _get_server_url(self) -> str:
         """Returns the deployed ZenML server's URL"""
