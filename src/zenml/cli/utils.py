@@ -792,13 +792,17 @@ def _resolve_stack_name_or_id(
     Returns:
         The Model of the referenced stack.
     """
+    # First interpret as full UUID
     try:
         stack_id = UUID(stack_name_or_id)
         return repo.zen_store.get_stack(stack_id)
     except ValueError:
-        try:
-            return repo.get_stack_by_name(stack_name_or_id)
-        except KeyError:
-            error(
-                f"Stack `{stack_name_or_id}` does not exist.",
-            )
+        pass
+
+    # Interpret as name or partial UUID
+    try:
+        return repo.get_stack_by_name_or_partial_id(stack_name_or_id)
+    except KeyError:
+        error(
+            f"Stack `{stack_name_or_id}` does not exist.",
+        )

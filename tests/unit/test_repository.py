@@ -246,11 +246,11 @@ def test_getting_a_stack(clean_repo):
     existing_stack_name = clean_repo.active_stack.name
 
     with does_not_raise():
-        stack = clean_repo.get_stack_by_name(existing_stack_name)
+        stack = clean_repo.get_stack_by_name_or_partial_id(existing_stack_name)
         assert isinstance(stack, StackModel)
 
     with pytest.raises(KeyError):
-        clean_repo.get_stack_by_name("stack_name_that_hopefully_does_not_exist")
+        clean_repo.get_stack_by_name_or_partial_id("stack_name_that_hopefully_does_not_exist")
 
 
 def test_registering_a_stack(clean_repo):
@@ -268,7 +268,7 @@ def test_registering_a_stack(clean_repo):
 
     new_repo = Repository(clean_repo.root)
     with does_not_raise():
-        new_repo.get_stack_by_name("some_new_stack_name")
+        new_repo.get_stack_by_name_or_partial_id("some_new_stack_name")
 
 
 def test_registering_a_stack_with_existing_name(clean_repo):

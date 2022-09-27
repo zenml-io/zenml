@@ -770,7 +770,7 @@ def rename_stack(
             )
 
         try:
-            repo.get_stack_by_name(new_stack_name)
+            repo.get_stack_by_name_or_partial_id(new_stack_name)
             cli_utils.error(
                 f"Stack `{new_stack_name}` already exists. Please choose a "
                 f"different name.",
@@ -800,6 +800,7 @@ def list_stacks() -> None:
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,
+            "STACK ID": stack.id,
             "SHARED": ":white_check_mark:" if stack.is_shared else ":x:",
             "OWNER": stack.user.name,
             **{
@@ -833,7 +834,8 @@ def describe_stack(stack_name_or_id: Optional[str]) -> None:
     active_stack = repo.active_stack_model
 
     if stack_name_or_id:
-        stack_to_describe = _resolve_stack_name_or_id(repo, stack_name_or_id)
+        stack_to_describe = _resolve_stack_name_or_id(
+                                repo, stack_name_or_id).to_hydrated_model()
     else:
         stack_to_describe = active_stack
 
@@ -1197,7 +1199,7 @@ def import_stack(
     repo = Repository()
     while True:
         try:
-            repo.get_stack_by_name(stack_name)
+            repo.get_stack_by_name_or_partial_id(stack_name)
             stack_name = click.prompt(
                 f"Stack `{stack_name}` already exists. "
                 f"Please choose a different name.",
@@ -1252,7 +1254,7 @@ def copy_stack(
             )
 
         try:
-            repo.get_stack_by_name(name=target_stack)
+            repo.get_stack_by_name_or_partial_id(name=target_stack)
             cli_utils.error(
                 f"Can't copy stack because a stack with the name "
                 f"'{target_stack}' already exists."
