@@ -46,7 +46,7 @@ def _create_local_stack(
     stack_name: str,
     orchestrator_name: Optional[str] = None,
     artifact_store_name: Optional[str] = None,
-):
+) -> Stack:
     """Creates a local stack with components with the given names. If the
     names are not given, a random string is used instead."""
 
@@ -260,17 +260,16 @@ def test_registering_a_stack(clean_repo):
     stack = _create_local_stack(
         repo=clean_repo, stack_name="some_new_stack_name"
     )
+    stack_model = stack.to_model(
+        user=clean_repo.active_user.id, project=clean_repo.active_project.id
+    )
     clean_repo.register_stack_component(stack.orchestrator.to_model())
     clean_repo.register_stack_component(stack.artifact_store.to_model())
-    clean_repo.register_stack(
-        stack.to_model(
-            user=clean_repo.active_user.id, project=clean_repo.active_project.id
-        )
-    )
+    clean_repo.register_stack(stack_model)
 
-    new_repo = Repository(clean_repo.root)
+    Repository(clean_repo.root)
     with does_not_raise():
-        new_repo.get_stack_by_name_or_partial_id("some_new_stack_name")
+        clean_repo.zen_store.get_stack(stack_model.id)
 
 
 def test_registering_a_stack_with_existing_name(clean_repo):

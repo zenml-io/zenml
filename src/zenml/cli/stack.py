@@ -23,7 +23,7 @@ import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.stack_components import _component_display_name
-from zenml.cli.utils import _resolve_stack_name_or_id
+from zenml.cli.utils import print_stacks_table
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
@@ -428,7 +428,9 @@ def update_stack(
     with console.status(f"Updating stack `{stack_name_or_id}`...\n"):
         repo = Repository()
         try:
-            stack_to_update = _resolve_stack_name_or_id(repo, stack_name_or_id)
+            stack_to_update = cli_utils.get_stack_by_id_or_name_or_prefix(
+                repo=repo, id_or_name_or_prefix=stack_name_or_id
+            )
         except KeyError:
             cli_utils.error(
                 f"Stack `{stack_name_or_id}` cannot be updated as it does not"
@@ -553,7 +555,9 @@ def share_stack(
 
     repo = Repository()
     try:
-        stack_to_rename = _resolve_stack_name_or_id(repo, stack_name_or_id)
+        stack_to_rename = cli_utils.get_stack_by_id_or_name_or_prefix(
+            repo=repo, id_or_name_or_prefix=stack_name_or_id
+        )
     except KeyError:
         cli_utils.error(
             f"Stack `{stack_name_or_ird}` cannot be updated as it does not "
@@ -695,7 +699,9 @@ def remove_stack_component(
     with console.status(f"Updating stack `{stack_name_or_id}`...\n"):
         repo = Repository()
         try:
-            stack_to_update = _resolve_stack_name_or_id(repo, stack_name_or_id)
+            stack_to_update = cli_utils.get_stack_by_id_or_name_or_prefix(
+                repo=repo, id_or_name_or_prefix=stack_name_or_id
+            )
         except KeyError:
             cli_utils.error(
                 f"Stack `{stack_name_or_id}` cannot be updated as it does not "
@@ -763,8 +769,8 @@ def rename_stack(
     with console.status(f"Renaming stack `{current_stack_name_or_id}`...\n"):
         repo = Repository()
         try:
-            stack_to_rename = _resolve_stack_name_or_id(
-                repo, current_stack_name_or_id
+            stack_to_rename = cli_utils.get_stack_by_id_or_name_or_prefix(
+                repo=repo, id_or_name_or_prefix=current_stack_name_or_id
             )
         except KeyError:
             cli_utils.error(
@@ -773,7 +779,9 @@ def rename_stack(
             )
 
         try:
-            repo.get_stack_by_name_or_partial_id(new_stack_name)
+            cli_utils.get_stack_by_id_or_name_or_prefix(
+                repo=repo, id_or_name_or_prefix=new_stack_name
+            )
             cli_utils.error(
                 f"Stack `{new_stack_name}` already exists. Please choose a "
                 f"different name.",
@@ -795,25 +803,8 @@ def list_stacks() -> None:
     cli_utils.print_active_config()
 
     repo = Repository()
-    active_stack_id = repo.active_stack_model.id
-    stack_dicts = []
-    # TODO: add filters
-    for stack in repo.stacks:
-        is_active = stack.id == active_stack_id
-        stack_config = {
-            "ACTIVE": ":point_right:" if is_active else "",
-            "STACK NAME": stack.name,
-            "STACK ID": stack.id,
-            "SHARED": ":white_check_mark:" if stack.is_shared else ":x:",
-            "OWNER": stack.user.name,
-            **{
-                component_type.upper(): components[0].name
-                for component_type, components in stack.components.items()
-            },
-        }
-        stack_dicts.append(stack_config)
-
-    cli_utils.print_table(stack_dicts)
+    stacks = repo.stacks
+    print_stacks_table(repo, stacks)
 
 
 @stack.command(
@@ -837,8 +828,8 @@ def describe_stack(stack_name_or_id: Optional[str]) -> None:
     active_stack = repo.active_stack_model
 
     if stack_name_or_id:
-        stack_to_describe = _resolve_stack_name_or_id(
-            repo, stack_name_or_id
+        stack_to_describe = cli_utils.get_stack_by_id_or_name_or_prefix(
+            repo=repo, id_or_name_or_prefix=stack_name_or_id
         ).to_hydrated_model()
     else:
         stack_to_describe = active_stack
@@ -883,7 +874,9 @@ def delete_stack(
     with console.status(f"Deleting stack '{stack_name_or_id}'...\n"):
         cfg = GlobalConfiguration()
         repo = Repository()
-        stack_to_delete = _resolve_stack_name_or_id(repo, stack_name_or_id)
+        stack_to_delete = cli_utils.get_stack_by_id_or_name_or_prefix(
+            repo=repo, id_or_name_or_prefix=stack_name_or_id
+        )
 
         if cfg.active_stack_id is not None:
             global_active_stack = repo.zen_store.get_stack(cfg.active_stack_id)
@@ -919,7 +912,9 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
     repo = Repository()
 
     try:
-        stack_to_set_active = _resolve_stack_name_or_id(repo, stack_name_or_id)
+        stack_to_set_active = cli_utils.get_stack_by_id_or_name_or_prefix(
+            repo=repo, id_or_name_or_prefix=stack_name_or_id
+        )
     except KeyError as e:
         cli_utils.error(str(e))
     else:
@@ -1057,12 +1052,14 @@ def export_stack(stack_name_or_id: str, filename: Optional[str]) -> None:
     repo = Repository()
 
     try:
-        stack_to_export = _resolve_stack_name_or_id(repo, stack_name_or_id)
+        stack_to_export = cli_utils.get_stack_by_id_or_name_or_prefix(
+            repo=repo, id_or_name_or_prefix=stack_name_or_id
+        )
     except KeyError:
         cli_utils.error(f"Stack '{stack_name_or_id}' does not exist.")
     else:
         # write zenml version and stack dict to YAML
-        yaml_data = stack.to_hydrated_model().to_yaml()
+        yaml_data = stack_to_export.to_hydrated_model().to_yaml()
         yaml_data["zenml_version"] = zenml.__version__
 
         if filename is None:
@@ -1203,7 +1200,9 @@ def import_stack(
     repo = Repository()
     while True:
         try:
-            repo.get_stack_by_name_or_partial_id(stack_name)
+            cli_utils.get_stack_by_id_or_name_or_prefix(
+                repo=repo, id_or_name_or_prefix=stack_name
+            )
             stack_name = click.prompt(
                 f"Stack `{stack_name}` already exists. "
                 f"Please choose a different name.",
@@ -1248,8 +1247,8 @@ def copy_stack(
 
     with console.status(f"Copying stack `{source_stack_name_or_id}`...\n"):
         try:
-            stack_to_copy = _resolve_stack_name_or_id(
-                repo, source_stack_name_or_id
+            stack_to_copy = cli_utils.get_stack_by_id_or_name_or_prefix(
+                repo=repo, id_or_name_or_prefix=source_stack_name_or_id
             )
         except KeyError:
             cli_utils.error(
@@ -1258,7 +1257,9 @@ def copy_stack(
             )
 
         try:
-            repo.get_stack_by_name_or_partial_id(name=target_stack)
+            cli_utils.get_stack_by_id_or_name_or_prefix(
+                repo=repo, id_or_name_or_prefix=target_stack
+            )
             cli_utils.error(
                 f"Can't copy stack because a stack with the name "
                 f"'{target_stack}' already exists."
@@ -1309,7 +1310,9 @@ def register_secrets(
 
     if stack_name_or_id:
         try:
-            stack_model = _resolve_stack_name_or_id(repo, stack_name_or_id)
+            stack_model = cli_utils.get_stack_by_id_or_name_or_prefix(
+                repo=repo, id_or_name_or_prefix=stack_name_or_id
+            )
             stack_ = Stack.from_model(stack_model.to_hydrated_model())
         except KeyError:
             cli_utils.error(f"No stack found for name `{stack_name_or_id}`.")

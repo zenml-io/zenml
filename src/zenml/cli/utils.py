@@ -780,29 +780,114 @@ def print_server_deployment(server: "ServerDeployment") -> None:
     console.print(rich_table)
 
 
-def _resolve_stack_name_or_id(
-    repo: Repository, stack_name_or_id: str
+def get_stack_by_id_or_name_or_prefix(
+    repo: Repository,
+    id_or_name_or_prefix: str,
 ) -> "StackModel":
-    """Returns Stack Model for a given name or id.
+    """Fetches a stack within active project using the name, id or partial id.
 
     Args:
         repo: Instance of the Repository singleton
-        stack_name_or_id: Name or id in from of a string
+        id_or_name_or_prefix: The id, name or partial id of the stack to
+                              fetch.
 
     Returns:
-        The Model of the referenced stack.
+        The stack with the given name.
+
+    Raises:
+        KeyError: If no stack with the given name exists.
+        RuntimeError: If multiple stacks with the given name exist.
     """
     # First interpret as full UUID
     try:
-        stack_id = UUID(stack_name_or_id)
+        stack_id = UUID(id_or_name_or_prefix)
         return repo.zen_store.get_stack(stack_id)
     except ValueError:
         pass
 
-    # Interpret as name or partial UUID
-    try:
-        return repo.get_stack_by_name_or_partial_id(stack_name_or_id)
-    except KeyError:
+    stacks = repo.zen_store.list_stacks(
+        project_name_or_id=repo.active_project.name,
+        name=id_or_name_or_prefix,
+    )
+    if len(stacks) > 1:
+        hydrated_stacks = [s.to_hydrated_model() for s in stacks]
+        print_stacks_table(repo=repo, stacks=hydrated_stacks)
         error(
-            f"Stack `{stack_name_or_id}` does not exist.",
+            f"Multiple stacks have been found for name "
+            f"'{id_or_name_or_prefix}'. The stacks listed above all share "
+            f"this name. Please specify the stack by full or partial id."
         )
+
+    elif len(stacks) == 1:
+        return stacks[0]
+    else:
+        logger.debug(
+            f"No stack with name '{id_or_name_or_prefix}' "
+            f"exists. Trying to resolve as partial_id"
+        )
+
+        # TODO: This is ugly, an _or filter should be set on the sql_zen_store
+        stacks = set(
+            repo.zen_store.list_stacks(
+                project_name_or_id=repo.active_project.name,
+                user_name_or_id=repo.active_user.name,
+            )
+            + repo.zen_store.list_stacks(
+                project_name_or_id=repo.active_project.name, is_shared=True
+            )
+        )
+
+        filtered_stacks = [
+            stack
+            for stack in stacks
+            if str(stack.id).startswith(id_or_name_or_prefix)
+        ]
+        if len(filtered_stacks) > 1:
+            hydrated_stacks = [s.to_hydrated_model() for s in filtered_stacks]
+            print_stacks_table(repo=repo, stacks=hydrated_stacks)
+            error(
+                f"The stacks listed above all share the provided prefix "
+                f"'{id_or_name_or_prefix}' on their ids. Please provide more "
+                f"characters to uniquely identify only one stack."
+            )
+
+        elif len(filtered_stacks) == 1:
+            return filtered_stacks[0]
+        else:
+            raise KeyError(
+                f"No stack with name or id prefix "
+                f"'{id_or_name_or_prefix}' exists."
+            )
+
+
+def print_stacks_table(
+    repo: Repository, stacks: List[HydratedStackModel]
+) -> None:
+    """Print a prettified list of all stacks supplied to this method.
+
+    Args:
+        repo: Repository instance
+        stacks: List of stacks
+
+    Returns:
+        None
+    """
+
+    stack_dicts = []
+    for stack in stacks:
+        active_stack_id = repo.active_stack_model.id
+        is_active = stack.id == active_stack_id
+        stack_config = {
+            "ACTIVE": ":point_right:" if is_active else "",
+            "STACK NAME": stack.name,
+            "STACK ID": stack.id,
+            "SHARED": ":white_check_mark:" if stack.is_shared else ":x:",
+            "OWNER": stack.user.name,
+            **{
+                component_type.upper(): components[0].name
+                for component_type, components in stack.components.items()
+            },
+        }
+        stack_dicts.append(stack_config)
+
+    print_table(stack_dicts)
