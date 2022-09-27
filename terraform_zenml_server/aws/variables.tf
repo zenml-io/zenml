@@ -15,6 +15,11 @@ variable "zenmlserver_namespace" {
   default     = "terraform-server"
   type        = string
 }
+variable "kubectl_config_path" {
+  description = "The path to the kube config"
+  default     = ""
+  type        = string
+}
 
 # If you want a new RDS, choose a name and a password. If you already
 # have an instance, provide the name and the password here too.
@@ -111,6 +116,12 @@ variable "create_ingress_controller" {
   description = "set to true  if you want the recipe to create an ingress controller in your cluster"  
   default     = true
   type        = bool
+}
+# if you already have an ingress controller, supply it's URL
+variable "ingress_controller_hostname" {
+  description = "The URL for the ingress controller on your cluster"
+  default     = ""
+  type        = string
 }
 
 # variables for creating a ZenML stack configuration file

@@ -5,15 +5,16 @@ data "external" "os" {
 }
 locals {
   os = data.external.os.result.os
+  kubectl_config_path = local.os == "Windows" ? "%USERPROFILE%\\.kube\\config" : "~/.kube/config"
 }
 
 # A default (non-aliased) provider configuration for "helm"
 provider "helm" {
   kubernetes {
-    config_path = local.os == "Windows" ? "%USERPROFILE%\\.kube\\config" : "~/.kube/config"
+    config_path = var.kubectl_config_path == ""? local.kubectl_config_path: var.kubectl_config_path
   }
 }
 
 provider "kubernetes" {
-  config_path = local.os == "Windows" ? "%USERPROFILE%\\.kube\\config" : "~/.kube/config"
+  config_path = var.kubectl_config_path == ""? local.kubectl_config_path: var.kubectl_config_path
 }
