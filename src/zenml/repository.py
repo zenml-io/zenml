@@ -774,6 +774,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         return self.get_stack_components()
 
+
     def register_stack_component(
         self,
         component: "ComponentModel",
@@ -822,21 +823,6 @@ class Repository(metaclass=RepositoryMetaClass):
         existing_component_model = self.get_stack_component_by_id(
             component.id,
         )
-
-        # Make sure there is no other component with the same name
-        try:
-            other_component = self.get_stack_component_by_name_and_type(
-                name=component.name,
-                type=component.type,
-            )
-            if other_component != existing_component_model:
-                raise ValueError(
-                    f"Cannot update {component.type} '{component.name}' since "
-                    f"another component with the same name and type "
-                    f"already exists."
-                )
-        except KeyError:
-            pass  # No other component with the same name exists
 
         # Get the flavor model of the existing component
         flavor_model = self.get_flavor_by_name_and_type(

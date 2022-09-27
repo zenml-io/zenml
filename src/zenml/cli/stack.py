@@ -527,6 +527,7 @@ def update_stack(
         repo.update_stack(current_stack)
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
+
 @stack.command(
     "share",
     context_settings=dict(ignore_unknown_options=True),
@@ -560,6 +561,7 @@ def share_stack(
                     only_component.is_shared = True
 
                     repo.update_stack_component(component=only_component)
+
         with console.status(f"Sharing stack `{current_stack.name}` ...\n"):
 
             current_stack.is_shared = True
