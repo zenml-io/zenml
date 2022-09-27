@@ -573,7 +573,9 @@ class Repository(metaclass=RepositoryMetaClass):
             is_shared=True,
         )
 
-        return [s.to_hydrated_model() for s in set(owned_stacks+shared_stacks)]
+        return [
+            s.to_hydrated_model() for s in set(owned_stacks + shared_stacks)
+        ]
 
     @property
     def active_stack_model(self) -> "HydratedStackModel":
@@ -1195,14 +1197,14 @@ class Repository(metaclass=RepositoryMetaClass):
         error_msg = (
             f"Cannot run pipeline '{pipeline_name}' since this name has "
             "already been registered with a different pipeline "
-            "configuration. You have three options to resolve this issue: "
+            "configuration. You have three options to resolve this issue:\n"
             "1) You can register a new pipeline by changing the name "
-            "of your pipeline, e.g., via `@pipeline(name='new_pipeline_name')."
+            "of your pipeline, e.g., via `@pipeline(name='new_pipeline_name').\n"
             "2) You can execute the current run without linking it to any "
             "pipeline by setting the 'unlisted' argument to `True`, e.g., "
             "via `my_pipeline_instance.run(unlisted=True)`. "
             "Unlisted runs are not linked to any pipeline, but are still "
-            "tracked by ZenML and can be accessed via the 'All Runs' tab. "
+            "tracked by ZenML and can be accessed via the 'All Runs' tab. \n"
             "3) You can delete the existing pipeline via "
             f"`zenml pipeline delete {pipeline_name}`. This will then "
             "change all existing runs of this pipeline to become unlisted."
