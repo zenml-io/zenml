@@ -30,13 +30,23 @@ class DomainModel(BaseModel):
     """
 
     def __hash__(self):
+        """Implementation of hash magic method.
+
+        Returns:
+            Hash of the UUID.
+        """
         return hash((type(self),) + tuple([self.id]))
 
     def __eq__(self, other):
-        if isinstance(other, DomainModel):
-            return self.id == other.id
+        """Implementation of equality magic method.
 
-        return False
+        Args:
+            other: The other object to compare to.
+
+        Returns:
+            True if the other object is of the same type and has the same UUID.
+        """
+        return self.id == other.id if isinstance(other, DomainModel) else False
 
     id: UUID = Field(default_factory=uuid4, title="The unique resource id.")
     created: datetime = Field(

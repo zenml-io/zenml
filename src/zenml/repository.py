@@ -831,9 +831,6 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Returns:
             The updated component.
-
-        Raises:
-            ValueError: If another component already exists with the same name and type.
         """
         # Get the existing component model
         existing_component_model = self.get_stack_component_by_id(
