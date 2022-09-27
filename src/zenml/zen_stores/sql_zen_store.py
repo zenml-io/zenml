@@ -646,7 +646,7 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(StackSchema.name == name)
             if is_shared is not None:
                 query = query.where(StackSchema.is_shared == is_shared)
-            stacks = session.exec(query).all()
+            stacks = session.exec(query.order_by(StackSchema.name)).all()
 
             return [stack.to_model() for stack in stacks]
 
