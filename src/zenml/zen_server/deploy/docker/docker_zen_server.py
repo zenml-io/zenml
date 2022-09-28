@@ -81,6 +81,11 @@ class DockerServerDeploymentConfig(ServerDeploymentConfig):
     ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
     store: Optional[StoreConfiguration] = None
 
+    class Config:
+        """Pydantic configuration."""
+
+        extra = "forbid"
+
 
 class DockerZenServerConfig(ContainerServiceConfig):
     """Docker Zen server configuration.

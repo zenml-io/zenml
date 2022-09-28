@@ -781,7 +781,7 @@ def get_stack_by_id_or_name_or_prefix(
 
     Raises:
         KeyError: If no stack with the given name exists.
-        RuntimeError: If multiple stacks with the given name exist.
+        ClickException: If multiple stacks with the given name exist.
     """
     # First interpret as full UUID
     try:
@@ -857,7 +857,6 @@ def print_stacks_table(
     Returns:
         None
     """
-
     stack_dicts = []
     for stack in stacks:
         active_stack_id = repo.active_stack_model.id

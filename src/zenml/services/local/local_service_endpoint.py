@@ -104,7 +104,7 @@ class LocalDaemonServiceEndpoint(BaseServiceEndpoint):
         """
         # If a port value is explicitly configured, attempt to use it first
         if self.config.port:
-            if port_available(self.config.port):
+            if port_available(self.config.port, self.config.ip_address):
                 return self.config.port
             if not self.config.allocate_port:
                 raise IOError(f"TCP port {self.config.port} is not available.")

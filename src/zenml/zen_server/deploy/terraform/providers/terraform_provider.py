@@ -11,66 +11,68 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Zen Server local provider implementation."""
+"""Zen Server terraform deployer implementation."""
 
+import os
 from typing import ClassVar, List, Optional, Tuple, Type, cast
 
-from zenml import __version__
-from zenml.enums import ServerProviderType
+from zenml.config.global_config import GlobalConfiguration
 from zenml.logger import get_logger
-from zenml.services import (
-    BaseService,
-    HTTPEndpointHealthMonitor,
-    HTTPEndpointHealthMonitorConfig,
-    LocalDaemonServiceEndpoint,
-    LocalDaemonServiceEndpointConfig,
-    ServiceConfig,
+from zenml.services import BaseService, ServiceConfig
+from zenml.services.service_endpoint import (
     ServiceEndpointConfig,
-    ServiceEndpointHealthMonitorConfig,
     ServiceEndpointProtocol,
 )
+from zenml.services.service_monitor import (
+    HTTPEndpointHealthMonitorConfig,
+    ServiceEndpointHealthMonitorConfig,
+)
 from zenml.zen_server.deploy.base_provider import BaseServerProvider
-from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
-from zenml.zen_server.deploy.local.local_zen_server import (
-    LOCAL_ZENML_SERVER_CONFIG_PATH,
-    LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT,
+from zenml.zen_server.deploy.deployment import (
+    ServerDeploymentConfig,
+    ServerDeploymentStatus,
+)
+from zenml.zen_server.deploy.docker.docker_zen_server import (
     ZEN_SERVER_HEALTHCHECK_URL_PATH,
-    LocalServerDeploymentConfig,
-    LocalZenServer,
-    LocalZenServerConfig,
+)
+from zenml.zen_server.deploy.terraform.terraform_zen_server import (
+    TERRAFORM_VALUES_FILE_PATH,
+    TERRAFORM_ZENML_SERVER_CONFIG_PATH,
+    TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT,
+    TERRAFORM_ZENML_SERVER_RECIPE_SUBPATH,
+    TerraformServerDeploymentConfig,
+    TerraformZenServer,
+    TerraformZenServerConfig,
 )
 
 logger = get_logger(__name__)
 
 
-class LocalServerProvider(BaseServerProvider):
-    """Local ZenML server provider."""
+class TerraformServerProvider(BaseServerProvider):
+    """Terraform ZenML server provider."""
 
-    TYPE: ClassVar[ServerProviderType] = ServerProviderType.LOCAL
     CONFIG_TYPE: ClassVar[
         Type[ServerDeploymentConfig]
-    ] = LocalServerDeploymentConfig
+    ] = TerraformServerDeploymentConfig
 
     @staticmethod
-    def check_local_server_dependencies() -> None:
-        """Check if local server dependencies are installed.
+    def _get_server_recipe_root_path() -> str:
+        """Get the server recipe root path.
 
-        Raises:
-            RuntimeError: If the dependencies are not installed.
+        The Terraform recipe files for all terraform server providers are
+        located in a folder relative to the `zenml.zen_server.deploy.terraform`
+        Python module.
+
+        Returns:
+            The server recipe root path.
         """
-        try:
-            # Make sure the ZenServer dependencies are installed
-            import fastapi  # noqa
-            import uvicorn  # type: ignore[import] # noqa
-        except ImportError:
-            # Unable to import the ZenServer dependencies.
-            raise RuntimeError(
-                "The local ZenML server provider is unavailable because the "
-                "ZenML server requirements seems to be unavailable on your machine. "
-                "This is probably because ZenML was installed without the optional "
-                "ZenServer dependencies. To install the missing dependencies "
-                f"run `pip install zenml=={__version__}[server]`."
-            )
+        import zenml.zen_server.deploy.terraform as terraform_module
+
+        root_path = os.path.join(
+            os.path.dirname(terraform_module.__file__),
+            TERRAFORM_ZENML_SERVER_RECIPE_SUBPATH,
+        )
+        return root_path
 
     @classmethod
     def _get_service_configuration(
@@ -87,22 +89,25 @@ class LocalServerProvider(BaseServerProvider):
             server_config: server deployment configuration.
 
         Returns:
-            The service, service endpoint and endpoint monitor configuration.
+            The service configuration.
         """
-        assert isinstance(server_config, LocalServerDeploymentConfig)
+        assert isinstance(server_config, TerraformServerDeploymentConfig)
 
         return (
-            LocalZenServerConfig(
-                root_runtime_path=LOCAL_ZENML_SERVER_CONFIG_PATH,
-                singleton=True,
+            TerraformZenServerConfig(
                 name=server_config.name,
-                blocking=server_config.blocking,
+                root_runtime_path=TERRAFORM_ZENML_SERVER_CONFIG_PATH,
+                singleton=True,
+                directory_path=os.path.join(
+                    cls._get_server_recipe_root_path(),
+                    server_config.provider,
+                ),
+                log_level=server_config.log_level,
+                variables_file_path=TERRAFORM_VALUES_FILE_PATH,
                 server=server_config,
             ),
-            LocalDaemonServiceEndpointConfig(
+            ServiceEndpointConfig(
                 protocol=ServiceEndpointProtocol.HTTP,
-                ip_address=str(server_config.ip_address),
-                port=server_config.port,
                 allocate_port=False,
             ),
             HTTPEndpointHealthMonitorConfig(
@@ -116,7 +121,7 @@ class LocalServerProvider(BaseServerProvider):
         config: ServerDeploymentConfig,
         timeout: Optional[int] = None,
     ) -> BaseService:
-        """Create, start and return the local ZenML server deployment service.
+        """Create, start and return the terraform ZenML server deployment service.
 
         Args:
             config: The server deployment configuration.
@@ -127,18 +132,17 @@ class LocalServerProvider(BaseServerProvider):
             The service instance.
 
         Raises:
-            RuntimeError: If a local service is already running.
+            RuntimeError: If a terraform service is already running.
         """
-        assert isinstance(config, LocalServerDeploymentConfig)
+        assert isinstance(config, TerraformServerDeploymentConfig)
 
         if timeout is None:
-            timeout = LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT
+            timeout = TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT
 
-        self.check_local_server_dependencies()
-        existing_service = LocalZenServer.get_service()
+        existing_service = TerraformZenServer.get_service()
         if existing_service:
             raise RuntimeError(
-                f"A local ZenML server with name '{existing_service.config.name}' "
+                f"A terraform ZenML server with name '{existing_service.config.name}' "
                 f"is already running. Please stop it first before starting a "
                 f"new one."
             )
@@ -148,13 +152,9 @@ class LocalServerProvider(BaseServerProvider):
             endpoint_cfg,
             monitor_cfg,
         ) = self._get_service_configuration(config)
-        endpoint = LocalDaemonServiceEndpoint(
-            config=endpoint_cfg,
-            monitor=HTTPEndpointHealthMonitor(
-                config=monitor_cfg,
-            ),
-        )
-        service = LocalZenServer(config=service_config, endpoint=endpoint)
+
+        service = TerraformZenServer(config=service_config)
+
         service.start(timeout=timeout)
         return service
 
@@ -164,7 +164,7 @@ class LocalServerProvider(BaseServerProvider):
         config: ServerDeploymentConfig,
         timeout: Optional[int] = None,
     ) -> BaseService:
-        """Update the local ZenML server deployment service.
+        """Update the terraform ZenML server deployment service.
 
         Args:
             service: The service instance.
@@ -176,27 +176,15 @@ class LocalServerProvider(BaseServerProvider):
             The updated service instance.
         """
         if timeout is None:
-            timeout = LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT
+            timeout = TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT
 
         (
             new_config,
-            new_endpoint_cfg,
-            new_monitor_cfg,
+            endpoint_cfg,
+            monitor_cfg,
         ) = self._get_service_configuration(config)
 
-        assert service.endpoint
-        assert service.endpoint.monitor
-
-        service.stop(timeout=timeout)
-        (
-            service.config,
-            service.endpoint.config,
-            service.endpoint.monitor.config,
-        ) = (
-            new_config,
-            new_endpoint_cfg,
-            new_monitor_cfg,
-        )
+        service.config = new_config
         service.start(timeout=timeout)
 
         return service
@@ -206,7 +194,7 @@ class LocalServerProvider(BaseServerProvider):
         service: BaseService,
         timeout: Optional[int] = None,
     ) -> BaseService:
-        """Start the local ZenML server deployment service.
+        """Start the terraform ZenML server deployment service.
 
         Args:
             service: The service instance.
@@ -217,7 +205,7 @@ class LocalServerProvider(BaseServerProvider):
             The updated service instance.
         """
         if timeout is None:
-            timeout = LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT
+            timeout = TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT
 
         service.start(timeout=timeout)
         return service
@@ -227,7 +215,7 @@ class LocalServerProvider(BaseServerProvider):
         service: BaseService,
         timeout: Optional[int] = None,
     ) -> BaseService:
-        """Stop the local ZenML server deployment service.
+        """Stop the terraform ZenML server deployment service.
 
         Args:
             service: The service instance.
@@ -238,7 +226,7 @@ class LocalServerProvider(BaseServerProvider):
             The updated service instance.
         """
         if timeout is None:
-            timeout = LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT
+            timeout = TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT
 
         service.stop(timeout=timeout)
         return service
@@ -248,23 +236,22 @@ class LocalServerProvider(BaseServerProvider):
         service: BaseService,
         timeout: Optional[int] = None,
     ) -> None:
-        """Remove the local ZenML server deployment service.
+        """Remove the terraform ZenML server deployment service.
 
         Args:
             service: The service instance.
             timeout: The timeout in seconds to wait until the service is
                 removed.
         """
-        assert isinstance(service, LocalZenServer)
+        assert isinstance(service, TerraformZenServer)
 
         if timeout is None:
-            timeout = LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT
+            timeout = TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT
 
         service.stop(timeout)
-        # TODO: Remove all service files from the disk.
 
     def _get_service(self, server_name: str) -> BaseService:
-        """Get the local ZenML server deployment service.
+        """Get the terraform ZenML server deployment service.
 
         Args:
             server_name: The server deployment name.
@@ -275,15 +262,14 @@ class LocalServerProvider(BaseServerProvider):
         Raises:
             KeyError: If the server deployment is not found.
         """
-        service = LocalZenServer.get_service()
+        service = TerraformZenServer.get_service()
         if service is None:
-            raise KeyError("The local ZenML server is not deployed.")
+            raise KeyError("The terraform ZenML server is not deployed.")
 
-        if service.config.name != server_name:
+        if service.config.server.name != server_name:
             raise KeyError(
-                "The local ZenML server is deployed but with a different name."
+                "The terraform ZenML server is deployed but with a different name."
             )
-
         return service
 
     def _list_services(self) -> List[BaseService]:
@@ -292,7 +278,7 @@ class LocalServerProvider(BaseServerProvider):
         Returns:
             A list of service instances.
         """
-        service = LocalZenServer.get_service()
+        service = TerraformZenServer.get_service()
         if service:
             return [service]
         return []
@@ -308,8 +294,35 @@ class LocalServerProvider(BaseServerProvider):
         Returns:
             The server deployment configuration.
         """
-        server = cast(LocalZenServer, service)
+        server = cast(TerraformZenServer, service)
         return server.config.server
 
+    def _get_deployment_status(
+        self, service: BaseService
+    ) -> ServerDeploymentStatus:
+        """Get the status of a server deployment from its service.
 
-LocalServerProvider.register_as_provider()
+        Args:
+            service: The server deployment service.
+
+        Returns:
+            The status of the server deployment.
+        """
+        gc = GlobalConfiguration()
+        url: Optional[str] = None
+        service = cast(TerraformZenServer, service)
+        ca_crt = None
+        if service.is_running:
+            url = service.get_server_url()
+            ca_crt = service.get_certificate()
+        connected = (
+            url is not None and gc.store is not None and gc.store.url == url
+        )
+
+        return ServerDeploymentStatus(
+            url=url,
+            status=service.status.state,
+            status_message=service.status.last_error,
+            connected=connected,
+            ca_crt=ca_crt,
+        )

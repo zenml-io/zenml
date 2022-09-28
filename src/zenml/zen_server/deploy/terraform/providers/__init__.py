@@ -11,17 +11,4 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML server deployments."""
-
-from zenml.zen_server.deploy import docker, local, terraform
-from zenml.zen_server.deploy.deployer import ServerDeployer
-from zenml.zen_server.deploy.deployment import (
-    ServerDeployment,
-    ServerDeploymentConfig,
-)
-
-__all__ = [
-    "ServerDeployer",
-    "ServerDeployment",
-    "ServerDeploymentConfig",
-]
+"""ZenServer Terraform Providers."""

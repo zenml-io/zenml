@@ -131,6 +131,7 @@ class ServerProviderType(StrEnum):
 
     LOCAL = "local"
     DOCKER = "docker"
+    AWS = "aws"
 
 
 class AnalyticsEventSource(StrEnum):
