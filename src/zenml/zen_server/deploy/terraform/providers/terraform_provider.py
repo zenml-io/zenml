@@ -312,10 +312,10 @@ class TerraformServerProvider(BaseServerProvider):
         gc = GlobalConfiguration()
         url: Optional[str] = None
         service = cast(TerraformZenServer, service)
-        tls_crt, tls_key, ca_crt = None, None, None
+        ca_crt = None
         if service.is_running:
             url = service.get_server_url()
-            tls_crt, tls_key, ca_crt = service.get_certificates()
+            ca_crt = service.get_certificate()
         connected = (
             url is not None and gc.store is not None and gc.store.url == url
         )
@@ -325,7 +325,5 @@ class TerraformServerProvider(BaseServerProvider):
             status=service.status.state,
             status_message=service.status.last_error,
             connected=connected,
-            tls_crt=tls_crt,
-            tls_key=tls_key,
             ca_crt=ca_crt,
         )

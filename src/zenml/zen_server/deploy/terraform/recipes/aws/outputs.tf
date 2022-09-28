@@ -8,14 +8,6 @@ output "password" {
   value = var.password
   sensitive = true
 }
-output "tls_crt" {
-  value = base64decode(data.kubernetes_secret.certificates.binary_data["tls.crt"])
-  sensitive = true
-}
-output "tls_key" {
-  value = base64decode(data.kubernetes_secret.certificates.binary_data["tls.key"])
-  sensitive = true
-}
 output "ca_crt" {
   value = base64decode(data.kubernetes_secret.certificates.binary_data["ca.crt"])
   sensitive = true

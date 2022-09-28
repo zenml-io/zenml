@@ -221,6 +221,13 @@ def down() -> None:
     required=False,
     type=str,
 )
+@click.option(
+    "--connect",
+    is_flag=True,
+    help="Connect your client to the ZenML server after it is successfully "
+    "deployed.",
+    type=click.BOOL,
+)
 def deploy(
     provider: Optional[str] = None,
     connect: bool = False,
@@ -325,12 +332,15 @@ def deploy(
             f"ZenML server '{name}' running at '{server.status.url}'."
         )
 
-    if connect:
-        deployer.connect_to_server(
-            server_config.name,
-            username,
-            password,
-        )
+        if connect:
+            deployer.connect_to_server(
+                server_config.name,
+                username,
+                password,
+                verify_ssl=server.status.ca_crt
+                if server.status.ca_crt is not None
+                else False,
+            )
 
 
 @cli.command(

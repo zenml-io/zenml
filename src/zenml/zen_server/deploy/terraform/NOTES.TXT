@@ -17,21 +17,23 @@ recipes ?
   - use some public registry and release versions of the helm chart there
   - reference the chart by repo/name/version in the recipe using vars with defaults
   that change with every release
+  NOW: released with the pypi package
+  LATER: find a way to publish to a public repo
 
 2. RDS database provisioning:
   - DONE version needs to be 5.7.* (8.0) doesn't work
-  - SSL ? (later)
+  - LATER SSL ? (later)
 
 3. [STEFAN] the terraform recipe should be copied in the service runtime path, instead of
 being updated and applied in place, to allow for multiple instances of the same
 recipe to be deployed (in theory, at least). I.e. the `terraform_client.working_dir`
 should be a subdirectory of the service runtime path where the recipe is copied to.
   - DONE: change the TerraformService init to do this
-  - change the stack recipe logic to no longer copy the recipes
+  - LATER change the stack recipe logic to no longer copy the recipes
 
-4. [STEFAN] deserializing the terraform server from disk loses the config type (subtype)
+4. LATER [STEFAN] deserializing the terraform server from disk loses the config type (subtype)
 
-5. [JAYESH] how do we extract the URL (hostname, port) and credentials (username/password/CA certificate)
+5. DONE [JAYESH] how do we extract the URL (hostname, port) and credentials (username/password/CA certificate)
 from the deployed server ?
   - username and password are in fact supplied as input (recipe config)
   - the URL is a recipe output
@@ -55,23 +57,23 @@ from the deployed server ?
       - other assumptions for the noob experience:
         - always deploy a DB
 
-7. [JAYESH] use config defaults that allow multi-instance deployments
+7. DONE [JAYESH] use config defaults that allow multi-instance deployments
   - if two ppl are using the same AWS cloud account, same region and same EKS
   cluster, but two different names (prefix values), they should not clash.
   - names of all resources (helm release, RDS DB, ingress) should use the prefix
-  - exception: ingress controller. The recipe checks if another ingress controller
+  - TODO: exception: ingress controller. The recipe checks if another ingress controller
   is already deployed and if so, it uses that one. If not, it deploys its own.
   - the service name is used as a prefix
 
-8. [JAYESH] terraform service implementation changes:
-  - save the service config before making long-running changes (e.g. terraform init/apply)
+8. DONE [JAYESH] terraform service implementation changes:
+  - DONE save the service config before making long-running changes (e.g. terraform init/apply)
   - without `check_status`, how do we know if the server is up and running ?
     - use terraform plan in the `check_status` function
       - if exit code is zero, then all resources are up and running -> ACTIVE
       - 1 -> ERROR
       - 2 -> INACTIVE
 
-9. how do we update an existing server recipe deployment ?
+9. DONE how do we update an existing server recipe deployment ?
   - run `zenml deploy` with an updated config ?
     -> [STEFAN] how do we prevent the user from creating a new server deployment
     instead of updating the existing one ?
@@ -88,23 +90,18 @@ from the deployed server ?
   - we can steal the code from the model deployer implementation
 
 12. helm chart recipe glue problems
-  - not all ingresses have paths. In fact, the default is to not use any path
+  - DONE not all ingresses have paths. In fact, the default is to not use any path
 
 
 13. other UX issues
   - aborting a deployment in progress leaves terraform running in the background
   and the recipe is locked. If killed, then the recipe thinks it's overwriting
   existing resources and fails.
-  - no default timeout ??
-
-
-  add certificates 
-  override get_deployment_status
-  url, the certificates as outputs
-  get certificates
   
-14. don't use a prepopulated values.tfvars.json
+14. DONE don't use a prepopulated values.tfvars.json
 
 15. rename `rds_*` in TerraformServerDeploymentConfig to `database-*` to make them more generic
 
 16. add a --force to zenml deploy to redeploy everything (and re-copy the recipe on top of the working directory)
+
+17. [STEFAN] test `zenml deploy` in noob mode 

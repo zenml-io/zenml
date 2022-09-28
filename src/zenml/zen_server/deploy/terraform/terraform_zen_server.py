@@ -194,7 +194,6 @@ class TerraformZenServer(TerraformService):
         ) as fp:
             json.dump(variables, fp=fp, indent=4)
 
-
     def provision(self) -> None:
         """Provision the service."""
         super().provision()
@@ -211,22 +210,11 @@ class TerraformZenServer(TerraformService):
             )
         )
 
-    def get_certificates(self) -> Tuple[str, str, str]:
-        """Returns a tuple of certificates from the ZenML server."""
-        return (
-            str(
-                self.terraform_client.output(
-                    TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_TLS_CRT, full_value=True
-                )
-            ),
-            str(
-                self.terraform_client.output(
-                    TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_TLS_KEY, full_value=True
-                )
-            ),
-            str(
-                self.terraform_client.output(
-                    TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_CA_CRT, full_value=True
-                )
+    def get_certificate(self) -> Optional[str]:
+        """Returns the CA certificates configured for the ZenML server."""
+        return cast(
+            str,
+            self.terraform_client.output(
+                TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_CA_CRT, full_value=True
             ),
         )

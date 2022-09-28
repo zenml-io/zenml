@@ -176,6 +176,12 @@ class TerraformService(BaseService):
         Raises:
             RuntimeError: if init or apply function fails.
         """
+        # write the service information in the service config file
+        assert self.status.config_file is not None
+
+        with open(self.status.config_file, "w") as f:
+            f.write(self.json(indent=4))
+
         # this directory gets created after a successful init
         previous_run_dir = os.path.join(
             self.terraform_client.working_dir, ".ignoreme"
@@ -201,12 +207,6 @@ class TerraformService(BaseService):
             capture_output=False,
             raise_on_error=True,
         )
-        
-        # write the service information in the service config file
-        assert self.status.config_file is not None
-
-        with open(self.status.config_file, "w") as f:
-            f.write(self.json(indent=4))
 
     def get_vars(self) -> Dict[str, Any]:
         """Get variables as a dictionary from values.tfvars.json.
