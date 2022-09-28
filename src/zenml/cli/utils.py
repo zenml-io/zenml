@@ -795,7 +795,7 @@ def describe_pydantic_object(schema_json: str):
         for prop, prop_schema in properties.items():
             warning(
                 f"{prop}, {prop_schema['type']}"
-                f"{', required' if prop_schema in required else ''}:"
+                f"{', required' if prop_schema in required else ''}"
             )
 
             if "description" in prop_schema:

@@ -946,7 +946,7 @@ def generate_stack_component_flavor_describe_command(
         required=True,
     )
     def describe_stack_component_flavor_command(name: str) -> None:
-        """Describes a flavor based on its schema.
+        """Describes a flavor based on its config schema.
 
         Args:
             name: The name of the flavor.
