@@ -1,4 +1,4 @@
-variable "prefix" {
+variable "name" {
   description = "The prefix to use for all AWS resource names"
   default     = "zenmlserver"
   type        = string
@@ -123,6 +123,22 @@ variable "ingress_controller_hostname" {
   default     = ""
   type        = string
 }
+variable "ingress_tls" {
+  description = "Whether to enable tls on the ingress or not"
+  default     = false
+  type        = bool
+}
+variable "ingress_tls_generate_certs" {
+  description = "Whether to enable tls certificates or not"
+  default     = false
+  type        = bool
+}
+variable "ingress_tls_secret_name" {
+  description = "Name for the Kubernetes secret that stores certificates"
+  default     = "zenml-tls-certs"
+  type        = string
+}
+
 
 # variables for creating a ZenML stack configuration file
 variable "zenml-version" {

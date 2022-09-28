@@ -1,7 +1,7 @@
 # set up the nginx ingress controller
 resource "kubernetes_namespace" "nginx-ns" {
   metadata {
-    name = "ingress-nginxhihi"
+    name = "${var.name}-ingress"
   }
 }
 
