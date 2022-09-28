@@ -19,6 +19,7 @@ resource "helm_release" "nginx-controller" {
 }
 
 data "kubernetes_service" "ingress-controller" {
+  count      = var.create_ingress_controller? 1 : 0
   metadata {
     name      = "zenml-ingress-nginx-controller"
     namespace = var.create_ingress_controller? kubernetes_namespace.nginx-ns[0].metadata[0].name : ""

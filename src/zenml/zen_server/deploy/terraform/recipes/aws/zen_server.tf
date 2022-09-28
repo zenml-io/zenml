@@ -35,7 +35,7 @@ resource "helm_release" "zen-server" {
   }
   set {
     name = "ingress.host"
-    value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller.status.0.load_balancer.0.ingress.0.hostname}" : var.ingress_controller_hostname
+    value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.hostname}" : var.ingress_controller_hostname
   }
   set {
     name = "ingress.tls.enabled"
@@ -47,7 +47,7 @@ resource "helm_release" "zen-server" {
   }
   set {
     name = "ingress.tls.secretName"
-    value = var.ingress_tls_secret_name
+    value = "${var.name}-${var.ingress_tls_secret_name}"
   }
 
   # set parameters for the mysql database
