@@ -69,10 +69,10 @@ For production use cases, some more flavors can be found in specific
 `integrations` modules. In terms of annotators, ZenML features an integration with
 `label_studio`.
 
-| Annotator | Flavor | Integration | Notes             |
-|----------------|--------|-------------|-------------------|
-| [LabelStudioAnnotator](./label-studio.md) | `label_studio` | `label_studio` | Connect ZenML with Label Studio |
-| [Custom Implementation](./custom.md) | _custom_ | | Extend the annotator abstraction and provide your own implementation |
+| Annotator                                 | Flavor         | Integration    | Notes                                                                |
+|-------------------------------------------|----------------|----------------|----------------------------------------------------------------------|
+| [LabelStudioAnnotator](./label-studio.md) | `label_studio` | `label_studio` | Connect ZenML with Label Studio                                      |
+| [Custom Implementation](./custom.md)      | _custom_       |                | Extend the annotator abstraction and provide your own implementation |
 
 If you would like to see the available flavors for annotators, you can use
 the command:
@@ -85,7 +85,7 @@ zenml annotator flavor list
 
 The available implementation of the annotator is built on top of the Label
 Studio integration, which means that using an annotator currently is no
-different than what's described in the [Label Studio page: How to use
+different from what's described in the [Label Studio page: How to use
 it?](./label-studio.md#how-do-you-use-it).
 
 ## A note on names

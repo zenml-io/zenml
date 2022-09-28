@@ -129,7 +129,7 @@ run `zenml annotator dataset annotate <dataset_name>`.
 
 [Our full continuous annotation / training example](#coming-soon) is the best
 place to see how all the pieces of making this integration work fit together.
-What follows is an overview of some of the key components to the Label Studio
+What follows is an overview of some key components to the Label Studio 
 integration and how it can be used.
 
 ### Label Studio Annotator Stack Component
