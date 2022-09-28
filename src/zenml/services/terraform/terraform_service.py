@@ -242,7 +242,11 @@ class TerraformService(BaseService):
 
     def _destroy(self) -> None:
         """Function to call terraform destroy on the given path."""
+        # get variables from the recipe as a python dictionary
+        vars = self.get_vars()
+
         self.terraform_client.destroy(
+            var=vars,
             capture_output=False,
             raise_on_error=True,
             force=python_terraform.IsNotFlagged,

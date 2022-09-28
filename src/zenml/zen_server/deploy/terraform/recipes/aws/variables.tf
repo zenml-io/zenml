@@ -6,7 +6,6 @@ variable "username" {
 
 variable "password" {
   description = "Password for the default ZenML server account"
-  default     = ""
   type        = string
 }
 
