@@ -69,7 +69,7 @@ def test_valid_stack_component_update_succeeds(clean_repo) -> None:
         StackComponent.from_model(
             cli_utils.get_component_by_id_or_name_or_prefix(
                 repo=clean_repo,
-                component_type=StackComponentType.ORCHESTRATOR,
+                component_type=StackComponentType.CONTAINER_REGISTRY,
                 id_or_name_or_prefix="new_container_registry",
             )
         ).config.uri
@@ -91,7 +91,7 @@ def test_valid_stack_component_update_succeeds(clean_repo) -> None:
         StackComponent.from_model(
             cli_utils.get_component_by_id_or_name_or_prefix(
                 repo=clean_repo,
-                component_type=StackComponentType.ORCHESTRATOR,
+                component_type=StackComponentType.CONTAINER_REGISTRY,
                 id_or_name_or_prefix="new_container_registry",
             )
         ).config.uri
@@ -131,7 +131,7 @@ def test_updating_stack_component_name_or_uuid_fails(clean_repo) -> None:
     with does_not_raise():
         cli_utils.get_component_by_id_or_name_or_prefix(
             repo=clean_repo,
-            component_type=StackComponentType.ORCHESTRATOR,
+            component_type=StackComponentType.CONTAINER_REGISTRY,
             id_or_name_or_prefix="new_container_registry",
         )
 
@@ -146,7 +146,7 @@ def test_updating_stack_component_name_or_uuid_fails(clean_repo) -> None:
     with does_not_raise():
         cli_utils.get_component_by_id_or_name_or_prefix(
             repo=clean_repo,
-            component_type=StackComponentType.ORCHESTRATOR,
+            component_type=StackComponentType.CONTAINER_REGISTRY,
             id_or_name_or_prefix="new_container_registry",
         )
 
@@ -185,7 +185,7 @@ def test_updating_stack_component_with_unconfigured_property_fails(
     with pytest.raises(AttributeError):
         cli_utils.get_component_by_id_or_name_or_prefix(
             repo=clean_repo,
-            component_type=StackComponentType.ORCHESTRATOR,
+            component_type=StackComponentType.CONTAINER_REGISTRY,
             id_or_name_or_prefix="new_container_registry",
         ).favorite_cat
 
@@ -389,13 +389,13 @@ def test_renaming_non_core_component_succeeds(clean_repo) -> None:
     with pytest.raises(KeyError):
         cli_utils.get_component_by_id_or_name_or_prefix(
             repo=clean_repo,
-            component_type=StackComponentType.ORCHESTRATOR,
+            component_type=StackComponentType.CONTAINER_REGISTRY,
             id_or_name_or_prefix="some_container_registry",
         )
     with does_not_raise():
         cli_utils.get_component_by_id_or_name_or_prefix(
             repo=clean_repo,
-            component_type=StackComponentType.ORCHESTRATOR,
+            component_type=StackComponentType.CONTAINER_REGISTRY,
             id_or_name_or_prefix=new_component_name,
         )
 

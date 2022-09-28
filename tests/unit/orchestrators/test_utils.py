@@ -16,7 +16,7 @@
 import json
 import os
 
-from zenml.constants import (
+from zenml.utils.proto_utils import (
     MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME,
     MLMD_CONTEXT_STACK_PROPERTY_NAME,
     MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME,

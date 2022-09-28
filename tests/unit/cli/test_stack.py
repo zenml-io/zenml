@@ -158,18 +158,19 @@ def test_adding_to_stack_succeeds(clean_repo) -> None:
     clean_repo.register_stack_component(local_secrets_manager.to_model())
 
     runner = CliRunner()
-    result = runner.invoke(
-        update_stack, ["default", "-x", local_secrets_manager.name]
-    )
+    result = runner.invoke(update_stack, ["-x", local_secrets_manager.name])
 
-    active_stack = Stack.from_model(
-        clean_repo.get_stack_by_name_or_partial_id(
-            "default"
-        ).to_hydrated_model()
-    )
+    active_stack = clean_repo.active_stack_model
+
     assert result.exit_code == 0
-    assert active_stack.secrets_manager is not None
-    assert active_stack.secrets_manager == local_secrets_manager
+    assert StackComponentType.SECRETS_MANAGER in active_stack.components.keys()
+    assert (
+        active_stack.components[StackComponentType.SECRETS_MANAGER] is not None
+    )
+    assert (
+        active_stack.components[StackComponentType.SECRETS_MANAGER][0].id
+        == local_secrets_manager.id
+    )
 
 
 def test_updating_nonexistent_stack_fails(clean_repo) -> None:
@@ -226,7 +227,10 @@ def test_renaming_non_active_stack_succeeds(clean_repo) -> None:
     runner = CliRunner()
     result = runner.invoke(rename_stack, ["arias_stack", "arias_renamed_stack"])
     assert result.exit_code == 0
-    assert clean_repo.active_stack_model.name == "arias_renamed_stack"
+    assert (
+        clean_repo.zen_store.get_stack(stack_model.id).name
+        == "arias_renamed_stack"
+    )
 
 
 def test_remove_component_from_nonexistent_stack_fails(clean_repo) -> None:

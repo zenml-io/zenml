@@ -926,8 +926,7 @@ def _get_component_as_dict(
 @click.argument("stack_name_or_id", type=str, required=False)
 @click.argument("filename", type=str, required=False)
 def export_stack(
-    stack_name_or_id: Optional[str],
-    filename: Optional[str]
+    stack_name_or_id: Optional[str], filename: Optional[str]
 ) -> None:
     """Export a stack to YAML.
 
@@ -986,7 +985,8 @@ def _import_stack_component(
     repo = Repository()
     try:
         other_component = repo.zen_store.get_stack_component(
-            component_id=UUID(component_id))
+            component_id=UUID(component_id)
+        )
     except KeyError:
         pass
     else:
@@ -994,7 +994,8 @@ def _import_stack_component(
 
     try:
         component = cli_utils.get_stack_by_id_or_name_or_prefix(
-            repo=repo, id_or_name_or_prefix=component_name)
+            repo=repo, id_or_name_or_prefix=component_name
+        )
         if component:
             # component with same name
             display_name = _component_display_name(component_type)
@@ -1018,16 +1019,14 @@ def _import_stack_component(
     except KeyError:
         pass
 
-    registered_component = (
-        repo.register_stack_component(
-            ComponentModel(
-                user=repo.active_user.id,
-                project=repo.active_project.id,
-                type=component_type,
-                name=component_name,
-                flavor=component_flavor,
-                configuration=component_config["configuration"],
-            )
+    registered_component = repo.register_stack_component(
+        ComponentModel(
+            user=repo.active_user.id,
+            project=repo.active_project.id,
+            type=component_type,
+            name=component_name,
+            flavor=component_flavor,
+            configuration=component_config["configuration"],
         )
     )
     return registered_component.id
