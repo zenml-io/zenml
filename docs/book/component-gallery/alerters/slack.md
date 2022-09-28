@@ -37,14 +37,14 @@ zenml integration install slack -y
 ```
 
 {% hint style="info" %}
-See the [Integrations](../../mlops-stacks/integrations.md) page for more
+See the [Integrations](../../component-gallery/integrations.md) page for more
 details on ZenML integrations and how to install and use them.
 {% endhint %}
 
 ### Setting Up a Slack Bot
 
-In order to use the `SlackAlerter`, you first need to have a Slack workspace set up
-with a channel that you want your pipelines to post to.
+In order to use the `SlackAlerter`, you first need to have a Slack workspace 
+set up with a channel that you want your pipelines to post to.
 
 Then, you need to [create a Slack App](https://api.slack.com/apps?new_app=1)
 with a bot in your workspace.
@@ -127,5 +127,5 @@ where we first send the test accuracy of a model to Slack and then wait with
 model deployment until a user approves it in Slack.
 
 
-For more information and a full list of configurable attributes of the Slack alerter, check out the 
-[API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter).
+For more information and a full list of configurable attributes of the Slack 
+alerter, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter).
