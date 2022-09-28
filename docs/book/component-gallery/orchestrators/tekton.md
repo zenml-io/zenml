@@ -78,8 +78,8 @@ the number of nodes in your cluster.
 {% endhint %}
 
 {% hint style="warning" %}
-ZenML has only been tested with Tekton Pipelines >=0.38.3 and may not work with previous 
-versions.
+ZenML has only been tested with Tekton Pipelines >=0.38.3 and may not work with 
+previous versions.
 {% endhint %}
 
 ## How to use it
@@ -95,8 +95,10 @@ To use the Tekton orchestrator, we need:
 for more information.
 * The name of your Kubernetes context which points to your remote cluster. 
 Run `kubectl config get-contexts` to see a list of available contexts.
-* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
-* A [remote container registry](../container-registries/container-registries.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
+your stack.
+* A [remote container registry](../container-registries/container-registries.md) 
+as part of your stack.
 
 We can then register the orchestrator and use it in our active stack:
 

@@ -12,22 +12,22 @@ in a secure manner.
 ## When to use it
 
 You should include a secrets manager in your ZenML stack if any other component
-of your stack requires confidential information (such as authentication credentials)
-or you want to access secret values inside your pipeline steps.
+of your stack requires confidential information (such as authentication 
+credentials) or you want to access secret values inside your pipeline steps.
 
 ## Secrets Manager Flavors
 
-Out of the box, ZenML comes with a `local` secrets manager that stores secrets in local 
-files. Additional cloud secrets managers are provided by integrations:
+Out of the box, ZenML comes with a `local` secrets manager that stores secrets 
+in local files. Additional cloud secrets managers are provided by integrations:
 
-| Secrets Manager | Flavor | Integration | Scoping Support | Notes             |
-|----------------|--------|-------------|-------------------|------------------|
-| [Local](./local.md) | `local` | _built-in_ | No | Uses local files to store secrets |
-| [AWS](./aws.md) | `aws` | `aws` | Yes | Uses AWS to store secrets |
-| [GCP](./gcp.md) | `gcp` | `gcp` | Yes | Uses GCP to store secretes |
-| [Azure](./azure.md) | `azure` | `azure` | Yes | Uses Azure Key Vaults to store secrets |
-| [HashiCorp Vault](./hashicorp-vault.md) | `vault` | `vault` | Yes | Uses HashiCorp Vault to store secrets |
-| [Custom Implementation](./custom.md) | _custom_ | | No | Extend the secrets manager abstraction and provide your own implementation |
+| Secrets Manager                         | Flavor   | Integration   | Scoping Support  | Notes                                                                      |
+|-----------------------------------------|----------|---------------|------------------|----------------------------------------------------------------------------|
+| [Local](./local.md)                     | `local`  | _built-in_    | No               | Uses local files to store secrets                                          |
+| [AWS](./aws.md)                         | `aws`    | `aws`         | Yes              | Uses AWS to store secrets                                                  |
+| [GCP](./gcp.md)                         | `gcp`    | `gcp`         | Yes              | Uses GCP to store secretes                                                 |
+| [Azure](./azure.md)                     | `azure`  | `azure`       | Yes              | Uses Azure Key Vaults to store secrets                                     |
+| [HashiCorp Vault](./hashicorp-vault.md) | `vault`  | `vault`       | Yes              | Uses HashiCorp Vault to store secrets                                      |
+| [Custom Implementation](./custom.md)    | _custom_ |               | No               | Extend the secrets manager abstraction and provide your own implementation |
 
 If you would like to see the available flavors of secrets managers, you can 
 use the command:
@@ -45,11 +45,10 @@ secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--usin
 {% hint style="info" %}
 
 A ZenML secret is a grouping of key-value pairs which are defined by a schema.
-An AWS SecretSchema, for example, has key-value pairs for `AWS_ACCESS_KEY_ID` and
- `AWS_SECRET_ACCESS_KEY` as well as an optional `AWS_SESSION_TOKEN`. If you don't
-specify a schema when registering a secret, ZenML will use the `ArbitrarySecretSchema`,
-a schema where arbitrary keys are allowed.
-
+An AWS SecretSchema, for example, has key-value pairs for `AWS_ACCESS_KEY_ID` 
+and `AWS_SECRET_ACCESS_KEY` as well as an optional `AWS_SESSION_TOKEN`. If you 
+don't specify a schema when registering a secret, ZenML will use the 
+`ArbitrarySecretSchema`, a schema where arbitrary keys are allowed.
 {% endhint %}
 
 Note that there are two ways you can register or update your secrets. If you
@@ -103,11 +102,9 @@ def secret_loader(
 ```
 
 {% hint style="info" %}
-
-This will only work if the environment that your ochestrator uses to execute steps 
-has access to the secrets manager. For example a local secrets manager
+This will only work if the environment that your orchestrator uses to execute 
+steps has access to the secrets manager. For example a local secrets manager
 will not work in combination with a remote orchestrator.
-
 {% endhint %}
 
 ## Secret Schemas
@@ -159,11 +156,10 @@ be raised
 
 ## Secret References
 
-Secret references work with any secrets mananger and allow you to securely
-specify sensitive configurations for your
-[stack components](../../developer-guide/stacks-repositories/stack.md#stack-components).
+Secret references work with any secrets manager and allow you to securely
+specify sensitive configurations for your [stack components](../../starter-guide/stacks/stacks-components.md).
 
-Check out the corresponding [documentation page](../../developer-guide/advanced-usage/secret-references.md)
+Check out the corresponding [documentation page](../../advanced-guide/practical/secrets-management.md)
 for more information.
 ## Secret Scopes
 

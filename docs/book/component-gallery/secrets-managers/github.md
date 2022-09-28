@@ -2,16 +2,17 @@
 description: How to store secrets in GitHub
 ---
 
-The GitHub secrets manager is a [secrets manager](./secrets-managers.md) flavor provided with
-the ZenML `github` integration that uses [GitHub secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
+The GitHub secrets manager is a [secrets manager](./secrets-managers.md) flavor 
+provided with the ZenML `github` integration that uses 
+[GitHub secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
 to store secrets.
 
 ## When to use it
 
 {% hint style="warning" %}
-The GitHub secrets manager does not allow reading secret values unless it's running inside a
-GitHub Actions workflow. For this reason, this secrets manager **only** works in combination
-with a [GitHub Actions orchestrator](../orchestrators/github-actions.md).
+The GitHub secrets manager does not allow reading secret values unless it's 
+running inside a GitHub Actions workflow. For this reason, this secrets 
+manager **only** works in combination with a [GitHub Actions orchestrator](../orchestrators/github-actions.md).
 {% endhint %}
 
 ## How to deploy it
@@ -46,10 +47,11 @@ zenml secrets-manager register <NAME> \
 zenml stack update -x <NAME>
 ```
 
-You can now [register, update or delete secrets](./secrets-managers.md#in-the-cli) using the CLI or [fetch secret values inside your steps](./secrets-managers.md#in-a-zenml-step).
+You can now [register, update or delete secrets](./secrets-managers.md#in-the-cli) 
+using the CLI or [fetch secret values inside your steps](./secrets-managers.md#in-a-zenml-step).
 
 A concrete example of using the GitHub secrets manager can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/github_actions_orchestration).
 
-For more information and a full list of configurable attributes of the GitHub secrets manager, check out the 
-[API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.github.secrets_managers.github_secrets_manager.GitHubSecretsManager).
+For more information and a full list of configurable attributes of the GitHub 
+secrets manager, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.github.secrets_managers.github_secrets_manager.GitHubSecretsManager).
