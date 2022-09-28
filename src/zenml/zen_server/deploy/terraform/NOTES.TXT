@@ -81,3 +81,11 @@ from the deployed server ?
 10. [NOT NOW] what about service endpoints ? can we implement them with the
   extra TLS complications ?
   - what about using an orphan REST zenml store for this ?
+
+
+
+  add certificates 
+  override get_deployment_status
+  url, the certificates as outputs
+  get certificates
+  

@@ -52,6 +52,8 @@ class TerraformServiceConfig(ServiceConfig):
         log_level: the log level to set the terraform client to. Choose one of
             TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
         variables_file_path: the path to the file that stores all variable values.
+        final_output_name: the output whose presence determines the success of 
+            the deployment.
     """
 
     root_runtime_path: str
@@ -59,6 +61,7 @@ class TerraformServiceConfig(ServiceConfig):
     directory_path: str
     log_level: str = "ERROR"
     variables_file_path: str = "values.tfvars.json"
+    final_output_name: str
 
 
 class TerraformServiceStatus(ServiceStatus):
@@ -130,6 +133,43 @@ class TerraformService(BaseService):
                 working_dir=str(self.config.directory_path)
             )
         return self._terraform_client
+
+    def check_status(self) -> Tuple[ServiceState, str]:
+        """Check the the current operational state of the external service.
+
+        If the final output name provided in the config exists as a non-null value, 
+        then it's reasonable to assume that the service is up and running.
+
+        Returns:
+            The operational state of the external service and a message
+            providing additional information about that state (e.g. a
+            description of the error if one is encountered while checking the
+            service status).
+        """
+        output: Optional[Any] = None
+        try:
+            output = self.terraform_client.output(
+                self.config.final_output_name,
+                full_value=True
+            )
+        except python_terraform.TerraformCommandError as e:
+            # the recipe doesn't have an output yet
+            return (
+                ServiceState.INACTIVE,
+                "The deployment is not active yet."
+            )
+
+        if output is None:
+            return (
+                ServiceState.ERROR,
+                "The deployment may have failed. Please "
+                "check the logs to know more."
+            )
+        else:
+            return (
+                ServiceState.ACTIVE,
+                "The deployment is now active."
+            )
 
     def _init_and_apply(self) -> None:
         """Function to call terraform init and terraform apply.

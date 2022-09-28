@@ -48,6 +48,7 @@ EXCLUDED_RECIPE_DIRS = [""]
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 VARIABLES_FILE = "values.tfvars.json"
+STACK_FILE_NAME = "stack-yaml-path"
 ALPHA_MESSAGE = (
     "The stack recipes CLI is in alpha and actively being developed. "
     "Please avoid running mission-critical workloads on resources deployed "
@@ -225,7 +226,7 @@ class StackRecipeService(TerraformService):
         """
         # return the path of the stack yaml file
         stack_file_path = self.terraform_client.output(
-            "stack-yaml-path", full_value=True
+            STACK_FILE_NAME, full_value=True
         )
         return str(stack_file_path)
 
@@ -1098,6 +1099,7 @@ if terraform_installed:  # noqa: C901
                         directory_path=str(local_stack_recipe.path),
                         log_level=log_level,
                         variables_file_path=VARIABLES_FILE,
+                        final_output_name=STACK_FILE_NAME,
                     )
                     # find an existing service with the same terraform path
                     # create a new one if not found
@@ -1193,15 +1195,6 @@ if terraform_installed:  # noqa: C901
         default="zenml_stack_recipes",
         help="Relative path at which you want to install the stack_recipe(s)",
     )
-    @click.option(
-        "--log-level",
-        type=click.Choice(
-            ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"], case_sensitive=False
-        ),
-        help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive) as "
-        "log level for the destroy operation.",
-        default="ERROR",
-    )
     @pass_git_stack_recipes_handler
     @click.pass_context
     def destroy(
@@ -1209,7 +1202,6 @@ if terraform_installed:  # noqa: C901
         git_stack_recipes_handler: GitStackRecipesHandler,
         stack_recipe_name: str,
         path: str,
-        log_level: str,
     ) -> None:
         """Destroy all resources from the stack_recipe at the specified relative path.
 
