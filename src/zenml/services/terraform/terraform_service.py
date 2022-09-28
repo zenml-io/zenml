@@ -146,29 +146,32 @@ class TerraformService(BaseService):
             description of the error if one is encountered while checking the
             service status).
         """
-        output: Optional[Any] = None
+        code: Optional[int]
         try:
-            output = self.terraform_client.output(
-                self.config.final_output_name,
-                full_value=True
+            code, out, err = self.terraform_client.plan(
+                detailed_exitcode=True,
+                var=self.get_vars(),
             )
         except python_terraform.TerraformCommandError as e:
-            # the recipe doesn't have an output yet
-            return (
-                ServiceState.INACTIVE,
-                "The deployment is not active yet."
-            )
-
-        if output is None:
             return (
                 ServiceState.ERROR,
-                "The deployment may have failed. Please "
-                "check the logs to know more."
+                f"Error with deployment: \n{err}"
             )
-        else:
+        
+        if code == 0:
             return (
                 ServiceState.ACTIVE,
-                "The deployment is now active."
+                "The deployment is active."
+            )
+        elif code == 1 or None:
+            return (
+                ServiceState.ERROR,
+                f"Error with deployment: \n{err}"
+            )
+        elif code == 2:
+            return (
+                ServiceState.INACTIVE,
+                "The deployment isn't active or needs an update."
             )
 
     def _init_and_apply(self) -> None:
@@ -196,7 +199,7 @@ class TerraformService(BaseService):
             fileio.mkdir(previous_run_dir)
 
         # get variables from the recipe as a python dictionary
-        vars = self.get_vars(self.terraform_client.working_dir)
+        vars = self.get_vars()
 
         # once init is successful, call terraform apply
         self.terraform_client.apply(
@@ -212,7 +215,7 @@ class TerraformService(BaseService):
         with open(self.status.config_file, "w") as f:
             f.write(self.json(indent=4))
 
-    def get_vars(self, path: str) -> Any:
+    def get_vars(self) -> Any:
         """Get variables as a dictionary from values.tfvars.json.
 
         Args:
@@ -227,7 +230,7 @@ class TerraformService(BaseService):
                 found in the stack recipe.
         """
         import json
-
+        path = self.terraform_client.working_dir
         variables_file_path = os.path.join(
             path, self.config.variables_file_path
         )

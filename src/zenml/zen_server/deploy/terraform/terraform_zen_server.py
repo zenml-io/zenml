@@ -50,7 +50,10 @@ TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH = (
     "/mnt/w/apps/zenml/terraform_zenml_server"
 )
 TERRAFORM_VALUES_FILE_PATH = "values.tfvars.json"
-TERRAFORM_DEPLOYED_ZENSERVER_URL_OUTPUT = "zenml_server_url"
+TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_URL = "zenml_server_url"
+TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_TLS_CRT = "tls_crt"
+TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_TLS_KEY = "tls_key"
+TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_CA_CRT = "ca_crt"
 TERRAFORM_FINAL_OUTPUT_NAME = "zenml_server_url"
 
 TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT = 60
@@ -136,7 +139,7 @@ class TerraformZenServer(TerraformService):
     def _copy_config_values(self) -> None:
         """Copy values from the server config to the locals.tf file."""
         # get the contents of the values.tfvars.json file as a dictionary
-        variables = self.get_vars(self.config.directory_path)
+        variables = self.get_vars()
 
         # get the contents of the server deploymen config as dict
         server_config = self.config.server.dict()
@@ -171,11 +174,25 @@ class TerraformZenServer(TerraformService):
         super().provision()
         logger.info(
             f"Your ZenML server is now deployed on AWS with URL:\n"
-            f"${self._get_server_url()}"
+            f"${self.get_server_url()}"
         )
 
-    def _get_server_url(self) -> str:
+    def get_server_url(self) -> str:
         """Returns the deployed ZenML server's URL"""
-        return self.terraform_client.output(
-            TERRAFORM_DEPLOYED_ZENSERVER_URL_OUTPUT, full_value=True
+        return str(self.terraform_client.output(
+            TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_URL, full_value=True
+        ))
+    
+    def get_certificates(self) -> Tuple[str, str, str]:
+        """Returns a tuple of certificates from the ZenML server."""
+        return (
+            str(self.terraform_client.output(
+                TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_TLS_CRT, full_value=True
+            )),
+            str(self.terraform_client.output(
+                TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_TLS_KEY, full_value=True
+            )),
+            str(self.terraform_client.output(
+                TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_CA_CRT, full_value=True
+            )),                        
         )
