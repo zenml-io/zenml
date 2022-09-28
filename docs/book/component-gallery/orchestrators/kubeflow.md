@@ -2,21 +2,18 @@
 description: How to orchestrate pipelines with Kubeflow
 ---
 
-The Kubeflow orchestrator is an [orchestrator](./orchestrators.md) flavor provided with
-the ZenML `kubeflow` integration that uses
-[Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/)
+The Kubeflow orchestrator is an [orchestrator](./orchestrators.md) flavor 
+provided with the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/)
 to run your pipelines.
 
 ## When to use it
 
 You should use the Kubeflow orchestrator if:
 * you're looking for a proven production-grade orchestrator.
-* you're looking for a UI in which you can track your pipeline
-runs.
-* you're already using Kubernetes or are not afraid of 
-setting up and maintaining a Kubernetes cluster.
-* you're willing to deploy and maintain Kubeflow Pipelines
-on your cluster.
+* you're looking for a UI in which you can track your pipeline runs.
+* you're already using Kubernetes or are not afraid of setting up and 
+maintaining a Kubernetes cluster.
+* you're willing to deploy and maintain Kubeflow Pipelines on your cluster.
 
 ## How to deploy it
 
@@ -50,7 +47,8 @@ set up a Kubernetes cluster and deploy Kubeflow Pipelines:
 * Have an existing
   GCP [GKE cluster](https://cloud.google.com/kubernetes-engine/docs/quickstart)
   set up.
-* Make sure you have the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk) set up first.
+* Make sure you have the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk) 
+  set up first.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl`
   and [configure](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl)
   it to talk to your GKE cluster using the following command:
@@ -125,10 +123,11 @@ To use the Kubeflow orchestrator, we need:
 {% tabs %}
 {% tab title="Local" %}
 
-When using the Kubeflow orchestrator locally, you'll additionally need
-* [K3D](https://k3d.io/v5.2.1/#installation) installed to spin up a local Kubernetes
-cluster.
-* A [local container registry](../container-registries/default.md) as part of your stack.
+When using the Kubeflow orchestrator locally, you'll additionally need:
+* [K3D](https://k3d.io/v5.2.1/#installation) installed to spin up a local 
+Kubernetes cluster.
+* A [local container registry](../container-registries/default.md) as part of 
+your stack.
 
 {% hint style="warning" %}
 The local Kubeflow Pipelines deployment requires more than 2 GB of RAM,
@@ -149,20 +148,19 @@ zenml stack update -o <NAME>
 
 {% tab title="Remote" %}
 
-When using the Kubeflow orchestrator with a remote cluster, you'll additionally need
+When using the Kubeflow orchestrator with a remote cluster, you'll additionally 
+need:
 * Kubeflow pipelines deployed on a remote cluster. See the [deployment section](#how-to-deploy-it) 
 for more information.
 * The name of your Kubernetes context which points to your remote cluster. 
 Run `kubectl config get-contexts` to see a list of available contexts.
-* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
-* A [remote metadata store](../metadata-stores/metadata-stores.md) as part of your stack. Kubeflow Pipelines
-already comes with its own MySQL database that is deployed in your Kubernetes cluster. If you want
-to use this database as your metadata store to get started quickly, check out the corresponding
-[documentation page](../metadata-stores/kubeflow.md). For a more production-ready setup we suggest
-using a [MySQL metatadata store](../metadata-stores/mysql.md) instead.
-* A [remote container registry](../container-registries/container-registries.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
+your stack.
+* A [remote container registry](../container-registries/container-registries.md) 
+as part of your stack.
 
 We can then register the orchestrator and use it in our active stack:
+
 ```shell
 zenml orchestrator register <NAME> \
     --flavor=kubeflow \
@@ -177,15 +175,15 @@ zenml stack update -o <NAME>
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
-which includes your code and use it to run your pipeline steps in Kubeflow. Check out
-[this page](../../developer-guide/advanced-usage/docker.md)
-if you want to learn more about how ZenML builds these images and
-how you can customize them.
+which includes your code and use it to run your pipeline steps in Kubeflow. 
+Check out [this page](../../advanced-guide/practical/containerization.md)
+if you want to learn more about how ZenML builds these images and how you can 
+customize them.
 {% endhint %}
 
 Once the orchestrator is part of the active stack, we need to run
 `zenml stack up` before running any pipelines. This command
-* forwards a port so you can view the Kubeflow UI in your browser.
+* forwards a port, so you can view the Kubeflow UI in your browser.
 * (in the local case) uses K3D to provision a Kubernetes cluster
 on your machine and deploys Kubeflow Pipelines on it.
 
@@ -197,8 +195,8 @@ python file_that_runs_a_zenml_pipeline.py
 A concrete example of using the Kubeflow orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).
 
-For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out the 
-[API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator).
+For more information and a full list of configurable attributes of the Kubeflow 
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator).
 
 ## Important Note for Multi-Tenancy Deployments
 
@@ -215,7 +213,8 @@ HTTP response body: {"error":"Invalid input error: Invalid resource references f
 namespace.","details":[{"@type":"type.googleapis.com/api.Error","error_message":"Invalid resource references for experiment. ListExperiment requires filtering by namespace.","error_details":"Invalid input error: Invalid resource references for experiment. ListExperiment requires filtering by namespace."}]}
 ```
 
-The current workaround is as follows. Please place the following code at the top of your runner script (commonly called `run.py`):
+The current workaround is as follows. Please place the following code at the 
+top of your runner script (commonly called `run.py`):
 
 ```python
 import json
@@ -274,8 +273,8 @@ KubeflowEntrypointConfiguration.get_run_name = patch_get_run_name
 # Continue with your normal pipeline runner code..
 ```
 
-Please note that in the above code, `HOST` should be registered on orchestration registration, 
-with the `kubeflow_hostname` parameter:
+Please note that in the above code, `HOST` should be registered on orchestration 
+registration, with the `kubeflow_hostname` parameter:
 
 ```
 export HOST=https://qux.com
@@ -284,14 +283,18 @@ zenml orchestrator register multi_tenant_kf --flavor=kubeflow \
    --other_params..
 ```
 
-Further note that the above is also currently not tested on all Kubeflow versions, so there might be further bugs with older Kubeflow versions. In this case, please reach out to us on [Slack](https://zenml.io/slack-invite).
+Further note that the above is also currently not tested on all Kubeflow 
+versions, so there might be further bugs with older Kubeflow versions. In this 
+case, please reach out to us on [Slack](https://zenml.io/slack-invite).
 
 In future ZenML versions, multi-tenancy will be natively supported. See this 
-[Slack thread](https://zenml.slack.com/archives/C01FWQ5D0TT/p1662545810395779) for more details  
-on how the above workaround came to effect.
+[Slack thread](https://zenml.slack.com/archives/C01FWQ5D0TT/p1662545810395779) 
+for more details on how the above workaround came to effect.
 
-Please note that the above is all to initialize the `kfp.Client()` class in the standard orchestrator logic. 
-This code can be seen [here](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/kubeflow/orchestrators/kubeflow_orchestrator.py#L709).
+Please note that the above is all to initialize the `kfp.Client()` class 
+in the standard orchestrator logic. This code can be seen 
+[here](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/kubeflow/orchestrators/kubeflow_orchestrator.py#L709).
 
-You can simply override this logic and add your custom authentication scheme if needed. Read [here](custom.md) 
-for more details on how to create a custom orchestrator.
+You can simply override this logic and add your custom authentication 
+scheme if needed. Read [here](custom.md) for more details on how to create a 
+custom orchestrator.

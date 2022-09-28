@@ -2,26 +2,23 @@
 description: How to orchestrate pipelines with Tekton
 ---
 
-The Tekton orchestrator is an [orchestrator](./orchestrators.md) flavor provided with
-the ZenML `tekton` integration that uses
-[Tekton Pipelines](https://tekton.dev/) to run your pipelines.
+The Tekton orchestrator is an [orchestrator](./orchestrators.md) flavor 
+provided with the ZenML `tekton` integration that uses [Tekton Pipelines](https://tekton.dev/) 
+to run your pipelines.
 
 ## When to use it
 
 You should use the Tekton orchestrator if:
 
 * you're looking for a proven production-grade orchestrator.
-* you're looking for a UI in which you can track your pipeline
-runs.
-* you're already using Kubernetes or are not afraid of 
-setting up and maintaining a Kubernetes cluster.
-* you're willing to deploy and maintain Tekton Pipelines
-on your cluster.
+* you're looking for a UI in which you can track your pipeline runs.
+* you're already using Kubernetes or are not afraid of setting up and 
+maintaining a Kubernetes cluster.
+* you're willing to deploy and maintain Tekton Pipelines on your cluster.
 
 ## How to deploy it
 
-You'll first need to
-set up a Kubernetes cluster and deploy Tekton Pipelines:
+You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 
 {% tabs %}
 {% tab title="AWS" %}
@@ -99,11 +96,10 @@ for more information.
 * The name of your Kubernetes context which points to your remote cluster. 
 Run `kubectl config get-contexts` to see a list of available contexts.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
-* A [remote metadata store](../metadata-stores/metadata-stores.md) as part of your stack. We suggest
-using a [MySQL metatadata store](../metadata-stores/mysql.md).
 * A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 
 We can then register the orchestrator and use it in our active stack:
+
 ```shell
 zenml orchestrator register <NAME> \
     --flavor=tekton \
@@ -115,14 +111,14 @@ zenml stack update -o <NAME>
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
-which includes your code and use it to run your pipeline steps in Tekton. Check out
-[this page](../../developer-guide/advanced-usage/docker.md)
-if you want to learn more about how ZenML builds these images and
-how you can customize them.
+which includes your code and use it to run your pipeline steps in Tekton. Check 
+out [this page](../../advanced-guide/practical/containerization.md) if you want 
+to learn more about how ZenML builds these images and how you can customize 
+them.
 {% endhint %}
 
-Once the orchestrator is part of the active stack, we need to run
-`zenml stack up` before running any pipelines. This command forwards a port so 
+Once the orchestrator is part of the active stack, we need to run 
+`zenml stack up` before running any pipelines. This command forwards a port, so 
 you can view the Tekton UI in your browser.
 
 You can now run any ZenML pipeline using the Tekton orchestrator:
@@ -133,5 +129,5 @@ python file_that_runs_a_zenml_pipeline.py
 A concrete example of using the Tekton orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/tekton_pipelines_orchestration).
 
-For more information and a full list of configurable attributes of the Tekton orchestrator, check out the 
-[API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.tekton.orchestrators.tekton_orchestrator.TektonOrchestrator).
+For more information and a full list of configurable attributes of the Tekton 
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.tekton.orchestrators.tekton_orchestrator.TektonOrchestrator).

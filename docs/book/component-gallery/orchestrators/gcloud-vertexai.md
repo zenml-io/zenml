@@ -2,8 +2,8 @@
 description: How to orchestrate pipelines with Vertex AI
 ---
 
-The Vertex orchestrator is an [orchestrator](./orchestrators.md) flavor provided with
-the ZenML `gcp` integration that uses [Vertex AI](https://cloud.google.com/vertex-ai)
+The Vertex orchestrator is an [orchestrator](./orchestrators.md) flavor provided
+with the ZenML `gcp` integration that uses [Vertex AI](https://cloud.google.com/vertex-ai)
 to run your pipelines.
 
 ## When to use it
@@ -11,14 +11,13 @@ to run your pipelines.
 You should use the Vertex orchestrator if:
 * you're already using GCP.
 * you're looking for a proven production-grade orchestrator.
-* you're looking for a UI in which you can track your pipeline
-runs.
+* you're looking for a UI in which you can track your pipeline runs.
 * you're looking for a managed solution for running your pipelines.
 * you're looking for a serverless solution for running your pipelines.
 
 ## How to deploy it
 
-Check out our cloud guide [ZenML Cloud Guide](../../stack-deployment-guide/overview.md)
+Check out our cloud guide [ZenML Cloud Guide](../../popular-stack-guides/gcp/gcp.md)
 for information on how to set up the Vertex orchestrator.
 
 ## How to use it
@@ -30,10 +29,12 @@ To use the Vertex orchestrator, we need:
     ```
 * [Docker](https://www.docker.com) installed and running.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
-* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
-* A [remote metadata store](../metadata-stores/metadata-stores.md) as part of your stack.
-* A [remote container registry](../container-registries/container-registries.md) as part of your stack.
-* The GCP project ID and location in which you want to run your Vertex AI pipelines.
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
+your stack.
+* A [remote container registry](../container-registries/container-registries.md) 
+as part of your stack.
+* The GCP project ID and location in which you want to run your Vertex 
+AI pipelines.
 
 We can then register the orchestrator and use it in our active stack:
 ```shell
@@ -48,8 +49,8 @@ zenml stack update -o <NAME>
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
-which includes your code and use it to run your pipeline steps in Vertex AI. Check out
-[this page](../../developer-guide/advanced-usage/docker.md)
+which includes your code and use it to run your pipeline steps in Vertex AI. 
+Check out [this page](../../advanced-guide/practical/containerization.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 {% endhint %}
@@ -62,5 +63,5 @@ python file_that_runs_a_zenml_pipeline.py
 A concrete example of using the Vertex orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/vertex_ai_orchestration).
 
-For more information and a full list of configurable attributes of the Vertex orchestrator, check out the 
-[API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.orchestrators.vertex_orchestrator.VertexOrchestrator).
+For more information and a full list of configurable attributes of the Vertex 
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.orchestrators.vertex_orchestrator.VertexOrchestrator).

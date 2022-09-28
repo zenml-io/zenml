@@ -9,28 +9,19 @@ the `BaseOrchestrator` comes into play. It abstracts away many of the ZenML
 specific details from the actual implementation and exposes a simplified 
 interface:
 
-1. As it is the base class for a specific type of `StackComponent`,
-   it inherits from the `StackComponent` class. This sets the `TYPE`
-   variable to the specific `StackComponentType`.
-2. The `FLAVOR` class variable needs to be set in the particular sub-class as it
-   is meant to identify the implementation flavor of the particular
-   orchestrator.
-3. Lastly, the base class features one `abstractmethod`:
-   `prepare_or_run_pipeline`. In the implementation of every
-   `Orchestrator` flavor, it is required to define this method with respect
-   to the flavor at hand.
-
-Putting all these considerations together, we end up with the following
-(simplified) implementation:
-
 ```python
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Type
+
 from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.enums import StackComponentType
+from zenml.stack import StackComponent, StackComponentConfig, Stack, Flavor
 
-from zenml.stack import StackComponent, Stack
 
+class BaseOrchestratorConfig(StackComponentConfig):
+    """Base class for all ZenML orchestrator configurations."""
 
+    
 class BaseOrchestrator(StackComponent, ABC):
     """Base class for all ZenML orchestrators"""
 
@@ -43,6 +34,29 @@ class BaseOrchestrator(StackComponent, ABC):
         """Prepares and runs the pipeline outright or returns an intermediate
         pipeline representation that gets deployed.
         """
+
+class BaseOrchestratorFlavor(Flavor):
+    """Base orchestrator for all ZenML orchestrator flavors."""
+    
+    @property
+    @abstractmethod
+    def name(self):
+        """Returns the name of the flavor."""
+
+    @property
+    def type(self) -> StackComponentType:
+        """Returns the flavor type."""
+        return StackComponentType.ORCHESTRATOR
+
+    @property
+    def config_class(self) -> Type[BaseOrchestratorConfig]:
+        """Config class for the base orchestrator flavor."""
+        return BaseOrchestratorConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type["BaseOrchestrator"]:
+        """Implementation class for this flavor."""
 ```
 
 {% hint style="info" %}
@@ -53,19 +67,46 @@ and get the complete docstrings, please check [the source code on GitHub](https:
 
 ## Build your own custom orchestrator
 
-If you want to create your own custom flavor for an artifact store, you can
+If you want to create your own custom flavor for an orchestrator, you can 
 follow the following steps:
 
-1. Create a class which inherits from the `BaseOrchestrator`.
-2. Define the `FLAVOR` class variable.
-3. Implement the `prepare_or_run_pipeline()` based on your desired orchestrator.
+1. Create a class which inherits from the `BaseOrchestrator` class and 
+implement the abstract `prepare_or_run_pipeline` methods.
+2. If you need to provide any configuration, create a class which inherits 
+from the `BaseOrchestratorConfig` class add your configuration parameters.
+3. Bring both of the implementation and the configuration together by inheriting
+from the `BaseOrchestratorFlavor` class. Make sure that you give a `name`
+to the flavor through its abstract property.
 
-Once you are done with the implementation, you can register it through the CLI
+Once you are done with the implementation, you can register it through the CLI 
 as:
 
 ```shell
-zenml orchestrator flavor register <THE-SOURCE-PATH-OF-YOUR-ORCHESTRATOR>
+zenml orchestrator flavor register <THE-SOURCE-PATH-OF-YOUR-ORCHESTRATOR-FLAVOR>
 ```
+
+{% hint style="warning" %}
+It is important to draw attention to when and how these base abstractions are 
+coming into play in a ZenML workflow.
+
+- The **CustomOrchestratorFlavor** class is imported and utilized upon the 
+creation of the custom flavor through the CLI.
+- The **CustomOrchestratorConfig** class is imported when someone tries to 
+register/update a stack component with this custom flavor. Especially, 
+during the registration process of the stack component, the config will be used 
+to validate the values given by the user. As `Config` object are inherently 
+`pydantic` objects, you can also add your own custom validators here.
+- The **CustomOrchestrator** only comes into play when the component is 
+ultimately in use. 
+
+The design behind this interaction lets us separate the configuration of the 
+flavor from its implementation. This way we can register flavors and components 
+even when the major dependencies behind their implementation are not installed
+in our local setting (assuming the `CustomOrchestratorFlavor` and the 
+`CustomOrchestratorConfig` are implemented in a different module/path than
+the actual `CustomOrchestrator`).
+{% endhint %}
+
 
 # Some additional implementation details
 
@@ -146,18 +187,12 @@ most of the required functionality. Let's dive right into it:
 Here is a schematic view of what the `StepEntrypointConfiguration` looks like:
 
 ```python
+from typing import Optional, Set, Any, List
 from tfx.orchestration.portable import data_types
 
-from zenml.entrypoints import utils as entrypoint_utils
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.integrations.registry import integration_registry
-from zenml.repository import Repository
-
-if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
-    from zenml.config.step_configurations import Step
 
 STEP_NAME_OPTION = "step_name"
 
@@ -197,16 +232,17 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
-and get the complete docstrings, please check the [the source code on GitHub](https://github.com/zenml-io/zenml/blob/main/src/zenml/entrypoints/step_entrypoint_configuration.py).
+and get the complete docstrings, please check [the source code on GitHub](https://github.com/zenml-io/zenml/blob/main/src/zenml/entrypoints/step_entrypoint_configuration.py).
 {% endhint %}
 
 ## Build your own Step Entrypoint Configuration
 
-If you need to customize what happens when a step gets executed inside the entrypoint,
-you can subclass the `StepEntrypointConfiguration` class:
+If you need to customize what happens when a step gets executed inside the 
+entrypoint, you can subclass from the `StepEntrypointConfiguration` class:
 
-If you want to provide a custom run name (this **has** to be the same for all steps that are
-executed as part of the same pipeline run), you can overwrite the `get_run_name(...)` method.
+If you want to provide a custom run name (this **has** to be the same for 
+all steps that are executed as part of the same pipeline run), you can 
+overwrite the `get_run_name(...)` method.
 
 If you need to pass additional arguments to the entrypoint, there are
 two methods that you need to implement:
