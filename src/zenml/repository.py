@@ -552,7 +552,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
     @property
     def stacks(self) -> List["HydratedStackModel"]:
-        """All stack models in the current project, owned by the current user.
+        """All stack models in the active project, owned by the current user or shared.
 
         This property is intended as a quick way to get information about the
         components of the registered stacks without loading all installed
