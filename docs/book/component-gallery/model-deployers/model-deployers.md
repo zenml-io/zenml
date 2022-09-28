@@ -2,38 +2,55 @@
 description: How to deploy your models and serve real-time predictions
 ---
 
-Model Deployment is the process of making a machine learning model available to make predictions and decisions on real world data. Getting predictions from trained models can be done in different ways depending on the use-case, a batch prediction is used to generate prediction for a large amount of data at once, while a real-time prediction is used to generate predictions for a single data point at a time.
+Model Deployment is the process of making a machine learning model available to 
+make predictions and decisions on real world data. Getting predictions from 
+trained models can be done in different ways depending on the use-case, a batch
+prediction is used to generate prediction for a large amount of data at once, 
+while a real-time prediction is used to generate predictions for a single data
+point at a time.
 
-Model deployers are stack components responsible for serving models on a real-time or batch basis.
+Model deployers are stack components responsible for serving models on a 
+real-time or batch basis.
 
-Online serving is the process of hosting and loading machine-learning models as part of a managed web service and providing access to the models through an API endpoint like HTTP or GRPC. Once deployed, model inference can be triggered at any time and you can send inference requests to the model through the web service's API and receive fast, low-latency responses.
+Online serving is the process of hosting and loading machine-learning models 
+as part of a managed web service and providing access to the models through 
+an API endpoint like HTTP or GRPC. Once deployed, model inference can be 
+triggered at any time, and you can send inference requests to the model 
+through the web service's API and receive fast, low-latency responses.
 
-Batch inference or offline inference is the process of making a machine learning model make predictions on a batch observations. This is useful for generating predictions for a large amount of data at once. The predictions are usually stored as files or in a database for end users or business applications.
+Batch inference or offline inference is the process of making a machine 
+learning model make predictions on a batch observations. This is useful for 
+generating predictions for a large amount of data at once. The predictions are 
+usually stored as files or in a database for end users or business applications.
 
 ## When to use it?
 
 The model deployers are optional components in the ZenML stack. They are used to
-deploy machine learning models to a target environment either a development (local) 
-or a production (Kubernetes), the model deployers are mainly used to deploy models 
-for real time inference use cases. With the model deployers and other stack components,
-you can build pipelines that are continuously trained and deployed to a production.
+deploy machine learning models to a target environment either a development 
+(local) or a production (Kubernetes), the model deployers are mainly used to 
+deploy models for real time inference use cases. With the model deployers and 
+other stack components, you can build pipelines that are continuously trained 
+and deployed to a production.
 
 ### Model Deployers Flavors
 
-ZenML comes with a `local` MLflow model deployer which is a simple model deployer that
-deploys models to a local MLflow server. Additional model deployers that can be used
-to deploy models on production environments are provided by integrations:
+ZenML comes with a `local` MLflow model deployer which is a simple model 
+deployer that deploys models to a local MLflow server. Additional model 
+deployers that can be used to deploy models on production environments are 
+provided by integrations:
 
-| Model Deployer | Flavor | Integration | Notes             |
-|----------------|--------|-------------|-------------------|
-| [MLflow](./mlflow.md) | `mlflow` | `mlflow` | Deploys ML Model locally |
-| [Seldon Core](./seldon.md) | `seldon` | `seldon Core` | Built on top of Kubernetes to deploy models for production grade environment |
-| [KServe](./kserve.md) | `kserve` | `kserve` | Kubernetes based model deployment framework |
-| [Custom Implementation](./custom.md) | _custom_ |  | Extend the Artifact Store abstraction and provide your own implementation |
+| Model Deployer                       | Flavor   | Integration   | Notes                                                                        |
+|--------------------------------------|----------|---------------|------------------------------------------------------------------------------|
+| [MLflow](./mlflow.md)                | `mlflow` | `mlflow`      | Deploys ML Model locally                                                     |
+| [Seldon Core](./seldon.md)           | `seldon` | `seldon Core` | Built on top of Kubernetes to deploy models for production grade environment |
+| [KServe](./kserve.md)                | `kserve` | `kserve`      | Kubernetes based model deployment framework                                  |
+| [Custom Implementation](./custom.md) | _custom_ |               | Extend the Artifact Store abstraction and provide your own implementation    |
 
 {% hint style="info" %}
-Every model deployer may have different attributes that must be configured in order to
-interact with the model serving tool, framework or platform (e.g. hostnames, URLs, references to credentials, other client related configuration parameters). The following example shows the configuration of the MLflow 
+Every model deployer may have different attributes that must be configured in 
+order to interact with the model serving tool, framework or platform (e.g. 
+hostnames, URLs, references to credentials, other client related configuration 
+parameters). The following example shows the configuration of the MLflow 
 and Seldon Core model deployers:
 
 ```shell
@@ -79,7 +96,7 @@ zenml model-deployer register seldon --flavor=seldon \
    provisions externally to deploy a model is represented internally as a
    `Service` object that may be accessed for visibility and control over
    a single model deployment. This functionality can be consumed directly
-   from ZenML pipeline steps, but it can also be used outside of the pipeline
+   from ZenML pipeline steps, but it can also be used outside the pipeline
    to deploy ad-hoc models. The following code is an example of using the
    Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step:
 
@@ -143,7 +160,7 @@ zenml model-deployer register seldon --flavor=seldon \
    delete a model server:
 
     ```python
-    from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
+   from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
     
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
     services = model_deployer.find_model_server(
@@ -174,17 +191,26 @@ zenml model-deployer register seldon --flavor=seldon \
 
 ### Custom pre-processing and post-processing
 
-**Pre-processing** is the process of transforming the data before it is passed to the machine learning model.
+**Pre-processing** is the process of transforming the data before it is passed 
+to the machine learning model.
 
-**Post-processing** is the process of transforming the data after it is returned from the machine learning model and before it is returned to the user.
+**Post-processing** is the process of transforming the data after it is 
+returned from the machine learning model, and before it is returned to the user.
 
-Both pre- and post-processing are very essential for the model deployment process. Most models require specific input formats which requires transforming the data before it is passed to the model and after it is returned from the model. ZenML allows you to define your own pre- and post-processing in two ways:
+Both pre- and post-processing are very essential for the model deployment 
+process. Most models require specific input formats which requires transforming 
+the data before it is passed to the model and after it is returned from the 
+model. ZenML allows you to define your own pre- and post-processing in two ways:
 
-1. At the pipeline level by defining custom steps before and after the predict step in the ZenML pipeline.
-2. At the model deployment tool level by defining a custom predict, pre- and post-processing functions that would be wrapped in a Docker container and executed on the model deployment server.
+1. At the pipeline level by defining custom steps before and after the predict 
+step in the ZenML pipeline.
+2. At the model deployment tool level by defining a custom predict, pre- and 
+post-processing functions that would be wrapped in a Docker container and 
+executed on the model deployment server.
 
 {% hint style="info" %}
-The custom model deployment support is available only for the following integrations:
+The custom model deployment support is available only for the following 
+integrations:
 
 * [KServe Custom Predictor](./kserve.md#custom-model-deployment)
 * [Seldon Core Custom Python Model](./seldon.md#custom-model-deployment)
@@ -239,8 +265,7 @@ $ zenml model-deployer models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
 Services can be passed through steps like any other object, and used to interact
-with the external systems that
-they represent:
+with the external systems that they represent:
 
 ```python
 from zenml.steps import step
@@ -253,8 +278,9 @@ def my_step(my_service: MyService) -> ...:
 ```
 
 The ZenML integrations that provide Model Deployer stack components also include
-standard pipeline steps that can directly be inserted into any pipeline to achieve
-a continuous model deployment workflow. These steps take care of all the aspects
-of continuously deploying models to an external server and saving the Service
-configuration into the Artifact Store, where they can be loaded at a later time
-and re-create the initial conditions used to serve a particular model.
+standard pipeline steps that can directly be inserted into any pipeline to 
+achieve a continuous model deployment workflow. These steps take care of all 
+the aspects of continuously deploying models to an external server and saving 
+the Service configuration into the Artifact Store, where they can be loaded 
+at a later time and re-create the initial conditions used to serve a particular 
+model.

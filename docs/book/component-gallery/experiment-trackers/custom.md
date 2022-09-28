@@ -17,8 +17,7 @@ is released.
 
 ## Build your own custom experiment tracker
 
-
-If you want to create your own custom flavor for experiment tracker, you can 
+If you want to create your own custom flavor for an experiment tracker, you can 
 follow the following steps:
 
 1. Create a class which inherits from the `BaseExperimentTracker` class and 
