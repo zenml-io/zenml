@@ -222,6 +222,8 @@ import os
 import kfp
 from kubernetes import client as k8s_client
 
+from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
+
 NAMESPACE = "namespace_name"  # set this
 USERNAME = "foo"  # set this
 PASSWORD = "bar"  # set this
