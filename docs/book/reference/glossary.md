@@ -173,21 +173,13 @@ secrets manager and an integration with the managed
 
 ## Stack
 
-A stack is made up of the following three core components:
+In ZenML, a **Stack** represents a set of configurations for your MLOps tools
+and infrastructure. It is made up of various stack components, two of which are 
+required in each stack:
 
 - An Artifact Store
-- A Metadata Store
 - An Orchestrator
 
-A ZenML stack also happens to be a Pydantic `BaseSettings` class, which means
-that there are multiple ways to use it.
-
-```bash
-zenml stack register STACK_NAME \
-    -m METADATA_STORE_NAME \
-    -a ARTIFACT_STORE_NAME \
-    -o ORCHESTRATOR_NAME
-```
 
 ## Step
 
