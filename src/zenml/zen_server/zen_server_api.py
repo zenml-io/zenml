@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Zen Server API."""
 import os
-from time import sleep
 from typing import Any
 
 from fastapi import FastAPI, Request

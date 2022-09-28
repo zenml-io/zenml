@@ -415,9 +415,6 @@ class LocalDaemonService(BaseService):
             timeout: amount of time to wait for the service to become active.
                 If set to 0, the method will return immediately after checking
                 the service status.
-
-        Raises:
-            RuntimeError: if the service cannot be started
         """
         if not self.config.blocking:
             super().start(timeout)

@@ -13,21 +13,16 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
-import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import click
-import yaml
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.store_config import StoreConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, LoggingLevels
-from zenml.repository import Repository
-from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
@@ -102,7 +97,6 @@ def set_logging_verbosity(verbosity: str) -> None:
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def config() -> None:
     """Manage the global store ZenML configuration."""
-
 
 
 @config.command("explain")

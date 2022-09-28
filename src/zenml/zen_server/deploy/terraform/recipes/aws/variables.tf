@@ -27,7 +27,7 @@ variable "region" {
   type        = string
 }
 
-variable "zenmlserver_namespace" {
+variable "namespace" {
   description = "The namespace to install the ZenML server Helm chart in"
   default     = "terraform-server"
   type        = string
@@ -102,27 +102,27 @@ variable "db_allocated_storage" {
 # If you haven't enabled the create_rds option, provide
 # the following value in addition to setting the username and
 # password in the values.tfvars.json file.
-variable "rds_url" {
+variable "database_url" {
   description = "The URL for the AWS RDS instance"
   default     = ""
   type        = string
 }
-variable "rds_sslCa" {
+variable "database_ssl_ca" {
   description = "The server ca for the AWS RDS instance"
   default     = ""
   type        = string
 }
-variable "rds_sslCert" {
+variable "database_ssl_cert" {
   description = "The client cert for the AWS RDS instance"
   default     = ""
   type        = string
 }
-variable "rds_sslKey" {
+variable "database_ssl_key" {
   description = "The client key for the AWS RDS instance"
   default     = ""
   type        = string
 }
-variable "rds_sslVerifyServerCert" {
+variable "database_ssl_verify_server_cert" {
   description = "Should SSL be verified?"
   default     = true
   type        = bool

@@ -131,6 +131,7 @@ class TerraformService(BaseService):
         if self._terraform_client is None:
             working_dir = self.config.directory_path
             if self.config.copy_terraform_files:
+                assert self.status.runtime_path is not None
                 working_dir = self.status.runtime_path
             self._terraform_client = python_terraform.Terraform(
                 working_dir=working_dir,
@@ -317,9 +318,6 @@ class TerraformService(BaseService):
             timeout: amount of time to wait for the service to become active.
                 If set to 0, the method will return immediately after checking
                 the service status.
-
-        Raises:
-            RuntimeError: if the service cannot be started
         """
         self.admin_state = ServiceState.ACTIVE
         self.provision()
@@ -331,9 +329,7 @@ class TerraformService(BaseService):
             timeout: amount of time to wait for the service to shutdown.
                 If set to 0, the method will return immediately after checking
                 the service status.
-
-        Raises:
-            RuntimeError: if the service cannot be stopped
+            force: if True, the service will be forcefully stopped.
         """
         self.admin_state = ServiceState.INACTIVE
         self.deprovision()

@@ -13,13 +13,10 @@
 #  permissions and limitations under the License.
 """Zen Server AWS Terraform deployer implementation."""
 
-import os
-from pathlib import Path
-from typing import ClassVar, List, Optional, Tuple, Type, cast
+from typing import ClassVar, Type
 
 from zenml.enums import ServerProviderType
 from zenml.logger import get_logger
-from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 from zenml.zen_server.deploy.terraform.providers.terraform_provider import (
     TerraformServerProvider,
 )
@@ -34,7 +31,17 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
     """AWS server deployment configuration.
 
     Attributes:
+        region: The AWS region to deploy to.
+        rds_db_username: The username for the RDS database.
+        rds_db_password: The password for the RDS database.
+        create_rds: Whether to create an RDS database.
+        db_name: Name of RDS database to create.
+        db_type: Type of RDS database to create.
+        db_version: Version of RDS database to create.
+        db_instance_class: Instance class of RDS database to create.
+        db_allocated_storage: Allocated storage of RDS database to create.
     """
+
     region: str = "eu-west-1"
     rds_db_username: str = "admin"
     rds_db_password: str = ""

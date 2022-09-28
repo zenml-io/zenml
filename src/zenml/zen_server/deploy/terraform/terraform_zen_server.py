@@ -14,20 +14,11 @@
 """Service implementation for the ZenML terraform server deployment."""
 
 import os
-from typing import Any, Dict, Optional, Tuple, cast
-
 from pathlib import Path
+from typing import Any, Dict, Optional, cast
 
 from zenml.logger import get_logger
-from zenml.services import (
-    ServiceState,
-    ServiceType,
-    TerraformService,
-    TerraformServiceConfig,
-)
-from zenml.services.container.container_service import (
-    SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
-)
+from zenml.services import ServiceType, TerraformService, TerraformServiceConfig
 from zenml.utils.io_utils import get_global_config_directory
 from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
@@ -82,8 +73,36 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     """Terraform server deployment configuration.
 
     Attributes:
-        log_level: the log level to set the terraform client to. Choose one of
+        log_level: The log level to set the terraform client to. Choose one of
             TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
+        username: The username for the default ZenML server account.
+        password: The password for the default ZenML server account.
+        email: The email for the default ZenML server account.
+        helm_chart: The path to the ZenML server helm chart to use for
+            deployment.
+        namespace: The Kubernetes namespace to deploy the ZenML server to.
+        kubectl_config_path: The path to the kubectl config file to use for
+            deployment.
+        ingress_tls: Whether to use TLS for the ingress.
+        ingress_tls_generate_certs: Whether to generate self-signed TLS
+            certificates for the ingress.
+        ingress_tls_secret_name: The name of the Kubernetes secret to use for
+            the ingress.
+        ingress_path: The path to use for the ingress.
+        create_ingress_controller: Whether to deploy an nginx ingress
+            controller as part of the deployment.
+        ingress_controller_hostname: The ingress controller hostname to use for
+            the ingress self-signed certificate and to compute the ZenML server
+            URL.
+        database_url: The URL of the RDS instance to use for the ZenML server.
+        database_ssl_ca: The path to the SSL CA certificate to use for the
+            database connection.
+        database_ssl_cert: The path to the client SSL certificate to use for the
+            database connection.
+        database_ssl_key: The path to the client SSL key to use for the
+            database connection.
+        database_ssl_verify_server_cert: Whether to verify the database server
+            SSL certificate.
     """
 
     log_level: str = "ERROR"
@@ -92,19 +111,19 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     password: str
     email: str = ""
     helm_chart: str = get_helm_chart_path()
-    zenmlserver_namespace: str = "zenmlserver"
+    namespace: str = "zenmlserver"
     kubectl_config_path: str = os.path.join(str(Path.home()), ".kube", "config")
     ingress_tls: bool = True
     ingress_tls_generate_certs: bool = True
     ingress_tls_secret_name: str = "zenml-tls-certs"
-    rds_url: str = ""
-    rds_sslCa: str = ""
-    rds_sslCert: str = ""
-    rds_sslKey: str = ""
-    rds_sslVerifyServerCert: bool = True
     ingress_path: str = ""
     create_ingress_controller: bool = True
     ingress_controller_hostname: str = ""
+    database_url: str = ""
+    database_ssl_ca: str = ""
+    database_ssl_cert: str = ""
+    database_ssl_key: str = ""
+    database_ssl_verify_server_cert: bool = True
 
     class Config:
         """Pydantic configuration."""
@@ -181,7 +200,7 @@ class TerraformZenServer(TerraformService):
 
         Args:
             variables: the variables dict with the user-provided
-            config values
+                config values
         """
         import json
 
@@ -203,7 +222,11 @@ class TerraformZenServer(TerraformService):
         )
 
     def get_server_url(self) -> str:
-        """Returns the deployed ZenML server's URL"""
+        """Returns the deployed ZenML server's URL.
+
+        Returns:
+            The URL of the deployed ZenML server.
+        """
         return str(
             self.terraform_client.output(
                 TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_URL, full_value=True
@@ -211,7 +234,11 @@ class TerraformZenServer(TerraformService):
         )
 
     def get_certificate(self) -> Optional[str]:
-        """Returns the CA certificates configured for the ZenML server."""
+        """Returns the CA certificate configured for the ZenML server.
+
+        Returns:
+            The CA certificate configured for the ZenML server.
+        """
         return cast(
             str,
             self.terraform_client.output(

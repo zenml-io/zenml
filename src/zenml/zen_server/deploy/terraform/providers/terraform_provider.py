@@ -17,7 +17,6 @@ import os
 from typing import ClassVar, List, Optional, Tuple, Type, cast
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.enums import ServerProviderType
 from zenml.logger import get_logger
 from zenml.services import BaseService, ServiceConfig
 from zenml.services.service_endpoint import (

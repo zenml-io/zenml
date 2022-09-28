@@ -15,21 +15,18 @@
 
 import ipaddress
 import os
-from importlib import import_module
 from typing import Any, Dict, Optional, Union
 
 import click
 import yaml
 from click_params import IP_ADDRESS  # type: ignore[import]
 from rich.errors import MarkupError
-from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import TagGroup, cli
+from zenml.cli.cli import cli
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.store_config import StoreConfiguration
 from zenml.console import console
-from zenml.enums import CliCategories, ServerProviderType
+from zenml.enums import ServerProviderType
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.utils import yaml_utils
@@ -39,7 +36,7 @@ from zenml.zen_server.deploy.deployment import (
     ServerDeploymentConfig,
 )
 from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
-from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, DEFAULT_PASSWORD
+from zenml.zen_stores.base_zen_store import DEFAULT_PASSWORD, DEFAULT_USERNAME
 
 logger = get_logger(__name__)
 
@@ -508,7 +505,6 @@ def connect(
 
     Args:
         url: The URL where the ZenML server is reachable.
-        local_store: Configure ZenML to use the local store.
         username: The username that is used to authenticate with the ZenML
             server.
         password: The password that is used to authenticate with the ZenML
@@ -625,7 +621,6 @@ def logs(
     follow: bool = False,
     raw: bool = False,
     tail: Optional[int] = None,
-    server_name: Optional[str] = None,
 ) -> None:
     """Display the logs for a ZenML server.
 

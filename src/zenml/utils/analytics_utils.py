@@ -118,6 +118,16 @@ class AnalyticsEvent(str, Enum):
     RUN_STACK_RECIPE = "Stack recipe created"
     DESTROY_STACK_RECIPE = "Stack recipe destroyed"
 
+    # ZenML server events
+    ZENML_SERVER_STARTED = "ZenML server started"
+    ZENML_SERVER_STOPPED = "ZenML server stopped"
+    ZENML_SERVER_CONNECTED = "ZenML server connected"
+    ZENML_SERVER_DEPLOYED = "ZenML server deployed"
+    ZENML_SERVER_DESTROYED = "ZenML server destroyed"
+
+    # everything grouped by unique server UUID
+    # all events must include the client ID, the user UUID and the email
+
 
 def get_segment_key() -> str:
     """Get key for authorizing to Segment backend.

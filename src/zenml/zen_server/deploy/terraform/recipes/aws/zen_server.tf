@@ -1,7 +1,7 @@
 # create the ZenServer deployment
 resource "kubernetes_namespace" "zen-server" {
   metadata {
-    name = "${var.name}-${var.zenmlserver_namespace}"
+    name = "${var.name}-${var.namespace}"
   }
 }
 
@@ -57,23 +57,23 @@ resource "helm_release" "zen-server" {
   # set parameters for the mysql database
   set {
     name  = "zenml.database.url"
-    value = var.create_rds? "mysql://${module.metadata_store[0].db_instance_username}:${module.metadata_store[0].db_instance_password}@${module.metadata_store[0].db_instance_address}:3306/${var.db_name}" : var.rds_url
+    value = var.create_rds? "mysql://${module.metadata_store[0].db_instance_username}:${module.metadata_store[0].db_instance_password}@${module.metadata_store[0].db_instance_address}:3306/${var.db_name}" : var.database_url
   }
   set {
     name  = "zenml.database.sslCa"
-    value = var.create_rds? "" : var.rds_sslCa
+    value = var.create_rds? "" : var.database_ssl_ca
   }
   set {
     name  = "zenml.database.sslCert"
-    value = var.create_rds? "" : var.rds_sslCert
+    value = var.create_rds? "" : var.database_ssl_cert
   }
   set {
     name  = "zenml.database.sslKey"
-    value = var.create_rds? "" : var.rds_sslKey
+    value = var.create_rds? "" : var.database_ssl_key
   }
   set {
     name  = "zenml.database.sslVerifyServerCert"
-    value = var.create_rds? false : var.rds_sslVerifyServerCert
+    value = var.create_rds? false : var.database_ssl_verify_server_cert
   }
   depends_on = [
     resource.kubernetes_namespace.zen-server
@@ -83,7 +83,7 @@ resource "helm_release" "zen-server" {
 data "kubernetes_secret" "certificates" {
   metadata {
     name = "${var.name}-${var.ingress_tls_secret_name}"
-    namespace = "${var.name}-${var.zenmlserver_namespace}"
+    namespace = "${var.name}-${var.namespace}"
   }
   binary_data = {
     "tls.crt" = ""
