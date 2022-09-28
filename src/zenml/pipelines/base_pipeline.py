@@ -46,6 +46,7 @@ from zenml.config.pipeline_configurations import (
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.enums import StoreType
 from zenml.environment import Environment
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
@@ -536,6 +537,19 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return_value = stack.deploy_pipeline(pipeline_deployment)
         finally:
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+
+        from zenml.config.global_config import GlobalConfiguration
+        gc = GlobalConfiguration()
+        
+        if gc.store.type == StoreType.REST:
+            # Connected to ZenServer
+            url = f"{gc.store.url}/pipelines/{pipeline_id}/runs/{pipeline_deployment.run_name}/dag"
+            logger.info(f"Dashboard URL: {url}")
+        elif gc.store.type == StoreType.SQL:
+            logger.info(
+                "Pipeline visualization can be seen in the ZenML Dashboard. "
+                "Run `zenml up` to see your pipeline!"
+            )
 
         return return_value
 
