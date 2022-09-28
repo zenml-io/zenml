@@ -103,3 +103,4 @@ from the deployed server ?
   url, the certificates as outputs
   get certificates
   
+14. don't use a prepopulated values.tfvars.json
