@@ -72,7 +72,7 @@ class BaseAlerter(StackComponent, ABC):
         return True
 
 
-class BaseAlerterFlavor(Flavor):
+class BaseAlerterFlavor(Flavor, ABC):
     """Base class for all ZenML alerter flavors."""
 
     @property

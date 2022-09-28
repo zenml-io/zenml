@@ -35,9 +35,6 @@ class KubernetesSparkStepOperatorConfig(SparkStepOperatorConfig):
             will run.
         service_account: the service account that will be used by various Spark
             components (to create and watch the pods).
-        docker_parent_image: (which originally comes from the
-            PipelineDockerImageBuilder base class) indicates the name of a
-            base image that has Spark enabled.
     """
 
     namespace: Optional[str] = None

@@ -58,9 +58,9 @@ class TorchServeParameters(BaseModel):
     """KServe PyTorch model deployer step configuration.
 
     Attributes:
-        service_config: KServe deployment service configuration.
         model_class: Path to Python file containing model architecture.
-        handler: TorchServe's handler file to handle custom TorchServe inference logic.
+        handler: TorchServe's handler file to handle custom TorchServe inference
+            logic.
         extra_files: Comma separated path to extra dependency files.
         model_version: Model version.
         requirements_file: Path to requirements file.

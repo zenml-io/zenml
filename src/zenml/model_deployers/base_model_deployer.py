@@ -45,7 +45,7 @@ class BaseModelDeployer(StackComponent, ABC):
     previous version of the same model instead of creating a new model server
     for every new model version (see the `deploy_model` abstract method).
     This functionality can be consumed directly from ZenML pipeline steps, but
-    it can also be used outside of the pipeline to deploy ad hoc models. It is
+    it can also be used outside the pipeline to deploy ad hoc models. It is
     also usually coupled with a standard model deployer step, implemented by
     each integration, that hides the details of the deployment process away from
     the user.
