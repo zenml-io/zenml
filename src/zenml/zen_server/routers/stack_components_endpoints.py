@@ -169,5 +169,4 @@ def get_stack_component_types() -> List[str]:
     Returns:
         List of stack components.
     """
-    print(StackComponentType.values())
     return StackComponentType.values()
