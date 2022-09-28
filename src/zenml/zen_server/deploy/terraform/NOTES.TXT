@@ -106,3 +106,5 @@ from the deployed server ?
 14. don't use a prepopulated values.tfvars.json
 
 15. rename `rds_*` in TerraformServerDeploymentConfig to `database-*` to make them more generic
+
+16. add a --force to zenml deploy to redeploy everything (and re-copy the recipe on top of the working directory)

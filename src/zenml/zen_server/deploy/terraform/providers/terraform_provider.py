@@ -316,6 +316,7 @@ class TerraformServerProvider(BaseServerProvider):
             TerraformZenServer,
             service
         )
+        tls_crt, tls_key, ca_crt = None, None, None
         if service.is_running:
             url = service.get_server_url()
             tls_crt, tls_key, ca_crt = service.get_certificates()
