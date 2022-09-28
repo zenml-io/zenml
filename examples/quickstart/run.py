@@ -37,7 +37,7 @@ from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
 
 def main():
 
-    # initialize and run training pipeline
+    # initialize and run the training pipeline
     training_pipeline_instance = training_pipeline(
         training_data_loader=training_data_loader(),
         trainer=svc_trainer_mlflow(),
@@ -47,7 +47,7 @@ def main():
     )
     training_pipeline_instance.run()
 
-    # initialize and run inference pipeline
+    # initialize and run the inference pipeline
     inference_pipeline_instance = inference_pipeline(
         inference_data_loader=inference_data_loader(),
         prediction_service_loader=prediction_service_loader(),
@@ -57,17 +57,17 @@ def main():
     )
     inference_pipeline_instance.run()
 
-    # fetch latest runs for each pipeline
+    # fetch the latest runs for each pipeline
     train_run = training_pipeline_instance.get_runs()[-1]
     inf_run = inference_pipeline_instance.get_runs()[-1]
 
-    # visualize training pipeline
+    # visualize the training pipeline
     PipelineRunLineageVisualizer().visualize(train_run)
 
-    # visualize inference pipeline
+    # visualize the inference pipeline
     PipelineRunLineageVisualizer().visualize(inf_run)
 
-    # visualize train-test and training-serving skew
+    # visualize the train-test and the training-serving skew
     training_data_loader_step = train_run.get_step(step="training_data_loader")
     inference_data_loader_step = inf_run.get_step(step="inference_data_loader")
     FacetStatisticsVisualizer().visualize(
@@ -78,7 +78,7 @@ def main():
         }
     )
 
-    # visualize data drift
+    # visualize tje data drift
     drift_detection_step = inf_run.get_step(step="drift_detector")
     EvidentlyVisualizer().visualize(drift_detection_step)
 
