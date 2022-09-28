@@ -32,6 +32,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from uuid import UUID
 
 import click
 from dateutil import tz
@@ -45,16 +46,22 @@ from rich.text import Text
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
-from zenml.enums import StoreType
+from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models.stack_models import HydratedStackModel
+from zenml.repository import Repository
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
-    from zenml.models import ComponentModel, FlavorModel
+    from zenml.models import (
+        ComponentModel,
+        FlavorModel,
+        HydratedComponentModel,
+        StackModel,
+    )
     from zenml.secret import BaseSecretSchema
     from zenml.services import BaseService, ServiceState
     from zenml.zen_server.deploy.deployment import ServerDeployment
@@ -247,37 +254,6 @@ def format_integration_list(
     return list_of_dicts
 
 
-def print_stack_component_list(
-    components: List["ComponentModel"],
-    active_component_name: Optional[str] = None,
-) -> None:
-    """Prints a table with configuration options for a list of stack components.
-
-    If a component is active (its name matches the `active_component_name`),
-    it will be highlighted in a separate table column.
-
-    Args:
-        components: List of stack components to print.
-        active_component_name: Name of the component that is currently
-            active.
-    """
-    configurations = []
-    for component in components:
-        is_active = component.name == active_component_name
-        component_config = {
-            "ACTIVE": ":point_right:" if is_active else "",
-            "NAME": component.name,
-            "FLAVOR": component.flavor,
-            "UUID": component.id,
-            **{
-                key.upper(): str(value)
-                for key, value in component.configuration.items()
-            },
-        }
-        configurations.append(component_config)
-    print_table(configurations)
-
-
 def print_stack_configuration(stack: HydratedStackModel, active: bool) -> None:
     """Prints the configuration options of a stack.
 
@@ -305,6 +281,11 @@ def print_stack_configuration(stack: HydratedStackModel, active: bool) -> None:
         for component in rich_table.columns[0]._cells
     ]
     console.print(rich_table)
+    declare(
+        f"Stack '{stack.name}' with id '{stack.id}' is owned by "
+        f"user '{stack.user.name}' and is "
+        f"'{'shared' if stack.is_shared else 'private'}'."
+    )
 
 
 def print_flavor_list(flavors: List["FlavorModel"]) -> None:
@@ -327,7 +308,7 @@ def print_flavor_list(flavors: List["FlavorModel"]) -> None:
 
 
 def print_stack_component_configuration(
-    component: "ComponentModel", active_status: bool
+    component: "HydratedComponentModel", active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component.
 
@@ -350,7 +331,7 @@ def print_stack_component_configuration(
     component_dict.pop("configuration")
     component_dict.update(component.configuration)
 
-    items = component_dict.items()
+    items = component.configuration.items()
     for item in items:
         elements = []
         for idx, elem in enumerate(item):
@@ -361,6 +342,12 @@ def print_stack_component_configuration(
         rich_table.add_row(*elements)
 
     console.print(rich_table)
+    declare(
+        f"{component.type.value.title()} '{component.name}' of flavor "
+        f"'{component.flavor}' with id '{component.id}' is owned by "
+        f"user '{component.user.name}' and is "
+        f"'{'shared' if component.is_shared else 'private'}'."
+    )
 
 
 def print_active_config() -> None:
@@ -813,3 +800,272 @@ def describe_pydantic_object(schema_json: str):
 
             if "description" in prop_schema:
                 declare(f"{prop_schema['description']}", width=80)
+
+
+def get_stack_by_id_or_name_or_prefix(
+    repo: Repository,
+    id_or_name_or_prefix: str,
+) -> "StackModel":
+    """Fetches a stack within active project using the name, id or partial id.
+
+    Args:
+        repo: Instance of the Repository singleton
+        id_or_name_or_prefix: The id, name or partial id of the stack to
+                              fetch.
+
+    Returns:
+        The stack with the given name.
+
+    Raises:
+        KeyError: If no stack with the given name exists.
+        RuntimeError: If multiple stacks with the given name exist.
+    """
+    # First interpret as full UUID
+    try:
+        stack_id = UUID(id_or_name_or_prefix)
+        return repo.zen_store.get_stack(stack_id)
+    except ValueError:
+        pass
+
+    stacks = repo.zen_store.list_stacks(
+        project_name_or_id=repo.active_project.name,
+        name=id_or_name_or_prefix,
+    )
+    if len(stacks) > 1:
+        hydrated_stacks = [s.to_hydrated_model() for s in stacks]
+        print_stacks_table(repo=repo, stacks=hydrated_stacks)
+        error(
+            f"Multiple stacks have been found for name "
+            f"'{id_or_name_or_prefix}'. The stacks listed above all share "
+            f"this name. Please specify the stack by full or partial id."
+        )
+
+    elif len(stacks) == 1:
+        return stacks[0]
+    else:
+        logger.debug(
+            f"No stack with name '{id_or_name_or_prefix}' "
+            f"exists. Trying to resolve as partial_id"
+        )
+
+        # TODO: This is ugly, an _or filter should be set on the sql_zen_store
+        stacks = set(
+            repo.zen_store.list_stacks(
+                project_name_or_id=repo.active_project.name,
+                user_name_or_id=repo.active_user.name,
+            )
+            + repo.zen_store.list_stacks(
+                project_name_or_id=repo.active_project.name, is_shared=True
+            )
+        )
+
+        filtered_stacks = [
+            stack
+            for stack in stacks
+            if str(stack.id).startswith(id_or_name_or_prefix)
+        ]
+        if len(filtered_stacks) > 1:
+            hydrated_stacks = [s.to_hydrated_model() for s in filtered_stacks]
+            print_stacks_table(repo=repo, stacks=hydrated_stacks)
+            error(
+                f"The stacks listed above all share the provided prefix "
+                f"'{id_or_name_or_prefix}' on their ids. Please provide more "
+                f"characters to uniquely identify only one stack."
+            )
+
+        elif len(filtered_stacks) == 1:
+            return filtered_stacks[0]
+        else:
+            raise KeyError(
+                f"No stack with name or id prefix "
+                f"'{id_or_name_or_prefix}' exists."
+            )
+
+
+def print_stacks_table(
+    repo: Repository, stacks: List[HydratedStackModel]
+) -> None:
+    """Print a prettified list of all stacks supplied to this method.
+
+    Args:
+        repo: Repository instance
+        stacks: List of stacks
+
+    Returns:
+        None
+    """
+
+    stack_dicts = []
+    for stack in stacks:
+        active_stack_id = repo.active_stack_model.id
+        is_active = stack.id == active_stack_id
+        stack_config = {
+            "ACTIVE": ":point_right:" if is_active else "",
+            "STACK NAME": stack.name,
+            "STACK ID": stack.id,
+            "SHARED": ":white_check_mark:" if stack.is_shared else ":x:",
+            "OWNER": stack.user.name,
+            **{
+                component_type.upper(): components[0].name
+                for component_type, components in stack.components.items()
+            },
+        }
+        stack_dicts.append(stack_config)
+
+    print_table(stack_dicts)
+
+
+def print_components_table(
+    repo: Repository,
+    component_type: StackComponentType,
+    components: List["HydratedComponentModel"],
+) -> None:
+    """Prints a table with configuration options for a list of stack components.
+
+    If a component is active (its name matches the `active_component_name`),
+    it will be highlighted in a separate table column.
+
+    Args:
+        repo: Instance of the Repository singleton
+        component_type: Type of stack component
+        components: List of stack components to print.
+    """
+    display_name = _component_display_name(component_type, plural=True)
+    if len(components) == 0:
+        warning(f"No {display_name} registered.")
+        return
+    active_stack = repo.active_stack_model
+    active_component_name = None
+    if component_type in active_stack.components.keys():
+        active_components = active_stack.components[component_type]
+        active_component_name = (
+            active_components[0].name if active_components else None
+        )
+
+    configurations = []
+    for component in components:
+        is_active = component.name == active_component_name
+        component_config = {
+            "ACTIVE": ":point_right:" if is_active else "",
+            "NAME": component.name,
+            "COMPONENT ID": component.id,
+            "FLAVOR": component.flavor,
+            "SHARED": ":white_check_mark:" if component.is_shared else ":x:",
+            "OWNER": component.user.name,
+            # **{
+            #     key.upper(): str(value)
+            #     for key, value in component.configuration.items()
+            # },
+        }
+        configurations.append(component_config)
+    print_table(configurations)
+
+
+def _component_display_name(
+    component_type: "StackComponentType", plural: bool = False
+) -> str:
+    """Human-readable name for a stack component.
+
+    Args:
+        component_type: Type of the component to get the display name for.
+        plural: Whether the display name should be plural or not.
+
+    Returns:
+        A human-readable name for the given stack component type.
+    """
+    name = component_type.plural if plural else component_type.value
+    return name.replace("_", " ")
+
+
+def get_component_by_id_or_name_or_prefix(
+    repo: Repository,
+    id_or_name_or_prefix: str,
+    component_type: StackComponentType,
+) -> "ComponentModel":
+    """Fetches a stack within active project using the name, id or partial id.
+
+    Args:
+        repo: Instance of the Repository singleton
+        id_or_name_or_prefix: The id, name or partial id of the component to
+                              fetch.
+        component_type: The type of the component to fetch.
+
+    Returns:
+        The stack with the given name.
+
+    Raises:
+        KeyError: If no stack with the given name exists.
+        RuntimeError: If multiple stacks with the given name exist.
+    """
+    # First interpret as full UUID
+    try:
+        component_id = UUID(id_or_name_or_prefix)
+        return repo.zen_store.get_stack_component(component_id)
+    except ValueError:
+        pass
+
+    components = repo.zen_store.list_stack_components(
+        project_name_or_id=repo.active_project.name,
+        name=id_or_name_or_prefix,
+        type=component_type,
+    )
+    if len(components) > 1:
+        hydrated_components = [c.to_hydrated_model() for c in components]
+        print_components_table(
+            repo=repo,
+            component_type=component_type,
+            components=hydrated_components,
+        )
+        error(
+            f"Multiple components have been found for name "
+            f"'{id_or_name_or_prefix}'. The components listed above all share "
+            f"this name. Please specify the component by full or partial id."
+        )
+
+    elif len(components) == 1:
+        return components[0]
+    else:
+        logger.debug(
+            f"No component with name '{id_or_name_or_prefix}' "
+            f"exists. Trying to resolve as partial_id"
+        )
+
+        # TODO: This is ugly, an _or filter should be set on the sql_zen_store
+        components = set(
+            repo.zen_store.list_stack_components(
+                project_name_or_id=repo.active_project.name,
+                user_name_or_id=repo.active_user.name,
+                type=component_type,
+            )
+            + repo.zen_store.list_stack_components(
+                project_name_or_id=repo.active_project.name,
+                is_shared=True,
+                type=component_type,
+            )
+        )
+
+        filtered_comps = [
+            component
+            for component in components
+            if str(component.id).startswith(id_or_name_or_prefix)
+        ]
+        if len(filtered_comps) > 1:
+            hydrated_comps = [s.to_hydrated_model() for s in filtered_comps]
+            print_components_table(
+                repo=repo,
+                component_type=component_type,
+                components=hydrated_comps,
+            )
+            error(
+                f"The components listed above all share the provided prefix "
+                f"'{id_or_name_or_prefix}' on their ids. Please provide more "
+                f"characters to uniquely identify only one component."
+            )
+
+        elif len(filtered_comps) == 1:
+            return filtered_comps[0]
+        else:
+            raise KeyError(
+                f"No stack with name or id prefix "
+                f"'{id_or_name_or_prefix}' exists."
+            )

@@ -127,6 +127,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     ssl_cert: Optional[str] = None
     ssl_key: Optional[str] = None
     ssl_verify_server_cert: bool = False
+    pool_size: int = 20
+    max_overflow: int = 20
 
     @root_validator
     def _validate_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -144,7 +146,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         Raises:
             ValueError: If the URL is invalid or the SQL driver is not
-            supported.
+                supported.
         """
         url = values.get("url")
         if url is None:
@@ -253,8 +255,14 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         values["url"] = str(sql_url)
         return values
 
-    def get_metadata_config(self) -> ConnectionConfig:
+    def get_metadata_config(
+        self, expand_certs: bool = False
+    ) -> ConnectionConfig:
         """Get the metadata configuration for the SQL ZenML store.
+
+        Args:
+            expand_certs: Whether to expand the certificate paths to their
+                contents.
 
         Returns:
             The metadata configuration.
@@ -287,8 +295,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             # Handle certificate params
             for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
                 ssl_setting = getattr(self, key)
-                if ssl_setting and os.path.isfile(ssl_setting):
-                    mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
+                if not ssl_setting:
+                    continue
+                if expand_certs and os.path.isfile(ssl_setting):
+                    with open(ssl_setting, "r") as f:
+                        ssl_setting = f.read()
+                mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
 
             # Handle additional params
             if mlmd_ssl_options:
@@ -305,7 +317,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return mlmd_config
 
-    def get_sqlmodel_config(self) -> Tuple[str, Dict[str, Any]]:
+    def get_sqlmodel_config(self) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
         """Get the SQLModel engine configuration for the SQL ZenML store.
 
         Returns:
@@ -315,19 +327,26 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             NotImplementedError: If the SQL driver is not supported.
         """
         sql_url = make_url(self.url)
-        # The following default value is needed for sqlite to avoid the Error:
-        #   sqlite3.ProgrammingError: SQLite objects created in a thread can
-        #   only be used in that same thread.
-        # TODO: [server] verify this is also true for mysql
-        sqlalchemy_connect_args = {"check_same_thread": False}
+        sqlalchemy_connect_args = {}
+        engine_args = {}
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             assert self.database is not None
+            # The following default value is needed for sqlite to avoid the Error:
+            #   sqlite3.ProgrammingError: SQLite objects created in a thread can
+            #   only be used in that same thread.
+            sqlalchemy_connect_args = {"check_same_thread": False}
         elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
             # all these are guaranteed by our root validator
             assert self.database is not None
             assert self.username is not None
             assert self.password is not None
             assert sql_url.host is not None
+
+            engine_args = {
+                "pool_size": self.pool_size,
+                "max_overflow": self.max_overflow,
+            }
+
             sql_url = sql_url._replace(
                 drivername="mysql+pymysql",
                 username=self.username,
@@ -348,7 +367,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 f"SQL driver `{sql_url.drivername}` is not supported."
             )
 
-        return str(sql_url), sqlalchemy_connect_args
+        return str(sql_url), sqlalchemy_connect_args, engine_args
 
     class Config:
         """Pydantic configuration class."""
@@ -421,8 +440,10 @@ class SqlZenStore(BaseZenStore):
         metadata_config = self.config.get_metadata_config()
         self._metadata_store = MetadataStore(config=metadata_config)
 
-        url, connect_args = self.config.get_sqlmodel_config()
-        self._engine = create_engine(url=url, connect_args=connect_args)
+        url, connect_args, engine_args = self.config.get_sqlmodel_config()
+        self._engine = create_engine(
+            url=url, connect_args=connect_args, **engine_args
+        )
         SQLModel.metadata.create_all(self._engine)
 
     @staticmethod
@@ -491,13 +512,19 @@ class SqlZenStore(BaseZenStore):
     # TFX Metadata
     # ------------
 
-    def get_metadata_config(self) -> ConnectionConfig:
+    def get_metadata_config(
+        self, expand_certs: bool = False
+    ) -> ConnectionConfig:
         """Get the TFX metadata config of this ZenStore.
+
+        Args:
+            expand_certs: Whether to expand the certificate paths in the
+                connection config to their value.
 
         Returns:
             The TFX metadata config of this ZenStore.
         """
-        return self.config.get_metadata_config()
+        return self.config.get_metadata_config(expand_certs=expand_certs)
 
     # ------
     # Stacks
@@ -515,38 +542,22 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The registered stack.
-
-        Raises:
-            StackExistsError: If a stack with the same name is already owned
-                by this user in this project.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(stack.project)
-            user = self._get_user_schema(stack.user)
+            project = self._get_project_schema(stack.project, session=session)
+            user = self._get_user_schema(stack.user, session=session)
 
-            # Check if stack with the domain key (name, project, owner) already
-            #  exists
-            existing_domain_stack = session.exec(
-                select(StackSchema)
-                .where(StackSchema.name == stack.name)
-                .where(StackSchema.project_id == stack.project)
-                .where(StackSchema.user_id == stack.user)
-            ).first()
-            if existing_domain_stack is not None:
-                raise StackExistsError(
-                    f"Unable to register stack with name "
-                    f"'{stack.name}': Found an existing stack with the same "
-                    f"name in the same '{project.name}' project owned by the "
-                    f"same '{user.name}' user."
-                )
-            existing_id_stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack.id)
-            ).first()
-            if existing_id_stack is not None:
-                raise StackExistsError(
-                    f"Unable to register stack with name "
-                    f"'{stack.name}' and id '{stack.id}': "
-                    f" Found an existing component with the same id."
+            self.fail_if_stack_with_id_already_exists(
+                stack=stack, session=session
+            )
+
+            self.fail_if_stack_with_name_exists_for_user(
+                stack=stack, project=project, user=user, session=session
+            )
+
+            if stack.is_shared:
+                self.fail_if_stack_with_name_already_shared(
+                    stack=stack, project=project, session=session
                 )
 
             # Get the Schemas of all components mentioned
@@ -620,10 +631,12 @@ class SqlZenStore(BaseZenStore):
             query = select(StackSchema)
             # TODO: prettify
             if project_name_or_id:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(StackSchema.project_id == project.id)
             if user_name_or_id:
-                user = self._get_user_schema(user_name_or_id)
+                user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(StackSchema.user_id == user.id)
             if component_id:
                 query = query.where(
@@ -633,7 +646,7 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(StackSchema.name == name)
             if is_shared is not None:
                 query = query.where(StackSchema.is_shared == is_shared)
-            stacks = session.exec(query).all()
+            stacks = session.exec(query.order_by(StackSchema.name)).all()
 
             return [stack.to_model() for stack in stacks]
 
@@ -662,6 +675,29 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update stack with id "
                     f"'{stack.id}': Found no"
                     f"existing stack with this id."
+                )
+            # In case of a renaming update, make sure no stack already exists
+            # with that name
+            if existing_stack.name != stack.name:
+                project = self._get_project_schema(
+                    project_name_or_id=stack.project, session=session
+                )
+                user = self._get_user_schema(
+                    user_name_or_id=stack.user, session=session
+                )
+                self.fail_if_stack_with_name_exists_for_user(
+                    stack=stack, project=project, user=user, session=session
+                )
+
+            # Check if stack update makes the stack a shared stack,
+            # In that case check if a stack with the same name is
+            # already shared within the project
+            if not existing_stack.is_shared and stack.is_shared:
+                project = self._get_project_schema(
+                    project_name_or_id=stack.project, session=session
+                )
+                self.fail_if_stack_with_name_already_shared(
+                    stack=stack, project=project, session=session
                 )
 
             # Get the Schemas of all components mentioned
@@ -704,6 +740,100 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
+    @staticmethod
+    def fail_if_stack_with_id_already_exists(
+        stack: StackModel, session: Session
+    ) -> None:
+        """Raise an exception if a Stack with the same id already exists.
+
+        Args:
+            stack: The Stack
+            session: The Session
+
+        Raises:
+            StackExistsError: If a stack with the same id already
+                              exists
+        """
+        existing_id_stack = session.exec(
+            select(StackSchema).where(StackSchema.id == stack.id)
+        ).first()
+        if existing_id_stack is not None:
+            raise StackExistsError(
+                f"Unable to register stack with name "
+                f"'{stack.name}' and id '{stack.id}': "
+                f" Found an existing component with the same id."
+            )
+
+    @staticmethod
+    def fail_if_stack_with_name_exists_for_user(
+        stack: StackModel,
+        project: ProjectSchema,
+        session: Session,
+        user: UserSchema,
+    ) -> None:
+        """Raise an exception if a Component with same name exists for user.
+
+        Args:
+            stack: The Stack
+            project: The project scope within which to check
+            user: The user that owns the Stack
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            StackExistsError: If a Stack with the given name is already
+                                       owned by the user
+        """
+        existing_domain_stack = session.exec(
+            select(StackSchema)
+            .where(StackSchema.name == stack.name)
+            .where(StackSchema.project_id == stack.project)
+            .where(StackSchema.user_id == stack.user)
+        ).first()
+        if existing_domain_stack is not None:
+            raise StackExistsError(
+                f"Unable to register stack with name "
+                f"'{stack.name}': Found an existing stack with the same "
+                f"name in the active project, '{project.name}', owned by the "
+                f"same user, '{user.name}'."
+            )
+        return None
+
+    def fail_if_stack_with_name_already_shared(
+        self, stack: StackModel, project: ProjectSchema, session: Session
+    ) -> None:
+        """Raise an exception if a Stack with same name is already shared.
+
+        Args:
+            stack: The Stack
+            project: The project scope within which to check
+            session: The Session
+
+        Raises:
+            StackExistsError: If a stack with the given name is already shared
+                              by a user.
+        """
+        # Check if component with the same name, type is already shared
+        # within the project
+        existing_shared_stack = session.exec(
+            select(StackSchema)
+            .where(StackSchema.name == stack.name)
+            .where(StackSchema.project_id == stack.project)
+            .where(StackSchema.is_shared == stack.is_shared)
+        ).first()
+        if existing_shared_stack is not None:
+            owner_of_shared = self._get_user_schema(
+                existing_shared_stack.user_id, session=session
+            )
+
+            raise StackExistsError(
+                f"Unable to share stack with name '{stack.name}': Found an "
+                f"existing stack with the same name in project "
+                f"'{project.name}' shared by '{owner_of_shared.name}'."
+            )
+
     # ----------------
     # Stack components
     # ----------------
@@ -720,42 +850,26 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created stack component.
-
-        Raises:
-            StackComponentExistsError: If a stack component with the same name
-                and type is already owned by this user in this project.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(component.project)
-            user = self._get_user_schema(component.user)
+            project = self._get_project_schema(
+                project_name_or_id=component.project, session=session
+            )
+            user = self._get_user_schema(
+                user_name_or_id=component.user, session=session
+            )
 
-            # Check if component with the same domain key (name, type, project,
-            # owner) already exists
-            existing_domain_component = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.name == component.name)
-                .where(StackComponentSchema.project_id == component.project)
-                .where(StackComponentSchema.user_id == component.user)
-                .where(StackComponentSchema.type == component.type)
-            ).first()
-            if existing_domain_component is not None:
-                raise StackComponentExistsError(
-                    f"Unable to register '{component.type.value}' component "
-                    f"with name '{component.name}': Found an existing "
-                    f"component with the same name and type in the same "
-                    f"'{project.name}' project owned by the same "
-                    f"'{user.name}' user."
-                )
-            existing_id_component = session.exec(
-                select(StackComponentSchema).where(
-                    StackComponentSchema.id == component.id
-                )
-            ).first()
-            if existing_id_component is not None:
-                raise StackComponentExistsError(
-                    f"Unable to register '{component.type.value}' component "
-                    f"with name '{component.name}' and id '{component.id}': "
-                    f" Found an existing component with the same id."
+            self.fail_if_component_with_id_already_exists(
+                component=component, session=session
+            )
+
+            self.fail_if_component_with_name_type_exists_for_user(
+                component=component, project=project, user=user, session=session
+            )
+
+            if component.is_shared:
+                self.fail_if_component_with_name_type_already_shared(
+                    component=component, project=project, session=session
                 )
 
             # Create the component
@@ -824,12 +938,14 @@ class SqlZenStore(BaseZenStore):
             # Get a list of all stacks
             query = select(StackComponentSchema)
             if project_name_or_id:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(
                     StackComponentSchema.project_id == project.id
                 )
             if user_name_or_id:
-                user = self._get_user_schema(user_name_or_id)
+                user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(StackComponentSchema.user_id == user.id)
             if type:
                 query = query.where(StackComponentSchema.type == type)
@@ -866,15 +982,41 @@ class SqlZenStore(BaseZenStore):
                 )
             ).first()
 
-            # TODO: verify if is_shared status needs to be checked here
             if existing_component is None:
                 raise KeyError(
                     f"Unable to update component with id "
                     f"'{component.id}': Found no"
                     f"existing component with this id."
                 )
-            existing_component.from_update_model(component=component)
 
+            # In case of a renaming update, make sure no component of the same
+            # type already exists with that name
+            if existing_component.name != component.name:
+                project = self._get_project_schema(
+                    project_name_or_id=component.project, session=session
+                )
+                user = self._get_user_schema(
+                    user_name_or_id=component.user, session=session
+                )
+                self.fail_if_component_with_name_type_exists_for_user(
+                    component=component,
+                    project=project,
+                    user=user,
+                    session=session,
+                )
+
+            # Check if component update makes the component a shared component,
+            # In that case check if a component with the same name, type are
+            # already shared within the project
+            if not existing_component.is_shared and component.is_shared:
+                project = self._get_project_schema(
+                    project_name_or_id=component.project, session=session
+                )
+                self.fail_if_component_with_name_type_already_shared(
+                    component=component, project=project, session=session
+                )
+
+            existing_component.from_update_model(component=component)
             session.add(existing_component)
             session.commit()
 
@@ -890,7 +1032,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component doesn't exist.
             IllegalOperationError: if the stack component is part of one or
-            more stacks.
+                more stacks.
         """
         with Session(self.engine) as session:
             try:
@@ -903,9 +1045,9 @@ class SqlZenStore(BaseZenStore):
                     raise IllegalOperationError(
                         f"Stack Component `{stack_component.name}` of type "
                         f"`{stack_component.type} can not be "
-                        f"deregistered as it is part of "
+                        f"deleted as it is part of "
                         f"{len(stack_component.stacks)} stacks. "
-                        f"Before unregistering this stack "
+                        f"Before deleting this stack "
                         f"component, make sure to remove it "
                         f"from all stacks."
                     )
@@ -932,6 +1074,112 @@ class SqlZenStore(BaseZenStore):
             stack_id: The id of the stack to get side effects for.
         """
         pass  # TODO: implement this
+
+    @staticmethod
+    def fail_if_component_with_id_already_exists(
+        component: ComponentModel, session: Session
+    ) -> None:
+        """Raise an exception if a Component with the same id already exists.
+
+        Args:
+            component: The Component
+            session: The Session
+
+        Raises:
+            StackComponentExistsError: If a component with the same id already
+                                       exists
+        """
+        existing_id_component = session.exec(
+            select(StackComponentSchema).where(
+                StackComponentSchema.id == component.id
+            )
+        ).first()
+        if existing_id_component is not None:
+            raise StackComponentExistsError(
+                f"Unable to register '{component.type.value}' component "
+                f"with name '{component.name}' and id '{component.id}': "
+                f" Found an existing component with the same id."
+            )
+
+    @staticmethod
+    def fail_if_component_with_name_type_exists_for_user(
+        component: ComponentModel,
+        project: ProjectSchema,
+        session: Session,
+        user: UserSchema,
+    ) -> None:
+        """Raise an exception if a Component with same name/type exists for user.
+
+        Args:
+            component: The Component
+            project: The project scope within which to check
+            user: The user that owns the Component
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            StackComponentExistsError: If a component with the given name and
+                                       type is already owned by the user
+        """
+        # Check if component with the same domain key (name, type, project,
+        # owner) already exists
+        existing_domain_component = session.exec(
+            select(StackComponentSchema)
+            .where(StackComponentSchema.name == component.name)
+            .where(StackComponentSchema.project_id == component.project)
+            .where(StackComponentSchema.user_id == component.user)
+            .where(StackComponentSchema.type == component.type)
+        ).first()
+        if existing_domain_component is not None:
+            raise StackComponentExistsError(
+                f"Unable to register '{component.type.value}' component "
+                f"with name '{component.name}': Found an existing "
+                f"component with the same name and type in the same "
+                f"'{project.name}' project owned by the same "
+                f"'{user.name}' user."
+            )
+        return None
+
+    def fail_if_component_with_name_type_already_shared(
+        self,
+        component: ComponentModel,
+        project: ProjectSchema,
+        session: Session,
+    ) -> None:
+        """Raise an exception if a Component with same name/type already shared.
+
+        Args:
+            component: The Component
+            project: The project scope within which to check
+            session: The Session
+
+        Raises:
+            StackComponentExistsError: If a component with the given name and
+                                       type is already shared by a user
+        """
+        # Check if component with the same name, type is already shared
+        # within the project
+        existing_shared_component = session.exec(
+            select(StackComponentSchema)
+            .where(StackComponentSchema.name == component.name)
+            .where(StackComponentSchema.project_id == component.project)
+            .where(StackComponentSchema.is_shared == component.is_shared)
+            .where(StackComponentSchema.type == component.type)
+        ).first()
+        if existing_shared_component is not None:
+            owner_of_shared = self._get_user_schema(
+                existing_shared_component.user_id, session=session
+            )
+
+            raise StackComponentExistsError(
+                f"Unable to shared component of type '{component.type.value}' "
+                f"with name '{component.name}': Found an "
+                f"existing component with the same name and type in project "
+                f"'{project.name}' shared by "
+                f"'{owner_of_shared.name}'."
+            )
 
     # -----------------------
     # Stack component flavors
@@ -1026,14 +1274,16 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             query = select(FlavorSchema)
             if project_name_or_id:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(FlavorSchema.project_id == project.id)
             if component_type:
                 query = query.where(FlavorSchema.type == component_type)
             if name:
                 query = query.where(FlavorSchema.name == name)
             if user_name_or_id:
-                user = self._get_user_schema(user_name_or_id)
+                user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(FlavorSchema.user_id == user.id)
 
             list_of_flavors_in_db = session.exec(query).all()
@@ -1161,7 +1411,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The requested user, if it was found.
         """
-        user = self._get_user_schema(user_name_or_id)
+        with Session(self.engine) as session:
+            user = self._get_user_schema(user_name_or_id, session=session)
         return user.to_model()
 
     def list_users(self) -> List[UserModel]:
@@ -1257,7 +1508,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The requested team.
         """
-        team = self._get_team_schema(team_name_or_id)
+        with Session(self.engine) as session:
+            team = self._get_team_schema(team_name_or_id, session=session)
         return team.to_model()
 
     def list_teams(self) -> List[TeamModel]:
@@ -1339,7 +1591,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all users that are part of the team.
         """
-        team = self._get_team_schema(team_name_or_id)
+        with Session(self.engine) as session:
+            team = self._get_team_schema(team_name_or_id, session=session)
         return [user.to_model() for user in team.users]
 
     def get_teams_for_user(
@@ -1354,7 +1607,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all teams that the user is part of.
         """
-        user = self._get_user_schema(user_name_or_id)
+        with Session(self.engine) as session:
+            user = self._get_user_schema(user_name_or_id, session=session)
         return [team.to_model() for team in user.teams]
 
     def add_user_to_team(
@@ -1455,7 +1709,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The requested role.
         """
-        role = self._get_role_schema(role_name_or_id)
+        with Session(self.engine) as session:
+            role = self._get_role_schema(role_name_or_id, session=session)
         return role.to_model()
 
     def list_roles(self) -> List[RoleModel]:
@@ -1568,12 +1823,14 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             query = select(UserRoleAssignmentSchema)
             if project_name_or_id is not None:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(
                     UserRoleAssignmentSchema.project_id == project.id
                 )
             if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id)
+                user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(UserRoleAssignmentSchema.user_id == user.id)
             assignments = session.exec(query).all()
             return [assignment.to_model() for assignment in assignments]
@@ -1596,7 +1853,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             query = select(TeamRoleAssignmentSchema)
             if project_name_or_id is not None:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(
                     TeamRoleAssignmentSchema.project_id == project.id
                 )
@@ -1792,14 +2051,18 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             project: Optional[ProjectSchema] = None
             if project_name_or_id:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
 
-            role = self._get_role_schema(role_name_or_id)
+            role = self._get_role_schema(role_name_or_id, session=session)
 
             role_assignment: Optional[SQLModel] = None
 
             if is_user:
-                user = self._get_user_schema(user_or_team_name_or_id)
+                user = self._get_user_schema(
+                    user_or_team_name_or_id, session=session
+                )
                 assignee_name = user.name
                 user_role_query = (
                     select(UserRoleAssignmentSchema)
@@ -1813,7 +2076,9 @@ class SqlZenStore(BaseZenStore):
 
                 role_assignment = session.exec(user_role_query).first()
             else:
-                team = self._get_team_schema(user_or_team_name_or_id)
+                team = self._get_team_schema(
+                    user_or_team_name_or_id, session=session
+                )
                 assignee_name = team.name
                 team_role_query = (
                     select(TeamRoleAssignmentSchema)
@@ -1886,7 +2151,10 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The requested project if one was found.
         """
-        project = self._get_project_schema(project_name_or_id)
+        with Session(self.engine) as session:
+            project = self._get_project_schema(
+                project_name_or_id, session=session
+            )
         return project.to_model()
 
     def list_projects(self) -> List[ProjectModel]:
@@ -2049,11 +2317,13 @@ class SqlZenStore(BaseZenStore):
             # Check if project with the given name exists
             query = select(PipelineSchema)
             if project_name_or_id is not None:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(PipelineSchema.project_id == project.id)
 
             if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id)
+                user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(PipelineSchema.user_id == user.id)
 
             if name:
@@ -2205,7 +2475,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             query = select(PipelineRunSchema)
             if project_name_or_id is not None:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
                 query = query.where(StackSchema.project_id == project.id)
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
@@ -2223,7 +2495,7 @@ class SqlZenStore(BaseZenStore):
             elif unlisted:
                 query = query.where(PipelineRunSchema.pipeline_id is None)
             if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id)
+                user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(PipelineRunSchema.user_id == user.id)
             runs = session.exec(query).all()
             return [run.to_model() for run in runs]
@@ -2402,7 +2674,7 @@ class SqlZenStore(BaseZenStore):
         object_name_or_id: Union[str, UUID],
         schema_class: Type[SQLModel],
         schema_name: str,
-        session: Optional[Session] = None,
+        session: Session,
     ) -> SQLModel:
         """Query a schema by its 'name' or 'id' field.
 
@@ -2438,14 +2710,8 @@ class SqlZenStore(BaseZenStore):
                 f"'{object_name_or_id}': '{object_name_or_id}' is not a valid "
                 f" UUID and no {schema_name} with this name exists."
             )
-        session = session or Session(self.engine)
-        if session is None:
-            with Session(self.engine):
-                schema = session.exec(
-                    select(schema_class).where(filter)
-                ).first()
-        else:
-            schema = session.exec(select(schema_class).where(filter)).first()
+
+        schema = session.exec(select(schema_class).where(filter)).first()
 
         if schema is None:
             raise KeyError(error_msg)
@@ -2454,7 +2720,7 @@ class SqlZenStore(BaseZenStore):
     def _get_project_schema(
         self,
         project_name_or_id: Union[str, UUID],
-        session: Optional[Session] = None,
+        session: Session,
     ) -> ProjectSchema:
         """Gets a project schema by name or ID.
 
@@ -2481,7 +2747,7 @@ class SqlZenStore(BaseZenStore):
     def _get_user_schema(
         self,
         user_name_or_id: Union[str, UUID],
-        session: Optional[Session] = None,
+        session: Session,
     ) -> UserSchema:
         """Gets a user schema by name or ID.
 
@@ -2508,7 +2774,7 @@ class SqlZenStore(BaseZenStore):
     def _get_team_schema(
         self,
         team_name_or_id: Union[str, UUID],
-        session: Optional[Session] = None,
+        session: Session,
     ) -> TeamSchema:
         """Gets a team schema by name or ID.
 
@@ -2535,7 +2801,7 @@ class SqlZenStore(BaseZenStore):
     def _get_role_schema(
         self,
         role_name_or_id: Union[str, UUID],
-        session: Optional[Session] = None,
+        session: Session,
     ) -> RoleSchema:
         """Gets a role schema by name or ID.
 

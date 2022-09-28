@@ -33,7 +33,7 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_metadata_config() -> str:
+def get_metadata_config() -> str:
     """Gets the metadata config.
 
     Returns:
@@ -41,5 +41,5 @@ async def get_metadata_config() -> str:
     """
     from google.protobuf.json_format import MessageToJson
 
-    config = zen_store.get_metadata_config()
+    config = zen_store.get_metadata_config(expand_certs=True)
     return MessageToJson(config)

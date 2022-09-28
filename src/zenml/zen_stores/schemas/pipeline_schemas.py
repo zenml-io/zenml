@@ -48,7 +48,7 @@ class PipelineSchema(SQLModel, table=True):
     user: "UserSchema" = Relationship(back_populates="pipelines")
 
     docstring: Optional[str] = Field(nullable=True)
-    spec: str
+    spec: str = Field(max_length=4096)
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -138,7 +138,7 @@ class PipelineRunSchema(SQLModel, table=True):
     )
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
-    pipeline_configuration: str
+    pipeline_configuration: str = Field(max_length=4096)
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
 
@@ -226,7 +226,7 @@ class StepRunSchema(SQLModel, table=True):
 
     entrypoint_name: str
     parameters: str
-    step_configuration: str
+    step_configuration: str = Field(max_length=4096)
     docstring: Optional[str]
 
     mlmd_id: int = Field(default=None, nullable=True)

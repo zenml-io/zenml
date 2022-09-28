@@ -17,7 +17,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import STACK_COMPONENTS, TYPES, VERSION_1
+from zenml.constants import COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
 from zenml.models.component_model import HydratedComponentModel
@@ -32,6 +32,13 @@ router = APIRouter(
     responses={401: error_response},
 )
 
+types_router = APIRouter(
+    prefix=VERSION_1 + COMPONENT_TYPES,
+    tags=["stack_components"],
+    dependencies=[Depends(authorize)],
+    responses={401: error_response},
+)
+
 
 @router.get(
     "",
@@ -39,7 +46,7 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def list_stack_components(
+def list_stack_components(
     project_name_or_id: Optional[Union[str, UUID]] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
     type: Optional[str] = None,
@@ -83,7 +90,7 @@ async def list_stack_components(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_stack_component(
+def get_stack_component(
     component_id: UUID, hydrated: bool = False
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Returns the requested stack component.
@@ -109,7 +116,7 @@ async def get_stack_component(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def update_stack_component(
+def update_stack_component(
     component_id: UUID,
     component_update: UpdateComponentModel,
     hydrated: bool = False,
@@ -141,7 +148,7 @@ async def update_stack_component(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def deregister_stack_component(component_id: UUID) -> None:
+def deregister_stack_component(component_id: UUID) -> None:
     """Deletes a stack component.
 
     Args:
@@ -150,13 +157,13 @@ async def deregister_stack_component(component_id: UUID) -> None:
     zen_store.delete_stack_component(component_id)
 
 
-@router.get(
-    TYPES,
-    response_model=List[StackComponentType],
+@types_router.get(
+    "",
+    response_model=List[str],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_stack_component_types() -> List[str]:
+def get_stack_component_types() -> List[str]:
     """Get a list of all stack component types.
 
     Returns:

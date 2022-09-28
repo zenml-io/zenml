@@ -41,7 +41,7 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def list_teams() -> List[TeamModel]:
+def list_teams() -> List[TeamModel]:
     """Returns a list of all teams.
 
     Returns:
@@ -56,7 +56,7 @@ async def list_teams() -> List[TeamModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def create_team(team: CreateTeamRequest) -> TeamModel:
+def create_team(team: CreateTeamRequest) -> TeamModel:
     """Creates a team.
 
     # noqa: DAR401
@@ -76,7 +76,7 @@ async def create_team(team: CreateTeamRequest) -> TeamModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_team(team_name_or_id: Union[str, UUID]) -> TeamModel:
+def get_team(team_name_or_id: Union[str, UUID]) -> TeamModel:
     """Returns a specific team.
 
     Args:
@@ -94,7 +94,7 @@ async def get_team(team_name_or_id: Union[str, UUID]) -> TeamModel:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def update_team(
+def update_team(
     team_name_or_id: Union[str, UUID], team_update: UpdateTeamRequest
 ) -> TeamModel:
     """Updates a team.
@@ -117,7 +117,7 @@ async def update_team(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_team(team_name_or_id: Union[str, UUID]) -> None:
+def delete_team(team_name_or_id: Union[str, UUID]) -> None:
     """Deletes a specific team.
 
     Args:
@@ -132,7 +132,7 @@ async def delete_team(team_name_or_id: Union[str, UUID]) -> None:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_role_assignments_for_team(
+def get_role_assignments_for_team(
     team_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
 ) -> List[RoleAssignmentModel]:

@@ -19,11 +19,10 @@ RUN pip install -e .[server]
 COPY src src
 
 RUN mkdir -p .zenconfig/local_stores/default_zen_store
-COPY zenml.db .zenconfig/local_stores/default_zen_store
 
 ENV ZENML_CONFIG_PATH=/zenml/.zenconfig \
     ZENML_DEBUG=true \
     ZENML_ANALYTICS_OPT_IN=false
 
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug"]
-CMD ["--port", "80", "--host",  "0.0.0.0"]
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app",  "--log-level", "debug"]
+CMD ["--proxy-headers", "--port", "80", "--host",  "0.0.0.0"]

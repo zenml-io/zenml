@@ -618,6 +618,9 @@ class Stack:
 
         Args:
             deployment: The pipeline deployment
+
+        Raises:
+            StackValidationError: If the stack component is not running.
         """
         self.validate(fail_if_secrets_missing=True)
 
@@ -640,9 +643,6 @@ class Stack:
 
         Args:
             deployment: The pipeline deployment.
-
-        Raises:
-            StackValidationError: If the stack configuration is not valid.
 
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.

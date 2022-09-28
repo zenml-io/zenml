@@ -161,8 +161,14 @@ class ZenStoreInterface(ABC):
     # ------------
 
     @abstractmethod
-    def get_metadata_config(self) -> ConnectionConfig:
+    def get_metadata_config(
+        self, expand_certs: bool = False
+    ) -> ConnectionConfig:
         """Get the TFX metadata config of this ZenStore.
+
+        Args:
+            expand_certs: Whether to expand the certificate paths in the
+                connection config to their value.
 
         Returns:
             The TFX metadata config of this ZenStore.

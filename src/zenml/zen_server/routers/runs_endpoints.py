@@ -47,7 +47,7 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def list_runs(
+def list_runs(
     project_name_or_id: Optional[Union[str, UUID]] = None,
     stack_id: Optional[UUID] = None,
     run_name: Optional[str] = None,
@@ -95,7 +95,7 @@ async def list_runs(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_run(
+def get_run(
     run_id: UUID,
     hydrated: bool = False,
 ) -> Union[HydratedPipelineRunModel, PipelineRunModel]:
@@ -122,7 +122,7 @@ async def get_run(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_run_dag(
+def get_run_dag(
     run_id: UUID,
 ) -> LineageGraph:
     """Get the DAG for a given pipeline run.
@@ -147,7 +147,7 @@ async def get_run_dag(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_run_steps(run_id: UUID) -> List[StepRunModel]:
+def get_run_steps(run_id: UUID) -> List[StepRunModel]:
     """Get all steps for a given pipeline run.
 
     Args:
@@ -165,7 +165,7 @@ async def get_run_steps(run_id: UUID) -> List[StepRunModel]:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_run_component_side_effects(
+def get_run_component_side_effects(
     run_id: UUID, component_id: Optional[UUID] = None
 ) -> Dict[str, Any]:
     """Get the component side-effects for a given pipeline run.
@@ -190,7 +190,7 @@ async def get_run_component_side_effects(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_pipeline_configuration(run_id: UUID) -> Dict[str, Any]:
+def get_pipeline_configuration(run_id: UUID) -> Dict[str, Any]:
     """Get the pipeline configuration of a specific pipeline run using its ID.
 
     Args:

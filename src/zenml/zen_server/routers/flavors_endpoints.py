@@ -38,7 +38,7 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def list_flavors(
+def list_flavors(
     project_name_or_id: Optional[Union[str, UUID]] = None,
     component_type: Optional[StackComponentType] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -80,7 +80,7 @@ async def list_flavors(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_flavor(flavor_id: UUID, hydrated: bool = False) -> FlavorModel:
+def get_flavor(flavor_id: UUID, hydrated: bool = False) -> FlavorModel:
     """Returns the requested flavor.
 
     Args:
@@ -105,7 +105,7 @@ async def get_flavor(flavor_id: UUID, hydrated: bool = False) -> FlavorModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def update_flavor(
+def update_flavor(
     flavor_id: UUID, flavor: FlavorModel, hydrated: bool = False
 ) -> FlavorModel:
     """Updates a stack.
@@ -133,7 +133,7 @@ async def update_flavor(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_flavor(flavor_id: UUID) -> None:
+def delete_flavor(flavor_id: UUID) -> None:
     """Deletes a flavor.
 
     Args:

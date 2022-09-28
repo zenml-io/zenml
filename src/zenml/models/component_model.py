@@ -99,6 +99,7 @@ class ComponentModel(
             configuration=self.configuration,
             project=project,
             user=user,
+            is_shared=self.is_shared,
             created=self.created,
             updated=self.updated,
         )
