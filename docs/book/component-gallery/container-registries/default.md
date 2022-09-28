@@ -28,7 +28,8 @@ localhost:9999
 
 To use the Default container registry, we need:
 * [Docker](https://www.docker.com) installed and running.
-* The registry URI. If you're using a local container registry, check out the [previous section](#local-registry-uri-format) on the URI format.
+* The registry URI. If you're using a local container registry, check out 
+* the [previous section](#local-registry-uri-format) on the URI format.
 
 We can then register the container registry and use it in our active stack:
 ```shell
@@ -40,5 +41,5 @@ zenml container-registry register <NAME> \
 zenml stack update -c <NAME>
 ```
 
-For more information and a full list of configurable attributes of the Default container registry, check out the 
-[API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.aws.container_registries.default_container_registry.DefaultContainerRegistry).
+For more information and a full list of configurable attributes of the Default 
+container registry, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.aws.container_registries.default_container_registry.DefaultContainerRegistry).

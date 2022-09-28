@@ -2,8 +2,8 @@
 description: How to store container images in Azure
 ---
 
-The Azure container registry is a [container registry](./container-registries.md) flavor which comes built-in with 
-ZenML and uses the [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/)
+The Azure container registry is a [container registry](./container-registries.md) 
+flavor which comes built-in with ZenML and uses the [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/)
 to store container images.
 
 ## When to use it
@@ -32,16 +32,19 @@ myregistry.azurecr.io
 To figure our the URI for your registry:
 * Go to the [Azure portal](https://portal.azure.com/#home).
 * In the search bar, enter `container registries` and select the container 
-registry you want to use. If you don't have any container registries yet, check out the 
-[deployment section](#how-do-you-deploy-it) on how to create one.
-* Use the name of your registry to fill the template `<REGISTRY_NAME>.azurecr.io` and get your URI.
+registry you want to use. If you don't have any container registries yet, check 
+out the [deployment section](#how-to-deploy-it) on how to create one.
+* Use the name of your registry to fill the template 
+`<REGISTRY_NAME>.azurecr.io` and get your URI.
+* 
 ## How to use it
 
 To use the Azure container registry, we need:
 * [Docker](https://www.docker.com) installed and running.
-* The [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) installed and authenticated.
-* The registry URI. Check out the [previous section](#how-to-find-the-registry-uri) on the URI format and how
-to get the URI for your registry.
+* The [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) 
+installed and authenticated.
+* The registry URI. Check out the [previous section](#how-to-find-the-registry-uri) 
+on the URI format and how to get the URI for your registry.
 
 We can then register the container registry and use it in our active stack:
 ```shell
@@ -53,12 +56,13 @@ zenml container-registry register <NAME> \
 zenml stack update -c <NAME>
 ```
 
-Additionally, we'll need to login to the container registry so Docker can pull and push images:
+Additionally, we'll need to login to the container registry so Docker can pull 
+and push images:
 ```shell
 # Fill your REGISTRY_NAME in the placeholder in the following command.
 # You can find the REGISTRY_NAME as part of your registry URI: `<REGISTRY_NAME>.azurecr.io`
 az acr login --name=<REGISTRY_NAME>
 ```
 
-For more information and a full list of configurable attributes of the Azure container registry, check out the 
-[API Docs](https://apidocs.zenml.io/latest/api_docs/container_registries/#zenml.container_registries.azure_container_registry.AzureContainerRegistry).
+For more information and a full list of configurable attributes of the Azure 
+container registry, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/container_registries/#zenml.container_registries.azure_container_registry.AzureContainerRegistry).

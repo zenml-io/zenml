@@ -2,9 +2,9 @@
 description: How to store container images in GCP
 ---
 
-The GCP container registry is a [container registry](./container-registries.md) flavor which comes built-in with 
-ZenML and uses the [Google Artifact Registry](https://cloud.google.com/artifact-registry) or the 
-[Google Container Registry](https://cloud.google.com/container-registry)
+The GCP container registry is a [container registry](./container-registries.md) 
+flavor which comes built-in with ZenML and uses the [Google Artifact Registry](https://cloud.google.com/artifact-registry) 
+or the [Google Container Registry](https://cloud.google.com/container-registry)
 to store container images.
 
 ## When to use it
@@ -12,7 +12,7 @@ to store container images.
 You should use the GCP container registry if:
 * one or more components of your stack need to pull or push container images.
 * you have access to GCP. If you're not using GCP, take a look at the
- other [container registry flavors](./container-registries.md#container-registry-flavors).
+other [container registry flavors](./container-registries.md#container-registry-flavors).
 
 ## How to deploy it
 
@@ -58,15 +58,18 @@ asia.gcr.io/another-project
 
 To figure our the URI for your registry:
 * Go to the [GCP console](https://console.cloud.google.com/).
-* Click on the dropdown menu in the top left to get a list of available projects with their names and IDs.
-* Use the ID of the project you want to use fill the template `gcr.io/<PROJECT_ID>` and get your URI
-(You can also use the other prefixes `<us/eu/asia>.gcr.io` as explained above if you want your images stored in a different region).
+* Click on the dropdown menu in the top left to get a list of available 
+projects with their names and IDs.
+* Use the ID of the project you want to use fill the template 
+`gcr.io/<PROJECT_ID>` and get your URI (You can also use the other 
+prefixes `<us/eu/asia>.gcr.io` as explained above if you want your images 
+stored in a different region).
 
 {% endtab %}
 {% tab title="Google Artifact Registry" %}
 
-When using the Google Artifact Registry, the GCP container 
-registry URI should have the following format:
+When using the Google Artifact Registry, the GCP container registry URI should 
+have the following format:
 
 ```shell
 <REGION>-docker.pkg.dev/<PROJECT_ID>/<REPOSITORY_NAME>
@@ -78,9 +81,9 @@ asia-docker.pkg.dev/my-project/another-repo
 ```
 
 To figure our the URI for your registry:
-* Go [here](https://console.cloud.google.com/artifacts) and select the repository that
-you want to uses to store Docker images. If you don't have a repository yet, take a look
-at the [deployment section](#how-to-deploy-it).
+* Go [here](https://console.cloud.google.com/artifacts) and select the 
+repository that you want to uses to store Docker images. If you don't have a 
+repository yet, take a look at the [deployment section](#how-to-deploy-it).
 * On the top, click the copy button to copy the full repository URL.
 
 {% endtab %}
@@ -91,9 +94,10 @@ at the [deployment section](#how-to-deploy-it).
 
 To use the Azure container registry, we need:
 * [Docker](https://www.docker.com) installed and running.
-* The [GCP CLI](https://cloud.google.com/sdk/docs/install) installed and authenticated.
-* The registry URI. Check out the [previous section](#how-to-find-the-registry-uri) on the URI format and how
-to get the URI for your registry.
+* The [GCP CLI](https://cloud.google.com/sdk/docs/install) installed and 
+authenticated.
+* The registry URI. Check out the [previous section](#how-to-find-the-registry-uri) 
+on the URI format and how to get the URI for your registry.
 
 We can then register the container registry and use it in our active stack:
 ```shell
@@ -105,7 +109,7 @@ zenml container-registry register <NAME> \
 zenml stack update -c <NAME>
 ```
 
-Additionally, we'll need to configure Docker so it can pull and push images:
+Additionally, we'll need to configure Docker, so it can pull and push images:
 
 {% tabs %}
 {% tab title="Google Container Registry" %}
@@ -125,5 +129,5 @@ gcloud auth configure-docker <REGION>-docker.pkg.dev
 {% endtabs %}
 
 
-For more information and a full list of configurable attributes of the GCP container registry, check out the 
-[API Docs](https://apidocs.zenml.io/latest/api_docs/container_registries/#zenml.container_registries.gcp_container_registry.GCPContainerRegistry).
+For more information and a full list of configurable attributes of the GCP 
+container registry, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/container_registries/#zenml.container_registries.gcp_container_registry.GCPContainerRegistry).

@@ -182,7 +182,7 @@ coming into play in a ZenML workflow.
 - The **CustomArtifactStoreFlavor** class is imported and utilized upon the 
 creation of the custom flavor through the CLI.
 - The **CustomArtifactStoreConfig** class is imported when someone tries to 
-register/update a stack component with the `my_alerter` flavor. Especially, 
+register/update a stack component with this custom flavor. Especially, 
 during the registration process of the stack component, the config will be used 
 to validate the values given by the user. As `Config` object are inherently 
 `pydantic` objects, you can also add your own custom validators here.
@@ -192,8 +192,9 @@ ultimately in use.
 The design behind this interaction lets us separate the configuration of the 
 flavor from its implementation. This way we can register flavors and components 
 even when the major dependencies behind their implementation are not installed
-in our local setting (assuming the `MyAlerterFlavor` and the `MyAlerterConfig`
-are implemented in a different module/path than the actual `MyAlerter`).
+in our local setting (assuming the `CustomArtifactStoreFlavor` and the 
+`CustomArtifactStoreConfig` are implemented in a different module/path than 
+the actual `CustomArtifactStore`).
 {% endhint %}
 
 ZenML includes a range of Artifact Store implementations, some built-in and
