@@ -2,7 +2,11 @@
 description: How to manage data in Feast feature stores
 ---
 
-Feast (Feature Store) is an operational data system for managing and serving machine learning features to models in production. Feast is able to serve feature data to models from a low-latency online store (for real-time prediction) or from an offline store (for scale-out batch scoring or model training).
+Feast (Feature Store) is an operational data system for managing and serving 
+machine learning features to models in production. Feast is able to serve 
+feature data to models from a low-latency online store (for real-time 
+prediction) or from an offline store (for scale-out batch scoring or model 
+training).
 
 ## When would you want to use it?
 
@@ -25,17 +29,23 @@ deployed models. We will update the docs when we enable this functionality.
 
 ## How to deploy it?
 
-The Feast Feature Store flavor is provided by the Feast ZenML integration, you need
-to install it, to be able to register it as a Feature Store
+The Feast Feature Store flavor is provided by the Feast ZenML integration, 
+you need to install it, to be able to register it as a Feature Store
 and add it to your stack:
 
 ```shell
 zenml integration install feast
 ```
 
-Since this example is built around a Redis use case, a Python package to interact with Redis will get installed alongside Feast, but you will still first need to install Redis yourself. See this page for some instructions on how to do that on your operating system.
+Since this example is built around a Redis use case, a Python package to 
+interact with Redis will get installed alongside Feast, but you will still 
+first need to install Redis yourself. See this page for some instructions on 
+how to do that on your operating system.
 
-You will then need to run a Redis server in the background in order for this example to work. You can either use the redis-server command in your terminal (which will run a continuous process until you CTRL-C out of it), or you can run the daemonized version:
+You will then need to run a Redis server in the background in order for this
+example to work. You can either use the redis-server command in your terminal 
+(which will run a continuous process until you CTRL-C out of it), or you can 
+run the daemonized version:
 
 ```shell
 redis-server --daemonize yes
@@ -46,7 +56,11 @@ ps aux | grep redis-server
 
 ## How do you use it?
 
-ZenML assumes that users already have a feature store that they just need to connect with. The ZenML Online data retrieval is currently possible in a local setting, but we don't currently support using the online data serving in the context of a deployed model or as part of model deployment. We will update this documentation as we develop out this feature.
+ZenML assumes that users already have a feature store that they just need to 
+connect with. The ZenML Online data retrieval is currently possible in a local 
+setting, but we don't currently support using the online data serving in the 
+context of a deployed model or as part of model deployment. We will update this 
+documentation as we develop out this feature.
 
 ZenML supports access to your feature store via a stack component that you can
 configure via the CLI tool. (
@@ -61,11 +75,11 @@ from datetime import datetime
 from typing import Any, Dict, List, Union
 import pandas as pd
 
-from zenml.steps import BaseStepConfig, step, StepContext
+from zenml.steps import BaseParameters, step, StepContext
 entity_dict = {…}  # defined in earlier code
 features = […]  # defined in earlier code
 
-class FeastHistoricalFeaturesConfig(BaseStepConfig):
+class FeastHistoricalFeaturesParameters(BaseParameters):
     """Feast Feature Store historical data step configuration."""
 
     entity_dict: Union[Dict[str, Any], str]
@@ -78,7 +92,7 @@ class FeastHistoricalFeaturesConfig(BaseStepConfig):
 
 @step
 def get_historical_features(
-        config: FeastHistoricalFeaturesConfig,
+        params: FeastHistoricalFeaturesParameters,
         context: StepContext,
 ) -> pd.DataFrame:
     """Feast Feature Store historical data step
@@ -101,22 +115,23 @@ def get_historical_features(
         )
 
     feature_store_component = context.stack.feature_store
-    config.entity_dict["event_timestamp"] = [
+    params.entity_dict["event_timestamp"] = [
         datetime.fromisoformat(val)
-        for val in config.entity_dict["event_timestamp"]
+        for val in params.entity_dict["event_timestamp"]
     ]
-    entity_df = pd.DataFrame.from_dict(config.entity_dict)
+    entity_df = pd.DataFrame.from_dict(params.entity_dict)
 
     return feature_store_component.get_historical_features(
         entity_df=entity_df,
-        features=config.features,
-        full_feature_names=config.full_feature_names,
+        features=params.features,
+        full_feature_names=params.full_feature_names,
     )
 
 
 historical_features = get_historical_features(
-    config=FeastHistoricalFeaturesConfig(
-        entity_dict=historical_entity_dict, features=features
+    params=FeastHistoricalFeaturesParameters(
+        entity_dict=entity_dict, 
+        features=features
     ),
 )
 ```
@@ -132,5 +147,5 @@ above code you can see that we have to convert them at various points.
 A concrete example of using the Feast feature store can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/feast_feature_store).
 
-For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out the 
-[API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.feast.feature_stores.feast_feature_store.FeastFeatureStore).
+For more information and a full list of configurable attributes of the 
+Feast feature store, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.feast.feature_stores.feast_feature_store.FeastFeatureStore).
