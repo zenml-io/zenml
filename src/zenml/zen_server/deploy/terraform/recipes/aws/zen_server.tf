@@ -2,7 +2,7 @@
 resource "helm_release" "zen-server" {
 
   name             = "zenml-server"
-  chart            = "../../helm/"
+  chart            = var.helm_chart
   namespace        = var.zenmlserver_namespace
   create_namespace = true
 
@@ -43,6 +43,6 @@ resource "helm_release" "zen-server" {
   }
   set {
     name  = "zenml.database.sslVerifyServerCert"
-    value = var.create_rds? false : true
+    value = var.create_rds? false : var.rds_sslVerifyServerCert
   }
 }

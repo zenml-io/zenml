@@ -29,6 +29,26 @@ from zenml.zen_server.deploy.terraform.terraform_zen_server import (
 
 logger = get_logger(__name__)
 
+ZENML_HELM_CHART_SUBPATH = "helm"
+
+
+def get_helm_chart_path() -> str:
+    """Get the ZenML server helm chart path.
+
+    The ZenML server helm chart files are located in a folder relative to the
+    `zenml.zen_server.deploy` Python module.
+
+    Returns:
+        The helm chart path.
+    """
+    import zenml.zen_server.deploy as deploy_module
+
+    path = os.path.join(
+        os.path.dirname(deploy_module.__file__),
+        ZENML_HELM_CHART_SUBPATH,
+    )
+    return path
+
 
 class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
     """AWS server deployment configuration.
@@ -40,16 +60,15 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
     region: Optional[str] = "eu-west-1"
     zenmlserver_namespace: Optional[str] = "terraform-server"
     kubectl_config_path: Optional[str] = os.path.join(
-        str(Path.home()),
-        ".kube",
-        "config"
+        str(Path.home()), ".kube", "config"
     )
+    helm_chart: str = get_helm_chart_path()
     rds_db_username: Optional[str] = "admin"
     rds_db_password: Optional[str] = ""
     create_rds: Optional[bool] = True
     db_name: Optional[str] = "zenmlserver"
     db_type: Optional[str] = "mysql"
-    db_version: Optional[str] = "8.0.28"
+    db_version: Optional[str] = "5.7.38"
     db_instance_class: Optional[str] = "db.t3.micro"
     db_allocated_storage: Optional[int] = 5
     rds_url: Optional[str] = ""

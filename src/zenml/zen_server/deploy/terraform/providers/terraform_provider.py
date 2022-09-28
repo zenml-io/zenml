@@ -36,7 +36,7 @@ from zenml.zen_server.deploy.terraform.terraform_zen_server import (
     TERRAFORM_VALUES_FILE_PATH,
     TERRAFORM_ZENML_SERVER_CONFIG_PATH,
     TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT,
-    TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH,
+    TERRAFORM_ZENML_SERVER_RECIPE_SUBPATH,
     TerraformServerDeploymentConfig,
     TerraformZenServer,
     TerraformZenServerConfig,
@@ -51,6 +51,25 @@ class TerraformServerProvider(BaseServerProvider):
     CONFIG_TYPE: ClassVar[
         Type[ServerDeploymentConfig]
     ] = TerraformServerDeploymentConfig
+
+    @staticmethod
+    def _get_server_recipe_root_path() -> str:
+        """Get the server recipe root path.
+
+        The Terraform recipe files for all terraform server providers are
+        located in a folder relative to the `zenml.zen_server.deploy.terraform`
+        Python module.
+
+        Returns:
+            The server recipe root path.
+        """
+        import zenml.zen_server.deploy.terraform as terraform_module
+
+        root_path = os.path.join(
+            os.path.dirname(terraform_module.__file__),
+            TERRAFORM_ZENML_SERVER_RECIPE_SUBPATH,
+        )
+        return root_path
 
     @classmethod
     def _get_service_configuration(
@@ -76,7 +95,7 @@ class TerraformServerProvider(BaseServerProvider):
                 root_runtime_path=TERRAFORM_ZENML_SERVER_CONFIG_PATH,
                 singleton=True,
                 directory_path=os.path.join(
-                    TERRAFORM_ZENML_SERVER_RECIPE_ROOT_PATH,
+                    cls._get_server_recipe_root_path(),
                     server_config.provider,
                 ),
                 log_level=server_config.log_level,
@@ -161,7 +180,6 @@ class TerraformServerProvider(BaseServerProvider):
             monitor_cfg,
         ) = self._get_service_configuration(config)
 
-        service.stop(timeout=timeout)
         service.config = new_config
         service.start(timeout=timeout)
 
@@ -244,11 +262,10 @@ class TerraformServerProvider(BaseServerProvider):
         if service is None:
             raise KeyError("The terraform ZenML server is not deployed.")
 
-        if service.config.name != server_name:
+        if service.config.server.name != server_name:
             raise KeyError(
                 "The terraform ZenML server is deployed but with a different name."
             )
-
         return service
 
     def _list_services(self) -> List[BaseService]:

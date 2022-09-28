@@ -265,7 +265,7 @@ def deploy(
     if not name:
         name = click.prompt(
             "ZenML server name (used as a prefix for the names of deployed "
-            "resources",
+            "resources)",
             default="zenml",
         )
     config_dict["name"] = name
@@ -300,6 +300,26 @@ def deploy(
     server_config = ServerDeploymentConfig.parse_obj(config_dict)
 
     deployer = ServerDeployer()
+
+    server = get_active_deployment(local=False)
+    if server:
+        if server.config.provider != provider:
+            raise ValueError(
+                f"ZenML is already deployed using a different provider "
+                f"({server.config.provider}). Please tear down the existing "
+                f"deployment by running `zenml destroy` before deploying a new "
+                f"one."
+            )
+
+        if server.config.name != name:
+            cli_utils.declare(
+                f"An existing deployment with a different name "
+                f"'{server.config.name}' already exists. Using a different "
+                f"name is the equivalent of destroying the existing deployment "
+                f"and creating a new one in its place."
+            )
+            if not click.confirm("Are you sure you want to continue?"):
+                return
 
     server = deployer.deploy_server(server_config, timeout=timeout)
     if server.status and server.status.url:
@@ -354,9 +374,7 @@ def status_server(server_name: Optional[str] = None) -> None:
             cli_utils.declare(f"Connected to a ZenML server: '{store_cfg.url}'")
 
     scope = "repository" if repo.uses_local_configuration else "global"
-    cli_utils.declare(
-        f"The current user is: '{repo.active_user.name}'"
-    )
+    cli_utils.declare(f"The current user is: '{repo.active_user.name}'")
     cli_utils.declare(
         f"The active project is: '{repo.active_project_name}' " f"({scope})"
     )
@@ -380,20 +398,47 @@ def status_server(server_name: Optional[str] = None) -> None:
     help=(
         """Configure your client to connect to a remote ZenML server.
 
-    Example:
+    Examples:
 
-      - to connect to the ZenML server last deployed from your machine with
-      `zenml deploy`:
+      * to connect to a ZenML deployment using command line arguments:
 
-        zenml server connect --username default
+        zenml connect --url=http://zenml.example.com:8080 --username=admin --project=default
 
-      - to connect to a ZenML deployment using a custom configuration:
-
-        zenml connect --url=http://localhost:8080 --username=admin --project=default
-
-        or:
+      * to use a configuration file:
 
         zenml connect --config=/path/to/zenml_config.yaml
+
+      * when no arguments are supplied, ZenML will attempt to connect to the
+        last ZenML server deployed from the local host using the 'zenml deploy'
+        command.
+
+    The configuration file must be a YAML or JSON file with the following
+    attributes:
+
+        url: The URL of the ZenML server.
+
+        username: The username to use for authentication.
+
+        password: The password to use for authentication.
+
+        verify_ssl: Either a boolean, in which case it controls whether the
+            server's TLS certificate is verified, or a string, in which case it
+            must be a path to a CA certificate bundle to use or the CA bundle
+            value itself.
+
+    Example configuration:
+
+        url: https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com/zenml\n
+        username: admin\n
+        password: Pa$$word123\n
+        verify_ssl: |\n
+        -----BEGIN CERTIFICATE-----
+        MIIDETCCAfmgAwIBAgIQYUmQg2LR/pHAMZb/vQwwXjANBgkqhkiG9w0BAQsFADAT
+        MREwDwYDVQQDEwh6ZW5tbC1jYTAeFw0yMjA5MjYxMzI3NDhaFw0yMzA5MjYxMzI3\n
+        ...\n
+        ULnzA0JkRWRnFqH6uXeJo1KAVqtxn1xf8PYxx3NlNDr9wi8KKwARf2lwm6sH4mvq
+        1aZ/0iYnGKCu7rLJzxeguliMf69E\n
+        -----END CERTIFICATE-----
 
     """
     ),
@@ -469,13 +514,11 @@ def connect(
     """
     from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
 
+    store_dict: Dict[str, Any] = {}
+    verify_ssl = ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
+
     if config:
-        if url is not None or username is not None or password is not None:
-            cli_utils.error(
-                "You cannot pass a config file and pass the `--url`, "
-                "`--username` or `--password` configuration options at the "
-                "same time."
-            )
+
         if os.path.isfile(config):
             store_dict = yaml_utils.read_yaml(config)
         else:
@@ -485,55 +528,52 @@ def connect(
                 "The configuration argument must be JSON/YAML content or "
                 "point to a valid configuration file."
             )
-        store_config = StoreConfiguration.parse_obj(store_dict)
-        GlobalConfiguration().set_store(store_config)
+
+        url = store_dict.get("url", url)
+        username = username or store_dict.get("username")
+        password = password or store_dict.get("password")
+        verify_ssl = store_dict.get("verify_ssl", verify_ssl)
+
     elif url is None:
-        if username is None:
-            cli_utils.error(
-                "The `--username` option is required to connect to a ZenML "
-                "server deployed from this machine."
-            )
         server = get_active_deployment(local=False)
 
-        if server is None:
-            cli_utils.error(
-                "No ZenML server was deployed from this machine. Please deploy "
-                "a ZenML server first by running `zenml deploy`, or use the "
-                "other command line arguments to configure how to connect to a "
-                "third party ZenML server. Alternatively, call `zenml up` to "
-                "start the ZenML dashboard locally."
+        if server is None or not server.status or not server.status.url:
+            cli_utils.warning(
+                "Running `zenml connect` without arguments can only be used to "
+                "connect to a ZenML server previously deployed from this host "
+                "with `zenml deploy`, but no such active deployment was found. "
+                "Please use the `--url` or `--config` command line arguments "
+                "to configure how to connect to a remote third party ZenML "
+                "server. Alternatively, call `zenml up` to start the ZenML "
+                "dashboard locally."
             )
-        if password is None:
-            password = click.prompt(
-                f"Password for user {username}", hide_input=True, default=""
-            )
-        deployer = ServerDeployer()
-        deployer.connect_to_server(server.config.name, username, password)
+            return
+        url = server.status.url
+        # TODO: get the certificate from the server deployment, if available
+
+    if not url:
+        url = click.prompt("ZenML server URL", type=str)
     else:
-        if url is None or username is None:
-            cli_utils.error(
-                "Both `--url` and `--username` options are required to connect "
-                "to a remote ZenML server."
-            )
-        if password is None:
-            password = click.prompt(
-                f"Password for user {username}", hide_input=True, default=""
-            )
-        store_config = RestZenStoreConfiguration(
-            url=url,
-            username=username,
-            password=password,
-            verify_ssl=ssl_ca_cert
-            if ssl_ca_cert is not None
-            else not no_verify_ssl,
+        cli_utils.declare(f"Connecting to: '{url}'...")
+    store_dict["url"] = url
+    if not username:
+        username = click.prompt("Username", type=str)
+    store_dict["username"] = username
+    if password is None:
+        password = click.prompt(
+            f"Password for user {username}", hide_input=True
         )
-        GlobalConfiguration().set_store(store_config)
+    store_dict["password"] = password
+    store_dict["verify_ssl"] = verify_ssl
+
+    store_config = RestZenStoreConfiguration.parse_obj(store_dict)
+    GlobalConfiguration().set_store(store_config)
 
     if project:
         try:
             Repository().set_active_project(project_name_or_id=project)
         except KeyError:
-            cli_utils.error(
+            cli_utils.warning(
                 f"The project {project} does not exist or is not accessible. "
                 f"Please set another project by running `zenml "
                 f"project set`."

@@ -46,6 +46,13 @@ spec:
               value: {{ .Values.zenml.defaultProject | quote }}
             - name: ZENML_DEFAULT_USER_NAME
               value: {{ .Values.zenml.defaultUsername | quote }}
+            {{- if .Values.zenml.database }}
+            - name: ZENML_STORE_TYPE
+              value: sql
+            - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
+              value: {{ .Values.zenml.database.sslVerifyServerCert | quote }}
+            {{- end }}
+
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}

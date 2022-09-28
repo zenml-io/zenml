@@ -17,7 +17,7 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, Generator, Optional, Tuple
+from typing import Any, Dict, Generator, Optional, Tuple
 
 import python_terraform  # type: ignore
 from pydantic import Field
@@ -27,7 +27,7 @@ from zenml.logger import get_logger
 from zenml.services.container.entrypoint import SERVICE_LOG_FILE_NAME
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
-from zenml.utils.io_utils import create_dir_recursive_if_not_exists
+from zenml.utils.io_utils import copy_dir, create_dir_recursive_if_not_exists
 
 logger = get_logger(__name__)
 
@@ -49,6 +49,8 @@ class TerraformServiceConfig(ServiceConfig):
             each service instance. Only has effect if the `root_runtime_path` is
             also set.
         directory_path: the path to the directory that hosts all the HCL files.
+        copy_terraform_files: whether to copy the HCL files to the service
+            runtime directory.
         log_level: the log level to set the terraform client to. Choose one of
             TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
         variables_file_path: the path to the file that stores all variable values.
@@ -57,6 +59,7 @@ class TerraformServiceConfig(ServiceConfig):
     root_runtime_path: str
     singleton: bool = False
     directory_path: str
+    copy_terraform_files: bool = False
     log_level: str = "ERROR"
     variables_file_path: str = "values.tfvars.json"
 
@@ -126,8 +129,11 @@ class TerraformService(BaseService):
             The terraform client.
         """
         if self._terraform_client is None:
+            working_dir = self.config.directory_path
+            if self.config.copy_terraform_files:
+                working_dir = self.status.runtime_path
             self._terraform_client = python_terraform.Terraform(
-                working_dir=str(self.config.directory_path)
+                working_dir=working_dir,
             )
         return self._terraform_client
 
@@ -140,6 +146,12 @@ class TerraformService(BaseService):
         Raises:
             RuntimeError: if init or apply function fails.
         """
+        # write the service information in the service config file
+        assert self.status.config_file is not None
+
+        with open(self.status.config_file, "w") as f:
+            f.write(self.json(indent=4))
+
         # this directory gets created after a successful init
         previous_run_dir = os.path.join(
             self.terraform_client.working_dir, ".ignoreme"
@@ -166,13 +178,7 @@ class TerraformService(BaseService):
             raise_on_error=True,
         )
 
-        # write the service information in the service config file
-        assert self.status.config_file is not None
-
-        with open(self.status.config_file, "w") as f:
-            f.write(self.json(indent=4))
-
-    def get_vars(self, path: str) -> Any:
+    def get_vars(self, path: str) -> Dict[str, Any]:
         """Get variables as a dictionary from values.tfvars.json.
 
         Args:
@@ -218,6 +224,7 @@ class TerraformService(BaseService):
         """
         # reuse the config file and logfile location from a previous run,
         # if available
+        copy_terraform_files = True
         if not self.status.runtime_path or not os.path.exists(
             self.status.runtime_path
         ):
@@ -229,13 +236,53 @@ class TerraformService(BaseService):
                         self.config.root_runtime_path,
                         str(self.uuid),
                     )
-                create_dir_recursive_if_not_exists(
-                    str(self.status.runtime_path)
-                )
+                if fileio.isdir(self.status.runtime_path):
+                    copy_terraform_files = False
+                else:
+                    create_dir_recursive_if_not_exists(
+                        str(self.status.runtime_path)
+                    )
             else:
                 self.status.runtime_path = tempfile.mkdtemp(
                     prefix="zenml-service-"
                 )
+
+            if copy_terraform_files and self.config.copy_terraform_files:
+                copy_dir(
+                    self.config.directory_path,
+                    self.status.runtime_path,
+                )
+
+    def check_status(self) -> Tuple[ServiceState, str]:
+        """Check the the current operational state of the terraform deployment.
+
+        Returns:
+            The operational state of the terraform deployment and a message
+            providing additional information about that state (e.g. a
+            description of the error, if one is encountered).
+        """
+
+        # get variables from the recipe as a python dictionary
+        vars = self.get_vars(self.terraform_client.working_dir)
+
+        # call terraform plan to get the current state
+        ret_code, out, err = self.terraform_client.plan(
+            detailed_exitcode=True,
+            refresh=False,
+            var=vars,
+            input=False,
+            # capture_output=False,
+            raise_on_error=False,
+        )
+        if ret_code == 0:
+            return ServiceState.ACTIVE, "Terraform resources are deployed."
+        elif ret_code == 2:
+            return (
+                ServiceState.INACTIVE,
+                "Terraform resources are not deployed or partially deployed.",
+            )
+        else:
+            return ServiceState.ERROR, f"Error while checking status: {err}"
 
     def provision(self) -> None:
         """Provision the service."""

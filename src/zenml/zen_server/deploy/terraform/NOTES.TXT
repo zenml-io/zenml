@@ -7,7 +7,7 @@
   and then update the locals.tf file at the directory_path with these values. 
   Then call super.provision()
 
-1. [STEFAN] where do we keep the ZenML server terraform recipes and how do we version,
+1. DONE [STEFAN] where do we keep the ZenML server terraform recipes and how do we version,
 package and distribute them ? 
   - keep them in the zenml repo, version/release them as pypi extras. We only
   need the server recipes to deploy the servers with `zenml deploy`.
@@ -63,7 +63,7 @@ from the deployed server ?
   is already deployed and if so, it uses that one. If not, it deploys its own.
   - the service name is used as a prefix
 
-8. terraform service implementation changes:
+8. [JAYESH] terraform service implementation changes:
   - save the service config before making long-running changes (e.g. terraform init/apply)
   - without `check_status`, how do we know if the server is up and running ?
     - use terraform plan in the `check_status` function
@@ -81,3 +81,18 @@ from the deployed server ?
 10. [NOT NOW] what about service endpoints ? can we implement them with the
   extra TLS complications ?
   - what about using an orphan REST zenml store for this ?
+
+11. [NOT NOW] server logs (recipe logs but also server logs)
+  - we're streaming the recipe logs to the console
+  - we need the pod name to get/stream the server logs
+  - we can steal the code from the model deployer implementation
+
+12. helm chart recipe glue problems
+  - not all ingresses have paths. In fact, the default is to not use any path
+
+
+13. other UX issues
+  - aborting a deployment in progress leaves terraform running in the background
+  and the recipe is locked. If killed, then the recipe thinks it's overwriting
+  existing resources and fails.
+  - no default timeout ??

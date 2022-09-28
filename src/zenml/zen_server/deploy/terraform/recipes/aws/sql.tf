@@ -30,10 +30,10 @@ module "metadata_store" {
   vpc_security_group_ids = [module.vpc[0].default_security_group_id]
 
   # DB parameter group
-  family = "mysql8.0"
+  family = "mysql5.7"
 
   # DB option group
-  major_engine_version = "8.0"
+  major_engine_version = "5.7"
 
   tags = {
     Owner       = "user"

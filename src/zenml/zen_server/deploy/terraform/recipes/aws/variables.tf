@@ -15,6 +15,13 @@ variable "zenmlserver_namespace" {
   default     = "terraform-server"
   type        = string
 }
+
+variable "helm_chart" {
+  description = "The path to the ZenML server helm chart"
+  default     = "../../../helm"
+  type        = string
+}
+
 variable "kubectl_config_path" {
   description = "The path to the kube config"
   default     = ""
@@ -60,7 +67,7 @@ variable "db_type" {
 }
 variable "db_version" {
   description = "The version for the AWS RDS database"
-  default     = "8.0.28"
+  default     = "5.7.38"
   type        = string
 }
 variable "db_instance_class" {
@@ -117,6 +124,7 @@ variable "create_ingress_controller" {
   default     = true
   type        = bool
 }
+
 # if you already have an ingress controller, supply it's URL
 variable "ingress_controller_hostname" {
   description = "The URL for the ingress controller on your cluster"
