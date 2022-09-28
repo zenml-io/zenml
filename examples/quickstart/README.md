@@ -175,12 +175,15 @@ rm -rf zenml_examples
 
 ## :bulb: Learn More
 
-If you want to learn more about ZenML, 
-then the [:page_facing_up: **ZenML Docs**](https://docs.zenml.io/) 
-are the perfect place to get started.
+If you want to learn more about ZenML as a tool, then the 
+[:page_facing_up: **ZenML Docs**](https://docs.zenml.io/) are the perfect place 
+to get started.
 
-Already have an MLOps stack in mind?
-ZenML most likely has
+If you are new to MLOps, you might want to take a look at our 
+[**ZenBytes**](https://github.com/zenml-io/zenbytes) lesson series instead 
+where we cover each MLOps concept in much more detail.
+
+Already have an MLOps stack in mind? ZenML most likely has
 [**:link: Integrations**](https://docs.zenml.io/mlops-stacks/integrations) 
 for whatever tools you plan to use. Check out the
 [**:pray: ZenML Examples**](https://github.com/zenml-io/zenml/tree/main/examples)
@@ -195,7 +198,4 @@ Also, make sure to join our <a href="https://zenml.io/slack-invite" target="_bla
     <b>Slack Community</b> 
 </a> to become part of the ZenML family!
 
-
-
-**New to MLOps?** You might want to start with our [**ZenBytes**](https://github.com/zenml-io/zenbytes) lesson series instead where we cover each MLOps concept in much more detail. This quickstart assumes you are already familiar with basic MLOps concepts and just want to learn how to approach them with ZenML.
 
