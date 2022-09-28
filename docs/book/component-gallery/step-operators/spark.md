@@ -12,23 +12,51 @@ cluster manager.
 
 ## Step Operators: `SparkStepOperator`
 
-A summarized version of the implementation looks as follows:
-
+A summarized version of the implementation can be summarized in two parts. 
+First, the configuration:
 ```python
-class SparkStepOperator(BaseStepOperator):
-    """Base class for all Spark-related step operators."""
-		
-		# Instance parameters
+from typing import Optional, Dict, Any
+from zenml.step_operators import BaseStepOperatorConfig
+
+class SparkStepOperatorConfig(BaseStepOperatorConfig):
+    """Spark step operator config.
+
+    Attributes:
+        master: is the master URL for the cluster. You might see different
+            schemes for different cluster managers which are supported by Spark
+            like Mesos, YARN, or Kubernetes. Within the context of this PR,
+            the implementation supports Kubernetes as a cluster manager.
+        deploy_mode: can either be 'cluster' (default) or 'client' and it
+            decides where the driver node of the application will run.
+        submit_kwargs: is the JSON string of a dict, which will be used
+            to define additional params if required (Spark has quite a
+            lot of different parameters, so including them, all in the step
+            operator was not implemented).
+    """
+
     master: str
     deploy_mode: str = "cluster"
     submit_kwargs: Optional[Dict[str, Any]] = None
+```
+
+and then the implementation:
+
+```python
+from typing import List
+from pyspark.conf import SparkConf
+
+from zenml.step_operators import BaseStepOperator
+
+
+class SparkStepOperator(BaseStepOperator):
+    """Base class for all Spark-related step operators."""
 
     def _resource_configuration(
         self,
         spark_config: SparkConf,
         resource_configuration: "ResourceSettings",
     ) -> None:
-				"""Configures Spark to handle the resource configuration."""
+      """Configures Spark to handle the resource configuration."""
 
     def _backend_configuration(
         self,
@@ -38,19 +66,21 @@ class SparkStepOperator(BaseStepOperator):
         """Configures Spark to handle backends like YARN, Mesos or Kubernetes."""
 
     def _io_configuration(
-				self, 
-				spark_config: SparkConf
-		) -> None:
+        self, 
+        spark_config: SparkConf
+    ) -> None:
         """Configures Spark to handle different input/output sources."""
 
     def _additional_configuration(
-				self, 
-				spark_config: SparkConf
-		) -> None:
+        self, 
+        spark_config: SparkConf
+	) -> None:
         """Appends the user-defined configuration parameters."""
 
     def _launch_spark_job(
-        self, spark_config: SparkConf, entrypoint_command: List[str]
+        self, 
+        spark_config: SparkConf, 
+        entrypoint_command: List[str]
     ) -> None:
         """Generates and executes a spark-submit command."""
 
@@ -62,7 +92,7 @@ class SparkStepOperator(BaseStepOperator):
         """Launches the step on Spark."""
 ```
 
-Under the base class, the first thing you will spot is the instance parameters: 
+Under the base configuration, you will see is the main configuration parameters: 
 
 - `master` is the master URL for the cluster where Spark will run. You might 
 see different schemes for this URL with varying cluster managers such as 
@@ -73,7 +103,7 @@ where the driver node of the application will run.
 define additional params if required (Spark has a wide variety of parameters, 
 thus including them all in a single class was deemed unnecessary.).
 
-In addition to these parameters, the `launch` method of the step operator 
+In addition to this configuration, the `launch` method of the step operator 
 gets additional configuration parameters from the `DockerSettings` and 
 `ResourceSettings`. As a result, the overall configuration happens in 4 
 base methods:
@@ -108,13 +138,30 @@ base `SparkStepOperator` and uses the `PipelineDockerImageBuilder` class to buil
 and push the required docker images. 
 
 ```python
-class KubernetesSparkStepOperator(
-    SparkStepOperator, 
-):
-		"""Step operator which runs Steps with Spark on Kubernetes."""
-    # Parameters for Kubernetes
+from typing import Optional
+
+from zenml.integrations.spark.step_operators.spark_step_operator import (
+    SparkStepOperatorConfig
+)
+
+class KubernetesSparkStepOperatorConfig(SparkStepOperatorConfig):
+    """Config for the Kubernetes Spark step operator."""
+
     namespace: Optional[str] = None
     service_account: Optional[str] = None
+```
+
+```python
+from typing import Optional
+from pyspark.conf import SparkConf
+
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.integrations.spark.step_operators.spark_step_operator import (
+    SparkStepOperator
+)
+
+class KubernetesSparkStepOperator(SparkStepOperator):
+    """Step operator which runs Steps with Spark on Kubernetes."""
 
     def _backend_configuration(
         self,
@@ -131,7 +178,8 @@ class KubernetesSparkStepOperator(
         ...
 ```
 
-For Kubernetes, there are also some additional important parameters:
+For Kubernetes, there are also some additional important configuration 
+parameters:
 
 - `namespace` is the namespace under which the driver and executor 
 pods will run.
@@ -153,8 +201,7 @@ paradigms in terms of time and resources.
 The `KubernetesSparkStepOperator` requires a Kubernetes cluster in order to run.
 There are many ways to deploy a Kubernetes cluster using different cloud 
 providers or on your custom infrastructure, and we can't possibly cover 
-all of them, but you can check out the 
-[spark example](https://github.com/zenml-io/zenml/tree/main/examples/spark_distributed_programming) 
+all of them, but you can check out the [spark example](https://github.com/zenml-io/zenml/tree/main/examples/spark_distributed_programming) 
 to see how it is deployed on AWS.
 
 ## How to use it
@@ -168,12 +215,10 @@ In order to use the `KubernetesSparkStepOperator`, you need:
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
 your stack.
-* A [remote metadata store](../metadata-stores/metadata-stores.md) as part of 
-your stack.
 * A [remote container registry](../container-registries/container-registries.md)
 as part of your stack.
-* A [remote secrets manager](../secrets-managers/secrets-managers.md) as part of your
-stack.
+* A [remote secrets manager](../secrets-managers/secrets-managers.md) as part
+of your stack.
 * A Kubernetes cluster [deployed](#how-to-deploy-it).
 
 We can then register the step operator and use it in our active stack:
@@ -183,11 +228,12 @@ zenml step-operator register <NAME> \
 	--flavor=spark-kubernetes \
 	--master=k8s://<API_SERVER_ENDPOINT> \
 	--namespace=<KUBERNETES_NAMESPACE> \
-	--service_account=<KUBERNETES_SERVICE_ACCOUNT> \
+	--service_account=<KUBERNETES_SERVICE_ACCOUNT>
 ```
 
 Once you added the step operator to your active stack, you can use it to
-execute individual steps of your pipeline by specifying it in the `@step` decorator as follows:
+execute individual steps of your pipeline by specifying it in the `@step` 
+decorator as follows:
 ```python
 from zenml.steps import step
 

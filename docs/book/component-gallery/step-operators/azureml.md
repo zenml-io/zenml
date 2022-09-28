@@ -2,17 +2,19 @@
 description: How to execute individual steps in AzureML
 ---
 
-The AzureML step operator is a [step operator](./step-operators.md) flavor provided with
-the ZenML `azure` integration that uses [AzureML](https://azure.microsoft.com/en-us/services/machine-learning/)
+The AzureML step operator is a [step operator](./step-operators.md) flavor 
+provided with the ZenML `azure` integration that uses 
+[AzureML](https://azure.microsoft.com/en-us/services/machine-learning/)
 to execute individual steps of ZenML pipelines.
 
 ## When to use it
 
 You should use the AzureML step operator if:
-* one or more steps of your pipeline require computing resources (CPU, GPU, memory) that are
-not provided by your orchestrator.
-* you have access to AzureML. If you're using a different cloud provider, take 
-a look at the [SageMaker](./amazon-sagemaker.md) or [Vertex](./gcloud-vertexai.md) step operators.
+* one or more steps of your pipeline require computing resources 
+(CPU, GPU, memory) that are not provided by your orchestrator.
+* you have access to AzureML. If you're using a different cloud 
+provider, take a look at the [SageMaker](./amazon-sagemaker.md) or 
+[Vertex](./gcloud-vertexai.md) step operators.
 
 ## How to deploy it
 
@@ -22,6 +24,7 @@ and [create a compute cluster](https://docs.microsoft.com/en-us/azure/machine-le
 * Create an `environment` for your pipelines. Follow [this guide](https://docs.microsoft.com/en-us/azure/machine-learning/how-to-manage-environments-in-studio) to set one up.
 * (Optional) Create a [Service Principal](https://docs.microsoft.com/en-us/azure/developer/java/sdk/identity-service-principal-auth) for authentication. This is required if
 you intend to run your pipelines with a remote orchestrator.
+
 ## How to use it
 
 To use the AzureML step operator, we need:
@@ -31,9 +34,10 @@ To use the AzureML step operator, we need:
     ```
 * An AzureML compute cluster and environment. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
-* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack. This is needed so
-that both your orchestration environment as well as AzureML can read and write step artifacts. Check out
-the documentation page of the artifact store you want to use for more information on how to set that up
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
+your stack. This is needed so that both your orchestration environment and 
+AzureML can read and write step artifacts. Check out the documentation page of 
+the artifact store you want to use for more information on how to set that up
 and configure authentication for it.
 
 We can then register the step operator and use it in our active stack:
@@ -68,13 +72,12 @@ def trainer(...) -> ...:
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your steps in AzureML. Check out
-[this page](../../developer-guide/advanced-usage/docker.md)
-if you want to learn more about how ZenML builds these images and
-how you can customize them.
+[this page](../../advanced-guide/practical/containerization.md) if you want to 
+learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 A concrete example of using the AzureML step operator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training).
 
-For more information and a full list of configurable attributes of the AzureML step operator, check out the 
-[API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.azure.step_operators.azureml_step_operator.AzureMLStepOperator).
+For more information and a full list of configurable attributes of the AzureML 
+step operator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.azure.step_operators.azureml_step_operator.AzureMLStepOperator).

@@ -71,7 +71,7 @@ If you want to create your own custom flavor for an orchestrator, you can
 follow the following steps:
 
 1. Create a class which inherits from the `BaseOrchestrator` class and 
-implement the abstract `prepare_or_run_pipeline` methods.
+implement the abstract `prepare_or_run_pipeline` method.
 2. If you need to provide any configuration, create a class which inherits 
 from the `BaseOrchestratorConfig` class add your configuration parameters.
 3. Bring both of the implementation and the configuration together by inheriting
