@@ -41,7 +41,7 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
     create_rds: bool = True
     db_name: str = "zenmlserver"
     db_type: str = "mysql"
-    db_version: str = "8.0.28"
+    db_version: str = "5.7.38"
     db_instance_class: str = "db.t3.micro"
     db_allocated_storage: int = 5
 
