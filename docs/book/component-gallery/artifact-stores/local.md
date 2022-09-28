@@ -50,11 +50,11 @@ local Artifact Store:
 $ zenml stack list
 Running without an active repository root.
 Using the default local database.
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ default    │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ ORCHESTRATOR ┃
+┠────────┼────────────┼────────────────┼──────────────┨
+┃   👉   │ default    │ default        │ default      ┃
+┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 
 $ zenml artifact-store describe
 Running without an active repository root.
@@ -88,7 +88,7 @@ your stacks as you see fit, e.g.:
 zenml artifact-store register custom_local --flavor local
 
 # Register and set a stack with the new artifact store
-zenml stack register custom_stack -o default -m default -a custom_local --set
+zenml stack register custom_stack -o default -a custom_local --set
 ```
 
 {% hint style="warning" %}
@@ -106,4 +106,4 @@ its configuration, you can have a look at [the API docs](https://apidocs.zenml.i
 ## How do you use it?
 
 Aside from the fact that the artifacts are stored locally, using the local
-Artifact Store is no different than [using any other flavor of Artifact Store](./artifact-stores.md#how-to-use-it).
+Artifact Store is no different from [using any other flavor of Artifact Store](./artifact-stores.md#how-to-use-it).

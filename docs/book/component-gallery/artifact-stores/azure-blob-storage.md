@@ -2,9 +2,9 @@
 description: How to store artifacts using Azure Blob Storage
 ---
 
-The Azure Artifact Store is an [Artifact Store](./artifact-stores.md) flavor provided with
-the Azure ZenML integration that uses [the Azure Blob Storage managed object storage service](https://azure.microsoft.com/en-us/services/storage/blobs/)
-to store ZenML artifacts in a Azure Blob Storage container.
+The Azure Artifact Store is an [Artifact Store](./artifact-stores.md) flavor 
+provided with the Azure ZenML integration that uses[the Azure Blob Storage managed object storage service](https://azure.microsoft.com/en-us/services/storage/blobs/)
+to store ZenML artifacts in an Azure Blob Storage container.
 
 ## When would you want to use it?
 
@@ -29,8 +29,8 @@ public cloud or self-hosted shared object storage service.
 
 You should use the Azure Artifact Store when you decide to keep your ZenML
 artifacts in a shared object storage and if you have access to the Azure Blob
-Storage managed service.
-You should consider one of the other [Artifact Store flavors](./artifact-stores.md#artifact-store-flavors)
+Storage managed service. You should consider one of the other 
+[Artifact Store flavors](./artifact-stores.md#artifact-store-flavors)
 if you don't have access to the Azure Blob Storage service.
 
 ## How do you deploy it?
@@ -65,9 +65,10 @@ configuration parameters pertaining to [authentication](#authentication-methods)
 to match your deployment scenario.
 
 {% hint style="info" %}
-Configuring an Azure Artifact Store in can be a complex and error prone process,
+Configuring an Azure Artifact Store in can be a complex and error-prone process,
 especially if you plan on using it alongside other stack components running in
-the Azure cloud. You might consider referring to the [ZenML Cloud Guide](../../stack-deployment-guide/overview.md)
+the Azure cloud. You might consider referring to the 
+[ZenML Cloud Guide](../../popular-stack-guides/azure/azure.md)
 for a more holistic approach to configuring full Azure-based stacks for ZenML.
 {% endhint %}
 
@@ -76,8 +77,8 @@ for a more holistic approach to configuring full Azure-based stacks for ZenML.
 Integrating and using an Azure Artifact Store in your pipelines is not
 possible without employing some form of authentication. ZenML currently provides
 two options for configuring Azure credentials, the recommended one being to use
-a [Secrets Manager](#secrets-manager-recommended) in your stack to store the
-sensitive information in a secure location.
+a `Secrets Manager` in your stack to store the sensitive information in a secure
+location.
 
 You will need the following information to configure Azure credentials for
 ZenML, depending on which type of Azure credentials you want to use:
@@ -119,12 +120,12 @@ machine, they do not have access to the local environment variables and
 will encounter authentication failures while trying to access the Azure Artifact
 Store:
 
-* [Orchestrators](../orchestrators/orchestrators.md) need to access the Artifact
-Store to manage pipeline artifacts
-* [Step Operators](../step-operators/step-operators.md) need to access the Artifact
-Store to manage step level artifacts
-* [Model Deployers](../model-deployers/model-deployers.md) need to access the Artifact
-Store to load served models
+* [Orchestrators](../orchestrators/orchestrators.md) need to access the 
+Artifact Store to manage pipeline artifacts
+* [Step Operators](../step-operators/step-operators.md) need to access the 
+Artifact Store to manage step level artifacts
+* [Model Deployers](../model-deployers/model-deployers.md) need to access the 
+Artifact Store to load served models
 
 These remote stack components can still use the implicit authentication method:
 if they are also running within the Azure Kubernetes Service, you can configure
@@ -186,4 +187,4 @@ its configuration, you can have a look at [the API docs](https://apidocs.zenml.i
 ## How do you use it?
 
 Aside from the fact that the artifacts are stored in Azure Blob Storage,
-using the Azure Artifact Store is no different than [using any other flavor of Artifact Store](./artifact-stores.md#how-to-use-it).
+using the Azure Artifact Store is no different from [using any other flavor of Artifact Store](./artifact-stores.md#how-to-use-it).

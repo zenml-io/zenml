@@ -15,45 +15,44 @@ The Artifact Store establishes one of the main components in every ZenML stack.
 Now, let us take a deeper dive into the fundamentals behind its abstraction,
 namely [the `BaseArtifactStore` class](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore):
 
-1. As it is the base class for a specific type of StackComponent,
-    it inherits from the StackComponent class. This sets the `TYPE`
-    variable to a StackComponentType. The `FLAVOR` class variable needs to be 
-    set in the specific subclass.
-2. As ZenML only supports filesystem-based artifact stores, it features an 
-    instance configuration parameter called `path`, which will indicate the 
-    root path of the artifact store. When creating an instance of any flavor of 
-    an `ArtifactStore`, users will have to define this parameter.
-3. Moreover, there is an empty class variable called `SUPPORTED_SCHEMES` that 
-    needs to be defined in every flavor implementation. It indicates the 
-    supported filepath schemes for the corresponding implementation.
-    For instance, for the Azure artifact store, this set will be defined as
-    `{"abfs://", "az://"}`.
-4. Lastly, the base class features a set of `abstractmethod`s: `open`,
-   `copyfile`,`exists`,`glob`,`isdir`,`listdir`,`makedirs`,`mkdir`,`remove`,
-   `rename`,`rmtree`,`stat`,`walk`. In the implementation of every 
-   `ArtifactStore` flavor, it is required to define these methods with respect 
-    to the flavor at hand.
+1. As ZenML only supports filesystem-based artifact stores, it features a 
+configuration parameter called `path`, which will indicate the root path of 
+the artifact store. When registering an artifact store, users will have to 
+define this parameter.
+2. Moreover, there is another variable in the config class called 
+`SUPPORTED_SCHEMES`. This is a class variable that needs to be defined 
+in every subclass of the base artifact store configuration. It indicates the 
+supported filepath schemes for the corresponding implementation. For instance, 
+for the Azure artifact store, this set will be defined as 
+`{"abfs://", "az://"}`.
+3. Lastly, the base class features a set of `abstractmethod`s: `open`,
+`copyfile`,`exists`,`glob`,`isdir`,`listdir`,`makedirs`,`mkdir`,`remove`,
+`rename`,`rmtree`,`stat`,`walk`. In the implementation of every 
+`ArtifactStore` flavor, it is required to define these methods with respect 
+to the flavor at hand.
 
 Putting all these considerations together, we end up with the following 
 implementation:
 
 ```python
+
 from zenml.enums import StackComponentType
-from zenml.stack import StackComponent
+from zenml.stack import StackComponent, StackComponentConfig
 
 PathType = Union[bytes, str]
+
+
+class BaseArtifactStoreConfig(StackComponentConfig):
+    """Config class for `BaseArtifactStore`."""
+
+    path: str
+
+    SUPPORTED_SCHEMES: ClassVar[Set[str]]
+
 
 class BaseArtifactStore(StackComponent):
     """Base class for all ZenML artifact stores."""
 
-    # --- Instance configuration ---
-    path: str  # The root path of the artifact store.
-
-    # --- Class variables ---
-    TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
-    SUPPORTED_SCHEMES: ClassVar[Set[str]]
-
-    # --- User interface ---
     @abstractmethod
     def open(self, name: PathType, mode: str = "r") -> Any:
         """Open a file at the given path."""
@@ -114,6 +113,30 @@ class BaseArtifactStore(StackComponent):
         onerror: Optional[Callable[..., None]] = None,
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
         """Return an iterator that walks the contents of the given directory."""
+
+        
+class BaseArtifactStoreFlavor(Flavor):
+    """Base class for artifact store flavors."""
+
+    @property
+    @abstractmethod
+    def name(self) -> Type["BaseArtifactStore"]:
+        """Returns the name of the flavor."""
+        
+    @property
+    def type(self) -> StackComponentType:
+        """Returns the flavor type."""
+        return StackComponentType.ARTIFACT_STORE
+
+    @property
+    def config_class(self) -> Type[StackComponentConfig]:
+        """Config class."""
+        return BaseArtifactStoreConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type["BaseArtifactStore"]:
+        """Implementation class."""
 ```
 
 {% hint style="info" %}
@@ -138,25 +161,49 @@ that you defined within your artifact store.
 If you want to implement your own custom Artifact Store, you can 
 follow the following steps:
 
-1. Create a class which inherits from [the `BaseArtifactStore` base class](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore).
-2. Define the `FLAVOR` and `SUPPORTED_SCHEMES` class variables.
-3. Implement the `abstractmethod`s based on your desired filesystem.
+1. Create a class which inherits from [the `BaseArtifactStore` class](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore)
+and implement the abstract methods.
+2. Create a class which inherits from [the `BaseArtifactStoreConfig` class]() 
+and fill in the `SUPPORTED_SCHEMES` based on your file system.
+3. Bring both of these classes together by inheriting from [the
+`BaseArtifactStoreFlavor` class]().
 
 Once you are done with the implementation, you can register it through the CLI 
 as:
 
 ```shell
-zenml artifact-store flavor register <THE-SOURCE-PATH-OF-YOUR-ARTIFACT-STORE>
+zenml artifact-store flavor register <THE-SOURCE-PATH-OF-YOUR-ARTIFACT-STORE-FLAVOR>
 ```
+
+{% hint style="warning" %}
+It is important to draw attention to when and how these base abstractions are 
+coming into play in a ZenML workflow.
+
+- The **CustomArtifactStoreFlavor** class is imported and utilized upon the 
+creation of the custom flavor through the CLI.
+- The **CustomArtifactStoreConfig** class is imported when someone tries to 
+register/update a stack component with the `my_alerter` flavor. Especially, 
+during the registration process of the stack component, the config will be used 
+to validate the values given by the user. As `Config` object are inherently 
+`pydantic` objects, you can also add your own custom validators here.
+- The **CustomArtifactStore** only comes into play when the component is 
+ultimately in use. 
+
+The design behind this interaction lets us separate the configuration of the 
+flavor from its implementation. This way we can register flavors and components 
+even when the major dependencies behind their implementation are not installed
+in our local setting (assuming the `MyAlerterFlavor` and the `MyAlerterConfig`
+are implemented in a different module/path than the actual `MyAlerter`).
+{% endhint %}
 
 ZenML includes a range of Artifact Store implementations, some built-in and
 other provided by specific integration modules. You can use them as examples
 of how you can extend the [base Artifact Store abstraction](#base-abstraction)
 to implement your own custom Artifact Store:
 
-|  Artifact Store  | Implementation  |
-|------------------|-----------------|
-| [Local](./local.md) | [LocalArtifactStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/artifact_stores/local_artifact_store.py) |
-| [AWS S3](./amazon-s3.md) | [S3ArtifactStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/s3/artifact_stores/s3_artifact_store.py) |
-| [Google Cloud Storage](./gcloud-gcs.md) | [GCPArtifactStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py) |
+| Artifact Store                                | Implementation                                                                                                                         |
+|-----------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| [Local](./local.md)                           | [LocalArtifactStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/artifact_stores/local_artifact_store.py)                    |
+| [AWS S3](./amazon-s3.md)                      | [S3ArtifactStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/s3/artifact_stores/s3_artifact_store.py)          |
+| [Google Cloud Storage](./gcloud-gcs.md)       | [GCPArtifactStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py)       |
 | [Azure Blob Storage](./azure-blob-storage.md) | [AzureArtifactStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/azure/artifact_stores/azure_artifact_store.py) |

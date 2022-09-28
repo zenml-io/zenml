@@ -2,8 +2,9 @@
 description: How to store artifacts using GCP Cloud Storage
 ---
 
-The GCS Artifact Store is an [Artifact Store](./artifact-stores.md) flavor provided with
-the GCP ZenML integration that uses [the Google Cloud Storage managed object storage service](https://cloud.google.com/storage/docs/introduction)
+The GCS Artifact Store is an [Artifact Store](./artifact-stores.md) flavor 
+provided with the GCP ZenML integration that uses 
+[the Google Cloud Storage managed object storage service](https://cloud.google.com/storage/docs/introduction)
 to store ZenML artifacts in a GCP Cloud Storage bucket.
 
 ## When would you want to use it?
@@ -64,7 +65,7 @@ configuration parameters pertaining to [authentication](#authentication-methods)
 to match your deployment scenario.
 
 {% hint style="info" %}
-Configuring a GCS Artifact Store in can be a complex and error prone process,
+Configuring a GCS Artifact Store in can be a complex and error-prone process,
 especially if you plan on using it alongside other stack components running in
 the Google cloud. You might consider referring to the [ZenML Cloud Guide](../../stack-deployment-guide/overview.md)
 for a more holistic approach to configuring full GCP-based stacks for ZenML.
@@ -75,8 +76,8 @@ for a more holistic approach to configuring full GCP-based stacks for ZenML.
 Integrating and using a GCS Artifact Store in your pipelines is not
 possible without employing some form of authentication. ZenML currently provides
 two options for configuring GCP credentials, the recommended one being to use
-a [Secrets Manager](../secrets-managers/secrets-managers.md) in your stack to store the
-sensitive information in a secure location.
+a [Secrets Manager](../secrets-managers/secrets-managers.md) in your stack to 
+store the sensitive information in a secure location.
 
 {% tabs %}
 {% tab title="Implicit Authentication" %}
@@ -97,19 +98,19 @@ machine, they do not have access to the local Google Cloud CLI configuration and
 will encounter authentication failures while trying to access the GCS Artifact
 Store:
 
-* [Orchestrators](../orchestrators/orchestrators.md) need to access the Artifact
-Store to manage pipeline artifacts
-* [Step Operators](../step-operators/step-operators.md) need to access the Artifact
-Store to manage step level artifacts
-* [Model Deployers](../model-deployers/model-deployers.md) need to access the Artifact
-Store to load served models
+* [Orchestrators](../orchestrators/orchestrators.md) need to access the 
+Artifact Store to manage pipeline artifacts
+* [Step Operators](../step-operators/step-operators.md) need to access the 
+Artifact Store to manage step level artifacts
+* [Model Deployers](../model-deployers/model-deployers.md) need to access the 
+Artifact Store to load served models
 
 These remote stack components can still use the implicit authentication method:
 if they are also running within Google Kubernetes Engine, ZenML will try to load
 credentials from the Google compute metadata service. In order to take advantage
 of this feature, you must have configured a [Service Account](https://cloud.google.com/kubernetes-engine/docs/tutorials/authenticating-to-cloud-platform)
 with the proper permissions or enabled [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)
-when you launched your GKE cluster. These mechanisms allows Google workloads like
+when you launched your GKE cluster. These mechanisms allow Google workloads like
 GKE pods to access other Google services without requiring explicit credentials.
 
 If you have remote stack components that are not running in GKE, or if
@@ -159,4 +160,4 @@ configuration, you can have a look at [the API docs](https://apidocs.zenml.io/la
 ## How do you use it?
 
 Aside from the fact that the artifacts are stored in GCP Cloud Storage,
-using the GCS Artifact Store is no different than [using any other flavor of Artifact Store](./artifact-stores.md#how-to-use-it).
+using the GCS Artifact Store is no different from [using any other flavor of Artifact Store](./artifact-stores.md#how-to-use-it).
