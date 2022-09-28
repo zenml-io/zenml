@@ -769,11 +769,11 @@ def print_server_deployment(server: "ServerDeployment") -> None:
 
 
 def describe_pydantic_object(schema_json: str):
-    """Describes a pydantic object based on the json of its schema.
+    """Describes a Pydantic object based on the json of its schema.
 
     Attributes:
-        schema_json: str, represents the schema of a pydantic object, which
-            can be obtained through BaseModelCLass.schema_json()
+        schema_json: str, represents the schema of a Pydantic object, which
+            can be obtained through BaseModelClass.schema_json()
     """
     # Get the schema dict
     schema = json.loads(schema_json)
