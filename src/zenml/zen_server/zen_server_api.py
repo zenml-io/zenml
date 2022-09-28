@@ -68,7 +68,7 @@ app.add_middleware(
 )
 
 app.mount(
-    "/dashboard/static",
+    "/static",
     StaticFiles(
         directory=relative_path(os.path.join(DASHBOARD_DIRECTORY, "static")),
         check_dir=False,

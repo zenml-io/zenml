@@ -53,7 +53,6 @@ TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_URL = "zenml_server_url"
 TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_TLS_CRT = "tls_crt"
 TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_TLS_KEY = "tls_key"
 TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_CA_CRT = "ca_crt"
-TERRAFORM_FINAL_OUTPUT_NAME = "zenml_server_url"
 
 TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
@@ -174,7 +173,27 @@ class TerraformZenServer(TerraformService):
             for k, v in self.config.server.dict().items()
             if k not in filter_vars
         }
+        self._write_to_variables_file(vars)
         return vars
+
+    def _write_to_variables_file(self, variables: Dict[str, Any]) -> None:
+        """Write the variables into the values.tfvars.json file.
+
+        Args:
+            variables: the variables dict with the user-provided
+            config values
+        """
+        import json
+
+        assert self.status.runtime_path
+        with open(
+            os.path.join(
+                self.status.runtime_path, self.config.variables_file_path
+            ),
+            "w",
+        ) as fp:
+            json.dump(variables, fp=fp, indent=4)
+
 
     def provision(self) -> None:
         """Provision the service."""

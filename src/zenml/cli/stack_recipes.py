@@ -1099,7 +1099,6 @@ if terraform_installed:  # noqa: C901
                         directory_path=str(local_stack_recipe.path),
                         log_level=log_level,
                         variables_file_path=VARIABLES_FILE,
-                        final_output_name=STACK_FILE_NAME,
                     )
                     # find an existing service with the same terraform path
                     # create a new one if not found

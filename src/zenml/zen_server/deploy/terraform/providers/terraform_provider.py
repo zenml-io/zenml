@@ -37,7 +37,6 @@ from zenml.zen_server.deploy.docker.docker_zen_server import (
     ZEN_SERVER_HEALTHCHECK_URL_PATH,
 )
 from zenml.zen_server.deploy.terraform.terraform_zen_server import (
-    TERRAFORM_FINAL_OUTPUT_NAME,
     TERRAFORM_VALUES_FILE_PATH,
     TERRAFORM_ZENML_SERVER_CONFIG_PATH,
     TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT,
@@ -97,6 +96,7 @@ class TerraformServerProvider(BaseServerProvider):
 
         return (
             TerraformZenServerConfig(
+                name=server_config.name,
                 root_runtime_path=TERRAFORM_ZENML_SERVER_CONFIG_PATH,
                 singleton=True,
                 directory_path=os.path.join(
@@ -105,7 +105,6 @@ class TerraformServerProvider(BaseServerProvider):
                 ),
                 log_level=server_config.log_level,
                 variables_file_path=TERRAFORM_VALUES_FILE_PATH,
-                final_output_name=TERRAFORM_FINAL_OUTPUT_NAME,
                 server=server_config,
             ),
             ServiceEndpointConfig(
@@ -312,10 +311,7 @@ class TerraformServerProvider(BaseServerProvider):
         """
         gc = GlobalConfiguration()
         url: Optional[str] = None
-        service = cast(
-            TerraformZenServer,
-            service
-        )
+        service = cast(TerraformZenServer, service)
         tls_crt, tls_key, ca_crt = None, None, None
         if service.is_running:
             url = service.get_server_url()

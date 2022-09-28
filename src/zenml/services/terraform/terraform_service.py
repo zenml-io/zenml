@@ -54,8 +54,6 @@ class TerraformServiceConfig(ServiceConfig):
         log_level: the log level to set the terraform client to. Choose one of
             TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
         variables_file_path: the path to the file that stores all variable values.
-        final_output_name: the output whose presence determines the success of
-            the deployment.
     """
 
     root_runtime_path: str
@@ -64,7 +62,6 @@ class TerraformServiceConfig(ServiceConfig):
     copy_terraform_files: bool = False
     log_level: str = "ERROR"
     variables_file_path: str = "values.tfvars.json"
-    final_output_name: str
 
 
 class TerraformServiceStatus(ServiceStatus):

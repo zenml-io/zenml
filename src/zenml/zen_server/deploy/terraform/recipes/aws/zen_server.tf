@@ -1,11 +1,15 @@
 # create the ZenServer deployment
+resource "kubernetes_namespace" "zen-server" {
+  metadata {
+    name = "${var.name}-${var.zenmlserver_namespace}"
+  }
+}
+
 resource "helm_release" "zen-server" {
 
   name             = "${var.name}-zenmlserver"
   chart            = var.helm_chart
-  namespace        = "${var.name}-${var.zenmlserver_namespace}"
-  create_namespace = true
-
+  namespace        = kubernetes_namespace.zen-server.metadata[0].name
 
   set {
     name  = "zenml.defaultUsername"
@@ -71,6 +75,9 @@ resource "helm_release" "zen-server" {
     name  = "zenml.database.sslVerifyServerCert"
     value = var.create_rds? false : var.rds_sslVerifyServerCert
   }
+  depends_on = [
+    resource.kubernetes_namespace.zen-server
+  ]
 }
 
 data "kubernetes_secret" "certificates" {

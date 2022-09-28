@@ -304,7 +304,7 @@ def deploy(
     server = get_active_deployment(local=False)
     if server:
         if server.config.provider != provider:
-            raise ValueError(
+            cli_utils.error(
                 f"ZenML is already deployed using a different provider "
                 f"({server.config.provider}). Please tear down the existing "
                 f"deployment by running `zenml destroy` before deploying a new "
@@ -312,14 +312,12 @@ def deploy(
             )
 
         if server.config.name != name:
-            cli_utils.declare(
+            cli_utils.error(
                 f"An existing deployment with a different name "
-                f"'{server.config.name}' already exists. Using a different "
-                f"name is the equivalent of destroying the existing deployment "
-                f"and creating a new one in its place."
+                f"'{server.config.name}' already exists. Please tear down the "
+                f"existing deployment by running `zenml destroy` before "
+                f"deploying a new one."
             )
-            if not click.confirm("Are you sure you want to continue?"):
-                return
 
     server = deployer.deploy_server(server_config, timeout=timeout)
     if server.status and server.status.url:
