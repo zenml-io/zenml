@@ -1137,8 +1137,8 @@ class SqlZenStore(BaseZenStore):
                 f"Unable to register '{component.type.value}' component "
                 f"with name '{component.name}': Found an existing "
                 f"component with the same name and type in the same "
-                f"'{project.name}' project owned by the same "
-                f"'{user.name}' user."
+                f" project, '{project.name}', owned by the same "
+                f" user, '{user.name}'."
             )
         return None
 
