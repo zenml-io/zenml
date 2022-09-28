@@ -56,7 +56,7 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
     Attributes:
     """
 
-    prefix: Optional[str] = "zenmlserver"
+    prefix: Optional[str] = "default"
     region: Optional[str] = "eu-west-1"
     zenmlserver_namespace: Optional[str] = "terraform-server"
     kubectl_config_path: Optional[str] = os.path.join(

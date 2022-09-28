@@ -33,6 +33,7 @@ from zenml.zen_server.deploy.docker.docker_zen_server import (
     ZEN_SERVER_HEALTHCHECK_URL_PATH,
 )
 from zenml.zen_server.deploy.terraform.terraform_zen_server import (
+    TERRAFORM_FINAL_OUTPUT_NAME,
     TERRAFORM_VALUES_FILE_PATH,
     TERRAFORM_ZENML_SERVER_CONFIG_PATH,
     TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT,
@@ -100,6 +101,7 @@ class TerraformServerProvider(BaseServerProvider):
                 ),
                 log_level=server_config.log_level,
                 variables_file_path=TERRAFORM_VALUES_FILE_PATH,
+                final_output_name=TERRAFORM_FINAL_OUTPUT_NAME,
                 server=server_config,
             ),
             ServiceEndpointConfig(

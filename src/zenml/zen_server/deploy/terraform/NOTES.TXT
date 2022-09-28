@@ -96,3 +96,10 @@ from the deployed server ?
   and the recipe is locked. If killed, then the recipe thinks it's overwriting
   existing resources and fails.
   - no default timeout ??
+
+
+  add certificates 
+  override get_deployment_status
+  url, the certificates as outputs
+  get certificates
+  

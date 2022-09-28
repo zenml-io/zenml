@@ -1,7 +1,7 @@
 # create the ZenServer deployment
 resource "helm_release" "zen-server" {
 
-  name             = "zenml-server"
+  name             = "${var.prefix}-zenmlserver"
   chart            = var.helm_chart
   namespace        = var.zenmlserver_namespace
   create_namespace = true
