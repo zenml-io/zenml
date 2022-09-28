@@ -54,7 +54,7 @@ class TerraformServiceConfig(ServiceConfig):
         log_level: the log level to set the terraform client to. Choose one of
             TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
         variables_file_path: the path to the file that stores all variable values.
-        final_output_name: the output whose presence determines the success of 
+        final_output_name: the output whose presence determines the success of
             the deployment.
     """
 
@@ -143,7 +143,7 @@ class TerraformService(BaseService):
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the the current operational state of the external service.
 
-        If the final output name provided in the config exists as a non-null value, 
+        If the final output name provided in the config exists as a non-null value,
         then it's reasonable to assume that the service is up and running.
 
         Returns:
@@ -152,30 +152,23 @@ class TerraformService(BaseService):
             description of the error if one is encountered while checking the
             service status).
         """
-        output: Optional[Any] = None
-        try:
-            output = self.terraform_client.output(
-                self.config.final_output_name,
-                full_value=True
-            )
-        except python_terraform.TerraformCommandError as e:
-            # the recipe doesn't have an output yet
+        code, out, err = self.terraform_client.plan(
+            detailed_exitcode=True,
+            refresh=False,
+            var=self.get_vars(),
+            input=False,
+            raise_on_error=False,
+        )
+
+        if code == 0:
+            return (ServiceState.ACTIVE, "The deployment is active.")
+        elif code == 2:
             return (
                 ServiceState.INACTIVE,
-                "The deployment is not active yet."
-            )
-
-        if output is None:
-            return (
-                ServiceState.ERROR,
-                "The deployment may have failed. Please "
-                "check the logs to know more."
+                "The deployment isn't active or needs an update.",
             )
         else:
-            return (
-                ServiceState.ACTIVE,
-                "The deployment is now active."
-            )
+            return (ServiceState.ERROR, f"Deployment error: \n{err}")
 
     def _init_and_apply(self) -> None:
         """Function to call terraform init and terraform apply.
@@ -208,7 +201,7 @@ class TerraformService(BaseService):
             fileio.mkdir(previous_run_dir)
 
         # get variables from the recipe as a python dictionary
-        vars = self.get_vars(self.terraform_client.working_dir)
+        vars = self.get_vars()
 
         # once init is successful, call terraform apply
         self.terraform_client.apply(
@@ -218,7 +211,7 @@ class TerraformService(BaseService):
             raise_on_error=True,
         )
 
-    def get_vars(self, path: str) -> Dict[str, Any]:
+    def get_vars(self) -> Dict[str, Any]:
         """Get variables as a dictionary from values.tfvars.json.
 
         Args:
@@ -234,6 +227,7 @@ class TerraformService(BaseService):
         """
         import json
 
+        path = self.terraform_client.working_dir
         variables_file_path = os.path.join(
             path, self.config.variables_file_path
         )
@@ -292,37 +286,6 @@ class TerraformService(BaseService):
                     self.config.directory_path,
                     self.status.runtime_path,
                 )
-
-    def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the terraform deployment.
-
-        Returns:
-            The operational state of the terraform deployment and a message
-            providing additional information about that state (e.g. a
-            description of the error, if one is encountered).
-        """
-
-        # get variables from the recipe as a python dictionary
-        vars = self.get_vars(self.terraform_client.working_dir)
-
-        # call terraform plan to get the current state
-        ret_code, out, err = self.terraform_client.plan(
-            detailed_exitcode=True,
-            refresh=False,
-            var=vars,
-            input=False,
-            # capture_output=False,
-            raise_on_error=False,
-        )
-        if ret_code == 0:
-            return ServiceState.ACTIVE, "Terraform resources are deployed."
-        elif ret_code == 2:
-            return (
-                ServiceState.INACTIVE,
-                "Terraform resources are not deployed or partially deployed.",
-            )
-        else:
-            return ServiceState.ERROR, f"Error while checking status: {err}"
 
     def provision(self) -> None:
         """Provision the service."""

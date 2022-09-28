@@ -4,7 +4,7 @@ module "vpc" {
   version = "~> 3.0"
   count   = var.create_rds? 1 : 0
 
-  name = "${var.prefix}-vpc"
+  name = "${var.name}-vpc"
   cidr = "10.10.0.0/16"
 
   azs             = ["${var.region}a", "${var.region}b", "${var.region}c"]

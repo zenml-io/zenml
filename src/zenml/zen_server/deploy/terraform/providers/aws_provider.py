@@ -56,6 +56,7 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
     Attributes:
     """
 
+<<<<<<< HEAD
     prefix: Optional[str] = "default"
     region: Optional[str] = "eu-west-1"
     zenmlserver_namespace: Optional[str] = "terraform-server"
@@ -79,6 +80,34 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
     ingress_path: Optional[str] = "zenmlhihi"
     create_ingress_controller: Optional[bool] = True
     ingress_controller_hostname: Optional[str] = ""
+=======
+    region: str = "eu-west-1"
+    zenmlserver_namespace: str = "zenmlserver"
+    kubectl_config_path: str = os.path.join(
+        str(Path.home()),
+        ".kube",
+        "config"
+    )
+    rds_db_username: str = "admin"
+    rds_db_password: str = ""
+    create_rds: bool = True
+    db_name: str = "zenmlserver"
+    db_type: str = "mysql"
+    db_version: str = "8.0.28"
+    db_instance_class: str = "db.t3.micro"
+    db_allocated_storage: int = 5
+    rds_url: str = ""
+    rds_sslCa: str = ""
+    rds_sslCert: str = ""
+    rds_sslKey: str = ""
+    rds_sslVerifyServerCert: bool = True
+    ingress_path: str = ""
+    create_ingress_controller: bool = True
+    ingress_controller_hostname: str = ""
+    ingress_tls: bool = True
+    ingress_tls_generate_certs: bool = True
+    ingress_tls_secret_name: str = "zenml-tls-certs"
+>>>>>>> b4343afb62ba73a95167817e05a33c0ec00c4443
 
 
 class AWSServerProvider(TerraformServerProvider):

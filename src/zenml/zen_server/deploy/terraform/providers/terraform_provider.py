@@ -16,6 +16,7 @@
 import os
 from typing import ClassVar, List, Optional, Tuple, Type, cast
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import ServerProviderType
 from zenml.logger import get_logger
 from zenml.services import BaseService, ServiceConfig
@@ -28,7 +29,10 @@ from zenml.services.service_monitor import (
     ServiceEndpointHealthMonitorConfig,
 )
 from zenml.zen_server.deploy.base_provider import BaseServerProvider
-from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
+from zenml.zen_server.deploy.deployment import (
+    ServerDeploymentConfig,
+    ServerDeploymentStatus,
+)
 from zenml.zen_server.deploy.docker.docker_zen_server import (
     ZEN_SERVER_HEALTHCHECK_URL_PATH,
 )
@@ -294,3 +298,37 @@ class TerraformServerProvider(BaseServerProvider):
         """
         server = cast(TerraformZenServer, service)
         return server.config.server
+
+    def _get_deployment_status(
+        self, service: BaseService
+    ) -> ServerDeploymentStatus:
+        """Get the status of a server deployment from its service.
+
+        Args:
+            service: The server deployment service.
+
+        Returns:
+            The status of the server deployment.
+        """
+        gc = GlobalConfiguration()
+        url: Optional[str] = None
+        service = cast(
+            TerraformZenServer,
+            service
+        )
+        if service.is_running:
+            url = service.get_server_url()
+            tls_crt, tls_key, ca_crt = service.get_certificates()
+        connected = (
+            url is not None and gc.store is not None and gc.store.url == url
+        )
+
+        return ServerDeploymentStatus(
+            url=url,
+            status=service.status.state,
+            status_message=service.status.last_error,
+            connected=connected,
+            tls_crt=tls_crt,
+            tls_key=tls_key,
+            ca_crt=ca_crt,
+        )
