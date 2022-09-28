@@ -20,10 +20,11 @@ preventive or correcting actions.
 Related concepts:
 
 * the Data Validator is an optional type of Stack Component that needs to be
-registered as part of your ZenML [Stack](../../developer-guide/stacks-repositories/stack.md).
+registered as part of your ZenML [Stack](../../starter-guide/stacks/stacks.md).
 * Data Validators used in ZenML pipelines usually generate data profiles and
-data quality check reports that are versioned and stored in the [Artifact Store](../artifact-stores/artifact-stores.md).
-They can be retrieved and inspected using [the post-execution workflow API](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md).
+data quality check reports that are versioned and stored in the 
+[Artifact Store](../artifact-stores/artifact-stores.md). They can be retrieved 
+and inspected using [the post-execution workflow API](../../starter-guide/pipelines/fetching-pipelines.md).
 
 ## When to use it
 
@@ -52,12 +53,12 @@ following table lists the currently available Data Validators and summarizes
 their features and the data types and model types that they can be used with in
 ZenML pipelines:
 
-| Data Validator | Validation Features | Data Types | Model Types | Notes | Flavor/Integration |
-|----------------|---------------------|------------|-------------|-------|--------------------|
-| [Deepchecks](./deepchecks.md) | data quality<br>data drift<br>model drift<br>model performance | tabular: `pandas.DataFrame`<br>CV: `torch.utils.data.dataloader.DataLoader`| tabular: `sklearn.base.ClassifierMixin`<br>CV: `torch.nn.Module` | Add Deepchecks data and model validation tests to your pipelines | `deepchecks` |
-| [Evidently](./evidently.md) | data quality<br>data drift<br>model drift<br>model performance | tabular: `pandas.DataFrame` | N/A | Use Evidently to generate a variety of data quality and data/model drift reports and visualizations | `evidently` |
-| [Great Expectations](./great-expectations.md) | data profiling<br>data quality | tabular: `pandas.DataFrame` | N/A | Perform data testing, documentation and profiling with Great Expectations | `great_expectations` |
-| [Whylogs/WhyLabs](./whylogs.md) | data drift | tabular: `pandas.DataFrame` | N/A | Generate data profiles with whylogs and upload them to WhyLabs | `whylogs` |
+| Data Validator                                | Validation Features                                            | Data Types                                                                  | Model Types                                                      | Notes                                                                                               | Flavor/Integration   |
+|-----------------------------------------------|----------------------------------------------------------------|-----------------------------------------------------------------------------|------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|----------------------|
+| [Deepchecks](./deepchecks.md)                 | data quality<br>data drift<br>model drift<br>model performance | tabular: `pandas.DataFrame`<br>CV: `torch.utils.data.dataloader.DataLoader` | tabular: `sklearn.base.ClassifierMixin`<br>CV: `torch.nn.Module` | Add Deepchecks data and model validation tests to your pipelines                                    | `deepchecks`         |
+| [Evidently](./evidently.md)                   | data quality<br>data drift<br>model drift<br>model performance | tabular: `pandas.DataFrame`                                                 | N/A                                                              | Use Evidently to generate a variety of data quality and data/model drift reports and visualizations | `evidently`          |
+| [Great Expectations](./great-expectations.md) | data profiling<br>data quality                                 | tabular: `pandas.DataFrame`                                                 | N/A                                                              | Perform data testing, documentation and profiling with Great Expectations                           | `great_expectations` |
+| [Whylogs/WhyLabs](./whylogs.md)               | data drift                                                     | tabular: `pandas.DataFrame`                                                 | N/A                                                              | Generate data profiles with whylogs and upload them to WhyLabs                                      | `whylogs`            |
 
 If you would like to see the available flavors of Data Validator, you can 
 use the command:
@@ -72,14 +73,15 @@ Every Data Validator has different data profiling and testing capabilities and
 uses a slightly different way of analyzing your data and your models, but it
 generally works as follows:
 
-* first, you have to configure and add an Data Validator to your ZenML stack
+* first, you have to configure and add a Data Validator to your ZenML stack
 * every integration includes one or more builtin data validation steps that you
 can add to your pipelines. Of course, you can also use the libraries directly in
-your own custom pipeline steps and simply return the results (e.g. data profiles,
-test reports) as artifacts that are versioned and stored by ZenML in its Artifact
-Store.
-* you can access the data validation artifacts in subsequent pipeline steps or
-you can load them in the [the post-execution workflow](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md) to process them or visualize them as needed.
+your own custom pipeline steps and simply return the results (e.g. data 
+profiles, test reports) as artifacts that are versioned and stored by ZenML in 
+its Artifact Store.
+* you can access the data validation artifacts in subsequent pipeline steps, or
+you can load them in [the post-execution workflow](../../starter-guide/pipelines/fetching-pipelines.md) 
+to process them or visualize them as needed.
 
 Consult the documentation for the particular [Data Validator flavor](#data-validator-flavors)
 that you plan on using or are using in your stack for detailed information about

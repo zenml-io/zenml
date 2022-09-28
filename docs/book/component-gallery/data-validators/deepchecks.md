@@ -30,21 +30,18 @@ and/or model validation features that are possible with Deepchecks:
 
 * Data Integrity Checks [for tabular](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#data-integrity)
 or [computer vision](https://docs.deepchecks.com/en/stable/checks_gallery/vision.html#data-integrity)
-data:
-detect data integrity problems within a single dataset (e.g. missing values,
-conflicting labels, mixed data types etc.).
+data: detect data integrity problems within a single dataset (e.g. missing
+values, conflicting labels, mixed data types etc.).
 
 * Data Drift Checks [for tabular](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#train-test-validation)
 or [computer vision](https://docs.deepchecks.com/en/stable/checks_gallery/vision.html#train-test-validation)
-data:
-detect data skew and data drift problems by comparing a target dataset against a
-reference dataset (e.g. feature drift, label drift, new labels etc.).
+data: detect data skew and data drift problems by comparing a target dataset 
+against a reference dataset (e.g. feature drift, label drift, new labels etc.).
 
 * Model Performance Checks [for tabular](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#model-evaluation)
 or [computer vision](https://docs.deepchecks.com/en/stable/checks_gallery/vision.html#model-evaluation)
-data:
-evaluate a model and detect problems with its performance (e.g. confusion matrix,
-boosting overfit, model error analysis)
+data: evaluate a model and detect problems with its performance (e.g. confusion 
+matrix, boosting overfit, model error analysis)
 
 You should consider one of the other [Data Validator flavors](./data-validators.md#data-validator-flavors)
 if you need a different set of data validation features.
@@ -53,7 +50,7 @@ if you need a different set of data validation features.
 
 The Deepchecks Data Validator flavor is included in the Deepchecks ZenML
 integration, you need to install it on your local machine to be able to register
-an Deepchecks Data Validator and add it to your stack:
+a Deepchecks Data Validator and add it to your stack:
 
 ```shell
 zenml integration install deepchecks -y
@@ -82,18 +79,19 @@ one-to-one to the set of Deepchecks data integrity checks [for tabular](https://
 and [computer vision](https://docs.deepchecks.com/en/stable/checks_gallery/vision.html#data-integrity)
 data
 
-* **data drift checks** require two datasets as input: target and reference. These correspond
-one-to-one to the set of Deepchecks train-test checks [for tabular data](https://docs.deepchecks.com/stable/checks_gallery/tabular.html#train-test-validation) and [for computer vision](https://docs.deepchecks.com/stable/checks_gallery/vision.html#train-test-validation).
+* **data drift checks** require two datasets as input: target and reference. 
+These correspond one-to-one to the set of Deepchecks train-test checks 
+[for tabular data](https://docs.deepchecks.com/stable/checks_gallery/tabular.html#train-test-validation) and [for computer vision](https://docs.deepchecks.com/stable/checks_gallery/vision.html#train-test-validation).
 
 * **model validation checks** require a single dataset and a mandatory model as
 input. This list includes a subset of the model evaluation checks provided by
-Deepchecks [for tabular data](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#model-evaluation) and 
+Deepchecks [for tabular data](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#model-evaluation)
 and [for computer vision](https://docs.deepchecks.com/stable/checks_gallery/vision.html#model-evaluation)
 that expect a single dataset as input.
 
 * **model drift checks** require two datasets and a mandatory model as input.
 This list includes a subset of the model evaluation checks provided by
-Deepchecks [for tabular data](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#model-evaluation) and 
+Deepchecks [for tabular data](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#model-evaluation)
 and [for computer vision](https://docs.deepchecks.com/stable/checks_gallery/vision.html#model-evaluation)
 that expect two datasets as input: target and reference.
 
@@ -117,8 +115,8 @@ recommended approach, but can only be customized through the supported step
 configuration parameters.
 * call the data validation methods provided by [the Deepchecks Data Validator](#the-deepchecks-data-validator)
 in your custom step implementation. This method allows for more flexibility
-concerning what can happen in the pipeline step, but you are still limited to the
-functionality implemented in the Data Validator.
+concerning what can happen in the pipeline step, but you are still limited 
+to the functionality implemented in the Data Validator.
 * [use the Deepchecks library directly](#call-deepchecks-directly) in
 your custom step implementation. This gives you complete freedom in how you are
 using Deepchecks' features.
@@ -129,11 +127,21 @@ pipelines.
 
 ## Warning! Usage in remote orchestrators
 
-The current ZenML version has a limitation in its base Docker image that requires a workaround for *all* pipelines using Deepchecks with a remote orchestrator (e.g. [Kubeflow](../orchestrators/kubeflow.md), [Vertex](../orchestrators/gcloud-vertexai.md)). The limitation being that the base Docker image needs to be extended to include binaries that are required by `opencv2`, which is a package that Deepchecks requires.
+The current ZenML version has a limitation in its base Docker image that 
+requires a workaround for *all* pipelines using Deepchecks with a remote 
+orchestrator (e.g. [Kubeflow](../orchestrators/kubeflow.md), 
+[Vertex](../orchestrators/gcloud-vertexai.md)). The limitation being that the 
+base Docker image needs to be extended to include binaries that are required by 
+`opencv2`, which is a package that Deepchecks requires.
 
-While these binaries might be available on most operating systems out of the box (and therefore not a problem with the default local orchestrator), we need to tell ZenML to add them to the containerization step when running in remote settings. Here is how:
+While these binaries might be available on most operating systems out of the 
+box (and therefore not a problem with the default local orchestrator), we need 
+to tell ZenML to add them to the containerization step when running in remote 
+settings. Here is how:
 
-First, create a file called `deepchecks-zenml.Dockerfile` and place it on the same level as your runner script (commonly called `run.py`). The contents of the Dockerfile are as follows:
+First, create a file called `deepchecks-zenml.Dockerfile` and place it on the 
+same level as your runner script (commonly called `run.py`). The contents of 
+the Dockerfile are as follows:
 
 ```shell
 ARG ZENML_VERSION=0.13.2
@@ -143,7 +151,10 @@ RUN apt-get update
 RUN apt-get install ffmpeg libsm6 libxext6  -y
 ```
 
-Then, place the following snippet above your pipeline definition. Note that the path of the `dockerfile`  are relative to where the pipeline definition file is. Read [the containerization guide](../../developer-guide/advanced-usage/docker.md) for more details:
+Then, place the following snippet above your pipeline definition. Note that 
+the path of the `dockerfile`  are relative to where the pipeline definition 
+file is. Read [the containerization guide](../../advanced-guide/practical/containerization.md) 
+for more details:
 
 ```python
 import zenml
@@ -167,7 +178,8 @@ def my_pipeline(...):
     ...
 ```
 
-From here on, you can continue to use the deepchecks integration as is explained below.
+From here on, you can continue to use the deepchecks integration as is 
+explained below.
 
 ### The Deepchecks standard steps
 
@@ -209,13 +221,13 @@ data integrity tests with their default configuration, e.g.:
 
 ```python
 from zenml.integrations.deepchecks.steps import (
-    DeepchecksDataIntegrityCheckStepConfig,
+    DeepchecksDataIntegrityCheckStepParameters,
     deepchecks_data_integrity_check_step,
 )
 
 data_validator = deepchecks_data_integrity_check_step(
     step_name="data_validator",
-    config=DeepchecksDataIntegrityCheckStepConfig(),
+    params=DeepchecksDataIntegrityCheckStepParameters(),
 )
 ```
 
@@ -249,7 +261,7 @@ class DeepchecksDataIntegrityCheckStep(BaseStep):
     def entrypoint(  # type: ignore[override]
         self,
         dataset: pd.DataFrame,
-        config: DeepchecksDataIntegrityCheckStepConfig,
+        params: DeepchecksDataIntegrityCheckStepParameters,
     ) -> SuiteResult:
         ...
 ```
@@ -260,13 +272,13 @@ be executed by supplying a `check_list` argument to the step configuration:
 ```python
 from zenml.integrations.deepchecks.validation_checks import DeepchecksDataIntegrityCheck
 from zenml.integrations.deepchecks.steps import (
-    DeepchecksDataIntegrityCheckStepConfig,
+    DeepchecksDataIntegrityCheckStepParameters,
     deepchecks_data_integrity_check_step,
 )
 
 data_validator = deepchecks_data_integrity_check_step(
     step_name="data_validator",
-    config=DeepchecksDataIntegrityCheckStepConfig(
+    params=DeepchecksDataIntegrityCheckStepParameters(
         check_list=[
             DeepchecksDataIntegrityCheck.TABULAR_MIXED_DATA_TYPES,
             DeepchecksDataIntegrityCheck.TABULAR_DATA_DUPLICATES,
@@ -288,7 +300,7 @@ passed transparently to the Deepchecks library:
 additional information about how the data is structured, e.g.:
 
     ```python
-    config=DeepchecksDataIntegrityCheckStepConfig(
+    params=DeepchecksDataIntegrityCheckStepParameters(
         dataset_kwargs=dict(label='class', cat_features=['country', 'state']),
     ),
     ```
@@ -298,7 +310,7 @@ check object constructors. Arguments are grouped for each check and indexed
 using the full check class name or check enum value as dictionary keys, e.g.:
 
     ```python
-    config=DeepchecksDataIntegrityCheckStepConfig(
+    params=DeepchecksDataIntegrityCheckStepParameters(
         check_list=[
             DeepchecksDataIntegrityCheck.TABULAR_OUTLIER_SAMPLE_DETECTION,
             DeepchecksDataIntegrityCheck.TABULAR_STRING_LENGTH_OUT_OF_BOUNDS,
@@ -320,14 +332,15 @@ using the full check class name or check enum value as dictionary keys, e.g.:
 * `run_kwargs`: Additional keyword arguments to be passed to the Deepchecks
 Suite `run` method.
 
-The `check_kwargs` attribute can also be used to customize [the conditions](https://docs.deepchecks.com/en/stable/user-guide/general/deepchecks_hierarchy.html#condition)
+The `check_kwargs` attribute can also be used to customize 
+[the conditions](https://docs.deepchecks.com/en/stable/user-guide/general/deepchecks_hierarchy.html#condition)
 configured for each Deepchecks test. ZenML attaches a special meaning to all
 check arguments that start with `condition_` and have a dictionary as value.
 This is required because there is no declarative way to specify conditions for
 Deepchecks checks. For example, the following step configuration:
 
 ```python
-config=DeepchecksDataIntegrityCheckStepConfig(
+params=DeepchecksDataIntegrityCheckStepParameters(
     check_list=[
         DeepchecksDataIntegrityCheck.TABULAR_OUTLIER_SAMPLE_DETECTION,
         DeepchecksDataIntegrityCheck.TABULAR_STRING_LENGTH_OUT_OF_BOUNDS,
@@ -515,7 +528,7 @@ def data_integrity_check(
 
 ### The Deepchecks ZenML Visualizer
 
-In the [post-execution workflow](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md),
+In the [post-execution workflow](../../starter-guide/pipelines/fetching-pipelines.md),
 you can load and render the Deepchecks test suite results generated and returned
 by your pipeline steps by means of the ZenML Deepchecks Visualizer, e.g.:
 

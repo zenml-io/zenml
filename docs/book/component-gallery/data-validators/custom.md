@@ -26,10 +26,14 @@ custom Data Validator implementation.
 If you want to implement your own custom Data Validator, you can follow the
 following steps:
 
-1. Create a class which inherits from [the `BaseDataValidator` class](https://apidocs.zenml.io/latest/api_docs/data_validators/#zenml.data_validators.base_data_validator.BaseDataValidator).
-2. Define the `FLAVOR` class variable.
-3. Override one or more of the `BaseDataValidator` methods, depending on the
+
+1. Create a class which inherits from [the `BaseDataValidator` class](https://apidocs.zenml.io/latest/api_docs/data_validators/#zenml.data_validators.base_data_validator.BaseDataValidator)
+and override one or more of the abstract methods, depending on the
 capabilities of the underlying library/service that you want to integrate.
+2. If you need any configuration, you can create a class which inherits 
+from the `BaseDataValidatorConfig` class.
+3. Bring both of these classes together by inheriting from the
+`BaseDataValidatorFlavor`.
 4. (Optional) You should also provide some standard steps that others can easily
 insert into their pipelines for instant access to data validation features.
 
@@ -40,13 +44,24 @@ as:
 zenml data-validator flavor register <THE-SOURCE-PATH-OF-YOUR-DATA-VALIDATOR>
 ```
 
-ZenML includes a range of Data Validator implementations provided by specific
-integration modules. You can use them as examples of how you can extend the [base Data Validator class](https://apidocs.zenml.io/latest/api_docs/data_validators/#zenml.data_validators.base_data_validator.BaseDataValidator)
-to implement your own custom Data Validator:
+{% hint style="warning" %}
+It is important to draw attention to when and how these base abstractions are 
+coming into play in a ZenML workflow.
 
-|  Data Validator  | Implementation  |
-|------------------|-----------------|
-| [Deepchecks](./deepchecks.md) | [DeepchecksDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/deepchecks/data_validators/deepchecks_data_validator.py) |
-| [Evidently](./evidently.md) | [EvidentlyDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/evidently/data_validators/evidently_data_validator.py) |
-| [Great Expectations](./great-expectations.md) | [GreatExpectationsDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/great_expectations/data_validators/ge_data_validator.py) |
-| [Whylogs/WhyLabs](./whylogs.md) | [WhylogsDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/whylogs/data_validators/whylogs_data_validator.py) |
+- The **CustomDataValidatorFlavor** class is imported and utilized upon the 
+creation of the custom flavor through the CLI.
+- The **CustomDataValidatorConfig** class is imported when someone tries to 
+register/update a stack component with this custom flavor. Especially, 
+during the registration process of the stack component, the config will be used 
+to validate the values given by the user. As `Config` object are inherently 
+`pydantic` objects, you can also add your own custom validators here.
+- The **CustomDataValidator** only comes into play when the component is 
+ultimately in use. 
+
+The design behind this interaction lets us separate the configuration of the 
+flavor from its implementation. This way we can register flavors and components 
+even when the major dependencies behind their implementation are not installed
+in our local setting (assuming the `CustomDataValidatorFlavor` and the 
+`CustomDataValidatorConfig` are implemented in a different module/path than
+the actual `CustomDataValidator`).
+{% endhint %}

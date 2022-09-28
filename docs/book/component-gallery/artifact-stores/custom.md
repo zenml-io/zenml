@@ -196,15 +196,3 @@ in our local setting (assuming the `CustomArtifactStoreFlavor` and the
 `CustomArtifactStoreConfig` are implemented in a different module/path than 
 the actual `CustomArtifactStore`).
 {% endhint %}
-
-ZenML includes a range of Artifact Store implementations, some built-in and
-other provided by specific integration modules. You can use them as examples
-of how you can extend the [base Artifact Store abstraction](#base-abstraction)
-to implement your own custom Artifact Store:
-
-| Artifact Store                                | Implementation                                                                                                                         |
-|-----------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| [Local](./local.md)                           | [LocalArtifactStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/artifact_stores/local_artifact_store.py)                    |
-| [AWS S3](./amazon-s3.md)                      | [S3ArtifactStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/s3/artifact_stores/s3_artifact_store.py)          |
-| [Google Cloud Storage](./gcloud-gcs.md)       | [GCPArtifactStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py)       |
-| [Azure Blob Storage](./azure-blob-storage.md) | [AzureArtifactStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/azure/artifact_stores/azure_artifact_store.py) |
