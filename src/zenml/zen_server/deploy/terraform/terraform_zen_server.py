@@ -16,6 +16,8 @@
 import os
 from typing import Any, Dict, Optional, Tuple, cast
 
+from pathlib import Path
+
 from zenml.logger import get_logger
 from zenml.services import (
     ServiceState,
@@ -56,6 +58,27 @@ TERRAFORM_FINAL_OUTPUT_NAME = "zenml_server_url"
 TERRAFORM_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
 
+ZENML_HELM_CHART_SUBPATH = "helm"
+
+
+def get_helm_chart_path() -> str:
+    """Get the ZenML server helm chart path.
+
+    The ZenML server helm chart files are located in a folder relative to the
+    `zenml.zen_server.deploy` Python module.
+
+    Returns:
+        The helm chart path.
+    """
+    import zenml.zen_server.deploy as deploy_module
+
+    path = os.path.join(
+        os.path.dirname(deploy_module.__file__),
+        ZENML_HELM_CHART_SUBPATH,
+    )
+    return path
+
+
 class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     """Terraform server deployment configuration.
 
@@ -65,6 +88,24 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     """
 
     log_level: str = "ERROR"
+
+    username: str
+    password: str
+    email: str = ""
+    helm_chart: str = get_helm_chart_path()
+    zenmlserver_namespace: str = "zenmlserver"
+    kubectl_config_path: str = os.path.join(str(Path.home()), ".kube", "config")
+    ingress_tls: bool = True
+    ingress_tls_generate_certs: bool = True
+    ingress_tls_secret_name: str = "zenml-tls-certs"
+    rds_url: str = ""
+    rds_sslCa: str = ""
+    rds_sslCert: str = ""
+    rds_sslKey: str = ""
+    rds_sslVerifyServerCert: bool = True
+    ingress_path: str = ""
+    create_ingress_controller: bool = True
+    ingress_controller_hostname: str = ""
 
     class Config:
         """Pydantic configuration."""
@@ -119,46 +160,21 @@ class TerraformZenServer(TerraformService):
         except FileNotFoundError:
             return None
 
-    def _copy_config_values(self) -> None:
-        """Copy values from the server config to the locals.tf file."""
-        # get the contents of the values.tfvars.json file as a dictionary
-        variables = self.get_vars()
+    def get_vars(self) -> Dict[str, Any]:
+        """Get variables as a dictionary.
 
+        Returns:
+            A dictionary of variables to use for the Terraform deployment.
+        """
         # get the contents of the server deployment config as dict
-        server_config = self.config.server.dict()
-
-        # update the variables dict with values from the server
-        # deployment config
-        for key in server_config.keys() & variables.keys():
-            variables[key] = server_config[key]
-
-        self._write_to_variables_file(variables)
-
-    def _write_to_variables_file(self, variables: Dict[str, Any]) -> None:
-        """Write the dictionary into the values.tfvars.json file.
-
-        Args:
-            variables: the variables dict with the user-provided
-            config values
-        """
-        import json
-
-        assert self.status.runtime_path
-        with open(
-            os.path.join(
-                self.status.runtime_path, self.config.variables_file_path
-            ),
-            "w",
-        ) as fp:
-            json.dump(variables, fp=fp, indent=4)
-
-    def _setup_runtime_path(self) -> None:
-        """Set up the runtime path for the service.
-
-        This method sets up the runtime path for the service.
-        """
-        super()._setup_runtime_path()
-        self._copy_config_values()
+        filter_vars = ["log_level", "provider"]
+        # filter keys that are not modeled as terraform deployment vars
+        vars = {
+            k: v
+            for k, v in self.config.server.dict().items()
+            if k not in filter_vars
+        }
+        return vars
 
     def provision(self) -> None:
         """Provision the service."""
@@ -170,20 +186,28 @@ class TerraformZenServer(TerraformService):
 
     def get_server_url(self) -> str:
         """Returns the deployed ZenML server's URL"""
-        return str(self.terraform_client.output(
-            TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_URL, full_value=True
-        ))
-    
+        return str(
+            self.terraform_client.output(
+                TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_URL, full_value=True
+            )
+        )
+
     def get_certificates(self) -> Tuple[str, str, str]:
         """Returns a tuple of certificates from the ZenML server."""
         return (
-            str(self.terraform_client.output(
-                TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_TLS_CRT, full_value=True
-            )),
-            str(self.terraform_client.output(
-                TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_TLS_KEY, full_value=True
-            )),
-            str(self.terraform_client.output(
-                TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_CA_CRT, full_value=True
-            )),                        
+            str(
+                self.terraform_client.output(
+                    TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_TLS_CRT, full_value=True
+                )
+            ),
+            str(
+                self.terraform_client.output(
+                    TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_TLS_KEY, full_value=True
+                )
+            ),
+            str(
+                self.terraform_client.output(
+                    TERRAFORM_DEPLOYED_ZENSERVER_OUTPUT_CA_CRT, full_value=True
+                )
+            ),
         )

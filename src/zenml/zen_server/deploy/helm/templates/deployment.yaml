@@ -46,6 +46,8 @@ spec:
               value: {{ .Values.zenml.defaultProject | quote }}
             - name: ZENML_DEFAULT_USER_NAME
               value: {{ .Values.zenml.defaultUsername | quote }}
+            - name: ZENML_DEFAULT_USER_EMAIL
+              value: {{ .Values.zenml.defaultUserEmail | quote }}
             {{- if .Values.zenml.database }}
             - name: ZENML_STORE_TYPE
               value: sql

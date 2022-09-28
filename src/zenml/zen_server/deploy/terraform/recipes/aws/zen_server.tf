@@ -6,6 +6,20 @@ resource "helm_release" "zen-server" {
   namespace        = "${var.name}-${var.zenmlserver_namespace}"
   create_namespace = true
 
+
+  set {
+    name  = "zenml.defaultUsername"
+    value = var.username
+  }
+  set {
+    name  = "zenml.defaultPassword"
+    value = var.password
+  }
+  set {
+    name  = "zenml.defaultUserEmail"
+    value = var.email
+  }
+  
   # set up the right path for ZenML
   set {
     name  = "zenml.rootUrlPath"

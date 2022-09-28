@@ -1,3 +1,20 @@
+variable "username" {
+  description = "Username for the default ZenML server account"
+  default     = "default"
+  type        = string
+}
+
+variable "password" {
+  description = "Password for the default ZenML server account"
+  type        = string
+}
+
+variable "email" {
+  description = "Email address for the default ZenML server account"
+  default     = ""
+  type        = string
+}
+
 variable "name" {
   description = "The prefix to use for all AWS resource names"
   default     = "zenmlserver"

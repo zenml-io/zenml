@@ -104,3 +104,5 @@ from the deployed server ?
   get certificates
   
 14. don't use a prepopulated values.tfvars.json
+
+15. rename `rds_*` in TerraformServerDeploymentConfig to `database-*` to make them more generic

@@ -214,9 +214,6 @@ class TerraformService(BaseService):
     def get_vars(self) -> Dict[str, Any]:
         """Get variables as a dictionary from values.tfvars.json.
 
-        Args:
-            path: the path to the stack recipe.
-
         Returns:
             A dictionary of variables to use for the stack recipes
             derived from the tfvars.json file.
