@@ -116,7 +116,7 @@ allowed for those keys.
 Secret schemas are available as builtin schemas, or loaded when an integration
 is installed. Custom schemas can also be defined by sub-classing the
 `zenml.secret.BaseSecretSchema` class. For example, the following is the builtin
-schema defined for the MySQL Metadata Store secrets:
+schema defined for a MySQL secret:
 
 ```python
 from typing import ClassVar, Optional
