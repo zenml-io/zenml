@@ -71,6 +71,7 @@ class ServerDeploymentStatus(BaseModel):
     status_message: Optional[str] = None
     connected: bool
     url: Optional[str] = None
+    ca_crt: Optional[str] = None
 
 
 class ServerDeployment(BaseModel):

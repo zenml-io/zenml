@@ -857,7 +857,6 @@ def print_stacks_table(
     Returns:
         None
     """
-
     stack_dicts = []
     for stack in stacks:
         active_stack_id = repo.active_stack_model.id

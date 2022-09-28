@@ -39,7 +39,8 @@ zenml:
   rootUrlPath:
 
   defaultProject: "default"
-  defaultUsername: admin
+  defaultUsername: default
+  defaultUserEmail: ""
   # Use your own password here
   defaultPassword: zenml
 

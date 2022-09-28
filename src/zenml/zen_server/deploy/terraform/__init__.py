@@ -11,17 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML server deployments."""
+"""ZenServer Terraform Deployment."""
 
-from zenml.zen_server.deploy import docker, local, terraform
-from zenml.zen_server.deploy.deployer import ServerDeployer
-from zenml.zen_server.deploy.deployment import (
-    ServerDeployment,
-    ServerDeploymentConfig,
+
+from zenml.zen_server.deploy.terraform.providers.aws_provider import (
+    AWSServerDeploymentConfig,
+    AWSServerProvider,
+)
+from zenml.zen_server.deploy.terraform.providers.terraform_provider import (
+    TerraformServerProvider,
 )
 
 __all__ = [
-    "ServerDeployer",
-    "ServerDeployment",
-    "ServerDeploymentConfig",
+    "TerraformServerProvider",
+    "AWSServerProvider",
+    "AWSServerDeploymentConfig",
 ]
