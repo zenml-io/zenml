@@ -12,16 +12,14 @@ components. This establishes a clear link between pipeline runs and experiments.
 Related concepts:
 
 * the Experiment Tracker is an optional type of Stack Component that needs to be
-registered as part of your ZenML [Stack](../../developer-guide/stacks-repositories/stack.md).
-* ZenML already includes versioning and tracking for the pipeline artifacts by
-storing artifacts in the [Artifact Store](../artifact-stores/artifact-stores.md) and
-maintaining a record of pipeline executions through the [Metadata Store](../metadata-stores/metadata-stores.md).
+registered as part of your ZenML [Stack](../../starter-guide/stacks/stacks.md).
+* ZenML already provides versioning and tracking for the pipeline artifacts by
+storing artifacts in the [Artifact Store](../artifact-stores/artifact-stores.md).
 
 ## When to use it
 
 ZenML already records information about the artifacts circulated through your
-pipelines by means of the mandatory [Artifact Store](../artifact-stores/artifact-stores.md) and
-[Metadata Store](../metadata-stores/metadata-stores.md) stack components. 
+pipelines by means of the mandatory [Artifact Store](../artifact-stores/artifact-stores.md). 
 
 <!-- markdown-link-check-disable -->
 
@@ -50,11 +48,11 @@ tools.
 
 Experiment Trackers are optional stack components provided by integrations:
 
-| Experiment Tracker | Flavor | Integration | Notes             |
-|----------------|--------|-------------|-----------------------|
-| [MLflow](./mlflow.md) | `mlflow` | `mlflow` | Add MLflow experiment tracking and visualization capabilities to your ZenML pipelines |
-| [Weights & Biases](./wandb.md) | `wandb` | `wandb` | Add Weights & Biases experiment tracking and visualization capabilities to your ZenML pipelines |
-| [Custom Implementation](./custom.md) | _custom_ |  | _custom_ | Extend the Experiment Tracker abstraction and provide your own implementation |
+| Experiment Tracker                   | Flavor   | Integration   | Notes                                                                                           |
+|--------------------------------------|----------|---------------|-------------------------------------------------------------------------------------------------|
+| [MLflow](./mlflow.md)                | `mlflow` | `mlflow`      | Add MLflow experiment tracking and visualization capabilities to your ZenML pipelines           |
+| [Weights & Biases](./wandb.md)       | `wandb`  | `wandb`       | Add Weights & Biases experiment tracking and visualization capabilities to your ZenML pipelines |
+| [Custom Implementation](./custom.md) | _custom_ |               | _custom_                                                                                        | Extend the Experiment Tracker abstraction and provide your own implementation |
 
 If you would like to see the available flavors of Experiment Tracker, you can 
 use the command:

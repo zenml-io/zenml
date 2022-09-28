@@ -2,9 +2,11 @@
 description: How to log and visualize experiments with MLflow
 ---
 
-The MLflow Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) flavor
-provided with the MLflow ZenML integration that uses [the MLflow tracking service](https://mlflow.org/docs/latest/tracking.html) to log and visualize information from your pipeline steps (e.g. models, parameters,
-metrics).
+The MLflow Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) 
+flavor provided with the MLflow ZenML integration that uses 
+[the MLflow tracking service](https://mlflow.org/docs/latest/tracking.html) 
+to log and visualize information from your pipeline steps (e.g. models, 
+parameters, metrics).
 
 ## When would you want to use it?
 
@@ -30,7 +32,6 @@ if you have never worked with MLflow before and would rather use another
 experiment tracking tool that you are more familiar with.
 
 ## How do you deploy it?
-
 
 The MLflow Experiment Tracker flavor is provided by the MLflow ZenML
 integration, you need to install it on your local machine to be able to register
@@ -67,7 +68,7 @@ what other types of components it can be combined with. This option requires
 for the MLflow Experiment Tracker.
 
 * [Databricks scenario](https://www.databricks.com/product/managed-mlflow):
-This scenario assumes that you have a Databricks workspace and you want to
+This scenario assumes that you have a Databricks workspace, and you want to
 use the managed MLflow Tracking server it provides. This option requires
 [authentication related parameters](#authentication-methods) to be configured
 for the MLflow Experiment Tracker.

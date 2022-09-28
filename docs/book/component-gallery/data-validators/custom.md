@@ -41,7 +41,7 @@ Once you are done with the implementation, you can register it through the CLI
 as:
 
 ```shell
-zenml data-validator flavor register <THE-SOURCE-PATH-OF-YOUR-DATA-VALIDATOR>
+zenml data-validator flavor register <THE-SOURCE-PATH-OF-YOUR-DATA-VALIDATOR-FLAVOR>
 ```
 
 {% hint style="warning" %}

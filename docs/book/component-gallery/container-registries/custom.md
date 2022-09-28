@@ -93,7 +93,7 @@ Once you are done with the implementation, you can register it through the CLI
 as:
 
 ```shell
-zenml container-registry flavor register <THE-SOURCE-PATH-OF-YOUR-REGISTRY>
+zenml container-registry flavor register <THE-SOURCE-PATH-OF-YOUR-CONTAINER-REGISTRY-FLAVOR>
 ```
 
 {% hint style="warning" %}

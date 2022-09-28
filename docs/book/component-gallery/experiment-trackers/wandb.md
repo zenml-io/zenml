@@ -19,8 +19,8 @@ oriented workflow.
 
 You should use the Weights & Biases Experiment Tracker:
 * if you have already been using Weights & Biases to track experiment results
-for your project and would like to continue doing so as you are incorporating MLOps
-workflows and best practices in your project through ZenML.
+for your project and would like to continue doing so as you are incorporating 
+MLOps workflows and best practices in your project through ZenML.
 * if you are looking for a more visually interactive way of navigating the
 results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
 * if you would like to connect ZenML to Weights & Biases to share the artifacts
@@ -102,8 +102,8 @@ implementation and its configuration, you can have a look at [the API docs](http
 
 To be able to log information from a ZenML pipeline step using the Weights &
 Biases Experiment Tracker component in the active stack, you need to enable an
-experiment tracker using the `@step` decorator. Then use Weights & Biases logging
-or auto-logging capabilities as you would normally do, e.g.:
+experiment tracker using the `@step` decorator. Then use Weights & Biases 
+logging or auto-logging capabilities as you would normally do, e.g.:
 
 ```python
 import wandb
@@ -161,7 +161,7 @@ def my_step(
         y_test: np.ndarray,
         model: tf.keras.Model,
 ) -> float:
-    """Everything in this step is autologged"""
+    """Everything in this step is auto-logged"""
     ...
 ```
 
