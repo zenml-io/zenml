@@ -22,8 +22,7 @@ import click
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.stack_components import _component_display_name
-from zenml.cli.utils import print_stacks_table
+from zenml.cli.utils import _component_display_name, print_stacks_table
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
@@ -192,90 +191,30 @@ def register_stack(
     with console.status(f"Registering stack '{stack_name}'...\n"):
         repo = Repository()
 
-        stack_components = {
-            StackComponentType.ARTIFACT_STORE: [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.ARTIFACT_STORE, name=artifact_store_name
-                ).id
-            ],
-            StackComponentType.ORCHESTRATOR: [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.ORCHESTRATOR, name=orchestrator_name
-                ).id
-            ],
+        type_component_mapping: Dict[StackComponentType, str] = {
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ALERTER: alerter_name,
+            StackComponentType.ANNOTATOR: annotator_name,
+            StackComponentType.CONTAINER_REGISTRY: container_registry_name,
+            StackComponentType.DATA_VALIDATOR: data_validator_name,
+            StackComponentType.EXPERIMENT_TRACKER: experiment_tracker_name,
+            StackComponentType.FEATURE_STORE: feature_store_name,
+            StackComponentType.MODEL_DEPLOYER: model_deployer_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+            StackComponentType.SECRETS_MANAGER: secrets_manager_name,
+            StackComponentType.STEP_OPERATOR: step_operator_name,
         }
+        stack_components = dict()
 
-        if container_registry_name:
-            stack_components[StackComponentType.CONTAINER_REGISTRY] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.CONTAINER_REGISTRY,
-                    name=container_registry_name,
-                ).id
-            ]
-
-        if step_operator_name:
-            stack_components[StackComponentType.STEP_OPERATOR] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.STEP_OPERATOR,
-                    name=step_operator_name,
-                ).id
-            ]
-
-        if secrets_manager_name:
-            stack_components[StackComponentType.SECRETS_MANAGER] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.SECRETS_MANAGER,
-                    name=secrets_manager_name,
-                ).id
-            ]
-
-        if feature_store_name:
-            stack_components[StackComponentType.FEATURE_STORE] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.FEATURE_STORE,
-                    name=feature_store_name,
-                ).id
-            ]
-
-        if model_deployer_name:
-            stack_components[StackComponentType.MODEL_DEPLOYER] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.MODEL_DEPLOYER,
-                    name=model_deployer_name,
-                ).id
-            ]
-
-        if experiment_tracker_name:
-            stack_components[StackComponentType.EXPERIMENT_TRACKER] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.EXPERIMENT_TRACKER,
-                    name=experiment_tracker_name,
-                ).id
-            ]
-
-        if alerter_name:
-            stack_components[StackComponentType.ALERTER] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.ALERTER,
-                    name=alerter_name,
-                ).id
-            ]
-
-        if annotator_name:
-            stack_components[StackComponentType.ANNOTATOR] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.ANNOTATOR,
-                    name=annotator_name,
-                ).id
-            ]
-
-        if data_validator_name:
-            stack_components[StackComponentType.DATA_VALIDATOR] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.DATA_VALIDATOR,
-                    name=data_validator_name,
-                ).id
-            ]
+        for c_type, name in type_component_mapping.items():
+            if name:
+                stack_components[c_type] = [
+                    cli_utils.get_component_by_id_or_name_or_prefix(
+                        repo=repo,
+                        component_type=c_type,
+                        id_or_name_or_prefix=name,
+                    ).id
+                ]
 
         stack_ = StackModel(
             name=stack_name,
@@ -436,93 +375,32 @@ def update_stack(
                 f"Stack `{stack_name_or_id}` cannot be updated as it does not"
                 f" exist.",
             )
+
+        type_component_mapping: Dict[StackComponentType, str] = {
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ALERTER: alerter_name,
+            StackComponentType.ANNOTATOR: annotator_name,
+            StackComponentType.CONTAINER_REGISTRY: container_registry_name,
+            StackComponentType.DATA_VALIDATOR: data_validator_name,
+            StackComponentType.EXPERIMENT_TRACKER: experiment_tracker_name,
+            StackComponentType.FEATURE_STORE: feature_store_name,
+            StackComponentType.MODEL_DEPLOYER: model_deployer_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+            StackComponentType.SECRETS_MANAGER: secrets_manager_name,
+            StackComponentType.STEP_OPERATOR: step_operator_name,
+        }
+
         stack_components = stack_to_update.components
 
-        if artifact_store_name:
-            stack_components[StackComponentType.ARTIFACT_STORE] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.ARTIFACT_STORE, name=artifact_store_name
-                ).id
-            ]
-
-        if orchestrator_name:
-            stack_components[StackComponentType.ORCHESTRATOR] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.ORCHESTRATOR, name=orchestrator_name
-                ).id
-            ]
-
-        if container_registry_name:
-            stack_components[StackComponentType.CONTAINER_REGISTRY] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.CONTAINER_REGISTRY,
-                    name=container_registry_name,
-                ).id
-            ]
-
-        if step_operator_name:
-            stack_components[StackComponentType.STEP_OPERATOR] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.STEP_OPERATOR,
-                    name=step_operator_name,
-                ).id
-            ]
-
-        if secrets_manager_name:
-            stack_components[StackComponentType.SECRETS_MANAGER] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.SECRETS_MANAGER,
-                    name=secrets_manager_name,
-                ).id
-            ]
-
-        if feature_store_name:
-            stack_components[StackComponentType.FEATURE_STORE] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.FEATURE_STORE,
-                    name=feature_store_name,
-                ).id
-            ]
-
-        if model_deployer_name:
-            stack_components[StackComponentType.MODEL_DEPLOYER] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.MODEL_DEPLOYER,
-                    name=model_deployer_name,
-                ).id
-            ]
-
-        if experiment_tracker_name:
-            stack_components[StackComponentType.EXPERIMENT_TRACKER] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.EXPERIMENT_TRACKER,
-                    name=experiment_tracker_name,
-                ).id
-            ]
-
-        if alerter_name:
-            stack_components[StackComponentType.ALERTER] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.ALERTER,
-                    name=alerter_name,
-                ).id
-            ]
-
-        if annotator_name:
-            stack_components[StackComponentType.ANNOTATOR] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.ANNOTATOR,
-                    name=annotator_name,
-                ).id
-            ]
-
-        if data_validator_name:
-            stack_components[StackComponentType.DATA_VALIDATOR] = [
-                repo.get_stack_component_by_name_and_type(
-                    StackComponentType.DATA_VALIDATOR,
-                    name=data_validator_name,
-                ).id
-            ]
+        for c_type, name in type_component_mapping.items():
+            if name:
+                stack_components[c_type] = [
+                    cli_utils.get_component_by_id_or_name_or_prefix(
+                        repo=repo,
+                        component_type=c_type,
+                        id_or_name_or_prefix=name,
+                    ).id
+                ]
 
         stack_to_update.components = stack_components
 
@@ -555,7 +433,7 @@ def share_stack(
 
     repo = Repository()
     try:
-        stack_to_rename = cli_utils.get_stack_by_id_or_name_or_prefix(
+        stack_to_share = cli_utils.get_stack_by_id_or_name_or_prefix(
             repo=repo, id_or_name_or_prefix=stack_name_or_id
         )
     except KeyError:
@@ -564,23 +442,29 @@ def share_stack(
             f"exist.",
         )
     else:
-        for c_t, c in stack_to_rename.to_hydrated_model().components.items():
+        for c_t, c in stack_to_share.to_hydrated_model().components.items():
             only_component = c[0]  # For future compatibility
-            with console.status(
-                f"Sharing component `{only_component.name}`" f"...\n"
-            ):
-                if not only_component:
-                    only_component.is_shared = True
-
-                    repo.update_stack_component(component=only_component)
-
-        with console.status(f"Sharing stack `{stack_to_rename.name}` ...\n"):
-
-            stack_to_rename.is_shared = True
-
-            repo.update_stack(stack_to_rename)
+            # with console.status(
+            #     f"Sharing component `{only_component.name}`" f"...\n"
+            # ):
             cli_utils.declare(
-                f"Stack `{stack_to_rename.name}` successfully" f" updated!"
+                f"A Stack can only be shared when all its "
+                f"components are also shared. Component "
+                f"'{only_component.name}' is also set to "
+                f"shared."
+            )
+
+            only_component.is_shared = True
+            breakpoint()
+            repo.update_stack_component(component=only_component)
+
+        with console.status(f"Sharing stack `{stack_to_share.name}` ...\n"):
+
+            stack_to_share.is_shared = True
+
+            repo.update_stack(stack_to_share)
+            cli_utils.declare(
+                f"Stack `{stack_to_share.name}` successfully shared!"
             )
 
 
@@ -1011,20 +895,22 @@ def down_stack(force: bool = False, old_force: bool = False) -> None:
 
 
 def _get_component_as_dict(
-    component_type: StackComponentType, component_name: str
+    component_type: StackComponentType, component_name_or_id: str
 ) -> Dict[str, str]:
     """Return a dict representation of a component's key config values.
 
     Args:
         component_type: The type of component to get.
-        component_name: The name of the component to get.
+        component_name_or_id: The name of the component to get.
 
     Returns:
         A dict representation of the component's key config values.
     """
     repo = Repository()
-    component = repo.get_stack_component_by_name_and_type(
-        type=component_type, name=component_name
+    component = cli_utils.get_component_by_id_or_name_or_prefix(
+        repo=repo,
+        component_type=component_type,
+        id_or_name_or_prefix=component_name_or_id,
     )
     component_dict = {
         key: value

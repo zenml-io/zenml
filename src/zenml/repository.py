@@ -841,7 +841,7 @@ class Repository(metaclass=RepositoryMetaClass):
         )
         return self.zen_store.get_stack_component(component_id=component_id)
 
-    def get_stack_components_by_type(
+    def list_stack_components_by_type(
         self, type: StackComponentType, is_shared: bool = False
     ) -> List[ComponentModel]:
         """Fetches all registered stack components of a given type.
@@ -865,67 +865,6 @@ class Repository(metaclass=RepositoryMetaClass):
                 user_name_or_id=self.active_user.id,
                 type=type,
             )
-
-    def get_stack_component_by_name_and_type(
-        self,
-        type: StackComponentType,
-        name: Optional[str],
-        is_shared: bool = False,
-    ) -> ComponentModel:
-        """Fetches a stack component by type and name.
-
-        If the name is not provided, the respective component in the active
-        stack is returned.
-
-        Args:
-            type: The type of the component to fetch.
-            name: The name of the component to fetch.
-            is_shared: Whether to fetch a shared component.
-
-        Returns:
-            A model of the requested stack component.
-
-        Raises:
-            KeyError: If no component with the given name and type exists.
-            RuntimeError: if multiple components with the given name and type
-                exist.
-        """
-        if name is None:
-            active_stack_components = self.active_stack_model.components
-            if type not in active_stack_components:
-                raise KeyError(
-                    f"No component of type '{type}' is registered in the "
-                    f"active stack and no component name was provided."
-                )
-            name = active_stack_components[type][0].name
-
-        if is_shared:
-            components = self.zen_store.list_stack_components(
-                project_name_or_id=self.active_project.name,
-                name=name,
-                type=type,
-                is_shared=True,
-            )
-        else:
-            components = self.zen_store.list_stack_components(
-                project_name_or_id=self.active_project.name,
-                name=name,
-                type=type,
-                user_name_or_id=self.active_user.name,
-            )
-
-        if not components:
-            raise KeyError(
-                f"No stack component of type '{type}' with the name "
-                f"'{name}' exists."
-            )
-        elif len(components) > 1:
-            raise RuntimeError(
-                "Multiple components have been found for this name.",
-                components,
-            )
-
-        return components[0]
 
     # .---------.
     # | FLAVORS |

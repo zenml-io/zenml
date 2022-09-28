@@ -1017,7 +1017,6 @@ class SqlZenStore(BaseZenStore):
                 )
 
             existing_component.from_update_model(component=component)
-
             session.add(existing_component)
             session.commit()
 
@@ -1046,9 +1045,9 @@ class SqlZenStore(BaseZenStore):
                     raise IllegalOperationError(
                         f"Stack Component `{stack_component.name}` of type "
                         f"`{stack_component.type} can not be "
-                        f"deregistered as it is part of "
+                        f"deleted as it is part of "
                         f"{len(stack_component.stacks)} stacks. "
-                        f"Before unregistering this stack "
+                        f"Before deleting this stack "
                         f"component, make sure to remove it "
                         f"from all stacks."
                     )
