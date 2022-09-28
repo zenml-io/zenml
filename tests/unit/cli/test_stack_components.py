@@ -20,6 +20,7 @@ from uuid import uuid4
 import pytest
 from click.testing import CliRunner
 
+import zenml.cli.utils as cli_utils
 from tests.unit.test_flavor import AriaOrchestratorFlavor
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
@@ -66,9 +67,10 @@ def test_valid_stack_component_update_succeeds(clean_repo) -> None:
     assert register_result.exit_code == 0
     assert (
         StackComponent.from_model(
-            clean_repo.get_stack_component_by_name_and_type(
-                type=StackComponentType.CONTAINER_REGISTRY,
-                name="new_container_registry",
+            cli_utils.get_component_by_id_or_name_or_prefix(
+                repo=clean_repo,
+                component_type=StackComponentType.ORCHESTRATOR,
+                id_or_name_or_prefix="new_container_registry",
             )
         ).config.uri
         == "some_random_uri.com"
@@ -87,9 +89,10 @@ def test_valid_stack_component_update_succeeds(clean_repo) -> None:
     assert update_result.exit_code == 0
     assert (
         StackComponent.from_model(
-            clean_repo.get_stack_component_by_name_and_type(
-                type=StackComponentType.CONTAINER_REGISTRY,
-                name="new_container_registry",
+            cli_utils.get_component_by_id_or_name_or_prefix(
+                repo=clean_repo,
+                component_type=StackComponentType.ORCHESTRATOR,
+                id_or_name_or_prefix="new_container_registry",
             )
         ).config.uri
         == "another_random_uri.com"
@@ -126,8 +129,10 @@ def test_updating_stack_component_name_or_uuid_fails(clean_repo) -> None:
     )
     assert update_result1.exit_code == 1
     with does_not_raise():
-        clean_repo.get_stack_component_by_name_and_type(
-            StackComponentType.CONTAINER_REGISTRY, "new_container_registry"
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            repo=clean_repo,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix="new_container_registry",
         )
 
     update_result2 = runner.invoke(
@@ -139,8 +144,10 @@ def test_updating_stack_component_name_or_uuid_fails(clean_repo) -> None:
     )
     assert update_result2.exit_code == 1
     with does_not_raise():
-        clean_repo.get_stack_component_by_name_and_type(
-            StackComponentType.CONTAINER_REGISTRY, "new_container_registry"
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            repo=clean_repo,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix="new_container_registry",
         )
 
 
@@ -176,8 +183,10 @@ def test_updating_stack_component_with_unconfigured_property_fails(
     )
     assert update_result.exit_code == 1
     with pytest.raises(AttributeError):
-        clean_repo.get_stack_component_by_name_and_type(
-            StackComponentType.CONTAINER_REGISTRY, "new_container_registry"
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            repo=clean_repo,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix="new_container_registry",
         ).favorite_cat
 
 
@@ -211,9 +220,7 @@ def test_removing_attributes_from_stack_component_works(
         updated=datetime.now(),
     )
     clean_repo.register_stack_component(new_orchestrator.to_model())
-    orchestrator = clean_repo.get_stack_component_by_name_and_type(
-        StackComponentType.ORCHESTRATOR, f"{new_orchestrator.name}"
-    )
+    orchestrator = clean_repo.get_stack_component_by_id(new_orchestrator.id)
     orchestrator = StackComponent.from_model(orchestrator.to_hydrated_model())
     assert (
         orchestrator.config.favorite_orchestration_language_version is not None
@@ -231,9 +238,7 @@ def test_removing_attributes_from_stack_component_works(
         ],
     )
     assert remove_attribute.exit_code == 0
-    orchestrator = clean_repo.get_stack_component_by_name_and_type(
-        StackComponentType.ORCHESTRATOR, f"{new_orchestrator.name}"
-    )
+    orchestrator = clean_repo.get_stack_component_by_id(new_orchestrator.id)
     orchestrator = StackComponent.from_model(orchestrator.to_hydrated_model())
     assert orchestrator.config.favorite_orchestration_language_version is None
 
@@ -321,8 +326,10 @@ def test_renaming_stack_component_to_preexisting_name_fails(
     )
     assert result.exit_code == 1
     with does_not_raise():
-        clean_repo.get_stack_component_by_name_and_type(
-            StackComponentType.ORCHESTRATOR, "new_orchestrator"
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            repo=clean_repo,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix="new_orchestrator",
         )
 
 
@@ -338,12 +345,16 @@ def test_renaming_nonexistent_stack_component_fails(clean_repo) -> None:
     )
     assert result.exit_code == 1
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component_by_name_and_type(
-            StackComponentType.CONTAINER_REGISTRY, "arias_container_registry"
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            repo=clean_repo,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix="arias_container_registry",
         )
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component_by_name_and_type(
-            StackComponentType.CONTAINER_REGISTRY, "not_a_container_registry"
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            repo=clean_repo,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix="arias_container_registry",
         )
 
 
@@ -376,13 +387,16 @@ def test_renaming_non_core_component_succeeds(clean_repo) -> None:
     )
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component_by_name_and_type(
-            StackComponentType.CONTAINER_REGISTRY,
-            "some_container_registry",
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            repo=clean_repo,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix="some_container_registry",
         )
     with does_not_raise():
-        clean_repo.get_stack_component_by_name_and_type(
-            StackComponentType.CONTAINER_REGISTRY, new_component_name
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            repo=clean_repo,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix=new_component_name,
         )
 
 
@@ -400,10 +414,14 @@ def test_renaming_core_component_succeeds(clean_repo) -> None:
     )
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component_by_name_and_type(
-            StackComponentType.ORCHESTRATOR, "default"
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            repo=clean_repo,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix="default",
         )
     with does_not_raise():
-        clean_repo.get_stack_component_by_name_and_type(
-            type=StackComponentType.ORCHESTRATOR, name=new_component_name
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            repo=clean_repo,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix=new_component_name,
         )

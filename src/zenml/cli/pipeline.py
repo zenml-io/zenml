@@ -129,7 +129,9 @@ def list_pipeline_runs(
         stack_id, pipeline_id, user_id = None, None, None
         repo = Repository()
         if stack:
-            stack_id = repo.get_stack_by_name(stack).id
+            stack_id = cli_utils.get_stack_by_id_or_name_or_prefix(
+                repo=repo, id_or_name_or_prefix=stack
+            ).id
         if pipeline:
             pipeline_id = repo.get_pipeline_by_name(pipeline).id
         if user:

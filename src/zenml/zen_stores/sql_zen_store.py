@@ -146,7 +146,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         Raises:
             ValueError: If the URL is invalid or the SQL driver is not
-            supported.
+                supported.
         """
         url = values.get("url")
         if url is None:
@@ -542,38 +542,22 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The registered stack.
-
-        Raises:
-            StackExistsError: If a stack with the same name is already owned
-                by this user in this project.
         """
         with Session(self.engine) as session:
             project = self._get_project_schema(stack.project, session=session)
             user = self._get_user_schema(stack.user, session=session)
 
-            # Check if stack with the domain key (name, project, owner) already
-            #  exists
-            existing_domain_stack = session.exec(
-                select(StackSchema)
-                .where(StackSchema.name == stack.name)
-                .where(StackSchema.project_id == stack.project)
-                .where(StackSchema.user_id == stack.user)
-            ).first()
-            if existing_domain_stack is not None:
-                raise StackExistsError(
-                    f"Unable to register stack with name "
-                    f"'{stack.name}': Found an existing stack with the same "
-                    f"name in the same '{project.name}' project owned by the "
-                    f"same '{user.name}' user."
-                )
-            existing_id_stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack.id)
-            ).first()
-            if existing_id_stack is not None:
-                raise StackExistsError(
-                    f"Unable to register stack with name "
-                    f"'{stack.name}' and id '{stack.id}': "
-                    f" Found an existing component with the same id."
+            self.fail_if_stack_with_id_already_exists(
+                stack=stack, session=session
+            )
+
+            self.fail_if_stack_with_name_exists_for_user(
+                stack=stack, project=project, user=user, session=session
+            )
+
+            if stack.is_shared:
+                self.fail_if_stack_with_name_already_shared(
+                    stack=stack, project=project, session=session
                 )
 
             # Get the Schemas of all components mentioned
@@ -662,7 +646,7 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(StackSchema.name == name)
             if is_shared is not None:
                 query = query.where(StackSchema.is_shared == is_shared)
-            stacks = session.exec(query).all()
+            stacks = session.exec(query.order_by(StackSchema.name)).all()
 
             return [stack.to_model() for stack in stacks]
 
@@ -691,6 +675,29 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update stack with id "
                     f"'{stack.id}': Found no"
                     f"existing stack with this id."
+                )
+            # In case of a renaming update, make sure no stack already exists
+            # with that name
+            if existing_stack.name != stack.name:
+                project = self._get_project_schema(
+                    project_name_or_id=stack.project, session=session
+                )
+                user = self._get_user_schema(
+                    user_name_or_id=stack.user, session=session
+                )
+                self.fail_if_stack_with_name_exists_for_user(
+                    stack=stack, project=project, user=user, session=session
+                )
+
+            # Check if stack update makes the stack a shared stack,
+            # In that case check if a stack with the same name is
+            # already shared within the project
+            if not existing_stack.is_shared and stack.is_shared:
+                project = self._get_project_schema(
+                    project_name_or_id=stack.project, session=session
+                )
+                self.fail_if_stack_with_name_already_shared(
+                    stack=stack, project=project, session=session
                 )
 
             # Get the Schemas of all components mentioned
@@ -733,6 +740,100 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
+    @staticmethod
+    def fail_if_stack_with_id_already_exists(
+        stack: StackModel, session: Session
+    ) -> None:
+        """Raise an exception if a Stack with the same id already exists.
+
+        Args:
+            stack: The Stack
+            session: The Session
+
+        Raises:
+            StackExistsError: If a stack with the same id already
+                              exists
+        """
+        existing_id_stack = session.exec(
+            select(StackSchema).where(StackSchema.id == stack.id)
+        ).first()
+        if existing_id_stack is not None:
+            raise StackExistsError(
+                f"Unable to register stack with name "
+                f"'{stack.name}' and id '{stack.id}': "
+                f" Found an existing component with the same id."
+            )
+
+    @staticmethod
+    def fail_if_stack_with_name_exists_for_user(
+        stack: StackModel,
+        project: ProjectSchema,
+        session: Session,
+        user: UserSchema,
+    ) -> None:
+        """Raise an exception if a Component with same name exists for user.
+
+        Args:
+            stack: The Stack
+            project: The project scope within which to check
+            user: The user that owns the Stack
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            StackExistsError: If a Stack with the given name is already
+                                       owned by the user
+        """
+        existing_domain_stack = session.exec(
+            select(StackSchema)
+            .where(StackSchema.name == stack.name)
+            .where(StackSchema.project_id == stack.project)
+            .where(StackSchema.user_id == stack.user)
+        ).first()
+        if existing_domain_stack is not None:
+            raise StackExistsError(
+                f"Unable to register stack with name "
+                f"'{stack.name}': Found an existing stack with the same "
+                f"name in the active project, '{project.name}', owned by the "
+                f"same user, '{user.name}'."
+            )
+        return None
+
+    def fail_if_stack_with_name_already_shared(
+        self, stack: StackModel, project: ProjectSchema, session: Session
+    ) -> None:
+        """Raise an exception if a Stack with same name is already shared.
+
+        Args:
+            stack: The Stack
+            project: The project scope within which to check
+            session: The Session
+
+        Raises:
+            StackExistsError: If a stack with the given name is already shared
+                              by a user.
+        """
+        # Check if component with the same name, type is already shared
+        # within the project
+        existing_shared_stack = session.exec(
+            select(StackSchema)
+            .where(StackSchema.name == stack.name)
+            .where(StackSchema.project_id == stack.project)
+            .where(StackSchema.is_shared == stack.is_shared)
+        ).first()
+        if existing_shared_stack is not None:
+            owner_of_shared = self._get_user_schema(
+                existing_shared_stack.user_id, session=session
+            )
+
+            raise StackExistsError(
+                f"Unable to share stack with name '{stack.name}': Found an "
+                f"existing stack with the same name in project "
+                f"'{project.name}' shared by '{owner_of_shared.name}'."
+            )
+
     # ----------------
     # Stack components
     # ----------------
@@ -749,44 +850,26 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created stack component.
-
-        Raises:
-            StackComponentExistsError: If a stack component with the same name
-                and type is already owned by this user in this project.
         """
         with Session(self.engine) as session:
             project = self._get_project_schema(
-                component.project, session=session
+                project_name_or_id=component.project, session=session
             )
-            user = self._get_user_schema(component.user, session=session)
+            user = self._get_user_schema(
+                user_name_or_id=component.user, session=session
+            )
 
-            # Check if component with the same domain key (name, type, project,
-            # owner) already exists
-            existing_domain_component = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.name == component.name)
-                .where(StackComponentSchema.project_id == component.project)
-                .where(StackComponentSchema.user_id == component.user)
-                .where(StackComponentSchema.type == component.type)
-            ).first()
-            if existing_domain_component is not None:
-                raise StackComponentExistsError(
-                    f"Unable to register '{component.type.value}' component "
-                    f"with name '{component.name}': Found an existing "
-                    f"component with the same name and type in the same "
-                    f"'{project.name}' project owned by the same "
-                    f"'{user.name}' user."
-                )
-            existing_id_component = session.exec(
-                select(StackComponentSchema).where(
-                    StackComponentSchema.id == component.id
-                )
-            ).first()
-            if existing_id_component is not None:
-                raise StackComponentExistsError(
-                    f"Unable to register '{component.type.value}' component "
-                    f"with name '{component.name}' and id '{component.id}': "
-                    f" Found an existing component with the same id."
+            self.fail_if_component_with_id_already_exists(
+                component=component, session=session
+            )
+
+            self.fail_if_component_with_name_type_exists_for_user(
+                component=component, project=project, user=user, session=session
+            )
+
+            if component.is_shared:
+                self.fail_if_component_with_name_type_already_shared(
+                    component=component, project=project, session=session
                 )
 
             # Create the component
@@ -899,15 +982,41 @@ class SqlZenStore(BaseZenStore):
                 )
             ).first()
 
-            # TODO: verify if is_shared status needs to be checked here
             if existing_component is None:
                 raise KeyError(
                     f"Unable to update component with id "
                     f"'{component.id}': Found no"
                     f"existing component with this id."
                 )
-            existing_component.from_update_model(component=component)
 
+            # In case of a renaming update, make sure no component of the same
+            # type already exists with that name
+            if existing_component.name != component.name:
+                project = self._get_project_schema(
+                    project_name_or_id=component.project, session=session
+                )
+                user = self._get_user_schema(
+                    user_name_or_id=component.user, session=session
+                )
+                self.fail_if_component_with_name_type_exists_for_user(
+                    component=component,
+                    project=project,
+                    user=user,
+                    session=session,
+                )
+
+            # Check if component update makes the component a shared component,
+            # In that case check if a component with the same name, type are
+            # already shared within the project
+            if not existing_component.is_shared and component.is_shared:
+                project = self._get_project_schema(
+                    project_name_or_id=component.project, session=session
+                )
+                self.fail_if_component_with_name_type_already_shared(
+                    component=component, project=project, session=session
+                )
+
+            existing_component.from_update_model(component=component)
             session.add(existing_component)
             session.commit()
 
@@ -923,7 +1032,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component doesn't exist.
             IllegalOperationError: if the stack component is part of one or
-            more stacks.
+                more stacks.
         """
         with Session(self.engine) as session:
             try:
@@ -936,9 +1045,9 @@ class SqlZenStore(BaseZenStore):
                     raise IllegalOperationError(
                         f"Stack Component `{stack_component.name}` of type "
                         f"`{stack_component.type} can not be "
-                        f"deregistered as it is part of "
+                        f"deleted as it is part of "
                         f"{len(stack_component.stacks)} stacks. "
-                        f"Before unregistering this stack "
+                        f"Before deleting this stack "
                         f"component, make sure to remove it "
                         f"from all stacks."
                     )
@@ -965,6 +1074,112 @@ class SqlZenStore(BaseZenStore):
             stack_id: The id of the stack to get side effects for.
         """
         pass  # TODO: implement this
+
+    @staticmethod
+    def fail_if_component_with_id_already_exists(
+        component: ComponentModel, session: Session
+    ) -> None:
+        """Raise an exception if a Component with the same id already exists.
+
+        Args:
+            component: The Component
+            session: The Session
+
+        Raises:
+            StackComponentExistsError: If a component with the same id already
+                                       exists
+        """
+        existing_id_component = session.exec(
+            select(StackComponentSchema).where(
+                StackComponentSchema.id == component.id
+            )
+        ).first()
+        if existing_id_component is not None:
+            raise StackComponentExistsError(
+                f"Unable to register '{component.type.value}' component "
+                f"with name '{component.name}' and id '{component.id}': "
+                f" Found an existing component with the same id."
+            )
+
+    @staticmethod
+    def fail_if_component_with_name_type_exists_for_user(
+        component: ComponentModel,
+        project: ProjectSchema,
+        session: Session,
+        user: UserSchema,
+    ) -> None:
+        """Raise an exception if a Component with same name/type exists for user.
+
+        Args:
+            component: The Component
+            project: The project scope within which to check
+            user: The user that owns the Component
+            session: The Session
+
+        Returns:
+            None
+
+        Raises:
+            StackComponentExistsError: If a component with the given name and
+                                       type is already owned by the user
+        """
+        # Check if component with the same domain key (name, type, project,
+        # owner) already exists
+        existing_domain_component = session.exec(
+            select(StackComponentSchema)
+            .where(StackComponentSchema.name == component.name)
+            .where(StackComponentSchema.project_id == component.project)
+            .where(StackComponentSchema.user_id == component.user)
+            .where(StackComponentSchema.type == component.type)
+        ).first()
+        if existing_domain_component is not None:
+            raise StackComponentExistsError(
+                f"Unable to register '{component.type.value}' component "
+                f"with name '{component.name}': Found an existing "
+                f"component with the same name and type in the same "
+                f"'{project.name}' project owned by the same "
+                f"'{user.name}' user."
+            )
+        return None
+
+    def fail_if_component_with_name_type_already_shared(
+        self,
+        component: ComponentModel,
+        project: ProjectSchema,
+        session: Session,
+    ) -> None:
+        """Raise an exception if a Component with same name/type already shared.
+
+        Args:
+            component: The Component
+            project: The project scope within which to check
+            session: The Session
+
+        Raises:
+            StackComponentExistsError: If a component with the given name and
+                                       type is already shared by a user
+        """
+        # Check if component with the same name, type is already shared
+        # within the project
+        existing_shared_component = session.exec(
+            select(StackComponentSchema)
+            .where(StackComponentSchema.name == component.name)
+            .where(StackComponentSchema.project_id == component.project)
+            .where(StackComponentSchema.is_shared == component.is_shared)
+            .where(StackComponentSchema.type == component.type)
+        ).first()
+        if existing_shared_component is not None:
+            owner_of_shared = self._get_user_schema(
+                existing_shared_component.user_id, session=session
+            )
+
+            raise StackComponentExistsError(
+                f"Unable to shared component of type '{component.type.value}' "
+                f"with name '{component.name}': Found an "
+                f"existing component with the same name and type in project "
+                f"'{project.name}' shared by "
+                f"'{owner_of_shared.name}'."
+            )
 
     # -----------------------
     # Stack component flavors

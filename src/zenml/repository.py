@@ -44,9 +44,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
-    from zenml.enums import StackComponentType
     from zenml.models import (
-        ComponentModel,
         HydratedStackModel,
         ProjectModel,
         StackModel,
@@ -571,9 +569,11 @@ class Repository(metaclass=RepositoryMetaClass):
         shared_stacks = self.zen_store.list_stacks(
             project_name_or_id=self.active_project_name,
             is_shared=True,
-
         )
-        return [s.to_hydrated_model() for s in owned_stacks+shared_stacks]
+
+        return [
+            s.to_hydrated_model() for s in set(owned_stacks + shared_stacks)
+        ]
 
     @property
     def active_stack_model(self) -> "HydratedStackModel":
@@ -640,45 +640,6 @@ class Repository(metaclass=RepositoryMetaClass):
             # set the active stack globally only if the repository doesn't use
             # a local configuration
             GlobalConfiguration().active_stack_id = stack.id
-
-    def get_stack_by_name(
-        self, name: str, is_shared: bool = False
-    ) -> "StackModel":
-        """Fetches a stack by name within the active project.
-
-        Args:
-            name: The name of the stack to fetch.
-            is_shared: Boolean whether to get a shared stack or a private stack
-
-        Returns:
-            The stack with the given name.
-
-        Raises:
-            KeyError: If no stack with the given name exists.
-            RuntimeError: If multiple stacks with the given name exist.
-        """
-        if is_shared:
-            stacks = self.zen_store.list_stacks(
-                project_name_or_id=self.active_project.name,
-                name=name,
-                is_shared=True,
-            )
-        else:
-            stacks = self.zen_store.list_stacks(
-                project_name_or_id=self.active_project.name,
-                user_name_or_id=self.active_user.name,
-                name=name,
-            )
-
-        # TODO: [server] this error handling could be improved
-        if not stacks:
-            raise KeyError(f"No stack with name '{name}' exists.")
-        elif len(stacks) > 1:
-            raise RuntimeError(
-                f"Multiple stacks have been found for name  '{name}'.", stacks
-            )
-
-        return stacks[0]
 
     def register_stack(self, stack: "StackModel") -> "StackModel":
         """Registers a stack and its components.
@@ -814,29 +775,11 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Returns:
             The updated component.
-
-        Raises:
-            ValueError: If another component already exists with the same name and type.
         """
         # Get the existing component model
         existing_component_model = self.get_stack_component_by_id(
             component.id,
         )
-
-        # Make sure there is no other component with the same name
-        try:
-            other_component = self.get_stack_component_by_name_and_type(
-                name=component.name,
-                type=component.type,
-            )
-            if other_component != existing_component_model:
-                raise ValueError(
-                    f"Cannot update {component.type} '{component.name}' since "
-                    f"another component with the same name and type "
-                    f"already exists."
-                )
-        except KeyError:
-            pass  # No other component with the same name exists
 
         # Get the flavor model of the existing component
         flavor_model = self.get_flavor_by_name_and_type(
@@ -898,7 +841,7 @@ class Repository(metaclass=RepositoryMetaClass):
         )
         return self.zen_store.get_stack_component(component_id=component_id)
 
-    def get_stack_components_by_type(
+    def list_stack_components_by_type(
         self, type: StackComponentType, is_shared: bool = False
     ) -> List[ComponentModel]:
         """Fetches all registered stack components of a given type.
@@ -922,67 +865,6 @@ class Repository(metaclass=RepositoryMetaClass):
                 user_name_or_id=self.active_user.id,
                 type=type,
             )
-
-    def get_stack_component_by_name_and_type(
-        self,
-        type: StackComponentType,
-        name: Optional[str],
-        is_shared: bool = False,
-    ) -> ComponentModel:
-        """Fetches a stack component by type and name.
-
-        If the name is not provided, the respective component in the active
-        stack is returned.
-
-        Args:
-            type: The type of the component to fetch.
-            name: The name of the component to fetch.
-            is_shared: Whether to fetch a shared component.
-
-        Returns:
-            A model of the requested stack component.
-
-        Raises:
-            KeyError: If no component with the given name and type exists.
-            RuntimeError: if multiple components with the given name and type
-                exist.
-        """
-        if name is None:
-            active_stack_components = self.active_stack_model.components
-            if type not in active_stack_components:
-                raise KeyError(
-                    f"No component of type '{type}' is registered in the "
-                    f"active stack and no component name was provided."
-                )
-            name = active_stack_components[type][0].name
-
-        if is_shared:
-            components = self.zen_store.list_stack_components(
-                project_name_or_id=self.active_project.name,
-                name=name,
-                type=type,
-                is_shared=True,
-            )
-        else:
-            components = self.zen_store.list_stack_components(
-                project_name_or_id=self.active_project.name,
-                name=name,
-                type=type,
-                user_name_or_id=self.active_user.name,
-            )
-
-        if not components:
-            raise KeyError(
-                f"No stack component of type '{type}' with the name "
-                f"'{name}' exists."
-            )
-        elif len(components) > 1:
-            raise RuntimeError(
-                "Multiple components have been found for this name.",
-                components,
-            )
-
-        return components[0]
 
     # .---------.
     # | FLAVORS |
@@ -1195,14 +1077,14 @@ class Repository(metaclass=RepositoryMetaClass):
         error_msg = (
             f"Cannot run pipeline '{pipeline_name}' since this name has "
             "already been registered with a different pipeline "
-            "configuration. You have three options to resolve this issue: "
+            "configuration. You have three options to resolve this issue:\n"
             "1) You can register a new pipeline by changing the name "
-            "of your pipeline, e.g., via `@pipeline(name='new_pipeline_name')."
+            "of your pipeline, e.g., via `@pipeline(name='new_pipeline_name').\n"
             "2) You can execute the current run without linking it to any "
             "pipeline by setting the 'unlisted' argument to `True`, e.g., "
             "via `my_pipeline_instance.run(unlisted=True)`. "
             "Unlisted runs are not linked to any pipeline, but are still "
-            "tracked by ZenML and can be accessed via the 'All Runs' tab. "
+            "tracked by ZenML and can be accessed via the 'All Runs' tab. \n"
             "3) You can delete the existing pipeline via "
             f"`zenml pipeline delete {pipeline_name}`. This will then "
             "change all existing runs of this pipeline to become unlisted."

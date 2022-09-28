@@ -46,7 +46,7 @@ def _create_local_stack(
     stack_name: str,
     orchestrator_name: Optional[str] = None,
     artifact_store_name: Optional[str] = None,
-):
+) -> Stack:
     """Creates a local stack with components with the given names. If the
     names are not given, a random string is used instead."""
 
@@ -246,11 +246,13 @@ def test_getting_a_stack(clean_repo):
     existing_stack_name = clean_repo.active_stack.name
 
     with does_not_raise():
-        stack = clean_repo.get_stack_by_name(existing_stack_name)
+        stack = clean_repo.get_stack_by_name_or_partial_id(existing_stack_name)
         assert isinstance(stack, StackModel)
 
     with pytest.raises(KeyError):
-        clean_repo.get_stack_by_name("stack_name_that_hopefully_does_not_exist")
+        clean_repo.get_stack_by_name_or_partial_id(
+            "stack_name_that_hopefully_does_not_exist"
+        )
 
 
 def test_registering_a_stack(clean_repo):
@@ -258,17 +260,16 @@ def test_registering_a_stack(clean_repo):
     stack = _create_local_stack(
         repo=clean_repo, stack_name="some_new_stack_name"
     )
+    stack_model = stack.to_model(
+        user=clean_repo.active_user.id, project=clean_repo.active_project.id
+    )
     clean_repo.register_stack_component(stack.orchestrator.to_model())
     clean_repo.register_stack_component(stack.artifact_store.to_model())
-    clean_repo.register_stack(
-        stack.to_model(
-            user=clean_repo.active_user.id, project=clean_repo.active_project.id
-        )
-    )
+    clean_repo.register_stack(stack_model)
 
-    new_repo = Repository(clean_repo.root)
+    Repository(clean_repo.root)
     with does_not_raise():
-        new_repo.get_stack_by_name("some_new_stack_name")
+        clean_repo.zen_store.get_stack(stack_model.id)
 
 
 def test_registering_a_stack_with_existing_name(clean_repo):
@@ -300,10 +301,10 @@ def test_registering_a_new_stack_with_already_registered_components(
     stack.id = uuid4()
     stack.name = "some_new_stack_name"
 
-    registered_orchestrators = clean_repo.get_stack_components_by_type(
+    registered_orchestrators = clean_repo.list_stack_components_by_type(
         StackComponentType.ORCHESTRATOR
     )
-    registered_artifact_stores = clean_repo.get_stack_components_by_type(
+    registered_artifact_stores = clean_repo.list_stack_components_by_type(
         StackComponentType.ARTIFACT_STORE
     )
 
@@ -312,12 +313,12 @@ def test_registering_a_new_stack_with_already_registered_components(
 
     # the same exact components were already registered in the repo, so no
     # new component should have been registered
-    assert registered_orchestrators == clean_repo.get_stack_components_by_type(
+    assert registered_orchestrators == clean_repo.list_stack_components_by_type(
         StackComponentType.ORCHESTRATOR
     )
     assert (
         registered_artifact_stores
-        == clean_repo.get_stack_components_by_type(
+        == clean_repo.list_stack_components_by_type(
             StackComponentType.ARTIFACT_STORE
         )
     )
@@ -423,8 +424,8 @@ def test_getting_a_stack_component(clean_repo):
     component = clean_repo.active_stack.orchestrator.to_model()
 
     with does_not_raise():
-        registered_component = clean_repo.get_stack_component_by_name_and_type(
-            type=component.type, name=component.name
+        registered_component = clean_repo.get_stack_component_by_id(
+            component.id
         )
 
     assert component == registered_component
@@ -434,10 +435,7 @@ def test_getting_a_nonexisting_stack_component(clean_repo):
     """Tests that getting a stack component for a name that isn't registered
     fails."""
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component_by_name_and_type(
-            type=StackComponentType.ORCHESTRATOR,
-            name="definitely_not_a_registered_orchestrator",
-        )
+        clean_repo.get_stack_component_by_id(uuid4())
 
 
 def test_registering_a_stack_component_with_existing_name(clean_repo):
@@ -458,11 +456,8 @@ def test_registering_a_new_stack_component(clean_repo):
     new_repo = Repository(clean_repo.root)
 
     with does_not_raise():
-        registered_artifact_store = (
-            new_repo.get_stack_component_by_name_and_type(
-                type=new_artifact_store.type,
-                name=new_artifact_store.name,
-            )
+        registered_artifact_store = new_repo.get_stack_component_by_id(
+            new_artifact_store.id
         )
 
     assert registered_artifact_store == new_artifact_store
@@ -478,16 +473,12 @@ def test_deregistering_a_stack_component(clean_repo):
     clean_repo.deregister_stack_component(component)
 
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component_by_name_and_type(
-            type=component.type, name=component.name
-        )
+        clean_repo.get_stack_component_by_id(component.id)
 
-    new_repo = Repository(clean_repo.root)
+    Repository(clean_repo.root)
 
     with pytest.raises(KeyError):
-        new_repo.get_stack_component_by_name_and_type(
-            type=component.type, name=component.name
-        )
+        clean_repo.get_stack_component_by_id(component.id)
 
 
 def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(

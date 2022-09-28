@@ -327,12 +327,15 @@ def unassign_role(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_current_user(
+def get_current_user(
     auth_context: AuthContext = Depends(authorize),
 ) -> UserModel:
     """Returns the model of the authenticated user.
 
     Args:
         auth_context: The authentication context.
+
+    Returns:
+        The model of the authenticated user.
     """
     return auth_context.user

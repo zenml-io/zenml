@@ -58,7 +58,7 @@ subsequently a new `Stack` with the type `wandb`. The wandb experiment tracker s
 Note that project_name and entity are optional in the below command:
 
 ```shell
-zenml experiment-tracker register wandb_tracker --type=wandb \
+zenml experiment-tracker register wandb_tracker --flavor=wandb \
     --api_key=<WANDB_API_KEY> \
     --entity=<WANDB_ENTITY> \
     --project_name=<WANDB_PROJECT_NAME>
