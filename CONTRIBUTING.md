@@ -13,11 +13,15 @@ you finalize your pull requests.
 
 ## ⚡️ Quicklinks
 
-* [Code of Conduct](#code-of-conduct)
-* [Getting Started](#getting-started)
-    * [Issues](#issues)
-    * [Pull Requests](#pull-requests)
-* [Getting Help](#getting-help)
+* [Code of Conduct](#%EF%B8%8F-code-of-conduct)
+* [Getting Started](#-getting-started)
+    * [Issues](#%EF%B8%8F-issues)
+    * [Pull Requests](#-pull-requests-when-to-make-one)
+    * [Linting, formatting, and tests](#-linting-formatting-and-tests)
+    * [Reporting a vulnerability](#-reporting-a-vulnerability)
+* [Coding conventions](#coding-conventions)
+* [Creating a new integration](#-creating-a-new-integration)
+* [Getting Help](#-getting-help)
 
 ## 🧑‍⚖️ Code of Conduct
 
