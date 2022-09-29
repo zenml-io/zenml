@@ -94,8 +94,8 @@ def dashboard(request: Request) -> Any:
 
 
 # Basic Health Endpoint
-@app.head(API + VERSION_1 + HEALTH, include_in_schema=False)
-@app.get(API + VERSION_1 + HEALTH)
+@app.head(HEALTH, include_in_schema=False)
+@app.get(HEALTH)
 def health() -> str:
     """Get health status of the server.
 
