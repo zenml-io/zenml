@@ -51,8 +51,8 @@ class S3ArtifactStoreConfig(BaseArtifactStoreConfig, AuthenticationConfigMixin):
     `client_kwargs`, `config_kwargs` or `s3_additional_kwargs`, you should pass
     them as a json string:
     ```
-    zenml artifact-store register my_s3_store --type=s3 --path=s3://my_bucket \
-    --client_kwargs='{"endpoint_url": "http://my-s3-endpoint"}'
+    zenml artifact-store register my_s3_store --flavor=s3 \
+    --path=s3://my_bucket --client_kwargs='{"endpoint_url": "http://my-s3-endpoint"}'
     ```
     """
 
