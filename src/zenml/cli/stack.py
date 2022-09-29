@@ -926,8 +926,7 @@ def _get_component_as_dict(
 @click.argument("stack_name_or_id", type=str, required=False)
 @click.argument("filename", type=str, required=False)
 def export_stack(
-    stack_name_or_id: Optional[str],
-    filename: Optional[str]
+    stack_name_or_id: Optional[str], filename: Optional[str]
 ) -> None:
     """Export a stack to YAML.
 
@@ -935,7 +934,7 @@ def export_stack(
         stack_name_or_id: The name of the stack to export.
         filename: The filename to export the stack to.
     """
-    track_event(AnalyticsEvent.EXPORT_STACK)
+    track_event(AnalyticsEvent.EXPORT_STACK, track_server_info=True)
 
     # Get configuration of given stack
     # TODO [ENG-893]: code duplicate with describe_stack()
@@ -986,7 +985,8 @@ def _import_stack_component(
     repo = Repository()
     try:
         other_component = repo.zen_store.get_stack_component(
-            component_id=UUID(component_id))
+            component_id=UUID(component_id)
+        )
     except KeyError:
         pass
     else:
@@ -994,7 +994,8 @@ def _import_stack_component(
 
     try:
         component = cli_utils.get_stack_by_id_or_name_or_prefix(
-            repo=repo, id_or_name_or_prefix=component_name)
+            repo=repo, id_or_name_or_prefix=component_name
+        )
         if component:
             # component with same name
             display_name = _component_display_name(component_type)
@@ -1018,16 +1019,14 @@ def _import_stack_component(
     except KeyError:
         pass
 
-    registered_component = (
-        repo.register_stack_component(
-            ComponentModel(
-                user=repo.active_user.id,
-                project=repo.active_project.id,
-                type=component_type,
-                name=component_name,
-                flavor=component_flavor,
-                configuration=component_config["configuration"],
-            )
+    registered_component = repo.register_stack_component(
+        ComponentModel(
+            user=repo.active_user.id,
+            project=repo.active_project.id,
+            type=component_type,
+            name=component_name,
+            flavor=component_flavor,
+            configuration=component_config["configuration"],
         )
     )
     return registered_component.id
@@ -1059,7 +1058,7 @@ def import_stack(
             the installed version of ZenML is different from the
             one specified in the stack YAML file.
     """
-    track_event(AnalyticsEvent.IMPORT_STACK)
+    track_event(AnalyticsEvent.IMPORT_STACK, track_server_info=True)
 
     # handle 'zenml stack import file.yaml' calls
     if stack_name.endswith(".yaml") and filename is None:
@@ -1135,7 +1134,7 @@ def copy_stack(
         source_stack_name_or_id: The name or id of the stack to copy.
         target_stack: Name of the copied stack.
     """
-    track_event(AnalyticsEvent.COPIED_STACK)
+    track_event(AnalyticsEvent.COPIED_STACK, track_server_info=True)
 
     repo = Repository()
 

@@ -13,9 +13,13 @@
 #  permissions and limitations under the License.
 """Service implementation for the ZenML terraform server deployment."""
 
+import json
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional, cast
+from uuid import UUID, uuid4
+
+from pydantic import Field
 
 from zenml.logger import get_logger
 from zenml.services import ServiceType, TerraformService, TerraformServiceConfig
@@ -107,6 +111,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
 
     log_level: str = "ERROR"
 
+    server_id: UUID = Field(default_factory=uuid4)
     username: str
     password: str
     email: str = ""
@@ -188,30 +193,21 @@ class TerraformZenServer(TerraformService):
         filter_vars = ["log_level", "provider"]
         # filter keys that are not modeled as terraform deployment vars
         vars = {
-            k: v
+            k: str(v) if isinstance(v, UUID) else v
             for k, v in self.config.server.dict().items()
             if k not in filter_vars
         }
-        self._write_to_variables_file(vars)
-        return vars
-
-    def _write_to_variables_file(self, variables: Dict[str, Any]) -> None:
-        """Write the variables into the values.tfvars.json file.
-
-        Args:
-            variables: the variables dict with the user-provided
-                config values
-        """
-        import json
-
         assert self.status.runtime_path
+
         with open(
             os.path.join(
                 self.status.runtime_path, self.config.variables_file_path
             ),
             "w",
         ) as fp:
-            json.dump(variables, fp=fp, indent=4)
+            json.dump(vars, fp, indent=4)
+
+        return vars
 
     def provision(self) -> None:
         """Provision the service."""

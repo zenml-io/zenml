@@ -84,6 +84,8 @@ def base_repo(
     os.environ["ZENML_CONFIG_PATH"] = str(tmp_path / "zenml")
 
     session_mocker.patch("analytics.track")
+    session_mocker.patch("analytics.group")
+    session_mocker.patch("analytics.identify")
 
     # initialize global config and repo at the new path
     GlobalConfiguration()

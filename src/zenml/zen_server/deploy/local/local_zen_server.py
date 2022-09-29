@@ -23,10 +23,12 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     ZEN_SERVER_ENTRYPOINT,
 )
 from zenml.enums import StoreType
 from zenml.logger import get_logger
+from zenml.models.server_models import ServerDeploymentType
 from zenml.repository import Repository
 from zenml.services import (
     LocalDaemonService,
@@ -157,6 +159,7 @@ class LocalZenServer(LocalDaemonService):
         """
         cmd, env = super()._get_daemon_cmd()
         env[ENV_ZENML_CONFIG_PATH] = LOCAL_ZENML_SERVER_GLOBAL_CONFIG_PATH
+        env[ENV_ZENML_SERVER_DEPLOYMENT_TYPE] = ServerDeploymentType.LOCAL
         return cmd, env
 
     def provision(self) -> None:

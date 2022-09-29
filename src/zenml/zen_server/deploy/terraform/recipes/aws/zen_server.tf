@@ -23,6 +23,14 @@ resource "helm_release" "zen-server" {
     name  = "zenml.defaultUserEmail"
     value = var.email
   }
+  set {
+    name  = "zenml.deploymentType"
+    value = "aws"
+  }
+  set {
+    name  = "zenml.serverId"
+    value = var.server_id
+  }
   
   # set up the right path for ZenML
   set {
