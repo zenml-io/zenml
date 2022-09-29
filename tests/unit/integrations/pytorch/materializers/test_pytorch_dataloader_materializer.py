@@ -22,7 +22,7 @@ from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer im
 )
 
 
-def test_pytorch_module_materializer(clean_client):
+def test_pytorch_dataloader_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
     with does_not_raise():
         _test_materializer(
