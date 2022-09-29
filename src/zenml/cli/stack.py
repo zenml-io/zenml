@@ -16,6 +16,7 @@
 import getpass
 import json
 from typing import Dict, Optional
+from uuid import UUID
 
 import click
 
@@ -922,43 +923,50 @@ def _get_component_as_dict(
 
 
 @stack.command("export", help="Exports a stack to a YAML file.")
-@click.argument("stack_name_or_id", type=str, required=True)
+@click.argument("stack_name_or_id", type=str, required=False)
 @click.argument("filename", type=str, required=False)
-def export_stack(stack_name_or_id: str, filename: Optional[str]) -> None:
+def export_stack(
+    stack_name_or_id: Optional[str], filename: Optional[str]
+) -> None:
     """Export a stack to YAML.
 
     Args:
         stack_name_or_id: The name of the stack to export.
         filename: The filename to export the stack to.
     """
-    track_event(AnalyticsEvent.EXPORT_STACK)
+    track_event(AnalyticsEvent.EXPORT_STACK, track_server_info=True)
 
     # Get configuration of given stack
     # TODO [ENG-893]: code duplicate with describe_stack()
     repo = Repository()
+    repo = Repository()
+    active_stack = repo.active_stack_model
 
-    try:
-        stack_to_export = cli_utils.get_stack_by_id_or_name_or_prefix(
-            repo=repo, id_or_name_or_prefix=stack_name_or_id
-        )
-    except KeyError:
-        cli_utils.error(f"Stack '{stack_name_or_id}' does not exist.")
+    if stack_name_or_id:
+        try:
+            stack_to_export = cli_utils.get_stack_by_id_or_name_or_prefix(
+                repo=repo, id_or_name_or_prefix=stack_name_or_id
+            ).to_hydrated_model()
+        except KeyError:
+            cli_utils.error(f"Stack '{stack_name_or_id}' does not exist.")
     else:
-        # write zenml version and stack dict to YAML
-        yaml_data = stack_to_export.to_hydrated_model().to_yaml()
-        yaml_data["zenml_version"] = zenml.__version__
+        stack_to_export = active_stack
 
-        if filename is None:
-            filename = stack_to_export.name + ".yaml"
-        write_yaml(filename, yaml_data)
-        cli_utils.declare(
-            f"Exported stack '{stack_to_export.name}' to file '{filename}'."
-        )
+    # write zenml version and stack dict to YAML
+    yaml_data = stack_to_export.to_yaml()
+    yaml_data["zenml_version"] = zenml.__version__
+
+    if filename is None:
+        filename = stack_to_export.name + ".yaml"
+    write_yaml(filename, yaml_data)
+    cli_utils.declare(
+        f"Exported stack '{stack_to_export.name}' to file '{filename}'."
+    )
 
 
 def _import_stack_component(
     component_type: StackComponentType, component_config: Dict[str, str]
-) -> str:
+) -> UUID:
     """Import a single stack component with given type/config.
 
     Args:
@@ -971,31 +979,35 @@ def _import_stack_component(
     component_type = StackComponentType(component_type)
     component_name = component_config.pop("name")
     component_flavor = component_config.pop("flavor")
+    component_id = component_config.pop("id")
 
     # make sure component can be registered, otherwise ask for new name
-    while True:
-        # check if component already exists
-        try:
-            other_component = _get_component_as_dict(
-                component_type, component_name
+    repo = Repository()
+    try:
+        other_component = repo.zen_store.get_stack_component(
+            component_id=UUID(component_id)
+        )
+    except KeyError:
+        pass
+    else:
+        return other_component.id
+
+    try:
+        component = cli_utils.get_stack_by_id_or_name_or_prefix(
+            repo=repo, id_or_name_or_prefix=component_name
+        )
+        if component:
+            # component with same name
+            display_name = _component_display_name(component_type)
+            component_name = click.prompt(
+                f"A component of type '{display_name}' with the name "
+                f"'{component_name}' already exists, "
+                f"but is configured differently. "
+                f"Please choose a different name.",
+                type=str,
             )
-
-        # component didn't exist yet, so we create it.
-        except KeyError:
-            break
-
-        # check whether other component has exactly same config as export
-        other_is_same = True
-        for key, value in component_config.items():
-            if key not in other_component or other_component[key] != value:
-                other_is_same = False
-                break
-
-        # component already exists and is correctly configured -> done
-        if other_is_same:
-            return component_name
-
-        # component already exists but with different config -> rename
+    except click.ClickException:
+        # component with same name
         display_name = _component_display_name(component_type)
         component_name = click.prompt(
             f"A component of type '{display_name}' with the name "
@@ -1004,9 +1016,10 @@ def _import_stack_component(
             f"Please choose a different name.",
             type=str,
         )
+    except KeyError:
+        pass
 
-    repo = Repository()
-    repo.register_stack_component(
+    registered_component = repo.register_stack_component(
         ComponentModel(
             user=repo.active_user.id,
             project=repo.active_project.id,
@@ -1016,7 +1029,7 @@ def _import_stack_component(
             configuration=component_config["configuration"],
         )
     )
-    return component_name
+    return registered_component.id
 
 
 @stack.command("import", help="Import a stack from YAML.")
@@ -1045,7 +1058,7 @@ def import_stack(
             the installed version of ZenML is different from the
             one specified in the stack YAML file.
     """
-    track_event(AnalyticsEvent.IMPORT_STACK)
+    track_event(AnalyticsEvent.IMPORT_STACK, track_server_info=True)
 
     # handle 'zenml stack import file.yaml' calls
     if stack_name.endswith(".yaml") and filename is None:
@@ -1082,35 +1095,29 @@ def import_stack(
                 "fail or lead to other unexpected behavior."
             )
 
-    # ask user for new stack_name if current one already exists
+    # ask user for a new stack_name if current one already exists
     repo = Repository()
-    while True:
-        try:
-            cli_utils.get_stack_by_id_or_name_or_prefix(
-                repo=repo, id_or_name_or_prefix=stack_name
-            )
-            stack_name = click.prompt(
-                f"Stack `{stack_name}` already exists. "
-                f"Please choose a different name.",
-                type=str,
-            )
-        except KeyError:
-            break
+    if stack_name in [s.name for s in repo.stacks]:
+        stack_name = click.prompt(
+            f"Stack `{stack_name}` already exists. "
+            f"Please choose a different name.",
+            type=str,
+        )
 
     # import stack components
-    component_names = {}
+    component_ids = {}
     for component_type, component_config in data["components"].items():
-        component_name = _import_stack_component(
+        component_id = _import_stack_component(
             component_type=component_type,
             component_config=component_config,
         )
-        component_names[component_type + "_name"] = component_name
+        component_ids[component_type + "_name"] = str(component_id)
 
     # register new stack
     ctx.invoke(
         register_stack,
         stack_name=stack_name,
-        **component_names,
+        **component_ids,
     )
 
 
@@ -1127,7 +1134,7 @@ def copy_stack(
         source_stack_name_or_id: The name or id of the stack to copy.
         target_stack: Name of the copied stack.
     """
-    track_event(AnalyticsEvent.COPIED_STACK)
+    track_event(AnalyticsEvent.COPIED_STACK, track_server_info=True)
 
     repo = Repository()
 

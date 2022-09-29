@@ -259,14 +259,24 @@ def remove_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
         cli_utils.error(str(err))
 
 
+def warn_unsupported_non_default_project():
+    cli_utils.warning(
+        "Currently the concept of `project` is not supported "
+        "within the Dashboard. The Project functionality will be "
+        "completed in the coming weeks. For the time being it "
+        "is recommended to stay within the `default` project."
+    )
+
+
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def project() -> None:
     """Commands for project management."""
 
 
-@project.command("list")
+@project.command("list", hidden=True)
 def list_projects() -> None:
     """List all projects."""
+    warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     projects = Repository().zen_store.list_projects()
 
@@ -282,7 +292,7 @@ def list_projects() -> None:
         cli_utils.declare("No projects registered.")
 
 
-@project.command("create", help="Create a new project.")
+@project.command("create", help="Create a new project.", hidden=True)
 @click.argument("project_name", type=str, required=True)
 @click.option("--description", "-d", type=str, required=False, default="")
 def create_project(project_name: str, description: str) -> None:
@@ -292,6 +302,7 @@ def create_project(project_name: str, description: str) -> None:
         project_name: The name of the project.
         description: A description of the project.
     """
+    warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     try:
         Repository().zen_store.create_project(
@@ -302,7 +313,7 @@ def create_project(project_name: str, description: str) -> None:
     cli_utils.declare(f"Created project '{project_name}'.")
 
 
-@project.command("update", help="Update an existing project.")
+@project.command("update", help="Update an existing project.", hidden=True)
 @click.argument("project_name", type=str, required=True)
 @click.option(
     "--name", "-n", type=str, required=False, help="New project name."
@@ -326,6 +337,7 @@ def update_project(
         name: The new name of the project.
         description: The new description of the project.
     """
+    warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     try:
         project = Repository().zen_store.get_project(project_name)
@@ -337,9 +349,10 @@ def update_project(
     cli_utils.declare(f"Updated project '{project_name}'.")
 
 
-@project.command("get")
+@project.command("get", hidden=True)
 def get_project() -> None:
     """Get the currently active project."""
+    warn_unsupported_non_default_project()
     active_project = Repository().active_project
     description = (
         "\nDescription: " + active_project.description
@@ -349,7 +362,7 @@ def get_project() -> None:
     cli_utils.declare(f"ACTIVE PROJECT: {active_project.name}{description}")
 
 
-@project.command("set", help="Set the active project.")
+@project.command("set", help="Set the active project.", hidden=True)
 @click.argument("project_name_or_id", type=str, required=True)
 def set_project(project_name_or_id: str) -> None:
     """Set the active project.
@@ -357,6 +370,7 @@ def set_project(project_name_or_id: str) -> None:
     Args:
         project_name_or_id: The name or ID of the project to set as active.
     """
+    warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     try:
         Repository().set_active_project(project_name_or_id=project_name_or_id)
@@ -365,7 +379,7 @@ def set_project(project_name_or_id: str) -> None:
     cli_utils.declare(f"Set active project '{project_name_or_id}'.")
 
 
-@project.command("delete", help="Delete a project.")
+@project.command("delete", help="Delete a project.", hidden=True)
 @click.argument("project_name_or_id", type=str, required=True)
 def delete_project(project_name_or_id: str) -> None:
     """Delete a project.
@@ -373,6 +387,7 @@ def delete_project(project_name_or_id: str) -> None:
     Args:
         project_name_or_id: Name or ID of project to delete.
     """
+    warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     cli_utils.confirmation(
         f"Are you sure you want to delete project `{project_name_or_id}`? "

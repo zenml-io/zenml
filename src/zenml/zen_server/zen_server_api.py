@@ -21,6 +21,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.cors import CORSMiddleware
 
 import zenml
+from zenml.constants import API, VERSION_1, HEALTH, VERSION
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
@@ -30,6 +31,7 @@ from zenml.zen_server.routers import (
     projects_endpoints,
     roles_endpoints,
     runs_endpoints,
+    server_endpoints,
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
@@ -68,7 +70,7 @@ app.add_middleware(
 )
 
 app.mount(
-    "/dashboard/static",
+    "/static",
     StaticFiles(
         directory=relative_path(os.path.join(DASHBOARD_DIRECTORY, "static")),
         check_dir=False,
@@ -92,8 +94,8 @@ def dashboard(request: Request) -> Any:
 
 
 # Basic Health Endpoint
-@app.head("/health", include_in_schema=False)
-@app.get("/health")
+@app.head(API + VERSION_1 + HEALTH, include_in_schema=False)
+@app.get(API + VERSION_1 + HEALTH)
 def health() -> str:
     """Get health status of the server.
 
@@ -101,16 +103,6 @@ def health() -> str:
         String representing the health status of the server.
     """
     return "OK"
-
-
-@app.get("/version")
-def version() -> str:
-    """Get version of the server.
-
-    Returns:
-        String representing the version of the server.
-    """
-    return zenml.__version__
 
 
 # to run this file locally, execute:
@@ -124,6 +116,7 @@ app.include_router(projects_endpoints.router)
 app.include_router(flavors_endpoints.router)
 app.include_router(roles_endpoints.router)
 app.include_router(runs_endpoints.router)
+app.include_router(server_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)

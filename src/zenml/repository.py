@@ -42,6 +42,7 @@ from zenml.stack import Flavor
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
+from zenml.zen_stores.base_zen_store import BaseZenStore, DEFAULT_PROJECT_NAME
 
 if TYPE_CHECKING:
     from zenml.models import (
@@ -51,7 +52,7 @@ if TYPE_CHECKING:
         UserModel,
     )
     from zenml.stack import Stack
-    from zenml.zen_stores.base_zen_store import BaseZenStore
+
 
 logger = get_logger(__name__)
 
@@ -477,7 +478,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         self._set_active_root(root)
 
-    @track(event=AnalyticsEvent.SET_PROJECT)
+    @track(event=AnalyticsEvent.SET_PROJECT, track_server_info=True)
     def set_active_project(
         self, project_name_or_id: Union[str, UUID]
     ) -> "ProjectModel":
@@ -526,7 +527,13 @@ class Repository(metaclass=RepositoryMetaClass):
                 "`zenml project set PROJECT_NAME` to set the active "
                 "project."
             )
-
+        if project_name != DEFAULT_PROJECT_NAME:
+            logger.warning(f"You are running with a non-default project "
+                           f"'{project_name}'. Any stacks, components, "
+                           f"pipelines and pipeline runs produced in this "
+                           f"project will currently not be accessible through "
+                           f"the dashboard. However, this will be possible "
+                           f"in the near future.")
         return project_name
 
     @property
@@ -552,7 +559,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
     @property
     def stacks(self) -> List["HydratedStackModel"]:
-        """All stack models in the current project, owned by the current user.
+        """All stack models in the active project, owned by the current user or shared.
 
         This property is intended as a quick way to get information about the
         components of the registered stacks without loading all installed
@@ -614,7 +621,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         return Stack.from_model(self.active_stack_model)
 
-    @track(event=AnalyticsEvent.SET_STACK)
+    @track(event=AnalyticsEvent.SET_STACK, track_server_info=True)
     def activate_stack(self, stack: "StackModel") -> None:
         """Sets the stack as active.
 
