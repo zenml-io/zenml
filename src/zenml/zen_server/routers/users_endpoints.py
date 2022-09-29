@@ -19,7 +19,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import SecretStr
 
-from zenml.constants import ACTIVATE, DEACTIVATE, ROLES, USERS, VERSION_1
+from zenml.constants import ACTIVATE, DEACTIVATE, ROLES, USERS, VERSION_1, API
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel, UserModel
@@ -40,7 +40,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 logger = get_logger(__name__)
 
 router = APIRouter(
-    prefix=VERSION_1 + USERS,
+    prefix=API + VERSION_1 + USERS,
     tags=["users"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
@@ -48,14 +48,14 @@ router = APIRouter(
 
 
 activation_router = APIRouter(
-    prefix=VERSION_1 + USERS,
+    prefix=API + VERSION_1 + USERS,
     tags=["users"],
     responses={401: error_response},
 )
 
 
 current_user_router = APIRouter(
-    prefix=VERSION_1,
+    prefix=API + VERSION_1,
     tags=["users"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

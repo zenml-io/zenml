@@ -25,7 +25,7 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
-    VERSION_1,
+    VERSION_1, API,
 )
 from zenml.enums import StackComponentType
 from zenml.models import (
@@ -50,7 +50,7 @@ from zenml.zen_server.models.stack_models import CreateStackRequest
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1 + PROJECTS,
+    prefix=API + VERSION_1 + PROJECTS,
     tags=["projects"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

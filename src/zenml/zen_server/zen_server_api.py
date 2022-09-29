@@ -21,6 +21,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.cors import CORSMiddleware
 
 import zenml
+from zenml.constants import API, VERSION_1, HEALTH, VERSION
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
@@ -93,8 +94,8 @@ def dashboard(request: Request) -> Any:
 
 
 # Basic Health Endpoint
-@app.head("/health", include_in_schema=False)
-@app.get("/health")
+@app.head(API + VERSION_1 + HEALTH, include_in_schema=False)
+@app.get(API + VERSION_1 + HEALTH)
 def health() -> str:
     """Get health status of the server.
 

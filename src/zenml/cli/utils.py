@@ -944,7 +944,7 @@ def get_component_by_id_or_name_or_prefix(
     id_or_name_or_prefix: str,
     component_type: StackComponentType,
 ) -> "ComponentModel":
-    """Fetches a stack within active project using the name, id or partial id.
+    """Fetches a component of given type within active project using the name, id or partial id.
 
     Args:
         repo: Instance of the Repository singleton
@@ -953,7 +953,7 @@ def get_component_by_id_or_name_or_prefix(
         component_type: The type of the component to fetch.
 
     Returns:
-        The stack with the given name.
+        The component with the given name.
 
     Raises:
         KeyError: If no stack with the given name exists.
@@ -1028,6 +1028,6 @@ def get_component_by_id_or_name_or_prefix(
             return filtered_comps[0]
         else:
             raise KeyError(
-                f"No stack with name or id prefix "
-                f"'{id_or_name_or_prefix}' exists."
+                f"No component of type `{component_type}` with name or id "
+                f"prefix '{id_or_name_or_prefix}' exists."
             )

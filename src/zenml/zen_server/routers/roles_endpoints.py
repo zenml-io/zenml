@@ -17,7 +17,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import ROLES, VERSION_1
+from zenml.constants import ROLES, VERSION_1, API
 from zenml.models import RoleModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.user_management_models import (
@@ -27,7 +27,7 @@ from zenml.zen_server.models.user_management_models import (
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1 + ROLES,
+    prefix=API + VERSION_1 + ROLES,
     tags=["roles"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
