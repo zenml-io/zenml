@@ -24,11 +24,11 @@ from rich.errors import MarkupError
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import ServerProviderType
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.zen_server.deploy.deployer import ServerDeployer
@@ -408,25 +408,25 @@ def status_server(server_name: Optional[str] = None) -> None:
     """
     """Show details about the active global configuration."""
     gc = GlobalConfiguration()
-    repo = Repository()
+    client = Client()
 
     store_cfg = gc.store
 
-    if repo.root:
-        cli_utils.declare(f"Active repository root: {repo.root}")
+    if client.root:
+        cli_utils.declare(f"Active repository root: {client.root}")
     if store_cfg is not None:
         if store_cfg == gc.get_default_store():
             cli_utils.declare(f"Using the local database ('{store_cfg.url}')")
         else:
             cli_utils.declare(f"Connected to a ZenML server: '{store_cfg.url}'")
 
-    scope = "repository" if repo.uses_local_configuration else "global"
-    cli_utils.declare(f"The current user is: '{repo.active_user.name}'")
+    scope = "repository" if client.uses_local_configuration else "global"
+    cli_utils.declare(f"The current user is: '{client.active_user.name}'")
     cli_utils.declare(
-        f"The active project is: '{repo.active_project_name}' " f"({scope})"
+        f"The active project is: '{client.active_project_name}' " f"({scope})"
     )
     cli_utils.declare(
-        f"The active stack is: '{repo.active_stack_model.name}' ({scope})"
+        f"The active stack is: '{client.active_stack_model.name}' ({scope})"
     )
 
     server = get_active_deployment(local=False)
@@ -617,7 +617,7 @@ def connect(
 
     if project:
         try:
-            Repository().set_active_project(project_name_or_id=project)
+            Client().set_active_project(project_name_or_id=project)
         except KeyError:
             cli_utils.warning(
                 f"The project {project} does not exist or is not accessible. "

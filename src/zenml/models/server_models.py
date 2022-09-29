@@ -56,3 +56,11 @@ class ServerModel(BaseModel):
         ServerDatabaseType.OTHER,
         title="The database type that the server is using.",
     )
+
+    def is_local(self) -> bool:
+        """Return whether the server is running locally."""
+        from zenml.config.global_config import GlobalConfiguration
+
+        # Local ZenML servers are identifiable by the fact that their
+        # server ID is the same as the local client (user) ID.
+        return self.id == GlobalConfiguration().user_id

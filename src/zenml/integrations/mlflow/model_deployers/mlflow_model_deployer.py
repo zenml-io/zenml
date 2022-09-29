@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, cast
 from uuid import UUID
 
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.integrations.mlflow import MLFLOW_MODEL_DEPLOYER_FLAVOR
@@ -31,7 +32,6 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
 )
 from zenml.logger import get_logger
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
-from zenml.repository import Repository
 from zenml.services import ServiceRegistry
 from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
 from zenml.services.service import BaseService, ServiceConfig
@@ -131,8 +131,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
         Raises:
             TypeError: If the active stack does not contain an MLFlowModelDeployer component.
         """
-        model_deployer = Repository(  # type: ignore[call-arg]
-            skip_repository_check=True
+        model_deployer = Client(  # type: ignore[call-arg]
+            skip_client_check=True
         ).active_stack.model_deployer
 
         if not model_deployer or not isinstance(

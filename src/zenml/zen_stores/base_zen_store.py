@@ -338,7 +338,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             True if the store is local, False otherwise.
         """
         return (
-            self.get_store_info().deployment_type == ServerDeploymentType.LOCAL
+            self.get_store_info().is_local()
         )
 
     # ------

@@ -24,10 +24,10 @@ from tfx.orchestration.portable.base_executor_operator import (
 )
 from tfx.proto.orchestration import executable_spec_pb2, execution_result_pb2
 
+from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
@@ -175,7 +175,7 @@ class StepExecutorOperator(BaseExecutorOperator):
         )
         assert step.config.step_operator
 
-        stack = Repository().active_stack
+        stack = Client().active_stack
         step_operator = self._get_step_operator(
             stack=stack, step_operator_name=step.config.step_operator
         )

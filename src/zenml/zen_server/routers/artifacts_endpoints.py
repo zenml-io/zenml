@@ -17,7 +17,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import ARTIFACTS, VERSION_1, API
+from zenml.constants import API, ARTIFACTS, VERSION_1
 from zenml.models.pipeline_models import ArtifactModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
