@@ -22,7 +22,7 @@ from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
 from zenml.integrations.registry import integration_registry
-from zenml.repository import Repository
+from zenml.client import Client
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -186,6 +186,6 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         Returns:
             Optional execution info of the run.
         """
-        orchestrator = Repository().active_stack.orchestrator
+        orchestrator = Client().active_stack.orchestrator
         orchestrator._prepare_run(deployment=deployment)
         return orchestrator.run_step(step=step)

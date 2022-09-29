@@ -14,7 +14,7 @@
 
 from zenml.enums import ExecutionStatus
 from zenml.post_execution import get_pipeline
-from zenml.repository import Repository
+from zenml.client import Client
 
 
 def generate_basic_validation_function(
@@ -104,8 +104,8 @@ def mlflow_tracking_example_validation():
     )
 
     # activate the stack set up and used by the example
-    Repository().activate_stack("mlflow_stack")
-    experiment_tracker = Repository().active_stack.experiment_tracker
+    Client().activate_stack("mlflow_stack")
+    experiment_tracker = Client().active_stack.experiment_tracker
     assert isinstance(experiment_tracker, MLFlowExperimentTracker)
     experiment_tracker.configure_mlflow()
 

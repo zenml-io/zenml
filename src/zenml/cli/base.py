@@ -31,7 +31,7 @@ from zenml.enums import AnalyticsEventSource
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.stack.stack_component import StackComponent
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
@@ -66,14 +66,14 @@ def init(path: Optional[Path]) -> None:
 
     with console.status(f"Initializing ZenML repository at {path}.\n"):
         try:
-            Repository.initialize(root=path)
+            Client.initialize(root=path)
             declare(f"ZenML repository initialized at {path}.")
         except InitializationException as e:
             error(f"{e}")
 
     declare(
         f"The local active stack was initialized to "
-        f"'{Repository().active_stack_model.name}'. This local configuration "
+        f"'{Client().active_stack_model.name}'. This local configuration "
         f"will only take effect when you're running ZenML from the initialized "
         f"repository root, or from a subdirectory. For more information on "
         f"repositories and configurations, please visit "
@@ -89,16 +89,17 @@ def _delete_local_files(force_delete: bool = False) -> None:
     """
     if not force_delete:
         confirm = confirmation(
-            "DANGER: This will completely delete metadata, artifacts and so on associated with all active stack components. \n\n"
+            "DANGER: This will completely delete metadata, artifacts and so "
+            "on associated with all active stack components. \n\n"
             "Are you sure you want to proceed?"
         )
         if not confirm:
             declare("Aborting clean.")
             return
 
-    repo = Repository()
-    if repo.active_stack_model:
-        stack_components = repo.active_stack_model.components
+    client = Client()
+    if client.active_stack_model:
+        stack_components = client.active_stack_model.components
         for _, components in stack_components.items():
             # TODO: [server] this needs to be adjusted as the ComponentModel
             #  does not have the local_path property anymore

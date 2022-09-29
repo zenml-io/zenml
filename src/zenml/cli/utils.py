@@ -49,7 +49,7 @@ from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models.stack_models import HydratedStackModel
-from zenml.repository import Repository
+from zenml.client import Client
 
 logger = get_logger(__name__)
 
@@ -352,10 +352,10 @@ def print_stack_component_configuration(
 
 def print_active_config() -> None:
     """Print the active configuration."""
-    from zenml.repository import Repository
+    from zenml.client import Client
 
     gc = GlobalConfiguration()
-    repo = Repository()
+    client = Client()
     if not gc.store:
         return
 
@@ -367,7 +367,7 @@ def print_active_config() -> None:
     elif gc.store.type == StoreType.REST:
         declare(f"Connected to the ZenML server: '{gc.store.url}'")
     if gc.active_project_name:
-        scope = "repository" if repo.uses_local_configuration else "global"
+        scope = "repository" if client.uses_local_configuration else "global"
         declare(
             f"Running with active project: '{gc.active_project_name}' "
             f"({scope})"
@@ -376,12 +376,12 @@ def print_active_config() -> None:
 
 def print_active_stack() -> None:
     """Print active stack."""
-    from zenml.repository import Repository
+    from zenml.client import Client
 
-    repo = Repository()
-    scope = "repository" if repo.uses_local_configuration else "global"
+    client = Client()
+    scope = "repository" if client.uses_local_configuration else "global"
     declare(
-        f"Running with active stack: '{repo.active_stack_model.name}' ({scope})"
+        f"Running with active stack: '{client.active_stack_model.name}' ({scope})"
     )
 
 
@@ -803,7 +803,7 @@ def describe_pydantic_object(schema_json: str):
 
 
 def get_stack_by_id_or_name_or_prefix(
-    repo: Repository,
+    repo: Client,
     id_or_name_or_prefix: str,
 ) -> "StackModel":
     """Fetches a stack within active project using the name, id or partial id.
@@ -883,7 +883,7 @@ def get_stack_by_id_or_name_or_prefix(
 
 
 def print_stacks_table(
-    repo: Repository, stacks: List[HydratedStackModel]
+    repo: Client, stacks: List[HydratedStackModel]
 ) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
@@ -915,7 +915,7 @@ def print_stacks_table(
 
 
 def print_components_table(
-    repo: Repository,
+    repo: Client,
     component_type: StackComponentType,
     components: List["HydratedComponentModel"],
 ) -> None:
@@ -977,7 +977,7 @@ def _component_display_name(
 
 
 def get_component_by_id_or_name_or_prefix(
-    repo: Repository,
+    repo: Client,
     id_or_name_or_prefix: str,
     component_type: StackComponentType,
 ) -> "ComponentModel":

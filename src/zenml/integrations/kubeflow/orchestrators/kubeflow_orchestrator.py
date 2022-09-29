@@ -69,7 +69,7 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
@@ -390,7 +390,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             ),
         }
 
-        stack = Repository().active_stack
+        stack = Client().active_stack
         local_stores_path = GlobalConfiguration().local_stores_path
 
         # go through all stack components and identify those that advertise
@@ -988,7 +988,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "Please install 'k3d' and 'kubectl' and try again."
             )
 
-        container_registry = Repository().active_stack.container_registry
+        container_registry = Client().active_stack.container_registry
 
         # should not happen, because the stack validation takes care of this,
         # but just in case
@@ -1029,7 +1029,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 kubernetes_context=kubernetes_context
             )
 
-            artifact_store = Repository().active_stack.artifact_store
+            artifact_store = Client().active_stack.artifact_store
             if isinstance(artifact_store, LocalArtifactStore):
                 local_deployment_utils.add_hostpath_to_kubeflow_pipelines(
                     kubernetes_context=kubernetes_context,

@@ -17,9 +17,9 @@
 from zenml.integrations.spark.step_operators.spark_step_operator import (
     SparkStepOperator,
 )
-from zenml.repository import Repository
+from zenml.client import Client
 
-step_operator = Repository().active_stack.step_operator
+step_operator = Client().active_stack.step_operator
 if not step_operator or not isinstance(step_operator, SparkStepOperator):
     raise RuntimeError(
         "Your active stack needs to contain a Spark step operator for this "

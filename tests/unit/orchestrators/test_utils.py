@@ -24,7 +24,7 @@ from zenml.utils.proto_utils import (
 )
 from zenml.orchestrators.utils import get_cache_status
 from zenml.pipelines import pipeline
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import step
 
 
@@ -91,8 +91,8 @@ def test_pipeline_storing_context_in_the_metadata_store():
     pipeline_ = p(some_step_1())
     pipeline_.run()
 
-    repo = Repository()
-    contexts = repo.zen_store._metadata_store.store.get_contexts_by_type(
+    client = Client()
+    contexts = client.zen_store._metadata_store.store.get_contexts_by_type(
         ZENML_MLMD_CONTEXT_TYPE
     )
 
@@ -100,14 +100,14 @@ def test_pipeline_storing_context_in_the_metadata_store():
 
     assert contexts[0].custom_properties[
         MLMD_CONTEXT_STACK_PROPERTY_NAME
-    ].string_value == json.dumps(repo.active_stack.dict(), sort_keys=True)
+    ].string_value == json.dumps(client.active_stack.dict(), sort_keys=True)
 
     from zenml.config.compiler import Compiler
     from zenml.config.pipeline_configurations import PipelineRunConfiguration
 
     compiled = Compiler().compile(
         pipeline=pipeline_,
-        stack=repo.active_stack,
+        stack=client.active_stack,
         run_configuration=PipelineRunConfiguration(),
     )
     dag_filepath = os.path.abspath(__file__)

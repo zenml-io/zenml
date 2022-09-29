@@ -292,7 +292,7 @@ class AnalyticsContext:
         """
         import analytics
 
-        from zenml.repository import Repository
+        from zenml.client import Client
 
         if isinstance(event, AnalyticsEvent):
             event = event.value
@@ -323,12 +323,12 @@ class AnalyticsContext:
         )
 
         if track_server_info:
-            repo = Repository()
-            zen_store = repo.zen_store
+            client = Client()
+            zen_store = client.zen_store
             if zen_store.type == StoreType.REST:
                 user = zen_store.active_user
                 server_info = zen_store.get_store_info()
-                project = repo.active_project
+                project = client.active_project
                 # TODO: extract server ID
                 properties.update(
                     {

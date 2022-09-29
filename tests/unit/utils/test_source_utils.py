@@ -24,7 +24,7 @@ from typing import Callable
 import pytest
 from pytest_mock import MockerFixture
 
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.utils import source_utils
 
 
@@ -96,7 +96,7 @@ def test_loading_class_by_path_prepends_repo_path(clean_repo, mocker, tmp_path):
 
     os.chdir(str(tmp_path))
 
-    Repository.initialize()
+    Client.initialize()
     clean_repo.activate_root()
 
     python_file = clean_repo.root / "some_directory" / "python_file.py"
@@ -126,7 +126,7 @@ def test_import_python_file_for_first_time(clean_repo, mocker, files_dir: Path):
 
     os.chdir(str(files_dir))
     clean_repo.activate_root()
-    Repository.initialize()
+    Client.initialize()
 
     mocker.patch.object(sys, "path", [])
 
@@ -159,7 +159,7 @@ def test_import_python_file_when_already_loaded(
 
     os.chdir(str(files_dir))
     clean_repo.activate_root()
-    Repository.initialize(root=files_dir)
+    Client.initialize(root=files_dir)
 
     mocker.patch.object(sys, "path", [])
 
@@ -198,7 +198,7 @@ def test_import_python_file(clean_repo, mocker, files_dir: Path):
 
     os.chdir(str(files_dir))
     clean_repo.activate_root()
-    Repository.initialize(root=files_dir)
+    Client.initialize(root=files_dir)
 
     main_python_file = files_dir / MAIN_MODULE_FILENAME
     some_python_file = files_dir / SOME_MODULE_FILENAME

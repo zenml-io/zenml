@@ -22,7 +22,7 @@ from zenml.exceptions import (
     StackValidationError,
 )
 from zenml.pipelines import pipeline
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import BaseParameters, step
 from zenml.utils.yaml_utils import write_yaml
 
@@ -289,6 +289,6 @@ def test_pipeline_run_fails_when_required_step_operator_is_missing(
     def step_that_requires_step_operator() -> None:
         pass
 
-    assert not Repository().active_stack.step_operator
+    assert not Client().active_stack.step_operator
     with pytest.raises(StackValidationError):
         one_step_pipeline(step_that_requires_step_operator()).run()

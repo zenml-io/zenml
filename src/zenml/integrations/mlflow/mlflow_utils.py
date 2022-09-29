@@ -17,7 +17,7 @@ import mlflow
 from mlflow.entities import Run
 
 from zenml.logger import get_logger
-from zenml.repository import Repository
+from zenml.client import Client
 
 logger = get_logger(__name__)
 
@@ -54,7 +54,7 @@ def get_tracking_uri() -> str:
         MLFlowExperimentTracker,
     )
 
-    tracker = Repository().active_stack.experiment_tracker
+    tracker = Client().active_stack.experiment_tracker
     if tracker is None or not isinstance(tracker, MLFlowExperimentTracker):
         raise get_missing_mlflow_experiment_tracker_error()
 

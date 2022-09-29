@@ -29,7 +29,7 @@ from zenml.constants import (
 from zenml.enums import StoreType
 from zenml.logger import get_logger
 from zenml.models.server_models import ServerDeploymentType
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.services import (
     LocalDaemonService,
     LocalDaemonServiceConfig,
@@ -190,7 +190,7 @@ class LocalZenServer(LocalDaemonService):
             self._copy_global_configuration()
             try:
                 GlobalConfiguration()._reset_instance()
-                Repository()._reset_instance()
+                Client()._reset_instance()
                 config_path = os.environ.get(ENV_ZENML_CONFIG_PATH)
                 os.environ[
                     ENV_ZENML_CONFIG_PATH
@@ -202,7 +202,7 @@ class LocalZenServer(LocalDaemonService):
                 else:
                     del os.environ[ENV_ZENML_CONFIG_PATH]
                 GlobalConfiguration()._reset_instance()
-                Repository()._reset_instance()
+                Client()._reset_instance()
 
     def run(self) -> None:
         """Run the ZenServer.

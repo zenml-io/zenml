@@ -34,7 +34,7 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -91,7 +91,7 @@ def mlflow_model_deployer_step(
     model_deployer = MLFlowModelDeployer.get_active_model_deployer()
 
     # fetch the MLflow artifacts logged during the pipeline run
-    experiment_tracker = Repository(  # type: ignore[call-arg]
+    experiment_tracker = Client(  # type: ignore[call-arg]
         skip_repository_check=True
     ).active_stack.experiment_tracker
 

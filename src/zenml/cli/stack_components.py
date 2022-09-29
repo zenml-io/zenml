@@ -31,7 +31,7 @@ from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.io import fileio
 from zenml.models import ComponentModel, FlavorModel
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
@@ -55,7 +55,7 @@ def generate_stack_component_get_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        active_stack = Repository().active_stack_model
+        active_stack = Client().active_stack_model
         components = active_stack.components.get(component_type, None)
         display_name = _component_display_name(component_type)
         if components:
@@ -95,18 +95,18 @@ def generate_stack_component_describe_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        repo = Repository()
+        client = Client()
 
         try:
             component = cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=repo,
+                repo=client,
                 component_type=component_type,
                 id_or_name_or_prefix=name_or_id,
             )
         except KeyError as e:
             cli_utils.error(str(e))  # noqa
 
-        is_active = component.id == repo.active_stack.components.get(
+        is_active = component.id == client.active_stack.components.get(
             component_type
         )
 
@@ -134,13 +134,13 @@ def generate_stack_component_list_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        repo = Repository()
+        client = Client()
 
-        components = repo.list_stack_components_by_type(type=component_type)
+        components = client.list_stack_components_by_type(type=component_type)
         hydrated_comps = [s.to_hydrated_model() for s in components]
 
         cli_utils.print_components_table(
-            repo=repo, component_type=component_type, components=hydrated_comps
+            repo=client, component_type=component_type, components=hydrated_comps
         )
 
     return list_stack_components_command
@@ -197,7 +197,7 @@ def generate_stack_component_register_command(
         with console.status(f"Registering {display_name} '{name}'...\n"):
             cli_utils.print_active_config()
             cli_utils.print_active_stack()
-            repo = Repository()
+            client = Client()
 
             # Parse the given args
             parsed_args = cli_utils.parse_unknown_options(
@@ -206,8 +206,8 @@ def generate_stack_component_register_command(
 
             # Create a new stack component model
             component_create_model = ComponentModel(
-                user=repo.active_user.id,
-                project=repo.active_project.id,
+                user=client.active_user.id,
+                project=client.active_project.id,
                 is_shared=share,
                 name=name,
                 flavor=flavor,
@@ -216,8 +216,8 @@ def generate_stack_component_register_command(
             )
 
             # Register the new model
-            repo = Repository()
-            repo.register_stack_component(component_create_model)
+            client = Client()
+            client.register_stack_component(component_create_model)
 
             cli_utils.declare(
                 f"Successfully registered {display_name} `{name}`."
@@ -264,10 +264,10 @@ def generate_stack_component_update_command(
             )
 
             # Get the existing component
-            repo = Repository()
+            client = Client()
             existing_component = (
                 cli_utils.get_component_by_id_or_name_or_prefix(
-                    repo=repo,
+                    repo=client,
                     component_type=component_type,
                     id_or_name_or_prefix=name_or_id,
                 )
@@ -280,7 +280,7 @@ def generate_stack_component_update_command(
             }
 
             # Update the component
-            repo.update_stack_component(
+            client.update_stack_component(
                 component=existing_component.copy(
                     update={"configuration": updated_attributes}
                 )
@@ -324,10 +324,10 @@ def generate_stack_component_share_command(
             cli_utils.print_active_config()
 
             # Get the existing component
-            repo = Repository()
+            client = Client()
             existing_component = (
                 cli_utils.get_component_by_id_or_name_or_prefix(
-                    repo=repo,
+                    repo=client,
                     component_type=component_type,
                     id_or_name_or_prefix=name_or_id,
                 )
@@ -336,7 +336,7 @@ def generate_stack_component_share_command(
             existing_component.is_shared = True
 
             # Update the component
-            repo.update_stack_component(component=existing_component)
+            client.update_stack_component(component=existing_component)
 
             cli_utils.declare(
                 f"Successfully shared {display_name} " f"`{name_or_id}`."
@@ -382,10 +382,10 @@ def generate_stack_component_remove_attribute_command(
             parsed_args = cli_utils.parse_unknown_component_attributes(args)
 
             # Fetch the existing component
-            repo = Repository()
+            client = Client()
 
             existing_comp = cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=repo,
+                repo=client,
                 component_type=component_type,
                 id_or_name_or_prefix=name_or_id,
             )
@@ -403,7 +403,7 @@ def generate_stack_component_remove_attribute_command(
 
             print(existing_comp)
             # Update the stack component
-            repo.update_stack_component(component=existing_comp)
+            client.update_stack_component(component=existing_comp)
 
             cli_utils.declare(
                 f"Successfully updated {display_name} `{name_or_id}`."
@@ -447,17 +447,17 @@ def generate_stack_component_rename_command(
             cli_utils.print_active_stack()
 
             # Fetch the existing component
-            repo = Repository()
+            client = Client()
             existing_component = (
                 cli_utils.get_component_by_id_or_name_or_prefix(
-                    repo=repo,
+                    repo=client,
                     component_type=component_type,
                     id_or_name_or_prefix=name_or_id,
                 )
             )
 
             # Rename and update the existing component
-            repo.update_stack_component(
+            client.update_stack_component(
                 component=existing_component.copy(update={"name": new_name}),
             )
 
@@ -494,15 +494,15 @@ def generate_stack_component_delete_command(
             cli_utils.print_active_stack()
 
             # Fetch the existing stack component
-            repo = Repository()
+            client = Client()
             existing_comp = cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=repo,
+                repo=client,
                 component_type=component_type,
                 id_or_name_or_prefix=name_or_id,
             )
 
             # Delete the component
-            repo.deregister_stack_component(existing_comp)
+            client.deregister_stack_component(existing_comp)
             cli_utils.declare(f"Deleted {display_name}: {name_or_id}")
 
     return delete_stack_component_command
@@ -543,10 +543,10 @@ def generate_stack_component_copy_command(
             cli_utils.print_active_stack()
 
             # Fetch the stack component
-            repo = Repository()
+            client = Client()
             existing_component = (
                 cli_utils.get_component_by_id_or_name_or_prefix(
-                    repo=repo,
+                    repo=client,
                     component_type=component_type,
                     id_or_name_or_prefix=source_component_name_or_id,
                 )
@@ -554,14 +554,14 @@ def generate_stack_component_copy_command(
 
             # Register a new one with a new name
             component_create_model = ComponentModel(
-                user=repo.active_user.id,
-                project=repo.active_project.id,
+                user=client.active_user.id,
+                project=client.active_project.id,
                 name=target_component,
                 flavor=existing_component.flavor,
                 configuration=existing_component.configuration,
                 type=existing_component.type,
             )
-            repo.register_stack_component(component=component_create_model)
+            client.register_stack_component(component=component_create_model)
 
     return copy_stack_component_command
 
@@ -588,11 +588,11 @@ def generate_stack_component_up_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        repo = Repository()
+        client = Client()
 
         try:
             component_model = cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=repo,
+                repo=client,
                 component_type=component_type,
                 id_or_name_or_prefix=name_or_id,
             )
@@ -686,10 +686,10 @@ def generate_stack_component_down_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        repo = Repository()
+        client = Client()
         try:
             component_model = cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=repo,
+                repo=client,
                 component_type=component_type,
                 id_or_name_or_prefix=name_or_id,
             )
@@ -771,10 +771,10 @@ def generate_stack_component_logs_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        repo = Repository()
+        client = Client()
         try:
             component_model = cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=repo,
+                repo=client,
                 component_type=component_type,
                 id_or_name_or_prefix=name_or_id,
             )
@@ -869,8 +869,8 @@ def generate_stack_component_flavor_list_command(
             cli_utils.print_active_stack()
 
             # Fetch the flavors
-            repo = Repository()
-            flavors = repo.get_flavors_by_type(component_type=component_type)
+            client = Client()
+            flavors = client.get_flavors_by_type(component_type=component_type)
 
             # Print the flavors
             cli_utils.print_flavor_list(flavors=flavors)
@@ -906,18 +906,18 @@ def generate_stack_component_flavor_register_command(
             cli_utils.print_active_config()
             cli_utils.print_active_stack()
 
-            repo = Repository()
+            client = Client()
 
             # Create a new model
             flavor_create_model = FlavorModel(
                 source=source,
                 type=component_type,
-                user=repo.active_user.id,
-                project=repo.active_project.id,
+                user=client.active_user.id,
+                project=client.active_project.id,
             )
 
             # Register the new model
-            new_flavor = repo.create_flavor(flavor_create_model)
+            new_flavor = client.create_flavor(flavor_create_model)
 
             cli_utils.declare(
                 f"Successfully registered new flavor '{new_flavor.name}' "
@@ -953,9 +953,9 @@ def generate_stack_component_flavor_describe_command(
         """
         with console.status(f"Describing {display_name} flavor: {name}`...\n"):
             # Fetch the existing flavor
-            repo = Repository()
+            client = Client()
 
-            flavor_model = repo.get_flavor_by_name_and_type(
+            flavor_model = client.get_flavor_by_name_and_type(
                 name=name, component_type=component_type
             )
 
@@ -993,13 +993,13 @@ def generate_stack_component_flavor_delete_command(
             cli_utils.print_active_stack()
 
             # Fetch the flavor
-            repo = Repository()
-            existing_flavor = repo.get_flavor_by_name_and_type(
+            client = Client()
+            existing_flavor = client.get_flavor_by_name_and_type(
                 name=name, component_type=component_type
             )
 
             # Delete the flavor
-            repo.delete_flavor(existing_flavor)
+            client.delete_flavor(existing_flavor)
 
             cli_utils.declare(
                 f"Successfully deleted flavor '{existing_flavor.name}' "

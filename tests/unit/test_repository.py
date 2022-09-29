@@ -36,13 +36,13 @@ from zenml.io import fileio
 from zenml.models.stack_models import StackModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.stack import Stack
 from zenml.utils import io_utils
 
 
 def _create_local_stack(
-    repo: Repository,
+    repo: Client,
     stack_name: str,
     orchestrator_name: Optional[str] = None,
     artifact_store_name: Optional[str] = None,
@@ -91,9 +91,9 @@ def _create_local_stack(
 
 def test_repository_detection(tmp_path):
     """Tests detection of ZenML repositories in a directory."""
-    assert Repository.is_repository_directory(tmp_path) is False
-    Repository.initialize(tmp_path)
-    assert Repository.is_repository_directory(tmp_path) is True
+    assert Client.is_repository_directory(tmp_path) is False
+    Client.initialize(tmp_path)
+    assert Client.is_repository_directory(tmp_path) is True
 
 
 def test_initializing_repo_creates_directory_and_uses_default_stack(
@@ -101,16 +101,16 @@ def test_initializing_repo_creates_directory_and_uses_default_stack(
 ):
     """Tests that repo initialization creates a .zen directory and uses the
     default local stack."""
-    Repository.initialize(tmp_path)
+    Client.initialize(tmp_path)
     assert fileio.exists(str(tmp_path / ".zen"))
 
-    repo = Repository()
+    client = Client()
     # switch to the new repo root
-    repo.activate_root(tmp_path)
+    client.activate_root(tmp_path)
 
-    assert len(repo.stacks) == 1
+    assert len(client.stacks) == 1
 
-    stack = repo.active_stack
+    stack = client.active_stack
     assert isinstance(stack.orchestrator, LocalOrchestrator)
     assert isinstance(stack.artifact_store, LocalArtifactStore)
     assert stack.container_registry is None
@@ -119,17 +119,17 @@ def test_initializing_repo_creates_directory_and_uses_default_stack(
 def test_initializing_repo_twice_fails(tmp_path):
     """Tests that initializing a repo in a directory where another repo already
     exists fails."""
-    Repository.initialize(tmp_path)
+    Client.initialize(tmp_path)
     with pytest.raises(InitializationException):
-        Repository.initialize(tmp_path)
+        Client.initialize(tmp_path)
 
 
 def test_freshly_initialized_repo_attributes(tmp_path):
     """Tests that the attributes of a new repository are set correctly."""
-    Repository.initialize(tmp_path)
-    repo = Repository(tmp_path)
+    Client.initialize(tmp_path)
+    client = Client(tmp_path)
 
-    assert repo.root == tmp_path
+    assert client.root == tmp_path
 
 
 def test_finding_repository_directory_with_explicit_path(tmp_path, clean_repo):
@@ -140,49 +140,49 @@ def test_finding_repository_directory_with_explicit_path(tmp_path, clean_repo):
     os.chdir(str(subdirectory_path))
 
     # no repo exists and explicit path passed
-    assert Repository.find_repository(tmp_path) is None
-    assert Repository(tmp_path).root is None
+    assert Client.find_repository(tmp_path) is None
+    assert Client(tmp_path).root is None
 
     # no repo exists and no path passed (=uses current working directory)
-    assert Repository.find_repository() is None
-    Repository._reset_instance()
-    assert Repository().root is None
+    assert Client.find_repository() is None
+    Client._reset_instance()
+    assert Client().root is None
 
     # no repo exists and explicit path set via environment variable
     os.environ["ZENML_REPOSITORY_PATH"] = str(tmp_path)
-    assert Repository.find_repository() is None
-    Repository._reset_instance()
-    assert Repository().root is None
+    assert Client.find_repository() is None
+    Client._reset_instance()
+    assert Client().root is None
 
     del os.environ["ZENML_REPOSITORY_PATH"]
 
     # initializing the repo
-    Repository.initialize(tmp_path)
+    Client.initialize(tmp_path)
 
     # repo exists and explicit path passed
-    assert Repository.find_repository(tmp_path) == tmp_path
-    assert Repository(tmp_path).root == tmp_path
+    assert Client.find_repository(tmp_path) == tmp_path
+    assert Client(tmp_path).root == tmp_path
 
     # repo exists and explicit path to subdirectory passed
-    assert Repository.find_repository(subdirectory_path) is None
-    assert Repository(subdirectory_path).root is None
+    assert Client.find_repository(subdirectory_path) is None
+    assert Client(subdirectory_path).root is None
 
     # repo exists and no path passed (=uses current working directory)
-    assert Repository.find_repository() == tmp_path
-    Repository._reset_instance()
-    assert Repository().root == tmp_path
+    assert Client.find_repository() == tmp_path
+    Client._reset_instance()
+    assert Client().root == tmp_path
 
     # repo exists and explicit path set via environment variable
     os.environ["ZENML_REPOSITORY_PATH"] = str(tmp_path)
-    assert Repository.find_repository() == tmp_path
-    Repository._reset_instance()
-    assert Repository().root == tmp_path
+    assert Client.find_repository() == tmp_path
+    Client._reset_instance()
+    assert Client().root == tmp_path
 
     # repo exists and explicit path to subdirectory set via environment variable
     os.environ["ZENML_REPOSITORY_PATH"] = str(subdirectory_path)
-    assert Repository.find_repository() is None
-    Repository._reset_instance()
-    assert Repository().root is None
+    assert Client.find_repository() is None
+    Client._reset_instance()
+    assert Client().root is None
 
     del os.environ["ZENML_REPOSITORY_PATH"]
 
@@ -191,11 +191,11 @@ def test_repo_without_configuration_file_falls_back_to_empty_config(tmp_path):
     """Tests that the repo uses an empty configuration if the config file was
     deleted."""
     io_utils.create_dir_recursive_if_not_exists(str(tmp_path / ".zen"))
-    repo = Repository(tmp_path)
+    client = Client(tmp_path)
 
-    assert len(repo.stacks) == 1
-    assert repo.active_stack_model.name == "default"
-    assert repo.active_stack is not None
+    assert len(client.stacks) == 1
+    assert client.active_stack_model.name == "default"
+    assert client.active_stack is not None
 
 
 def test_creating_repository_instance_during_step_execution(mocker):
@@ -206,7 +206,7 @@ def test_creating_repository_instance_during_step_execution(mocker):
         return_value=True,
     )
     with does_not_raise():
-        Repository()
+        Client()
 
 
 def test_activating_nonexisting_stack_fails(clean_repo):
@@ -237,7 +237,7 @@ def test_activating_a_stack_updates_the_config_file(clean_repo):
     clean_repo.register_stack(stack_model)
     clean_repo.activate_stack(stack_model)
 
-    assert Repository(clean_repo.root).active_stack_model.name == stack.name
+    assert Client(clean_repo.root).active_stack_model.name == stack.name
 
 
 def test_getting_a_stack(clean_repo):
@@ -267,7 +267,7 @@ def test_registering_a_stack(clean_repo):
     clean_repo.register_stack_component(stack.artifact_store.to_model())
     clean_repo.register_stack(stack_model)
 
-    Repository(clean_repo.root)
+    Client(clean_repo.root)
     with does_not_raise():
         clean_repo.zen_store.get_stack(stack_model.id)
 
@@ -453,10 +453,10 @@ def test_registering_a_new_stack_component(clean_repo):
     ).artifact_store.to_model()
     clean_repo.register_stack_component(new_artifact_store)
 
-    new_repo = Repository(clean_repo.root)
+    new_client = Client(clean_repo.root)
 
     with does_not_raise():
-        registered_artifact_store = new_repo.get_stack_component_by_id(
+        registered_artifact_store = new_client.get_stack_component_by_id(
             new_artifact_store.id
         )
 
@@ -475,7 +475,7 @@ def test_deregistering_a_stack_component(clean_repo):
     with pytest.raises(KeyError):
         clean_repo.get_stack_component_by_id(component.id)
 
-    Repository(clean_repo.root)
+    Client(clean_repo.root)
 
     with pytest.raises(KeyError):
         clean_repo.get_stack_component_by_id(component.id)

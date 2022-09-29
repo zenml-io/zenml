@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, Dict, NamedTuple, Optional, Type, cast
 
 from zenml.exceptions import StepContextError
-from zenml.repository import Repository
+from zenml.client import Client
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
@@ -90,7 +90,7 @@ class StepContext:
             )
             for key in output_materializers.keys()
         }
-        self._stack = Repository().active_stack
+        self._stack = Client().active_stack
 
     def _get_output(
         self, output_name: Optional[str] = None

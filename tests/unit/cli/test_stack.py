@@ -35,7 +35,7 @@ from zenml.cli.stack import (
 from zenml.enums import StackComponentType
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
     LocalSecretsManagerConfig,
@@ -47,7 +47,7 @@ NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 # TODO [ENG-828]: Add tests for these commands using REST, SQL and local options
 
 
-def _create_local_orchestrator(repo: Repository):
+def _create_local_orchestrator(repo: Client):
     """Returns a local orchestrator."""
     return LocalOrchestrator(
         name="arias_orchestrator",
@@ -62,7 +62,7 @@ def _create_local_orchestrator(repo: Repository):
     )
 
 
-def _create_local_artifact_store(repo: Repository):
+def _create_local_artifact_store(repo: Client):
     """Fixture that creates a local artifact store for testing."""
     return LocalArtifactStore(
         name="arias_artifact_store",
@@ -77,7 +77,7 @@ def _create_local_artifact_store(repo: Repository):
     )
 
 
-def _create_local_secrets_manager(repo: Repository):
+def _create_local_secrets_manager(repo: Client):
     return LocalSecretsManager(
         name="arias_secrets_manager",
         id=uuid4(),

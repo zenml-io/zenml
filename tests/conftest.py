@@ -47,7 +47,7 @@ from zenml.models.user_management_models import TeamModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.stack.stack import Stack
 from zenml.stack.stack_component import StackComponentConfig, StackComponentType
 from zenml.steps import StepContext, step
@@ -89,11 +89,11 @@ def base_repo(
 
     # initialize global config and repo at the new path
     GlobalConfiguration()
-    repo = Repository()
+    client = Client()
 
     # monkey patch original cwd in for later use and yield
-    repo.original_cwd = orig_cwd
-    yield repo
+    client.original_cwd = orig_cwd
+    yield client
 
     # remove all traces, and change working directory back to base path
     os.chdir(orig_cwd)
@@ -117,15 +117,15 @@ def base_repo(
 
     # reset the global configuration and the repository
     GlobalConfiguration._reset_instance()
-    Repository._reset_instance()
+    Client._reset_instance()
 
 
 @pytest.fixture
 def clean_repo(
     request: pytest.FixtureRequest,
     tmp_path_factory: pytest.TempPathFactory,
-    base_repo: Repository,
-) -> Repository:
+    base_repo: Client,
+) -> Client:
     """Fixture to get a clean global configuration and repository for an
     individual test.
 
@@ -152,9 +152,9 @@ def clean_repo(
     # save the current global configuration and repository singleton instances
     # to restore them later, then reset them
     original_config = GlobalConfiguration.get_instance()
-    original_repository = Repository.get_instance()
+    original_repository = Client.get_instance()
     GlobalConfiguration._reset_instance()
-    Repository._reset_instance()
+    Client._reset_instance()
 
     # set the ZENML_CONFIG_PATH environment variable to ensure that the global
     # configuration and the local stacks used in the scope of this function are
@@ -163,12 +163,12 @@ def clean_repo(
 
     # initialize global config and repo at the new path
     GlobalConfiguration()
-    repo = Repository()
+    client = Client()
 
     # monkey patch base repo cwd for later user and yield
-    repo.original_cwd = base_repo.original_cwd
+    client.original_cwd = base_repo.original_cwd
 
-    yield repo
+    yield client
 
     # remove all traces, and change working directory back to base path
     os.chdir(orig_cwd)
@@ -195,7 +195,7 @@ def clean_repo(
 
     # restore the original global configuration and the repository singleton
     GlobalConfiguration._reset_instance(original_config)
-    Repository._reset_instance(original_repository)
+    Client._reset_instance(original_repository)
 
 
 @pytest.fixture

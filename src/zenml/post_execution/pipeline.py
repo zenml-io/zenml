@@ -19,7 +19,7 @@ from uuid import UUID
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineModel
 from zenml.post_execution.pipeline_run import PipelineRunView
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 if TYPE_CHECKING:
@@ -36,9 +36,9 @@ def get_pipelines() -> List["PipelineView"]:
         A list of post-execution pipeline views.
     """
     # TODO: [server] handle the active stack correctly
-    repo = Repository()
-    pipelines = repo.zen_store.list_pipelines(
-        project_name_or_id=repo.active_project.id
+    client = Client()
+    pipelines = client.zen_store.list_pipelines(
+        project_name_or_id=client.active_project.id
     )
     return [PipelineView(model) for model in pipelines]
 
@@ -113,11 +113,11 @@ def get_pipeline(
             ),
         )
 
-    repo = Repository()
-    active_project_id = repo.active_project.id
+    client = Client()
+    active_project_id = client.active_project.id
     assert active_project_id is not None
     try:
-        pipeline_model = repo.zen_store.get_pipeline_in_project(
+        pipeline_model = client.zen_store.get_pipeline_in_project(
             pipeline_name=pipeline_name,
             project_name_or_id=active_project_id,
         )
@@ -172,7 +172,7 @@ class PipelineView:
         """
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
-        runs = Repository().zen_store.list_runs(
+        runs = Client().zen_store.list_runs(
             project_name_or_id=self._model.project,
             pipeline_id=self._model.id,
         )

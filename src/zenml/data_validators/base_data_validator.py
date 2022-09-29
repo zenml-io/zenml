@@ -16,7 +16,7 @@
 from typing import Any, ClassVar, Optional, Sequence, Type, cast
 
 from zenml.enums import StackComponentType
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
 
@@ -50,8 +50,8 @@ class BaseDataValidator(StackComponent):
             TypeError: if a data validator is not part of the
                 active stack.
         """
-        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        data_validator = repo.active_stack.data_validator
+        client = Client(skip_repository_check=True)  # type: ignore[call-arg]
+        data_validator = client.active_stack.data_validator
         if not data_validator:
             raise TypeError(
                 "The active stack needs to have a data validator component "

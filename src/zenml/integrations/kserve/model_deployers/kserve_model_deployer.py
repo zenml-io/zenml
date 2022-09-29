@@ -33,7 +33,7 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
@@ -92,7 +92,7 @@ class KServeModelDeployer(BaseModelDeployer):
         Raises:
             TypeError: if the KServe model deployer is not available.
         """
-        model_deployer = Repository(  # type: ignore [call-arg]
+        model_deployer = Client(  # type: ignore [call-arg]
             skip_repository_check=True
         ).active_stack.model_deployer
         if not model_deployer or not isinstance(
@@ -284,13 +284,13 @@ class KServeModelDeployer(BaseModelDeployer):
 
         # Add telemetry with metadata that gets the stack metadata and
         # differentiates between pure model and custom code deployments
-        stack = Repository().active_stack
+        stack = Client().active_stack
         stack_metadata = {
             component_type.value: component.flavor
             for component_type, component in stack.components.items()
         }
         metadata = {
-            "store_type": Repository().zen_store.type.value,
+            "store_type": Client().zen_store.type.value,
             **stack_metadata,
             "is_custom_code_deployment": config.container is not None,
         }
@@ -510,7 +510,7 @@ class KServeModelDeployer(BaseModelDeployer):
         """
         if self.config.secret:
 
-            secret_manager = Repository(  # type: ignore [call-arg]
+            secret_manager = Client(  # type: ignore [call-arg]
                 skip_repository_check=True
             ).active_stack.secrets_manager
 

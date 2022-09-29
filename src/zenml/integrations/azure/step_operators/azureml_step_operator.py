@@ -38,7 +38,7 @@ from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
     AzureMLStepOperatorConfig,
 )
 from zenml.logger import get_logger
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.step_operators import BaseStepOperator
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
@@ -110,7 +110,7 @@ class AzureMLStepOperator(BaseStepOperator):
         docker_image_builder = PipelineDockerImageBuilder()
         requirements_files = docker_image_builder._gather_requirements_files(
             docker_settings=docker_settings,
-            stack=Repository().active_stack,
+            stack=Client().active_stack,
         )
         requirements = list(
             itertools.chain.from_iterable(

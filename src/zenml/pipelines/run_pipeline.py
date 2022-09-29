@@ -24,7 +24,7 @@ from zenml.config.config_keys import (
 )
 from zenml.exceptions import PipelineConfigurationError
 from zenml.logger import get_logger
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import BaseStep
 from zenml.utils import source_utils, yaml_utils
 
@@ -45,7 +45,7 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     # If the file was run with `python run.py, this would happen automatically.
     #  In order to allow seamless switching between running directly and through
     #  zenml, this is done at this point
-    zenml_root = Repository().root
+    zenml_root = Client().root
     if not zenml_root:
         raise RuntimeError(
             "The `run_pipeline` function can only be called "

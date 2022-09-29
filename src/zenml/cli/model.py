@@ -29,7 +29,7 @@ from zenml.cli.utils import (
 )
 from zenml.console import console
 from zenml.enums import StackComponentType
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
@@ -53,8 +53,8 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         Args:
             ctx: The click context.
         """
-        repo = Repository()
-        model_deployer_models = repo.active_stack_model.components[
+        client = Client()
+        model_deployer_models = client.active_stack_model.components[
             StackComponentType.MODEL_DEPLOYER
         ]
         if model_deployer_models is None:

@@ -15,7 +15,7 @@
 
 from typing import Optional, Type, TypeVar, cast
 
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.secret import BaseSecretSchema
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
@@ -71,7 +71,7 @@ class AuthenticationMixin(StackComponent):
         if not self.config.authentication_secret:
             return None
 
-        active_stack = Repository(skip_repository_check=True).active_stack  # type: ignore[call-arg]
+        active_stack = Client(skip_repository_check=True).active_stack  # type: ignore[call-arg]
         secrets_manager = active_stack.secrets_manager
         if not secrets_manager:
             raise RuntimeError(

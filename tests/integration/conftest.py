@@ -19,15 +19,15 @@ import pytest
 from pytest_mock import MockerFixture
 
 from zenml.container_registries import DefaultContainerRegistryFlavor
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.stack import Stack
 
 
 @pytest.fixture(scope="module")
 def shared_kubeflow_repo(
-    base_repo: Repository,
+    base_repo: Client,
     module_mocker: MockerFixture,
-) -> Generator[Repository, None, None]:
+) -> Generator[Client, None, None]:
     """Creates and activates a locally provisioned kubeflow stack.
 
     As the resource provisioning for the local kubeflow deployment takes quite
@@ -87,7 +87,7 @@ def cleanup_active_repo() -> None:
     metadata store in the current stack.
     """
 
-    kubeflow_stack = Repository().active_stack
+    kubeflow_stack = Client().active_stack
 
     # Delete the artifact store and metadata store of previous tests
     if os.path.exists(kubeflow_stack.artifact_store.path):
@@ -96,8 +96,8 @@ def cleanup_active_repo() -> None:
 
 @pytest.fixture
 def clean_kubeflow_repo(
-    shared_kubeflow_repo: Repository,
-) -> Generator[Repository, None, None]:
+    shared_kubeflow_repo: Client,
+) -> Generator[Client, None, None]:
     """Creates a clean environment with a provisioned local kubeflow stack.
 
     This fixture reuses the stack configuration from the shared kubeflow
@@ -119,8 +119,8 @@ def clean_kubeflow_repo(
 
 @pytest.fixture
 def clean_base_repo(
-    base_repo: Repository,
-) -> Generator[Repository, None, None]:
+    base_repo: Client,
+) -> Generator[Client, None, None]:
     """Creates a clean environment with an empty artifact store and metadata
     store out of the shared base repository.
 

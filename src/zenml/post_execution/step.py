@@ -19,7 +19,7 @@ from uuid import UUID
 from zenml.enums import ExecutionStatus
 from zenml.models import StepRunModel
 from zenml.post_execution.artifact import ArtifactView
-from zenml.repository import Repository
+from zenml.client import Client
 
 
 class StepView:
@@ -141,7 +141,7 @@ class StepView:
         Returns:
             The current status of the step.
         """
-        return Repository().zen_store.get_run_step_status(self.id)
+        return Client().zen_store.get_run_step_status(self.id)
 
     @property
     def is_cached(self) -> bool:
@@ -221,7 +221,7 @@ class StepView:
             # we already fetched inputs, no need to do anything
             return
 
-        inputs = Repository().zen_store.get_run_step_inputs(self.id)
+        inputs = Client().zen_store.get_run_step_inputs(self.id)
         self._inputs = {
             input_name: ArtifactView(input)
             for input_name, input in inputs.items()
@@ -233,7 +233,7 @@ class StepView:
             # we already fetched outputs, no need to do anything
             return
 
-        outputs = Repository().zen_store.get_run_step_outputs(self.id)
+        outputs = Client().zen_store.get_run_step_outputs(self.id)
         self._outputs = {
             output_name: ArtifactView(output)
             for output_name, output in outputs.items()

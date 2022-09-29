@@ -60,7 +60,7 @@ logger = get_logger(__name__)
 DEFAULT_STACK_NAME = "default"
 
 
-class RepositoryConfiguration(FileSyncModel):
+class ClientConfiguration(FileSyncModel):
     """Pydantic object used for serializing repository configuration options.
 
     Attributes:
@@ -84,7 +84,7 @@ class RepositoryConfiguration(FileSyncModel):
         underscore_attrs_are_private = True
 
 
-class RepositoryMetaClass(ABCMeta):
+class ClientMetaClass(ABCMeta):
     """Repository singleton metaclass.
 
     This metaclass is used to enforce a singleton instance of the Repository
@@ -104,9 +104,9 @@ class RepositoryMetaClass(ABCMeta):
             **kwargs: Keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        cls._global_repository: Optional["Repository"] = None
+        cls._global_repository: Optional["Client"] = None
 
-    def __call__(cls, *args: Any, **kwargs: Any) -> "Repository":
+    def __call__(cls, *args: Any, **kwargs: Any) -> "Client":
         """Create or return the global Repository instance.
 
         If the Repository constructor is called with custom arguments,
@@ -119,7 +119,7 @@ class RepositoryMetaClass(ABCMeta):
             **kwargs: Keyword arguments.
 
         Returns:
-            Repository: The global Repository instance.
+            Client: The global Repository instance.
         """
         from zenml.steps.step_environment import (
             STEP_ENVIRONMENT_NAME,
@@ -158,7 +158,7 @@ class RepositoryMetaClass(ABCMeta):
         return cls._global_repository
 
 
-class Repository(metaclass=RepositoryMetaClass):
+class Client(metaclass=ClientMetaClass):
     """ZenML repository class.
 
     The ZenML repository manages configuration options for ZenML stacks as well
@@ -195,12 +195,12 @@ class Repository(metaclass=RepositoryMetaClass):
                 repositories internally.
         """
         self._root: Optional[Path] = None
-        self._config: Optional[RepositoryConfiguration] = None
+        self._config: Optional[ClientConfiguration] = None
 
         self._set_active_root(root)
 
     @classmethod
-    def get_instance(cls) -> Optional["Repository"]:
+    def get_instance(cls) -> Optional["Client"]:
         """Return the Repository singleton instance.
 
         Returns:
@@ -210,7 +210,7 @@ class Repository(metaclass=RepositoryMetaClass):
         return cls._global_repository
 
     @classmethod
-    def _reset_instance(cls, repo: Optional["Repository"] = None) -> None:
+    def _reset_instance(cls, repo: Optional["Client"] = None) -> None:
         """Reset the Repository singleton instance.
 
         This method is only meant for internal use and testing purposes.
@@ -280,7 +280,7 @@ class Repository(metaclass=RepositoryMetaClass):
         self._config.active_project_name = active_project.name
         self._config.active_stack_id = active_stack.id
 
-    def _load_config(self) -> Optional[RepositoryConfiguration]:
+    def _load_config(self) -> Optional[ClientConfiguration]:
         """Loads the repository configuration from disk.
 
         This happens if the repository has an active root and the configuration
@@ -307,7 +307,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 "configuration."
             )
 
-        return RepositoryConfiguration(config_path)
+        return ClientConfiguration(config_path)
 
     @staticmethod
     @track(event=AnalyticsEvent.INITIALIZE_REPO)
@@ -326,7 +326,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         root = root or Path.cwd()
         logger.debug("Initializing new repository at path %s.", root)
-        if Repository.is_repository_directory(root):
+        if Client.is_repository_directory(root):
             raise InitializationException(
                 f"Found existing ZenML repository at path '{root}'."
             )
@@ -334,7 +334,7 @@ class Repository(metaclass=RepositoryMetaClass):
         config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
         io_utils.create_dir_recursive_if_not_exists(config_directory)
         # Initialize the repository configuration at the custom path
-        Repository(root=root)
+        Client(root=root)
 
     @property
     def uses_local_configuration(self) -> bool:
@@ -419,7 +419,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 Absolute path to a ZenML repository directory or None if no
                 repository directory was found.
             """
-            if Repository.is_repository_directory(path_):
+            if Client.is_repository_directory(path_):
                 return path_
 
             if not search_parent_directories or io_utils.is_root(str(path_)):
@@ -1113,7 +1113,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 "You cannot delete yourself. If you wish to delete your active "
                 "user account, please contact your ZenML administrator."
             )
-        Repository().zen_store.delete_user(user_name_or_id=user.name)
+        Client().zen_store.delete_user(user_name_or_id=user.name)
 
     def delete_project(self, project_name_or_id: str) -> None:
         """Delete a project.
@@ -1131,6 +1131,6 @@ class Repository(metaclass=RepositoryMetaClass):
                 f"Project '{project_name_or_id}' cannot be deleted since it is "
                 "currently active. Please set another project as active first."
             )
-        Repository().zen_store.delete_project(
+        Client().zen_store.delete_project(
             project_name_or_id=project_name_or_id
         )

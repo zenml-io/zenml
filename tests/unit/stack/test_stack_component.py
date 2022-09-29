@@ -26,7 +26,7 @@ from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManagerConfig,
 )
@@ -167,7 +167,7 @@ def test_stack_component_prevents_secret_references_for_some_attributes():
 
 
 def test_stack_component_secret_reference_resolving(
-    clean_repo: Repository, register_stub_orchestrator_flavor
+    clean_repo: Client, register_stub_orchestrator_flavor
 ):
     """Tests that the stack component resolves secrets if possible."""
     component = _get_stub_orchestrator(

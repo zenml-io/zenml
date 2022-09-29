@@ -21,7 +21,7 @@ from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineRunModel
 from zenml.post_execution.step import StepView
-from zenml.repository import Repository
+from zenml.client import Client
 
 logger = get_logger(__name__)
 
@@ -39,9 +39,9 @@ def get_run(name: str) -> "PipelineRunView":
         KeyError: If no run with the given name exists.
         RuntimeError: If multiple runs with the given name exist.
     """
-    repo = Repository()
-    active_project_id = repo.active_project.id
-    runs = repo.zen_store.list_runs(
+    client = Client()
+    active_project_id = client.active_project.id
+    runs = client.zen_store.list_runs(
         run_name=name,
         project_name_or_id=active_project_id,
     )
@@ -64,9 +64,9 @@ def get_unlisted_runs() -> List["PipelineRunView"]:
     Returns:
         A list of post-execution run views.
     """
-    repo = Repository()
-    runs = repo.zen_store.list_runs(
-        project_name_or_id=repo.active_project.id,
+    client = Client()
+    runs = client.zen_store.list_runs(
+        project_name_or_id=client.active_project.id,
         unlisted=True,
     )
     return [PipelineRunView(model) for model in runs]
@@ -253,7 +253,7 @@ class PipelineRunView:
             return
 
         assert self._model.id is not None
-        steps = Repository().zen_store.list_run_steps(self._model.id)
+        steps = Client().zen_store.list_run_steps(self._model.id)
         self._steps = {step.name: StepView(step) for step in steps}
 
     def __repr__(self) -> str:
