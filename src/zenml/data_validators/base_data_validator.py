@@ -50,7 +50,7 @@ class BaseDataValidator(StackComponent):
             TypeError: if a data validator is not part of the
                 active stack.
         """
-        client = Client(skip_repository_check=True)  # type: ignore[call-arg]
+        client = Client(skip_client_check=True)  # type: ignore[call-arg]
         data_validator = client.active_stack.data_validator
         if not data_validator:
             raise TypeError(

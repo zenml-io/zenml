@@ -132,7 +132,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
             TypeError: If the active stack does not contain an MLFlowModelDeployer component.
         """
         model_deployer = Client(  # type: ignore[call-arg]
-            skip_repository_check=True
+            skip_client_check=True
         ).active_stack.model_deployer
 
         if not model_deployer or not isinstance(

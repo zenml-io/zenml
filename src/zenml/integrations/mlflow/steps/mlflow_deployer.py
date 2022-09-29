@@ -92,7 +92,7 @@ def mlflow_model_deployer_step(
 
     # fetch the MLflow artifacts logged during the pipeline run
     experiment_tracker = Client(  # type: ignore[call-arg]
-        skip_repository_check=True
+        skip_client_check=True
     ).active_stack.experiment_tracker
 
     if not isinstance(experiment_tracker, MLFlowExperimentTracker):

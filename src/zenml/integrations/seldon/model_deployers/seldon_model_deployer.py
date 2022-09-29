@@ -89,7 +89,7 @@ class SeldonModelDeployer(BaseModelDeployer):
             TypeError: if the Seldon Core model deployer is not available.
         """
         model_deployer = Client(  # type: ignore [call-arg]
-            skip_repository_check=True
+            skip_client_check=True
         ).active_stack.model_deployer
         if not model_deployer or not isinstance(
             model_deployer, SeldonModelDeployer
@@ -181,7 +181,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         if self.config.secret:
 
             secret_manager = Client(  # type: ignore [call-arg]
-                skip_repository_check=True
+                skip_client_check=True
             ).active_stack.secrets_manager
 
             if not secret_manager or not isinstance(
