@@ -81,7 +81,6 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
             TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
         username: The username for the default ZenML server account.
         password: The password for the default ZenML server account.
-        email: The email for the default ZenML server account.
         helm_chart: The path to the ZenML server helm chart to use for
             deployment.
         namespace: The Kubernetes namespace to deploy the ZenML server to.
@@ -114,7 +113,6 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     server_id: UUID = Field(default_factory=uuid4)
     username: str
     password: str
-    email: str = ""
     helm_chart: str = get_helm_chart_path()
     namespace: str = "zenmlserver"
     kubectl_config_path: str = os.path.join(str(Path.home()), ".kube", "config")

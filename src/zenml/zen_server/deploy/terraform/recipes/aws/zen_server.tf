@@ -20,10 +20,6 @@ resource "helm_release" "zen-server" {
     value = var.password
   }
   set {
-    name  = "zenml.defaultUserEmail"
-    value = var.email
-  }
-  set {
     name  = "zenml.deploymentType"
     value = "aws"
   }

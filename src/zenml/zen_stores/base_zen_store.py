@@ -23,7 +23,6 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DEFAULT_PROJECT_NAME,
-    ENV_ZENML_DEFAULT_USER_EMAIL,
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
@@ -501,7 +500,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         user_password = os.getenv(
             ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
         )
-        user_email = os.getenv(ENV_ZENML_DEFAULT_USER_EMAIL, "")
 
         logger.info(f"Creating default user '{user_name}' ...")
         return self.create_user(
@@ -509,7 +507,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 name=user_name,
                 active=True,
                 password=user_password,
-                email=user_email,
             )
         )
 

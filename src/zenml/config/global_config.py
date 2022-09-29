@@ -31,7 +31,7 @@ from zenml.constants import (
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
-from zenml.enums import StoreType
+from zenml.enums import AnalyticsEventSource, StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
@@ -39,6 +39,7 @@ from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     AnalyticsGroup,
     identify_group,
+    identify_user,
     track_event,
 )
 
@@ -383,6 +384,21 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         if self.store != store.config or not self._zen_store:
             logger.debug(f"Configuring the global store to {store.config}")
             self.store = store.config
+
+            # We want to check if an email address has been set for
+            # the active user and if so, record it in the analytics. The
+            # call to `set_email_address` will only record the email address
+            # if it has not already been recorded in the past, so we don't
+            # flood the analytics with the same email address over and over.
+            active_user = store.active_user
+            if active_user.email_opted_in and active_user.email:
+                self.set_email_address(
+                    active_user.email,
+                    AnalyticsEventSource.ZENML_CONNECT
+                    if self._zen_store
+                    else AnalyticsEventSource.ZENML_SERVER_OPT_IN,
+                )
+
             self._zen_store = store
 
             # Sanitize the global configuration to reflect the new store
@@ -552,7 +568,13 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         logger.info("Updated the global store configuration.")
 
         if self.zen_store.type == StoreType.REST:
+            # Every time a client connects to a ZenML server, we want to
+            # group the client ID and the server ID together. This records
+            # only that a particular client has successfully connected to a
+            # particular server at least once, but no information about the
+            # user account is recorded here.
             server_info = self.zen_store.get_store_info()
+
             identify_group(
                 AnalyticsGroup.ZENML_SERVER_GROUP,
                 group_id=str(server_info.id),
@@ -565,12 +587,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
             track_event(
                 AnalyticsEvent.ZENML_SERVER_CONNECTED,
-                metadata={
-                    "server_id": str(server_info.id),
-                    "version": server_info.version,
-                    "deployment_type": str(server_info.deployment_type),
-                    "database_type": str(server_info.database_type),
-                },
+                track_server_info=True,
             )
 
         track_event(
@@ -578,6 +595,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             {"store_type": config.type.value},
             track_server_info=self.zen_store.type == StoreType.REST,
         )
+
 
     @property
     def zen_store(self) -> "BaseZenStore":
@@ -597,6 +615,29 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         assert self._zen_store is not None
 
         return self._zen_store
+
+    def set_email_address(
+        self, email: str, source: AnalyticsEventSource
+    ) -> None:
+        """Set the email address associated with this client.
+
+        Args:
+            email: The email address to use for this client.
+        """
+
+        # The first time an email address is associated with the client, we want
+        # to identify the client by an email address. If the email address has
+        # been changed, we also want to update the information.
+        if email:
+            if self.user_email != email:
+                identify_user(
+                    {
+                        "email": email,
+                        "source": source,
+                    }
+                )
+
+            self.user_email = email
 
     class Config:
         """Pydantic configuration class."""

@@ -176,11 +176,6 @@ class ActivateUserRequest(UpdateRequest[UserModel]):
         title="Full name for the account owner.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    email: Optional[str] = Field(
-        default=None,
-        title="Email address associated with the account.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
-    )
     password: SecretStr = Field(
         title="Account password.", max_length=USER_PASSWORD_MAX_LENGTH
     )

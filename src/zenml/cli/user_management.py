@@ -58,7 +58,6 @@ def list_users() -> None:
 
 @user.command("create", help="Create a new user.")
 @click.argument("user_name", type=str, required=True)
-# @click.option("--email", type=str, required=True)
 @click.option(
     "--password",
     help=(

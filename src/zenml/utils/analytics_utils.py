@@ -294,6 +294,7 @@ class AnalyticsContext:
         import analytics
 
         from zenml.repository import Repository
+        from zenml.config.global_config import GlobalConfiguration
 
         if isinstance(event, AnalyticsEvent):
             event = event.value
@@ -324,23 +325,24 @@ class AnalyticsContext:
         )
 
         if track_server_info:
-            repo = Repository()
-            zen_store = repo.zen_store
-            if zen_store.type == StoreType.REST:
-                user = zen_store.active_user
-                server_info = zen_store.get_store_info()
-                project = repo.active_project
-                # TODO: extract server ID
-                properties.update(
-                    {
-                        "user_id": str(user.id),
-                        "email": user.email or "",
-                        "project_id": str(project.id),
-                        "server_id": str(server_info.id),
-                        "server_deployment": str(server_info.deployment_type),
-                        "database_type": str(server_info.database_type),
-                    }
-                )
+            gc = GlobalConfiguration()
+            # avoid initializing the store in the analytics, to not create an
+            # infinite loop
+            if gc._zen_store is not None:
+                zen_store = gc.zen_store
+                if zen_store.type == StoreType.REST:
+                    user = zen_store.active_user
+                    server_info = zen_store.get_store_info()
+                    properties.update(
+                        {
+                            "user_id": str(user.id),
+                            "server_id": str(server_info.id),
+                            "server_deployment": str(
+                                server_info.deployment_type
+                            ),
+                            "database_type": str(server_info.database_type),
+                        }
+                    )
 
         analytics.track(self.user_id, event, properties)
 
@@ -387,6 +389,7 @@ def identify_group(
         return analytics.group(group, group_id, traits=group_metadata)
 
     return False
+
 
 def track_event(
     event: Union[str, AnalyticsEvent],

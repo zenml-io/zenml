@@ -209,12 +209,6 @@ def down() -> None:
     help="The username to use for the provisioned admin account.",
 )
 @click.option(
-    "--email",
-    type=str,
-    default=None,
-    help="The email address to use for the provisioned admin account.",
-)
-@click.option(
     "--password",
     type=str,
     default=None,
@@ -244,7 +238,6 @@ def deploy(
     provider: Optional[str] = None,
     connect: bool = False,
     username: Optional[str] = None,
-    email: Optional[str] = None,
     password: Optional[str] = None,
     name: Optional[str] = None,
     timeout: Optional[int] = None,
@@ -257,7 +250,6 @@ def deploy(
         provider: ZenML server provider name.
         connect: Connecting the client to the ZenML server.
         username: The username for the provisioned admin account.
-        email: The email address for the provisioned admin account.
         password: The initial password to use for the provisioned admin account.
         timeout: Time in seconds to wait for the server to start.
         config: A YAML or JSON configuration or configuration file to use.
@@ -279,7 +271,6 @@ def deploy(
         provider = config_dict.get("provider", provider)
         username = config_dict.get("username", username)
         password = config_dict.get("password", password)
-        email = config_dict.get("email", email)
 
     if not name:
         name = click.prompt(
@@ -308,14 +299,6 @@ def deploy(
         password = click.prompt("ZenML admin account password", hide_input=True)
     config_dict["password"] = password
 
-    email = email or config_dict.get("email", None)
-    if not email:
-        email = click.prompt(
-            "ZenML admin account email address",
-            default="",
-        )
-    config_dict["email"] = email
-
     server_config = ServerDeploymentConfig.parse_obj(config_dict)
 
     deployer = ServerDeployer()
@@ -342,10 +325,9 @@ def deploy(
 
     metadata = {
         "provider": str(server.config.provider),
-        "email": email or "",
     }
-
     if isinstance(server.config, TerraformServerDeploymentConfig):
+        # TODO: maybe move the server ID into the ServerDeploymentConfig class
         metadata["server_id"] = str(server.config.server_id)
 
     track_event(
