@@ -38,6 +38,7 @@ from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
+from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
@@ -538,14 +539,27 @@ class BasePipeline(metaclass=BasePipelineMeta):
         finally:
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-        from zenml.config.global_config import GlobalConfiguration
         gc = GlobalConfiguration()
-        
+
         if gc.store.type == StoreType.REST:
             # Connected to ZenServer
-            url = f"{gc.store.url}/pipelines/{pipeline_id}/runs/{pipeline_deployment.run_name}/dag"
-            logger.info(f"Dashboard URL: {url}")
+            client = Client()
+
+            # Get the runs from the zen_store
+            runs = client.zen_store.list_runs(
+                run_name=pipeline_deployment.run_name
+            )
+
+            # We should only do the log if runs exist
+            if runs:
+                # For now, take the first index to get the latest run
+                run = runs[0]
+                url = (
+                    f"{gc.store.url}/pipelines/{pipeline_id}/runs/{run.id}/dag"
+                )
+                logger.info(f"Dashboard URL: {url}")
         elif gc.store.type == StoreType.SQL:
+            # Connected to SQL Store Type, we're local
             logger.info(
                 "Pipeline visualization can be seen in the ZenML Dashboard. "
                 "Run `zenml up` to see your pipeline!"
