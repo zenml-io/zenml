@@ -12,3 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Deprecated Repository implementation."""
+
+from warnings import warn
+
+from zenml.client import Client
+
+
+class Repository:
+    """DEPRECATED: Implementation of the ZenML repository instance."""
+
+    def __new__(cls, *args, **kwargs):
+        """Returns the Client class due to deprecation."""
+        warn(
+            f"{cls.__name__} has been renamed to {Client.__name__}, "
+            f"the alias will be removed in the future.",
+            DeprecationWarning, stacklevel=2
+        )
+        return Client(*args, **kwargs)
