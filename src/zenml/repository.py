@@ -21,8 +21,16 @@ from zenml.client import Client
 class Repository:
     """DEPRECATED: Implementation of the ZenML repository instance."""
 
-    def __new__(cls, *args, **kwargs):
-        """Returns the Client class due to deprecation."""
+    def __new__(cls, *args, **kwargs) -> Client:
+        """Returns the Client class due to deprecation.
+
+        Args:
+            *args: Arguments.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            Client: The Client class.
+        """
         warn(
             f"{cls.__name__} has been renamed to {Client.__name__}, "
             f"the alias will be removed in the future.",
