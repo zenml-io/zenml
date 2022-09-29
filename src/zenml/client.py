@@ -192,7 +192,7 @@ class Client(metaclass=ClientMetaClass):
                 environment variable `ZENML_REPOSITORY_PATH` (if set) and by
                 recursively searching in the parent directories of the
                 current working directory. Only used to initialize new
-                repositories internally.
+                clients internally.
         """
         self._root: Optional[Path] = None
         self._config: Optional[ClientConfiguration] = None
@@ -210,17 +210,17 @@ class Client(metaclass=ClientMetaClass):
         return cls._global_client
 
     @classmethod
-    def _reset_instance(cls, repo: Optional["Client"] = None) -> None:
+    def _reset_instance(cls, client: Optional["Client"] = None) -> None:
         """Reset the Client singleton instance.
 
         This method is only meant for internal use and testing purposes.
 
         Args:
-            repo: The Client instance to set as the global singleton.
+            client: The Client instance to set as the global singleton.
                 If None, the global Client singleton is reset to an empty
                 value.
         """
-        cls._global_client = repo
+        cls._global_client = client
 
     def _set_active_root(self, root: Optional[Path] = None) -> None:
         """Set the supplied path as the client root.
@@ -394,7 +394,7 @@ class Client(metaclass=ClientMetaClass):
                 f"environment variable '{ENV_ZENML_REPOSITORY_PATH}'."
             )
         else:
-            # try to find the repo in the parent directories of the current
+            # try to find the client in the parent directories of the current
             # working directory
             path = Path.cwd()
             search_parent_directories = True
@@ -407,8 +407,8 @@ class Client(metaclass=ClientMetaClass):
                 f"client, run `zenml init`."
             )
 
-        def _find_repo_helper(path_: Path) -> Optional[Path]:
-            """Helper function to recursively search parent directories for a ZenML client.
+        def _find_client_helper(path_: Path) -> Optional[Path]:
+            """Recursively search parent directories for a ZenML client.
 
             Args:
                 path_: The path to search.
@@ -423,12 +423,12 @@ class Client(metaclass=ClientMetaClass):
             if not search_parent_directories or io_utils.is_root(str(path_)):
                 return None
 
-            return _find_repo_helper(path_.parent)
+            return _find_client_helper(path_.parent)
 
-        repo_path = _find_repo_helper(path)
+        client_path = _find_client_helper(path)
 
-        if repo_path:
-            return repo_path.resolve()
+        if client_path:
+            return client_path.resolve()
         if enable_warnings:
             logger.warning(warning_message)
         return None
