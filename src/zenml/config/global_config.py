@@ -34,6 +34,7 @@ from zenml.constants import (
 from zenml.enums import AnalyticsEventSource, StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.models.project_models import ProjectModel
 from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
@@ -124,6 +125,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
     Attributes:
         user_id: Unique user id.
+        user_email: Email address associated with this client.
         analytics_opt_in: If a user agreed to sending analytics or not.
         version: Version of ZenML that was last used to create or update the
             global config.
@@ -135,6 +137,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4, allow_mutation=False)
+    user_email: Optional[str] = None
     analytics_opt_in: bool = True
     version: Optional[str]
     store: Optional[StoreConfiguration]
@@ -144,6 +147,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
+    _active_project: Optional[ProjectModel] = None
 
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
@@ -413,7 +417,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         active_project, active_stack = self.zen_store.validate_active_config(
             self.active_project_name, self.active_stack_id
         )
-        self.active_project_name = active_project.name
+        self.set_active_project(active_project)
         self.active_stack_id = active_stack.id
 
     @staticmethod
@@ -595,7 +599,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             track_server_info=self.zen_store.type == StoreType.REST,
         )
 
-
     @property
     def zen_store(self) -> "BaseZenStore":
         """Initialize and/or return the global zen store.
@@ -614,6 +617,44 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         assert self._zen_store is not None
 
         return self._zen_store
+
+    @property
+    def active_project(self) -> "ProjectModel":
+        """Get the currently active project of the local client.
+
+        Returns:
+            The active project.
+
+        Raises:
+            RuntimeError: If no project is active.
+        """
+        if (
+            self._active_project
+            and self._active_project.name != self.active_project_name
+        ):
+            # in case someone tries to set the active project name directly
+            # outside of this class
+            self._active_project = None
+        if not self._active_project:
+            if not self.active_project_name:
+                raise RuntimeError(
+                    "No active project is configured. Run "
+                    "`zenml project set PROJECT_NAME` to set the active "
+                    "project."
+                )
+            self._active_project = self.zen_store.get_project(
+                project_name_or_id=self.active_project_name
+            )
+        return self._active_project
+
+    def set_active_project(self, project: ProjectModel) -> None:
+        """Set the project for the local client.
+
+        Args:
+            project: The project to set active.
+        """
+        self.active_project_name = project.name
+        self._active_project = project
 
     def set_email_address(
         self, email: str, source: AnalyticsEventSource

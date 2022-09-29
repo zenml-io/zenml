@@ -292,6 +292,7 @@ class AnalyticsContext:
             True if tracking information was sent, False otherwise.
         """
         import analytics
+
         from zenml.config.global_config import GlobalConfiguration
 
         if isinstance(event, AnalyticsEvent):

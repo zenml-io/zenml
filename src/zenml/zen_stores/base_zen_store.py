@@ -71,6 +71,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
     config: StoreConfiguration
     track_analytics: bool = True
+    _active_user: Optional[UserModel] = None
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
@@ -460,7 +461,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             The active user.
         """
-        return self.get_user(self.active_user_name)
+        if self._active_user is None:
+            self._active_user = self.get_user(self.active_user_name)
+        return self._active_user
 
     @property
     def users(self) -> List[UserModel]:

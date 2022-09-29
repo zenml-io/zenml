@@ -33,11 +33,7 @@ from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack.stack_component import StackComponent
-from zenml.utils.analytics_utils import (
-    AnalyticsEvent,
-    identify_user,
-    track_event,
-)
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
 
 logger = get_logger(__name__)
@@ -204,8 +200,12 @@ def go() -> None:
 
     client = Client()
 
-    # Only ask them if they havn't been asked before
-    if client.active_user.email_opted_in is None:
+    # Only ask them if they haven't been asked before and the email
+    # hasn't been supplied by other means
+    if (
+        not GlobalConfiguration().user_email
+        and client.active_user.email_opted_in is None
+    ):
         gave_email = _prompt_email()
         metadata = {"gave_email": gave_email}
 
@@ -285,18 +285,22 @@ def _prompt_email() -> bool:
             console.print(zenml_go_thank_you_message, width=80)
 
             # For now, hard-code to ZENML GO as the source
-            identify_user(
-                {"email": email, "source": AnalyticsEventSource.ZENML_GO}
+            GlobalConfiguration().set_email_address(
+                email, source=AnalyticsEventSource.ZENML_GO
             )
 
             # Add consent and email to user model
 
             client.zen_store.user_email_opt_in(
-                client.active_user.id, email, True
+                client.active_user.id,
+                user_opt_in_response=True,
+                email=email,
             )
             return True
     else:
         # This is the case where user opts out
-        client.zen_store.user_email_opt_in(client.active_user.id, None, False)
+        client.zen_store.user_email_opt_in(
+            client.active_user.id, user_opt_in_response=False
+        )
 
     return False

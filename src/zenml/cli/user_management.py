@@ -79,7 +79,7 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
         )
 
     cli_utils.print_active_config()
-    user = UserModel(name=user_name, password=password)
+    user = UserModel(name=user_name, password=password, active=password != "")
     try:
         Client().zen_store.create_user(user)
     except EntityExistsError as err:
