@@ -2509,6 +2509,7 @@ class SqlZenStore(BaseZenStore):
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(PipelineRunSchema.user_id == user.id)
+                query = query.order_by(PipelineRunSchema.created)
             runs = session.exec(query).all()
             return [run.to_model() for run in runs]
 

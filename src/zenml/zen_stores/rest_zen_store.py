@@ -27,6 +27,7 @@ from pydantic import BaseModel, validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    API,
     ARTIFACTS,
     FLAVORS,
     INFO,
@@ -44,7 +45,6 @@ from zenml.constants import (
     TEAMS,
     USERS,
     VERSION_1,
-    API,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
@@ -1477,33 +1477,38 @@ class RestZenStore(BaseZenStore):
             )
         elif response.status_code == 404:
             if "DoesNotExistException" not in response.text:
-                raise KeyError(response.json().get("detail",
-                                                   (response.text,))[1])
+                raise KeyError(
+                    response.json().get("detail", (response.text,))[1]
+                )
             message = ": ".join(response.json().get("detail", (response.text,)))
             raise DoesNotExistException(message)
         elif response.status_code == 409:
             if "StackComponentExistsError" in response.text:
                 raise StackComponentExistsError(
-                    message=
-                    ": ".join(response.json().get("detail", (response.text,)))
+                    message=": ".join(
+                        response.json().get("detail", (response.text,))
+                    )
                 )
             elif "StackExistsError" in response.text:
                 raise StackExistsError(
-                    message=
-                    ": ".join(response.json().get("detail", (response.text,)))
+                    message=": ".join(
+                        response.json().get("detail", (response.text,))
+                    )
                 )
             elif "EntityExistsError" in response.text:
                 raise EntityExistsError(
-                    message=
-                    ": ".join(response.json().get("detail", (response.text,)))
+                    message=": ".join(
+                        response.json().get("detail", (response.text,))
+                    )
                 )
             else:
                 raise ValueError(
                     ": ".join(response.json().get("detail", (response.text,)))
                 )
         elif response.status_code == 422:
-            raise RuntimeError(": ".join(response.json()
-                                         .get("detail", (response.text,))))
+            raise RuntimeError(
+                ": ".join(response.json().get("detail", (response.text,)))
+            )
         elif response.status_code == 500:
             raise RuntimeError(response.text)
         else:
