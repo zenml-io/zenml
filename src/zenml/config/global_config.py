@@ -31,10 +31,16 @@ from zenml.constants import (
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
+from zenml.enums import StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import (
+    AnalyticsEvent,
+    AnalyticsGroup,
+    identify_group,
+    track_event,
+)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -544,9 +550,33 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         self._configure_store(config, skip_default_registrations, **kwargs)
         logger.info("Updated the global store configuration.")
+
+        if self.zen_store.type == StoreType.REST:
+            server_info = self.zen_store.get_store_info()
+            identify_group(
+                AnalyticsGroup.ZENML_SERVER_GROUP,
+                group_id=str(server_info.id),
+                group_metadata={
+                    "version": server_info.version,
+                    "deployment_type": str(server_info.deployment_type),
+                    "database_type": str(server_info.database_type),
+                },
+            )
+
+            track_event(
+                AnalyticsEvent.ZENML_SERVER_CONNECTED,
+                metadata={
+                    "server_id": str(server_info.id),
+                    "version": server_info.version,
+                    "deployment_type": str(server_info.deployment_type),
+                    "database_type": str(server_info.database_type),
+                },
+            )
+
         track_event(
             AnalyticsEvent.INITIALIZED_STORE,
             {"store_type": config.type.value},
+            track_server_info=self.zen_store.type == StoreType.REST,
         )
 
     @property

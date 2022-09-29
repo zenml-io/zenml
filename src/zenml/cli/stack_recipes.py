@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, ClassVar, List, Optional, Tuple, cast
+from typing import Any, ClassVar, List, Optional, cast
 
 import click
 from packaging.version import Version, parse
@@ -31,7 +31,6 @@ from zenml.cli.stack import import_stack, stack
 from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 from zenml.services.terraform.terraform_service import (
     SERVICE_CONFIG_FILE_NAME,

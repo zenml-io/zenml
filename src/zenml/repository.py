@@ -477,7 +477,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         self._set_active_root(root)
 
-    @track(event=AnalyticsEvent.SET_PROJECT)
+    @track(event=AnalyticsEvent.SET_PROJECT, track_server_info=True)
     def set_active_project(
         self, project_name_or_id: Union[str, UUID]
     ) -> "ProjectModel":
@@ -614,7 +614,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         return Stack.from_model(self.active_stack_model)
 
-    @track(event=AnalyticsEvent.SET_STACK)
+    @track(event=AnalyticsEvent.SET_STACK, track_server_info=True)
     def activate_stack(self, stack: "StackModel") -> None:
         """Sets the stack as active.
 

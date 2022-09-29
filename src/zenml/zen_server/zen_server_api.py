@@ -30,6 +30,7 @@ from zenml.zen_server.routers import (
     projects_endpoints,
     roles_endpoints,
     runs_endpoints,
+    server_endpoints,
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
@@ -103,16 +104,6 @@ def health() -> str:
     return "OK"
 
 
-@app.get("/version")
-def version() -> str:
-    """Get version of the server.
-
-    Returns:
-        String representing the version of the server.
-    """
-    return zenml.__version__
-
-
 # to run this file locally, execute:
 # uvicorn zenml.zen_server.zen_server_api:app --reload
 
@@ -124,6 +115,7 @@ app.include_router(projects_endpoints.router)
 app.include_router(flavors_endpoints.router)
 app.include_router(roles_endpoints.router)
 app.include_router(runs_endpoints.router)
+app.include_router(server_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)

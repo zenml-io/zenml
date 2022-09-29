@@ -30,12 +30,16 @@ from zenml.enums import ServerProviderType
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.utils import yaml_utils
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.zen_server.deploy.deployer import ServerDeployer
 from zenml.zen_server.deploy.deployment import (
     ServerDeployment,
     ServerDeploymentConfig,
 )
 from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
+from zenml.zen_server.deploy.terraform.terraform_zen_server import (
+    TerraformServerDeploymentConfig,
+)
 from zenml.zen_stores.base_zen_store import DEFAULT_PASSWORD, DEFAULT_USERNAME
 
 logger = get_logger(__name__)
@@ -144,6 +148,11 @@ def up(
 
     server = deployer.deploy_server(server_config)
 
+    track_event(
+        AnalyticsEvent.ZENML_SERVER_STARTED,
+        metadata={"provider": str(provider)},
+    )
+
     if not blocking:
         deployer.connect_to_server(
             LOCAL_ZENML_SERVER_NAME,
@@ -169,6 +178,12 @@ def down() -> None:
 
     deployer = ServerDeployer()
     deployer.remove_server(server.config.name)
+
+    track_event(
+        AnalyticsEvent.ZENML_SERVER_STOPPED,
+        metadata={"provider": str(server.config.provider)},
+    )
+
     cli_utils.declare("The local ZenML dashboard has been shut down.")
 
 
@@ -324,6 +339,20 @@ def deploy(
             )
 
     server = deployer.deploy_server(server_config, timeout=timeout)
+
+    metadata = {
+        "provider": str(server.config.provider),
+        "email": email or "",
+    }
+
+    if isinstance(server.config, TerraformServerDeploymentConfig):
+        metadata["server_id"] = str(server.config.server_id)
+
+    track_event(
+        AnalyticsEvent.ZENML_SERVER_DEPLOYED,
+        metadata=metadata,
+    )
+
     if server.status and server.status.url:
         cli_utils.declare(
             f"ZenML server '{name}' running at '{server.status.url}'."
@@ -352,6 +381,19 @@ def destroy() -> None:
 
     deployer = ServerDeployer()
     deployer.remove_server(server.config.name)
+
+    metadata = {
+        "provider": str(server.config.provider),
+    }
+
+    if isinstance(server.config, TerraformServerDeploymentConfig):
+        metadata["server_id"] = str(server.config.server_id)
+
+    track_event(
+        AnalyticsEvent.ZENML_SERVER_DESTROYED,
+        metadata=metadata,
+    )
+
     cli_utils.declare(
         "The ZenML server has been torn down and all resources removed."
     )

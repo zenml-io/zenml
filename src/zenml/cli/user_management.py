@@ -260,10 +260,13 @@ def remove_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
 
 
 def warn_unsupported_non_default_project():
-    cli_utils.warning("Currently the concept of `project` is not supported "
-                      "within the Dashboard. The Project functionality will be "
-                      "completed in the coming weeks. For the time being it "
-                      "is recommended to stay within the `default` project.")
+    cli_utils.warning(
+        "Currently the concept of `project` is not supported "
+        "within the Dashboard. The Project functionality will be "
+        "completed in the coming weeks. For the time being it "
+        "is recommended to stay within the `default` project."
+    )
+
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def project() -> None:
