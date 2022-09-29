@@ -42,6 +42,7 @@ from zenml.stack import Flavor
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
+from zenml.zen_stores.base_zen_store import BaseZenStore, DEFAULT_PROJECT_NAME
 
 if TYPE_CHECKING:
     from zenml.models import (
@@ -51,7 +52,7 @@ if TYPE_CHECKING:
         UserModel,
     )
     from zenml.stack import Stack
-    from zenml.zen_stores.base_zen_store import BaseZenStore
+
 
 logger = get_logger(__name__)
 
@@ -526,7 +527,13 @@ class Repository(metaclass=RepositoryMetaClass):
                 "`zenml project set PROJECT_NAME` to set the active "
                 "project."
             )
-
+        if project_name != DEFAULT_PROJECT_NAME:
+            logger.warning(f"You are running with a non-default project "
+                           f"'{project_name}'. Any stacks, components, "
+                           f"pipelines and pipeline runs produced in this "
+                           f"project will currently not be accessible through "
+                           f"the dashboard. However, this will be possible "
+                           f"in the near future.")
         return project_name
 
     @property

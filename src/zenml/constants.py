@@ -141,6 +141,9 @@ ZEN_SERVER_ENTRYPOINT = "zenml.zen_server.zen_server_api:app"
 
 
 # API Endpoint paths:
+API = "/api"
+HEALTH = "/health"
+VERSION = "/version"
 STACKS_EMPTY = "/stacks-empty"
 STACKS = "/stacks"
 STACK_COMPONENTS = "/components"

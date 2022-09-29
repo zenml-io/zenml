@@ -23,7 +23,7 @@ from zenml.constants import (
     PIPELINE_CONFIGURATION,
     RUNS,
     STEPS,
-    VERSION_1,
+    VERSION_1, API,
 )
 from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
@@ -32,7 +32,7 @@ from zenml.zen_server.models.pipeline_models import HydratedPipelineRunModel
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1 + RUNS,
+    prefix=API + VERSION_1 + RUNS,
     tags=["runs"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
