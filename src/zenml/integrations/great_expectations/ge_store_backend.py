@@ -26,9 +26,9 @@ from great_expectations.exceptions import (  # type: ignore[import]
     StoreBackendError,
 )
 
+from zenml.client import Client
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.client import Client
 from zenml.utils import io_utils
 
 logger = get_logger(__name__)

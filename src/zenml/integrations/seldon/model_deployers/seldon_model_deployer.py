@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional, cast
 from uuid import UUID
 
+from zenml.client import Client
 from zenml.integrations.seldon import SELDON_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.seldon.constants import SELDON_DOCKER_IMAGE_KEY
 from zenml.integrations.seldon.flavors.seldon_model_deployer_flavor import (
@@ -30,7 +31,6 @@ from zenml.integrations.seldon.services.seldon_deployment import (
 )
 from zenml.logger import get_logger
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
-from zenml.client import Client
 from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack

@@ -18,8 +18,8 @@ from typing import Generator
 import pytest
 from pytest_mock import MockerFixture
 
-from zenml.container_registries import DefaultContainerRegistryFlavor
 from zenml.client import Client
+from zenml.container_registries import DefaultContainerRegistryFlavor
 from zenml.stack import Stack
 
 

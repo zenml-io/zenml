@@ -23,12 +23,12 @@ from tfx.orchestration.portable.python_executor_operator import (
 )
 from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
 
+from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
 from zenml.io import fileio
-from zenml.client import Client
 from zenml.steps import utils as step_utils
 
 if TYPE_CHECKING:

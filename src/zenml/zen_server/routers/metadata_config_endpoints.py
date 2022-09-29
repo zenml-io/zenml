@@ -15,7 +15,7 @@
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import METADATA_CONFIG, VERSION_1, API
+from zenml.constants import API, METADATA_CONFIG, VERSION_1
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 

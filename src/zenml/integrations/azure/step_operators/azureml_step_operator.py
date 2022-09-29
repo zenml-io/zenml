@@ -32,13 +32,13 @@ from azureml.core.authentication import (
 from azureml.core.conda_dependencies import CondaDependencies
 
 import zenml
+from zenml.client import Client
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.environment import Environment as ZenMLEnvironment
 from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
     AzureMLStepOperatorConfig,
 )
 from zenml.logger import get_logger
-from zenml.client import Client
 from zenml.step_operators import BaseStepOperator
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,

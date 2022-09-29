@@ -27,11 +27,11 @@ from zenml.cli.feature import register_feature_store_subcommands
 from zenml.cli.model import register_model_deployer_subcommands
 from zenml.cli.secret import register_secrets_manager_subcommands
 from zenml.cli.utils import _component_display_name
+from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.io import fileio
 from zenml.models import ComponentModel, FlavorModel
-from zenml.client import Client
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
@@ -140,7 +140,9 @@ def generate_stack_component_list_command(
         hydrated_comps = [s.to_hydrated_model() for s in components]
 
         cli_utils.print_components_table(
-            client=client, component_type=component_type, components=hydrated_comps
+            client=client,
+            component_type=component_type,
+            components=hydrated_comps,
         )
 
     return list_stack_components_command

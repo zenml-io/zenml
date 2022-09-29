@@ -18,12 +18,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from zenml.constants import (
+    API,
     COMPONENT_SIDE_EFFECTS,
     GRAPH,
     PIPELINE_CONFIGURATION,
     RUNS,
     STEPS,
-    VERSION_1, API,
+    VERSION_1,
 )
 from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
 from zenml.post_execution.lineage.lineage_graph import LineageGraph

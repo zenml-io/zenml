@@ -17,11 +17,11 @@ from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineRunModel
 from zenml.post_execution.step import StepView
-from zenml.client import Client
 
 logger = get_logger(__name__)
 

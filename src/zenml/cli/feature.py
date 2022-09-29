@@ -19,8 +19,8 @@ import click
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error
-from zenml.enums import StackComponentType
 from zenml.client import Client
+from zenml.enums import StackComponentType
 from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:

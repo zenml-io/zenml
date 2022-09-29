@@ -16,10 +16,10 @@
 from typing import TYPE_CHECKING, Any, List, Optional, Type, Union
 from uuid import UUID
 
+from zenml.client import Client
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineModel
 from zenml.post_execution.pipeline_run import PipelineRunView
-from zenml.client import Client
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 if TYPE_CHECKING:

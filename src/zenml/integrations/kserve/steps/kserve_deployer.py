@@ -18,6 +18,7 @@ from typing import List, Optional, cast
 from pydantic import BaseModel, validator
 
 from zenml.artifacts.model_artifact import ModelArtifact
+from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
@@ -32,7 +33,6 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.client import Client
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,

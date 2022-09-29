@@ -27,9 +27,9 @@ from zenml.cli.utils import (
     print_served_model_configuration,
     warning,
 )
+from zenml.client import Client
 from zenml.console import console
 from zenml.enums import StackComponentType
-from zenml.client import Client
 from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:

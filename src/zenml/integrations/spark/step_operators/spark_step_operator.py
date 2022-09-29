@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, List, Optional, cast
 
 from pyspark.conf import SparkConf
 
+from zenml.client import Client
 from zenml.integrations.spark.flavors.spark_step_operator_flavor import (
     SparkStepOperatorConfig,
 )
@@ -25,7 +26,6 @@ from zenml.integrations.spark.step_operators.spark_entrypoint_configuration impo
     SparkEntrypointConfiguration,
 )
 from zenml.logger import get_logger
-from zenml.client import Client
 from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)

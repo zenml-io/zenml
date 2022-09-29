@@ -18,6 +18,7 @@ from typing import Optional, Type, cast
 from mlflow.tracking import MlflowClient, artifact_utils
 
 from zenml.artifacts.model_artifact import ModelArtifact
+from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
@@ -34,7 +35,6 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.client import Client
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,

@@ -24,6 +24,7 @@ import click
 from zenml import __version__ as zenml_version
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
@@ -31,7 +32,6 @@ from zenml.enums import AnalyticsEventSource
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.client import Client
 from zenml.stack.stack_component import StackComponent
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,

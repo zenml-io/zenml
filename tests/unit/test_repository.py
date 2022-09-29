@@ -25,6 +25,7 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
     LocalArtifactStoreConfig,
 )
+from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.exceptions import (
     IllegalOperationError,
@@ -36,7 +37,6 @@ from zenml.io import fileio
 from zenml.models.stack_models import StackModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
-from zenml.client import Client
 from zenml.stack import Stack
 from zenml.utils import io_utils
 
@@ -132,7 +132,9 @@ def test_freshly_initialized_repo_attributes(tmp_path):
     assert client.root == tmp_path
 
 
-def test_finding_repository_directory_with_explicit_path(tmp_path, clean_client):
+def test_finding_repository_directory_with_explicit_path(
+    tmp_path, clean_client
+):
     """Tests that a repository can be found using an explicit path, an
     environment variable and the current working directory."""
     subdirectory_path = tmp_path / "some_other_directory"
@@ -246,7 +248,9 @@ def test_getting_a_stack(clean_client):
     existing_stack_name = clean_client.active_stack.name
 
     with does_not_raise():
-        stack = clean_client.get_stack_by_name_or_partial_id(existing_stack_name)
+        stack = clean_client.get_stack_by_name_or_partial_id(
+            existing_stack_name
+        )
         assert isinstance(stack, StackModel)
 
     with pytest.raises(KeyError):
@@ -313,8 +317,11 @@ def test_registering_a_new_stack_with_already_registered_components(
 
     # the same exact components were already registered in the repo, so no
     # new component should have been registered
-    assert registered_orchestrators == clean_client.list_stack_components_by_type(
-        StackComponentType.ORCHESTRATOR
+    assert (
+        registered_orchestrators
+        == clean_client.list_stack_components_by_type(
+            StackComponentType.ORCHESTRATOR
+        )
     )
     assert (
         registered_artifact_stores

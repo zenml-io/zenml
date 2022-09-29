@@ -15,8 +15,8 @@
 
 from typing import Any, ClassVar, Optional, Sequence, Type, cast
 
-from zenml.enums import StackComponentType
 from zenml.client import Client
+from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
 

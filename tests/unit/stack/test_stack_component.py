@@ -26,7 +26,6 @@ from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
-from zenml.client import Client
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManagerConfig,
 )

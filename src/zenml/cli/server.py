@@ -24,11 +24,11 @@ from rich.errors import MarkupError
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import ServerProviderType
 from zenml.logger import get_logger
-from zenml.client import Client
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.zen_server.deploy.deployer import ServerDeployer

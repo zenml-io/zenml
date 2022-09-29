@@ -15,8 +15,8 @@
 
 from typing import TYPE_CHECKING, Dict, NamedTuple, Optional, Type, cast
 
-from zenml.exceptions import StepContextError
 from zenml.client import Client
+from zenml.exceptions import StepContextError
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact

@@ -20,10 +20,10 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.pipelines.run_pipeline import run_pipeline
-from zenml.client import Client
 from zenml.utils.uuid_utils import is_valid_uuid
 
 logger = get_logger(__name__)

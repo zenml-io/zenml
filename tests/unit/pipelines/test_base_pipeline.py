@@ -16,13 +16,13 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
+from zenml.client import Client
 from zenml.exceptions import (
     PipelineConfigurationError,
     PipelineInterfaceError,
     StackValidationError,
 )
 from zenml.pipelines import pipeline
-from zenml.client import Client
 from zenml.steps import BaseParameters, step
 from zenml.utils.yaml_utils import write_yaml
 

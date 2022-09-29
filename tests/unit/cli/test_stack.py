@@ -32,10 +32,10 @@ from zenml.cli.stack import (
     rename_stack,
     update_stack,
 )
+from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
-from zenml.client import Client
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
     LocalSecretsManagerConfig,

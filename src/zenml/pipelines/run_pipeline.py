@@ -17,6 +17,7 @@ import types
 from typing import Any, Dict
 
 from zenml import constants
+from zenml.client import Client
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     SourceConfigurationKeys,
@@ -24,7 +25,6 @@ from zenml.config.config_keys import (
 )
 from zenml.exceptions import PipelineConfigurationError
 from zenml.logger import get_logger
-from zenml.client import Client
 from zenml.steps import BaseStep
 from zenml.utils import source_utils, yaml_utils
 

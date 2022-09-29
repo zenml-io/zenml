@@ -66,12 +66,12 @@ from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 from tfx.types.artifact import Artifact
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.utils import get_cache_status
-from zenml.client import Client
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.utils import source_utils, string_utils
 

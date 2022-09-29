@@ -19,11 +19,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from zenml.constants import (
+    API,
     INPUTS,
     OUTPUTS,
     STEP_CONFIGURATION,
     STEPS,
-    VERSION_1, API,
+    VERSION_1,
 )
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 from zenml.zen_server.auth import authorize

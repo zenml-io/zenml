@@ -22,6 +22,7 @@ from mlflow.store.db.db_types import DATABASE_ENGINES
 
 import zenml
 from zenml.artifact_stores import LocalArtifactStore
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
@@ -34,7 +35,6 @@ from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import (
     is_remote_mlflow_tracking_uri,
 )
 from zenml.logger import get_logger
-from zenml.client import Client
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:

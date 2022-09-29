@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.post_execution import get_pipeline
-from zenml.client import Client
 
 
 def generate_basic_validation_function(

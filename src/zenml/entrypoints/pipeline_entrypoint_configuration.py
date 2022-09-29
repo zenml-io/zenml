@@ -14,12 +14,12 @@
 """Abstract base class for entrypoint configurations that run a pipeline."""
 
 
+from zenml.client import Client
 from zenml.entrypoints import utils as entrypoint_utils
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
 from zenml.integrations.registry import integration_registry
-from zenml.client import Client
 
 
 class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):

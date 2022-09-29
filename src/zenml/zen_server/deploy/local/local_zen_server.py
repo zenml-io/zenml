@@ -18,6 +18,7 @@ import os
 import shutil
 from typing import Dict, List, Optional, Tuple, Union, cast
 
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
@@ -29,7 +30,6 @@ from zenml.constants import (
 from zenml.enums import StoreType
 from zenml.logger import get_logger
 from zenml.models.server_models import ServerDeploymentType
-from zenml.client import Client
 from zenml.services import (
     LocalDaemonService,
     LocalDaemonServiceConfig,

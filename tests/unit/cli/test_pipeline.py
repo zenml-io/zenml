@@ -17,9 +17,9 @@ import sys
 
 import click
 
+from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.post_execution.pipeline import get_pipeline
-from zenml.client import Client
 
 PIPELINE_NAME = "some_pipe"
 STEP_NAME = "some_step"
@@ -27,9 +27,7 @@ MATERIALIZER_NAME = "SomeMaterializer"
 CUSTOM_OBJ_NAME = "SomeObj"
 
 
-def test_pipeline_run_single_file(
-    clean_client, files_dir: str
-) -> None:
+def test_pipeline_run_single_file(clean_client, files_dir: str) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the same file."""
     clean_sys_modules = sys.modules

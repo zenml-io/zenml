@@ -36,6 +36,7 @@ from great_expectations.profile.user_configurable_profiler import (  # type: ign
     UserConfigurableProfiler,
 )
 
+from zenml.client import Client
 from zenml.data_validators import BaseDataValidator
 from zenml.environment import Environment
 from zenml.integrations.great_expectations.flavors.great_expectations_data_validator_flavor import (
@@ -47,7 +48,6 @@ from zenml.integrations.great_expectations.ge_store_backend import (
 from zenml.integrations.great_expectations.utils import create_batch_request
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.client import Client
 from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 from zenml.utils import io_utils
 from zenml.utils.string_utils import random_str

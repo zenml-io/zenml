@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field, validator
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import (
@@ -37,7 +38,6 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, ProjectModel, StackModel, UserModel
 from zenml.models.flavor_models import FlavorModel
-from zenml.client import Client
 from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
 

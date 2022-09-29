@@ -16,16 +16,16 @@
 import json
 import os
 
+from zenml.client import Client
+from zenml.orchestrators.utils import get_cache_status
+from zenml.pipelines import pipeline
+from zenml.steps import step
 from zenml.utils.proto_utils import (
     MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME,
     MLMD_CONTEXT_STACK_PROPERTY_NAME,
     MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME,
     ZENML_MLMD_CONTEXT_TYPE,
 )
-from zenml.orchestrators.utils import get_cache_status
-from zenml.pipelines import pipeline
-from zenml.client import Client
-from zenml.steps import step
 
 
 def test_get_cache_status_raises_no_error_when_none_passed():
@@ -33,7 +33,9 @@ def test_get_cache_status_raises_no_error_when_none_passed():
     get_cache_status(None)
 
 
-def test_get_cache_status_works_when_running_pipeline_twice(clean_client, mocker):
+def test_get_cache_status_works_when_running_pipeline_twice(
+    clean_client, mocker
+):
     """Check that steps are cached when a pipeline is run twice successively."""
     from zenml.pipelines import pipeline
     from zenml.steps import step

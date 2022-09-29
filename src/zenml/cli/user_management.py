@@ -19,10 +19,10 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
-from zenml.client import Client
 from zenml.utils.uuid_utils import parse_name_or_uuid
 
 
@@ -35,9 +35,7 @@ def user() -> None:
 def get_user() -> None:
     """Get the active user."""
     cli_utils.print_active_config()
-    cli_utils.declare(
-        f"Active user: '{Client().zen_store.active_user_name}'"
-    )
+    cli_utils.declare(f"Active user: '{Client().zen_store.active_user_name}'")
 
 
 @user.command("list")

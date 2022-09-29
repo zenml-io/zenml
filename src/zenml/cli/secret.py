@@ -29,10 +29,10 @@ from zenml.cli.utils import (
     print_list_items,
     warning,
 )
+from zenml.client import Client
 from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.exceptions import SecretExistsError
-from zenml.client import Client
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
 from zenml.stack.stack_component import StackComponent
 

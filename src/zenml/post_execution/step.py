@@ -16,10 +16,10 @@
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.models import StepRunModel
 from zenml.post_execution.artifact import ArtifactView
-from zenml.client import Client
 
 
 class StepView:

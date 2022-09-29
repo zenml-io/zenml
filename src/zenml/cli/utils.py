@@ -43,13 +43,13 @@ from rich.prompt import Confirm
 from rich.style import Style
 from rich.text import Text
 
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models.stack_models import HydratedStackModel
-from zenml.client import Client
 
 logger = get_logger(__name__)
 

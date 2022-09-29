@@ -42,7 +42,7 @@ from zenml.stack import Flavor
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
-from zenml.zen_stores.base_zen_store import BaseZenStore, DEFAULT_PROJECT_NAME
+from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME, BaseZenStore
 
 if TYPE_CHECKING:
     from zenml.models import (
@@ -298,9 +298,7 @@ class Client(metaclass=ClientMetaClass):
         # load the client configuration file if it exists, otherwise use
         # an empty configuration as default
         if fileio.exists(config_path):
-            logger.debug(
-                f"Loading client configuration from {config_path}."
-            )
+            logger.debug(f"Loading client configuration from {config_path}.")
         else:
             logger.debug(
                 "No client configuration file found, creating default "
@@ -528,12 +526,14 @@ class Client(metaclass=ClientMetaClass):
                 "project."
             )
         if project_name != DEFAULT_PROJECT_NAME:
-            logger.warning(f"You are running with a non-default project "
-                           f"'{project_name}'. Any stacks, components, "
-                           f"pipelines and pipeline runs produced in this "
-                           f"project will currently not be accessible through "
-                           f"the dashboard. However, this will be possible "
-                           f"in the near future.")
+            logger.warning(
+                f"You are running with a non-default project "
+                f"'{project_name}'. Any stacks, components, "
+                f"pipelines and pipeline runs produced in this "
+                f"project will currently not be accessible through "
+                f"the dashboard. However, this will be possible "
+                f"in the near future."
+            )
         return project_name
 
     @property
@@ -1131,6 +1131,4 @@ class Client(metaclass=ClientMetaClass):
                 f"Project '{project_name_or_id}' cannot be deleted since it is "
                 "currently active. Please set another project as active first."
             )
-        Client().zen_store.delete_project(
-            project_name_or_id=project_name_or_id
-        )
+        Client().zen_store.delete_project(project_name_or_id=project_name_or_id)

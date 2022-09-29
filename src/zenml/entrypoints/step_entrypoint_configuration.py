@@ -17,12 +17,12 @@ from typing import TYPE_CHECKING, Any, List, Optional, Set
 
 from tfx.orchestration.portable import data_types
 
+from zenml.client import Client
 from zenml.entrypoints import utils as entrypoint_utils
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
 from zenml.integrations.registry import integration_registry
-from zenml.client import Client
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment

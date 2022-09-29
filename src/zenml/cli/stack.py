@@ -24,13 +24,13 @@ import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import _component_display_name, print_stacks_table
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.models import ComponentModel
 from zenml.models.stack_models import StackModel
-from zenml.client import Client
 from zenml.secret import ArbitrarySecretSchema
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
@@ -764,7 +764,9 @@ def delete_stack(
         )
 
         if cfg.active_stack_id is not None:
-            global_active_stack = client.zen_store.get_stack(cfg.active_stack_id)
+            global_active_stack = client.zen_store.get_stack(
+                cfg.active_stack_id
+            )
             if global_active_stack.name == stack_name_or_id:
                 cli_utils.error(
                     f"Stack {stack_to_delete.name} cannot be deleted while it "
@@ -818,9 +820,7 @@ def get_active_stack() -> None:
     """Gets the active stack."""
     cli_utils.print_active_config()
 
-    scope = (
-        " repository" if Client().uses_local_configuration else " global"
-    )
+    scope = " repository" if Client().uses_local_configuration else " global"
 
     with console.status("Getting the active stack..."):
         client = Client()

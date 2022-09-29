@@ -24,10 +24,10 @@ from tfx.orchestration.portable.base_executor_operator import (
 )
 from tfx.proto.orchestration import executable_spec_pb2, execution_result_pb2
 
+from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.client import Client
 from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
