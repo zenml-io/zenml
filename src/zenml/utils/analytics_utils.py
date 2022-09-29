@@ -143,6 +143,8 @@ def get_segment_key() -> str:
 
 
 class AnalyticsContext:
+    """Context manager for analytics."""
+
     def __init__(self) -> None:
         """Context manager for analytics.
 
@@ -379,7 +381,7 @@ def identify_group(
     Args:
         group: Group to track.
         group_id: ID of the group.
-        metadata: Metadata to attach to the group.
+        group_metadata: Metadata to attach to the group.
     """
     with AnalyticsContext() as analytics:
         return analytics.group(group, group_id, traits=group_metadata)
