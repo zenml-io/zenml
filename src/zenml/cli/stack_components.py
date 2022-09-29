@@ -946,15 +946,12 @@ def generate_stack_component_flavor_describe_command(
         required=True,
     )
     def describe_stack_component_flavor_command(name: str) -> None:
-        """Describes a flavor based on its schema.
+        """Describes a flavor based on its config schema.
 
         Args:
             name: The name of the flavor.
         """
         with console.status(f"Describing {display_name} flavor: {name}`...\n"):
-            cli_utils.print_active_config()
-            cli_utils.print_active_stack()
-
             # Fetch the existing flavor
             repo = Repository()
 
@@ -962,8 +959,7 @@ def generate_stack_component_flavor_describe_command(
                 name=name, component_type=component_type
             )
 
-            # TODO: Implement a utility function here to display the schema
-            print(flavor_model.config_schema)
+            cli_utils.describe_pydantic_object(flavor_model.config_schema)
 
     return describe_stack_component_flavor_command
 

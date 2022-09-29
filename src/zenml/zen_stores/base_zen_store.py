@@ -18,11 +18,15 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+import zenml
+from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DEFAULT_PROJECT_NAME,
+    ENV_ZENML_DEFAULT_USER_EMAIL,
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
+    ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackExistsError
@@ -37,6 +41,11 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.pipeline_models import PipelineModel
+from zenml.models.server_models import (
+    ServerDatabaseType,
+    ServerDeploymentType,
+    ServerModel,
+)
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     AnalyticsTrackerMixin,
@@ -306,6 +315,32 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         return active_project, active_stack
 
+    def get_store_info(self) -> ServerModel:
+        """Get information about the store.
+
+        Returns:
+            Information about the store.
+        """
+
+        return ServerModel(
+            id=GlobalConfiguration().user_id,
+            version=zenml.__version__,
+            deployment_type=os.environ.get(
+                ENV_ZENML_SERVER_DEPLOYMENT_TYPE, ServerDeploymentType.OTHER
+            ),
+            database_type=ServerDatabaseType.OTHER,
+        )
+
+    def is_local_store(self) -> bool:
+        """Check if the store is a local store or connected to a locally deployed ZenML server.
+
+        Returns:
+            True if the store is local, False otherwise.
+        """
+        return (
+            self.get_store_info().deployment_type == ServerDeploymentType.LOCAL
+        )
+
     # ------
     # Stacks
     # ------
@@ -466,12 +501,15 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         user_password = os.getenv(
             ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
         )
+        user_email = os.getenv(ENV_ZENML_DEFAULT_USER_EMAIL, "")
+
         logger.info(f"Creating default user '{user_name}' ...")
         return self.create_user(
             UserModel(
                 name=user_name,
                 active=True,
                 password=user_password,
+                email=user_email,
             )
         )
 
@@ -596,15 +634,18 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         self,
         event: Union[str, AnalyticsEvent],
         metadata: Optional[Dict[str, Any]] = None,
+        track_server_info: bool = False,
     ) -> None:
         """Track an analytics event.
 
         Args:
             event: The event to track.
             metadata: Additional metadata to track with the event.
+            track_server_info: Whether to track server info.
         """
         if self.track_analytics:
-            track_event(event, metadata)
+            # Server information is always tracked, if available.
+            track_event(event, metadata, track_server_info=True)
 
     class Config:
         """Pydantic configuration class."""

@@ -15,6 +15,12 @@ fullnameOverride: ""
 zenml:
   debug: True
 
+  # ZenML server deployment type
+  deploymentType:
+
+  # Unique server UUID
+  serverId:
+
   # The ZenML authentication scheme. Use one of:
   # 
   # NO_AUTH - No authentication

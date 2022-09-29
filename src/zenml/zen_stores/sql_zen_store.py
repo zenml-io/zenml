@@ -56,8 +56,9 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
+from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import io_utils, uuid_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
 from zenml.zen_stores.metadata_store import MetadataStore
@@ -507,6 +508,17 @@ class SqlZenStore(BaseZenStore):
             config_copy.url = cls.get_local_url(path)
 
         return config_copy
+
+    def get_store_info(self) -> ServerModel:
+        """Get information about the store.
+
+        Returns:
+            Information about the store.
+        """
+        model = super().get_store_info()
+        sql_url = make_url(self.config.url)
+        model.database_type = ServerDatabaseType(sql_url.drivername)
+        return model
 
     # ------------
     # TFX Metadata
@@ -3339,3 +3351,24 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(step_input)
             session.commit()
+
+    # ---------
+    # Analytics
+    # ---------
+
+    def track_event(
+        self,
+        event: Union[str, AnalyticsEvent],
+        metadata: Optional[Dict[str, Any]] = None,
+        track_server_info: bool = False,
+    ) -> None:
+        """Track an analytics event.
+
+        Args:
+            event: The event to track.
+            metadata: Additional metadata to track with the event.
+            track_server_info: Whether to track server info.
+        """
+        if self.track_analytics:
+            # Server information is never tracked for SQL zenml stores.
+            track_event(event, metadata, track_server_info=False)

@@ -35,6 +35,7 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
+from zenml.models.server_models import ServerModel
 
 
 class ZenStoreInterface(ABC):
@@ -154,6 +155,14 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The store configuration of the copied store.
+        """
+
+    @abstractmethod
+    def get_store_info(self) -> ServerModel:
+        """Get information about the store.
+
+        Returns:
+            Information about the store.
         """
 
     # ------------

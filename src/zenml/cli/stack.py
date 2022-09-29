@@ -934,7 +934,7 @@ def export_stack(
         stack_name_or_id: The name of the stack to export.
         filename: The filename to export the stack to.
     """
-    track_event(AnalyticsEvent.EXPORT_STACK)
+    track_event(AnalyticsEvent.EXPORT_STACK, track_server_info=True)
 
     # Get configuration of given stack
     # TODO [ENG-893]: code duplicate with describe_stack()
@@ -1058,7 +1058,7 @@ def import_stack(
             the installed version of ZenML is different from the
             one specified in the stack YAML file.
     """
-    track_event(AnalyticsEvent.IMPORT_STACK)
+    track_event(AnalyticsEvent.IMPORT_STACK, track_server_info=True)
 
     # handle 'zenml stack import file.yaml' calls
     if stack_name.endswith(".yaml") and filename is None:
@@ -1134,7 +1134,7 @@ def copy_stack(
         source_stack_name_or_id: The name or id of the stack to copy.
         target_stack: Name of the copied stack.
     """
-    track_event(AnalyticsEvent.COPIED_STACK)
+    track_event(AnalyticsEvent.COPIED_STACK, track_server_info=True)
 
     repo = Repository()
 
