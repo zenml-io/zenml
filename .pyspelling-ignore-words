@@ -64,6 +64,7 @@ BaseExecutorOperator
 BaseMaterializer
 BaseMaterializerMeta
 BaseModel
+BaseModelClass
 BaseModelDeployer
 BaseOrchestrator
 BaseParameters
@@ -244,6 +245,7 @@ GreatExpectationsProfilerStep
 GreatExpectationsValidatorConfig
 GreatExpectationsValidatorStep
 GreatExpectationsVisualizer
+HCL
 HCP
 HDQC
 HFModel
@@ -319,10 +321,6 @@ LocationConstraint
 LogRecord
 LookupError
 MERCHANTABILITY
-exc
-BaseModelClass
-nginx
-HCL
 MLFlow
 MLFlowDeployerConfig
 MLFlowDeployerParameters
@@ -891,6 +889,7 @@ eu
 europe
 eval
 evidentlyai
+exc
 explainability
 explainers
 extensibility
@@ -1091,6 +1090,7 @@ natively
 ndarray
 ner
 newtarget
+nginx
 nlp
 nn
 nodegroup
