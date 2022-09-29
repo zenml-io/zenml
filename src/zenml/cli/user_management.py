@@ -20,7 +20,8 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
-from zenml.enums import CliCategories
+from zenml.config.global_config import GlobalConfiguration
+from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
@@ -54,7 +55,12 @@ def list_users() -> None:
     )
 
 
-@user.command("create", help="Create a new user.")
+@user.command(
+    "create",
+    help="Create a new user. If an empty password is configured, an activation "
+    "token is generated and a link to the dashboard is provided where the "
+    "user can activate the account.",
+)
 @click.argument("user_name", type=str, required=True)
 @click.option(
     "--password",
@@ -74,17 +80,32 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
     """
     if not password:
         password = click.prompt(
-            f"Password for user {user_name}",
+            f"Password for user {user_name}. Leave empty to generate an "
+            f"activation token",
+            default="",
             hide_input=True,
         )
 
     cli_utils.print_active_config()
-    user = UserModel(name=user_name, password=password, active=password != "")
+    user = UserModel(name=user_name, password=password or None)
+    # Use the activation workflow only if connected to a ZenML server.
+    gc = GlobalConfiguration()
+    if gc.zen_store.type != StoreType.REST:
+        user.active = password != ""
+    else:
+        user.active = True
+
     try:
-        Client().zen_store.create_user(user)
+        user = Client().zen_store.create_user(user)
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created user '{user_name}'.")
+    if not user.active and user.activation_token is not None:
+        cli_utils.declare(
+            f"The created user account is currently inactive. You can activate "
+            f"it by visiting the dashboard at the following URL:\n"
+            f"{gc.store.url}/signup?user={str(user.id)}&token={user.activation_token.get_secret_value()}\n"
+        )
 
 
 @user.command("delete")

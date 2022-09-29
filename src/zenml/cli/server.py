@@ -27,7 +27,7 @@ from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.enums import ServerProviderType
+from zenml.enums import ServerProviderType, StoreType
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -61,7 +61,14 @@ def get_active_deployment(local: bool = False) -> Optional[ServerDeployment]:
         was found.
     """
     deployer = ServerDeployer()
-    servers = deployer.list_servers()
+    if local:
+        servers = deployer.list_servers(provider_type=ServerProviderType.LOCAL)
+        if not servers:
+            servers = deployer.list_servers(
+                provider_type=ServerProviderType.DOCKER
+            )
+    else:
+        servers = deployer.list_servers()
 
     if not servers:
         return None
@@ -154,11 +161,20 @@ def up(
     )
 
     if not blocking:
-        deployer.connect_to_server(
-            LOCAL_ZENML_SERVER_NAME,
-            DEFAULT_USERNAME,
-            DEFAULT_PASSWORD,
-        )
+        gc = GlobalConfiguration()
+        # Don't connect to the local server if the client is already connected
+        # to a remote server.
+        if gc.zen_store.type == StoreType.REST:
+            cli_utils.declare(
+                "Skipped connecting to the local server. The client is "
+                "already connected to a remote ZenML server."
+            )
+        else:
+            deployer.connect_to_server(
+                LOCAL_ZENML_SERVER_NAME,
+                DEFAULT_USERNAME,
+                DEFAULT_PASSWORD,
+            )
 
         if server.status and server.status.url:
             cli_utils.declare(
@@ -382,13 +398,8 @@ def destroy() -> None:
 
 
 @cli.command("status", help="Show information about the current configuration.")
-def status_server(server_name: Optional[str] = None) -> None:
-    """Get the status of a ZenML server.
-
-    Args:
-        server_name: Name of the ZenML server deployment.
-    """
-    """Show details about the active global configuration."""
+def status() -> None:
+    """Show details about the current configuration."""
     gc = GlobalConfiguration()
     client = Client()
 
@@ -411,14 +422,16 @@ def status_server(server_name: Optional[str] = None) -> None:
         f"The active stack is: '{client.active_stack_model.name}' ({scope})"
     )
 
-    server = get_active_deployment(local=False)
-    if server:
-        cli_utils.declare("The status for the local ZenML server:")
-        cli_utils.print_server_deployment(server)
-
     server = get_active_deployment(local=True)
     if server:
-        cli_utils.declare("The status for the cloud ZenML deployment:")
+        cli_utils.declare("The status of the local dashboard:")
+        cli_utils.print_server_deployment(server)
+
+    server = get_active_deployment(local=False)
+    if server:
+        cli_utils.declare(
+            "The status of the cloud ZenML server deployed from this host:"
+        )
         cli_utils.print_server_deployment(server)
 
 
@@ -577,7 +590,8 @@ def connect(
             )
             return
         url = server.status.url
-        # TODO: get the certificate from the server deployment, if available
+        if server.status.ca_crt:
+            verify_ssl = server.status.ca_crt
 
     if not url:
         url = click.prompt("ZenML server URL", type=str)

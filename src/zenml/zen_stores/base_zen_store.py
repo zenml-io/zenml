@@ -107,7 +107,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             ) from e
 
         if not skip_default_registrations:
+            logger.debug("Initializing database")
             self._initialize_database()
+        else:
+            logger.debug("Skipping database initialization")
 
     @staticmethod
     def get_store_class(store_type: StoreType) -> Type["BaseZenStore"]:

@@ -36,6 +36,8 @@ spec:
           env:
             - name: ZENML_DEBUG
               value: {{ .Values.zenml.debug | quote }}
+            - name: ANALYTICS_OPT_IN
+              value: "False"
             - name: ZENML_AUTH_TYPE
               value: {{ .Values.zenml.authType | quote }}
             {{- if .Values.zenml.rootUrlPath }}
