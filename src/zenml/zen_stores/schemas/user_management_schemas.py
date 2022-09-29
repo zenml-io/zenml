@@ -123,6 +123,7 @@ class UserSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             full_name=self.full_name,
+            email=self.email,
             email_opted_in=self.email_opted_in,
             active=self.active,
             password=self.password,

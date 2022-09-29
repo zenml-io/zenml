@@ -701,7 +701,6 @@ class RestZenStore(BaseZenStore):
             route=USERS,
             resource_model=UserModel,
         )
-        return UserModel.parse_obj(self.get(f"{USERS}/{str(user_name_or_id)}"))
 
     # TODO: [ALEX] add filtering param(s)
     def list_users(self) -> List[UserModel]:
@@ -766,7 +765,7 @@ class RestZenStore(BaseZenStore):
         request = EmailOptInModel(email=email,
                                   email_opted_in=user_opt_in_response)
         route = f"{USERS}/{str(user_name_or_id)}{EMAIL_ANALYTICS}"
-        self.post(f"{route}", body=request)
+        self.put(f"{route}", body=request)
 
     # -----
     # Teams

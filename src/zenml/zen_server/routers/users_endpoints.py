@@ -261,7 +261,7 @@ def email_opt_in_response(
     Returns:
         The generated activation token.
     """
-    user = zen_store.user_email_opt_in(
+    zen_store.user_email_opt_in(
         user_name_or_id=user_name_or_id,
         email=user_response.email,
         user_opt_in_response=user_response.email_opted_in

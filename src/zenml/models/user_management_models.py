@@ -148,6 +148,11 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         title="The full name for the account owner.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
+    email: Optional[str] = Field(
+        default="",
+        title="The email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
     email_opted_in: Optional[bool] = Field(
         title="Whether the user agreed to share their email.",
         description="`null` if not answered, `true` if agreed, "
