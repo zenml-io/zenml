@@ -19,7 +19,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import SecretStr
 
-from zenml.constants import ACTIVATE, DEACTIVATE, ROLES, USERS, VERSION_1, API
+from zenml.constants import ACTIVATE, DEACTIVATE, ROLES, USERS, VERSION_1, API, \
+    EMAIL_ANALYTICS
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel, UserModel
@@ -33,7 +34,7 @@ from zenml.zen_server.models.user_management_models import (
     CreateUserRequest,
     CreateUserResponse,
     DeactivateUserResponse,
-    UpdateUserRequest,
+    UpdateUserRequest, EmailOptInModel,
 )
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -240,6 +241,31 @@ def delete_user(
             "user account, please contact your ZenML administrator."
         )
     zen_store.delete_user(user_name_or_id=user_name_or_id)
+
+
+@router.put(
+    "/{user_name_or_id}" + EMAIL_ANALYTICS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def email_opt_in_response(
+    user_name_or_id: Union[str, UUID],
+    user_response: EmailOptInModel
+) -> None:
+    """Deactivates a user and generates a new activation token for it.
+
+    Args:
+        user_name_or_id: Name or ID of the user.
+        user_response: User Response to email prompt
+
+    Returns:
+        The generated activation token.
+    """
+    user = zen_store.user_email_opt_in(
+        user_name_or_id=user_name_or_id,
+        email=user_response.email,
+        user_opt_in_response=user_response.email_opted_in
+    )
 
 
 @router.get(

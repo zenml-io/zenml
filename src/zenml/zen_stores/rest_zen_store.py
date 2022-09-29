@@ -42,7 +42,7 @@ from zenml.constants import (
     STEPS,
     TEAMS,
     USERS,
-    VERSION_1,
+    VERSION_1, EMAIL_ANALYTICS,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
@@ -94,7 +94,7 @@ from zenml.zen_server.models.user_management_models import (
     CreateUserResponse,
     UpdateRoleRequest,
     UpdateTeamRequest,
-    UpdateUserRequest,
+    UpdateUserRequest, EmailOptInModel,
 )
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -718,6 +718,28 @@ class RestZenStore(BaseZenStore):
             resource_id=user_name_or_id,
             route=USERS,
         )
+
+    def user_email_opt_in(
+        self,
+        user_name_or_id: Union[str, UUID],
+        email: str,
+        user_opt_in_response: bool
+    ) -> None:
+        """Persist user response to the email prompt.
+
+        Args:
+            user_name_or_id: The name or the ID of the user.
+            email: The users email
+            user_opt_in_response: Whether this email should be associated
+                                  with the user id in the telemtry
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+
+        request = EmailOptInModel(email=email,
+                                  email_opted_in=user_opt_in_response)
+        route = f"{USERS}/{str(user_name_or_id)}{EMAIL_ANALYTICS}"
+        self.post(f"{route}", body=request)
 
     # -----
     # Teams

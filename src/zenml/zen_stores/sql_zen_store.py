@@ -1464,6 +1464,37 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
 
+    @track(AnalyticsEvent.OPT_IN_OUT_EMAIL)
+    def user_email_opt_in(
+        self,
+        user_name_or_id: Union[str, UUID],
+        email: str,
+        user_opt_in_response: bool
+    ):
+        """Persist user response to the email prompt.
+
+        Args:
+            user_name_or_id: The name or the ID of the user.
+            email: The users email
+            user_opt_in_response: Whether this email should be associated
+                                  with the user id in the telemtry
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        with Session(self.engine) as session:
+            try:
+                user = self._get_user_schema(user_name_or_id, session=session)
+            except NoResultFound as error:
+                raise KeyError from error
+            else:
+                # TODO: In the future we might want to validate that the email
+                #  is non-empty and valid at this point if user_opt_in_response
+                #  is True
+                user.email = email
+                user.email_opted_in = user_opt_in_response
+                session.add(user)
+                session.commit()
+
     # -----
     # Teams
     # -----

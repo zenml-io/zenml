@@ -135,7 +135,6 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         "id",
         "name",
         "full_name",
-        "email",
         "active",
     ]
 
@@ -149,10 +148,10 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         title="The full name for the account owner.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    email: str = Field(
-        default="",
-        title="The email address associated with the account.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    email_opted_in: Optional[bool] = Field(
+        title="Whether the user agreed to share their email.",
+        description="`null` if not answered, `true` if agreed, "
+                    "`false` if skipped."
     )
     active: bool = Field(default=False, title="Active account.")
     password: Optional[SecretStr] = Field(default=None, exclude=True)

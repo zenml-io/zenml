@@ -175,6 +175,7 @@ COMPONENT_SIDE_EFFECTS = "/component-side-effects"
 METADATA_CONFIG = "/metadata-config"
 REPOSITORIES = "/repositories"
 DEACTIVATE = "/deactivate"
+EMAIL_ANALYTICS = "/email-opt-in"
 ACTIVATE = "/activate"
 VERSION_1 = "/v1"
 

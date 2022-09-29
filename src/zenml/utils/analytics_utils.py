@@ -69,6 +69,7 @@ class AnalyticsEvent(str, Enum):
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
     OPT_OUT_ANALYTICS = "Analytics opt-out"
+    OPT_IN_OUT_EMAIL = "Response for Email prompt"
 
     # Examples
     RUN_ZENML_GO = "ZenML go"

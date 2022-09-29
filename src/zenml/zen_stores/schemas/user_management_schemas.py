@@ -46,12 +46,14 @@ class UserSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     name: str
     full_name: str
-    email: str
+    email: Optional[str] = Field(nullable=True)
     active: bool
     password: Optional[str] = Field(nullable=True)
     activation_token: Optional[str] = Field(nullable=True)
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
+
+    email_opted_in: Optional[bool] = Field(nullable=True)
 
     teams: List["TeamSchema"] = Relationship(
         back_populates="users", link_model=TeamAssignmentSchema
@@ -89,7 +91,6 @@ class UserSchema(SQLModel, table=True):
             id=model.id,
             name=model.name,
             full_name=model.full_name,
-            email=model.email,
             active=model.active,
             password=model.get_hashed_password(),
             activation_token=model.get_hashed_activation_token(),
@@ -106,7 +107,6 @@ class UserSchema(SQLModel, table=True):
         """
         self.name = model.name
         self.full_name = model.full_name
-        self.email = model.email
         self.active = model.active
         self.password = model.get_hashed_password()
         self.activation_token = model.get_hashed_activation_token()
@@ -123,7 +123,7 @@ class UserSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             full_name=self.full_name,
-            email=self.email,
+            email_opted_in=self.email_opted_in,
             active=self.active,
             password=self.password,
             activation_token=self.activation_token,
