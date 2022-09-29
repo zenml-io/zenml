@@ -21,7 +21,7 @@ from zenml.integrations.pytorch.materializers.pytorch_module_materializer import
 )
 
 
-def test_pytorch_module_materializer(clean_repo):
+def test_pytorch_module_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
     with does_not_raise():
         _test_materializer(
@@ -29,7 +29,7 @@ def test_pytorch_module_materializer(clean_repo):
             materializer=PyTorchModuleMaterializer,
         )
 
-    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    last_run = clean_client.get_pipeline("test_pipeline").runs[-1]
     module = last_run.steps[-1].output.read()
     assert isinstance(module, Module)
     assert module.in_features == 20

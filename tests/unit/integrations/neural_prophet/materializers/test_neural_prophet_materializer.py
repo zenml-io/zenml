@@ -23,7 +23,7 @@ from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer
 )
 
 
-def test_neural_prophet_booster_materializer(clean_repo):
+def test_neural_prophet_booster_materializer(clean_client):
     """Tests whether the steps work for the Neural Prophet forecaster
     materializer."""
     sample_df = pd.DataFrame(
@@ -41,7 +41,7 @@ def test_neural_prophet_booster_materializer(clean_repo):
             materializer=NeuralProphetMaterializer,
         )
 
-    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    last_run = clean_client.get_pipeline("test_pipeline").runs[-1]
     forecaster = last_run.steps[-1].output.read()
     assert isinstance(forecaster, NeuralProphet)
     assert forecaster.config_train.epochs == 2

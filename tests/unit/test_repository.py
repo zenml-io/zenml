@@ -97,7 +97,7 @@ def test_repository_detection(tmp_path):
 
 
 def test_initializing_repo_creates_directory_and_uses_default_stack(
-    tmp_path, clean_repo
+    tmp_path, clean_client
 ):
     """Tests that repo initialization creates a .zen directory and uses the
     default local stack."""
@@ -132,7 +132,7 @@ def test_freshly_initialized_repo_attributes(tmp_path):
     assert client.root == tmp_path
 
 
-def test_finding_repository_directory_with_explicit_path(tmp_path, clean_repo):
+def test_finding_repository_directory_with_explicit_path(tmp_path, clean_client):
     """Tests that a repository can be found using an explicit path, an
     environment variable and the current working directory."""
     subdirectory_path = tmp_path / "some_other_directory"
@@ -209,128 +209,128 @@ def test_creating_repository_instance_during_step_execution(mocker):
         Client()
 
 
-def test_activating_nonexisting_stack_fails(clean_repo):
+def test_activating_nonexisting_stack_fails(clean_client):
     """Tests that activating a stack name that isn't registered fails."""
     stack = _create_local_stack(
-        repo=clean_repo, stack_name="stack_name_that_hopefully_does_not_exist"
+        repo=clean_client, stack_name="stack_name_that_hopefully_does_not_exist"
     )
 
     with pytest.raises(KeyError):
-        clean_repo.activate_stack(
+        clean_client.activate_stack(
             stack.to_model(
-                user=clean_repo.active_user.id,
-                project=clean_repo.active_project.id,
+                user=clean_client.active_user.id,
+                project=clean_client.active_project.id,
             )
         )
 
 
-def test_activating_a_stack_updates_the_config_file(clean_repo):
+def test_activating_a_stack_updates_the_config_file(clean_client):
     """Tests that the newly active stack name gets persisted."""
-    stack = _create_local_stack(repo=clean_repo, stack_name="new_stack")
+    stack = _create_local_stack(repo=clean_client, stack_name="new_stack")
     stack_model = stack.to_model(
-        user=clean_repo.active_user.id, project=clean_repo.active_project.id
+        user=clean_client.active_user.id, project=clean_client.active_project.id
     )
 
-    clean_repo.register_stack_component(stack.orchestrator.to_model())
-    clean_repo.register_stack_component(stack.artifact_store.to_model())
+    clean_client.register_stack_component(stack.orchestrator.to_model())
+    clean_client.register_stack_component(stack.artifact_store.to_model())
 
-    clean_repo.register_stack(stack_model)
-    clean_repo.activate_stack(stack_model)
+    clean_client.register_stack(stack_model)
+    clean_client.activate_stack(stack_model)
 
-    assert Client(clean_repo.root).active_stack_model.name == stack.name
+    assert Client(clean_client.root).active_stack_model.name == stack.name
 
 
-def test_getting_a_stack(clean_repo):
+def test_getting_a_stack(clean_client):
     """Tests that getting a stack succeeds if the stack name exists and fails
     otherwise."""
-    existing_stack_name = clean_repo.active_stack.name
+    existing_stack_name = clean_client.active_stack.name
 
     with does_not_raise():
-        stack = clean_repo.get_stack_by_name_or_partial_id(existing_stack_name)
+        stack = clean_client.get_stack_by_name_or_partial_id(existing_stack_name)
         assert isinstance(stack, StackModel)
 
     with pytest.raises(KeyError):
-        clean_repo.get_stack_by_name_or_partial_id(
+        clean_client.get_stack_by_name_or_partial_id(
             "stack_name_that_hopefully_does_not_exist"
         )
 
 
-def test_registering_a_stack(clean_repo):
+def test_registering_a_stack(clean_client):
     """Tests that registering a stack works and the stack gets persisted."""
     stack = _create_local_stack(
-        repo=clean_repo, stack_name="some_new_stack_name"
+        repo=clean_client, stack_name="some_new_stack_name"
     )
     stack_model = stack.to_model(
-        user=clean_repo.active_user.id, project=clean_repo.active_project.id
+        user=clean_client.active_user.id, project=clean_client.active_project.id
     )
-    clean_repo.register_stack_component(stack.orchestrator.to_model())
-    clean_repo.register_stack_component(stack.artifact_store.to_model())
-    clean_repo.register_stack(stack_model)
+    clean_client.register_stack_component(stack.orchestrator.to_model())
+    clean_client.register_stack_component(stack.artifact_store.to_model())
+    clean_client.register_stack(stack_model)
 
-    Client(clean_repo.root)
+    Client(clean_client.root)
     with does_not_raise():
-        clean_repo.zen_store.get_stack(stack_model.id)
+        clean_client.zen_store.get_stack(stack_model.id)
 
 
-def test_registering_a_stack_with_existing_name(clean_repo):
+def test_registering_a_stack_with_existing_name(clean_client):
     """Tests that registering a stack for an existing name fails."""
     stack = _create_local_stack(
-        repo=clean_repo, stack_name=clean_repo.active_stack_model.name
+        repo=clean_client, stack_name=clean_client.active_stack_model.name
     )
-    clean_repo.register_stack_component(stack.orchestrator.to_model())
-    clean_repo.register_stack_component(stack.artifact_store.to_model())
+    clean_client.register_stack_component(stack.orchestrator.to_model())
+    clean_client.register_stack_component(stack.artifact_store.to_model())
 
     with pytest.raises(StackExistsError):
-        clean_repo.register_stack(
+        clean_client.register_stack(
             stack.to_model(
-                user=clean_repo.active_user.id,
-                project=clean_repo.active_project.id,
+                user=clean_client.active_user.id,
+                project=clean_client.active_project.id,
             )
         )
 
 
 def test_registering_a_new_stack_with_already_registered_components(
-    clean_repo,
+    clean_client,
 ):
     """Tests that registering a new stack with already registered components
     registers the stacks and does NOT register the components."""
-    stack = clean_repo.active_stack.to_model(
-        user=clean_repo.active_user.id,
-        project=clean_repo.active_project.id,
+    stack = clean_client.active_stack.to_model(
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
     )
     stack.id = uuid4()
     stack.name = "some_new_stack_name"
 
-    registered_orchestrators = clean_repo.list_stack_components_by_type(
+    registered_orchestrators = clean_client.list_stack_components_by_type(
         StackComponentType.ORCHESTRATOR
     )
-    registered_artifact_stores = clean_repo.list_stack_components_by_type(
+    registered_artifact_stores = clean_client.list_stack_components_by_type(
         StackComponentType.ARTIFACT_STORE
     )
 
     with does_not_raise():
-        clean_repo.register_stack(stack)
+        clean_client.register_stack(stack)
 
     # the same exact components were already registered in the repo, so no
     # new component should have been registered
-    assert registered_orchestrators == clean_repo.list_stack_components_by_type(
+    assert registered_orchestrators == clean_client.list_stack_components_by_type(
         StackComponentType.ORCHESTRATOR
     )
     assert (
         registered_artifact_stores
-        == clean_repo.list_stack_components_by_type(
+        == clean_client.list_stack_components_by_type(
             StackComponentType.ARTIFACT_STORE
         )
     )
 
 
-def test_updating_a_stack_with_new_components(clean_repo):
+def test_updating_a_stack_with_new_components(clean_client):
     """Tests that updating a new stack with already registered components
     updates the stack with the new or altered components passed in."""
-    current_stack = clean_repo.active_stack
+    current_stack = clean_client.active_stack
     old_orchestrator = current_stack.orchestrator
     new_orchestrator = _create_local_stack(
-        clean_repo, "", orchestrator_name="new_orchestrator"
+        clean_client, "", orchestrator_name="new_orchestrator"
     ).orchestrator
     updated_stack = Stack(
         id=current_stack.id,
@@ -340,23 +340,23 @@ def test_updating_a_stack_with_new_components(clean_repo):
     )
 
     with does_not_raise():
-        clean_repo.register_stack_component(new_orchestrator.to_model())
+        clean_client.register_stack_component(new_orchestrator.to_model())
 
-        clean_repo.update_stack(
+        clean_client.update_stack(
             updated_stack.to_model(
-                user=clean_repo.active_user.id,
-                project=clean_repo.active_project.id,
+                user=clean_client.active_user.id,
+                project=clean_client.active_project.id,
             )
         )
 
-    active_orchestrator = clean_repo.active_stack.orchestrator.to_model()
+    active_orchestrator = clean_client.active_stack.orchestrator.to_model()
     assert active_orchestrator != old_orchestrator.to_model()
     assert active_orchestrator == new_orchestrator.to_model()
 
 
-def test_renaming_stack_with_update_method_succeeds(clean_repo):
+def test_renaming_stack_with_update_method_succeeds(clean_client):
     """Tests that renaming a stack with the update method succeeds."""
-    current_stack = clean_repo.active_stack
+    current_stack = clean_client.active_stack
     new_stack_name = "new_stack_name"
     updated_stack = Stack(
         id=current_stack.id,
@@ -366,94 +366,94 @@ def test_renaming_stack_with_update_method_succeeds(clean_repo):
     )
 
     with does_not_raise():
-        clean_repo.update_stack(
+        clean_client.update_stack(
             updated_stack.to_model(
-                user=clean_repo.active_user.id,
-                project=clean_repo.active_project.id,
+                user=clean_client.active_user.id,
+                project=clean_client.active_project.id,
             )
         )
-    assert new_stack_name == clean_repo.active_stack_model.name
+    assert new_stack_name == clean_client.active_stack_model.name
 
 
-def test_register_a_stack_with_unregistered_component_fails(clean_repo):
+def test_register_a_stack_with_unregistered_component_fails(clean_client):
     """Tests that registering a stack with an unregistered component fails."""
 
     new_stack = _create_local_stack(
-        repo=clean_repo, stack_name="some_new_stack_name"
+        repo=clean_client, stack_name="some_new_stack_name"
     )
     # Don't register orchestrator or artifact store
 
     with pytest.raises(KeyError):
-        clean_repo.register_stack(
+        clean_client.register_stack(
             new_stack.to_model(
-                user=clean_repo.active_user.id,
-                project=clean_repo.active_project.id,
+                user=clean_client.active_user.id,
+                project=clean_client.active_project.id,
             )
         )
 
 
-def test_deregistering_the_active_stack(clean_repo):
+def test_deregistering_the_active_stack(clean_client):
     """Tests that deregistering the active stack fails."""
     with pytest.raises(ValueError):
-        clean_repo.deregister_stack(
-            clean_repo.active_stack.to_model(
-                user=clean_repo.active_user.id,
-                project=clean_repo.active_project.id,
+        clean_client.deregister_stack(
+            clean_client.active_stack.to_model(
+                user=clean_client.active_user.id,
+                project=clean_client.active_project.id,
             )
         )
 
 
-def test_deregistering_a_non_active_stack(clean_repo):
+def test_deregistering_a_non_active_stack(clean_client):
     """Tests that deregistering a non-active stack works."""
     stack = _create_local_stack(
-        repo=clean_repo, stack_name="some_new_stack_name"
+        repo=clean_client, stack_name="some_new_stack_name"
     )
     stack_model = stack.to_model(
-        user=clean_repo.active_user.id, project=clean_repo.active_project.id
+        user=clean_client.active_user.id, project=clean_client.active_project.id
     )
-    clean_repo.register_stack_component(stack.orchestrator.to_model())
-    clean_repo.register_stack_component(stack.artifact_store.to_model())
-    clean_repo.register_stack(stack_model)
+    clean_client.register_stack_component(stack.orchestrator.to_model())
+    clean_client.register_stack_component(stack.artifact_store.to_model())
+    clean_client.register_stack(stack_model)
 
     with does_not_raise():
-        clean_repo.deregister_stack(stack_model)
+        clean_client.deregister_stack(stack_model)
 
 
-def test_getting_a_stack_component(clean_repo):
+def test_getting_a_stack_component(clean_client):
     """Tests that getting a stack component returns the correct component."""
-    component = clean_repo.active_stack.orchestrator.to_model()
+    component = clean_client.active_stack.orchestrator.to_model()
 
     with does_not_raise():
-        registered_component = clean_repo.get_stack_component_by_id(
+        registered_component = clean_client.get_stack_component_by_id(
             component.id
         )
 
     assert component == registered_component
 
 
-def test_getting_a_nonexisting_stack_component(clean_repo):
+def test_getting_a_nonexisting_stack_component(clean_client):
     """Tests that getting a stack component for a name that isn't registered
     fails."""
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component_by_id(uuid4())
+        clean_client.get_stack_component_by_id(uuid4())
 
 
-def test_registering_a_stack_component_with_existing_name(clean_repo):
+def test_registering_a_stack_component_with_existing_name(clean_client):
     """Tests that registering a stack component for an existing name fails."""
     with pytest.raises(StackComponentExistsError):
-        clean_repo.register_stack_component(
-            clean_repo.active_stack.orchestrator.to_model()
+        clean_client.register_stack_component(
+            clean_client.active_stack.orchestrator.to_model()
         )
 
 
-def test_registering_a_new_stack_component(clean_repo):
+def test_registering_a_new_stack_component(clean_client):
     """Tests that registering a stack component works and is persisted."""
     new_artifact_store = _create_local_stack(
-        clean_repo, "", artifact_store_name="arias_store"
+        clean_client, "", artifact_store_name="arias_store"
     ).artifact_store.to_model()
-    clean_repo.register_stack_component(new_artifact_store)
+    clean_client.register_stack_component(new_artifact_store)
 
-    new_client = Client(clean_repo.root)
+    new_client = Client(clean_client.root)
 
     with does_not_raise():
         registered_artifact_store = new_client.get_stack_component_by_id(
@@ -463,30 +463,30 @@ def test_registering_a_new_stack_component(clean_repo):
     assert registered_artifact_store == new_artifact_store
 
 
-def test_deregistering_a_stack_component(clean_repo):
+def test_deregistering_a_stack_component(clean_client):
     """Tests that deregistering a stack component works and is persisted."""
     component = _create_local_stack(
-        clean_repo, "", orchestrator_name="unregistered_orchestrator"
+        clean_client, "", orchestrator_name="unregistered_orchestrator"
     ).orchestrator.to_model()
 
-    clean_repo.register_stack_component(component)
-    clean_repo.deregister_stack_component(component)
+    clean_client.register_stack_component(component)
+    clean_client.deregister_stack_component(component)
 
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component_by_id(component.id)
+        clean_client.get_stack_component_by_id(component.id)
 
-    Client(clean_repo.root)
+    Client(clean_client.root)
 
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component_by_id(component.id)
+        clean_client.get_stack_component_by_id(component.id)
 
 
 def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
-    clean_repo,
+    clean_client,
 ):
     """Tests that deregistering a stack component that is part of a registered
     stack fails."""
-    component = clean_repo.active_stack.orchestrator.to_model()
+    component = clean_client.active_stack.orchestrator.to_model()
 
     with pytest.raises(IllegalOperationError):
-        clean_repo.deregister_stack_component(component)
+        clean_client.deregister_stack_component(component)

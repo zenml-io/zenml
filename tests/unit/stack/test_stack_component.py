@@ -167,20 +167,20 @@ def test_stack_component_prevents_secret_references_for_some_attributes():
 
 
 def test_stack_component_secret_reference_resolving(
-    clean_repo: Client, register_stub_orchestrator_flavor
+    clean_client, register_stub_orchestrator_flavor
 ):
     """Tests that the stack component resolves secrets if possible."""
     component = _get_stub_orchestrator(
         name="stub_orchestrator",
-        repo=clean_repo,
+        repo=clean_client,
         attribute_without_validator="{{secret.key}}",
     )
-    clean_repo.register_stack_component(component.to_model())
+    clean_client.register_stack_component(component.to_model())
     with pytest.raises(RuntimeError):
         # not part of the active stack
         _ = component.config.attribute_without_validator
 
-    active_stack = clean_repo.active_stack
+    active_stack = clean_client.active_stack
     stack = Stack(
         id=active_stack.id,
         name=active_stack.name,
@@ -188,10 +188,10 @@ def test_stack_component_secret_reference_resolving(
         orchestrator=component,
     )
     stack_model = stack.to_model(
-        user=clean_repo.active_user.id, project=clean_repo.active_project.id
+        user=clean_client.active_user.id, project=clean_client.active_project.id
     )
 
-    clean_repo.update_stack(stack_model)
+    clean_client.update_stack(stack_model)
 
     with pytest.raises(RuntimeError):
         # no secret manager in stack
@@ -205,15 +205,15 @@ def test_stack_component_secret_reference_resolving(
         config=LocalSecretsManagerConfig(),
         flavor="local",
         type=StackComponentType.SECRETS_MANAGER,
-        user=clean_repo.active_user.id,
-        project=clean_repo.active_project.id,
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
-    clean_repo.register_stack_component(secrets_manager.to_model())
+    clean_client.register_stack_component(secrets_manager.to_model())
 
     stack_model.components["secrets_manager"] = [secrets_manager.id]
-    clean_repo.update_stack(stack_model)
+    clean_client.update_stack(stack_model)
 
     with pytest.raises(KeyError):
         # secret doesn't exist

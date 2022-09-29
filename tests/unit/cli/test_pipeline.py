@@ -28,14 +28,14 @@ CUSTOM_OBJ_NAME = "SomeObj"
 
 
 def test_pipeline_run_single_file(
-    clean_repo: Client, files_dir: str
+    clean_client, files_dir: str
 ) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the same file."""
     clean_sys_modules = sys.modules
 
     os.chdir(files_dir)
-    clean_repo.activate_root()
+    clean_client.activate_root()
     Client.initialize(root=files_dir)
 
     assert os.path.isfile(os.path.join(files_dir, "run.py"))
@@ -64,7 +64,7 @@ def test_pipeline_run_single_file(
             del sys.modules[mod]
 
 
-def test_pipeline_run_multifile(clean_repo: Client, files_dir: str) -> None:
+def test_pipeline_run_multifile(clean_client, files_dir: str) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the different files.
 
@@ -81,7 +81,7 @@ def test_pipeline_run_multifile(clean_repo: Client, files_dir: str) -> None:
     clean_sys_modules = sys.modules
 
     os.chdir(files_dir)
-    clean_repo.activate_root()
+    clean_client.activate_root()
     Client.initialize(root=files_dir)
 
     assert os.path.isfile(os.path.join(files_dir, "pipeline_file/pipeline.py"))

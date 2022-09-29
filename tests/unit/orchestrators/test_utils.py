@@ -33,7 +33,7 @@ def test_get_cache_status_raises_no_error_when_none_passed():
     get_cache_status(None)
 
 
-def test_get_cache_status_works_when_running_pipeline_twice(clean_repo, mocker):
+def test_get_cache_status_works_when_running_pipeline_twice(clean_client, mocker):
     """Check that steps are cached when a pipeline is run twice successively."""
     from zenml.pipelines import pipeline
     from zenml.steps import step

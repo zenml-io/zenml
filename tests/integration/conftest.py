@@ -25,7 +25,7 @@ from zenml.stack import Stack
 
 @pytest.fixture(scope="module")
 def shared_kubeflow_repo(
-    base_repo: Client,
+    base_client,
     module_mocker: MockerFixture,
 ) -> Generator[Client, None, None]:
     """Creates and activates a locally provisioned kubeflow stack.
@@ -58,7 +58,7 @@ def shared_kubeflow_repo(
         custom_docker_base_image_name="zenml-base-image:latest",
         synchronous=True,
     )
-    artifact_store = base_repo.active_stack.artifact_store.copy(
+    artifact_store = base_client.active_stack.artifact_store.copy(
         update={"name": "local_kubeflow_artifact_store"}
     )
     container_registry = DefaultContainerRegistryFlavor(
@@ -70,13 +70,13 @@ def shared_kubeflow_repo(
         artifact_store=artifact_store,
         container_registry=container_registry,
     )
-    base_repo.register_stack(kubeflow_stack)
-    base_repo.activate_stack(kubeflow_stack.name)
+    base_client.register_stack(kubeflow_stack)
+    base_client.activate_stack(kubeflow_stack.name)
 
     # Provision resources for the kubeflow stack
     kubeflow_stack.provision()
 
-    yield base_repo
+    yield base_client
 
     # Deprovision the resources after all tests in this module are finished
     kubeflow_stack.deprovision()
@@ -119,7 +119,7 @@ def clean_kubeflow_repo(
 
 @pytest.fixture
 def clean_base_repo(
-    base_repo: Client,
+    base_client,
 ) -> Generator[Client, None, None]:
     """Creates a clean environment with an empty artifact store and metadata
     store out of the shared base repository.
@@ -132,4 +132,4 @@ def clean_base_repo(
     """
     cleanup_active_repo()
 
-    yield base_repo
+    yield base_client

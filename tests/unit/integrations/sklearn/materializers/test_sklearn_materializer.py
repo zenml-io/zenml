@@ -22,7 +22,7 @@ from zenml.integrations.sklearn.materializers.sklearn_materializer import (
 )
 
 
-def test_sklearn_materializer(clean_repo):
+def test_sklearn_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
 
     with does_not_raise():
@@ -31,7 +31,7 @@ def test_sklearn_materializer(clean_repo):
             materializer=SklearnMaterializer,
         )
 
-    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    last_run = clean_client.get_pipeline("test_pipeline").runs[-1]
     model = last_run.steps[-1].output.read()
     assert isinstance(model, ClassifierMixin)
     assert model.gamma == "auto"
