@@ -99,7 +99,7 @@ def generate_stack_component_describe_command(
 
         try:
             component = cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=client,
+                client=client,
                 component_type=component_type,
                 id_or_name_or_prefix=name_or_id,
             )
@@ -140,7 +140,7 @@ def generate_stack_component_list_command(
         hydrated_comps = [s.to_hydrated_model() for s in components]
 
         cli_utils.print_components_table(
-            repo=client, component_type=component_type, components=hydrated_comps
+            client=client, component_type=component_type, components=hydrated_comps
         )
 
     return list_stack_components_command
@@ -267,7 +267,7 @@ def generate_stack_component_update_command(
             client = Client()
             existing_component = (
                 cli_utils.get_component_by_id_or_name_or_prefix(
-                    repo=client,
+                    client=client,
                     component_type=component_type,
                     id_or_name_or_prefix=name_or_id,
                 )
@@ -327,7 +327,7 @@ def generate_stack_component_share_command(
             client = Client()
             existing_component = (
                 cli_utils.get_component_by_id_or_name_or_prefix(
-                    repo=client,
+                    client=client,
                     component_type=component_type,
                     id_or_name_or_prefix=name_or_id,
                 )
@@ -385,7 +385,7 @@ def generate_stack_component_remove_attribute_command(
             client = Client()
 
             existing_comp = cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=client,
+                client=client,
                 component_type=component_type,
                 id_or_name_or_prefix=name_or_id,
             )
@@ -450,7 +450,7 @@ def generate_stack_component_rename_command(
             client = Client()
             existing_component = (
                 cli_utils.get_component_by_id_or_name_or_prefix(
-                    repo=client,
+                    client=client,
                     component_type=component_type,
                     id_or_name_or_prefix=name_or_id,
                 )
@@ -496,7 +496,7 @@ def generate_stack_component_delete_command(
             # Fetch the existing stack component
             client = Client()
             existing_comp = cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=client,
+                client=client,
                 component_type=component_type,
                 id_or_name_or_prefix=name_or_id,
             )
@@ -546,7 +546,7 @@ def generate_stack_component_copy_command(
             client = Client()
             existing_component = (
                 cli_utils.get_component_by_id_or_name_or_prefix(
-                    repo=client,
+                    client=client,
                     component_type=component_type,
                     id_or_name_or_prefix=source_component_name_or_id,
                 )
@@ -592,7 +592,7 @@ def generate_stack_component_up_command(
 
         try:
             component_model = cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=client,
+                client=client,
                 component_type=component_type,
                 id_or_name_or_prefix=name_or_id,
             )
@@ -689,7 +689,7 @@ def generate_stack_component_down_command(
         client = Client()
         try:
             component_model = cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=client,
+                client=client,
                 component_type=component_type,
                 id_or_name_or_prefix=name_or_id,
             )
@@ -774,7 +774,7 @@ def generate_stack_component_logs_command(
         client = Client()
         try:
             component_model = cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=client,
+                client=client,
                 component_type=component_type,
                 id_or_name_or_prefix=name_or_id,
             )

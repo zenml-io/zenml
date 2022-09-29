@@ -68,7 +68,7 @@ def test_valid_stack_component_update_succeeds(clean_client) -> None:
     assert (
         StackComponent.from_model(
             cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=clean_client,
+                client=clean_client,
                 component_type=StackComponentType.CONTAINER_REGISTRY,
                 id_or_name_or_prefix="new_container_registry",
             )
@@ -90,7 +90,7 @@ def test_valid_stack_component_update_succeeds(clean_client) -> None:
     assert (
         StackComponent.from_model(
             cli_utils.get_component_by_id_or_name_or_prefix(
-                repo=clean_client,
+                client=clean_client,
                 component_type=StackComponentType.CONTAINER_REGISTRY,
                 id_or_name_or_prefix="new_container_registry",
             )
@@ -130,7 +130,7 @@ def test_updating_stack_component_name_or_uuid_fails(clean_client) -> None:
     assert update_result1.exit_code == 1
     with does_not_raise():
         cli_utils.get_component_by_id_or_name_or_prefix(
-            repo=clean_client,
+            client=clean_client,
             component_type=StackComponentType.CONTAINER_REGISTRY,
             id_or_name_or_prefix="new_container_registry",
         )
@@ -145,7 +145,7 @@ def test_updating_stack_component_name_or_uuid_fails(clean_client) -> None:
     assert update_result2.exit_code == 1
     with does_not_raise():
         cli_utils.get_component_by_id_or_name_or_prefix(
-            repo=clean_client,
+            client=clean_client,
             component_type=StackComponentType.CONTAINER_REGISTRY,
             id_or_name_or_prefix="new_container_registry",
         )
@@ -184,7 +184,7 @@ def test_updating_stack_component_with_unconfigured_property_fails(
     assert update_result.exit_code == 1
     with pytest.raises(AttributeError):
         cli_utils.get_component_by_id_or_name_or_prefix(
-            repo=clean_client,
+            client=clean_client,
             component_type=StackComponentType.CONTAINER_REGISTRY,
             id_or_name_or_prefix="new_container_registry",
         ).favorite_cat
@@ -327,7 +327,7 @@ def test_renaming_stack_component_to_preexisting_name_fails(
     assert result.exit_code == 1
     with does_not_raise():
         cli_utils.get_component_by_id_or_name_or_prefix(
-            repo=clean_client,
+            client=clean_client,
             component_type=StackComponentType.ORCHESTRATOR,
             id_or_name_or_prefix="new_orchestrator",
         )
@@ -346,13 +346,13 @@ def test_renaming_nonexistent_stack_component_fails(clean_client) -> None:
     assert result.exit_code == 1
     with pytest.raises(KeyError):
         cli_utils.get_component_by_id_or_name_or_prefix(
-            repo=clean_client,
+            client=clean_client,
             component_type=StackComponentType.ORCHESTRATOR,
             id_or_name_or_prefix="arias_container_registry",
         )
     with pytest.raises(KeyError):
         cli_utils.get_component_by_id_or_name_or_prefix(
-            repo=clean_client,
+            client=clean_client,
             component_type=StackComponentType.ORCHESTRATOR,
             id_or_name_or_prefix="arias_container_registry",
         )
@@ -388,13 +388,13 @@ def test_renaming_non_core_component_succeeds(clean_client) -> None:
     assert result.exit_code == 0
     with pytest.raises(KeyError):
         cli_utils.get_component_by_id_or_name_or_prefix(
-            repo=clean_client,
+            client=clean_client,
             component_type=StackComponentType.CONTAINER_REGISTRY,
             id_or_name_or_prefix="some_container_registry",
         )
     with does_not_raise():
         cli_utils.get_component_by_id_or_name_or_prefix(
-            repo=clean_client,
+            client=clean_client,
             component_type=StackComponentType.CONTAINER_REGISTRY,
             id_or_name_or_prefix=new_component_name,
         )
@@ -415,13 +415,13 @@ def test_renaming_core_component_succeeds(clean_client) -> None:
     assert result.exit_code == 0
     with pytest.raises(KeyError):
         cli_utils.get_component_by_id_or_name_or_prefix(
-            repo=clean_client,
+            client=clean_client,
             component_type=StackComponentType.ORCHESTRATOR,
             id_or_name_or_prefix="default",
         )
     with does_not_raise():
         cli_utils.get_component_by_id_or_name_or_prefix(
-            repo=clean_client,
+            client=clean_client,
             component_type=StackComponentType.ORCHESTRATOR,
             id_or_name_or_prefix=new_component_name,
         )

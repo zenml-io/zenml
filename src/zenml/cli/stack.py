@@ -211,7 +211,7 @@ def register_stack(
             if name:
                 stack_components[c_type] = [
                     cli_utils.get_component_by_id_or_name_or_prefix(
-                        repo=client,
+                        client=client,
                         component_type=c_type,
                         id_or_name_or_prefix=name,
                     ).id
@@ -369,7 +369,7 @@ def update_stack(
         client = Client()
         try:
             stack_to_update = cli_utils.get_stack_by_id_or_name_or_prefix(
-                repo=client, id_or_name_or_prefix=stack_name_or_id
+                client=client, id_or_name_or_prefix=stack_name_or_id
             )
         except KeyError:
             cli_utils.error(
@@ -397,7 +397,7 @@ def update_stack(
             if name:
                 stack_components[c_type] = [
                     cli_utils.get_component_by_id_or_name_or_prefix(
-                        repo=client,
+                        client=client,
                         component_type=c_type,
                         id_or_name_or_prefix=name,
                     ).id
@@ -435,7 +435,7 @@ def share_stack(
     client = Client()
     try:
         stack_to_share = cli_utils.get_stack_by_id_or_name_or_prefix(
-            repo=client, id_or_name_or_prefix=stack_name_or_id
+            client=client, id_or_name_or_prefix=stack_name_or_id
         )
     except KeyError:
         cli_utils.error(
@@ -585,7 +585,7 @@ def remove_stack_component(
         client = Client()
         try:
             stack_to_update = cli_utils.get_stack_by_id_or_name_or_prefix(
-                repo=client, id_or_name_or_prefix=stack_name_or_id
+                client=client, id_or_name_or_prefix=stack_name_or_id
             )
         except KeyError:
             cli_utils.error(
@@ -655,7 +655,7 @@ def rename_stack(
         client = Client()
         try:
             stack_to_rename = cli_utils.get_stack_by_id_or_name_or_prefix(
-                repo=client, id_or_name_or_prefix=current_stack_name_or_id
+                client=client, id_or_name_or_prefix=current_stack_name_or_id
             )
         except KeyError:
             cli_utils.error(
@@ -665,7 +665,7 @@ def rename_stack(
 
         try:
             cli_utils.get_stack_by_id_or_name_or_prefix(
-                repo=client, id_or_name_or_prefix=new_stack_name
+                client=client, id_or_name_or_prefix=new_stack_name
             )
             cli_utils.error(
                 f"Stack `{new_stack_name}` already exists. Please choose a "
@@ -714,7 +714,7 @@ def describe_stack(stack_name_or_id: Optional[str]) -> None:
 
     if stack_name_or_id:
         stack_to_describe = cli_utils.get_stack_by_id_or_name_or_prefix(
-            repo=client, id_or_name_or_prefix=stack_name_or_id
+            client=client, id_or_name_or_prefix=stack_name_or_id
         ).to_hydrated_model()
     else:
         stack_to_describe = active_stack
@@ -760,7 +760,7 @@ def delete_stack(
         cfg = GlobalConfiguration()
         client = Client()
         stack_to_delete = cli_utils.get_stack_by_id_or_name_or_prefix(
-            repo=client, id_or_name_or_prefix=stack_name_or_id
+            client=client, id_or_name_or_prefix=stack_name_or_id
         )
 
         if cfg.active_stack_id is not None:
@@ -798,7 +798,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
 
     try:
         stack_to_set_active = cli_utils.get_stack_by_id_or_name_or_prefix(
-            repo=client, id_or_name_or_prefix=stack_name_or_id
+            client=client, id_or_name_or_prefix=stack_name_or_id
         )
     except KeyError as e:
         cli_utils.error(str(e))
@@ -909,7 +909,7 @@ def _get_component_as_dict(
     """
     client = Client()
     component = cli_utils.get_component_by_id_or_name_or_prefix(
-        repo=client,
+        client=client,
         component_type=component_type,
         id_or_name_or_prefix=component_name_or_id,
     )
@@ -944,7 +944,7 @@ def export_stack(
     if stack_name_or_id:
         try:
             stack_to_export = cli_utils.get_stack_by_id_or_name_or_prefix(
-                repo=client, id_or_name_or_prefix=stack_name_or_id
+                client=client, id_or_name_or_prefix=stack_name_or_id
             ).to_hydrated_model()
         except KeyError:
             cli_utils.error(f"Stack '{stack_name_or_id}' does not exist.")
@@ -993,7 +993,7 @@ def _import_stack_component(
 
     try:
         component = cli_utils.get_stack_by_id_or_name_or_prefix(
-            repo=client, id_or_name_or_prefix=component_name
+            client=client, id_or_name_or_prefix=component_name
         )
         if component:
             # component with same name
@@ -1140,7 +1140,7 @@ def copy_stack(
     with console.status(f"Copying stack `{source_stack_name_or_id}`...\n"):
         try:
             stack_to_copy = cli_utils.get_stack_by_id_or_name_or_prefix(
-                repo=client, id_or_name_or_prefix=source_stack_name_or_id
+                client=client, id_or_name_or_prefix=source_stack_name_or_id
             )
         except KeyError:
             cli_utils.error(
@@ -1150,7 +1150,7 @@ def copy_stack(
 
         try:
             cli_utils.get_stack_by_id_or_name_or_prefix(
-                repo=client, id_or_name_or_prefix=target_stack
+                client=client, id_or_name_or_prefix=target_stack
             )
             cli_utils.error(
                 f"Can't copy stack because a stack with the name "
@@ -1203,7 +1203,7 @@ def register_secrets(
     if stack_name_or_id:
         try:
             stack_model = cli_utils.get_stack_by_id_or_name_or_prefix(
-                repo=client, id_or_name_or_prefix=stack_name_or_id
+                client=client, id_or_name_or_prefix=stack_name_or_id
             )
             stack_ = Stack.from_model(stack_model.to_hydrated_model())
         except KeyError:

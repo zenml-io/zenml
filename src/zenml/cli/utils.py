@@ -803,13 +803,13 @@ def describe_pydantic_object(schema_json: str):
 
 
 def get_stack_by_id_or_name_or_prefix(
-    repo: Client,
+    client: Client,
     id_or_name_or_prefix: str,
 ) -> "StackModel":
     """Fetches a stack within active project using the name, id or partial id.
 
     Args:
-        repo: Instance of the Repository singleton
+        client: Instance of the Repository singleton
         id_or_name_or_prefix: The id, name or partial id of the stack to
                               fetch.
 
@@ -823,17 +823,17 @@ def get_stack_by_id_or_name_or_prefix(
     # First interpret as full UUID
     try:
         stack_id = UUID(id_or_name_or_prefix)
-        return repo.zen_store.get_stack(stack_id)
+        return client.zen_store.get_stack(stack_id)
     except ValueError:
         pass
 
-    stacks = repo.zen_store.list_stacks(
-        project_name_or_id=repo.active_project.name,
+    stacks = client.zen_store.list_stacks(
+        project_name_or_id=client.active_project.name,
         name=id_or_name_or_prefix,
     )
     if len(stacks) > 1:
         hydrated_stacks = [s.to_hydrated_model() for s in stacks]
-        print_stacks_table(repo=repo, stacks=hydrated_stacks)
+        print_stacks_table(client=client, stacks=hydrated_stacks)
         error(
             f"Multiple stacks have been found for name "
             f"'{id_or_name_or_prefix}'. The stacks listed above all share "
@@ -850,12 +850,12 @@ def get_stack_by_id_or_name_or_prefix(
 
         # TODO: This is ugly, an _or filter should be set on the sql_zen_store
         stacks = set(
-            repo.zen_store.list_stacks(
-                project_name_or_id=repo.active_project.name,
-                user_name_or_id=repo.active_user.name,
+            client.zen_store.list_stacks(
+                project_name_or_id=client.active_project.name,
+                user_name_or_id=client.active_user.name,
             )
-            + repo.zen_store.list_stacks(
-                project_name_or_id=repo.active_project.name, is_shared=True
+            + client.zen_store.list_stacks(
+                project_name_or_id=client.active_project.name, is_shared=True
             )
         )
 
@@ -866,7 +866,7 @@ def get_stack_by_id_or_name_or_prefix(
         ]
         if len(filtered_stacks) > 1:
             hydrated_stacks = [s.to_hydrated_model() for s in filtered_stacks]
-            print_stacks_table(repo=repo, stacks=hydrated_stacks)
+            print_stacks_table(client=client, stacks=hydrated_stacks)
             error(
                 f"The stacks listed above all share the provided prefix "
                 f"'{id_or_name_or_prefix}' on their ids. Please provide more "
@@ -883,12 +883,12 @@ def get_stack_by_id_or_name_or_prefix(
 
 
 def print_stacks_table(
-    repo: Client, stacks: List[HydratedStackModel]
+    client: Client, stacks: List[HydratedStackModel]
 ) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
     Args:
-        repo: Repository instance
+        client: Repository instance
         stacks: List of stacks
 
     Returns:
@@ -896,7 +896,7 @@ def print_stacks_table(
     """
     stack_dicts = []
     for stack in stacks:
-        active_stack_id = repo.active_stack_model.id
+        active_stack_id = client.active_stack_model.id
         is_active = stack.id == active_stack_id
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
@@ -915,7 +915,7 @@ def print_stacks_table(
 
 
 def print_components_table(
-    repo: Client,
+    client: Client,
     component_type: StackComponentType,
     components: List["HydratedComponentModel"],
 ) -> None:
@@ -925,7 +925,7 @@ def print_components_table(
     it will be highlighted in a separate table column.
 
     Args:
-        repo: Instance of the Repository singleton
+        client: Instance of the Repository singleton
         component_type: Type of stack component
         components: List of stack components to print.
     """
@@ -933,7 +933,7 @@ def print_components_table(
     if len(components) == 0:
         warning(f"No {display_name} registered.")
         return
-    active_stack = repo.active_stack_model
+    active_stack = client.active_stack_model
     active_component_name = None
     if component_type in active_stack.components.keys():
         active_components = active_stack.components[component_type]
@@ -977,14 +977,14 @@ def _component_display_name(
 
 
 def get_component_by_id_or_name_or_prefix(
-    repo: Client,
+    client: Client,
     id_or_name_or_prefix: str,
     component_type: StackComponentType,
 ) -> "ComponentModel":
     """Fetches a component of given type within active project using the name, id or partial id.
 
     Args:
-        repo: Instance of the Repository singleton
+        client: Instance of the Client singleton
         id_or_name_or_prefix: The id, name or partial id of the component to
                               fetch.
         component_type: The type of the component to fetch.
@@ -999,19 +999,19 @@ def get_component_by_id_or_name_or_prefix(
     # First interpret as full UUID
     try:
         component_id = UUID(id_or_name_or_prefix)
-        return repo.zen_store.get_stack_component(component_id)
+        return client.zen_store.get_stack_component(component_id)
     except ValueError:
         pass
 
-    components = repo.zen_store.list_stack_components(
-        project_name_or_id=repo.active_project.name,
+    components = client.zen_store.list_stack_components(
+        project_name_or_id=client.active_project.name,
         name=id_or_name_or_prefix,
         type=component_type,
     )
     if len(components) > 1:
         hydrated_components = [c.to_hydrated_model() for c in components]
         print_components_table(
-            repo=repo,
+            client=client,
             component_type=component_type,
             components=hydrated_components,
         )
@@ -1031,13 +1031,13 @@ def get_component_by_id_or_name_or_prefix(
 
         # TODO: This is ugly, an _or filter should be set on the sql_zen_store
         components = set(
-            repo.zen_store.list_stack_components(
-                project_name_or_id=repo.active_project.name,
-                user_name_or_id=repo.active_user.name,
+            client.zen_store.list_stack_components(
+                project_name_or_id=client.active_project.name,
+                user_name_or_id=client.active_user.name,
                 type=component_type,
             )
-            + repo.zen_store.list_stack_components(
-                project_name_or_id=repo.active_project.name,
+            + client.zen_store.list_stack_components(
+                project_name_or_id=client.active_project.name,
                 is_shared=True,
                 type=component_type,
             )
@@ -1051,7 +1051,7 @@ def get_component_by_id_or_name_or_prefix(
         if len(filtered_comps) > 1:
             hydrated_comps = [s.to_hydrated_model() for s in filtered_comps]
             print_components_table(
-                repo=repo,
+                client=client,
                 component_type=component_type,
                 components=hydrated_comps,
             )

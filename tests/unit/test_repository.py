@@ -91,9 +91,9 @@ def _create_local_stack(
 
 def test_repository_detection(tmp_path):
     """Tests detection of ZenML repositories in a directory."""
-    assert Client.is_repository_directory(tmp_path) is False
+    assert Client.is_client_directory(tmp_path) is False
     Client.initialize(tmp_path)
-    assert Client.is_repository_directory(tmp_path) is True
+    assert Client.is_client_directory(tmp_path) is True
 
 
 def test_initializing_repo_creates_directory_and_uses_default_stack(
@@ -140,17 +140,17 @@ def test_finding_repository_directory_with_explicit_path(tmp_path, clean_client)
     os.chdir(str(subdirectory_path))
 
     # no repo exists and explicit path passed
-    assert Client.find_repository(tmp_path) is None
+    assert Client.find_client(tmp_path) is None
     assert Client(tmp_path).root is None
 
     # no repo exists and no path passed (=uses current working directory)
-    assert Client.find_repository() is None
+    assert Client.find_client() is None
     Client._reset_instance()
     assert Client().root is None
 
     # no repo exists and explicit path set via environment variable
     os.environ["ZENML_REPOSITORY_PATH"] = str(tmp_path)
-    assert Client.find_repository() is None
+    assert Client.find_client() is None
     Client._reset_instance()
     assert Client().root is None
 
@@ -160,27 +160,27 @@ def test_finding_repository_directory_with_explicit_path(tmp_path, clean_client)
     Client.initialize(tmp_path)
 
     # repo exists and explicit path passed
-    assert Client.find_repository(tmp_path) == tmp_path
+    assert Client.find_client(tmp_path) == tmp_path
     assert Client(tmp_path).root == tmp_path
 
     # repo exists and explicit path to subdirectory passed
-    assert Client.find_repository(subdirectory_path) is None
+    assert Client.find_client(subdirectory_path) is None
     assert Client(subdirectory_path).root is None
 
     # repo exists and no path passed (=uses current working directory)
-    assert Client.find_repository() == tmp_path
+    assert Client.find_client() == tmp_path
     Client._reset_instance()
     assert Client().root == tmp_path
 
     # repo exists and explicit path set via environment variable
     os.environ["ZENML_REPOSITORY_PATH"] = str(tmp_path)
-    assert Client.find_repository() == tmp_path
+    assert Client.find_client() == tmp_path
     Client._reset_instance()
     assert Client().root == tmp_path
 
     # repo exists and explicit path to subdirectory set via environment variable
     os.environ["ZENML_REPOSITORY_PATH"] = str(subdirectory_path)
-    assert Client.find_repository() is None
+    assert Client.find_client() is None
     Client._reset_instance()
     assert Client().root is None
 

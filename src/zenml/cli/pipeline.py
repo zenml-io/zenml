@@ -130,7 +130,7 @@ def list_pipeline_runs(
         client = Client()
         if stack:
             stack_id = cli_utils.get_stack_by_id_or_name_or_prefix(
-                repo=client, id_or_name_or_prefix=stack
+                client=client, id_or_name_or_prefix=stack
             ).id
         if pipeline:
             pipeline_id = client.get_pipeline_by_name(pipeline).id

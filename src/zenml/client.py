@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Repository implementation."""
+"""Client implementation."""
 
 import os
 from abc import ABCMeta
@@ -61,7 +61,7 @@ DEFAULT_STACK_NAME = "default"
 
 
 class ClientConfiguration(FileSyncModel):
-    """Pydantic object used for serializing repository configuration options.
+    """Pydantic object used for serializing client configuration options.
 
     Attributes:
         active_stack_id: Optional name of the active stack.
@@ -85,41 +85,41 @@ class ClientConfiguration(FileSyncModel):
 
 
 class ClientMetaClass(ABCMeta):
-    """Repository singleton metaclass.
+    """Client singleton metaclass.
 
-    This metaclass is used to enforce a singleton instance of the Repository
+    This metaclass is used to enforce a singleton instance of the Client
     class with the following additional properties:
 
-    * the singleton Repository instance is created on first access to reflect
-    the global configuration and local repository configuration.
-    * the Repository shouldn't be accessed from within pipeline steps (a warning
+    * the singleton Client instance is created on first access to reflect
+    the global configuration and local client configuration.
+    * the Client shouldn't be accessed from within pipeline steps (a warning
     is logged if this is attempted).
     """
 
     def __init__(cls, *args: Any, **kwargs: Any) -> None:
-        """Initialize the Repository class.
+        """Initialize the Client class.
 
         Args:
             *args: Positional arguments.
             **kwargs: Keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        cls._global_repository: Optional["Client"] = None
+        cls._global_client: Optional["Client"] = None
 
     def __call__(cls, *args: Any, **kwargs: Any) -> "Client":
-        """Create or return the global Repository instance.
+        """Create or return the global Client instance.
 
-        If the Repository constructor is called with custom arguments,
+        If the Client constructor is called with custom arguments,
         the singleton functionality of the metaclass is bypassed: a new
-        Repository instance is created and returned immediately and without
-        saving it as the global Repository singleton.
+        Client instance is created and returned immediately and without
+        saving it as the global Client singleton.
 
         Args:
             *args: Positional arguments.
             **kwargs: Keyword arguments.
 
         Returns:
-            Client: The global Repository instance.
+            Client: The global Client instance.
         """
         from zenml.steps.step_environment import (
             STEP_ENVIRONMENT_NAME,
@@ -130,15 +130,15 @@ class ClientMetaClass(ABCMeta):
             StepEnvironment, Environment().get_component(STEP_ENVIRONMENT_NAME)
         )
 
-        # `skip_repository_check` is a special kwarg that can be passed to
-        # the Repository constructor to silent the message that warns users
+        # `skip_client_check` is a special kwarg that can be passed to
+        # the Client constructor to silent the message that warns users
         # about accessing external information in their steps.
-        if not kwargs.pop("skip_repository_check", False):
+        if not kwargs.pop("skip_client_check", False):
             if step_env and step_env.cache_enabled:
                 logger.warning(
-                    "You are accessing repository information from a step "
+                    "You are accessing client information from a step "
                     "that has caching enabled. Future executions of this step "
-                    "may be cached even though the repository information may "
+                    "may be cached even though the client information may "
                     "be different. You should take this into consideration and "
                     "adjust your step to disable caching if needed. "
                     "Alternatively, use a `StepContext` inside your step "
@@ -148,20 +148,20 @@ class ClientMetaClass(ABCMeta):
                 )
 
         if args or kwargs:
-            return cast("Repository", super().__call__(*args, **kwargs))
+            return cast("Client", super().__call__(*args, **kwargs))
 
-        if not cls._global_repository:
-            cls._global_repository = cast(
-                "Repository", super().__call__(*args, **kwargs)
+        if not cls._global_client:
+            cls._global_client = cast(
+                "Client", super().__call__(*args, **kwargs)
             )
 
-        return cls._global_repository
+        return cls._global_client
 
 
 class Client(metaclass=ClientMetaClass):
-    """ZenML repository class.
+    """ZenML client class.
 
-    The ZenML repository manages configuration options for ZenML stacks as well
+    The ZenML client manages configuration options for ZenML stacks as well
     as their components.
     """
 
@@ -169,26 +169,26 @@ class Client(metaclass=ClientMetaClass):
         self,
         root: Optional[Path] = None,
     ) -> None:
-        """Initializes the global repository instance.
+        """Initializes the global client instance.
 
-        Repository is a singleton class: only one instance can exist. Calling
+        Client is a singleton class: only one instance can exist. Calling
         this constructor multiple times will always yield the same instance (see
         the exception below).
 
         The `root` argument is only meant for internal use and testing purposes.
         User code must never pass them to the constructor.
-        When a custom `root` value is passed, an anonymous Repository instance
-        is created and returned independently of the Repository singleton and
+        When a custom `root` value is passed, an anonymous Client instance
+        is created and returned independently of the Client singleton and
         that will have no effect as far as the rest of the ZenML core code is
         concerned.
 
-        Instead of creating a new Repository instance to reflect a different
-        repository root, to change the active root in the global Repository,
-        call `Repository().activate_root(<new-root>)`.
+        Instead of creating a new Client instance to reflect a different
+        client root, to change the active root in the global Client,
+        call `Client().activate_root(<new-root>)`.
 
         Args:
-            root: (internal use) custom root directory for the repository. If
-                no path is given, the repository root is determined using the
+            root: (internal use) custom root directory for the client. If
+                no path is given, the client root is determined using the
                 environment variable `ZENML_REPOSITORY_PATH` (if set) and by
                 recursively searching in the parent directories of the
                 current working directory. Only used to initialize new
@@ -201,38 +201,38 @@ class Client(metaclass=ClientMetaClass):
 
     @classmethod
     def get_instance(cls) -> Optional["Client"]:
-        """Return the Repository singleton instance.
+        """Return the Client singleton instance.
 
         Returns:
-            The Repository singleton instance or None, if the Repository hasn't
+            The Client singleton instance or None, if the Client hasn't
             been initialized yet.
         """
-        return cls._global_repository
+        return cls._global_client
 
     @classmethod
     def _reset_instance(cls, repo: Optional["Client"] = None) -> None:
-        """Reset the Repository singleton instance.
+        """Reset the Client singleton instance.
 
         This method is only meant for internal use and testing purposes.
 
         Args:
-            repo: The Repository instance to set as the global singleton.
-                If None, the global Repository singleton is reset to an empty
+            repo: The Client instance to set as the global singleton.
+                If None, the global Client singleton is reset to an empty
                 value.
         """
-        cls._global_repository = repo
+        cls._global_client = repo
 
     def _set_active_root(self, root: Optional[Path] = None) -> None:
-        """Set the supplied path as the repository root.
+        """Set the supplied path as the client root.
 
-        If a repository configuration is found at the given path or the
-        path, it is loaded and used to initialize the repository.
-        If no repository configuration is found, the global configuration is
+        If a client configuration is found at the given path or the
+        path, it is loaded and used to initialize the client.
+        If no client configuration is found, the global configuration is
         used instead to manage the active stack, project etc.
 
         Args:
-            root: The path to set as the active repository root. If not set,
-                the repository root is determined using the environment
+            root: The path to set as the active client root. If not set,
+                the client root is determined using the environment
                 variable `ZENML_REPOSITORY_PATH` (if set) and by recursively
                 searching in the parent directories of the current working
                 directory.
@@ -240,24 +240,24 @@ class Client(metaclass=ClientMetaClass):
         enable_warnings = handle_bool_env_var(
             ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, True
         )
-        self._root = self.find_repository(root, enable_warnings=enable_warnings)
+        self._root = self.find_client(root, enable_warnings=enable_warnings)
 
         if not self._root:
             if enable_warnings:
-                logger.info("Running without an active repository root.")
+                logger.info("Running without an active client root.")
         else:
-            logger.debug("Using repository root %s.", self._root)
+            logger.debug("Using client root %s.", self._root)
             self._config = self._load_config()
 
-        # Sanitize the repository configuration to reflect the current
+        # Sanitize the client configuration to reflect the current
         # settings
         self._sanitize_config()
 
     def _config_path(self) -> Optional[str]:
-        """Path to the repository configuration file.
+        """Path to the client configuration file.
 
         Returns:
-            Path to the repository configuration file or None if the repository
+            Path to the client configuration file or None if the client
             root has not been initialized yet.
         """
         if not self.config_directory:
@@ -265,9 +265,9 @@ class Client(metaclass=ClientMetaClass):
         return str(self.config_directory / "config.yaml")
 
     def _sanitize_config(self) -> None:
-        """Sanitize and save the repository configuration.
+        """Sanitize and save the client configuration.
 
-        This method is called to ensure that the repository configuration
+        This method is called to ensure that the client configuration
         doesn't contain outdated information, such as an active stack or
         project that no longer exists.
         """
@@ -281,29 +281,29 @@ class Client(metaclass=ClientMetaClass):
         self._config.active_stack_id = active_stack.id
 
     def _load_config(self) -> Optional[ClientConfiguration]:
-        """Loads the repository configuration from disk.
+        """Loads the client configuration from disk.
 
-        This happens if the repository has an active root and the configuration
+        This happens if the client has an active root and the configuration
         file exists. If the configuration file doesn't exist, an empty
         configuration is returned.
 
         Returns:
-            Loaded repository configuration or None if the repository does not
+            Loaded client configuration or None if the client does not
             have an active root.
         """
         config_path = self._config_path()
         if not config_path:
             return None
 
-        # load the repository configuration file if it exists, otherwise use
+        # load the client configuration file if it exists, otherwise use
         # an empty configuration as default
         if fileio.exists(config_path):
             logger.debug(
-                f"Loading repository configuration from {config_path}."
+                f"Loading client configuration from {config_path}."
             )
         else:
             logger.debug(
-                "No repository configuration file found, creating default "
+                "No client configuration file found, creating default "
                 "configuration."
             )
 
@@ -314,70 +314,70 @@ class Client(metaclass=ClientMetaClass):
     def initialize(
         root: Optional[Path] = None,
     ) -> None:
-        """Initializes a new ZenML repository at the given path.
+        """Initializes a new ZenML client at the given path.
 
         Args:
-            root: The root directory where the repository should be created.
+            root: The root directory where the client should be created.
                 If None, the current working directory is used.
 
         Raises:
             InitializationException: If the root directory already contains a
-                ZenML repository.
+                ZenML client.
         """
         root = root or Path.cwd()
-        logger.debug("Initializing new repository at path %s.", root)
-        if Client.is_repository_directory(root):
+        logger.debug("Initializing new client at path %s.", root)
+        if Client.is_client_directory(root):
             raise InitializationException(
-                f"Found existing ZenML repository at path '{root}'."
+                f"Found existing ZenML client at path '{root}'."
             )
 
         config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
         io_utils.create_dir_recursive_if_not_exists(config_directory)
-        # Initialize the repository configuration at the custom path
+        # Initialize the client configuration at the custom path
         Client(root=root)
 
     @property
     def uses_local_configuration(self) -> bool:
-        """Check if the repository is using a local configuration.
+        """Check if the client is using a local configuration.
 
         Returns:
-            True if the repository is using a local configuration,
+            True if the client is using a local configuration,
             False otherwise.
         """
         return self._config is not None
 
     @staticmethod
-    def is_repository_directory(path: Path) -> bool:
-        """Checks whether a ZenML repository exists at the given path.
+    def is_client_directory(path: Path) -> bool:
+        """Checks whether a ZenML client exists at the given path.
 
         Args:
             path: The path to check.
 
         Returns:
-            True if a ZenML repository exists at the given path,
+            True if a ZenML client exists at the given path,
             False otherwise.
         """
         config_dir = path / REPOSITORY_DIRECTORY_NAME
         return fileio.isdir(str(config_dir))
 
     @staticmethod
-    def find_repository(
+    def find_client(
         path: Optional[Path] = None, enable_warnings: bool = False
     ) -> Optional[Path]:
-        """Search for a ZenML repository directory.
+        """Search for a ZenML client directory.
 
         Args:
-            path: Optional path to look for the repository. If no path is
-                given, this function tries to find the repository using the
+            path: Optional path to look for the client. If no path is
+                given, this function tries to find the client using the
                 environment variable `ZENML_REPOSITORY_PATH` (if set) and
                 recursively searching in the parent directories of the current
                 working directory.
-            enable_warnings: If `True`, warnings are printed if the repository
+            enable_warnings: If `True`, warnings are printed if the client
                 root cannot be found.
 
         Returns:
-            Absolute path to a ZenML repository directory or None if no
-            repository directory was found.
+            Absolute path to a ZenML client directory or None if no
+            client directory was found.
         """
         if not path:
             # try to get path from the environment variable
@@ -390,9 +390,9 @@ class Client(metaclass=ClientMetaClass):
             # parent directories
             search_parent_directories = False
             warning_message = (
-                f"Unable to find ZenML repository at path '{path}'. Make sure "
-                f"to create a ZenML repository by calling `zenml init` when "
-                f"specifying an explicit repository path in code or via the "
+                f"Unable to find ZenML client at path '{path}'. Make sure "
+                f"to create a ZenML client by calling `zenml init` when "
+                f"specifying an explicit client path in code or via the "
                 f"environment variable '{ENV_ZENML_REPOSITORY_PATH}'."
             )
         else:
@@ -401,25 +401,25 @@ class Client(metaclass=ClientMetaClass):
             path = Path.cwd()
             search_parent_directories = True
             warning_message = (
-                f"Unable to find ZenML repository in your current working "
+                f"Unable to find ZenML client in your current working "
                 f"directory ({path}) or any parent directories. If you "
-                f"want to use an existing repository which is in a different "
+                f"want to use an existing client which is in a different "
                 f"location, set the environment variable "
                 f"'{ENV_ZENML_REPOSITORY_PATH}'. If you want to create a new "
-                f"repository, run `zenml init`."
+                f"client, run `zenml init`."
             )
 
         def _find_repo_helper(path_: Path) -> Optional[Path]:
-            """Helper function to recursively search parent directories for a ZenML repository.
+            """Helper function to recursively search parent directories for a ZenML client.
 
             Args:
                 path_: The path to search.
 
             Returns:
-                Absolute path to a ZenML repository directory or None if no
-                repository directory was found.
+                Absolute path to a ZenML client directory or None if no
+                client directory was found.
             """
-            if Client.is_repository_directory(path_):
+            if Client.is_client_directory(path_):
                 return path_
 
             if not search_parent_directories or io_utils.is_root(str(path_)):
@@ -446,32 +446,32 @@ class Client(metaclass=ClientMetaClass):
 
     @property
     def root(self) -> Optional[Path]:
-        """The root directory of this repository.
+        """The root directory of this client.
 
         Returns:
-            The root directory of this repository, or None, if the repository
+            The root directory of this client, or None, if the client
             has not been initialized.
         """
         return self._root
 
     @property
     def config_directory(self) -> Optional[Path]:
-        """The configuration directory of this repository.
+        """The configuration directory of this client.
 
         Returns:
-            The configuration directory of this repository, or None, if the
-            repository doesn't have an active root.
+            The configuration directory of this client, or None, if the
+            client doesn't have an active root.
         """
         if not self.root:
             return None
         return self.root / REPOSITORY_DIRECTORY_NAME
 
     def activate_root(self, root: Optional[Path] = None) -> None:
-        """Set the active repository root directory.
+        """Set the active client root directory.
 
         Args:
-            root: The path to set as the active repository root. If not set,
-                the repository root is determined using the environment
+            root: The path to set as the active client root. If not set,
+                the client root is determined using the environment
                 variable `ZENML_REPOSITORY_PATH` (if set) and by recursively
                 searching in the parent directories of the current working
                 directory.
@@ -482,7 +482,7 @@ class Client(metaclass=ClientMetaClass):
     def set_active_project(
         self, project_name_or_id: Union[str, UUID]
     ) -> "ProjectModel":
-        """Set the project for the local repository.
+        """Set the project for the local client.
 
         Args:
             project_name_or_id: The name or ID of the project to set active.
@@ -496,16 +496,16 @@ class Client(metaclass=ClientMetaClass):
         if self._config:
             self._config.active_project_name = project.name
         else:
-            # set the active project globally only if the repository doesn't use
+            # set the active project globally only if the client doesn't use
             # a local configuration
             GlobalConfiguration().active_project_name = project.name
         return project
 
     @property
     def active_project_name(self) -> str:
-        """The name of the active project for this repository.
+        """The name of the active project for this client.
 
-        If no active project is configured locally for the repository, the
+        If no active project is configured locally for the client, the
         active project in the global configuration is used instead.
 
         Returns:
@@ -538,9 +538,9 @@ class Client(metaclass=ClientMetaClass):
 
     @property
     def active_project(self) -> "ProjectModel":
-        """Get the currently active project of the local repository.
+        """Get the currently active project of the local client.
 
-        If no active project is configured locally for the repository, the
+        If no active project is configured locally for the client, the
         active project in the global configuration is used instead.
 
         Returns:
@@ -584,13 +584,13 @@ class Client(metaclass=ClientMetaClass):
 
     @property
     def active_stack_model(self) -> "HydratedStackModel":
-        """The model of the active stack for this repository.
+        """The model of the active stack for this client.
 
-        If no active stack is configured locally for the repository, the active
+        If no active stack is configured locally for the client, the active
         stack in the global configuration is used instead.
 
         Returns:
-            The model of the active stack for this repository.
+            The model of the active stack for this client.
 
         Raises:
             RuntimeError: If the active stack is not set.
@@ -612,10 +612,10 @@ class Client(metaclass=ClientMetaClass):
 
     @property
     def active_stack(self) -> "Stack":
-        """The active stack for this repository.
+        """The active stack for this client.
 
         Returns:
-            The active stack for this repository.
+            The active stack for this client.
         """
         from zenml.stack.stack import Stack
 
@@ -644,7 +644,7 @@ class Client(metaclass=ClientMetaClass):
             self._config.active_stack_id = stack.id
 
         else:
-            # set the active stack globally only if the repository doesn't use
+            # set the active stack globally only if the client doesn't use
             # a local configuration
             GlobalConfiguration().active_stack_id = stack.id
 
@@ -710,7 +710,7 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             ValueError: If the stack is the currently active stack for this
-                repository.
+                client.
         """
         if stack.id == self.active_stack_model.id:
             raise ValueError(
