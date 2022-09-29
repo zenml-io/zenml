@@ -916,7 +916,7 @@ def test_step_can_have_subscripted_generic_input_types():
         p(step_1(), step_2()).run()
 
 
-def test_step_can_have_raw_artifacts(clean_repo):
+def test_step_can_have_raw_artifacts(clean_client):
     """Check that you can bypass materialization with raw artifacts."""
 
     @step

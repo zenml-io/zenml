@@ -24,7 +24,7 @@ from typing import Callable
 import pytest
 from pytest_mock import MockerFixture
 
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.utils import source_utils
 
 
@@ -90,16 +90,18 @@ def test_prepend_python_path():
     assert path_element not in sys.path
 
 
-def test_loading_class_by_path_prepends_repo_path(clean_repo, mocker, tmp_path):
+def test_loading_class_by_path_prepends_repo_path(
+    clean_client, mocker, tmp_path
+):
     """Tests that loading a class always prepends the active repository root to
     the python path."""
 
     os.chdir(str(tmp_path))
 
-    Repository.initialize()
-    clean_repo.activate_root()
+    Client.initialize()
+    clean_client.activate_root()
 
-    python_file = clean_repo.root / "some_directory" / "python_file.py"
+    python_file = clean_client.root / "some_directory" / "python_file.py"
     python_file.parent.mkdir()
     python_file.write_text("test = 1")
 
@@ -116,7 +118,9 @@ def test_loading_class_by_path_prepends_repo_path(clean_repo, mocker, tmp_path):
         source_utils.load_source_path_class("python_file.test")
 
 
-def test_import_python_file_for_first_time(clean_repo, mocker, files_dir: Path):
+def test_import_python_file_for_first_time(
+    clean_client, mocker, files_dir: Path
+):
     """Test that importing a python file as module works and allows for
     importing of module attributes even with module popped from sys path"""
 
@@ -125,8 +129,8 @@ def test_import_python_file_for_first_time(clean_repo, mocker, files_dir: Path):
     SOME_FUNC = "some_func"
 
     os.chdir(str(files_dir))
-    clean_repo.activate_root()
-    Repository.initialize()
+    clean_client.activate_root()
+    Client.initialize()
 
     mocker.patch.object(sys, "path", [])
 
@@ -148,7 +152,7 @@ def test_import_python_file_for_first_time(clean_repo, mocker, files_dir: Path):
 
 
 def test_import_python_file_when_already_loaded(
-    clean_repo, mocker, files_dir: Path
+    clean_client, mocker, files_dir: Path
 ):
     """Test that importing a python file as module works even if it is
     already on sys path and allows for importing of module attributes"""
@@ -158,8 +162,8 @@ def test_import_python_file_when_already_loaded(
     SOME_FUNC = "some_func"
 
     os.chdir(str(files_dir))
-    clean_repo.activate_root()
-    Repository.initialize(root=files_dir)
+    clean_client.activate_root()
+    Client.initialize(root=files_dir)
 
     mocker.patch.object(sys, "path", [])
 
@@ -186,7 +190,7 @@ def test_import_python_file_when_already_loaded(
     del sys.modules[SOME_MODULE]
 
 
-def test_import_python_file(clean_repo, mocker, files_dir: Path):
+def test_import_python_file(clean_client, mocker, files_dir: Path):
     """Test that importing a python file as module works even if it is
     already imported within the another previously loaded module"""
 
@@ -197,8 +201,8 @@ def test_import_python_file(clean_repo, mocker, files_dir: Path):
     OTHER_FUNC = "other_func"
 
     os.chdir(str(files_dir))
-    clean_repo.activate_root()
-    Repository.initialize(root=files_dir)
+    clean_client.activate_root()
+    Client.initialize(root=files_dir)
 
     main_python_file = files_dir / MAIN_MODULE_FILENAME
     some_python_file = files_dir / SOME_MODULE_FILENAME

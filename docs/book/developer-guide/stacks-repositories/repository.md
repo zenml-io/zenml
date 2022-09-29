@@ -161,10 +161,9 @@ You can access your repository in Python using the `zenml.repository.Repository`
 class:
 
 ```python
-from zenml.repository import Repository
+from zenml.client import Client
 
-
-repo = Repository()
+client = Client()
 ```
 
 This allows you to perform various repository operations directly in Python, 
@@ -183,11 +182,10 @@ The following code snippet shows how you can retrieve or modify information
 of your active stack and stack components in Python:
 
 ```python
-from zenml.repository import Repository
+from zenml.client import Client
 
-
-repo = Repository()
-active_stack = repo.active_stack
+client = Client()
+active_stack = client.active_stack
 print(active_stack.name)
 print(active_stack.orchestrator.name)
 print(active_stack.artifact_store.name)
@@ -202,13 +200,12 @@ In the following we use the repository to register a new ZenML stack called
 `local` and set it as the active stack of the repository:
 
 ```python
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.orchestrators import LocalOrchestrator
 from zenml.stack import Stack
 
-
-repo = Repository()
+client = Client()
 
 # Create a new orchestrator
 orchestrator = LocalOrchestrator(name="local")
@@ -227,10 +224,10 @@ stack = Stack(
 )
 
 # Register the new stack
-repo.register_stack(stack)
+client.register_stack(stack)
 
 # Set the stack as the active stack of the repository
-repo.activate_stack(stack.name)
+client.activate_stack(stack.name)
 ```
 
 ## Unregistering a Repository

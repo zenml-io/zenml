@@ -21,7 +21,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.cors import CORSMiddleware
 
 import zenml
-from zenml.constants import API, VERSION_1, HEALTH, VERSION
+from zenml.constants import HEALTH
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,

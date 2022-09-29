@@ -20,7 +20,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.io import fileio
 
 
-def test_global_config_file_creation(clean_repo):
+def test_global_config_file_creation(clean_client):
     """Tests whether a config file gets created when the global
     config object is first instantiated."""
     if fileio.exists(GlobalConfiguration()._config_file()):
@@ -30,14 +30,14 @@ def test_global_config_file_creation(clean_repo):
     assert fileio.exists(GlobalConfiguration()._config_file())
 
 
-def test_global_config_user_id_is_immutable(clean_repo):
+def test_global_config_user_id_is_immutable(clean_client):
     """Tests that the global config user id attribute is immutable."""
     with pytest.raises(TypeError):
         GlobalConfiguration().user_id = uuid4()
 
 
 def test_global_config_returns_value_from_environment_variable(
-    mocker, clean_repo
+    mocker, clean_client
 ):
     """Tests that global config attributes can be overwritten by environment
     variables."""

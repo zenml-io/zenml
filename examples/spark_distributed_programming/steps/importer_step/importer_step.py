@@ -14,10 +14,10 @@
 
 from pyspark.sql import DataFrame, SparkSession
 
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import BaseParameters, step
 
-step_operator = Repository().active_stack.step_operator
+step_operator = Client().active_stack.step_operator
 
 
 class ImporterParameters(BaseParameters):

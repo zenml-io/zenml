@@ -21,7 +21,7 @@ from zenml.integrations.huggingface.materializers.huggingface_tf_model_materiali
 )
 
 
-def test_huggingface_tf_pretrained_model_materializer(clean_repo):
+def test_huggingface_tf_pretrained_model_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Tensorflow Pretrained Model materializer."""
     with does_not_raise():
         _test_materializer(
@@ -31,7 +31,7 @@ def test_huggingface_tf_pretrained_model_materializer(clean_repo):
             materializer=HFTFModelMaterializer,
         )
 
-    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    last_run = clean_client.get_pipeline("test_pipeline").runs[-1]
     model = last_run.steps[-1].output.read()
     assert isinstance(model, TFPreTrainedModel)
     assert model.config.max_position_embeddings == 512

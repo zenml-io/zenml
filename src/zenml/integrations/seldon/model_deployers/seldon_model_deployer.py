@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional, cast
 from uuid import UUID
 
+from zenml.client import Client
 from zenml.integrations.seldon import SELDON_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.seldon.constants import SELDON_DOCKER_IMAGE_KEY
 from zenml.integrations.seldon.flavors.seldon_model_deployer_flavor import (
@@ -30,7 +31,6 @@ from zenml.integrations.seldon.services.seldon_deployment import (
 )
 from zenml.logger import get_logger
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
-from zenml.repository import Repository
 from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
@@ -88,8 +88,8 @@ class SeldonModelDeployer(BaseModelDeployer):
         Raises:
             TypeError: if the Seldon Core model deployer is not available.
         """
-        model_deployer = Repository(  # type: ignore [call-arg]
-            skip_repository_check=True
+        model_deployer = Client(  # type: ignore [call-arg]
+            skip_client_check=True
         ).active_stack.model_deployer
         if not model_deployer or not isinstance(
             model_deployer, SeldonModelDeployer
@@ -180,8 +180,8 @@ class SeldonModelDeployer(BaseModelDeployer):
         # to the Seldon Core deployment
         if self.config.secret:
 
-            secret_manager = Repository(  # type: ignore [call-arg]
-                skip_repository_check=True
+            secret_manager = Client(  # type: ignore [call-arg]
+                skip_client_check=True
             ).active_stack.secrets_manager
 
             if not secret_manager or not isinstance(
@@ -335,13 +335,13 @@ class SeldonModelDeployer(BaseModelDeployer):
 
         # Add telemetry with metadata that gets the stack metadata and
         # differentiates between pure model and custom code deployments
-        stack = Repository().active_stack
+        stack = Client().active_stack
         stack_metadata = {
             component_type.value: component.flavor
             for component_type, component in stack.components.items()
         }
         metadata = {
-            "store_type": Repository().zen_store.type.value,
+            "store_type": Client().zen_store.type.value,
             **stack_metadata,
             "is_custom_code_deployment": config.is_custom_deployment,
         }

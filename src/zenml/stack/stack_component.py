@@ -147,9 +147,9 @@ class StackComponentConfig(BaseModel, ABC):
                 "your active stack: `zenml stack set <STACK_NAME>`."
             )
 
-        from zenml.repository import Repository
+        from zenml.client import Client
 
-        secrets_manager = Repository().active_stack.secrets_manager
+        secrets_manager = Client().active_stack.secrets_manager
         if not secrets_manager:
             raise RuntimeError(
                 f"Failed to resolve secret reference for attribute {key} "
@@ -186,9 +186,9 @@ class StackComponentConfig(BaseModel, ABC):
             True if this config belongs to a component in the active stack,
             False otherwise.
         """
-        from zenml.repository import Repository
+        from zenml.client import Client
 
-        for component in Repository().active_stack.components.values():
+        for component in Client().active_stack.components.values():
             if component.config == self:
                 return True
         return False
@@ -275,9 +275,9 @@ class StackComponent:
         Raises:
             ImportError: If the flavor can't be imported.
         """
-        from zenml.repository import Repository
+        from zenml.client import Client
 
-        flavor_model = Repository().get_flavor_by_name_and_type(
+        flavor_model = Client().get_flavor_by_name_and_type(
             name=component_model.flavor,
             component_type=component_model.type,
         )
