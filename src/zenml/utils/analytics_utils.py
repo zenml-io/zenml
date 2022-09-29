@@ -150,7 +150,6 @@ class AnalyticsContext:
         properly, only tracked when configured to do so and that any errors
         are handled gracefully.
         """
-
         import analytics
 
         from zenml.config.global_config import GlobalConfiguration

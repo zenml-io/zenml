@@ -257,7 +257,8 @@ def remove_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
         cli_utils.error(str(err))
 
 
-def warn_unsupported_non_default_project():
+def warn_unsupported_non_default_project() -> None:
+    """Warning for unsupported non-default project."""
     cli_utils.warning(
         "Currently the concept of `project` is not supported "
         "within the Dashboard. The Project functionality will be "
