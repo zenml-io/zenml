@@ -134,7 +134,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4, allow_mutation=False)
-    user_metadata: Optional[Dict[str, str]]
     analytics_opt_in: bool = True
     version: Optional[str]
     store: Optional[StoreConfiguration]

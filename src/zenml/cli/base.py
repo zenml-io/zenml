@@ -177,7 +177,6 @@ def clean(yes: bool = False, local: bool = False) -> None:
                 user_id=gc.user_id,
                 analytics_opt_in=gc.analytics_opt_in,
                 version=gc.version,
-                user_metadata=gc.user_metadata,
             )
             fresh_gc.set_default_store()
             declare(f"Reinitialized ZenML global config at {Path.cwd()}.")
@@ -198,15 +197,16 @@ def go() -> None:
         zenml_go_privacy_message,
         zenml_go_welcome_message,
     )
-    from zenml.config.global_config import GlobalConfiguration
 
-    gc = GlobalConfiguration()
     metadata = {}
 
     console.print(zenml_go_welcome_message, width=80)
 
-    if not gc.user_metadata:
-        gave_email = _prompt_email(gc)
+    client = Client()
+    
+    # Only ask them if they havn't been asked before
+    if client.active_user.email_opted_in is None:
+        gave_email = _prompt_email()
         metadata = {"gave_email": gave_email}
 
     # Add telemetry
@@ -261,11 +261,8 @@ def go() -> None:
     subprocess.check_call(["jupyter", "notebook"], cwd=notebook_path)
 
 
-def _prompt_email(gc: GlobalConfiguration) -> bool:
+def _prompt_email() -> bool:
     """Ask the user to give their email address.
-
-    Args:
-        gc (GlobalConfiguration): The global configuration object.
 
     Returns:
         bool: True if the user gave an email address, False otherwise.
@@ -280,17 +277,32 @@ def _prompt_email(gc: GlobalConfiguration) -> bool:
     email = click.prompt(
         click.style("Email", fg="blue"), default="", show_default=False
     )
+    client = Client()
     if email:
         if len(email) > 0 and email.count("@") != 1:
             warning("That doesn't look like an email. Skipping ...")
         else:
-
             console.print(zenml_go_thank_you_message, width=80)
 
-            gc.user_metadata = {"email": email}
             # For now, hard-code to ZENML GO as the source
             identify_user(
                 {"email": email, "source": AnalyticsEventSource.ZENML_GO}
             )
+            
+            # Add consent and email to user model
+            
+            client.zen_store.user_email_opt_in(
+                client.active_user.id,
+                email,
+                True
+            )
             return True
+    else:
+        # This is the case where user opts out
+        client.zen_store.user_email_opt_in(
+            client.active_user.id,
+            None,
+            False
+        )
+
     return False
