@@ -29,7 +29,7 @@ def test_pytorch_module_materializer(clean_client):
             materializer=PyTorchModuleMaterializer,
         )
 
-    pipeline_instance.run()
+        pipeline_instance.run()
 
     last_run = pipeline_instance.get_runs()[-1]
     test_step = last_run.steps[-1]

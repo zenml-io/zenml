@@ -25,13 +25,17 @@ from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer im
 def test_pytorch_dataloader_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
     with does_not_raise():
-        _test_materializer(
+        pipeline_instance = _test_materializer(
             step_output=DataLoader(Dataset(), batch_size=37, num_workers=7),
             materializer=PyTorchDataLoaderMaterializer,
         )
 
-    last_run = clean_client.get_pipeline("test_pipeline").runs[-1]
-    dataloader = last_run.steps[-1].output.read()
+        pipeline_instance.run()
+
+    last_run = pipeline_instance.get_runs()[-1]
+    test_step = last_run.steps[-1]
+    dataloader = test_step.output.read()
+
     assert isinstance(dataloader, DataLoader)
     assert dataloader.dataset is not None
     assert dataloader.batch_size == 37
