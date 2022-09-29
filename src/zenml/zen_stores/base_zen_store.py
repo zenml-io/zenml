@@ -321,7 +321,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             Information about the store.
         """
-
         return ServerModel(
             id=GlobalConfiguration().user_id,
             version=zenml.__version__,
