@@ -17,7 +17,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import ROLES, VERSION_1, API
+from zenml.constants import API, ROLES, VERSION_1
 from zenml.models import RoleModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.user_management_models import (

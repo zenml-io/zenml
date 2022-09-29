@@ -16,7 +16,7 @@
 from fastapi import APIRouter, Depends
 
 import zenml
-from zenml.constants import INFO, VERSION_1, API
+from zenml.constants import API, INFO, VERSION_1
 from zenml.models.server_models import ServerModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store

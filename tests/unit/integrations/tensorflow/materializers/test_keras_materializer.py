@@ -21,7 +21,7 @@ from zenml.integrations.tensorflow.materializers.keras_materializer import (
 )
 
 
-def test_tensorflow_keras_materializer(clean_repo):
+def test_tensorflow_keras_materializer(clean_client):
     """Tests whether the steps work for the TensorFlow Keras materializer."""
     inputs = keras.Input(shape=(32,))
     outputs = keras.layers.Dense(1)(inputs)
@@ -34,7 +34,7 @@ def test_tensorflow_keras_materializer(clean_repo):
             materializer=KerasMaterializer,
         )
 
-    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    last_run = clean_client.get_pipeline("test_pipeline").runs[-1]
     model = last_run.steps[-1].output.read()
     assert isinstance(model, keras.Model)
     assert isinstance(model.optimizer, keras.optimizers.Adam)

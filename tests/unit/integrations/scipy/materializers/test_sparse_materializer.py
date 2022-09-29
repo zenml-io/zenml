@@ -21,7 +21,7 @@ from zenml.integrations.scipy.materializers.sparse_materializer import (
 )
 
 
-def test_scipy_sparse_matrix_materializer(clean_repo):
+def test_scipy_sparse_matrix_materializer(clean_client):
     """Tests whether the steps work for the SciPy sparse matrix materializer."""
     with does_not_raise():
         _test_materializer(
@@ -31,7 +31,7 @@ def test_scipy_sparse_matrix_materializer(clean_repo):
             materializer=SparseMaterializer,
         )
 
-    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    last_run = clean_client.get_pipeline("test_pipeline").runs[-1]
     sparse_matrix = last_run.steps[-1].output.read()
     assert isinstance(sparse_matrix, spmatrix)
     assert sparse_matrix.format == "coo"

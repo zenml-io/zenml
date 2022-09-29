@@ -22,7 +22,7 @@ from zenml.integrations.pillow.materializers.pillow_image_materializer import (
 from zenml.post_execution.pipeline import get_pipeline
 
 
-def test_materializer_works_for_pillow_image_objects(clean_repo):
+def test_materializer_works_for_pillow_image_objects(clean_client):
     """Check the materializer is able to handle PIL image objects."""
     with does_not_raise():
         _test_materializer(

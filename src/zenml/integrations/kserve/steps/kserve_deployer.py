@@ -18,6 +18,7 @@ from typing import List, Optional, cast
 from pydantic import BaseModel, validator
 
 from zenml.artifacts.model_artifact import ModelArtifact
+from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
@@ -32,7 +33,6 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -424,7 +424,7 @@ def kserve_custom_model_deployer_step(
 
     # Get the model artifact to extract information about the model
     # and how it can be loaded again later in the deployment environment.
-    artifact = Repository().zen_store.list_artifacts(artifact_uri=model.uri)
+    artifact = Client().zen_store.list_artifacts(artifact_uri=model.uri)
     if not artifact:
         raise DoesNotExistException(f"No artifact found at {model.uri}.")
 

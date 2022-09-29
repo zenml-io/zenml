@@ -554,7 +554,7 @@ class ZenStoreInterface(ABC):
         self,
         user_name_or_id: Union[str, UUID],
         email: str,
-        user_opt_in_response: bool
+        user_opt_in_response: bool,
     ):
         """Persist user response to the email prompt.
 

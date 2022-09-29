@@ -156,7 +156,7 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
     email_opted_in: Optional[bool] = Field(
         title="Whether the user agreed to share their email.",
         description="`null` if not answered, `true` if agreed, "
-                    "`false` if skipped."
+        "`false` if skipped.",
     )
     active: bool = Field(default=False, title="Active account.")
     password: Optional[SecretStr] = Field(default=None, exclude=True)

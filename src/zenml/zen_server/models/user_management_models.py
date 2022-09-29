@@ -16,7 +16,7 @@
 
 from typing import Any, Optional, cast
 
-from pydantic import Field, SecretStr, BaseModel
+from pydantic import BaseModel, Field, SecretStr
 
 from zenml.models.constants import (
     MODEL_NAME_FIELD_MAX_LENGTH,
