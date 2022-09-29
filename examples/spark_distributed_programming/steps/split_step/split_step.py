@@ -14,10 +14,10 @@
 
 from pyspark.sql import DataFrame
 
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import BaseParameters, Output, step
 
-step_operator = Repository().active_stack.step_operator
+step_operator = Client().active_stack.step_operator
 
 
 class SplitParameters(BaseParameters):

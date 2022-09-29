@@ -18,6 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from zenml.constants import (
+    API,
     FLAVORS,
     PIPELINES,
     PROJECTS,
@@ -25,7 +26,7 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
-    VERSION_1, API,
+    VERSION_1,
 )
 from zenml.enums import StackComponentType
 from zenml.models import (

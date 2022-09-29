@@ -50,7 +50,7 @@ Detailed steps are available in the README of the respective recipe but here's w
 6. You'll notice that a ZenML stack configuration file gets created after the previous command executes 🤯! This YAML file can be imported as a ZenML stack manually by running the following command.
 
     ```
-    zenml stack import <STACK_NAME> <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
+    zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
     ```
 
 ## Deleting resources

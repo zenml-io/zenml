@@ -18,7 +18,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import STACKS, VERSION_1, API
+from zenml.constants import API, STACKS, VERSION_1
 from zenml.models import StackModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.zen_server.auth import authorize

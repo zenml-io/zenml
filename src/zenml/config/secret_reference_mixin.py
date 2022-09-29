@@ -100,9 +100,9 @@ class SecretReferenceMixin(BaseModel):
         if not secret_utils.is_secret_reference(value):
             return value
 
-        from zenml.repository import Repository
+        from zenml.client import Client
 
-        secrets_manager = Repository().active_stack.secrets_manager
+        secrets_manager = Client().active_stack.secrets_manager
         if not secrets_manager:
             raise RuntimeError(
                 f"Failed to resolve secret reference for attribute {key}: "

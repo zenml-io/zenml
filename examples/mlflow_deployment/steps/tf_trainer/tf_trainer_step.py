@@ -15,10 +15,10 @@ import mlflow  # type: ignore [import]
 import numpy as np  # type: ignore [import]
 import tensorflow as tf  # type: ignore [import]
 
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import BaseParameters, step
 
-experiment_tracker = Repository().active_stack.experiment_tracker
+experiment_tracker = Client().active_stack.experiment_tracker
 
 
 class TrainerParameters(BaseParameters):

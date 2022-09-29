@@ -15,10 +15,10 @@ import numpy as np
 import tensorflow as tf
 import wandb
 
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import step
 
-experiment_tracker = Repository().active_stack.experiment_tracker
+experiment_tracker = Client().active_stack.experiment_tracker
 
 
 @step(experiment_tracker=experiment_tracker.name)

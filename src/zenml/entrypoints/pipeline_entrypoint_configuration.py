@@ -14,12 +14,12 @@
 """Abstract base class for entrypoint configurations that run a pipeline."""
 
 
+from zenml.client import Client
 from zenml.entrypoints import utils as entrypoint_utils
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
 from zenml.integrations.registry import integration_registry
-from zenml.repository import Repository
 
 
 class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):
@@ -33,7 +33,7 @@ class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
 
-        orchestrator = Repository().active_stack.orchestrator
+        orchestrator = Client().active_stack.orchestrator
         orchestrator._prepare_run(deployment=deployment_config)
 
         for step in deployment_config.steps.values():

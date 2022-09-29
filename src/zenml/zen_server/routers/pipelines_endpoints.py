@@ -18,7 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.constants import PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1, API
+from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import PipelineModel
 from zenml.zen_server.auth import authorize

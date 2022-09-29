@@ -19,7 +19,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import SecretStr
 
-from zenml.constants import ACTIVATE, DEACTIVATE, ROLES, USERS, VERSION_1, API
+from zenml.constants import ACTIVATE, API, DEACTIVATE, ROLES, USERS, VERSION_1
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel, UserModel

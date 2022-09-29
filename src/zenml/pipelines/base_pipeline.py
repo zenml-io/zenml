@@ -33,6 +33,7 @@ from typing import (
 import yaml
 
 from zenml import constants
+from zenml.client import Client
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
@@ -50,7 +51,6 @@ from zenml.enums import StoreType
 from zenml.environment import Environment
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
@@ -390,7 +390,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         track_event(
             event=AnalyticsEvent.RUN_PIPELINE,
             metadata={
-                "store_type": Repository().zen_store.type.value,
+                "store_type": Client().zen_store.type.value,
                 **stack_metadata,
                 "total_steps": len(self.steps),
                 "schedule": bool(deployment.schedule),
@@ -447,7 +447,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             return
 
-        stack = Repository().active_stack
+        stack = Client().active_stack
 
         # Activating the built-in integrations through lazy loading
         from zenml.integrations.registry import integration_registry
@@ -504,7 +504,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             ]
             pipeline_spec = PipelineSpec(steps=step_specs)
 
-            pipeline_id = Repository().register_pipeline(
+            pipeline_id = Client().register_pipeline(
                 pipeline_name=pipeline_deployment.pipeline.name,
                 pipeline_spec=pipeline_spec,
             )
@@ -688,7 +688,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             PartialArtifactConfiguration,
         )
 
-        stack = stack or Repository().active_stack
+        stack = stack or Client().active_stack
 
         setting_classes = stack.setting_classes
         setting_classes.update(settings_utils.get_general_settings())

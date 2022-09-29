@@ -18,7 +18,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import FLAVORS, VERSION_1, API
+from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import FlavorModel
 from zenml.zen_server.auth import authorize
