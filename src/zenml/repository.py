@@ -26,6 +26,7 @@ class Repository:
         warn(
             f"{cls.__name__} has been renamed to {Client.__name__}, "
             f"the alias will be removed in the future.",
-            DeprecationWarning, stacklevel=2
+            DeprecationWarning,
+            stacklevel=2,
         )
         return Client(*args, **kwargs)

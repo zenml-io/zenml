@@ -203,7 +203,7 @@ def go() -> None:
     console.print(zenml_go_welcome_message, width=80)
 
     client = Client()
-    
+
     # Only ask them if they havn't been asked before
     if client.active_user.email_opted_in is None:
         gave_email = _prompt_email()
@@ -288,21 +288,15 @@ def _prompt_email() -> bool:
             identify_user(
                 {"email": email, "source": AnalyticsEventSource.ZENML_GO}
             )
-            
+
             # Add consent and email to user model
-            
+
             client.zen_store.user_email_opt_in(
-                client.active_user.id,
-                email,
-                True
+                client.active_user.id, email, True
             )
             return True
     else:
         # This is the case where user opts out
-        client.zen_store.user_email_opt_in(
-            client.active_user.id,
-            None,
-            False
-        )
+        client.zen_store.user_email_opt_in(client.active_user.id, None, False)
 
     return False

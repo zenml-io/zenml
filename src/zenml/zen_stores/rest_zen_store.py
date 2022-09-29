@@ -27,7 +27,9 @@ from pydantic import BaseModel, validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    API,
     ARTIFACTS,
+    EMAIL_ANALYTICS,
     FLAVORS,
     INFO,
     INPUTS,
@@ -44,8 +46,6 @@ from zenml.constants import (
     TEAMS,
     USERS,
     VERSION_1,
-    EMAIL_ANALYTICS,
-    API,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
@@ -97,10 +97,10 @@ from zenml.zen_server.models.user_management_models import (
     CreateTeamRequest,
     CreateUserRequest,
     CreateUserResponse,
+    EmailOptInModel,
     UpdateRoleRequest,
     UpdateTeamRequest,
     UpdateUserRequest,
-    EmailOptInModel,
 )
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -749,7 +749,7 @@ class RestZenStore(BaseZenStore):
         self,
         user_name_or_id: Union[str, UUID],
         email: str,
-        user_opt_in_response: bool
+        user_opt_in_response: bool,
     ) -> None:
         """Persist user response to the email prompt.
 
@@ -762,8 +762,9 @@ class RestZenStore(BaseZenStore):
             KeyError: If no user with the given name exists.
         """
 
-        request = EmailOptInModel(email=email,
-                                  email_opted_in=user_opt_in_response)
+        request = EmailOptInModel(
+            email=email, email_opted_in=user_opt_in_response
+        )
         route = f"{USERS}/{str(user_name_or_id)}{EMAIL_ANALYTICS}"
         self.put(f"{route}", body=request)
 
@@ -1500,33 +1501,38 @@ class RestZenStore(BaseZenStore):
             )
         elif response.status_code == 404:
             if "DoesNotExistException" not in response.text:
-                raise KeyError(response.json().get("detail",
-                                                   (response.text,))[1])
+                raise KeyError(
+                    response.json().get("detail", (response.text,))[1]
+                )
             message = ": ".join(response.json().get("detail", (response.text,)))
             raise DoesNotExistException(message)
         elif response.status_code == 409:
             if "StackComponentExistsError" in response.text:
                 raise StackComponentExistsError(
-                    message=
-                    ": ".join(response.json().get("detail", (response.text,)))
+                    message=": ".join(
+                        response.json().get("detail", (response.text,))
+                    )
                 )
             elif "StackExistsError" in response.text:
                 raise StackExistsError(
-                    message=
-                    ": ".join(response.json().get("detail", (response.text,)))
+                    message=": ".join(
+                        response.json().get("detail", (response.text,))
+                    )
                 )
             elif "EntityExistsError" in response.text:
                 raise EntityExistsError(
-                    message=
-                    ": ".join(response.json().get("detail", (response.text,)))
+                    message=": ".join(
+                        response.json().get("detail", (response.text,))
+                    )
                 )
             else:
                 raise ValueError(
                     ": ".join(response.json().get("detail", (response.text,)))
                 )
         elif response.status_code == 422:
-            raise RuntimeError(": ".join(response.json()
-                                         .get("detail", (response.text,))))
+            raise RuntimeError(
+                ": ".join(response.json().get("detail", (response.text,)))
+            )
         elif response.status_code == 500:
             raise RuntimeError(response.text)
         else:
