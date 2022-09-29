@@ -44,6 +44,7 @@ from zenml.constants import (
     TEAMS,
     USERS,
     VERSION_1,
+    API,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
@@ -1402,7 +1403,7 @@ class RestZenStore(BaseZenStore):
         if self._api_token is None:
             response = self._handle_response(
                 requests.post(
-                    self.url + VERSION_1 + LOGIN,
+                    self.url + API + VERSION_1 + LOGIN,
                     data={
                         "username": self.config.username,
                         "password": self.config.password,
@@ -1476,28 +1477,33 @@ class RestZenStore(BaseZenStore):
             )
         elif response.status_code == 404:
             if "DoesNotExistException" not in response.text:
-                raise KeyError(*response.json().get("detail", (response.text,)))
+                raise KeyError(response.json().get("detail",
+                                                   (response.text,))[1])
             message = ": ".join(response.json().get("detail", (response.text,)))
             raise DoesNotExistException(message)
         elif response.status_code == 409:
             if "StackComponentExistsError" in response.text:
                 raise StackComponentExistsError(
-                    *response.json().get("detail", (response.text,))
+                    message=
+                    ": ".join(response.json().get("detail", (response.text,)))
                 )
             elif "StackExistsError" in response.text:
                 raise StackExistsError(
-                    *response.json().get("detail", (response.text,))
+                    message=
+                    ": ".join(response.json().get("detail", (response.text,)))
                 )
             elif "EntityExistsError" in response.text:
                 raise EntityExistsError(
-                    *response.json().get("detail", (response.text,))
+                    message=
+                    ": ".join(response.json().get("detail", (response.text,)))
                 )
             else:
                 raise ValueError(
-                    *response.json().get("detail", (response.text,))
+                    ": ".join(response.json().get("detail", (response.text,)))
                 )
         elif response.status_code == 422:
-            raise RuntimeError(*response.json().get("detail", (response.text,)))
+            raise RuntimeError(": ".join(response.json()
+                                         .get("detail", (response.text,))))
         elif response.status_code == 500:
             raise RuntimeError(response.text)
         else:
@@ -1558,7 +1564,7 @@ class RestZenStore(BaseZenStore):
         """
         logger.debug(f"Sending GET request to {path}...")
         return self._request(
-            "GET", self.url + VERSION_1 + path, params=params, **kwargs
+            "GET", self.url + API + VERSION_1 + path, params=params, **kwargs
         )
 
     def delete(
@@ -1576,7 +1582,7 @@ class RestZenStore(BaseZenStore):
         """
         logger.debug(f"Sending DELETE request to {path}...")
         return self._request(
-            "DELETE", self.url + VERSION_1 + path, params=params, **kwargs
+            "DELETE", self.url + API + VERSION_1 + path, params=params, **kwargs
         )
 
     def post(
@@ -1600,7 +1606,7 @@ class RestZenStore(BaseZenStore):
         logger.debug(f"Sending POST request to {path}...")
         return self._request(
             "POST",
-            self.url + VERSION_1 + path,
+            self.url + API + VERSION_1 + path,
             data=body.json(),
             params=params,
             **kwargs,
@@ -1627,7 +1633,7 @@ class RestZenStore(BaseZenStore):
         logger.debug(f"Sending PUT request to {path}...")
         return self._request(
             "PUT",
-            self.url + VERSION_1 + path,
+            self.url + API + VERSION_1 + path,
             data=body.json(),
             params=params,
             **kwargs,
