@@ -102,6 +102,7 @@ def declare(
         text: Input text string.
         bold: Optional boolean to bold the text.
         italic: Optional boolean to italicize the text.
+        **kwargs: Optional kwargs to be passed to console.print().
     """
     base_style = zenml_style_defaults["info"]
     style = Style.chain(base_style, Style(bold=bold, italic=italic))
@@ -132,6 +133,7 @@ def warning(
         text: Input text string.
         bold: Optional boolean to bold the text.
         italic: Optional boolean to italicize the text.
+        **kwargs: Optional kwargs to be passed to console.print().
     """
     base_style = zenml_style_defaults["warning"]
     style = Style.chain(base_style, Style(bold=bold, italic=italic))
@@ -771,7 +773,7 @@ def print_server_deployment(server: "ServerDeployment") -> None:
 def describe_pydantic_object(schema_json: str):
     """Describes a Pydantic object based on the json of its schema.
 
-    Attributes:
+    Args:
         schema_json: str, represents the schema of a Pydantic object, which
             can be obtained through BaseModelClass.schema_json()
     """
@@ -818,7 +820,6 @@ def get_stack_by_id_or_name_or_prefix(
 
     Raises:
         KeyError: If no stack with the given name exists.
-        ClickException: If multiple stacks with the given name exist.
     """
     # First interpret as full UUID
     try:
@@ -890,9 +891,6 @@ def print_stacks_table(
     Args:
         client: Repository instance
         stacks: List of stacks
-
-    Returns:
-        None
     """
     stack_dicts = []
     for stack in stacks:
@@ -994,7 +992,6 @@ def get_component_by_id_or_name_or_prefix(
 
     Raises:
         KeyError: If no stack with the given name exists.
-        RuntimeError: If multiple stacks with the given name exist.
     """
     # First interpret as full UUID
     try:
