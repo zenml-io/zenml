@@ -259,7 +259,7 @@ def test_share_stack_that_is_already_shared_by_other_user_fails(
     )[0]
     other_user_default_stack.is_shared = True
 
-    # TODO: Clean this up once, once authorizetion is implemented the current
+    # TODO: Clean this up once, once authorization is implemented the current
     #  user might not be authorized to update other_users stack
     runner.invoke(share_stack, [str(other_user_default_stack.id)])
     result = runner.invoke(share_stack, ["default"])
@@ -286,7 +286,7 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
     )[0]
     other_user_default_stack.is_shared = True
 
-    # TODO: Clean this up once, once authorizetion is implemented the current
+    # TODO: Clean this up once, once authorization is implemented the current
     #  user might not be authorized to update other_users stack
     runner.invoke(share_stack, [str(other_user_default_stack.id)])
     result = runner.invoke(share_stack, ["default"])
