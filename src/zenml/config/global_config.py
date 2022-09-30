@@ -34,7 +34,6 @@ from zenml.constants import (
 from zenml.enums import AnalyticsEventSource, StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models.project_models import ProjectModel
 from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
@@ -45,6 +44,7 @@ from zenml.utils.analytics_utils import (
 )
 
 if TYPE_CHECKING:
+    from zenml.models.project_models import ProjectModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -147,7 +147,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
-    _active_project: Optional[ProjectModel] = None
+    _active_project: Optional["ProjectModel"] = None
 
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
@@ -644,7 +644,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             )
         return self._active_project
 
-    def set_active_project(self, project: ProjectModel) -> None:
+    def set_active_project(self, project: "ProjectModel") -> None:
         """Set the project for the local client.
 
         Args:

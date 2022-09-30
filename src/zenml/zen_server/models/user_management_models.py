@@ -209,7 +209,7 @@ class DeactivateUserResponse(UserModel, UpdateResponse[UserModel]):
 
     _MODEL_TYPE = UserModel
 
-    activation_token: SecretStr = Field(..., title="Account activation token.")
+    activation_token: str = Field(..., title="Account activation token.")
 
     @classmethod
     def from_model(

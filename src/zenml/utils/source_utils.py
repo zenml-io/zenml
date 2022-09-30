@@ -57,14 +57,11 @@ from zenml import __version__, constants
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.logger import get_logger
-from zenml.stack.stack_component import StackComponentConfig
-
-if TYPE_CHECKING:
-    pass
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
+    from zenml.stack.stack_component import StackComponentConfig
     from zenml.stack.flavor import Flavor
 
 
