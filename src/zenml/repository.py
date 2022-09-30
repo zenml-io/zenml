@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Deprecated Repository implementation."""
 
+from typing import Any, cast
 from warnings import warn
 
 from zenml.client import Client
@@ -21,7 +22,7 @@ from zenml.client import Client
 class Repository:
     """DEPRECATED: Implementation of the ZenML repository instance."""
 
-    def __new__(cls, *args, **kwargs) -> Client:
+    def __new__(cls, *args: Any, **kwargs: Any) -> "Repository":
         """Returns the Client class due to deprecation.
 
         Args:
@@ -37,4 +38,4 @@ class Repository:
             DeprecationWarning,
             stacklevel=2,
         )
-        return Client(*args, **kwargs)
+        return cast(Repository, Client(*args, **kwargs))

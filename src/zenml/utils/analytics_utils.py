@@ -375,7 +375,7 @@ def identify_group(
     group: Union[str, AnalyticsGroup],
     group_id: str,
     group_metadata: Optional[Dict[str, Any]] = None,
-):
+) -> bool:
     """Attach metadata to a segment group.
 
     Args:

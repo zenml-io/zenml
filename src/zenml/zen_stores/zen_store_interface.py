@@ -555,7 +555,7 @@ class ZenStoreInterface(ABC):
         user_name_or_id: Union[str, UUID],
         user_opt_in_response: bool,
         email: Optional[str] = None,
-    ):
+    ) -> UserModel:
         """Persist user response to the email prompt.
 
         Args:
@@ -563,6 +563,10 @@ class ZenStoreInterface(ABC):
             user_opt_in_response: Whether this email should be associated
                 with the user id in the telemetry
             email: The users email
+
+        Returns:
+            The updated user.
+
         Raises:
             KeyError: If no user with the given name exists.
         """

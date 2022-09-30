@@ -745,12 +745,13 @@ class RestZenStore(BaseZenStore):
             route=USERS,
         )
 
+    @track(AnalyticsEvent.OPT_IN_OUT_EMAIL)
     def user_email_opt_in(
         self,
         user_name_or_id: Union[str, UUID],
         user_opt_in_response: bool,
         email: Optional[str] = None,
-    ) -> None:
+    ) -> UserModel:
         """Persist user response to the email prompt.
 
         Args:
@@ -758,6 +759,10 @@ class RestZenStore(BaseZenStore):
             user_opt_in_response: Whether this email should be associated
                 with the user id in the telemetry
             email: The users email
+
+        Returns:
+            The updated user.
+
         Raises:
             KeyError: If no user with the given name exists.
         """
@@ -766,7 +771,10 @@ class RestZenStore(BaseZenStore):
             email=email, email_opted_in=user_opt_in_response
         )
         route = f"{USERS}/{str(user_name_or_id)}{EMAIL_ANALYTICS}"
-        self.put(f"{route}", body=request)
+
+        response_body = self.put(route, body=request)
+        user = UserModel.parse_obj(response_body)
+        return user
 
     # -----
     # Teams

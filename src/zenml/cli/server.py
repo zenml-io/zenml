@@ -156,6 +156,7 @@ def up(
     server = deployer.deploy_server(server_config)
 
     gc = GlobalConfiguration()
+    assert gc.store is not None
     track_event(
         AnalyticsEvent.ZENML_SERVER_STARTED,
         metadata={
@@ -201,6 +202,7 @@ def down() -> None:
     deployer.remove_server(server.config.name)
 
     gc = GlobalConfiguration()
+    assert gc.store is not None
     track_event(
         AnalyticsEvent.ZENML_SERVER_STOPPED,
         metadata={
@@ -368,11 +370,11 @@ def deploy(
             f"ZenML server '{name}' running at '{server.status.url}'."
         )
 
-        if connect:
+        if connect and username:
             deployer.connect_to_server(
                 server_config.name,
                 username,
-                password,
+                password or "",
                 verify_ssl=server.status.ca_crt
                 if server.status.ca_crt is not None
                 else False,

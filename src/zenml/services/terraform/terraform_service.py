@@ -236,6 +236,11 @@ class TerraformService(BaseService):
         # read values into a dict and return
         with fileio.open(variables_file_path, "r") as f:
             variables = json.load(f)
+        if not isinstance(variables, dict):
+            raise TypeError(
+                "The values.tfvars.json file must contain a dictionary "
+                "of variables."
+            )
         return variables
 
     def _destroy(self) -> None:

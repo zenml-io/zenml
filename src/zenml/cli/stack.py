@@ -192,7 +192,7 @@ def register_stack(
     with console.status(f"Registering stack '{stack_name}'...\n"):
         client = Client()
 
-        type_component_mapping: Dict[StackComponentType, str] = {
+        type_component_mapping: Dict[StackComponentType, Optional[str]] = {
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ALERTER: alerter_name,
             StackComponentType.ANNOTATOR: annotator_name,
@@ -377,7 +377,7 @@ def update_stack(
                 f" exist.",
             )
 
-        type_component_mapping: Dict[StackComponentType, str] = {
+        type_component_mapping: Dict[StackComponentType, Optional[str]] = {
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ALERTER: alerter_name,
             StackComponentType.ANNOTATOR: annotator_name,

@@ -253,12 +253,13 @@ def delete_user(
 
 @router.put(
     "/{user_name_or_id}" + EMAIL_ANALYTICS,
+    response_model=UserModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def email_opt_in_response(
     user_name_or_id: Union[str, UUID], user_response: EmailOptInModel
-) -> None:
+) -> UserModel:
     """Deactivates a user and generates a new activation token for it.
 
     Args:
@@ -266,9 +267,9 @@ def email_opt_in_response(
         user_response: User Response to email prompt
 
     Returns:
-        The generated activation token.
+        The updated user.
     """
-    zen_store.user_email_opt_in(
+    return zen_store.user_email_opt_in(
         user_name_or_id=user_name_or_id,
         email=user_response.email,
         user_opt_in_response=user_response.email_opted_in,

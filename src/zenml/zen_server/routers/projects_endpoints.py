@@ -511,7 +511,7 @@ def create_pipeline(
 
 @router.get(
     "/{project_name_or_id}" + STATISTICS,
-    response_model=Dict[str, str],  # type: ignore[arg-type]
+    response_model=Dict[str, str],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

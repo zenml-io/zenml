@@ -14,6 +14,7 @@
 """Base domain model definitions."""
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -29,7 +30,7 @@ class DomainModel(BaseModel):
       * have a creation timestamp and a last modified timestamp
     """
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         """Implementation of hash magic method.
 
         Returns:
@@ -37,7 +38,7 @@ class DomainModel(BaseModel):
         """
         return hash((type(self),) + tuple([self.id]))
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         """Implementation of equality magic method.
 
         Args:

@@ -539,7 +539,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         gc = GlobalConfiguration()
 
-        if gc.store.type == StoreType.REST:
+        if gc.store and gc.store.type == StoreType.REST:
             # Connected to ZenServer
             client = Client()
 
@@ -556,7 +556,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"{gc.store.url}/pipelines/{pipeline_id}/runs/{run.id}/dag"
                 )
                 logger.info(f"Dashboard URL: {url}")
-        elif gc.store.type == StoreType.SQL:
+        elif gc.store and gc.store.type == StoreType.SQL:
             # Connected to SQL Store Type, we're local
             logger.info(
                 "Pipeline visualization can be seen in the ZenML Dashboard. "

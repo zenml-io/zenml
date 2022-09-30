@@ -101,6 +101,7 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created user '{user_name}'.")
     if not user.active and user.activation_token is not None:
+        assert gc.store is not None
         cli_utils.declare(
             f"The created user account is currently inactive. You can activate "
             f"it by visiting the dashboard at the following URL:\n"

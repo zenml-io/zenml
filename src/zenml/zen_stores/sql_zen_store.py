@@ -84,8 +84,8 @@ from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
-SelectOfScalar.inherit_cache = True  # type: ignore[attr-defined]
-Select.inherit_cache = True  # type: ignore[attr-defined]
+SelectOfScalar.inherit_cache = True
+Select.inherit_cache = True
 
 logger = get_logger(__name__)
 
@@ -1483,7 +1483,7 @@ class SqlZenStore(BaseZenStore):
         user_name_or_id: Union[str, UUID],
         user_opt_in_response: bool,
         email: Optional[str] = None,
-    ):
+    ) -> UserModel:
         """Persist user response to the email prompt.
 
         Args:
@@ -1491,6 +1491,10 @@ class SqlZenStore(BaseZenStore):
             user_opt_in_response: Whether this email should be associated
                 with the user id in the telemetry
             email: The users email
+
+        Returns:
+            The updated user.
+
         Raises:
             KeyError: If no user with the given name exists.
         """
@@ -1507,6 +1511,8 @@ class SqlZenStore(BaseZenStore):
                 user.email_opted_in = user_opt_in_response
                 session.add(user)
                 session.commit()
+
+            return user.to_model()
 
     # -----
     # Teams

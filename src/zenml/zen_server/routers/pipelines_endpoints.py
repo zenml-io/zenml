@@ -150,7 +150,7 @@ def delete_pipeline(pipeline_id: UUID) -> None:
 
 @router.get(
     "/{pipeline_id}" + RUNS,
-    response_model=Union[
+    response_model=Union[  # type: ignore[arg-type]
         List[HydratedPipelineRunModel], List[PipelineRunModel]
     ],
     responses={401: error_response, 404: error_response, 422: error_response},

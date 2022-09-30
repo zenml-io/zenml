@@ -94,7 +94,7 @@ def declare(
     text: Union[str, Text],
     bold: Optional[bool] = None,
     italic: Optional[bool] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     """Echo a declaration on the CLI.
 
@@ -125,7 +125,7 @@ def warning(
     text: str,
     bold: Optional[bool] = None,
     italic: Optional[bool] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     """Echo a warning string on the CLI.
 
@@ -768,7 +768,7 @@ def print_server_deployment(server: "ServerDeployment") -> None:
     console.print(rich_table)
 
 
-def describe_pydantic_object(schema_json: str):
+def describe_pydantic_object(schema_json: str) -> None:
     """Describes a Pydantic object based on the json of its schema.
 
     Args:
