@@ -257,7 +257,7 @@ class AnalyticsContext:
 
         traits.update(
             {
-                "name": group,
+                "group_id": group_id,
             }
         )
 
