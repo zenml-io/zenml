@@ -20,12 +20,12 @@ run on a separate environment equipped with a GPU (like a trainer step).
 """
 from zenml.step_operators.base_step_operator import (
     BaseStepOperator,
+    BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
-    BaseStepOperatorConfig
 )
 
 __all__ = [
     "BaseStepOperator",
     "BaseStepOperatorFlavor",
-    "BaseStepOperatorConfig"
+    "BaseStepOperatorConfig",
 ]

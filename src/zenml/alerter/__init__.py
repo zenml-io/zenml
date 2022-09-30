@@ -18,13 +18,15 @@ and also for general monitoring / reporting.
 """
 
 from zenml.alerter.base_alerter import (
-    BaseAlerter, BaseAlerterConfig,
-    BaseAlerterFlavor, BaseAlerterStepParameters
+    BaseAlerter,
+    BaseAlerterConfig,
+    BaseAlerterFlavor,
+    BaseAlerterStepParameters,
 )
 
 __all__ = [
     "BaseAlerter",
     "BaseAlerterConfig",
     "BaseAlerterFlavor",
-    "BaseAlerterStepParameters"
+    "BaseAlerterStepParameters",
 ]
