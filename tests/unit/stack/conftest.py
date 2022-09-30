@@ -37,6 +37,7 @@ def stack_with_mock_components(mocker):
         spec=BaseArtifactStore,
         type=StackComponentType.ARTIFACT_STORE,
         flavor=MOCK_FLAVOR,
+        path="/",
     )
     orchestrator.config.required_secrets = set()
     artifact_store.config.required_secrets = set()

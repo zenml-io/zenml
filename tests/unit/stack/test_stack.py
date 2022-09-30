@@ -155,7 +155,6 @@ def test_stack_prepare_pipeline_run(
     stack_with_mock_components.prepare_pipeline_deployment(deployment)
     for component in stack_with_mock_components.components.values():
         component.prepare_pipeline_deployment.assert_called_once()
-        component.prepare_pipeline_run.assert_called_once()
 
 
 def test_stack_deployment(
@@ -183,8 +182,8 @@ def test_stack_deployment(
         deployment=deployment,
     )
 
-    for component in stack_with_mock_components.components.values():
-        component.prepare_pipeline_deployment.assert_called_once()
+    # for component in stack_with_mock_components.components.values():
+    #     component.prepare_step_run.assert_called_once()
 
     stack_with_mock_components.orchestrator.run.assert_called_once_with(
         deployment=deployment,

@@ -37,12 +37,6 @@ from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
 )
-from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
-    GCPArtifactStore,
-)
-from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
-    GCPArtifactStoreConfig,
-)
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.user_management_models import TeamModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
@@ -389,6 +383,13 @@ def local_artifact_store():
 @pytest.fixture
 def remote_artifact_store():
     """Fixture that creates a local artifact store for testing."""
+    from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
+        GCPArtifactStore,
+    )
+    from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
+        GCPArtifactStoreConfig,
+    )
+
     return GCPArtifactStore(
         name="",
         id=uuid4(),
