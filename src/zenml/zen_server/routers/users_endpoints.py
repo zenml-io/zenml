@@ -206,7 +206,7 @@ def activate_user(
 )
 @handle_exceptions
 def deactivate_user(
-        user_name_or_id: Union[str, UUID]
+    user_name_or_id: Union[str, UUID]
 ) -> DeactivateUserResponse:
     """Deactivates a user and generates a new activation token for it.
 

@@ -61,8 +61,8 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.stack.stack_component import StackComponentConfig
     from zenml.stack.flavor import Flavor
+    from zenml.stack.stack_component import StackComponentConfig
 
 
 def is_standard_pin(pin: str) -> bool:

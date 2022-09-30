@@ -297,7 +297,7 @@ def generate_stack_component_update_command(
 
 def generate_stack_component_share_command(
     component_type: StackComponentType,
-) -> Callable[[str, List[str]], None]:
+) -> Callable[[str], None]:
     """Generates an `share` command for the specific stack component type.
 
     Args:
