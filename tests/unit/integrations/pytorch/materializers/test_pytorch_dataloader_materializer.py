@@ -20,7 +20,7 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (
     PyTorchDataLoaderMaterializer,
 )
-from zenml.post_execution.pipeline import get_pipeline
+from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_pytorch_dataloader_materializer(clean_client):
@@ -31,7 +31,7 @@ def test_pytorch_dataloader_materializer(clean_client):
             materializer=PyTorchDataLoaderMaterializer,
         )
 
-    last_run = get_pipeline("test_pipeline").runs[-1]
+    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
     test_step = last_run.steps[-1]
     dataloader = test_step.output.read()
 

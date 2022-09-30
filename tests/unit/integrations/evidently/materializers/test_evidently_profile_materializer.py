@@ -21,6 +21,7 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.evidently.materializers.evidently_profile_materializer import (
     EvidentlyProfileMaterializer,
 )
+from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_evidently_profile_materializer(clean_client):
@@ -31,6 +32,6 @@ def test_evidently_profile_materializer(clean_client):
             materializer=EvidentlyProfileMaterializer,
         )
 
-    last_run = clean_client.get_pipeline("test_pipeline").runs[-1]
+    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
     evidently_profile = last_run.steps[-1].output.read()
     assert isinstance(evidently_profile, Profile)

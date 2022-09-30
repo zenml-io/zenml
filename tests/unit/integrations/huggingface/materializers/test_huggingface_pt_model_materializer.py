@@ -19,6 +19,7 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.huggingface.materializers.huggingface_pt_model_materializer import (
     HFPTModelMaterializer,
 )
+from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_huggingface_pretrained_model_materializer(clean_client):
@@ -30,7 +31,7 @@ def test_huggingface_pretrained_model_materializer(clean_client):
             materializer=HFPTModelMaterializer,
         )
 
-    last_run = clean_client.get_pipeline("test_pipeline").runs[-1]
+    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
     model = last_run.steps[-1].output.read()
     assert isinstance(model, PreTrainedModel)
     assert model.config.model_type == "roberta"
