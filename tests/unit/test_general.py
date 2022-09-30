@@ -17,7 +17,7 @@ from typing import Any
 
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.pipelines import BasePipeline, pipeline
+from zenml.pipelines import pipeline
 from zenml.steps import step
 
 
@@ -28,7 +28,7 @@ def test_handle_int_env_var():
 
 def _test_materializer(
     step_output: Any, materializer: BaseMaterializer
-) -> BasePipeline:
+) -> None:
     """Helper function to simplify materializer testing.
 
     Args:
@@ -45,6 +45,6 @@ def _test_materializer(
     def test_pipeline(read_step) -> None:
         read_step()
 
-    return test_pipeline(
+    test_pipeline(
         read_step=read_step().with_return_materializers(materializer)
-    )
+    ).run()
