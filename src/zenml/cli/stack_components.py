@@ -15,7 +15,7 @@
 
 import time
 from importlib import import_module
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable, List
 
 import click
 from rich.markdown import Markdown
