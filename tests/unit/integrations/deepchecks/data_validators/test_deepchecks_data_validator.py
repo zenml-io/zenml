@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from datetime import datetime
+from uuid import uuid4
 
 from zenml.enums import StackComponentType
 from zenml.integrations.deepchecks import DEEPCHECKS_DATA_VALIDATOR_FLAVOR
@@ -22,8 +24,18 @@ from zenml.integrations.deepchecks.data_validators import (
 
 def test_deepchecks_data_validator_attributes():
     """Tests that the basic attributes of the Deepchecks data validator are set correctly."""
-    validator = DeepchecksDataValidator(name="arias_validator")
-    assert validator.TYPE == StackComponentType.DATA_VALIDATOR
-    assert validator.FLAVOR == DEEPCHECKS_DATA_VALIDATOR_FLAVOR
+    validator = DeepchecksDataValidator(
+        name="arias_validator",
+        id=uuid4(),
+        config={},
+        flavor="deepchecks",
+        type=StackComponentType.DATA_VALIDATOR,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+    assert validator.type == StackComponentType.DATA_VALIDATOR
+    assert validator.flavor == DEEPCHECKS_DATA_VALIDATOR_FLAVOR
     assert validator.name == "arias_validator"
     assert validator.NAME == "Deepchecks"

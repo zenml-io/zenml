@@ -34,7 +34,6 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.io import fileio
-from zenml.models.stack_models import StackModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.stack import Stack
@@ -91,9 +90,9 @@ def _create_local_stack(
 
 def test_repository_detection(tmp_path):
     """Tests detection of ZenML repositories in a directory."""
-    assert Client.is_client_directory(tmp_path) is False
+    assert Client.is_repository_directory(tmp_path) is False
     Client.initialize(tmp_path)
-    assert Client.is_client_directory(tmp_path) is True
+    assert Client.is_repository_directory(tmp_path) is True
 
 
 def test_initializing_repo_creates_directory_and_uses_default_stack(
@@ -142,17 +141,17 @@ def test_finding_repository_directory_with_explicit_path(
     os.chdir(str(subdirectory_path))
 
     # no repo exists and explicit path passed
-    assert Client.find_client(tmp_path) is None
+    assert Client.find_repository(tmp_path) is None
     assert Client(tmp_path).root is None
 
     # no repo exists and no path passed (=uses current working directory)
-    assert Client.find_client() is None
+    assert Client.find_repository() is None
     Client._reset_instance()
     assert Client().root is None
 
     # no repo exists and explicit path set via environment variable
     os.environ["ZENML_REPOSITORY_PATH"] = str(tmp_path)
-    assert Client.find_client() is None
+    assert Client.find_repository() is None
     Client._reset_instance()
     assert Client().root is None
 
@@ -162,27 +161,27 @@ def test_finding_repository_directory_with_explicit_path(
     Client.initialize(tmp_path)
 
     # repo exists and explicit path passed
-    assert Client.find_client(tmp_path) == tmp_path
+    assert Client.find_repository(tmp_path) == tmp_path
     assert Client(tmp_path).root == tmp_path
 
     # repo exists and explicit path to subdirectory passed
-    assert Client.find_client(subdirectory_path) is None
+    assert Client.find_repository(subdirectory_path) is None
     assert Client(subdirectory_path).root is None
 
     # repo exists and no path passed (=uses current working directory)
-    assert Client.find_client() == tmp_path
+    assert Client.find_repository() == tmp_path
     Client._reset_instance()
     assert Client().root == tmp_path
 
     # repo exists and explicit path set via environment variable
     os.environ["ZENML_REPOSITORY_PATH"] = str(tmp_path)
-    assert Client.find_client() == tmp_path
+    assert Client.find_repository() == tmp_path
     Client._reset_instance()
     assert Client().root == tmp_path
 
     # repo exists and explicit path to subdirectory set via environment variable
     os.environ["ZENML_REPOSITORY_PATH"] = str(subdirectory_path)
-    assert Client.find_client() is None
+    assert Client.find_repository() is None
     Client._reset_instance()
     assert Client().root is None
 
@@ -214,7 +213,8 @@ def test_creating_repository_instance_during_step_execution(mocker):
 def test_activating_nonexisting_stack_fails(clean_client):
     """Tests that activating a stack name that isn't registered fails."""
     stack = _create_local_stack(
-        repo=clean_client, stack_name="stack_name_that_hopefully_does_not_exist"
+        repo=clean_client,
+        stack_name="stack_name_that_hopefully_does_not_exist",
     )
 
     with pytest.raises(KeyError):
@@ -230,7 +230,8 @@ def test_activating_a_stack_updates_the_config_file(clean_client):
     """Tests that the newly active stack name gets persisted."""
     stack = _create_local_stack(repo=clean_client, stack_name="new_stack")
     stack_model = stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
     )
 
     clean_client.register_stack_component(stack.orchestrator.to_model())
@@ -242,30 +243,14 @@ def test_activating_a_stack_updates_the_config_file(clean_client):
     assert Client(clean_client.root).active_stack_model.name == stack.name
 
 
-def test_getting_a_stack(clean_client):
-    """Tests that getting a stack succeeds if the stack name exists and fails
-    otherwise."""
-    existing_stack_name = clean_client.active_stack.name
-
-    with does_not_raise():
-        stack = clean_client.get_stack_by_name_or_partial_id(
-            existing_stack_name
-        )
-        assert isinstance(stack, StackModel)
-
-    with pytest.raises(KeyError):
-        clean_client.get_stack_by_name_or_partial_id(
-            "stack_name_that_hopefully_does_not_exist"
-        )
-
-
 def test_registering_a_stack(clean_client):
     """Tests that registering a stack works and the stack gets persisted."""
     stack = _create_local_stack(
         repo=clean_client, stack_name="some_new_stack_name"
     )
     stack_model = stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
     )
     clean_client.register_stack_component(stack.orchestrator.to_model())
     clean_client.register_stack_component(stack.artifact_store.to_model())
@@ -416,7 +401,8 @@ def test_deregistering_a_non_active_stack(clean_client):
         repo=clean_client, stack_name="some_new_stack_name"
     )
     stack_model = stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
     )
     clean_client.register_stack_component(stack.orchestrator.to_model())
     clean_client.register_stack_component(stack.artifact_store.to_model())
