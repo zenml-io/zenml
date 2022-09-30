@@ -660,8 +660,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         Args:
             email: The email address to use for this client.
+            source: The analytics event source.
         """
-
         # The first time an email address is associated with the client, we want
         # to identify the client by an email address. If the email address has
         # been changed, we also want to update the information.

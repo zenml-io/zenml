@@ -766,7 +766,6 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given name exists.
         """
-
         request = EmailOptInModel(
             email=email, email_opted_in=user_opt_in_response
         )
