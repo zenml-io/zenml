@@ -33,7 +33,7 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
-from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
+from zenml.models.pipeline_models import PipelineModel
 from zenml.models.stack_models import StackModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -1028,45 +1028,6 @@ def test_list_runs_returns_nothing_when_no_runs_exist(
 
     false_pipeline_runs = sql_store["store"].list_runs(pipeline_id=uuid.uuid4())
     assert len(false_pipeline_runs) == 0
-
-
-def test_update_run_succeeds(
-    sql_store: BaseZenStore,
-):
-    """Tests updating run."""
-    pipeline_run = PipelineRunModel(
-        name="arias_pipeline_run",
-        user=sql_store["active_user"].id,
-        project=sql_store["default_project"].id,
-        pipeline_configuration={},
-    )
-    sql_store["store"].create_run(pipeline_run=pipeline_run)
-    run_id = sql_store["store"].list_runs()[0].id
-    run = sql_store["store"].get_run(run_id=run_id)
-    run.name = "updated_arias_run"
-    with does_not_raise():
-        sql_store["store"].update_run(run=run)
-        updated_run = sql_store["store"].get_run(run_id=run_id)
-        assert updated_run.name == "updated_arias_run"
-
-
-def test_update_run_fails_when_run_does_not_exist(
-    sql_store: BaseZenStore,
-):
-    """Tests updating run fails when run does not exist."""
-    pipeline_run = PipelineRunModel(
-        name="arias_pipeline_run",
-    )
-    with pytest.raises(KeyError):
-        sql_store["store"].update_run(run=pipeline_run)
-
-
-def test_delete_run_raises_error(
-    sql_store: BaseZenStore,
-):
-    """Tests deleting run raises error."""
-    with pytest.raises(NotImplementedError):
-        sql_store["store"].delete_run(run_id=uuid.uuid4())
 
 
 # ------------------
