@@ -7,13 +7,13 @@ description: Find answers to the most frequently asked questions about ZenML
 #### Is ZenML just another orchestrator like Airflow, Kubeflow, Flyte, etc?
 
 Not really! An orchestrator in MLOps is the system component that is responsible
-for executing and managing the execution of a ML pipeline. ZenML is a framework
+for executing and managing the execution of an ML pipeline. ZenML is a framework
 that allows you to run your pipelines on whatever orchestrator you like, and we
 coordinate with all the other parts of an ML system in production. There are
-[standard orchestrators](../mlops-stacks/orchestrators/orchestrators.md) that ZenML supports
-out-of-the-box, but you are encouraged to 
-[write your own orchestrator](../mlops-stacks/orchestrators/custom.md) in order to gain more control
-as to exactly how your pipelines are executed!
+[standard orchestrators](../component-gallery/orchestrators/orchestrators.md) 
+that ZenML supports out-of-the-box, but you are encouraged to 
+[write your own orchestrator](../component-gallery/orchestrators/custom.md) 
+in order to gain more control as to exactly how your pipelines are executed!
 
 #### Can I use tool X? How does tool Y integrate with ZenML?
 
@@ -28,16 +28,16 @@ integrations to the above list (check out the
 features](https://zenml.io/discussion) you'd like and add your ideas to the
 roadmap. 
 
-Most importantly, ZenML is extensible and we encourage you to use it with
+Most importantly, ZenML is extensible, and we encourage you to use it with
 whatever other tools you require as part of your ML process and system(s). Check
-out [our documentation on how to get started](../getting-started/introduction.md) with extending ZenML to
-learn more!
+out [our documentation on how to get started](../getting-started/introduction.md)
+with extending ZenML to learn more!
 
 #### How do I install on an M1 Mac
 
-If you have an M1 Mac machine and you are encountering an error while trying to
-install ZenML, please try to setup brew and pyenv with Rosetta 2 and then 
-install ZenML. The issue arises because some of the dependencies aren’t fully
+If you have an M1 Mac machine, and you are encountering an error while trying to
+install ZenML, please try to set up brew and pyenv with Rosetta 2 and then 
+install ZenML. The issue arises because some dependencies aren’t fully
 compatible with the vanilla ARM64 Architecture. The following links may be 
 helpful.
 
@@ -48,7 +48,7 @@ helpful.
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 
 This depends on the tool and its respective MLOps category. We have a full guide
-on this over [here](../developer-guide/advanced-usage/custom-flavors.md)!
+on this over [here](../advanced-guide/stacks/custom-flavors.md)!
 
 #### Why did you build ZenML?
 
@@ -95,9 +95,9 @@ using ZenML in the early stages of your project, you get the following benefits:
 
 #### How can I be sure you'll stick around as a tool?
 
-The [team behind ZenML](https://zenml.io/company#CompanyTeam) have a shared vision of making
-MLOps simple and accessible to accelerate problem solving in the world. We
-recently raised our [seed
+The [team behind ZenML](https://zenml.io/company#CompanyTeam) have a shared 
+vision of making MLOps simple and accessible to accelerate problem-solving 
+in the world. We recently raised our [seed
 round](https://venturebeat.com/2021/12/14/open-source-mlops-framework-zenml-raises-2-7m/)
 to fulfill this vision, and you can be sure we're here to stay!
 
@@ -106,9 +106,9 @@ of it just going away any time soon.
 
 #### How can I speak with the community?
 
-The first point of call should be [our Slack
-group](https://zenml.io/slack-invite/). Ask your questions about bugs or
-specific use cases and someone from the core team will respond.
+The first point of call should be [our Slack group](https://zenml.io/slack-invite/). 
+Ask your questions about bugs or specific use cases and someone from the core 
+team will respond.
 
 #### Which license does ZenML use?
 
