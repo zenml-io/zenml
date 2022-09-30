@@ -790,7 +790,7 @@ def test_returning_an_object_of_the_wrong_type_raises_an_error(
         pipeline_ = one_step_pipeline(step_function())
 
         with pytest.raises(StepInterfaceError):
-            pipeline_.run()
+            pipeline_.run(unlisted=True)
 
 
 def test_returning_wrong_amount_of_objects_raises_an_error(one_step_pipeline):
@@ -839,7 +839,7 @@ def test_returning_wrong_amount_of_objects_raises_an_error(one_step_pipeline):
         pipeline_ = one_step_pipeline(step_function())
 
         with pytest.raises(StepInterfaceError):
-            pipeline_.run()
+            pipeline_.run(unlisted=True)
 
 
 def test_step_can_output_generic_types(one_step_pipeline):
@@ -857,7 +857,7 @@ def test_step_can_output_generic_types(one_step_pipeline):
         pipeline_ = one_step_pipeline(step_function())
 
         with does_not_raise():
-            pipeline_.run()
+            pipeline_.run(unlisted=True)
 
 
 def test_step_can_output_subscripted_generic_types(one_step_pipeline):
@@ -875,7 +875,7 @@ def test_step_can_output_subscripted_generic_types(one_step_pipeline):
         pipeline_ = one_step_pipeline(step_function())
 
         with does_not_raise():
-            pipeline_.run()
+            pipeline_.run(unlisted=True)
 
 
 def test_step_can_have_generic_input_types():
