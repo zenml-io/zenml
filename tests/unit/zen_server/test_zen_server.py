@@ -33,7 +33,6 @@ from zenml.services import (
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_server.deploy.local.local_zen_server import (
     ZEN_SERVER_HEALTHCHECK_URL_PATH,
-    LocalDaemonServiceEndpoint,
     LocalServerDeploymentConfig,
     LocalZenServer,
     LocalZenServerConfig,

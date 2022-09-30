@@ -47,8 +47,6 @@ from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME, BaseZenStore
 if TYPE_CHECKING:
     from zenml.models import (
         HydratedStackModel,
-        ProjectModel,
-        StackModel,
         UserModel,
     )
     from zenml.stack import Stack

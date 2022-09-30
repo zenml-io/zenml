@@ -132,6 +132,7 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
         Returns:
             The Dash application.
         """
+        # flake8: noqa: C901
         external_stylesheets = [
             dbc.themes.BOOTSTRAP,
             dbc.icons.BOOTSTRAP,

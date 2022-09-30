@@ -73,17 +73,11 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.utils import get_cache_status
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
-from zenml.utils import source_utils, string_utils
-
-if TYPE_CHECKING:
-    pass
-from zenml.stack import StackComponent
 from zenml.utils import proto_utils, source_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step, StepConfiguration
-    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 

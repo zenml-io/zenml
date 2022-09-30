@@ -58,7 +58,7 @@ from zenml.models import (
 )
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import io_utils, uuid_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
 from zenml.zen_stores.metadata_store import MetadataStore
@@ -149,6 +149,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             ValueError: If the URL is invalid or the SQL driver is not
                 supported.
         """
+        # flake8: noqa: C901
         url = values.get("url")
         if url is None:
             return values

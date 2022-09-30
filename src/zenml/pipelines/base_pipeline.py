@@ -67,9 +67,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
-    from zenml.pipelines import Schedule
     from zenml.post_execution import PipelineRunView
-    from zenml.stack import Stack
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
