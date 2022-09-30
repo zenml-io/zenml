@@ -155,9 +155,14 @@ def up(
 
     server = deployer.deploy_server(server_config)
 
+    gc = GlobalConfiguration()
     track_event(
         AnalyticsEvent.ZENML_SERVER_STARTED,
-        metadata={"provider": str(provider)},
+        metadata={
+            "server_id": str(gc.user_id),
+            "server_deployment": str(provider),
+            "database_type": str(gc.store.type),
+        },
     )
 
     if not blocking:
@@ -195,9 +200,14 @@ def down() -> None:
     deployer = ServerDeployer()
     deployer.remove_server(server.config.name)
 
+    gc = GlobalConfiguration()
     track_event(
         AnalyticsEvent.ZENML_SERVER_STOPPED,
-        metadata={"provider": str(server.config.provider)},
+        metadata={
+            "server_id": str(gc.user_id),
+            "server_deployment": str(server.config.provider),
+            "database_type": str(gc.store.type),
+        },
     )
 
     cli_utils.declare("The local ZenML dashboard has been shut down.")
@@ -342,7 +352,7 @@ def deploy(
     server = deployer.deploy_server(server_config, timeout=timeout)
 
     metadata = {
-        "provider": str(server.config.provider),
+        "server_deployment": str(server.config.provider),
     }
     if isinstance(server.config, TerraformServerDeploymentConfig):
         # TODO: maybe move the server ID into the ServerDeploymentConfig class
@@ -383,7 +393,7 @@ def destroy() -> None:
     deployer.remove_server(server.config.name)
 
     metadata = {
-        "provider": str(server.config.provider),
+        "server_deployment": str(server.config.provider),
     }
 
     if isinstance(server.config, TerraformServerDeploymentConfig):

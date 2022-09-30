@@ -285,7 +285,9 @@ class Client(metaclass=ClientMetaClass):
             return
 
         active_project, active_stack = self.zen_store.validate_active_config(
-            self._config.active_project_name, self._config.active_stack_id
+            self._config.active_project_name,
+            self._config.active_stack_id,
+            config_name="repo",
         )
         self._config.active_stack_id = active_stack.id
         self._config.set_active_project(active_project)

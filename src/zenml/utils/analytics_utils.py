@@ -327,16 +327,17 @@ class AnalyticsContext:
         # infinite loop
         if gc._zen_store is not None:
             zen_store = gc.zen_store
-            if zen_store.type == StoreType.REST:
+            if (
+                zen_store.type == StoreType.REST
+                and "server_id" not in properties
+            ):
                 user = zen_store.active_user
                 server_info = zen_store.get_store_info()
                 properties.update(
                     {
                         "user_id": str(user.id),
                         "server_id": str(server_info.id),
-                        "server_deployment": str(
-                            server_info.deployment_type
-                        ),
+                        "server_deployment": str(server_info.deployment_type),
                         "database_type": str(server_info.database_type),
                     }
                 )
