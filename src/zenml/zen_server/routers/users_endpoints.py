@@ -205,7 +205,9 @@ def activate_user(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def deactivate_user(user_name_or_id: Union[str, UUID]) -> UserModel:
+def deactivate_user(
+        user_name_or_id: Union[str, UUID]
+) -> DeactivateUserResponse:
     """Deactivates a user and generates a new activation token for it.
 
     Args:
