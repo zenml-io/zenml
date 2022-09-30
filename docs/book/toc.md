@@ -137,13 +137,6 @@
 ## Reference
 
 * [Community & Content](reference/community-and-content.md)
-  * [Join the Slack Community](https://zenml.io/slack-invite/)
-  * [Roadmap](https://zenml.io/roadmap)
-  * [Blog](https://blog.zenml.io/)
-  * [Podcast](https://podcast.zenml.io/)
-  * [YouTube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
-  * [Newsletter](https://zenml.substack.com/)
-  * [Community Events](https://www.eventbrite.de/o/zenml-44751230043)
 * [Glossary](reference/glossary.md)
 * [FAQ](reference/faq.md)
 * [CLI Cheat Sheet](reference/cheat-sheet.md)
