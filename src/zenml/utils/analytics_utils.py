@@ -377,13 +377,16 @@ def identify_group(
     group: Union[str, AnalyticsGroup],
     group_id: str,
     group_metadata: Optional[Dict[str, Any]] = None,
-) -> None:
+):
     """Attach metadata to a segment group.
 
     Args:
         group: Group to track.
         group_id: ID of the group.
         group_metadata: Metadata to attach to the group.
+
+    Returns:
+        True if event is sent successfully, False is not.
     """
     with AnalyticsContext() as analytics:
         return analytics.group(group, group_id, traits=group_metadata)

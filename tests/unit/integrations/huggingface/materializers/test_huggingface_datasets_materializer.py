@@ -20,6 +20,7 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
     HFDatasetMaterializer,
 )
+from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_huggingface_datasets_materializer(clean_client):
@@ -33,7 +34,7 @@ def test_huggingface_datasets_materializer(clean_client):
             materializer=HFDatasetMaterializer,
         )
 
-    last_run = clean_client.get_pipeline("test_pipeline").runs[-1]
+    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
     dataset = last_run.steps[-1].output.read()
     assert isinstance(dataset, Dataset)
     assert dataset.data.shape == (3, 1)

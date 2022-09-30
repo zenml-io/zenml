@@ -58,7 +58,11 @@ class ServerModel(BaseModel):
     )
 
     def is_local(self) -> bool:
-        """Return whether the server is running locally."""
+        """Return whether the server is running locally.
+
+        Returns:
+            True if the server is running locally, False otherwise.
+        """
         from zenml.config.global_config import GlobalConfiguration
 
         # Local ZenML servers are identifiable by the fact that their

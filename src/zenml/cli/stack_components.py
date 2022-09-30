@@ -320,7 +320,6 @@ def generate_stack_component_share_command(
 
         Args:
             name_or_id: The name or id of the stack component to update.
-            args: Additional arguments to pass to the update command.
         """
         with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
             cli_utils.print_active_config()
@@ -373,7 +372,7 @@ def generate_stack_component_remove_attribute_command(
 
         Args:
             name_or_id: The name of the stack component to remove the
-            attribute from.
+                attribute from.
             args: Additional arguments to pass to the remove_attribute command.
         """
         with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
