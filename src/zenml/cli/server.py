@@ -307,7 +307,9 @@ def deploy(
     config_dict["provider"] = provider
 
     if not username:
-        username = click.prompt("ZenML admin account username", default="admin")
+        username = click.prompt(
+            "ZenML admin account username", default="default"
+        )
     config_dict["username"] = username
 
     password = password or config_dict.get("password", None)

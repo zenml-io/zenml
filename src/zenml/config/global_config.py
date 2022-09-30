@@ -589,14 +589,12 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             )
 
             track_event(
-                AnalyticsEvent.ZENML_SERVER_CONNECTED,
-                track_server_info=True,
+                AnalyticsEvent.ZENML_SERVER_CONNECTED
             )
 
         track_event(
             AnalyticsEvent.INITIALIZED_STORE,
-            {"store_type": config.type.value},
-            track_server_info=self.zen_store.type == StoreType.REST,
+            {"store_type": config.type.value}
         )
 
     @property

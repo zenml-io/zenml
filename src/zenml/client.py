@@ -486,7 +486,7 @@ class Client(metaclass=ClientMetaClass):
         """
         self._set_active_root(root)
 
-    @track(event=AnalyticsEvent.SET_PROJECT, track_server_info=True)
+    @track(event=AnalyticsEvent.SET_PROJECT)
     def set_active_project(
         self, project_name_or_id: Union[str, UUID]
     ) -> "ProjectModel":
@@ -631,7 +631,7 @@ class Client(metaclass=ClientMetaClass):
 
         return Stack.from_model(self.active_stack_model)
 
-    @track(event=AnalyticsEvent.SET_STACK, track_server_info=True)
+    @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(self, stack: "StackModel") -> None:
         """Sets the stack as active.
 

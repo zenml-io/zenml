@@ -634,18 +634,16 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         self,
         event: Union[str, AnalyticsEvent],
         metadata: Optional[Dict[str, Any]] = None,
-        track_server_info: bool = False,
     ) -> None:
         """Track an analytics event.
 
         Args:
             event: The event to track.
             metadata: Additional metadata to track with the event.
-            track_server_info: Whether to track server info.
         """
         if self.track_analytics:
             # Server information is always tracked, if available.
-            track_event(event, metadata, track_server_info=True)
+            track_event(event, metadata)
 
     class Config:
         """Pydantic configuration class."""
