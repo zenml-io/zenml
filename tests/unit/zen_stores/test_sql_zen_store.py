@@ -977,54 +977,15 @@ def test_deleting_nonexistent_pipeline_fails(
 # --------------
 
 
-def test_create_pipeline_run_succeeds(
-    sql_store: BaseZenStore,
-):
-    """Tests creating pipeline run."""
-    pipeline_run = PipelineRunModel(
-        name="arias_pipeline_run",
-    )
-    with does_not_raise():
-        sql_store["store"].create_run(pipeline_run=pipeline_run)
-
-
-def test_creating_pipeline_run_fails_when_run_already_exists(
-    sql_store: BaseZenStore,
-):
-    """Tests creating pipeline run fails when run already exists."""
-    pipeline_run = PipelineRunModel(
-        name="arias_pipeline_run",
-    )
-    sql_store["store"].create_run(pipeline_run=pipeline_run)
-    with pytest.raises(EntityExistsError):
-        sql_store["store"].create_run(pipeline_run=pipeline_run)
-
-
-def test_creating_pipeline_run_fails_when_no_pipeline_exists(
-    sql_store: BaseZenStore,
-):
-    """Tests creating pipeline run fails when no pipeline exists."""
-    pipeline_run = PipelineRunModel(
-        name="arias_pipeline_run",
-        pipeline_id=uuid.uuid4(),
-    )
-    with pytest.raises(KeyError):
-        sql_store["store"].create_run(pipeline_run=pipeline_run)
-
-
 def test_getting_run_succeeds(
-    sql_store: BaseZenStore,
+    sql_store_with_run: BaseZenStore,
 ):
     """Tests getting run."""
-    pipeline_run = PipelineRunModel(
-        name="arias_pipeline_run",
-    )
-    sql_store["store"].create_run(pipeline_run=pipeline_run)
-    run_id = sql_store["store"].list_runs()[0].id
+    run_id = sql_store_with_run["pipeline_run"].id
     with does_not_raise():
-        run = sql_store["store"].get_run(run_id=run_id)
+        run = sql_store_with_run["store"].get_run(run_id=run_id)
         assert run is not None
-        assert run.name == "arias_pipeline_run"
+        assert run.name == sql_store_with_run["pipeline_run"].name
 
 
 def test_getting_nonexistent_run_fails(
@@ -1036,17 +997,14 @@ def test_getting_nonexistent_run_fails(
 
 
 def test_list_runs_succeeds(
-    sql_store: BaseZenStore,
+    sql_store_with_run: BaseZenStore,
 ):
     """Tests listing runs."""
-    pipeline_run = PipelineRunModel(
-        name="arias_pipeline_run",
-    )
-    sql_store["store"].create_run(pipeline_run=pipeline_run)
+    run = sql_store_with_run["pipeline_run"]
     with does_not_raise():
-        runs = sql_store["store"].list_runs()
+        runs = sql_store_with_run["store"].list_runs()
         assert len(runs) == 1
-        assert runs[0].name == "arias_pipeline_run"
+        assert runs[0].name == run.name
 
 
 def test_list_runs_returns_nothing_when_no_runs_exist(
@@ -1078,6 +1036,9 @@ def test_update_run_succeeds(
     """Tests updating run."""
     pipeline_run = PipelineRunModel(
         name="arias_pipeline_run",
+        user=sql_store["active_user"].id,
+        project=sql_store["default_project"].id,
+        pipeline_configuration={},
     )
     sql_store["store"].create_run(pipeline_run=pipeline_run)
     run_id = sql_store["store"].list_runs()[0].id
