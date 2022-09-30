@@ -14,12 +14,6 @@ variable "password" {
   type        = string
 }
 
-variable "email" {
-  description = "Email address for the default ZenML server account"
-  default     = ""
-  type        = string
-}
-
 variable "name" {
   description = "The prefix to use for all AWS resource names"
   default     = "zenmlserver"

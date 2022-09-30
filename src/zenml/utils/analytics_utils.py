@@ -71,6 +71,7 @@ class AnalyticsEvent(str, Enum):
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
     OPT_OUT_ANALYTICS = "Analytics opt-out"
+    OPT_IN_OUT_EMAIL = "Response for Email prompt"
 
     # Examples
     RUN_ZENML_GO = "ZenML go"
@@ -293,7 +294,7 @@ class AnalyticsContext:
         """
         import analytics
 
-        from zenml.client import Client
+        from zenml.config.global_config import GlobalConfiguration
 
         if isinstance(event, AnalyticsEvent):
             event = event.value
@@ -324,23 +325,24 @@ class AnalyticsContext:
         )
 
         if track_server_info:
-            client = Client()
-            zen_store = client.zen_store
-            if zen_store.type == StoreType.REST:
-                user = zen_store.active_user
-                server_info = zen_store.get_store_info()
-                project = client.active_project
-                # TODO: extract server ID
-                properties.update(
-                    {
-                        "user_id": str(user.id),
-                        "email": user.email or "",
-                        "project_id": str(project.id),
-                        "server_id": str(server_info.id),
-                        "server_deployment": str(server_info.deployment_type),
-                        "database_type": str(server_info.database_type),
-                    }
-                )
+            gc = GlobalConfiguration()
+            # avoid initializing the store in the analytics, to not create an
+            # infinite loop
+            if gc._zen_store is not None:
+                zen_store = gc.zen_store
+                if zen_store.type == StoreType.REST:
+                    user = zen_store.active_user
+                    server_info = zen_store.get_store_info()
+                    properties.update(
+                        {
+                            "user_id": str(user.id),
+                            "server_id": str(server_info.id),
+                            "server_deployment": str(
+                                server_info.deployment_type
+                            ),
+                            "database_type": str(server_info.database_type),
+                        }
+                    )
 
         analytics.track(self.user_id, event, properties)
 

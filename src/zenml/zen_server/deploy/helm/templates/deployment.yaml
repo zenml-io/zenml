@@ -36,6 +36,8 @@ spec:
           env:
             - name: ZENML_DEBUG
               value: {{ .Values.zenml.debug | quote }}
+            - name: ANALYTICS_OPT_IN
+              value: "False"
             - name: ZENML_AUTH_TYPE
               value: {{ .Values.zenml.authType | quote }}
             {{- if .Values.zenml.rootUrlPath }}
@@ -46,8 +48,6 @@ spec:
               value: {{ .Values.zenml.defaultProject | quote }}
             - name: ZENML_DEFAULT_USER_NAME
               value: {{ .Values.zenml.defaultUsername | quote }}
-            - name: ZENML_DEFAULT_USER_EMAIL
-              value: {{ .Values.zenml.defaultUserEmail | quote }}
             {{- if .Values.zenml.database.url }}
             - name: ZENML_STORE_TYPE
               value: sql

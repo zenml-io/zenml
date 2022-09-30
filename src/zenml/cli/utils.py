@@ -747,9 +747,7 @@ def print_server_deployment(server: "ServerDeployment") -> None:
     rich_table.add_column("", overflow="fold")
     rich_table.add_column("", overflow="fold")
 
-    server_info = [
-        (str(k).upper(), str(v)) for k, v in server.config.dict().items()
-    ]
+    server_info = []
 
     if server.status:
         server_info.extend(
