@@ -415,7 +415,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         are set to their default values, if possible.
         """
         active_project, active_stack = self.zen_store.validate_active_config(
-            self.active_project_name, self.active_stack_id
+            self.active_project_name,
+            self.active_stack_id,
+            config_name="global",
         )
         self.set_active_project(active_project)
         self.active_stack_id = active_stack.id
@@ -588,15 +590,10 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 },
             )
 
-            track_event(
-                AnalyticsEvent.ZENML_SERVER_CONNECTED,
-                track_server_info=True,
-            )
+            track_event(AnalyticsEvent.ZENML_SERVER_CONNECTED)
 
         track_event(
-            AnalyticsEvent.INITIALIZED_STORE,
-            {"store_type": config.type.value},
-            track_server_info=self.zen_store.type == StoreType.REST,
+            AnalyticsEvent.INITIALIZED_STORE, {"store_type": config.type.value}
         )
 
     @property

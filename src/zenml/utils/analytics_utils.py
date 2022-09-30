@@ -280,14 +280,12 @@ class AnalyticsContext:
         self,
         event: Union[str, AnalyticsEvent],
         properties: Optional[Dict[str, Any]] = None,
-        track_server_info: bool = False,
     ) -> bool:
         """Track an event.
 
         Args:
             event: Event to track.
             properties: Event properties.
-            track_server_info: Whether to track server info, if available.
 
         Returns:
             True if tracking information was sent, False otherwise.
@@ -324,25 +322,25 @@ class AnalyticsContext:
             }
         )
 
-        if track_server_info:
-            gc = GlobalConfiguration()
-            # avoid initializing the store in the analytics, to not create an
-            # infinite loop
-            if gc._zen_store is not None:
-                zen_store = gc.zen_store
-                if zen_store.type == StoreType.REST:
-                    user = zen_store.active_user
-                    server_info = zen_store.get_store_info()
-                    properties.update(
-                        {
-                            "user_id": str(user.id),
-                            "server_id": str(server_info.id),
-                            "server_deployment": str(
-                                server_info.deployment_type
-                            ),
-                            "database_type": str(server_info.database_type),
-                        }
-                    )
+        gc = GlobalConfiguration()
+        # avoid initializing the store in the analytics, to not create an
+        # infinite loop
+        if gc._zen_store is not None:
+            zen_store = gc.zen_store
+            if (
+                zen_store.type == StoreType.REST
+                and "server_id" not in properties
+            ):
+                user = zen_store.active_user
+                server_info = zen_store.get_store_info()
+                properties.update(
+                    {
+                        "user_id": str(user.id),
+                        "server_id": str(server_info.id),
+                        "server_deployment": str(server_info.deployment_type),
+                        "database_type": str(server_info.database_type),
+                    }
+                )
 
         analytics.track(self.user_id, event, properties)
 
@@ -397,22 +395,18 @@ def identify_group(
 def track_event(
     event: Union[str, AnalyticsEvent],
     metadata: Optional[Dict[str, Any]] = None,
-    track_server_info: bool = False,
 ) -> bool:
     """Track segment event if user opted-in.
 
     Args:
         event: Name of event to track in segment.
         metadata: Dict of metadata to track.
-        track_server_info: Whether to track the server info, if available.
 
     Returns:
         True if event is sent successfully, False is not.
     """
     with AnalyticsContext() as analytics:
-        return analytics.track(
-            event, metadata, track_server_info=track_server_info
-        )
+        return analytics.track(event, metadata)
 
     return False
 
@@ -475,14 +469,12 @@ class AnalyticsTrackerMixin(ABC):
         self,
         event: Union[str, AnalyticsEvent],
         metadata: Optional[Dict[str, Any]],
-        track_server_info: bool = False,
     ) -> None:
         """Track an event.
 
         Args:
             event: Event to track.
             metadata: Metadata to track.
-            track_server_info: Whether to track server info, if available.
         """
 
 
@@ -512,30 +504,25 @@ class AnalyticsTrackedModelMixin(BaseModel):
     def track_event(
         self,
         event: Union[str, AnalyticsEvent],
-        track_server_info: bool = False,
         tracker: Optional[AnalyticsTrackerMixin] = None,
     ) -> None:
         """Track an event for the model.
 
         Args:
             event: Event to track.
-            track_server_info: Whether to track server info, if available.
             tracker: Optional tracker to use for analytics.
         """
         metadata = self.get_analytics_metadata()
         if tracker:
-            tracker.track_event(
-                event, metadata, track_server_info=track_server_info
-            )
+            tracker.track_event(event, metadata)
         else:
-            track_event(event, metadata, track_server_info=track_server_info)
+            track_event(event, metadata)
 
 
 @parametrized
 def track(
     func: Callable[..., Any],
     event: Optional[Union[str, AnalyticsEvent]] = None,
-    track_server_info: bool = False,
 ) -> Callable[..., Any]:
     """Decorator to track event.
 
@@ -551,7 +538,6 @@ def track(
     Args:
         func: Function that is decorated.
         event: Event string to stamp with.
-        track_server_info: Whether to track server info, if available.
 
     Returns:
         Decorated function.
@@ -576,25 +562,13 @@ def track(
                 tracker = args[0]
             for obj in [result] + list(args) + list(kwargs.values()):
                 if isinstance(obj, AnalyticsTrackedModelMixin):
-                    obj.track_event(
-                        event_name,
-                        track_server_info=track_server_info,
-                        tracker=tracker,
-                    )
+                    obj.track_event(event_name, tracker=tracker)
                     break
             else:
                 if tracker:
-                    tracker.track_event(
-                        event_name,
-                        metadata,
-                        track_server_info=track_server_info,
-                    )
+                    tracker.track_event(event_name, metadata)
                 else:
-                    track_event(
-                        event_name,
-                        metadata,
-                        track_server_info=track_server_info,
-                    )
+                    track_event(event_name, metadata)
 
         except Exception as e:
             logger.debug(f"Analytics tracking failure for {func}: {e}")
