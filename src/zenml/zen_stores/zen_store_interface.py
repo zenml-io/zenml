@@ -549,6 +549,24 @@ class ZenStoreInterface(ABC):
             KeyError: If no user with the given ID exists.
         """
 
+    @abstractmethod
+    def user_email_opt_in(
+        self,
+        user_name_or_id: Union[str, UUID],
+        user_opt_in_response: bool,
+        email: Optional[str] = None,
+    ):
+        """Persist user response to the email prompt.
+
+        Args:
+            user_name_or_id: The name or the ID of the user.
+            user_opt_in_response: Whether this email should be associated
+                with the user id in the telemetry
+            email: The users email
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+
     # -----
     # Teams
     # -----

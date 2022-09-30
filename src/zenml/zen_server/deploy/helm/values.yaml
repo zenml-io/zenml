@@ -46,7 +46,6 @@ zenml:
 
   defaultProject: "default"
   defaultUsername: default
-  defaultUserEmail: ""
   # Use your own password here
   defaultPassword: zenml
 

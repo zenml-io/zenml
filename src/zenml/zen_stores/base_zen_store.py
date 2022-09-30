@@ -23,7 +23,6 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DEFAULT_PROJECT_NAME,
-    ENV_ZENML_DEFAULT_USER_EMAIL,
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
@@ -72,6 +71,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
     config: StoreConfiguration
     track_analytics: bool = True
+    _active_user: Optional[UserModel] = None
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
@@ -107,7 +107,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             ) from e
 
         if not skip_default_registrations:
+            logger.debug("Initializing database")
             self._initialize_database()
+        else:
+            logger.debug("Skipping database initialization")
 
     @staticmethod
     def get_store_class(store_type: StoreType) -> Type["BaseZenStore"]:
@@ -460,7 +463,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             The active user.
         """
-        return self.get_user(self.active_user_name)
+        if self._active_user is None:
+            self._active_user = self.get_user(self.active_user_name)
+        return self._active_user
 
     @property
     def users(self) -> List[UserModel]:
@@ -498,7 +503,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         user_password = os.getenv(
             ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
         )
-        user_email = os.getenv(ENV_ZENML_DEFAULT_USER_EMAIL, "")
 
         logger.info(f"Creating default user '{user_name}' ...")
         return self.create_user(
@@ -506,7 +510,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 name=user_name,
                 active=True,
                 password=user_password,
-                email=user_email,
             )
         )
 

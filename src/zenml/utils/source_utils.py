@@ -94,7 +94,7 @@ def is_inside_repository(file_path: str) -> bool:
     """
     from zenml.client import Client
 
-    repo_path = Client.find_client()
+    repo_path = Client.find_repository()
     if not repo_path:
         return False
 
@@ -270,7 +270,7 @@ def get_source_root_path() -> str:
     """
     from zenml.client import Client
 
-    repo_root = Client.find_client()
+    repo_root = Client.find_repository()
     if repo_root:
         logger.debug("Using repository root as source root: %s", repo_root)
         return str(repo_root.resolve())
@@ -488,7 +488,7 @@ def load_source_path_class(
     """
     from zenml.client import Client
 
-    repo_root = Client.find_client()
+    repo_root = Client.find_repository()
     if not import_path and repo_root:
         import_path = str(repo_root)
 
