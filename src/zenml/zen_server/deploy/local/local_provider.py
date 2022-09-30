@@ -186,7 +186,6 @@ class LocalServerProvider(BaseServerProvider):
 
         assert service.endpoint
         assert service.endpoint.monitor
-        print("stopping")
         service.stop(timeout=timeout)
         (
             service.config,
@@ -197,7 +196,6 @@ class LocalServerProvider(BaseServerProvider):
             new_endpoint_cfg,
             new_monitor_cfg,
         )
-        print("starting")
         service.start(timeout=timeout)
 
         return service
