@@ -456,7 +456,6 @@ def share_stack(
             )
 
             only_component.is_shared = True
-            breakpoint()
             client.update_stack_component(component=only_component)
 
         with console.status(f"Sharing stack `{stack_to_share.name}` ...\n"):

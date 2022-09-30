@@ -30,10 +30,12 @@ from zenml.cli.stack import (
     import_stack,
     remove_stack_component,
     rename_stack,
+    share_stack,
     update_stack,
 )
 from zenml.client import Client
 from zenml.enums import StackComponentType
+from zenml.models import UserModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
@@ -231,6 +233,64 @@ def test_renaming_non_active_stack_succeeds(clean_client) -> None:
         clean_client.zen_store.get_stack(stack_model.id).name
         == "arias_renamed_stack"
     )
+
+
+def test_sharing_nonexistent_stack_fails(clean_client: Client) -> None:
+    """Test stack rename of nonexistent stack fails."""
+    runner = CliRunner()
+    result = runner.invoke(share_stack, ["not_a_stack"])
+    assert result.exit_code == 1
+
+
+def test_share_stack_that_is_already_shared_by_other_user_fails(
+    clean_client: Client,
+) -> None:
+    runner = CliRunner()
+    other_user = UserModel(name="Arias_Evil_Twin")
+    other_user = clean_client.zen_store.create_user(other_user)
+    clean_client.zen_store._create_default_stack(
+        project_name_or_id="default", user_name_or_id=other_user.id
+    )
+    # TODO: Clean this up, we need to make sure this get exactly one stack
+    other_user_default_stack = clean_client.zen_store.list_stacks(
+        project_name_or_id=clean_client.active_project.id,
+        user_name_or_id=other_user.id,
+        name="default",
+    )[0]
+    other_user_default_stack.is_shared = True
+
+    # TODO: Clean this up once, once authorizetion is implemented the current
+    #  user might not be authorized to update other_users stack
+    runner.invoke(share_stack, [str(other_user_default_stack.id)])
+    result = runner.invoke(share_stack, ["default"])
+    assert result.exit_code == 1
+
+
+def test_share_stack_when_component_is_already_shared_by_other_user_fails(
+    clean_client: Client,
+) -> None:
+    """When sharing a stack all the components are also shared, so if a
+    component with the same name is already shared this should fail."""
+    runner = CliRunner()
+    other_user = UserModel(name="Arias_Evil_Twin")
+    other_user = clean_client.zen_store.create_user(other_user)
+    clean_client.zen_store._create_default_stack(
+        project_name_or_id="default", user_name_or_id=other_user.id
+    )
+    # TODO: Clean this up, we need to make sure this get exactly one stack
+    other_user_default_stack = clean_client.zen_store.list_stack_components(
+        project_name_or_id=clean_client.active_project.id,
+        user_name_or_id=other_user.id,
+        name="default",
+        type=StackComponentType.ORCHESTRATOR,
+    )[0]
+    other_user_default_stack.is_shared = True
+
+    # TODO: Clean this up once, once authorizetion is implemented the current
+    #  user might not be authorized to update other_users stack
+    runner.invoke(share_stack, [str(other_user_default_stack.id)])
+    result = runner.invoke(share_stack, ["default"])
+    assert result.exit_code == 1
 
 
 def test_remove_component_from_nonexistent_stack_fails(clean_client) -> None:
