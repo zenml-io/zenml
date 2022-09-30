@@ -36,12 +36,6 @@ from zenml.models import (
 from zenml.models.pipeline_models import PipelineModel
 from zenml.models.stack_models import StackModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.user_management_schemas import (
-    RoleSchema,
-    TeamSchema,
-    UserSchema,
-)
 
 DEFAULT_NAME = "default"
 
@@ -707,72 +701,6 @@ def test_tfx_metadata_succeeds(
         config = sql_store["store"].get_metadata_config()
         assert config is not None
         assert type(config) == ConnectionConfig
-
-
-# =======================
-# Internal helper methods
-# =======================
-
-
-def test_get_schema_succeeds(
-    sql_store: BaseZenStore,
-):
-    """Tests getting schema."""
-    schema = sql_store["store"]._get_schema_by_name_or_id(
-        DEFAULT_NAME, ProjectSchema, "project"
-    )
-    assert schema is not None
-    assert type(schema) == ProjectSchema
-
-
-def test_get_schema_fails_for_nonexistent_object(
-    sql_store: BaseZenStore,
-):
-    """Tests getting schema fails for nonexistent object."""
-    with pytest.raises(KeyError):
-        sql_store["store"]._get_schema_by_name_or_id(
-            "arias_project", ProjectSchema, "project"
-        )
-
-
-def test_get_project_schema_succeeds(
-    sql_store: BaseZenStore,
-):
-    """Tests getting project schema."""
-    schema = sql_store["store"]._get_project_schema(DEFAULT_NAME)
-    assert schema is not None
-    assert type(schema) == ProjectSchema
-
-
-def test_get_user_schema_succeeds(
-    sql_store: BaseZenStore,
-):
-    """Tests getting user schema."""
-    schema = sql_store["store"]._get_user_schema(DEFAULT_NAME)
-    assert schema is not None
-    assert type(schema) == UserSchema
-
-
-def test_get_team_schema_succeeds(
-    sql_store: BaseZenStore,
-):
-    """Tests getting team schema."""
-    new_team = TeamModel(name="arias_team")
-    sql_store["store"].create_team(new_team)
-    schema = sql_store["store"]._get_team_schema("arias_team")
-    assert schema is not None
-    assert type(schema) == TeamSchema
-
-
-def test_get_role_schema_succeeds(
-    sql_store: BaseZenStore,
-):
-    """Tests getting role schema."""
-    new_role = RoleModel(name="aria_admin")
-    sql_store["store"].create_role(new_role)
-    schema = sql_store["store"]._get_role_schema("aria_admin")
-    assert schema is not None
-    assert type(schema) == RoleSchema
 
 
 # ---------

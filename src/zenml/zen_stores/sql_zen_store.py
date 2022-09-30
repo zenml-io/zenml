@@ -1605,7 +1605,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             team = self._get_team_schema(team_name_or_id, session=session)
-        return [user.to_model() for user in team.users]
+            return [user.to_model() for user in team.users]
 
     def get_teams_for_user(
         self, user_name_or_id: Union[str, UUID]
@@ -1621,7 +1621,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             user = self._get_user_schema(user_name_or_id, session=session)
-        return [team.to_model() for team in user.teams]
+            return [team.to_model() for team in user.teams]
 
     def add_user_to_team(
         self,
@@ -1723,7 +1723,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             role = self._get_role_schema(role_name_or_id, session=session)
-        return role.to_model()
+            return role.to_model()
 
     def list_roles(self) -> List[RoleModel]:
         """List all roles.
@@ -1734,7 +1734,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             roles = session.exec(select(RoleSchema)).all()
 
-        return [role.to_model() for role in roles]
+            return [role.to_model() for role in roles]
 
     @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(self, role: RoleModel) -> RoleModel:
