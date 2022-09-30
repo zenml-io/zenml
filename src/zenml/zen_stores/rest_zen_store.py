@@ -758,8 +758,6 @@ class RestZenStore(BaseZenStore):
             user_opt_in_response: Whether this email should be associated
                 with the user id in the telemetry
             email: The users email
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         request = EmailOptInModel(
             email=email, email_opted_in=user_opt_in_response

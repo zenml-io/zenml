@@ -264,9 +264,6 @@ def email_opt_in_response(
     Args:
         user_name_or_id: Name or ID of the user.
         user_response: User Response to email prompt
-
-    Returns:
-        The generated activation token.
     """
     zen_store.user_email_opt_in(
         user_name_or_id=user_name_or_id,
