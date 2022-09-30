@@ -219,6 +219,7 @@ class TerraformService(BaseService):
         Raises:
             FileNotFoundError: if the values.tfvars.json file is not
                 found in the stack recipe.
+            TypeError: if the file doesn't contain a dictionary of variables.
         """
         import json
 
