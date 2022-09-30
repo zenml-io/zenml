@@ -71,7 +71,7 @@ def generate_stack_component_get_command(
 
 def generate_stack_component_describe_command(
     component_type: StackComponentType,
-) -> Callable[[Optional[str]], None]:
+) -> Callable[[str], None]:
     """Generates a `describe` command for the specific stack component type.
 
     Args:
@@ -86,7 +86,7 @@ def generate_stack_component_describe_command(
         type=str,
         required=False,
     )
-    def describe_stack_component_command(name_or_id: Optional[str]) -> None:
+    def describe_stack_component_command(name_or_id: str) -> None:
         """Prints details about the active/specified component.
 
         Args:
@@ -569,7 +569,7 @@ def generate_stack_component_copy_command(
 
 def generate_stack_component_up_command(
     component_type: StackComponentType,
-) -> Callable[[Optional[str]], None]:
+) -> Callable[[str], None]:
     """Generates a `up` command for the specific stack component type.
 
     Args:
@@ -580,7 +580,7 @@ def generate_stack_component_up_command(
     """
 
     @click.argument("name_or_id", type=str, required=False)
-    def up_stack_component_command(name_or_id: Optional[str] = None) -> None:
+    def up_stack_component_command(name_or_id: str) -> None:
         """Deploys a stack component locally.
 
         Args:
@@ -639,7 +639,7 @@ def generate_stack_component_up_command(
 
 def generate_stack_component_down_command(
     component_type: StackComponentType,
-) -> Callable[[Optional[str], bool], None]:
+) -> Callable[[str, bool], None]:
     """Generates a `down` command for the specific stack component type.
 
     Args:
@@ -666,7 +666,7 @@ def generate_stack_component_down_command(
         "them. Use `-f/--force` instead.",
     )
     def down_stack_component_command(
-        name_or_id: Optional[str] = None,
+        name_or_id: str,
         force: bool = False,
         old_force: bool = False,
     ) -> None:
@@ -742,7 +742,7 @@ def generate_stack_component_down_command(
 
 def generate_stack_component_logs_command(
     component_type: StackComponentType,
-) -> Callable[[Optional[str], bool], None]:
+) -> Callable[[str, bool], None]:
     """Generates a `logs` command for the specific stack component type.
 
     Args:
@@ -760,7 +760,7 @@ def generate_stack_component_logs_command(
         help="Follow the log file instead of just displaying the current logs.",
     )
     def stack_component_logs_command(
-        name_or_id: Optional[str] = None, follow: bool = False
+        name_or_id: str, follow: bool = False
     ) -> None:
         """Displays stack component logs.
 

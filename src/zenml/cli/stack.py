@@ -430,7 +430,7 @@ def share_stack(
     client = Client()
 
     active_stack_name = client.active_stack_model.name
-    stack_name_or_ird = stack_name_or_id or active_stack_name
+    stack_name_or_id = stack_name_or_id or active_stack_name
 
     client = Client()
     try:
@@ -439,7 +439,7 @@ def share_stack(
         )
     except KeyError:
         cli_utils.error(
-            f"Stack `{stack_name_or_ird}` cannot be updated as it does not "
+            f"Stack `{stack_name_or_id}` cannot be updated as it does not "
             f"exist.",
         )
     else:

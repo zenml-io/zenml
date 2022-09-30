@@ -848,13 +848,16 @@ def get_stack_by_id_or_name_or_prefix(
         )
 
         # TODO: This is ugly, an _or filter should be set on the sql_zen_store
-        stacks = set(
-            client.zen_store.list_stacks(
-                project_name_or_id=client.active_project.name,
-                user_name_or_id=client.active_user.name,
-            )
-            + client.zen_store.list_stacks(
-                project_name_or_id=client.active_project.name, is_shared=True
+        stacks = list(
+            set(
+                client.zen_store.list_stacks(
+                    project_name_or_id=client.active_project.name,
+                    user_name_or_id=client.active_user.name,
+                )
+                + client.zen_store.list_stacks(
+                    project_name_or_id=client.active_project.name,
+                    is_shared=True,
+                )
             )
         )
 
@@ -1025,16 +1028,18 @@ def get_component_by_id_or_name_or_prefix(
         )
 
         # TODO: This is ugly, an _or filter should be set on the sql_zen_store
-        components = set(
-            client.zen_store.list_stack_components(
-                project_name_or_id=client.active_project.name,
-                user_name_or_id=client.active_user.name,
-                type=component_type,
-            )
-            + client.zen_store.list_stack_components(
-                project_name_or_id=client.active_project.name,
-                is_shared=True,
-                type=component_type,
+        components = list(
+            set(
+                client.zen_store.list_stack_components(
+                    project_name_or_id=client.active_project.name,
+                    user_name_or_id=client.active_user.name,
+                    type=component_type,
+                )
+                + client.zen_store.list_stack_components(
+                    project_name_or_id=client.active_project.name,
+                    is_shared=True,
+                    type=component_type,
+                )
             )
         )
 
