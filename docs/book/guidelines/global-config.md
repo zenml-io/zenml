@@ -4,17 +4,10 @@ description: What is the global ZenML config
 
 # The Global Config
 
-ZenML has two main locations where it stores information on the local machine.
-These are the _Global Config_ and the _Repository_ (see 
-[here](../developer-guide/stacks-repositories/repository.md)
-for more information on the repository).
-
-Most of the information stored by ZenML on a machine, such as the global
-settings and even the configured 
-[Stacks and Stack Components](../developer-guide/stacks-repositories/stack.md), 
-is kept in a folder commonly referred to as the _ZenML Global Config Directory_
-or the _ZenML Config Path_. The location of this folder depends on the 
-operating system type and the current system user, but is usually located in 
+The information about the global settings of ZenML on a machine is kept in a 
+folder commonly referred to as the _ZenML Global Config Directory_ or the 
+_ZenML Config Path_. The location of this folder depends on the operating 
+system type and the current system user, but is usually located in 
 the following locations:
 
 * Linux: `~/.config/zenml`
@@ -38,8 +31,6 @@ can be used to manage the information stored there:
 
 * `zenml analytics` - manage the analytics settings
 * `zenml config` - manage the global configuration
-* `zenml stack` - manage Stacks
-* `zenml <stack-component>` - manage Stack Components
 * `zenml clean` - to be used only in case of emergency, to bring the ZenML
 configuration back to its default factory state
 
@@ -50,20 +41,22 @@ Directory_ and initializes the default configuration in it, along with a default
 Stack:
 
 ```
-$ zenml stack list
-Initializing the ZenML global configuration version to 0.13.1
-Initializing database...
-Registered stack with name 'default'.
-The global active stack is not set. Switching the global active stack to 'default'
+Initializing the ZenML global configuration version to 0.13.2
+Creating default project 'default' ...
+Creating default user 'default' ...
+Creating default stack for user default in project default...
+Active project not set. Setting it to the default.
+The active stack is not set. Setting the active stack to the default project stack.
 Using the default store for the global config.
-Unable to find ZenML repository in your current working directory (/tmp/zenserver) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
+Unable to find ZenML repository in your current working directory (/tmp/folder) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
-Using the default store database.
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ORCHESTRATOR │ METADATA_STORE │ ARTIFACT_STORE ┃
-┠────────┼────────────┼──────────────┼────────────────┼────────────────┨
-┃   👉   │ default    │ default      │ default        │ default        ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
+Using the default local database.
+Running with active project: 'default' (global)
+┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃ ACTIVE │ STACK NAME │ SHARED │ OWNER   │ ARTIFACT_STORE │ ORCHESTRATOR ┃
+┠────────┼────────────┼────────┼─────────┼────────────────┼──────────────┨
+┃   👉   │ default    │ ❌     │ default │ default        │ default      ┃
+┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
 
 The following is an example of the layout of the _Global Config Directory_
@@ -73,13 +66,13 @@ immediately after initialization:
 /home/stefan/.config/zenml   <- Global Config Directory
 ├── config.yaml              <- Global Configuration Settings
 ├── local_stores             <- Every Stack component that stores information
-|   |                        locally will have its own subdirectory here.
+|   |                           locally will have its own subdirectory here.
 |   |                        
 │   └── a1a0d3d0-d552-4a80-be09-67e5e29be8ee   <- Local Store path for the `default`
-|                                              local Artifact Store
+|                                                 local Artifact Store
 |
 └── zenml.db                 <- SQLite database where ZenML data (stacks, components,
-                             etc) are stored by default.
+                                etc) are stored by default.
 ```
 
 As shown above, the _Global Config Directory_ stores the following

@@ -33,26 +33,6 @@ description: Best practices, recommendations, and tips from the ZenML team
 
 ## Best Practices and Tips
 
-### Pass integration requirements to your pipelines through the decorator:
-
-```python
-from zenml.integrations.constants import TENSORFLOW
-from zenml.pipelines import pipeline
-
-
-@pipeline(required_integrations=[TENSORFLOW])
-def training_pipeline():
-    ...
-```
-
-Writing your pipeline like this makes sure you can change out the orchestrator
-at any point without running into dependency issues.
-
-### Do not overlap `required_integrations` and `requirements`
-
-Setting requirements twice can lead to unexpected behavior as you will end up
-with *only* one of the two defined package versions, which might cause problems.
-
 ### Nest `pipeline_instance.run()` in `if __name__ == "__main__"`
 
 ```python
@@ -99,7 +79,8 @@ artifacts to invalidate the cache. In case a step has external data sources like
 external APIs or filesystems, caching should be disabled explicitly for the 
 step.
 
-### Enable cache explicitly for steps that have a `context` argument, if they don't invalidate the caching behavior
+### Enable cache explicitly for steps that have a `context` argument, if they 
+don't invalidate the caching behavior
 
 Cache is implicitly disabled for steps that have a
 [context](../developer-guide/advanced-usage/step-fixtures.md#step-contexts) argument,
@@ -108,12 +89,7 @@ from the artifact store that are unrelated to the current step. However, if that
 is not the case, and your step logic doesn't invalidate the caching behavior, it
 would be better to explicitly enable the cache for your step.
 
-### Don't use the same metadata stores across multiple artifact stores
-
-You might run into issues as the metadata store will point to artifacts in
-inactive artifact stores.
-
-### Use unique pipeline names across projects, especially if used with the same metadata store
+### Use unique pipeline names across projects
 
 Pipeline names are their unique identifiers, so using the same name for
 different pipelines will create a mixed history of runs between the two
