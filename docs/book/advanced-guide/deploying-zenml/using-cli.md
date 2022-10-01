@@ -30,13 +30,13 @@ Reasonable defaults are in place for you already and if you wish to configure mo
 
 If you already have an existing cluster with your local `kubectl` configured with it, you can jump straight to the `deploy` command above to get going with the defaults. 
 
-However, if you also already have a database that you would want to use with the deployment you can choose to configure it with the use of a config file. This file can be found in the Resources section towards the end of this guide. It offers a host of configuration options that you can leverage for advanced use cases. Here we will demonstrate setting the database.
+However, if you also already have a database that you would want to use with the deployment you can choose to configure it with the use of a config file. This file can be found in the [Configuration File Templates](#configuration-file-templates) towards the end of this guide. It offers a host of configuration options that you can leverage for advanced use cases. Here we will demonstrate setting the database.
 
 - Fill the fields below from the config file with values from your database.
 
     ```
-    rds_db_username: The username for the RDS database.
-    rds_db_password: The password for the RDS database.
+    database_username: The username for the RDS database.
+    database_password: The password for the RDS database.
     
     database_url: The URL of the database to use for the ZenML server.
     database_ssl_ca: The path to the SSL CA certificate to use for the
@@ -63,3 +63,83 @@ However, if you also already have a database that you would want to use with the
 
 ## Configuration File Templates
 
+### Base Config File
+This is the general structure of a config file. Use this as a base and then add any clooud-specific parameters from the sections below. 
+
+<details>
+    <summary>AWS</summary>
+
+```
+name: Name of the server deployment.
+provider: The server provider type. # one of aws, gcp or azure
+username: The username for the default ZenML server account.
+password: The password for the default ZenML server account.
+log_level: The log level to set the terraform client to. Choose one of
+    TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
+helm_chart: The path to the ZenML server helm chart to use for
+    deployment.
+namespace: The Kubernetes namespace to deploy the ZenML server to.
+kubectl_config_path: The path to the kubectl config file to use for
+    deployment.
+ingress_tls: Whether to use TLS for the ingress.
+ingress_tls_generate_certs: Whether to generate self-signed TLS
+    certificates for the ingress.
+ingress_tls_secret_name: The name of the Kubernetes secret to use for
+    the ingress.
+ingress_path: The path to use for the ingress.
+create_ingress_controller: Whether to deploy an nginx ingress
+    controller as part of the deployment.
+ingress_controller_hostname: The ingress controller hostname to use for
+    the ingress self-signed certificate and to compute the ZenML server
+    URL.
+database_username: The username for the database.
+database_password: The password for the database.
+database_url: The URL of the database to use for the ZenML server.
+database_ssl_ca: The path to the SSL CA certificate to use for the
+    database connection.
+database_ssl_cert: The path to the client SSL certificate to use for the
+    database connection.
+database_ssl_key: The path to the client SSL key to use for the
+    database connection.
+database_ssl_verify_server_cert: Whether to verify the database server
+    SSL certificate.
+```
+
+</details>
+
+### Cloud specific settings
+
+<details>
+    <summary>AWS</summary>
+
+```
+region: The AWS region to deploy to.
+create_rds: Whether to create an RDS database.
+db_name: Name of RDS database to create.
+db_type: Type of RDS database to create.
+db_version: Version of RDS database to create.
+db_instance_class: Instance class of RDS database to create.
+db_allocated_storage: Allocated storage of RDS database to create.
+```
+
+The `database_username` and `database_password` from the general config is used to set tose variables for the AWS RDS instance as well.
+
+</details>
+
+<details>
+    <summary>Azure</summary>
+
+```
+
+```
+
+</details>
+
+<details>
+    <summary>GCP</summary>
+
+```
+
+```
+
+</details>
