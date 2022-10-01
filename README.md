@@ -262,6 +262,19 @@ zenml up
 
 The dashboard can also be deployed with a server on any cloud service (see Deploy ZenML section).
 
+
+## 🍰 ZenBytes
+New to MLOps? Get up to speed by visiting the [ZenBytes](https://github.com/zenml-io/zenbytes) repo.
+
+>ZenBytes is a series of short practical MLOps lessons taught using ZenML. 
+>It covers many of the [core concepts](https://docs.zenml.io/getting-started/core-concepts) widely used in ZenML and MLOps in general.
+
+## 📜 ZenFiles
+Already comfortable with ZenML and wish to elevate your pipeline into production mode? Check out [ZenFiles](https://github.com/zenml-io/zenfiles).
+
+>ZenFiles is a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
+
+
 # Infrastructure Requirements
 
 ## ☁️ Deploy ZenML
@@ -290,17 +303,6 @@ zenml stack recipe deploy <NAME_OF_STACK_RECIPE> --import
 
 The above command not only provisions the given tools, but also automatically creates a ZenML stack with the configuration of the deployed recipe!
 
-
-## 🍰 ZenBytes
-New to MLOps? Get up to speed by visiting the [ZenBytes](https://github.com/zenml-io/zenbytes) repo.
-
->ZenBytes is a series of short practical MLOps lessons taught using ZenML. 
->It covers many of the [core concepts](https://docs.zenml.io/getting-started/core-concepts) widely used in ZenML and MLOps in general.
-
-## 📜 ZenFiles
-Already comfortable with ZenML and wish to elevate your pipeline into production mode? Check out [ZenFiles](https://github.com/zenml-io/zenfiles).
-
->ZenFiles is a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
 
 # 🗺 Roadmap
 
