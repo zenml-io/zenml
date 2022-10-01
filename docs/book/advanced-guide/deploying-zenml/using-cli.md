@@ -64,7 +64,7 @@ However, if you also already have a database that you would want to use with the
 ## Configuration File Templates
 
 ### Base Config File
-This is the general structure of a config file. Use this as a base and then add any clooud-specific parameters from the sections below. 
+This is the general structure of a config file. Use this as a base and then add any cloud-specific parameters from the sections below. 
 
 <details>
     <summary>AWS</summary>
@@ -110,7 +110,7 @@ database_ssl_verify_server_cert: Whether to verify the database server
 ### Cloud specific settings
 
 <details>
-    <summary>AWS</summary>
+    <summary>General</summary>
 
 ```
 region: The AWS region to deploy to.
@@ -122,7 +122,7 @@ db_instance_class: Instance class of RDS database to create.
 db_allocated_storage: Allocated storage of RDS database to create.
 ```
 
-The `database_username` and `database_password` from the general config is used to set tose variables for the AWS RDS instance as well.
+The `database_username` and `database_password` from the general config is used to set those variables for the AWS RDS instance as well.
 
 </details>
 
