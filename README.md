@@ -102,11 +102,18 @@
       <ul>
         <li><a href="#-installation">Installation</a></li>
         <li><a href="#-first-run">First run</a></li>
+        <li><a href="#-collaborate-with-zenml">Collaborate with ZenML</a></li>
         <li><a href="#-zenbytes">ZenBytes</a></li>
         <li><a href="#-zenfiles">ZenFiles</a></li>
       </ul>
     </li>
-    <li><a href="#-collaborate-with-your-team">Collaborate with your team</a></li>
+    <li>
+      <a href="#-infrastructure-requirements">Infrastructure Requirements</a>
+      <ul>
+        <li><a href="#-deploy-zenml">Deploy ZenML</a></li>
+        <li><a href="#-open-source-mlops-recipes">MLOps Recipes</a></li>
+      </ul>
+    </li>
     <li><a href="#-learn-more">Learn More</a></li>
     <li><a href="#-roadmap">Roadmap</a></li>
     <li><a href="#-contributing-and-community">Contributing and Community</a></li>
@@ -236,7 +243,7 @@ def training_data_loader() -> Output(
 
 You can also run your first pipeline right in [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb)
 
-# 👭 Collaborate with ZenML
+## 👭 Collaborate with ZenML
 
 ZenML is built to support teams working together. 
 The underlying infrastructure on which your ML workflows run can be shared, as can the data, assets, and artifacts in your workflow. 
@@ -250,6 +257,8 @@ zenml up
 ![ZenML Dashboard](docs/book/assets/pipelines_dashboard.png)
 
 The dashboard can also be deployed with a server on any cloud service (see Deploy ZenML section).
+
+# Infrastructure Requirements
 
 ## ☁️ Deploy ZenML
 
@@ -276,6 +285,7 @@ zenml stack recipe deploy <NAME_OF_STACK_RECIPE> --import
 ```
 
 The above command not only provisions the given tools, but also automatically creates a ZenML stack with the configuration of the deployed recipe!
+
 
 ## 🍰 ZenBytes
 New to MLOps? Get up to speed by visiting the [ZenBytes](https://github.com/zenml-io/zenbytes) repo.
