@@ -118,13 +118,6 @@
 
 <br />
 
-# TODO: 
-
-* Too busy at the top
-* Change and update TOC
-* Too much text 
-* Are we missing pipeline and stack registration?
-
 # 🤖 Why ZenML?
 
 🤹 Are you an ML engineer or data scientist shipping models to production and juggling a plethora of tools? ZenML is here to help transition your production ML pipelines to production.
