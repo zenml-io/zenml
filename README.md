@@ -52,7 +52,7 @@
   <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
 
   <p align="center">
-    A simple yet powerful open-source framework that scales your MLOps stack with your needs.
+    A simple yet powerful open-source framework that integrates all your ML tools.
     <br />
     <a href="https://docs.zenml.io/"><strong>Explore the docs »</strong></a>
     <br />
@@ -127,26 +127,11 @@
 
 # 🤖 Why ZenML?
 
-🤹 Are you an ML engineer or data scientist shipping models to production and juggling a plethora of tools? 
-
-🤷‍♂️ Do you struggle with versioning data, code, and models in your projects? 
-
-👀 Have you had trouble replicating production pipelines and monitoring models in production?
-
-✅ If you answered yes to any of the above, ZenML is here to help with all that and more...
-
-Everyone loves to train ML models, but few talks about shipping them into production, and even fewer can do it well.
-At ZenML, we believe the journey from model development to production doesn't need to be long and painful.
+🤹 Are you an ML engineer or data scientist shipping models to production and juggling a plethora of tools? ZenML is here to help transition your production ML pipelines to production.
 
 ![The long journey from experimentation to production.](docs/book/assets/1-pipeline-hard-reproduce.png)
 
-
-With ZenML, you can concentrate on what you do best - developing ML models and not worry about infrastructure or deployment tools.
-
-If you come from unstructured notebooks or scripts with lots of manual processes, ZenML will make the path to production easier and faster for you and your team.
-Using ZenML allows you to own the entire pipeline - from experimentation to production.
-
-This is why we built ZenML. Read more [here](https://blog.zenml.io/why-zenml/).
+With ZenML, you can concentrate on what you do best - developing ML models and not worry about infrastructure or deployment tools. Read more [here](https://blog.zenml.io/why-zenml/).
 
 
 # 💡 What is ZenML?
@@ -160,8 +145,6 @@ ZenML is an extensible, open-source MLOps framework for creating portable, produ
 
 ZenML offers a simple and flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions catered toward ML workflows. 
 With ZenML you'll have all your favorite tools in one place so you can tailor a workflow that caters to your specific needs.
-
-![ZenML unifies all your tools in one place.](docs/book/assets/sam-side-by-side-full-text.png)
 
 Read more on all tools you can readily use in the [integrations](https://zenml.io/integrations) section. Can't find your tool? You can always [write your own integration](https://docs.zenml.io/developer-guide/advanced-usage/custom-flavors) to use it with ZenML.
 
@@ -217,12 +200,48 @@ zenml go
 
 This spins up a Jupyter notebook that walks you through various functionalities of ZenML at a high level.
 
-By the end, you'll get a glimpse of how to use ZenML to:
+By the end, you'll get a glimpse of how to use ZenML to register a stack:
 
-+ Train, evaluate, deploy, and embed a model in an inference pipeline.
-+ Automatically track and version data, models, and other artifacts.
-+ Track model hyperparameters and metrics with experiment tracking tools.
-+ Measure and visualize train-test skew, training-serving skew, and data drift.
+```shell
+# Register the MLflow experiment tracker
+zenml experiment-tracker register mlflow_tracker --flavor=mlflow
+
+# Register the MLflow model deployer
+zenml model-deployer register mlflow_deployer --flavor=mlflow
+
+# Register the Evidently data validator
+zenml data-validator register evidently_validator --flavor=evidently
+
+# Add the MLflow components into our default stack
+zenml stack update default -d mlflow_deployer -e mlflow_tracker -dv evidently_validator
+```
+
+And run a simple pipeline creating steps like this:
+
+```python
+import pandas as pd
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+
+from zenml.steps import step, Output
+
+@step
+def training_data_loader() -> Output(
+    X_train=pd.DataFrame,
+    X_test=pd.DataFrame,
+    y_train=pd.Series,
+    y_test=pd.Series,
+):
+    """Load the iris dataset as tuple of Pandas DataFrame / Series."""
+    iris = load_iris(as_frame=True)
+    X_train, X_test, y_train, y_test = train_test_split(
+        iris.data, iris.target, test_size=0.2, shuffle=True, random_state=42
+    )
+    return X_train, X_test, y_train, y_test
+```
+
+You can also run your first pipeline right in [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb)
 
 # 👭 Collaborate with ZenML
 
@@ -235,7 +254,7 @@ To visually see this in action, ZenML ships with a fully-featured dashboard, tha
 zenml up
 ```
 
-![ZenML Dashboard](docs/pipelines.png)
+![ZenML Dashboard](docs/book/assets/pipelines_dashboard.png)
 
 The dashboard can also be deployed with a server on any cloud service (see Deploy ZenML section).
 
@@ -249,7 +268,7 @@ The easiest and fastest way to get running on the cloud is by using the `deploy`
 zenml deploy
 ```
 
-![ZenML Architecture Diagram.](docs/architecture_diagram.png)
+![ZenML Architecture Diagram.](docs/book/assets/architecture_diagram.png)
 
 ## 👨‍🍳 Open Source MLOps Stack Recipes
 
