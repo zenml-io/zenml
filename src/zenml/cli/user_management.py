@@ -105,7 +105,7 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
         cli_utils.declare(
             f"The created user account is currently inactive. You can activate "
             f"it by visiting the dashboard at the following URL:\n"
-            f"{gc.store.url}/signup?user={str(user.id)}&token={user.activation_token.get_secret_value()}\n"
+            f"{gc.store.url}/signup?user={str(user.id)}&username={user.name}&token={user.activation_token.get_secret_value()}\n"
         )
 
 

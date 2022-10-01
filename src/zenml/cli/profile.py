@@ -13,15 +13,13 @@
 #  permissions and limitations under the License.
 """CLI for migrating legacy ZenML profiles."""
 
-import base64
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, Dict, Generator, List, Optional
+from typing import Any, DefaultDict, Dict, Generator, List, Optional
 from uuid import UUID
 
 import click
-import yaml
 from pydantic import BaseModel, Field, validator
 
 from zenml.cli import utils as cli_utils
@@ -36,7 +34,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, ProjectModel, StackModel, UserModel
+from zenml.models import ComponentModel, ProjectModel, StackModel
 from zenml.models.flavor_models import FlavorModel
 from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
@@ -127,13 +125,20 @@ class LocalStore(BaseModel):
         return str(path)
 
     def get_component(
-        self, component_type: str, name: str, prefix: str = ""
+        self,
+        component_type: str,
+        name: str,
+        project_id: UUID,
+        user_id: UUID,
+        prefix: str = "",
     ) -> ComponentModel:
         """Fetch the flavor and configuration for a stack component.
 
         Args:
             component_type: The type of the component to fetch.
             name: The name of the component to fetch.
+            project_id: The project ID to set for the fetched component.
+            user_id: The user ID to set for the fetched component.
             prefix: Optional name prefix to use for the returned component.
 
         Returns:
@@ -154,24 +159,34 @@ class LocalStore(BaseModel):
             component_type=component_type, name=name
         )
         flavor = components[name]
-        config_dict = yaml_utils.read_yaml(component_config_path)
+        config_dict: Dict[str, Any] = yaml_utils.read_yaml(
+            component_config_path
+        )
         component_name = (prefix + name) if name != "default" else name
-        config_dict["name"] = component_name
+        component_id = UUID(config_dict["uuid"])
+        config_dict.pop("uuid")
+        config_dict.pop("name")
         # TODO: [server] The Model needs to also set user and project correctly
         return ComponentModel(
-            type=component_type,
+            id=component_id,
             name=component_name,
+            type=component_type,
             flavor=flavor,
-            id=UUID(config_dict["uuid"]),
-            configuration=base64.b64encode(yaml.dump(config_dict).encode()),
+            configuration=config_dict,
+            project=project_id,
+            user=user_id,
         )
 
-    def get_components(self, prefix: str = "") -> List[ComponentModel]:
+    def get_components(
+        self, project_id: UUID, user_id: UUID, prefix: str = ""
+    ) -> List[ComponentModel]:
         """Fetch all stack components.
 
         The default components are expressly excluded from this list.
 
         Args:
+            project_id: The project ID to set for the fetched components.
+            user_id: The user ID to set for the fetched components.
             prefix: Optional name prefix to use for the returned components.
 
         Returns:
@@ -188,12 +203,18 @@ class LocalStore(BaseModel):
                 ]:
                     continue
                 components.append(
-                    self.get_component(component_type, name, prefix)
+                    self.get_component(
+                        component_type,
+                        name,
+                        project_id=project_id,
+                        user_id=user_id,
+                        prefix=prefix,
+                    )
                 )
         return components
 
     def get_stack(
-        self, name: str, prefix: str = "", project: Optional[str] = None
+        self, name: str, project_id: UUID, user_id: UUID, prefix: str = ""
     ) -> StackModel:
         """Fetch the configuration for a stack.
 
@@ -202,10 +223,10 @@ class LocalStore(BaseModel):
 
         Args:
             name: The name of the stack to fetch.
+            project_id: The project ID to set for the fetched stack.
+            user_id: The user ID to set for the fetched stack.
             prefix: Optional name prefix to use for the returned stack and its
                 components (unless default).
-            project: Optional project name to use to fetch the default stack to
-                replace the default components in the stack.
 
         Returns:
             A stack model for the stack.
@@ -220,61 +241,61 @@ class LocalStore(BaseModel):
                 f"{set(self.stacks)}."
             )
 
-        components: Dict[StackComponentType, ComponentModel] = {}
+        components: Dict[StackComponentType, List[UUID]] = {}
         for component_type, component_name in stack.items():
             if component_type == "metadata_store":
                 continue
             component: ComponentModel = self.get_component(
-                component_type, component_name, prefix
+                component_type,
+                component_name,
+                project_id=project_id,
+                user_id=user_id,
+                prefix=prefix,
             )
-            if (
-                component_name == "default"
-                and project
-                and component_type
-                in [
-                    StackComponentType.ARTIFACT_STORE,
-                    StackComponentType.ORCHESTRATOR,
-                ]
-            ):
+            if component_name == "default" and component_type in [
+                StackComponentType.ARTIFACT_STORE,
+                StackComponentType.ORCHESTRATOR,
+            ]:
                 zen_store = Client().zen_store
-                # use the component in the active store
-                # TODO: [server] make sure this is the intended use
-                #  of _get_default_stack
+                # use the default component in the active project
                 component = (
                     zen_store._get_default_stack(
-                        project_name_or_id=project,
-                        user_name_or_id=zen_store.active_user.id,
+                        project_name_or_id=project_id,
+                        user_name_or_id=user_id,
                     )
                     .to_hydrated_model()
                     .components[StackComponentType(component_type)][0]
                 )
 
-            components[StackComponentType(component_type)] = component
+            components[StackComponentType(component_type)] = [component.id]
 
         return StackModel(
             name=prefix + name,
             components=components,
-            project=project,
+            project=project_id,
+            user=user_id,
         )
 
     def get_stacks(
-        self, prefix: str = "", project: Optional[str] = None
+        self, project_id: UUID, user_id: UUID, prefix: str = ""
     ) -> List[StackModel]:
         """Fetch all stacks.
 
         The default stack is expressly excluded from this list.
 
         Args:
+            project_id: The project ID to set for the fetched stacks.
+            user_id: The user ID to set for the fetched stacks.
             prefix: Optional name prefix to use for the returned stack and
                 stack components.
-            project: Optional project name to use to fetch the default stack to
-                replace the default components in the stack.
 
         Returns:
-            A list of stack configurations.
+            A list of stacks.
         """
         return [
-            self.get_stack(name, prefix, project)
+            self.get_stack(
+                name, project_id=project_id, user_id=user_id, prefix=prefix
+            )
             for name in self.stacks
             if name != "default"
         ]
@@ -308,7 +329,16 @@ class LocalStore(BaseModel):
         Returns:
             True if the store contains stacks, False otherwise.
         """
-        return len(self.get_stacks()) > 0
+        client = Client()
+        return (
+            len(
+                self.get_stacks(
+                    project_id=client.active_project.id,
+                    user_id=client.active_user.id,
+                )
+            )
+            > 0
+        )
 
     def contains_stack_components(self) -> bool:
         """Check if the store contains stack components.
@@ -318,7 +348,16 @@ class LocalStore(BaseModel):
         Returns:
             True if the store contains stack components, False otherwise.
         """
-        return len(self.get_components()) > 0
+        client = Client()
+        return (
+            len(
+                self.get_components(
+                    project_id=client.active_project.id,
+                    user_id=client.active_user.id,
+                )
+            )
+            > 0
+        )
 
     @property
     def config_file(self) -> str:
@@ -398,10 +437,9 @@ def list_profiles(
         "ZenML profiles have been deprecated and removed in this version of "
         "ZenML. All stacks, stack components, flavors etc. are now stored "
         "and managed globally, either in a local database or on a remote ZenML "
-        "server (see the `zenml config` command). As alternatives, you can use "
-        "different global configuration paths by setting the `ZENML_CONFIG_PATH` "
-        "environment variable to point to a different location, or use projects "
-        "as a scoping mechanism for stack and stack components.\n\n"
+        "server (see the `zenml up` and `zenml connect` commands). As an"
+        "alternative to profiles, you can use projects as a scoping mechanism "
+        "for stacks, stack components and other ZenML objects.\n\n"
         "The information stored in legacy profiles is not automatically "
         "migrated. You can do so manually by using the `zenml profile list` and "
         "`zenml profile migrate` commands."
@@ -507,6 +545,7 @@ def migrate_profiles(
 
     client = Client()
     project: Optional[ProjectModel] = None
+    user = client.active_user
     if project_name:
         try:
             project = client.zen_store.get_project(project_name)
@@ -521,14 +560,15 @@ def migrate_profiles(
                     ),
                 )
             )
+            client.zen_store._create_default_stack(
+                project_name_or_id=project_name,
+                user_name_or_id=user.id,
+            )
     else:
         project = client.active_project
 
     if not project:
         cli_utils.error("No active project found.")
-
-    user: UserModel = client.zen_store.active_user
-    assert user.id is not None
 
     if flavors:
         if not store.stack_component_flavors:
@@ -547,6 +587,8 @@ def migrate_profiles(
                             source=flavor.source,
                             name=name,
                             type=StackComponentType(flavor.type),
+                            user=user.id,
+                            project=project.id,
                         )
                     )
                     cli_utils.declare(f"Migrated component flavor '{name}'.")
@@ -570,6 +612,8 @@ def migrate_profiles(
                 f"Migrating stack components from {store.config_file}..."
             )
             for component in store.get_components(
+                project_id=project.id,
+                user_id=user.id,
                 prefix=prefix,
             ):
                 try:
@@ -580,8 +624,6 @@ def migrate_profiles(
                     )
                 except StackComponentExistsError:
                     if overwrite:
-                        component.user = user.id
-                        component.project = project.id
                         client.zen_store.update_stack_component(
                             component=component,
                         )
@@ -605,10 +647,12 @@ def migrate_profiles(
             )
         else:
             cli_utils.declare(f"Migrating stacks from {store.config_file}...")
-            for stack in store.get_stacks(prefix=prefix, project=project.name):
+            for stack in store.get_stacks(
+                project_id=project.id,
+                user_id=user.id,
+                prefix=prefix,
+            ):
                 try:
-                    stack.project = project.id
-                    stack.user = user.id
                     client.zen_store.create_stack(stack)
                     cli_utils.declare(f"Migrated stack '{stack.name}'.")
                 except StackExistsError:
