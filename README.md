@@ -207,42 +207,38 @@ This spins up a Jupyter notebook that walks you through various functionalities 
 By the end, you'll get a glimpse of how to use ZenML to register a stack:
 
 ```shell
-# Register the MLflow experiment tracker
+# Register a MLflow experiment tracker
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 
-# Register the MLflow model deployer
-zenml model-deployer register mlflow_deployer --flavor=mlflow
+# Register an Airflow orchestrator
+zenml data-validator register airflow_orchestrator --flavor=airflow
 
-# Register the Evidently data validator
-zenml data-validator register evidently_validator --flavor=evidently
-
-# Add the MLflow components into our default stack
-zenml stack update default -d mlflow_deployer -e mlflow_tracker -dv evidently_validator
+# Create a stack from the components
+zenml stack register my_stack -o airflow_orchestrator -a default -e mlflow_tracker
 ```
 
-And run a simple pipeline creating steps like this:
+And run a simple pipeline on Airflow (or an orchestrator of your choice) creating steps like this:
 
 ```python
-import pandas as pd
+import mlflow
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
+from zenml.client import Client
 
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
+experiment_tracker = Client().active_stack.experiment_tracker
 
-from zenml.steps import step, Output
-
-@step
-def training_data_loader() -> Output(
-    X_train=pd.DataFrame,
-    X_test=pd.DataFrame,
-    y_train=pd.Series,
-    y_test=pd.Series,
-):
-    """Load the iris dataset as tuple of Pandas DataFrame / Series."""
-    iris = load_iris(as_frame=True)
-    X_train, X_test, y_train, y_test = train_test_split(
-        iris.data, iris.target, test_size=0.2, shuffle=True, random_state=42
-    )
-    return X_train, X_test, y_train, y_test
+@step(experiment_tracker=experiment_tracker.name)
+def svc_trainer_mlflow(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier and log to MLflow."""
+    mlflow.sklearn.autolog()  # log all model hparams and metrics to MLflow
+    model = SVC(gamma=0.01)
+    model.fit(X_train.to_numpy(), y_train.to_numpy())
+    train_acc = model.score(X_train.to_numpy(), y_train.to_numpy())
+    print(f"Train accuracy: {train_acc}")
+    return model
 ```
 
 You can also run your first pipeline right in [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb)
@@ -264,12 +260,14 @@ The dashboard can also be deployed with a server on any cloud service (see Deplo
 
 
 ## 🍰 ZenBytes
+
 New to MLOps? Get up to speed by visiting the [ZenBytes](https://github.com/zenml-io/zenbytes) repo.
 
 >ZenBytes is a series of short practical MLOps lessons taught using ZenML. 
 >It covers many of the [core concepts](https://docs.zenml.io/getting-started/core-concepts) widely used in ZenML and MLOps in general.
 
 ## 📜 ZenFiles
+
 Already comfortable with ZenML and wish to elevate your pipeline into production mode? Check out [ZenFiles](https://github.com/zenml-io/zenfiles).
 
 >ZenFiles is a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
