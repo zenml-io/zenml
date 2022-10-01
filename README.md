@@ -108,9 +108,9 @@
       </ul>
     </li>
     <li>
-      <a href="#infrastructure-requirements">Infrastructure Requirements</a>
+      <a href="#%EF%B8%8F-infrastructure-requirements">Infrastructure Requirements</a>
       <ul>
-        <li><a href="#-deploy-zenml">%EF%B8%8F-deploy-zenml</a></li>
+        <li><a href="#-deploy-zenml">Deploy ZenML</a></li>
         <li><a href="#-open-source-mlops-stack-recipes">MLOps Recipes</a></li>
       </ul>
     </li>
@@ -277,13 +277,17 @@ Already comfortable with ZenML and wish to elevate your pipeline into production
 
 ## 🔋 Deploy ZenML
 
-In order to collaborate, ZenML needs to be deployed on the cloud so that it can serve as the central interface to store pipelines, runs, and stacks.
+While ZenML works perfectly fine locally, it should be deployed on the cloud to enable collaborative features as the central MLOps interface for teams.
 
-The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. Read more about the command [here]().
+The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. Read more about the command [here](https://docs.zenml.io/deployment).
 
 ```shell
 zenml deploy
 ```
+
+Naturally, [the docs](https://docs.zenml.io/deployment) contain detailed guides on how to manually set up ZenML on the cloud in case more control is required.
+
+The following architectural diagram illustrates a common ZenML deployment:
 
 ![ZenML Architecture Diagram.](docs/book/assets/architecture_diagram.png)
 
