@@ -142,8 +142,6 @@ Using ZenML allows you to own the entire pipeline - from experimentation to prod
 This is why we built ZenML. Read more [here](https://blog.zenml.io/why-zenml/).
 
 
-
-
 # 💡 What is ZenML?
 
 <div align="center">
@@ -169,6 +167,12 @@ Read more on all tools you can readily use in the [integrations](https://zenml.i
 pip install zenml
 ```
 > **Note** - ZenML supports Python 3.7, 3.8, and 3.9.
+
+In order to get access to the dashboard locally, install the optional dependencies for the ZenML server:
+
+```shell
+pip install "zenml[server]"
+```
 
 **Option 2** - If you’re feeling adventurous, try out the bleeding-edge installation:
 
@@ -213,14 +217,41 @@ By the end, you'll get a glimpse of how to use ZenML to:
 + Track model hyperparameters and metrics with experiment tracking tools.
 + Measure and visualize train-test skew, training-serving skew, and data drift.
 
+# 👭 Collaborate with ZenML
+
+ZenML is built to support teams working together. 
+The underlying infrastructure on which your ML workflows run can be shared, as can the data, assets, and artifacts in your workflow. 
+
+To visually see this in action, ZenML ships with a fully-featured dashboard, that can be launched locally with the simple command:
+
+```
+zenml up
+```
+
+![ZenML Dashboard](docs/pipelines.png)
+
+The dashboard can also be deployed with a server on any cloud service (see Deploy ZenML section).
+
+## ☁️ Deploy ZenML
+
+In order to collaborate, ZenML needs to be deployed on the cloud so that it can serve as the central interface to store pipelines, runs, and stacks.
+
+The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. Read more about the command [here]().
+
+```shell
+zenml deploy
+```
+
+![ZenML Architecture Diagram.](docs/architecture_diagram.png)
+
 ## 👨‍🍳 Open Source MLOps Stack Recipes
 
-ZenML boasts a ton of [integrations](https://zenml.io/integrations) into popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/developer-guide/stacks-profiles-repositories) concept ensures that these tools work nicely together, therefore bringing structure and standardization into the MLOps workflow.
+Apart from the infrastructure required to run ZenML itself, ZenML also boasts a ton of [integrations](https://zenml.io/integrations) into popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/developer-guide/stacks-profiles-repositories) concept ensures that these tools work nicely together, therefore bringing structure and standardization into the MLOps workflow.
 
 However, ZenML assumes that the stack infrastructure for these tools is already provisioned. If you do not have deployed infrastructure, and want to quickly spin up combinations of tools on the cloud, the [MLOps stack sister repository](https://github.com/zenml-io/mlops-stacks) contains a series of Terraform-based recipes to provision such stacks. These recipes can be used directly with ZenML:
 
 ```bash
-pip install zenml[stacks]
+pip install "zenml[stacks]"
 
 zenml stack recipe deploy <NAME_OF_STACK_RECIPE> --import
 ```
@@ -238,31 +269,6 @@ Already comfortable with ZenML and wish to elevate your pipeline into production
 
 >ZenFiles is a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
 
-# 👭 Collaborate with your team
-
-ZenML is built to support teams working together. 
-The underlying infrastructure on which your ML workflows run can be shared, as can the data, assets, and artifacts in your workflow. 
-
-In ZenML, a Stack represents a set of configurations for your MLOps tools and infrastructure. You can quickly share your ZenML stack with anyone by exporting the stack:
-
-```
-zenml stack export <STACK_NAME> <FILENAME.yaml>
-```
-
-Similarly, you can import a stack by running:
-```
-zenml stack import <STACK_NAME> -f <FILENAME.yaml>
-```
-
-Learn more on importing/exporting stacks [here](https://docs.zenml.io/collaborate/stack-export-import).
-
-
-The [ZenML Profiles](https://docs.zenml.io/collaborate/zenml-store) offer an easy way to manage and switch between your stacks. All your stacks, components, and other classes of ZenML objects can be stored in a central location and shared across multiple users, teams, and automated systems such as CI/CD processes.
-
-With the [ZenServer](https://docs.zenml.io/collaborate/zenml-server) 
-you can deploy ZenML as a centralized service and connect entire teams and organizations to an easy-to-manage collaboration platform that provides a unified view of the MLOps processes, tools, and technologies that support your entire AI/ML project lifecycle.
-
-Read more about using ZenML for collaboration [here](https://docs.zenml.io/collaborate/collaborate-with-zenml).
 
 # 📖 Learn More
 
@@ -287,7 +293,7 @@ Read more about using ZenML for collaboration [here](https://docs.zenml.io/colla
 
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/getting-started/core-concepts
-[API Guide]: https://docs.zenml.io/v/docs/developer-guide/steps-and-pipelines/functional-vs-class-based-api
+[Deployment Guide]: TBD
 [Our latest release]: https://github.com/zenml-io/zenml/releases
 [Vote for Features]: https://zenml.io/discussion
 [Docs]: https://docs.zenml.io/
@@ -319,8 +325,6 @@ influence the roadmap as follows:
   board](https://zenml.io/discussion).
 - Start a thread in our [Slack channel](https://zenml.io/slack-invite).
 - [Create an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our Github repo.
-
-
 
 # 🙌 Contributing and Community
 
