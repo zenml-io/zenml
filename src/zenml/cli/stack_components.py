@@ -106,8 +106,11 @@ def generate_stack_component_describe_command(
         except KeyError as e:
             cli_utils.error(str(e))  # noqa
 
-        is_active = component.id == client.active_stack.components.get(
-            component_type
+        active_component = client.active_stack_model.components.get(
+            component_type, []
+        )
+        is_active = (
+            len(active_component) > 0 and component.id == active_component[0].id
         )
 
         cli_utils.print_stack_component_configuration(
@@ -402,7 +405,6 @@ def generate_stack_component_remove_attribute_command(
                         f"."
                     )
 
-            print(existing_comp)
             # Update the stack component
             client.update_stack_component(component=existing_comp)
 
