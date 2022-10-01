@@ -131,7 +131,11 @@
 
 ![The long journey from experimentation to production.](docs/book/assets/1-pipeline-hard-reproduce.png)
 
-With ZenML, you can concentrate on what you do best - developing ML models and not worry about infrastructure or deployment tools. Read more [here](https://blog.zenml.io/why-zenml/).
+Everyone loves to train ML models, but few talks about shipping them into production, and even fewer can do it well. At ZenML, we believe the journey from model development to production doesn't need to be long and painful.
+
+If you come from unstructured notebooks or scripts with lots of manual processes, ZenML will make the path to production easier and faster for you and your team. Using ZenML allows you to own the entire pipeline - from experimentation to production.
+
+Read more [here](https://blog.zenml.io/why-zenml/).
 
 
 # 💡 What is ZenML?
