@@ -273,9 +273,9 @@ Already comfortable with ZenML and wish to elevate your pipeline into production
 >ZenFiles is a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
 
 
-# Infrastructure Requirements
+# ☁️ Infrastructure Requirements
 
-## ☁️ Deploy ZenML
+## 🔋 Deploy ZenML
 
 In order to collaborate, ZenML needs to be deployed on the cloud so that it can serve as the central interface to store pipelines, runs, and stacks.
 
