@@ -33,10 +33,12 @@ from typing import (
 import yaml
 
 from zenml import constants
+from zenml.client import Client
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
+from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
@@ -46,10 +48,10 @@ from zenml.config.pipeline_configurations import (
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.enums import StoreType
 from zenml.environment import Environment
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
@@ -65,9 +67,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
-    from zenml.pipelines import Schedule
     from zenml.post_execution import PipelineRunView
-    from zenml.stack import Stack
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -389,7 +389,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         track_event(
             event=AnalyticsEvent.RUN_PIPELINE,
             metadata={
-                "store_type": Repository().zen_store.type.value,
+                "store_type": Client().zen_store.type.value,
                 **stack_metadata,
                 "total_steps": len(self.steps),
                 "schedule": bool(deployment.schedule),
@@ -446,7 +446,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             return
 
-        stack = Repository().active_stack
+        stack = Client().active_stack
 
         # Activating the built-in integrations through lazy loading
         from zenml.integrations.registry import integration_registry
@@ -503,7 +503,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             ]
             pipeline_spec = PipelineSpec(steps=step_specs)
 
-            pipeline_id = Repository().register_pipeline(
+            pipeline_id = Client().register_pipeline(
                 pipeline_name=pipeline_deployment.pipeline.name,
                 pipeline_spec=pipeline_spec,
             )
@@ -536,6 +536,32 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return_value = stack.deploy_pipeline(pipeline_deployment)
         finally:
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+
+        gc = GlobalConfiguration()
+
+        if gc.store and gc.store.type == StoreType.REST:
+            # Connected to ZenServer
+            client = Client()
+
+            # Get the runs from the zen_store
+            runs = client.zen_store.list_runs(
+                run_name=pipeline_deployment.run_name
+            )
+
+            # We should only do the log if runs exist
+            if runs:
+                # For now, take the first index to get the latest run
+                run = runs[0]
+                url = (
+                    f"{gc.store.url}/pipelines/{pipeline_id}/runs/{run.id}/dag"
+                )
+                logger.info(f"Dashboard URL: {url}")
+        elif gc.store and gc.store.type == StoreType.SQL:
+            # Connected to SQL Store Type, we're local
+            logger.info(
+                "Pipeline visualization can be seen in the ZenML Dashboard. "
+                "Run `zenml up` to see your pipeline!"
+            )
 
         return return_value
 
@@ -674,7 +700,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             PartialArtifactConfiguration,
         )
 
-        stack = stack or Repository().active_stack
+        stack = stack or Client().active_stack
 
         setting_classes = stack.setting_classes
         setting_classes.update(settings_utils.get_general_settings())

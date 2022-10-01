@@ -23,12 +23,12 @@ from tfx.orchestration.portable.python_executor_operator import (
 )
 from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
 
+from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
 from zenml.io import fileio
-from zenml.repository import Repository
 from zenml.steps import utils as step_utils
 
 if TYPE_CHECKING:
@@ -89,7 +89,7 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         """
         # Make sure the artifact store is loaded before we load the execution
         # info
-        stack = Repository().active_stack
+        stack = Client().active_stack
 
         execution_info_path = self.entrypoint_args[EXECUTION_INFO_PATH_OPTION]
         execution_info = self._load_execution_info(execution_info_path)

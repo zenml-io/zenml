@@ -20,9 +20,10 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.huggingface.materializers.huggingface_tokenizer_materializer import (
     HFTokenizerMaterializer,
 )
+from zenml.post_execution.pipeline import PipelineRunView
 
 
-def test_huggingface_tokenizer_materializer(clean_repo):
+def test_huggingface_tokenizer_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Tokenizer materializer."""
 
     with does_not_raise():
@@ -31,7 +32,7 @@ def test_huggingface_tokenizer_materializer(clean_repo):
             materializer=HFTokenizerMaterializer,
         )
 
-    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
     tokenizer = last_run.steps[-1].output.read()
     assert isinstance(tokenizer, PreTrainedTokenizerBase)
     assert tokenizer.model_max_length == 512

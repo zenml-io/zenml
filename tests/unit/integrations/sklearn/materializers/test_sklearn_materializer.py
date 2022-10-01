@@ -20,9 +20,10 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.sklearn.materializers.sklearn_materializer import (
     SklearnMaterializer,
 )
+from zenml.post_execution.pipeline import PipelineRunView
 
 
-def test_sklearn_materializer(clean_repo):
+def test_sklearn_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
 
     with does_not_raise():
@@ -31,7 +32,7 @@ def test_sklearn_materializer(clean_repo):
             materializer=SklearnMaterializer,
         )
 
-    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
     model = last_run.steps[-1].output.read()
     assert isinstance(model, ClassifierMixin)
     assert model.gamma == "auto"

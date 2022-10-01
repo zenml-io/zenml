@@ -18,7 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.constants import PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
+from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import PipelineModel
 from zenml.zen_server.auth import authorize
@@ -30,7 +30,7 @@ from zenml.zen_server.models.pipeline_models import (
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1 + PIPELINES,
+    prefix=API + VERSION_1 + PIPELINES,
     tags=["pipelines"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
@@ -150,7 +150,7 @@ def delete_pipeline(pipeline_id: UUID) -> None:
 
 @router.get(
     "/{pipeline_id}" + RUNS,
-    response_model=Union[
+    response_model=Union[  # type: ignore[arg-type]
         List[HydratedPipelineRunModel], List[PipelineRunModel]
     ],
     responses={401: error_response, 404: error_response, 422: error_response},

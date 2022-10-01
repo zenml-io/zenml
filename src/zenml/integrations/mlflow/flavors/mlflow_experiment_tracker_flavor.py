@@ -132,12 +132,12 @@ class MLFlowExperimentTrackerConfig(BaseExperimentTrackerConfig):
 
                 if not databricks_host:
                     raise ValueError(
-                        f"MLflow experiment tracking with a Databricks MLflow "
-                        f"managed tracking server requires the `databricks_host` "
-                        f"to be set in your stack component. To update your "
-                        f"component, run `zenml experiment-tracker update "
-                        f"<NAME> --databricks_host=DATABRICKS_HOST` "
-                        f"and specify the hostname of your Databricks workspace."
+                        "MLflow experiment tracking with a Databricks MLflow "
+                        "managed tracking server requires the `databricks_host` "
+                        "to be set in your stack component. To update your "
+                        "component, run `zenml experiment-tracker update "
+                        "<NAME> --databricks_host=DATABRICKS_HOST` "
+                        "and specify the hostname of your Databricks workspace."
                     )
 
             if is_remote_mlflow_tracking_uri(tracking_uri):

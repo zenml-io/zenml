@@ -57,10 +57,6 @@ from zenml import __version__, constants
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.logger import get_logger
-from zenml.stack.stack_component import StackComponentConfig
-
-if TYPE_CHECKING:
-    pass
 
 logger = get_logger(__name__)
 
@@ -92,9 +88,9 @@ def is_inside_repository(file_path: str) -> bool:
     Returns:
         `True` if the file is inside a zenml repository, else `False`.
     """
-    from zenml.repository import Repository
+    from zenml.client import Client
 
-    repo_path = Repository.find_repository()
+    repo_path = Client.find_repository()
     if not repo_path:
         return False
 
@@ -268,9 +264,9 @@ def get_source_root_path() -> str:
     Raises:
         RuntimeError: if the main module was not started or determined.
     """
-    from zenml.repository import Repository
+    from zenml.client import Client
 
-    repo_root = Repository.find_repository()
+    repo_root = Client.find_repository()
     if repo_root:
         logger.debug("Using repository root as source root: %s", repo_root)
         return str(repo_root.resolve())
@@ -486,9 +482,9 @@ def load_source_path_class(
     Returns:
         the given class
     """
-    from zenml.repository import Repository
+    from zenml.client import Client
 
-    repo_root = Repository.find_repository()
+    repo_root = Client.find_repository()
     if not import_path and repo_root:
         import_path = str(repo_root)
 

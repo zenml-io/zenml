@@ -18,6 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from zenml.constants import (
+    API,
     FLAVORS,
     PIPELINES,
     PROJECTS,
@@ -50,7 +51,7 @@ from zenml.zen_server.models.stack_models import CreateStackRequest
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1 + PROJECTS,
+    prefix=API + VERSION_1 + PROJECTS,
     tags=["projects"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
@@ -510,7 +511,7 @@ def create_pipeline(
 
 @router.get(
     "/{project_name_or_id}" + STATISTICS,
-    response_model=Dict[str, str],  # type: ignore[arg-type]
+    response_model=Dict[str, str],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

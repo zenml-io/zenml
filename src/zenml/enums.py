@@ -131,9 +131,12 @@ class ServerProviderType(StrEnum):
 
     LOCAL = "local"
     DOCKER = "docker"
+    AWS = "aws"
 
 
 class AnalyticsEventSource(StrEnum):
     """Enum to identify analytics events source."""
 
     ZENML_GO = "zenml go"
+    ZENML_CONNECT = "zenml connect"
+    ZENML_SERVER_OPT_IN = "zenml server opt-in"

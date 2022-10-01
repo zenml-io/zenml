@@ -29,10 +29,10 @@ from zenml.cli.utils import (
     print_list_items,
     warning,
 )
+from zenml.client import Client
 from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.exceptions import SecretExistsError
-from zenml.repository import Repository
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
 from zenml.stack.stack_component import StackComponent
 
@@ -57,8 +57,8 @@ def register_secrets_manager_subcommands() -> None:
         Args:
             ctx: Click context.
         """
-        repo = Repository()
-        secrets_manager_models = repo.active_stack_model.components[
+        client = Client()
+        secrets_manager_models = client.active_stack_model.components[
             StackComponentType.SECRETS_MANAGER
         ]
         if secrets_manager_models is None:

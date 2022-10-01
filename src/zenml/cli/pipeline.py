@@ -20,10 +20,10 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.pipelines.run_pipeline import run_pipeline
-from zenml.repository import Repository
 from zenml.utils.uuid_utils import is_valid_uuid
 
 logger = get_logger(__name__)
@@ -57,8 +57,8 @@ def cli_pipeline_run(python_file: str, config_path: str) -> None:
 def list_pipelines() -> None:
     """List all registered pipelines."""
     cli_utils.print_active_config()
-    pipelines = Repository().zen_store.list_pipelines(
-        project_name_or_id=Repository().active_project.id
+    pipelines = Client().zen_store.list_pipelines(
+        project_name_or_id=Client().active_project.id
     )
     if not pipelines:
         cli_utils.declare("No piplines registered.")
@@ -79,14 +79,14 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
         pipeline_name_or_id: The name or ID of the pipeline to delete.
     """
     cli_utils.print_active_config()
-    active_project_id = Repository().active_project.id
+    active_project_id = Client().active_project.id
     assert active_project_id is not None
     try:
-        repo = Repository()
+        client = Client()
         if is_valid_uuid(pipeline_name_or_id):
-            pipeline = repo.zen_store.get_pipeline(UUID(pipeline_name_or_id))
+            pipeline = client.zen_store.get_pipeline(UUID(pipeline_name_or_id))
         else:
-            pipeline = repo.zen_store.get_pipeline_in_project(
+            pipeline = client.zen_store.get_pipeline_in_project(
                 pipeline_name=pipeline_name_or_id,
                 project_name_or_id=active_project_id,
             )
@@ -98,7 +98,7 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
         "unlisted."
     )
     assert pipeline.id is not None
-    Repository().zen_store.delete_pipeline(pipeline_id=pipeline.id)
+    Client().zen_store.delete_pipeline(pipeline_id=pipeline.id)
     cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
 
 
@@ -127,15 +127,17 @@ def list_pipeline_runs(
     cli_utils.print_active_config()
     try:
         stack_id, pipeline_id, user_id = None, None, None
-        repo = Repository()
+        client = Client()
         if stack:
-            stack_id = repo.get_stack_by_name(stack).id
+            stack_id = cli_utils.get_stack_by_id_or_name_or_prefix(
+                client=client, id_or_name_or_prefix=stack
+            ).id
         if pipeline:
-            pipeline_id = repo.get_pipeline_by_name(pipeline).id
+            pipeline_id = client.get_pipeline_by_name(pipeline).id
         if user:
-            user_id = repo.zen_store.get_user(user).id
-        pipeline_runs = Repository().zen_store.list_runs(
-            project_name_or_id=Repository().active_project.id,
+            user_id = client.zen_store.get_user(user).id
+        pipeline_runs = Client().zen_store.list_runs(
+            project_name_or_id=Client().active_project.id,
             user_name_or_id=user_id,
             pipeline_id=pipeline_id,
             stack_id=stack_id,

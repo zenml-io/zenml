@@ -18,7 +18,7 @@ import os
 from tempfile import TemporaryDirectory
 from typing import Any, Type
 
-from transformers import AutoConfig, TFPreTrainedModel
+from transformers import AutoConfig, TFPreTrainedModel  # type: ignore [import]
 
 from zenml.artifacts import ModelArtifact
 from zenml.materializers.base_materializer import BaseMaterializer

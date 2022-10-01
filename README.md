@@ -251,7 +251,7 @@ zenml stack export <STACK_NAME> <FILENAME.yaml>
 
 Similarly, you can import a stack by running:
 ```
-zenml stack import <STACK_NAME> <FILENAME.yaml>
+zenml stack import <STACK_NAME> -f <FILENAME.yaml>
 ```
 
 Learn more on importing/exporting stacks [here](https://docs.zenml.io/collaborate/stack-export-import).

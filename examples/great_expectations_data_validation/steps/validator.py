@@ -18,7 +18,7 @@ from zenml.integrations.great_expectations.steps import (
 )
 from zenml.steps.utils import clone_step
 
-ge_validate_train_prams = GreatExpectationsValidatorParameters(
+ge_validate_train_params = GreatExpectationsValidatorParameters(
     expectation_suite_name="steel_plates_suite",
     data_asset_name="steel_plates_train_df",
 )

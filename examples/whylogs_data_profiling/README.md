@@ -200,7 +200,8 @@ zenml data-validator register whylogs -f whylogs
 zenml stack register whylogs_stack -o default -a default -dv whylogs --set
 ```
 
-Adding Whylabs logging capabilities to that is just a bit more complicated, as you
+Adding Whylabs logging capabilities to that (in addition to the use of the base
+whylogs data validation) is just a bit more complicated, as you
 also require a Secrets Manager in your stack:
 
 ```shell

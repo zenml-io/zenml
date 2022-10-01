@@ -20,9 +20,10 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.whylogs.materializers.whylogs_materializer import (
     WhylogsMaterializer,
 )
+from zenml.post_execution.pipeline import PipelineRunView
 
 
-def test_whylogs_materializer(clean_repo):
+def test_whylogs_materializer(clean_client):
     """Tests whether the steps work for the Whylogs materializer."""
 
     with does_not_raise():
@@ -35,7 +36,7 @@ def test_whylogs_materializer(clean_repo):
             materializer=WhylogsMaterializer,
         )
 
-    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
     dataset_profile_view = last_run.steps[-1].output.read()
     assert isinstance(dataset_profile_view, DatasetProfileView)
     assert dataset_profile_view.creation_timestamp is not None

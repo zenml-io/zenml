@@ -24,20 +24,23 @@ logger = get_logger(__name__)
 SCAN_PORT_RANGE = (8000, 65535)
 
 
-def port_available(port: int) -> bool:
+def port_available(port: int, address: str = "127.0.0.1") -> bool:
     """Checks if a local port is available.
 
     Args:
         port: TCP port number
+        address: IP address on the local machine
 
     Returns:
         True if the port is available, otherwise False
     """
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("127.0.0.1", port))
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            s.bind((address, port))
     except socket.error as e:
-        logger.debug("Port %d unavailable: %s", port, e)
+        logger.debug("Port %d unavailable on %s: %s", port, address, e)
         return False
 
     return True

@@ -21,7 +21,7 @@ from typing import Callable, NamedTuple, Optional
 import pytest
 
 from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
-from zenml.repository import Repository
+from zenml.client import Client
 
 from .example_validations import (
     generate_basic_validation_function,
@@ -71,8 +71,8 @@ class ExampleIntegrationTestConfiguration(NamedTuple):
     """
 
     name: str
-    validation_function: Callable[[Repository], None]
-    setup_function: Optional[Callable[[Repository], None]] = None
+    validation_function: Callable[[Client], None]
+    setup_function: Optional[Callable[[Client], None]] = None
     skip_on_windows: bool = False
     prevent_stack_setup: bool = True
 
