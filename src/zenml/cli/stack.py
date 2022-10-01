@@ -225,6 +225,7 @@ def register_stack(
             user=client.active_user.id,
         )
 
+        print(stack_)
         created_stack = client.register_stack(stack_)
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
