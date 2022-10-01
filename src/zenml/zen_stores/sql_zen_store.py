@@ -555,6 +555,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The registered stack.
+
+        Raises:
+            KeyError: If one or more of the stack's components are not
+                registered in the store.
         """
         with Session(self.engine) as session:
             project = self._get_project_schema(stack.project, session=session)
@@ -574,15 +578,27 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Get the Schemas of all components mentioned
-            filters = [
-                (StackComponentSchema.id == component_id)
+            component_ids = [
+                component_id
                 for list_of_component_ids in stack.components.values()
                 for component_id in list_of_component_ids
+            ]
+            filters = [
+                (StackComponentSchema.id == component_id)
+                for component_id in component_ids
             ]
 
             defined_components = session.exec(
                 select(StackComponentSchema).where(or_(*filters))
             ).all()
+            defined_component_ids = [c.id for c in defined_components]
+
+            # check if all component IDs are valid
+            if len(defined_component_ids) != len(component_ids):
+                raise KeyError(
+                    f"Some components referenced in the stack were not found: "
+                    f"{set(component_ids) - set(defined_component_ids)}"
+                )
 
             # Create the stack
             stack_in_db = StackSchema.from_create_model(

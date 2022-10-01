@@ -259,16 +259,14 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 active_project = self.get_project(active_project_name_or_id)
             except KeyError:
                 logger.warning(
-                    "Project '%s' not found. Resetting the active project in "
-                    "the %s config to the default.",
-                    active_project_name_or_id,
+                    "The current %s active project is no longer available. "
+                    "Resetting the active project to default.",
                     config_name,
                 )
                 active_project = self._default_project
         else:
-            logger.warning(
-                "Active project not set in the %s config. Setting it to the "
-                "default.",
+            logger.info(
+                "Setting the %s active project to default.",
                 config_name,
             )
             active_project = self._default_project
@@ -295,40 +293,30 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 active_stack = self.get_stack(stack_id=active_stack_id)
             except KeyError:
                 logger.warning(
-                    "Active stack with id '%s' not found in the %s config. "
-                    "Setting it to the default stack in project '%s'.",
-                    active_stack_id,
+                    "The current %s active stack is no longer available. "
+                    "Resetting the active stack to default.",
                     config_name,
-                    active_project.name,
                 )
                 active_stack = default_stack
             else:
                 if active_stack.project != active_project.id:
                     logger.warning(
-                        "The active stack with id '%s' is not in the active "
-                        "project. Resetting the active stack in the %s config "
-                        "to the default stack in project '%s'.",
-                        active_stack_id,
+                        "The current %s active stack is not part of the active "
+                        "project. Resetting the active stack to default.",
                         config_name,
-                        active_project.name,
                     )
                     active_stack = default_stack
                 elif active_stack.user != self.active_user.id:
                     logger.warning(
-                        "The active stack with id '%s' is not owned by the "
-                        "active user. Resetting the active stack in the %s "
-                        "config to the default stack in project '%s'.",
-                        active_stack_id,
+                        "The current %s active stack is not owned by the "
+                        "active user. Resetting the active stack to default.",
                         config_name,
-                        active_project.name,
                     )
                     active_stack = default_stack
         else:
             logger.warning(
-                "The active stack is not set in the %s config. Setting the "
-                "active stack to the default stack in project %s.",
+                "Setting the %s active stack to default.",
                 config_name,
-                active_project.name,
             )
             active_stack = default_stack
 
