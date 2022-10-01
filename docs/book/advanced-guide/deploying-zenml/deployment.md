@@ -22,9 +22,9 @@ This sets up a local daemon (with options to run it as a Docker container) that 
 Running ZenML locally is an easy way to experiment with your pipelines and design proof-of-concepts. However, for a lot of use cases like: sharing stacks and pipeline information with your team and for using cloud services to run your pipelines, you have to deploy ZenML on the cloud.
 
 You can use any of the following ways to get started:
-- The `zenml deploy` CLI command that provides an easy interface to deploy on Kubernetes in AWS, GCP or Azure.
-- A Docker image that you can run in any environment of your choice.
-- A Helm chart that can be deployed to any Kubernetes cluster (on-prem or managed).
+- The [`zenml deploy` CLI command](./using-cli.md) that provides an easy interface to deploy on Kubernetes in AWS, GCP or Azure.
+- A [Docker image](./docker-helm.md#using-docker) that you can run in any environment of your choice.
+- A [Helm chart](./docker-helm.md#using-helm) that can be deployed to any Kubernetes cluster (on-prem or managed).
 
 In the following sections, let's take a look at each of those options.
 

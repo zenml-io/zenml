@@ -2,6 +2,8 @@
 description: A guide into ZenML architecture and into concepts like providers, deployers and more!
 ---
 
+Introduction to centralized tracking of metadata and to the ZenServer concept.
+
 ## Architecture
 
 A ZenML deployment consists of two components -
