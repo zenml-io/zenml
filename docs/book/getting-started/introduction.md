@@ -15,8 +15,6 @@ description: Welcome to ZenML!
 Everyone loves to train ML models, but few talks about shipping them into production, and even fewer can do it well.
 At ZenML, we believe the journey from model development to production doesn't need to be long and painful.
 
-![The long journey from experimentation to production.](../assets/1-pipeline-hard-reproduce.png)
-
 With ZenML, you can concentrate on what you do best - developing ML models and not worry about infrastructure or deployment tools.
 
 If you come from unstructured notebooks or scripts with lots of manual processes, ZenML will make the path to production easier and faster for you and your team.
@@ -30,6 +28,8 @@ It's built for data scientists, ML Engineers, and MLOps Developers to collaborat
 **tool-agnostic**, and has interfaces/abstractions that are catered towards ML workflows. 
 
 ZenML brings together all your favorite tools in one place so you can tailor your workflow to cater your needs.
+
+![ZenML unifies all your tools in one place.](../assets/sam-side-by-side-full-text.png)
 
 Eager to get started? We recommend the following to start using **ZenML** right away:
 
