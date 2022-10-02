@@ -29,6 +29,9 @@ and notebooks.
 
 [Click here to go to ZenBytes](https://github.com/zenml-io/zenbytes)
 
+ZenBytes shares a close link to the [Practical MLOps](../advanced-guide/practical/practical-mlops.md) 
+section of the docs.
+
 ## ZenFiles: See ZenML in practice
 
 ZenFiles are production-grade ML use-cases powered by ZenML. They are fully
@@ -42,8 +45,15 @@ repository of ZenML.
 
 ## YouTube Tutorials
 
-If you're a visual learner, then the [official ZenML YouTube channel](https://www.youtube.com/c/ZenML) is the place to go. It features tutorials, community meetups, and various other annoucements regarding the product.
+If you're a visual learner, then the [official ZenML YouTube channel](https://www.youtube.com/c/ZenML) 
+is the place to go. It features tutorials, community meetups, and various other annoucements regarding the product.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/RlBjci8iHxU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+## Blog
 
-##
+The [ZenML Blog](https://blog.zenml.io/) is regularly updated with in-depth tutorials. 
+Filtering with the [zenml tag](https://blog.zenml.io/tag/zenml/) is the best way to find 
+relevant tutorials and read at leisure. 
+
+## Slack
+
+If you're missing a starting point, join the [Slack community](https://zenml.io/slack-invite) and let us know!
