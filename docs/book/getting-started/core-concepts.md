@@ -40,7 +40,7 @@ A **Stack** is the configuration of the underlying infrastructure and choices ar
 
 ZenML comes with a default stack that runs locally, as seen in the following diagram:
 
-![ZenML pipelines run on stacks](../assets/core_concepts/concepts-2.png)
+![ZenML pipelines run on stacks](../assets/core_concepts/simple_stack_and_pipeline.png)
 
 In any Stack, there **must** be at least two basic **Stack Components** - and *orchestrator* and an *artifact store*.
 
