@@ -73,7 +73,7 @@ installFile() {
   cd "$INSTALL_PATH"
   mkdir -p "$INSTALL_DIR"
   tar xzf "$TMP_FILE" -C "$INSTALL_DIR"
-  echo "$APP_NAME installed into $INSTALL_DIR/$INSTALL_DIR"
+  echo "$APP_NAME installed into $INSTALL_PATH/$INSTALL_DIR"
 }
 
 # verifyChecksum verifies the SHA256 checksum of the binary package.
