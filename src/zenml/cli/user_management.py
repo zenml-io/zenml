@@ -78,18 +78,25 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
         user_name: The name of the user to create.
         password: The password of the user to create.
     """
+    gc = GlobalConfiguration()
     if not password:
-        password = click.prompt(
-            f"Password for user {user_name}. Leave empty to generate an "
-            f"activation token",
-            default="",
-            hide_input=True,
-        )
+        if gc.zen_store.type != StoreType.REST:
+
+            password = click.prompt(
+                f"Password for user {user_name}",
+                hide_input=True,
+            )
+        else:
+            password = click.prompt(
+                f"Password for user {user_name}. Leave empty to generate an "
+                f"activation token",
+                default="",
+                hide_input=True,
+            )
 
     cli_utils.print_active_config()
     user = UserModel(name=user_name, password=password or None)
     # Use the activation workflow only if connected to a ZenML server.
-    gc = GlobalConfiguration()
     if gc.zen_store.type != StoreType.REST:
         user.active = password != ""
     else:

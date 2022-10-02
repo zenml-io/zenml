@@ -212,6 +212,10 @@ class LocalStore(BaseModel):
         component_name = (prefix + name) if name != "default" else name
         config_dict.pop("uuid")
         config_dict.pop("name")
+        # filter out empty values to avoid validation errors
+        config_dict = dict(
+            filter(lambda x: x[1] is not None, config_dict.items())
+        )
 
         return LegacyComponentModel(
             name=component_name,
@@ -449,7 +453,26 @@ def list_profiles(
 
 @profile.command(
     "migrate",
-    help="Migrate stacks, components and flavors from a legacy profile.",
+    help="""Migrate stacks, components and flavors from a legacy profile. 
+    
+    Use this command to import the stacks, stack components and flavors from a
+    legacy profile path into the active project or a specified project.
+
+    If no project is specified, the active project is used. A different project
+    can be specified with the `--project` argument and the project will be
+    created if it does not exist yet.
+    
+    If your migrated stack components have configurations that are no longer
+    valid, you can pass the `--skip-validation` flag to import them anyway.
+    The invalid configurations can be fixed manually afterwards by using the
+    `zenml <component-type> update` and `zenml <component-type> remove-attribute`
+    commands.
+
+    To avoid name clashes, you can specify a prefix value that will be prepended
+    to the names of all migrated stacks, stack components and flavors.
+    Alternatively, you can pass the `--overwrite` flag to overwrite existing
+    objects.
+    """,
 )
 @click.option(
     "--stacks",

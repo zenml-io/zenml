@@ -16,12 +16,10 @@
 from typing import TYPE_CHECKING
 
 import click
-from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
-from zenml.console import console
 from zenml.enums import CliCategories, LoggingLevels
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -91,72 +89,3 @@ def set_logging_verbosity(verbosity: str) -> None:
             f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
         )
     cli_utils.declare(f"Set verbosity to: {verbosity}")
-
-
-# Global store configuration
-@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
-def config() -> None:
-    """Manage the global store ZenML configuration."""
-
-
-@config.command("explain")
-def explain_config() -> None:
-    """Explains the concept of ZenML configurations."""
-    with console.pager():
-        console.print(
-            Markdown(
-                """
-The ZenML configuration that is managed through `zenml config` determines the
-type of backend that ZenML uses to persist objects such as Stacks, Stack
-Components and Flavors.
-
-The default configuration is to store all this information on the local
-filesystem:
-
-```
-$ zenml config describe
-Running without an active repository root.
-No active project is configured. Run zenml project set PROJECT_NAME to set the active project.
-The global configuration is (/home/stefan/.config/zenml/config.yaml):
- - url: 'sqlite:////home/stefan/.config/zenml/zenml.db'
-The active stack is: 'default' (global)
-The active project is not set.
-```
-
-The `zenml config set` CLI command can be used to change the global
-configuration as well as the local configuration of a specific repository to
-store the data on a remote ZenML server.
-
-To change the global configuration to use a remote ZenML server, pass the URL
-where the server can be reached along with the authentication credentials:
-
-```
-$ zenml config set --url=http://localhost:8080 --username=default --project=default --password=
-Updated the global store configuration.
-
-$ zenml config describe
-Running without an active repository root.
-The global configuration is (/home/stefan/.config/zenml/config.yaml):
- - url: 'http://localhost:8080'
- - username: 'default'
-The active stack is: 'default' (global)
-The active project is: 'default' (global)
-```
-
-To switch the global configuration back to the default local store, pass the
-`--local-store` flag:
-
-```
-$ zenml config set --local-store
-Using the default store for the global config.
-
-$ zenml config describe
-Running without an active repository root.
-The global configuration is (/home/stefan/.config/zenml/config.yaml):
- - url: 'sqlite:////home/stefan/.config/zenml/zenml.db'
-The active stack is: 'default' (global)
-The active project is: 'default' (global)
-```
-"""
-            )
-        )

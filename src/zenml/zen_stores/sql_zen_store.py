@@ -594,7 +594,9 @@ class SqlZenStore(BaseZenStore):
             defined_component_ids = [c.id for c in defined_components]
 
             # check if all component IDs are valid
-            if len(defined_component_ids) != len(component_ids):
+            if len(component_ids) > 0 and len(defined_component_ids) != len(
+                component_ids
+            ):
                 raise KeyError(
                     f"Some components referenced in the stack were not found: "
                     f"{set(component_ids) - set(defined_component_ids)}"
