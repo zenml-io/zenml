@@ -45,22 +45,6 @@ ZenML brings together all your favorite tools in one place so you can tailor you
 
 Read more on all tools you can readily use in the [integrations](https://zenml.io/integrations) section. Can't find your tool? You can always [write your own integration](https://docs.zenml.io/developer-guide/advanced-usage/custom-flavors) to use it with ZenML.
 
-## Why ZenML
-Everyone loves to train ML models, but few talks about shipping them into production, and even fewer can do it well.
-It's no wonder that 85% of ML models fail and 53% don't make it into production, according to a Gartner survey.
-
-
-At ZenML, we believe the journey from model development to production doesn't need to be long and meandering.
-
-With ZenML, you as a data scientist can concentrate on what you do best - developing ML models, and not worry about infrastructure or deployment tools.
-If you come from unstructured notebooks or scripts with lots of manual processes, ZenML will make the path to production easier and faster for you and your team.
-Using ZenML allows data scientists like you to own the entire pipeline - from experimentation to production.
-
-This is why we built ZenML.
-
-![ZenML unifies all your tools in one place.](../assets/sam-side-by-side-full-text.png)
-
-
 Eager to get started? We recommend the following to start using **ZenML** right away!
 
 ## **Pipelining** - Take Your First ZenML Steps
