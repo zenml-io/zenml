@@ -1,10 +1,8 @@
 ---
-description: Get started with code examples.
+description: Resources to learn how to use ZenML practically.
 ---
 
-# ZenML In Code: See examples of how ZenML is used
-
-This documents a series of resources to learn how to use ZenML practically.
+# ZenML In Code
 
 ## ZenML Examples: See how all the integrations work
 
