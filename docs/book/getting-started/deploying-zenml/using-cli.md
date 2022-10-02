@@ -22,7 +22,7 @@ zenml deploy
 You will be prompted to provide a name for your deployment and details like what cloud provider you want to deploy to, in addition to the username, password and email you want to set for the default user — and that's it! It creates the database and any VPCs, permissions and more that is needed.
 
 > **Note**
-> To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resoureces like MySQL databases and networks.
+> To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
 
 Reasonable defaults are in place for you already and if you wish to configure more settings, take a look at the next scenario that uses a config file.
 

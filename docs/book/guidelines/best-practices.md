@@ -76,7 +76,7 @@ disabled for any given pipeline.
 
 ZenML inherently uses caching. However, this caching relies on changes of input
 artifacts to invalidate the cache. In case a step has external data sources like
-external APIs or filesystems, caching should be disabled explicitly for the 
+external APIs or file systems, caching should be disabled explicitly for the 
 step.
 
 ### Enable cache explicitly for steps that have a `context` argument, if they 
