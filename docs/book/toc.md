@@ -130,9 +130,13 @@
 * [Best Practices](guidelines/best-practices.md)
 * [Global Configuration](guidelines/global-config.md)
 * [System Environmental Variables](guidelines/system-environmental-variables.md)
-* [Usage Analytics](guidelines/usage-analytics.md)
-* [Contribution Guide](guidelines/contributing.md)
-* [External Integration Guide](guidelines/integrating.md)
+* [Migration guide 0.20.0](guidelines/migration-zero-twenty.md)
+
+## Misc
+
+* [Contribution Guide](misc/contributing.md)
+* [External Integration Guide](misc/integrating.md)
+* [Usage Analytics](misc/usage-analytics.md)
 
 ## Reference
 
