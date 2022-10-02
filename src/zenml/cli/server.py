@@ -144,8 +144,9 @@ def up(
     config_attrs: Dict[str, Any] = dict(
         name=LOCAL_ZENML_SERVER_NAME,
         provider=provider,
-        blocking=blocking,
     )
+    if not docker:
+        config_attrs["blocking"] = blocking
     if port is not None:
         config_attrs["port"] = port
     if ip_address is not None:
