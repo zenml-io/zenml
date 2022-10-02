@@ -28,7 +28,7 @@ stack components and pipeline runs all are stored on a sqlite database at
 `(~/.config/zenml/local_stores/default_zen_store/zenml.db)`. The ZenML client 
 creates and directly connects to this db. You don't need to worry about a thing.
 
-![ZenML on SQLite](../assets/getting_started/Scenario1.png)
+![ZenML on SQLite](../../assets/getting_started/Scenario1.png)
 
 * If the user wants to be fancy, find out how to configure a different location,
 or different db altogether [here]()
@@ -42,7 +42,7 @@ or different db altogether [here]()
 -> Find out more [here]()
 
 
-![ZenML on with Local HTTP Server](../assets/getting_started/Scenario2.png)
+![ZenML on with Local HTTP Server](../../assets/getting_started/Scenario2.png)
 
 ## Scenario 3: Remote Deployment of the HTTP server and Database
 
@@ -55,5 +55,5 @@ managed independently
 * Link to section that explains this more
 
 
-![ZenML on with Remote HTTP Server](../assets/getting_started/Scenario3.1.png)
-![ZenML on with Remote HTTP Server - Collaboration](../assets/getting_started/Scenario3.2.png)
+![ZenML on with Remote HTTP Server](../../assets/getting_started/Scenario3.1.png)
+![ZenML on with Remote HTTP Server - Collaboration](../../assets/getting_started/Scenario3.2.png)
