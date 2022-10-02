@@ -15,12 +15,12 @@
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import METADATA_CONFIG, VERSION_1
+from zenml.constants import API, METADATA_CONFIG, VERSION_1
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1 + METADATA_CONFIG,
+    prefix=API + VERSION_1 + METADATA_CONFIG,
     tags=["metadata_config"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

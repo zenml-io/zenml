@@ -20,9 +20,10 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (
     PyTorchDataLoaderMaterializer,
 )
+from zenml.post_execution.pipeline import PipelineRunView
 
 
-def test_pytorch_module_materializer(clean_repo):
+def test_pytorch_dataloader_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
     with does_not_raise():
         _test_materializer(
@@ -30,8 +31,10 @@ def test_pytorch_module_materializer(clean_repo):
             materializer=PyTorchDataLoaderMaterializer,
         )
 
-    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
-    dataloader = last_run.steps[-1].output.read()
+    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
+    test_step = last_run.steps[-1]
+    dataloader = test_step.output.read()
+
     assert isinstance(dataloader, DataLoader)
     assert dataloader.dataset is not None
     assert dataloader.batch_size == 37

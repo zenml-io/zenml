@@ -20,9 +20,10 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.xgboost.materializers.xgboost_dmatrix_materializer import (
     XgboostDMatrixMaterializer,
 )
+from zenml.post_execution.pipeline import PipelineRunView
 
 
-def test_xgboost_dmatrix_materializer(clean_repo):
+def test_xgboost_dmatrix_materializer(clean_client):
     """Tests whether the steps work for the XGBoost Booster materializer."""
     with does_not_raise():
         _test_materializer(
@@ -30,7 +31,7 @@ def test_xgboost_dmatrix_materializer(clean_repo):
             materializer=XgboostDMatrixMaterializer,
         )
 
-    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
     dmatrix = last_run.steps[-1].output.read()
     assert isinstance(dmatrix, xgb.DMatrix)
     assert dmatrix.num_row() == 5

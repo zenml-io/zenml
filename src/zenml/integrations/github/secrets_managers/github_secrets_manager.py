@@ -21,12 +21,12 @@ from typing import Any, List, NoReturn, Optional, Tuple, cast
 import requests
 from requests.auth import HTTPBasicAuth
 
+from zenml.client import Client
 from zenml.exceptions import SecretExistsError
 from zenml.integrations.github.flavors.github_secrets_manager_flavor import (
     GitHubSecretsManagerConfig,
 )
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
@@ -243,7 +243,7 @@ class GitHubSecretsManager(BaseSecretsManager):
             )
 
         if not inside_github_action_environment():
-            stack_name = Repository().active_stack_model.name
+            stack_name = Client().active_stack_model.name
             commands = [
                 f"zenml stack copy {stack_name} <NEW_STACK_NAME>",
                 "zenml secrets_manager register <NEW_SECRETS_MANAGER_NAME> "

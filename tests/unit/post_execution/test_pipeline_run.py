@@ -46,6 +46,7 @@ def sample_stepview(sample_step: "BaseStep") -> StepView:
             mlmd_parent_step_ids=[0],
             pipeline_run_id=uuid4(),
             parent_step_ids=[],
+            step_configuration={},
         )
     )
 
@@ -57,6 +58,9 @@ def sample_pipeline_run_view(sample_stepview: StepView) -> PipelineRunView:
         PipelineRunModel(
             id=uuid4(),
             name="sample_run_name",
+            user=uuid4(),
+            project=uuid4(),
+            pipeline_configuration={},
         )
     )
     setattr(sample_pipeline_run_view, "_steps", {"some_step": sample_stepview})
@@ -64,7 +68,6 @@ def sample_pipeline_run_view(sample_stepview: StepView) -> PipelineRunView:
 
 
 def test_get_step_returns_stepview(
-    sample_step: "BaseStep",
     sample_stepview: StepView,
     sample_pipeline_run_view: PipelineRunView,
 ):

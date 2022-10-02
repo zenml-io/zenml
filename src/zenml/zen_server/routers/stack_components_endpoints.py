@@ -17,7 +17,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
+from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
 from zenml.models.component_model import HydratedComponentModel
@@ -26,14 +26,14 @@ from zenml.zen_server.models.component_models import UpdateComponentModel
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1 + STACK_COMPONENTS,
+    prefix=API + VERSION_1 + STACK_COMPONENTS,
     tags=["stack_components"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
 types_router = APIRouter(
-    prefix=VERSION_1 + COMPONENT_TYPES,
+    prefix=API + VERSION_1 + COMPONENT_TYPES,
     tags=["stack_components"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
@@ -169,5 +169,4 @@ def get_stack_component_types() -> List[str]:
     Returns:
         List of stack components.
     """
-    print(StackComponentType.values())
     return StackComponentType.values()

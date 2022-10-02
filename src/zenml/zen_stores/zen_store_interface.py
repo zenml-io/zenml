@@ -35,6 +35,7 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
+from zenml.models.server_models import ServerModel
 
 
 class ZenStoreInterface(ABC):
@@ -154,6 +155,14 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The store configuration of the copied store.
+        """
+
+    @abstractmethod
+    def get_store_info(self) -> ServerModel:
+        """Get information about the store.
+
+        Returns:
+            Information about the store.
         """
 
     # ------------
@@ -538,6 +547,28 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no user with the given ID exists.
+        """
+
+    @abstractmethod
+    def user_email_opt_in(
+        self,
+        user_name_or_id: Union[str, UUID],
+        user_opt_in_response: bool,
+        email: Optional[str] = None,
+    ) -> UserModel:
+        """Persist user response to the email prompt.
+
+        Args:
+            user_name_or_id: The name or the ID of the user.
+            user_opt_in_response: Whether this email should be associated
+                with the user id in the telemetry
+            email: The users email
+
+        Returns:
+            The updated user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
         """
 
     # -----

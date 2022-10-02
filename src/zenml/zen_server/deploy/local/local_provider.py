@@ -96,6 +96,7 @@ class LocalServerProvider(BaseServerProvider):
                 root_runtime_path=LOCAL_ZENML_SERVER_CONFIG_PATH,
                 singleton=True,
                 name=server_config.name,
+                blocking=server_config.blocking,
                 server=server_config,
             ),
             LocalDaemonServiceEndpointConfig(
@@ -185,7 +186,6 @@ class LocalServerProvider(BaseServerProvider):
 
         assert service.endpoint
         assert service.endpoint.monitor
-
         service.stop(timeout=timeout)
         (
             service.config,

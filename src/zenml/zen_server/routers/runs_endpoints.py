@@ -18,6 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from zenml.constants import (
+    API,
     COMPONENT_SIDE_EFFECTS,
     GRAPH,
     PIPELINE_CONFIGURATION,
@@ -32,7 +33,7 @@ from zenml.zen_server.models.pipeline_models import HydratedPipelineRunModel
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1 + RUNS,
+    prefix=API + VERSION_1 + RUNS,
     tags=["runs"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
@@ -41,7 +42,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Union[
+    response_model=Union[  # type: ignore[arg-type]
         List[HydratedPipelineRunModel], List[PipelineRunModel]
     ],
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -91,7 +92,7 @@ def list_runs(
 
 @router.get(
     "/{run_id}",
-    response_model=Union[HydratedPipelineRunModel, PipelineRunModel],
+    response_model=Union[HydratedPipelineRunModel, PipelineRunModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

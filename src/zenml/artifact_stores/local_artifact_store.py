@@ -319,9 +319,9 @@ class LocalArtifactStore(BaseArtifactStore):
             current directory and a list of files inside the current
             directory.
         """
-        yield from os.walk(
+        yield from os.walk(  # type: ignore[type-var, misc]
             top, topdown=topdown, onerror=onerror
-        )  # type: ignore[type-var, misc]
+        )
 
 
 class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):

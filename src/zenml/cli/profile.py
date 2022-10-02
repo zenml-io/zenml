@@ -13,47 +13,95 @@
 #  permissions and limitations under the License.
 """CLI for migrating legacy ZenML profiles."""
 
-import base64
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, Dict, Generator, List, Optional
+from typing import Any, DefaultDict, Dict, Generator, List, Optional, Tuple
 from uuid import UUID
 
 import click
-import yaml
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
+from pydantic import ValidationError as PydanticValidationError
+from pydantic import validator
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import (
-    EntityExistsError,
-    StackComponentExistsError,
-    StackExistsError,
-)
+from zenml.exceptions import EntityExistsError, ValidationError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, ProjectModel, StackModel, UserModel
+from zenml.models import ComponentModel, ProjectModel, StackModel
 from zenml.models.flavor_models import FlavorModel
-from zenml.repository import Repository
 from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
 
 logger = get_logger(__name__)
 
 
-class FlavorWrapper(BaseModel):
-    """Network serializable wrapper.
-
-    This represents the custom implementation of a stack component flavor.
-    """
+class LegacyFlavorModel(BaseModel):
+    """Legacy flavor model."""
 
     name: str
     type: str
     source: str
     integration: Optional[str]
+
+
+class LegacyComponentModel(BaseModel):
+    """Legacy stack component model."""
+
+    name: str
+    type: StackComponentType
+    flavor: str
+    configuration: Dict[str, Any]
+
+    def to_model(self, project_id: UUID, user_id: UUID) -> ComponentModel:
+        """Converts to a component model.
+
+        Args:
+            project_id: The project id.
+            user_id: The user id.
+
+        Returns:
+            The component model.
+        """
+        return ComponentModel(
+            name=self.name,
+            type=self.type,
+            flavor=self.flavor,
+            configuration=self.configuration,
+            project=project_id,
+            user=user_id,
+        )
+
+
+class LegacyStackModel(BaseModel):
+    """Legacy stack model."""
+
+    name: str
+    components: Dict[StackComponentType, str]
+
+    def to_model(
+        self, project_id: UUID, user_id: UUID, components: List[ComponentModel]
+    ) -> StackModel:
+        """Converts to a stack model.
+
+        Args:
+            project_id: The project id.
+            user_id: The user id.
+            components: The components that are part of the stack.
+
+        Returns:
+            The stack model.
+        """
+        return StackModel(
+            name=self.name,
+            components={c.type: [c.id] for c in components},
+            project=project_id,
+            user=user_id,
+        )
 
 
 class LocalStore(BaseModel):
@@ -72,7 +120,9 @@ class LocalStore(BaseModel):
     stack_components: DefaultDict[str, Dict[str, str]] = Field(
         default=defaultdict(dict)
     )
-    stack_component_flavors: List[FlavorWrapper] = Field(default_factory=list)
+    stack_component_flavors: List[LegacyFlavorModel] = Field(
+        default_factory=list
+    )
 
     _config_file: str
 
@@ -127,8 +177,11 @@ class LocalStore(BaseModel):
         return str(path)
 
     def get_component(
-        self, component_type: str, name: str, prefix: str = ""
-    ) -> ComponentModel:
+        self,
+        component_type: str,
+        name: str,
+        prefix: str = "",
+    ) -> LegacyComponentModel:
         """Fetch the flavor and configuration for a stack component.
 
         Args:
@@ -137,8 +190,7 @@ class LocalStore(BaseModel):
             prefix: Optional name prefix to use for the returned component.
 
         Returns:
-            A component model for the stack component, containing the component
-            information.
+            A legacy component model for the stack component.
 
         Raises:
             KeyError: If no stack component exists for the given type and name.
@@ -154,19 +206,25 @@ class LocalStore(BaseModel):
             component_type=component_type, name=name
         )
         flavor = components[name]
-        config_dict = yaml_utils.read_yaml(component_config_path)
+        config_dict: Dict[str, Any] = yaml_utils.read_yaml(
+            component_config_path
+        )
         component_name = (prefix + name) if name != "default" else name
-        config_dict["name"] = component_name
-        # TODO: [server] The Model needs to also set user and project correctly
-        return ComponentModel(
-            type=component_type,
-            name=component_name,
-            flavor=flavor,
-            id=UUID(config_dict["uuid"]),
-            configuration=base64.b64encode(yaml.dump(config_dict).encode()),
+        config_dict.pop("uuid")
+        config_dict.pop("name")
+        # filter out empty values to avoid validation errors
+        config_dict = dict(
+            filter(lambda x: x[1] is not None, config_dict.items())
         )
 
-    def get_components(self, prefix: str = "") -> List[ComponentModel]:
+        return LegacyComponentModel(
+            name=component_name,
+            type=component_type,
+            flavor=flavor,
+            configuration=config_dict,
+        )
+
+    def get_components(self, prefix: str = "") -> List[LegacyComponentModel]:
         """Fetch all stack components.
 
         The default components are expressly excluded from this list.
@@ -177,7 +235,7 @@ class LocalStore(BaseModel):
         Returns:
             A list of component models for all stack components.
         """
-        components: List[ComponentModel] = []
+        components: List[LegacyComponentModel] = []
         for component_type in self.stack_components:
             if component_type == "metadata_store":
                 continue
@@ -188,13 +246,15 @@ class LocalStore(BaseModel):
                 ]:
                     continue
                 components.append(
-                    self.get_component(component_type, name, prefix)
+                    self.get_component(
+                        component_type,
+                        name,
+                        prefix=prefix,
+                    )
                 )
         return components
 
-    def get_stack(
-        self, name: str, prefix: str = "", project: Optional[str] = None
-    ) -> StackModel:
+    def get_stack(self, name: str, prefix: str = "") -> LegacyStackModel:
         """Fetch the configuration for a stack.
 
         For default stack components, the default component in the current
@@ -204,11 +264,9 @@ class LocalStore(BaseModel):
             name: The name of the stack to fetch.
             prefix: Optional name prefix to use for the returned stack and its
                 components (unless default).
-            project: Optional project name to use to fetch the default stack to
-                replace the default components in the stack.
 
         Returns:
-            A stack model for the stack.
+            A legacy stack model for the stack.
 
         Raises:
             KeyError: If no stack exists with the given name.
@@ -220,46 +278,22 @@ class LocalStore(BaseModel):
                 f"{set(self.stacks)}."
             )
 
-        components: Dict[StackComponentType, ComponentModel] = {}
+        components: Dict[StackComponentType, str] = {}
         for component_type, component_name in stack.items():
             if component_type == "metadata_store":
                 continue
-            component: ComponentModel = self.get_component(
-                component_type, component_name, prefix
+            components[StackComponentType(component_type)] = (
+                (prefix + component_name)
+                if component_name != "default"
+                else component_name
             )
-            if (
-                component_name == "default"
-                and project
-                and component_type
-                in [
-                    StackComponentType.ARTIFACT_STORE,
-                    StackComponentType.ORCHESTRATOR,
-                ]
-            ):
-                zen_store = Repository().zen_store
-                # use the component in the active store
-                # TODO: [server] make sure this is the intended use
-                #  of _get_default_stack
-                component = (
-                    zen_store._get_default_stack(
-                        project_name_or_id=project,
-                        user_name_or_id=zen_store.active_user.id,
-                    )
-                    .to_hydrated_model()
-                    .components[StackComponentType(component_type)][0]
-                )
 
-            components[StackComponentType(component_type)] = component
-
-        return StackModel(
+        return LegacyStackModel(
             name=prefix + name,
             components=components,
-            project=project,
         )
 
-    def get_stacks(
-        self, prefix: str = "", project: Optional[str] = None
-    ) -> List[StackModel]:
+    def get_stacks(self, prefix: str = "") -> List[LegacyStackModel]:
         """Fetch all stacks.
 
         The default stack is expressly excluded from this list.
@@ -267,14 +301,12 @@ class LocalStore(BaseModel):
         Args:
             prefix: Optional name prefix to use for the returned stack and
                 stack components.
-            project: Optional project name to use to fetch the default stack to
-                replace the default components in the stack.
 
         Returns:
-            A list of stack configurations.
+            A list of stacks.
         """
         return [
-            self.get_stack(name, prefix, project)
+            self.get_stack(name, prefix=prefix)
             for name in self.stacks
             if name != "default"
         ]
@@ -318,6 +350,7 @@ class LocalStore(BaseModel):
         Returns:
             True if the store contains stack components, False otherwise.
         """
+        Client()
         return len(self.get_components()) > 0
 
     @property
@@ -393,15 +426,14 @@ def list_profiles(
         path: Custom path where to look for profiles. The current global
             configuration path is used if not set.
     """
-    Repository()
+    Client()
     cli_utils.warning(
         "ZenML profiles have been deprecated and removed in this version of "
         "ZenML. All stacks, stack components, flavors etc. are now stored "
         "and managed globally, either in a local database or on a remote ZenML "
-        "server (see the `zenml config` command). As alternatives, you can use "
-        "different global configuration paths by setting the `ZENML_CONFIG_PATH` "
-        "environment variable to point to a different location, or use projects "
-        "as a scoping mechanism for stack and stack components.\n\n"
+        "server (see the `zenml up` and `zenml connect` commands). As an"
+        "alternative to profiles, you can use projects as a scoping mechanism "
+        "for stacks, stack components and other ZenML objects.\n\n"
         "The information stored in legacy profiles is not automatically "
         "migrated. You can do so manually by using the `zenml profile list` and "
         "`zenml profile migrate` commands."
@@ -421,7 +453,26 @@ def list_profiles(
 
 @profile.command(
     "migrate",
-    help="Migrate stacks, components and flavors from a legacy profile.",
+    help="""Migrate stacks, components and flavors from a legacy profile. 
+    
+    Use this command to import the stacks, stack components and flavors from a
+    legacy profile path into the active project or a specified project.
+
+    If no project is specified, the active project is used. A different project
+    can be specified with the `--project` argument and the project will be
+    created if it does not exist yet.
+    
+    If your migrated stack components have configurations that are no longer
+    valid, you can pass the `--skip-validation` flag to import them anyway.
+    The invalid configurations can be fixed manually afterwards by using the
+    `zenml <component-type> update` and `zenml <component-type> remove-attribute`
+    commands.
+
+    To avoid name clashes, you can specify a prefix value that will be prepended
+    to the names of all migrated stacks, stack components and flavors.
+    Alternatively, you can pass the `--overwrite` flag to overwrite existing
+    objects.
+    """,
 )
 @click.option(
     "--stacks",
@@ -451,6 +502,12 @@ def list_profiles(
     type=click.BOOL,
 )
 @click.option(
+    "--skip-validation",
+    is_flag=True,
+    help=("Don't validate the migrated stack component configurations."),
+    type=click.BOOL,
+)
+@click.option(
     "--prefix",
     type=str,
     default="",
@@ -475,6 +532,7 @@ def migrate_profiles(
     flavors: bool,
     overwrite: bool,
     ignore_errors: bool,
+    skip_validation: bool,
     prefix: str,
     profile_path: str,
     project_name: Optional[str],
@@ -486,11 +544,18 @@ def migrate_profiles(
         flavors: Migrate flavors from the profile.
         overwrite: Overwrite the existing stacks, stack components and flavors.
         ignore_errors: Continue the import process if an error is encountered.
+        skip_validation: Don't validate the migrated stack component
+            configurations.
         prefix: Use a prefix for the names of imported stacks, stack components and
             flavors.
         profile_path: Path where the profile files are located.
         project_name: Migrate the stacks, components and flavors to a custom
             project.
+
+    Raises:
+        PydanticValidationError: If a migrated stack component configuration
+            is invalid.
+        ValidationError: If a migrated stack or stack component is invalid.
     """
     # flake8: noqa: C901
     stores = list(find_profiles(profile_path))
@@ -505,14 +570,15 @@ def migrate_profiles(
         stacks = flavors = True
     store = stores[0]
 
-    repo = Repository()
+    client = Client()
     project: Optional[ProjectModel] = None
+    user = client.active_user
     if project_name:
         try:
-            project = repo.zen_store.get_project(project_name)
+            project = client.zen_store.get_project(project_name)
         except KeyError:
             cli_utils.declare(f"Creating project {project_name}")
-            project = repo.zen_store.create_project(
+            project = client.zen_store.create_project(
                 ProjectModel(
                     name=project_name,
                     description=(
@@ -521,14 +587,15 @@ def migrate_profiles(
                     ),
                 )
             )
+            client.zen_store._create_default_stack(
+                project_name_or_id=project_name,
+                user_name_or_id=user.id,
+            )
     else:
-        project = repo.active_project
+        project = client.active_project
 
     if not project:
         cli_utils.error("No active project found.")
-
-    user: UserModel = repo.zen_store.active_user
-    assert user.id is not None
 
     if flavors:
         if not store.stack_component_flavors:
@@ -542,11 +609,13 @@ def migrate_profiles(
             for flavor in store.stack_component_flavors:
                 name = f"{prefix}{flavor.name}"
                 try:
-                    repo.zen_store.create_flavor(
+                    client.zen_store.create_flavor(
                         FlavorModel(
                             source=flavor.source,
                             name=name,
                             type=StackComponentType(flavor.type),
+                            user=user.id,
+                            project=project.id,
                         )
                     )
                     cli_utils.declare(f"Migrated component flavor '{name}'.")
@@ -555,6 +624,12 @@ def migrate_profiles(
                         f"Cannot migrate component flavor '{name}. It already "
                         f"exists."
                     )
+                    if ignore_errors:
+                        cli_utils.warning(msg)
+                    else:
+                        cli_utils.error(msg)
+                except Exception as e:
+                    msg = f"Failed to migrate component flavor '{name}': {e}"
                     if ignore_errors:
                         cli_utils.warning(msg)
                     else:
@@ -569,35 +644,67 @@ def migrate_profiles(
             cli_utils.declare(
                 f"Migrating stack components from {store.config_file}..."
             )
-            for component in store.get_components(
-                prefix=prefix,
-            ):
-                try:
-                    repo.zen_store.create_stack_component(component=component)
-                    cli_utils.declare(
-                        f"Migrated {component.type} '{component.name}' with "
-                        f"flavor '{component.flavor}'."
-                    )
-                except StackComponentExistsError:
-                    if overwrite:
-                        component.user = user.id
-                        component.project = project.id
-                        repo.zen_store.update_stack_component(
-                            component=component,
-                        )
-                        cli_utils.declare(
-                            f"Updated {component.type} '{component.name}' with "
-                            f"flavor '{component.flavor}'."
-                        )
-                    else:
+            for legacy_component in store.get_components(prefix=prefix):
+                component = legacy_component.to_model(
+                    user_id=user.id, project_id=project.id
+                )
+
+                existing_components = client.zen_store.list_stack_components(
+                    project_name_or_id=project.id,
+                    user_name_or_id=user.id,
+                    type=legacy_component.type,
+                    name=legacy_component.name,
+                    is_shared=False,
+                )
+
+                if existing_components:
+                    if not overwrite:
                         msg = (
-                            f"Cannot migrate {component.type} "
+                            f"Cannot migrate stack component "
                             f"'{component.name}'. It already exists."
                         )
                         if ignore_errors:
                             cli_utils.warning(msg)
                         else:
                             cli_utils.error(msg)
+                        continue
+                    component.id = existing_components[0].id
+
+                try:
+                    try:
+                        if not existing_components:
+                            client.register_stack_component(component=component)
+                        else:
+                            client.update_stack_component(component=component)
+                    except (ValidationError, PydanticValidationError) as e:
+                        if not skip_validation:
+                            raise e
+                        cli_utils.warning(
+                            f"Validation error ignored while migrating "
+                            f"{component.type} '{component.name}': {e}"
+                        )
+                        if not existing_components:
+                            client.zen_store.create_stack_component(
+                                component=component
+                            )
+                        else:
+                            client.zen_store.update_stack_component(
+                                component=component
+                            )
+                    operation = "Migrated" if existing_components else "Created"
+                    cli_utils.declare(
+                        f"{operation} {component.type} '{component.name}' with "
+                        f"flavor '{component.flavor}'."
+                    )
+                except Exception as e:
+                    msg = (
+                        f"Failed to migrate {component.type} "
+                        f"'{component.name}': {e}"
+                    )
+                    if ignore_errors:
+                        cli_utils.warning(msg)
+                    else:
+                        cli_utils.error(msg)
 
         if not store.contains_stacks():
             cli_utils.declare(
@@ -605,27 +712,92 @@ def migrate_profiles(
             )
         else:
             cli_utils.declare(f"Migrating stacks from {store.config_file}...")
-            for stack in store.get_stacks(prefix=prefix, project=project.name):
-                try:
-                    stack.project = project.id
-                    stack.user = user.id
-                    repo.zen_store.create_stack(stack)
-                    cli_utils.declare(f"Migrated stack '{stack.name}'.")
-                except StackExistsError:
-                    if overwrite:
-                        assert stack.id is not None
-                        stack.project = project.id
-                        stack.user = user.id
-                        repo.zen_store.update_stack(
-                            stack=stack,
+            for legacy_stack in store.get_stacks(prefix=prefix):
+
+                # resolve components
+                missing_components: List[Tuple[StackComponentType, str]] = []
+                components: List[ComponentModel] = []
+                for c_type, name in legacy_stack.components.items():
+                    existing_components = (
+                        client.zen_store.list_stack_components(
+                            project_name_or_id=project.id,
+                            user_name_or_id=user.id,
+                            name=name,
+                            type=c_type,
+                            is_shared=False,
                         )
-                        cli_utils.declare(f"Updated stack '{stack.name}'.")
+                    )
+                    if not existing_components:
+                        missing_components.append((c_type, name))
+                        continue
+
+                    components.append(existing_components[0])
+
+                if missing_components:
+                    missing_msg = ", ".join(
+                        f"{c_type} '{name}'"
+                        for c_type, name in missing_components
+                    )
+                    msg = (
+                        f"Cannot migrate stack '{legacy_stack.name}'. The "
+                        f"following components could not be found: "
+                        f"{missing_msg}"
+                    )
+                    if ignore_errors:
+                        cli_utils.warning(msg)
                     else:
+                        cli_utils.error(msg)
+                    continue
+
+                stack = legacy_stack.to_model(
+                    user_id=user.id,
+                    project_id=project.id,
+                    components=components,
+                )
+
+                existing_stacks = client.zen_store.list_stacks(
+                    project_name_or_id=project.id,
+                    user_name_or_id=user.id,
+                    name=legacy_stack.name,
+                    is_shared=False,
+                )
+
+                if existing_stacks:
+                    if not overwrite:
                         msg = (
-                            f"Cannot migrate stack '{stack.name}'. It already "
-                            f"exists."
+                            f"Cannot migrate stack "
+                            f"'{stack.name}'. It already exists."
                         )
                         if ignore_errors:
                             cli_utils.warning(msg)
                         else:
                             cli_utils.error(msg)
+                        continue
+                    stack.id = existing_stacks[0].id
+
+                try:
+                    try:
+                        if not existing_stacks:
+                            client.register_stack(stack=stack)
+                        else:
+                            client.update_stack(stack=stack)
+                    except (ValidationError, PydanticValidationError) as e:
+                        if not skip_validation:
+                            raise e
+                        cli_utils.warning(
+                            f"Validation error encountered while migrating "
+                            f"stack '{stack.name}': {e}"
+                        )
+                        if not existing_stacks:
+                            client.zen_store.create_stack(stack=stack)
+                        else:
+                            client.zen_store.update_stack(stack=stack)
+
+                    operation = "Updated" if existing_stacks else "Created"
+                    cli_utils.declare(f"{operation} stack '{stack.name}'.")
+                except Exception as e:
+                    msg = f"Failed to migrate stack '{stack.name}': {e}"
+                    if ignore_errors:
+                        cli_utils.warning(msg)
+                    else:
+                        cli_utils.error(msg)

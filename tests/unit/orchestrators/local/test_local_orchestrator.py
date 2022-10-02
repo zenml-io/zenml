@@ -16,8 +16,7 @@ from uuid import uuid4
 
 from zenml.enums import StackComponentType
 from zenml.orchestrators import LocalOrchestrator
-from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
-from zenml.stack.stack_component import StackComponentConfig, StackComponentType
+from zenml.stack.stack_component import StackComponentConfig
 
 
 def test_local_orchestrator_attributes():

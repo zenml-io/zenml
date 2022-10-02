@@ -19,6 +19,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from zenml.constants import (
+    API,
     INPUTS,
     OUTPUTS,
     STEP_CONFIGURATION,
@@ -30,7 +31,7 @@ from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1 + STEPS,
+    prefix=API + VERSION_1 + STEPS,
     tags=["steps"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

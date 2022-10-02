@@ -66,24 +66,18 @@ from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 from tfx.types.artifact import Artifact
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.utils import get_cache_status
-from zenml.repository import Repository
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
-from zenml.utils import source_utils, string_utils
-
-if TYPE_CHECKING:
-    pass
-from zenml.stack import StackComponent
 from zenml.utils import proto_utils, source_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step, StepConfiguration
-    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -294,11 +288,11 @@ class BaseOrchestrator(StackComponent, ABC):
             deployment_config, step_name
         )
 
-        metadata_connection_cfg = Repository().zen_store.get_metadata_config()
+        metadata_connection_cfg = Client().zen_store.get_metadata_config()
 
         # At this point the active metadata store is queried for the
         # metadata_connection
-        stack = Repository().active_stack
+        stack = Client().active_stack
         executor_operator = self._get_executor_operator(
             step_operator=step.config.step_operator
         )

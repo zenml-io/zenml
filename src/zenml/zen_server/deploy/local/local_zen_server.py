@@ -18,15 +18,18 @@ import os
 import shutil
 from typing import Dict, List, Optional, Tuple, Union, cast
 
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     ZEN_SERVER_ENTRYPOINT,
 )
 from zenml.enums import StoreType
 from zenml.logger import get_logger
+from zenml.models.server_models import ServerDeploymentType
 from zenml.services import (
     LocalDaemonService,
     LocalDaemonServiceConfig,
@@ -61,13 +64,21 @@ class LocalServerDeploymentConfig(ServerDeploymentConfig):
     Attributes:
         port: The TCP port number where the server is accepting connections.
         address: The IP address where the server is reachable.
+        blocking: Run the server in blocking mode instead of using a daemon
+            process.
     """
 
     port: int = 8237
     ip_address: Union[
         ipaddress.IPv4Address, ipaddress.IPv6Address
     ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
+    blocking: bool = False
     store: Optional[StoreConfiguration] = None
+
+    class Config:
+        """Pydantic configuration."""
+
+        extra = "forbid"
 
 
 class LocalZenServerConfig(LocalDaemonServiceConfig):
@@ -148,6 +159,7 @@ class LocalZenServer(LocalDaemonService):
         """
         cmd, env = super()._get_daemon_cmd()
         env[ENV_ZENML_CONFIG_PATH] = LOCAL_ZENML_SERVER_GLOBAL_CONFIG_PATH
+        env[ENV_ZENML_SERVER_DEPLOYMENT_TYPE] = ServerDeploymentType.LOCAL
         return cmd, env
 
     def provision(self) -> None:
@@ -163,6 +175,34 @@ class LocalZenServer(LocalDaemonService):
         """
         super().deprovision(force=force)
         shutil.rmtree(LOCAL_ZENML_SERVER_CONFIG_PATH)
+
+    def start(self, timeout: int = 0) -> None:
+        """Start the service and optionally wait for it to become active.
+
+        Args:
+            timeout: amount of time to wait for the service to become active.
+                If set to 0, the method will return immediately after checking
+                the service status.
+        """
+        if not self.config.blocking:
+            super().start(timeout)
+        else:
+            self._copy_global_configuration()
+            try:
+                GlobalConfiguration()._reset_instance()
+                Client()._reset_instance()
+                config_path = os.environ.get(ENV_ZENML_CONFIG_PATH)
+                os.environ[
+                    ENV_ZENML_CONFIG_PATH
+                ] = LOCAL_ZENML_SERVER_GLOBAL_CONFIG_PATH
+                self.run()
+            finally:
+                if config_path:
+                    os.environ[ENV_ZENML_CONFIG_PATH] = config_path
+                else:
+                    del os.environ[ENV_ZENML_CONFIG_PATH]
+                GlobalConfiguration()._reset_instance()
+                Client()._reset_instance()
 
     def run(self) -> None:
         """Run the ZenServer.

@@ -27,8 +27,11 @@ from pydantic import BaseModel, validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    API,
     ARTIFACTS,
+    EMAIL_ANALYTICS,
     FLAVORS,
+    INFO,
     INPUTS,
     LOGIN,
     METADATA_CONFIG,
@@ -69,6 +72,8 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
+from zenml.models.server_models import ServerModel
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_server.models.base_models import (
     CreateRequest,
     CreateResponse,
@@ -92,6 +97,7 @@ from zenml.zen_server.models.user_management_models import (
     CreateTeamRequest,
     CreateUserRequest,
     CreateUserResponse,
+    EmailOptInModel,
     UpdateRoleRequest,
     UpdateTeamRequest,
     UpdateUserRequest,
@@ -159,11 +165,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         Returns:
             The validated verify_ssl value.
-
-        Raises:
-            ValueError: If the verify_ssl value points to a non-existing file.
         """
-
         secret_folder = Path(
             GlobalConfiguration().local_stores_path,
             "certificates",
@@ -273,6 +275,15 @@ class RestZenStore(BaseZenStore):
                 config.verify_ssl = f.read()
         return config
 
+    def get_store_info(self) -> ServerModel:
+        """Get information about the server.
+
+        Returns:
+            Information about the server.
+        """
+        body = self.get(INFO)
+        return ServerModel.parse_obj(body)
+
     # ------------
     # TFX Metadata
     # ------------
@@ -334,6 +345,7 @@ class RestZenStore(BaseZenStore):
     # Stacks
     # ------
 
+    @track(AnalyticsEvent.REGISTERED_STACK)
     def create_stack(
         self,
         stack: StackModel,
@@ -397,6 +409,7 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
+    @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
         self,
         stack: StackModel,
@@ -415,6 +428,7 @@ class RestZenStore(BaseZenStore):
             request_model=UpdateStackRequest,
         )
 
+    @track(AnalyticsEvent.DELETED_STACK)
     def delete_stack(self, stack_id: UUID) -> None:
         """Delete a stack.
 
@@ -430,6 +444,7 @@ class RestZenStore(BaseZenStore):
     # Stack components
     # ----------------
 
+    @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
     def create_stack_component(
         self,
         component: ComponentModel,
@@ -496,6 +511,7 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
+    @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
         self,
         component: ComponentModel,
@@ -515,6 +531,7 @@ class RestZenStore(BaseZenStore):
             # request_model=UpdateComponentRequest,
         )
 
+    @track(AnalyticsEvent.DELETED_STACK_COMPONENT)
     def delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
 
@@ -546,6 +563,7 @@ class RestZenStore(BaseZenStore):
     # Stack component flavors
     # -----------------------
 
+    @track(AnalyticsEvent.CREATED_FLAVOR)
     def create_flavor(
         self,
         flavor: FlavorModel,
@@ -610,6 +628,7 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
+    @track(AnalyticsEvent.UPDATED_FLAVOR)
     def update_flavor(self, flavor: FlavorModel) -> FlavorModel:
         """Update an existing stack component flavor.
 
@@ -626,6 +645,7 @@ class RestZenStore(BaseZenStore):
             # request_model=UpdateFlavorRequest,
         )
 
+    @track(AnalyticsEvent.DELETED_FLAVOR)
     def delete_flavor(self, flavor_id: UUID) -> None:
         """Delete a stack component flavor.
 
@@ -650,6 +670,7 @@ class RestZenStore(BaseZenStore):
         """
         return self.config.username
 
+    @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserModel) -> UserModel:
         """Creates a new user.
 
@@ -680,7 +701,6 @@ class RestZenStore(BaseZenStore):
             route=USERS,
             resource_model=UserModel,
         )
-        return UserModel.parse_obj(self.get(f"{USERS}/{str(user_name_or_id)}"))
 
     # TODO: [ALEX] add filtering param(s)
     def list_users(self) -> List[UserModel]:
@@ -697,6 +717,7 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
+    @track(AnalyticsEvent.UPDATED_USER)
     def update_user(self, user: UserModel) -> UserModel:
         """Updates an existing user.
 
@@ -712,6 +733,7 @@ class RestZenStore(BaseZenStore):
             request_model=UpdateUserRequest,
         )
 
+    @track(AnalyticsEvent.DELETED_USER)
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
 
@@ -723,10 +745,38 @@ class RestZenStore(BaseZenStore):
             route=USERS,
         )
 
+    @track(AnalyticsEvent.OPT_IN_OUT_EMAIL)
+    def user_email_opt_in(
+        self,
+        user_name_or_id: Union[str, UUID],
+        user_opt_in_response: bool,
+        email: Optional[str] = None,
+    ) -> UserModel:
+        """Persist user response to the email prompt.
+
+        Args:
+            user_name_or_id: The name or the ID of the user.
+            user_opt_in_response: Whether this email should be associated
+                with the user id in the telemetry
+            email: The users email
+
+        Returns:
+            The updated user.
+        """
+        request = EmailOptInModel(
+            email=email, email_opted_in=user_opt_in_response
+        )
+        route = f"{USERS}/{str(user_name_or_id)}{EMAIL_ANALYTICS}"
+
+        response_body = self.put(route, body=request)
+        user = UserModel.parse_obj(response_body)
+        return user
+
     # -----
     # Teams
     # -----
 
+    @track(AnalyticsEvent.CREATED_TEAM)
     def create_team(self, team: TeamModel) -> TeamModel:
         """Creates a new team.
 
@@ -771,6 +821,7 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
+    @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(self, team: TeamModel) -> TeamModel:
         """Update an existing team.
 
@@ -786,6 +837,7 @@ class RestZenStore(BaseZenStore):
             request_model=UpdateTeamRequest,
         )
 
+    @track(AnalyticsEvent.DELETED_TEAM)
     def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
         """Deletes a team.
 
@@ -848,7 +900,7 @@ class RestZenStore(BaseZenStore):
     # Roles
     # -----
 
-    # TODO: consider using team_id instead
+    @track(AnalyticsEvent.CREATED_ROLE)
     def create_role(self, role: RoleModel) -> RoleModel:
         """Creates a new role.
 
@@ -895,6 +947,7 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
+    @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(self, role: RoleModel) -> RoleModel:
         """Update an existing role.
 
@@ -910,6 +963,7 @@ class RestZenStore(BaseZenStore):
             request_model=UpdateRoleRequest,
         )
 
+    @track(AnalyticsEvent.DELETED_ROLE)
     def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
         """Deletes a role.
 
@@ -1005,6 +1059,7 @@ class RestZenStore(BaseZenStore):
     # Projects
     # --------
 
+    @track(AnalyticsEvent.CREATED_PROJECT)
     def create_project(self, project: ProjectModel) -> ProjectModel:
         """Creates a new project.
 
@@ -1050,6 +1105,7 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
+    @track(AnalyticsEvent.UPDATED_PROJECT)
     def update_project(self, project: ProjectModel) -> ProjectModel:
         """Update an existing project.
 
@@ -1065,6 +1121,7 @@ class RestZenStore(BaseZenStore):
             request_model=UpdateProjectRequest,
         )
 
+    @track(AnalyticsEvent.DELETED_PROJECT)
     def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
         """Deletes a project.
 
@@ -1080,6 +1137,7 @@ class RestZenStore(BaseZenStore):
     # Pipelines
     # ---------
 
+    @track(AnalyticsEvent.CREATE_PIPELINE)
     def create_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
         """Creates a new pipeline in a project.
 
@@ -1134,6 +1192,7 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
+    @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
         """Updates a pipeline.
 
@@ -1149,6 +1208,7 @@ class RestZenStore(BaseZenStore):
             request_model=UpdatePipelineRequest,
         )
 
+    @track(AnalyticsEvent.DELETE_PIPELINE)
     def delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
 
@@ -1247,8 +1307,8 @@ class RestZenStore(BaseZenStore):
         Args:
             run_id: The ID of the pipeline run to get the status for.
 
-        Returns:
-            The status of the pipeline run.
+        Raises:
+            NotImplementedError: since it is not implemented.
         """
         # TODO
         raise NotImplementedError
@@ -1371,7 +1431,7 @@ class RestZenStore(BaseZenStore):
         if self._api_token is None:
             response = self._handle_response(
                 requests.post(
-                    self.url + VERSION_1 + LOGIN,
+                    self.url + API + VERSION_1 + LOGIN,
                     data={
                         "username": self.config.username,
                         "password": self.config.password,
@@ -1440,32 +1500,43 @@ class RestZenStore(BaseZenStore):
                 )
         elif response.status_code == 401:
             raise AuthorizationException(
-                f"{response.status_code} Client Error: Unauthorized request to URL {response.url}: {response.json().get('detail')}"
+                f"{response.status_code} Client Error: Unauthorized request to "
+                f"URL {response.url}: {response.json().get('detail')}"
             )
         elif response.status_code == 404:
             if "DoesNotExistException" not in response.text:
-                raise KeyError(*response.json().get("detail", (response.text,)))
+                raise KeyError(
+                    response.json().get("detail", (response.text,))[1]
+                )
             message = ": ".join(response.json().get("detail", (response.text,)))
             raise DoesNotExistException(message)
         elif response.status_code == 409:
             if "StackComponentExistsError" in response.text:
                 raise StackComponentExistsError(
-                    *response.json().get("detail", (response.text,))
+                    message=": ".join(
+                        response.json().get("detail", (response.text,))
+                    )
                 )
             elif "StackExistsError" in response.text:
                 raise StackExistsError(
-                    *response.json().get("detail", (response.text,))
+                    message=": ".join(
+                        response.json().get("detail", (response.text,))
+                    )
                 )
             elif "EntityExistsError" in response.text:
                 raise EntityExistsError(
-                    *response.json().get("detail", (response.text,))
+                    message=": ".join(
+                        response.json().get("detail", (response.text,))
+                    )
                 )
             else:
                 raise ValueError(
-                    *response.json().get("detail", (response.text,))
+                    ": ".join(response.json().get("detail", (response.text,)))
                 )
         elif response.status_code == 422:
-            raise RuntimeError(*response.json().get("detail", (response.text,)))
+            raise RuntimeError(
+                ": ".join(response.json().get("detail", (response.text,)))
+            )
         elif response.status_code == 500:
             raise RuntimeError(response.text)
         else:
@@ -1524,8 +1595,9 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
+        logger.debug(f"Sending GET request to {path}...")
         return self._request(
-            "GET", self.url + VERSION_1 + path, params=params, **kwargs
+            "GET", self.url + API + VERSION_1 + path, params=params, **kwargs
         )
 
     def delete(
@@ -1541,8 +1613,9 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
+        logger.debug(f"Sending DELETE request to {path}...")
         return self._request(
-            "DELETE", self.url + VERSION_1 + path, params=params, **kwargs
+            "DELETE", self.url + API + VERSION_1 + path, params=params, **kwargs
         )
 
     def post(
@@ -1563,9 +1636,10 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
+        logger.debug(f"Sending POST request to {path}...")
         return self._request(
             "POST",
-            self.url + VERSION_1 + path,
+            self.url + API + VERSION_1 + path,
             data=body.json(),
             params=params,
             **kwargs,
@@ -1589,9 +1663,10 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
+        logger.debug(f"Sending PUT request to {path}...")
         return self._request(
             "PUT",
-            self.url + VERSION_1 + path,
+            self.url + API + VERSION_1 + path,
             data=body.json(),
             params=params,
             **kwargs,

@@ -19,10 +19,11 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.enums import CliCategories
+from zenml.client import Client
+from zenml.config.global_config import GlobalConfiguration
+from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
-from zenml.repository import Repository
 from zenml.utils.uuid_utils import parse_name_or_uuid
 
 
@@ -35,30 +36,32 @@ def user() -> None:
 def get_user() -> None:
     """Get the active user."""
     cli_utils.print_active_config()
-    cli_utils.declare(
-        f"Active user: '{Repository().zen_store.active_user_name}'"
-    )
+    cli_utils.declare(f"Active user: '{Client().zen_store.active_user_name}'")
 
 
 @user.command("list")
 def list_users() -> None:
     """List all users."""
     cli_utils.print_active_config()
-    users = Repository().zen_store.users
+    users = Client().zen_store.users
     if not users:
         cli_utils.declare("No users registered.")
         return
 
     cli_utils.print_pydantic_models(
         users,
-        exclude_columns=["id", "created", "updated"],
-        is_active=lambda u: u.name == Repository().zen_store.active_user_name,
+        exclude_columns=["id", "created", "updated", "email", "email_opted_in"],
+        is_active=lambda u: u.name == Client().zen_store.active_user_name,
     )
 
 
-@user.command("create", help="Create a new user.")
+@user.command(
+    "create",
+    help="Create a new user. If an empty password is configured, an activation "
+    "token is generated and a link to the dashboard is provided where the "
+    "user can activate the account.",
+)
 @click.argument("user_name", type=str, required=True)
-# @click.option("--email", type=str, required=True)
 @click.option(
     "--password",
     help=(
@@ -75,19 +78,42 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
         user_name: The name of the user to create.
         password: The password of the user to create.
     """
+    gc = GlobalConfiguration()
     if not password:
-        password = click.prompt(
-            f"Password for user {user_name}",
-            hide_input=True,
-        )
+        if gc.zen_store.type != StoreType.REST:
+
+            password = click.prompt(
+                f"Password for user {user_name}",
+                hide_input=True,
+            )
+        else:
+            password = click.prompt(
+                f"Password for user {user_name}. Leave empty to generate an "
+                f"activation token",
+                default="",
+                hide_input=True,
+            )
 
     cli_utils.print_active_config()
-    user = UserModel(name=user_name, password=password)
+    user = UserModel(name=user_name, password=password or None)
+    # Use the activation workflow only if connected to a ZenML server.
+    if gc.zen_store.type != StoreType.REST:
+        user.active = password != ""
+    else:
+        user.active = True
+
     try:
-        Repository().zen_store.create_user(user)
+        user = Client().zen_store.create_user(user)
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created user '{user_name}'.")
+    if not user.active and user.activation_token is not None:
+        assert gc.store is not None
+        cli_utils.declare(
+            f"The created user account is currently inactive. You can activate "
+            f"it by visiting the dashboard at the following URL:\n"
+            f"{gc.store.url}/signup?user={str(user.id)}&username={user.name}&token={user.activation_token.get_secret_value()}\n"
+        )
 
 
 @user.command("delete")
@@ -100,7 +126,7 @@ def delete_user(user_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        Repository().delete_user(user_name_or_id)
+        Client().delete_user(user_name_or_id)
     except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Deleted user '{user_name_or_id}'.")
@@ -115,7 +141,7 @@ def team() -> None:
 def list_teams() -> None:
     """List all teams."""
     cli_utils.print_active_config()
-    teams = Repository().zen_store.teams
+    teams = Client().zen_store.teams
     if not teams:
         cli_utils.declare("No teams registered.")
         return
@@ -136,7 +162,7 @@ def describe_team(team_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        users = Repository().zen_store.get_users_for_team(
+        users = Client().zen_store.get_users_for_team(
             team_name_or_id=parse_name_or_uuid(team_name_or_id)
         )
     except KeyError as err:
@@ -160,7 +186,7 @@ def create_team(team_name: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        Repository().zen_store.create_team(TeamModel(name=team_name))
+        Client().zen_store.create_team(TeamModel(name=team_name))
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created team '{team_name}'.")
@@ -181,9 +207,9 @@ def update_team(
     """
     cli_utils.print_active_config()
     try:
-        team = Repository().zen_store.get_team(team_name)
+        team = Client().zen_store.get_team(team_name)
         team.name = name or team.name
-        Repository().zen_store.update_team(team)
+        Client().zen_store.update_team(team)
     except (EntityExistsError, KeyError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Updated team '{team_name}'.")
@@ -199,7 +225,7 @@ def delete_team(team_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        Repository().zen_store.delete_team(parse_name_or_uuid(team_name_or_id))
+        Client().zen_store.delete_team(parse_name_or_uuid(team_name_or_id))
     except KeyError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Deleted team '{team_name_or_id}'.")
@@ -221,7 +247,7 @@ def add_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
 
     try:
         for user_name_or_id in user_names_or_ids:
-            Repository().zen_store.add_user_to_team(
+            Client().zen_store.add_user_to_team(
                 user_name_or_id=parse_name_or_uuid(user_name_or_id),
                 team_name_or_id=parse_name_or_uuid(team_name_or_id),
             )
@@ -248,7 +274,7 @@ def remove_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
 
     try:
         for user_name_or_id in user_names_or_ids:
-            Repository().zen_store.remove_user_from_team(
+            Client().zen_store.remove_user_from_team(
                 user_name_or_id=parse_name_or_uuid(user_name_or_id),
                 team_name_or_id=parse_name_or_uuid(team_name_or_id),
             )
@@ -259,19 +285,30 @@ def remove_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
         cli_utils.error(str(err))
 
 
+def warn_unsupported_non_default_project() -> None:
+    """Warning for unsupported non-default project."""
+    cli_utils.warning(
+        "Currently the concept of `project` is not supported "
+        "within the Dashboard. The Project functionality will be "
+        "completed in the coming weeks. For the time being it "
+        "is recommended to stay within the `default` project."
+    )
+
+
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def project() -> None:
     """Commands for project management."""
 
 
-@project.command("list")
+@project.command("list", hidden=True)
 def list_projects() -> None:
     """List all projects."""
+    warn_unsupported_non_default_project()
     cli_utils.print_active_config()
-    projects = Repository().zen_store.list_projects()
+    projects = Client().zen_store.list_projects()
 
     if projects:
-        active_project = Repository().active_project
+        active_project = Client().active_project
         active_project_id = active_project.id if active_project else None
         cli_utils.print_pydantic_models(
             projects,
@@ -282,7 +319,7 @@ def list_projects() -> None:
         cli_utils.declare("No projects registered.")
 
 
-@project.command("create", help="Create a new project.")
+@project.command("create", help="Create a new project.", hidden=True)
 @click.argument("project_name", type=str, required=True)
 @click.option("--description", "-d", type=str, required=False, default="")
 def create_project(project_name: str, description: str) -> None:
@@ -292,9 +329,10 @@ def create_project(project_name: str, description: str) -> None:
         project_name: The name of the project.
         description: A description of the project.
     """
+    warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     try:
-        Repository().zen_store.create_project(
+        Client().zen_store.create_project(
             ProjectModel(name=project_name, description=description)
         )
     except EntityExistsError as err:
@@ -302,7 +340,7 @@ def create_project(project_name: str, description: str) -> None:
     cli_utils.declare(f"Created project '{project_name}'.")
 
 
-@project.command("update", help="Update an existing project.")
+@project.command("update", help="Update an existing project.", hidden=True)
 @click.argument("project_name", type=str, required=True)
 @click.option(
     "--name", "-n", type=str, required=False, help="New project name."
@@ -326,21 +364,23 @@ def update_project(
         name: The new name of the project.
         description: The new description of the project.
     """
+    warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     try:
-        project = Repository().zen_store.get_project(project_name)
+        project = Client().zen_store.get_project(project_name)
         project.name = name or project.name
         project.description = description or project.description
-        Repository().zen_store.update_project(project)
+        Client().zen_store.update_project(project)
     except (EntityExistsError, KeyError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Updated project '{project_name}'.")
 
 
-@project.command("get")
+@project.command("get", hidden=True)
 def get_project() -> None:
     """Get the currently active project."""
-    active_project = Repository().active_project
+    warn_unsupported_non_default_project()
+    active_project = Client().active_project
     description = (
         "\nDescription: " + active_project.description
         if active_project.description
@@ -349,7 +389,7 @@ def get_project() -> None:
     cli_utils.declare(f"ACTIVE PROJECT: {active_project.name}{description}")
 
 
-@project.command("set", help="Set the active project.")
+@project.command("set", help="Set the active project.", hidden=True)
 @click.argument("project_name_or_id", type=str, required=True)
 def set_project(project_name_or_id: str) -> None:
     """Set the active project.
@@ -357,15 +397,16 @@ def set_project(project_name_or_id: str) -> None:
     Args:
         project_name_or_id: The name or ID of the project to set as active.
     """
+    warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     try:
-        Repository().set_active_project(project_name_or_id=project_name_or_id)
+        Client().set_active_project(project_name_or_id=project_name_or_id)
     except KeyError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Set active project '{project_name_or_id}'.")
 
 
-@project.command("delete", help="Delete a project.")
+@project.command("delete", help="Delete a project.", hidden=True)
 @click.argument("project_name_or_id", type=str, required=True)
 def delete_project(project_name_or_id: str) -> None:
     """Delete a project.
@@ -373,6 +414,7 @@ def delete_project(project_name_or_id: str) -> None:
     Args:
         project_name_or_id: Name or ID of project to delete.
     """
+    warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     cli_utils.confirmation(
         f"Are you sure you want to delete project `{project_name_or_id}`? "
@@ -380,7 +422,7 @@ def delete_project(project_name_or_id: str) -> None:
         "pipelines, runs, artifacts and metadata."
     )
     try:
-        Repository().delete_project(project_name_or_id)
+        Client().delete_project(project_name_or_id)
     except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Deleted project '{project_name_or_id}'.")
@@ -395,7 +437,7 @@ def role() -> None:
 def list_roles() -> None:
     """List all roles."""
     cli_utils.print_active_config()
-    roles = Repository().zen_store.roles
+    roles = Client().zen_store.roles
     if not roles:
         cli_utils.declare("No roles registered.")
         return
@@ -414,7 +456,7 @@ def create_role(role_name: str) -> None:
         role_name: Name of the role to create.
     """
     cli_utils.print_active_config()
-    Repository().zen_store.create_role(role=RoleModel(name=role_name))
+    Client().zen_store.create_role(role=RoleModel(name=role_name))
     cli_utils.declare(f"Created role '{role_name}'.")
 
 
@@ -433,9 +475,9 @@ def update_role(
     """
     cli_utils.print_active_config()
     try:
-        role = Repository().zen_store.get_role(role_name)
+        role = Client().zen_store.get_role(role_name)
         role.name = name or role.name
-        Repository().zen_store.update_role(role)
+        Client().zen_store.update_role(role)
     except (EntityExistsError, KeyError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Updated role '{role_name}'.")
@@ -451,7 +493,7 @@ def delete_role(role_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        Repository().zen_store.delete_role(
+        Client().zen_store.delete_role(
             role_name_or_id=parse_name_or_uuid(role_name_or_id)
         )
     except KeyError as err:
@@ -488,7 +530,7 @@ def assign_role(
     # Assign the role to users
     for user_name_or_id in user_names_or_ids:
         try:
-            Repository().zen_store.assign_role(
+            Client().zen_store.assign_role(
                 role_name_or_id=role_name_or_id,
                 user_or_team_name_or_id=user_name_or_id,
                 is_user=True,
@@ -506,7 +548,7 @@ def assign_role(
     # Assign the role to teams
     for team_name_or_id in team_names_or_ids:
         try:
-            Repository().zen_store.assign_role(
+            Client().zen_store.assign_role(
                 role_name_or_id=role_name_or_id,
                 user_or_team_name_or_id=team_name_or_id,
                 is_user=False,
@@ -551,7 +593,7 @@ def revoke_role(
     # Revoke the role from users
     for user_name_or_id in user_names_or_ids:
         try:
-            Repository().zen_store.revoke_role(
+            Client().zen_store.revoke_role(
                 role_name_or_id=role_name_or_id,
                 user_or_team_name_or_id=user_name_or_id,
                 is_user=True,
@@ -568,7 +610,7 @@ def revoke_role(
     # Revoke the role from teams
     for team_name_or_id in team_names_or_ids:
         try:
-            Repository().zen_store.revoke_role(
+            Client().zen_store.revoke_role(
                 role_name_or_id=role_name_or_id,
                 user_or_team_name_or_id=team_name_or_id,
                 is_user=False,
@@ -617,7 +659,7 @@ def list_role_assignments(
             for.
     """
     cli_utils.print_active_config()
-    role_assignments = Repository().zen_store.list_role_assignments(
+    role_assignments = Client().zen_store.list_role_assignments(
         user_name_or_id=user_name_or_id,
         team_name_or_id=team_name_or_id,
         project_name_or_id=project_name_or_id,

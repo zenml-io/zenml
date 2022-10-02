@@ -17,9 +17,9 @@ import sys
 
 import click
 
+from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.post_execution.pipeline import get_pipeline
-from zenml.repository import Repository
 
 PIPELINE_NAME = "some_pipe"
 STEP_NAME = "some_step"
@@ -27,16 +27,14 @@ MATERIALIZER_NAME = "SomeMaterializer"
 CUSTOM_OBJ_NAME = "SomeObj"
 
 
-def test_pipeline_run_single_file(
-    clean_repo: Repository, files_dir: str
-) -> None:
+def test_pipeline_run_single_file(clean_client, files_dir: str) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the same file."""
     clean_sys_modules = sys.modules
 
     os.chdir(files_dir)
-    clean_repo.activate_root()
-    Repository.initialize(root=files_dir)
+    clean_client.activate_root()
+    Client.initialize(root=files_dir)
 
     assert os.path.isfile(os.path.join(files_dir, "run.py"))
     assert os.path.isfile(os.path.join(files_dir, "config.yaml"))
@@ -64,7 +62,7 @@ def test_pipeline_run_single_file(
             del sys.modules[mod]
 
 
-def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
+def test_pipeline_run_multifile(clean_client, files_dir: str) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the different files.
 
@@ -81,8 +79,8 @@ def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
     clean_sys_modules = sys.modules
 
     os.chdir(files_dir)
-    clean_repo.activate_root()
-    Repository.initialize(root=files_dir)
+    clean_client.activate_root()
+    Client.initialize(root=files_dir)
 
     assert os.path.isfile(os.path.join(files_dir, "pipeline_file/pipeline.py"))
     assert os.path.isfile(os.path.join(files_dir, "config.yaml"))

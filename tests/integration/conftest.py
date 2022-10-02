@@ -18,16 +18,16 @@ from typing import Generator
 import pytest
 from pytest_mock import MockerFixture
 
+from zenml.client import Client
 from zenml.container_registries import DefaultContainerRegistryFlavor
-from zenml.repository import Repository
 from zenml.stack import Stack
 
 
 @pytest.fixture(scope="module")
 def shared_kubeflow_repo(
-    base_repo: Repository,
+    base_client,
     module_mocker: MockerFixture,
-) -> Generator[Repository, None, None]:
+) -> Generator[Client, None, None]:
     """Creates and activates a locally provisioned kubeflow stack.
 
     As the resource provisioning for the local kubeflow deployment takes quite
@@ -58,7 +58,7 @@ def shared_kubeflow_repo(
         custom_docker_base_image_name="zenml-base-image:latest",
         synchronous=True,
     )
-    artifact_store = base_repo.active_stack.artifact_store.copy(
+    artifact_store = base_client.active_stack.artifact_store.copy(
         update={"name": "local_kubeflow_artifact_store"}
     )
     container_registry = DefaultContainerRegistryFlavor(
@@ -70,13 +70,13 @@ def shared_kubeflow_repo(
         artifact_store=artifact_store,
         container_registry=container_registry,
     )
-    base_repo.register_stack(kubeflow_stack)
-    base_repo.activate_stack(kubeflow_stack.name)
+    base_client.register_stack(kubeflow_stack)
+    base_client.activate_stack(kubeflow_stack.name)
 
     # Provision resources for the kubeflow stack
     kubeflow_stack.provision()
 
-    yield base_repo
+    yield base_client
 
     # Deprovision the resources after all tests in this module are finished
     kubeflow_stack.deprovision()
@@ -87,7 +87,7 @@ def cleanup_active_repo() -> None:
     metadata store in the current stack.
     """
 
-    kubeflow_stack = Repository().active_stack
+    kubeflow_stack = Client().active_stack
 
     # Delete the artifact store and metadata store of previous tests
     if os.path.exists(kubeflow_stack.artifact_store.path):
@@ -96,8 +96,8 @@ def cleanup_active_repo() -> None:
 
 @pytest.fixture
 def clean_kubeflow_repo(
-    shared_kubeflow_repo: Repository,
-) -> Generator[Repository, None, None]:
+    shared_kubeflow_repo: Client,
+) -> Generator[Client, None, None]:
     """Creates a clean environment with a provisioned local kubeflow stack.
 
     This fixture reuses the stack configuration from the shared kubeflow
@@ -119,8 +119,8 @@ def clean_kubeflow_repo(
 
 @pytest.fixture
 def clean_base_repo(
-    base_repo: Repository,
-) -> Generator[Repository, None, None]:
+    base_client,
+) -> Generator[Client, None, None]:
     """Creates a clean environment with an empty artifact store and metadata
     store out of the shared base repository.
 
@@ -132,4 +132,4 @@ def clean_base_repo(
     """
     cleanup_active_repo()
 
-    yield base_repo
+    yield base_client

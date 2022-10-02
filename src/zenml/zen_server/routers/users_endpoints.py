@@ -19,7 +19,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import SecretStr
 
-from zenml.constants import ACTIVATE, DEACTIVATE, ROLES, USERS, VERSION_1
+from zenml.constants import (
+    ACTIVATE,
+    API,
+    DEACTIVATE,
+    EMAIL_ANALYTICS,
+    ROLES,
+    USERS,
+    VERSION_1,
+)
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel, UserModel
@@ -33,6 +41,7 @@ from zenml.zen_server.models.user_management_models import (
     CreateUserRequest,
     CreateUserResponse,
     DeactivateUserResponse,
+    EmailOptInModel,
     UpdateUserRequest,
 )
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -40,7 +49,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 logger = get_logger(__name__)
 
 router = APIRouter(
-    prefix=VERSION_1 + USERS,
+    prefix=API + VERSION_1 + USERS,
     tags=["users"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
@@ -48,14 +57,14 @@ router = APIRouter(
 
 
 activation_router = APIRouter(
-    prefix=VERSION_1 + USERS,
+    prefix=API + VERSION_1 + USERS,
     tags=["users"],
     responses={401: error_response},
 )
 
 
 current_user_router = APIRouter(
-    prefix=VERSION_1,
+    prefix=API + VERSION_1,
     tags=["users"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
@@ -196,7 +205,9 @@ def activate_user(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def deactivate_user(user_name_or_id: Union[str, UUID]) -> UserModel:
+def deactivate_user(
+    user_name_or_id: Union[str, UUID]
+) -> DeactivateUserResponse:
     """Deactivates a user and generates a new activation token for it.
 
     Args:
@@ -240,6 +251,31 @@ def delete_user(
             "user account, please contact your ZenML administrator."
         )
     zen_store.delete_user(user_name_or_id=user_name_or_id)
+
+
+@router.put(
+    "/{user_name_or_id}" + EMAIL_ANALYTICS,
+    response_model=UserModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def email_opt_in_response(
+    user_name_or_id: Union[str, UUID], user_response: EmailOptInModel
+) -> UserModel:
+    """Deactivates a user and generates a new activation token for it.
+
+    Args:
+        user_name_or_id: Name or ID of the user.
+        user_response: User Response to email prompt
+
+    Returns:
+        The updated user.
+    """
+    return zen_store.user_email_opt_in(
+        user_name_or_id=user_name_or_id,
+        email=user_response.email,
+        user_opt_in_response=user_response.email_opted_in,
+    )
 
 
 @router.get(
@@ -327,12 +363,15 @@ def unassign_role(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_current_user(
+def get_current_user(
     auth_context: AuthContext = Depends(authorize),
 ) -> UserModel:
     """Returns the model of the authenticated user.
 
     Args:
         auth_context: The authentication context.
+
+    Returns:
+        The model of the authenticated user.
     """
     return auth_context.user

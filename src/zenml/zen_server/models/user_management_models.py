@@ -16,7 +16,7 @@
 
 from typing import Any, Optional, cast
 
-from pydantic import Field, SecretStr
+from pydantic import BaseModel, Field, SecretStr
 
 from zenml.models.constants import (
     MODEL_NAME_FIELD_MAX_LENGTH,
@@ -44,11 +44,6 @@ class CreateUserRequest(CreateRequest[UserModel]):
     full_name: Optional[str] = Field(
         default=None,
         title="The full name for the account owner.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
-    )
-    email: Optional[str] = Field(
-        default=None,
-        title="The email address associated with the account.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     password: Optional[str] = Field(
@@ -128,11 +123,6 @@ class UpdateUserRequest(UpdateRequest[UserModel]):
         title="Updated full name for the account owner.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    email: Optional[str] = Field(
-        default=None,
-        title="Updated email address associated with the account.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
-    )
     password: Optional[SecretStr] = Field(
         default=None,
         title="Updated account password.",
@@ -186,11 +176,6 @@ class ActivateUserRequest(UpdateRequest[UserModel]):
         title="Full name for the account owner.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    email: Optional[str] = Field(
-        default=None,
-        title="Email address associated with the account.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
-    )
     password: SecretStr = Field(
         title="Account password.", max_length=USER_PASSWORD_MAX_LENGTH
     )
@@ -224,7 +209,7 @@ class DeactivateUserResponse(UserModel, UpdateResponse[UserModel]):
 
     _MODEL_TYPE = UserModel
 
-    activation_token: SecretStr = Field(..., title="Account activation token.")
+    activation_token: str = Field(..., title="Account activation token.")  # type: ignore[assignment]
 
     @classmethod
     def from_model(
@@ -253,6 +238,19 @@ class DeactivateUserResponse(UserModel, UpdateResponse[UserModel]):
         # Validate attributes when assigning them
         validate_assignment = True
         underscore_attrs_are_private = True
+
+
+class EmailOptInModel(BaseModel):
+    """Model for user deactivation requests."""
+
+    email: Optional[str] = Field(
+        default=None,
+        title="Email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    email_opted_in: bool = Field(
+        title="Whether or not to associate the email with the user"
+    )
 
 
 class CreateRoleRequest(CreateRequest[RoleModel]):

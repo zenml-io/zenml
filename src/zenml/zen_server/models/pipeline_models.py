@@ -67,7 +67,7 @@ class HydratedPipelineModel(PipelineModel):
     runs: List["PipelineRunModel"] = Field(
         title="A list of the last x Pipeline Runs."
     )
-    status: List[ExecutionStatus] = Field(  # type: ignore[assignment]
+    status: List[ExecutionStatus] = Field(
         title="The status of the last x Pipeline Runs."
     )
     project: ProjectModel = Field(  # type: ignore[assignment]
@@ -117,18 +117,12 @@ class HydratedPipelineModel(PipelineModel):
 class HydratedPipelineRunModel(PipelineRunModel):
     """Pipeline model with User and Project fully hydrated."""
 
-    pipeline: PipelineModel = Field(  # type: ignore[assignment]
-        title="The pipeline this run belongs to."
-    )
-    stack: StackModel = Field(  # type: ignore[assignment]
-        title="The stack that was used fro this run."
-    )
+    pipeline: PipelineModel = Field(title="The pipeline this run belongs to.")
+    stack: StackModel = Field(title="The stack that was used fro this run.")
     user: UserModel = Field(  # type: ignore[assignment]
         title="The user that ran this pipeline.",
     )
-    status: ExecutionStatus = Field(  # type: ignore[assignment]
-        title="The status of the run."
-    )
+    status: ExecutionStatus = Field(title="The status of the run.")
 
     @classmethod
     def from_model(
