@@ -68,12 +68,22 @@ aren’t fully compatible with the vanilla ARM64 Architecture. The following lin
 
 ## Running with Docker
 
+### Python package
+
 `zenml` is also available as a Docker image hosted publicly on 
 [DockerHub](https://hub.docker.com/r/zenmldocker/zenml). 
 Use the following command to get started in a bash environment with `zenml` available:
 
 ```
 docker run -it zenmldocker/zenml /bin/bash
+```
+
+### ZenML Server
+
+If you would like to run the ZenML server with Docker:
+
+```shell
+docker run -it -d -p 8080:80 zenmldocker/zenml-server
 ```
 
 ## Installing Develop

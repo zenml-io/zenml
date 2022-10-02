@@ -183,6 +183,12 @@ pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 docker run -it zenmldocker/zenml /bin/bash
 ```
 
+or just run the ZenML server directly with Docker:
+
+```shell
+docker run -it -d -p 8080:80 zenmldocker/zenml-server
+```
+
 > **Warning** 
 > #### Known installation issues for M1 Mac users
 >
@@ -193,6 +199,8 @@ docker run -it zenmldocker/zenml /bin/bash
 >- [Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
 >- [Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
 
+
+Read full installation instructions in the [docs](https://docs.zenml.io/getting-started/installation).
 
 ## 🏇 First run
 
