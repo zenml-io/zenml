@@ -106,6 +106,10 @@ def dashboard(request: Request) -> Any:
     Returns:
         The ZenML dashboard.
     """
+    if not os.path.isfile(
+        os.path.join(relative_path(DASHBOARD_DIRECTORY), "index.html")
+    ):
+        raise HTTPException(status_code=404)
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -142,6 +146,8 @@ def get_root_static_files() -> List[str]:
         List of static files in the root directory.
     """
     root_path = relative_path(DASHBOARD_DIRECTORY)
+    if not os.path.isdir(root_path):
+        return []
     files = []
     for file in os.listdir(root_path):
         if file == "index.html":
@@ -197,8 +203,13 @@ def catch_all(request: Request, file_path: str) -> Any:
         return FileResponse(full_path)
 
     tokens = file_path.split("/")
-    if len(tokens) == 1:
+    if len(tokens) == 1 and not request.query_params:
         logger.debug(f"Requested non-existent static file: {file_path}")
+        raise HTTPException(status_code=404)
+
+    if not os.path.isfile(
+        os.path.join(relative_path(DASHBOARD_DIRECTORY), "index.html")
+    ):
         raise HTTPException(status_code=404)
 
     # everything else is directed to the index.html file that hosts the
