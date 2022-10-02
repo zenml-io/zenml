@@ -18,13 +18,16 @@ from pipelines import (
     tensorflow_inference_pipeline,
     tensorflow_training_deployment_pipeline,
 )
-from steps.deployment_trigger import DeploymentTriggerConfig, deployment_trigger
+from steps.deployment_trigger import (
+    DeploymentTriggerParameters,
+    deployment_trigger,
+)
 from steps.prediction_service_loader import (
-    PredectionServiceLoaderStepConfig,
+    PredectionServiceLoaderStepParameters,
     prediction_service_loader,
 )
 from steps.tensorflow_steps import (
-    TensorflowTrainerConfig,
+    TensorflowTrainerParameters,
     importer_mnist,
     kserve_tensorflow_deployer,
     normalizer,
@@ -98,10 +101,12 @@ def main(
         deployment = tensorflow_training_deployment_pipeline(
             importer=importer_mnist(),
             normalizer=normalizer(),
-            trainer=tf_trainer(TensorflowTrainerConfig(epochs=epochs, lr=lr)),
+            trainer=tf_trainer(
+                TensorflowTrainerParameters(epochs=epochs, lr=lr)
+            ),
             evaluator=tf_evaluator(),
             deployment_trigger=deployment_trigger(
-                config=DeploymentTriggerConfig(
+                params=DeploymentTriggerParameters(
                     min_accuracy=min_accuracy,
                 )
             ),
@@ -115,7 +120,7 @@ def main(
         inference = tensorflow_inference_pipeline(
             predict_preprocessor=tf_predict_preprocessor(),
             prediction_service_loader=prediction_service_loader(
-                PredectionServiceLoaderStepConfig(
+                PredectionServiceLoaderStepParameters(
                     pipeline_name=deployment_pipeline_name,
                     step_name=deployer_step_name,
                     model_name=model_name,

@@ -48,6 +48,10 @@ class InitializationException(ZenMLBaseException):
     """Raised when an error occurred during initialization of a ZenML repository."""
 
 
+class AuthorizationException(ZenMLBaseException):
+    """Raised when an authorization error occurred while trying to access a ZenML resource ."""
+
+
 class DoesNotExistException(ZenMLBaseException):
     """Raises exception when the entity does not exist in the system but an action is being done that requires it to be present."""
 
@@ -206,20 +210,28 @@ class DuplicateRunNameError(RuntimeError):
         super().__init__(message)
 
 
-class StackExistsError(ZenMLBaseException):
-    """Raised when trying to register a stack with a name that already exists."""
+class NotAuthorizedError(ZenMLBaseException):
+    """Raised when the user does not have permission to perform an action."""
 
 
-class StackComponentExistsError(ZenMLBaseException):
-    """Raised when trying to register a stack component with a name that already exists."""
+class ValidationError(ZenMLBaseException):
+    """Raised when the Model passed to the ZenStore."""
 
 
 class EntityExistsError(ZenMLBaseException):
-    """Raised when trying to register a user-management entity with a name that already exists."""
+    """Raised when trying to register an entity that already exists."""
 
 
-class SecretExistsError(ZenMLBaseException):
-    """Raised when trying to register a secret with a name that already exists."""
+class StackExistsError(EntityExistsError):
+    """Raised when trying to register a stack with name that already exists."""
+
+
+class StackComponentExistsError(EntityExistsError):
+    """Raised when trying to register a stack component with existing name."""
+
+
+class SecretExistsError(EntityExistsError):
+    """Raised when trying to register a secret with existing name."""
 
 
 class StackValidationError(ZenMLBaseException):
@@ -236,6 +248,10 @@ class GitNotFoundError(ImportError):
 
 class DuplicatedConfigurationError(ZenMLBaseException):
     """Raised when a configuration parameter is set twice."""
+
+
+class IllegalOperationError(ZenMLBaseException):
+    """Raised when an illegal operation is attempted."""
 
 
 class SettingsResolvingError(ZenMLBaseException):

@@ -13,18 +13,19 @@
 #  permissions and limitations under the License.
 """Implementation of the Spark Step Operator."""
 
-import json
 import subprocess
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, cast
 
-from pydantic import validator
 from pyspark.conf import SparkConf
 
+from zenml.client import Client
+from zenml.integrations.spark.flavors.spark_step_operator_flavor import (
+    SparkStepOperatorConfig,
+)
 from zenml.integrations.spark.step_operators.spark_entrypoint_configuration import (
     SparkEntrypointConfiguration,
 )
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
@@ -35,25 +36,16 @@ if TYPE_CHECKING:
 
 
 class SparkStepOperator(BaseStepOperator):
-    """Base class for all Spark-related step operators.
+    """Base class for all Spark-related step operators."""
 
-    Attributes:
-        master: is the master URL for the cluster. You might see different
-            schemes for different cluster managers which are supported by Spark
-            like Mesos, YARN, or Kubernetes. Within the context of this PR,
-            the implementation supports Kubernetes as a cluster manager.
-        deploy_mode: can either be 'cluster' (default) or 'client' and it
-            decides where the driver node of the application will run.
-        submit_kwargs: is the JSON string of a dict, which will be used
-            to define additional params if required (Spark has quite a
-            lot of different parameters, so including them, all in the step
-            operator was not implemented).
-    """
+    @property
+    def config(self) -> SparkStepOperatorConfig:
+        """Returns the `SparkStepOperatorConfig` config.
 
-    # Instance parameters
-    master: str
-    deploy_mode: str = "cluster"
-    submit_kwargs: Optional[Dict[str, Any]] = None
+        Returns:
+            The configuration.
+        """
+        return cast(SparkStepOperatorConfig, self._config)
 
     @property
     def application_path(self) -> Optional[str]:
@@ -71,40 +63,6 @@ class SparkStepOperator(BaseStepOperator):
             The path to the application entrypoint
         """
         return None
-
-    @validator("submit_kwargs", pre=True)
-    def _convert_json_string(
-        cls, value: Union[None, str, Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
-        """Converts potential JSON strings passed via the CLI to dictionaries.
-
-        Args:
-            value: The value to convert.
-
-        Returns:
-            The converted value.
-
-        Raises:
-            TypeError: If the value is not a `str`, `Dict` or `None`.
-            ValueError: If the value is an invalid json string or a json string
-                that does not decode into a dictionary.
-        """
-        if isinstance(value, str):
-            try:
-                dict_ = json.loads(value)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid json string '{value}'") from e
-
-            if not isinstance(dict_, Dict):
-                raise ValueError(
-                    f"Json string '{value}' did not decode into a dictionary."
-                )
-
-            return dict_
-        elif isinstance(value, Dict) or value is None:
-            return value
-        else:
-            raise TypeError(f"{value} is not a json string or a dictionary.")
 
     def _resource_configuration(
         self,
@@ -175,13 +133,13 @@ class SparkStepOperator(BaseStepOperator):
                 required authentication
         """
         # Get active artifact store
-        repo = Repository()
-        artifact_store = repo.active_stack.artifact_store
+        client = Client()
+        artifact_store = client.active_stack.artifact_store
 
         from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 
         # If S3, preconfigure the spark session
-        if artifact_store.FLAVOR == S3_ARTIFACT_STORE_FLAVOR:
+        if artifact_store.flavor == S3_ARTIFACT_STORE_FLAVOR:
             (
                 key,
                 secret,
@@ -221,7 +179,7 @@ class SparkStepOperator(BaseStepOperator):
                 "using. That also means, that when you use this step operator "
                 "with certain artifact store flavor, ZenML can take care of "
                 "the pre-configuration. However, the artifact store flavor "
-                f"'{artifact_store.FLAVOR}' featured in this stack is not "
+                f"'{artifact_store.flavor}' featured in this stack is not "
                 f"known to this step operator and it might require additional "
                 f"configuration."
             )
@@ -234,8 +192,8 @@ class SparkStepOperator(BaseStepOperator):
                 configuration parameters
         """
         # Add the additional parameters
-        if self.submit_kwargs:
-            for k, v in self.submit_kwargs.items():
+        if self.config.submit_kwargs:
+            for k, v in self.config.submit_kwargs.items():
                 spark_config.set(k, v)
 
     def _launch_spark_job(
@@ -254,8 +212,8 @@ class SparkStepOperator(BaseStepOperator):
         # Base spark-submit command
         command = [
             f"spark-submit "
-            f"--master {self.master} "
-            f"--deploy-mode {self.deploy_mode}"
+            f"--master {self.config.master} "
+            f"--deploy-mode {self.config.deploy_mode}"
         ]
 
         # Add the configuration parameters

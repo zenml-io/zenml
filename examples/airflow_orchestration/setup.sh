@@ -6,7 +6,6 @@ setup_stack () {
   zenml orchestrator register airflow_orchestrator --flavor=airflow || \
     msg "${WARNING}Reusing preexisting orchestrator ${NOFORMAT}airflow_orchestrator"
   zenml stack register airflow_stack \
-      -m default \
       -a default \
       -o airflow_orchestrator || \
     msg "${WARNING}Reusing preexisting stack ${NOFORMAT}airflow_stack"

@@ -58,10 +58,11 @@ from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.logger import get_logger
 
-if TYPE_CHECKING:
-    from zenml.stack import StackComponent
-
 logger = get_logger(__name__)
+
+if TYPE_CHECKING:
+    from zenml.stack.flavor import Flavor
+    from zenml.stack.stack_component import StackComponentConfig
 
 
 def is_standard_pin(pin: str) -> bool:
@@ -87,9 +88,9 @@ def is_inside_repository(file_path: str) -> bool:
     Returns:
         `True` if the file is inside a zenml repository, else `False`.
     """
-    from zenml.repository import Repository
+    from zenml.client import Client
 
-    repo_path = Repository.find_repository()
+    repo_path = Client.find_repository()
     if not repo_path:
         return False
 
@@ -263,9 +264,9 @@ def get_source_root_path() -> str:
     Raises:
         RuntimeError: if the main module was not started or determined.
     """
-    from zenml.repository import Repository
+    from zenml.client import Client
 
-    repo_root = Repository.find_repository()
+    repo_root = Client.find_repository()
     if repo_root:
         logger.debug("Using repository root as source root: %s", repo_root)
         return str(repo_root.resolve())
@@ -481,9 +482,9 @@ def load_source_path_class(
     Returns:
         the given class
     """
-    from zenml.repository import Repository
+    from zenml.client import Client
 
-    repo_root = Repository.find_repository()
+    repo_root = Client.find_repository()
     if not import_path and repo_root:
         import_path = str(repo_root)
 
@@ -580,7 +581,7 @@ def import_python_file(file_path: str, zen_root: str) -> types.ModuleType:
 
 def validate_flavor_source(
     source: str, component_type: StackComponentType
-) -> Type["StackComponent"]:
+) -> Type["Flavor"]:
     """Import a StackComponent class from a given source and validate its type.
 
     Args:
@@ -595,25 +596,89 @@ def validate_flavor_source(
         TypeError: If the given module path does not point to a subclass of a
             StackComponent which has the right component type.
     """
-    from zenml.stack import StackComponent
+    from zenml.stack.flavor import Flavor
+    from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
     try:
-        stack_component_class = load_source_path_class(source)
+        flavor_class = load_source_path_class(source)
     except (ValueError, AttributeError, ImportError) as e:
         raise ValueError(
             f"ZenML can not import the flavor class '{source}': {e}"
         )
 
-    if not issubclass(stack_component_class, StackComponent):
+    if not issubclass(flavor_class, Flavor):
         raise TypeError(
             f"The source '{source}' does not point to a subclass of the ZenML"
-            f"StackComponent."
+            f"Flavor."
         )
 
-    if stack_component_class.TYPE != component_type:  # noqa
+    flavor = flavor_class()
+    try:
+        impl_class = flavor.implementation_class
+    except (ModuleNotFoundError, ImportError, NotImplementedError):
+        raise ValueError(
+            f"The implementation class defined within the "
+            f"'{flavor_class.__name__}' can not be imported."
+        )
+
+    if not issubclass(impl_class, StackComponent):
         raise TypeError(
-            f"The source points to a {stack_component_class.TYPE}, not a "  # noqa
+            f"The implementation class '{impl_class.__name__}' of a flavor "
+            f"needs to be a subclass of the ZenML StackComponent."
+        )
+
+    if impl_class.type != component_type:  # noqa
+        raise TypeError(
+            f"The source points to a {impl_class.type}, not a "  # noqa
             f"{component_type}."
         )
 
-    return stack_component_class  # noqa
+    try:
+        conf_class = flavor.config_class
+    except (ModuleNotFoundError, ImportError, NotImplementedError):
+        raise ValueError(
+            f"The config class defined within the "
+            f"'{flavor_class.__name__}' can not be imported."
+        )
+
+    if not issubclass(conf_class, StackComponentConfig):
+        raise TypeError(
+            f"The config class '{conf_class.__name__}' of a flavor "
+            f"needs to be a subclass of the ZenML StackComponentConfig."
+        )
+
+    return flavor_class  # noqa
+
+
+def validate_config_source(
+    source: str, component_type: StackComponentType
+) -> Type["StackComponentConfig"]:
+    """Validates a StackComponentConfig class from a given source.
+
+    Args:
+        source: source path of the implementation
+        component_type: the type of the stack component
+
+    Returns:
+        The validated config.
+
+    Raises:
+        ValueError: If ZenML cannot import the config class.
+        TypeError: If the config class is not a subclass of the `config_class`.
+    """
+    from zenml.stack.stack_component import StackComponentConfig
+
+    try:
+        config_class = load_source_path_class(source)
+    except (ValueError, AttributeError, ImportError) as e:
+        raise ValueError(
+            f"ZenML can not import the config class '{source}': {e}"
+        )
+
+    if not issubclass(config_class, StackComponentConfig):
+        raise TypeError(
+            f"The source path '{source}' does not point to a subclass of "
+            f"the ZenML config_class."
+        )
+
+    return config_class  # noqa

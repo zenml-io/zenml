@@ -13,16 +13,17 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional
+from typing import TYPE_CHECKING, List, Optional, cast
 
 import sagemaker
 
 from zenml.enums import StackComponentType
-from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
+from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
+    SagemakerStepOperatorConfig,
+)
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
@@ -35,39 +36,21 @@ SAGEMAKER_DOCKER_IMAGE_KEY = "sagemaker_docker_image"
 _ENTRYPOINT_ENV_VARIABLE = "__ZENML_ENTRYPOINT"
 
 
-class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
+class SagemakerStepOperator(BaseStepOperator):
     """Step operator to run a step on Sagemaker.
 
     This class defines code that builds an image with the ZenML entrypoint
     to run using Sagemaker's Estimator.
-
-    Attributes:
-        role: The role that has to be assigned to the jobs which are
-            running in Sagemaker.
-        instance_type: The type of the compute instance where jobs will run.
-        base_image: The base image to use for building the docker
-            image that will be executed.
-        bucket: Name of the S3 bucket to use for storing artifacts
-            from the job run. If not provided, a default bucket will be created
-            based on the following format: "sagemaker-{region}-{aws-account-id}".
-        experiment_name: The name for the experiment to which the job
-            will be associated. If not provided, the job runs would be
-            independent.
     """
 
-    role: str
-    instance_type: str
+    @property
+    def config(self) -> SagemakerStepOperatorConfig:
+        """Returns the `SagemakerStepOperatorConfig` config.
 
-    base_image: Optional[str] = None
-    bucket: Optional[str] = None
-    experiment_name: Optional[str] = None
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("base_image", "docker_parent_image")
-    )
+        Returns:
+            The configuration.
+        """
+        return cast(SagemakerStepOperatorConfig, self._config)
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -99,7 +82,8 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         if not steps_to_run:
             return
 
-        image_digest = self.build_and_push_docker_image(
+        docker_image_builder = PipelineDockerImageBuilder()
+        image_digest = docker_image_builder.build_and_push_docker_image(
             deployment=deployment,
             stack=stack,
             entrypoint=f"${_ENTRYPOINT_ENV_VARIABLE}",
@@ -132,13 +116,13 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         image_name = info.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY]
         environment = {_ENTRYPOINT_ENV_VARIABLE: " ".join(entrypoint_command)}
 
-        session = sagemaker.Session(default_bucket=self.bucket)
+        session = sagemaker.Session(default_bucket=self.config.bucket)
         estimator = sagemaker.estimator.Estimator(
             image_name,
-            self.role,
+            self.config.role,
             environment=environment,
             instance_count=1,
-            instance_type=self.instance_type,
+            instance_type=self.config.instance_type,
             sagemaker_session=session,
         )
 
@@ -146,9 +130,9 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         sanitized_run_name = info.run_name.replace("_", "-")
 
         experiment_config = {}
-        if self.experiment_name:
+        if self.config.experiment_name:
             experiment_config = {
-                "ExperimentName": self.experiment_name,
+                "ExperimentName": self.config.experiment_name,
                 "TrialName": sanitized_run_name,
             }
 

@@ -16,3 +16,5 @@
 from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
     KServeModelDeployer,
 )
+
+__all__ = ["KServeModelDeployer"]

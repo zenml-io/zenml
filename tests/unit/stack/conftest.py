@@ -11,18 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import StackComponentType
-from zenml.metadata_stores import BaseMetadataStore
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack, StackComponent, StackValidator
+from zenml.stack.stack_component import StackComponentConfig
 
 MOCK_FLAVOR = "mock_flavor"
-MOCK_UUID = uuid4()
 
 
 @pytest.fixture
@@ -32,29 +32,21 @@ def stack_with_mock_components(mocker):
         spec=BaseOrchestrator,
         type=StackComponentType.ORCHESTRATOR,
         flavor=MOCK_FLAVOR,
-        uuid=MOCK_UUID,
-    )
-    metadata_store = mocker.Mock(
-        spec=BaseMetadataStore,
-        type=StackComponentType.METADATA_STORE,
-        flavor=MOCK_FLAVOR,
-        uuid=MOCK_UUID,
     )
     artifact_store = mocker.Mock(
         spec=BaseArtifactStore,
         type=StackComponentType.ARTIFACT_STORE,
         flavor=MOCK_FLAVOR,
-        uuid=MOCK_UUID,
+        path="/",
     )
-    orchestrator.required_secrets = set()
-    metadata_store.required_secrets = set()
-    artifact_store.required_secrets = set()
-    artifact_store.path = "/"
+    orchestrator.config.required_secrets = set()
+    artifact_store.config.required_secrets = set()
+    artifact_store.config.path = "/"
 
     return Stack(
+        id=uuid4(),
         name="mock_stack",
         orchestrator=orchestrator,
-        metadata_store=metadata_store,
         artifact_store=artifact_store,
     )
 
@@ -66,14 +58,33 @@ def failing_stack_validator():
 
 
 @pytest.fixture
-def stub_component():
-    class _StubComponent(StackComponent):
-        name = "StubComponent"
+def stub_component_config():
+    class _StubComponentConfig(StackComponentConfig):
         some_public_attribute_name = "Aria"
         _some_private_attribute_name = "Also Aria"
 
-        # Class Configuration
-        TYPE = StackComponentType.ORCHESTRATOR
-        FLAVOR = MOCK_FLAVOR
+    return _StubComponentConfig()
 
-    return _StubComponent()
+
+@pytest.fixture
+def stub_component():
+    class _StubComponentConfig(StackComponentConfig):
+        some_public_attribute_name = "Aria"
+        _some_private_attribute_name = "Also Aria"
+
+    class _StubComponent(StackComponent):
+        @property
+        def config(self) -> _StubComponentConfig:
+            return self._config
+
+    return _StubComponent(
+        name="StubComponent",
+        id=uuid4(),
+        config=_StubComponentConfig(),
+        flavor=MOCK_FLAVOR,
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )

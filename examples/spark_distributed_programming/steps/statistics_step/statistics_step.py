@@ -15,12 +15,12 @@
 import pandas as pd
 from pyspark.sql import DataFrame
 
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import step
 
-step_operator = Repository().active_stack.step_operator
+step_operator = Client().active_stack.step_operator
 
 
-@step(custom_step_operator=step_operator.name)
+@step(step_operator=step_operator.name)
 def statistics_step(dataset: DataFrame) -> pd.DataFrame:
     return dataset.describe().toPandas()  # noqa

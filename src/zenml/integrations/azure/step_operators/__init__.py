@@ -16,3 +16,5 @@
 from zenml.integrations.azure.step_operators.azureml_step_operator import (  # noqa
     AzureMLStepOperator,
 )
+
+__all__ = ["AzureMLStepOperator"]

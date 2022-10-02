@@ -16,20 +16,22 @@ import hashlib
 import json
 from typing import TYPE_CHECKING, Dict
 
+from pydantic.json import pydantic_encoder
 from tfx.proto.orchestration import pipeline_pb2
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
-from zenml.constants import (
-    MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME,
-    MLMD_CONTEXT_STACK_PROPERTY_NAME,
-    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME,
-    ZENML_MLMD_CONTEXT_TYPE,
-)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
+
+
+ZENML_MLMD_CONTEXT_TYPE = "zenml"
+MLMD_CONTEXT_STACK_PROPERTY_NAME = "stack"
+MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME = "pipeline_configuration"
+MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME = "step_configuration"
+MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME = "model_ids"
 
 
 def add_pipeline_node_context(
@@ -69,27 +71,40 @@ def add_mlmd_contexts(
         deployment: The pipeline deployment to store in the contexts.
         stack: The stack the pipeline will run on.
     """
+    from zenml.client import Client
+
+    client = Client()
+
+    model_ids = json.dumps(
+        {
+            "user_id": client.active_user.id,
+            "project_id": client.active_project.id,
+            "pipeline_id": deployment.pipeline_id,
+            "stack_id": deployment.stack_id,
+        },
+        sort_keys=True,
+        default=pydantic_encoder,
+    )
+
     stack_json = json.dumps(stack.dict(), sort_keys=True)
     pipeline_config = deployment.pipeline.json(sort_keys=True)
+    step_config = step.json(sort_keys=True)
 
     context_properties = {
         MLMD_CONTEXT_STACK_PROPERTY_NAME: stack_json,
         MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME: pipeline_config,
+        MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME: step_config,
+        MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME: model_ids,
     }
 
-    step_context_properties = context_properties.copy()
-    step_context_properties[MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME] = step.json(
-        sort_keys=True
-    )
-
-    properties_json = json.dumps(step_context_properties, sort_keys=True)
+    properties_json = json.dumps(context_properties, sort_keys=True)
     context_name = hashlib.md5(properties_json.encode()).hexdigest()
 
     add_pipeline_node_context(
         pipeline_node,
         type_=ZENML_MLMD_CONTEXT_TYPE,
         name=context_name,
-        properties=step_context_properties,
+        properties=context_properties,
     )
 
 

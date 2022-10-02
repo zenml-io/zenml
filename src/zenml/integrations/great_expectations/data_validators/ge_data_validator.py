@@ -14,7 +14,7 @@
 """Implementation of the Great Expectations data validator."""
 
 import os
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
+from typing import Any, Dict, List, Optional, Sequence, cast
 
 import pandas as pd
 import yaml
@@ -35,12 +35,12 @@ from great_expectations.data_context.types.resource_identifiers import (  # type
 from great_expectations.profile.user_configurable_profiler import (  # type: ignore[import]
     UserConfigurableProfiler,
 )
-from pydantic import root_validator, validator
 
+from zenml.client import Client
 from zenml.data_validators import BaseDataValidator
 from zenml.environment import Environment
-from zenml.integrations.great_expectations import (
-    GREAT_EXPECTATIONS_DATA_VALIDATOR_FLAVOR,
+from zenml.integrations.great_expectations.flavors.great_expectations_data_validator_flavor import (
+    GreatExpectationsDataValidatorConfig,
 )
 from zenml.integrations.great_expectations.ge_store_backend import (
     ZenMLArtifactStoreBackend,
@@ -48,7 +48,6 @@ from zenml.integrations.great_expectations.ge_store_backend import (
 from zenml.integrations.great_expectations.utils import create_batch_request
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 from zenml.utils import io_utils
 from zenml.utils.string_utils import random_str
@@ -57,85 +56,19 @@ logger = get_logger(__name__)
 
 
 class GreatExpectationsDataValidator(BaseDataValidator):
-    """Great Expectations data validator stack component.
+    """Great Expectations data validator stack component."""
 
-    Attributes:
-        context_root_dir: location of an already initialized Great Expectations
-            data context. If configured, the data validator will only be usable
-            with local orchestrators.
-        context_config: in-line Great Expectations data context configuration.
-        configure_zenml_stores: if set, ZenML will automatically configure
-            stores that use the Artifact Store as a backend. If neither
-            `context_root_dir` nor `context_config` are set, this is the default
-            behavior.
-        configure_local_docs: configure a local data docs site where Great
-            Expectations docs are generated and can be visualized locally.
-    """
-
-    context_root_dir: Optional[str] = None
-    context_config: Optional[Dict[str, Any]] = None
-    configure_zenml_stores: bool = False
-    configure_local_docs: bool = True
     _context: BaseDataContext = None
+    _context_config: Optional[Dict[str, Any]] = None
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = GREAT_EXPECTATIONS_DATA_VALIDATOR_FLAVOR
-
-    @validator("context_root_dir")
-    def _ensure_valid_context_root_dir(
-        cls, context_root_dir: Optional[str] = None
-    ) -> Optional[str]:
-        """Ensures that the root directory is an absolute path and points to an existing path.
-
-        Args:
-            context_root_dir: The context_root_dir value to validate.
+    @property
+    def config(self) -> GreatExpectationsDataValidatorConfig:
+        """Returns the `GreatExpectationsDataValidatorConfig` config.
 
         Returns:
-            The context_root_dir if it is valid.
-
-        Raises:
-            ValueError: If the context_root_dir is not valid.
+            The configuration.
         """
-        if context_root_dir:
-            context_root_dir = os.path.abspath(context_root_dir)
-            if not fileio.exists(context_root_dir):
-                raise ValueError(
-                    f"The Great Expectations context_root_dir value doesn't "
-                    f"point to an existing data context path: {context_root_dir}"
-                )
-        return context_root_dir
-
-    @root_validator(pre=True)
-    def _convert_context_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Converts context_config from JSON/YAML string format to a dict.
-
-        Args:
-            values: Values passed to the object constructor
-
-        Returns:
-            Values passed to the object constructor
-
-        Raises:
-            ValueError: If the context_config value is not a valid JSON/YAML or
-                if the GE configuration extracted from it fails GE validation.
-        """
-        context_config = values.get("context_config")
-        if context_config and not isinstance(context_config, dict):
-            try:
-                context_config_dict = yaml.safe_load(context_config)
-            except yaml.parser.ParserError as e:
-                raise ValueError(
-                    f"Malformed `context_config` value. Only JSON and YAML formats "
-                    f"are supported: {str(e)}"
-                )
-            try:
-                context_config = DataContextConfig(**context_config_dict)
-                BaseDataContext(project_config=context_config)
-            except Exception as e:
-                raise ValueError(f"Invalid `context_config` value: {str(e)}")
-
-            values["context_config"] = context_config_dict
-        return values
+        return cast(GreatExpectationsDataValidatorConfig, self._config)
 
     @classmethod
     def get_data_context(cls) -> BaseDataContext:
@@ -154,6 +87,51 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         return data_validator.data_context
 
     @property
+    def context_config(self) -> Optional[Dict[str, Any]]:
+        """Get the Great Expectations data context configuration.
+
+        The first time the context config is loaded from the stack component
+        config, it is converted from JSON/YAML string format to a dict.
+
+        Raises:
+            ValueError: If the context_config value is not a valid JSON/YAML or
+                if the GE configuration extracted from it fails GE validation.
+
+        Returns:
+            A dictionary with the GE data context configuration.
+        """
+        # If the context config is already loaded, return it
+        if self._context_config is not None:
+            return self._context_config
+
+        # Otherwise, load it from the stack component config
+        context_config = self.config.context_config
+        if context_config is None:
+            return None
+        if isinstance(context_config, dict):
+            self._context_config = context_config
+            return self._context_config
+
+        # If the context config is a string, try to parse it as JSON/YAML
+        try:
+            context_config_dict = yaml.safe_load(context_config)
+        except yaml.parser.ParserError as e:
+            raise ValueError(
+                f"Malformed `context_config` value. Only JSON and YAML "
+                f"formats are supported: {str(e)}"
+            )
+
+        # Validate that the context config is a valid GE config
+        try:
+            context_config = DataContextConfig(**context_config_dict)
+            BaseDataContext(project_config=context_config)
+        except Exception as e:
+            raise ValueError(f"Invalid `context_config` value: {str(e)}")
+
+        self._context_config = cast(Dict[str, Any], context_config_dict)
+        return self._context_config
+
+    @property
     def local_path(self) -> Optional[str]:
         """Return a local path where this component stores information.
 
@@ -164,7 +142,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         Returns:
             The local path where this component stores information.
         """
-        return self.context_root_dir
+        return self.config.context_root_dir
 
     def get_store_config(self, class_name: str, prefix: str) -> Dict[str, Any]:
         """Generate a Great Expectations store configuration.
@@ -181,7 +159,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             "store_backend": {
                 "module_name": ZenMLArtifactStoreBackend.__module__,
                 "class_name": ZenMLArtifactStoreBackend.__name__,
-                "prefix": f"{str(self.uuid)}/{prefix}",
+                "prefix": f"{str(self.id)}/{prefix}",
             },
         }
 
@@ -206,7 +184,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             store_backend = {
                 "module_name": ZenMLArtifactStoreBackend.__module__,
                 "class_name": ZenMLArtifactStoreBackend.__name__,
-                "prefix": f"{str(self.uuid)}/{prefix}",
+                "prefix": f"{str(self.id)}/{prefix}",
             }
 
         return {
@@ -261,11 +239,11 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 },
             )
 
-            configure_zenml_stores = self.configure_zenml_stores
-            if self.context_root_dir:
+            configure_zenml_stores = self.config.configure_zenml_stores
+            if self.config.context_root_dir:
                 # initialize the local data context, if a local path was
                 # configured
-                self._context = DataContext(self.context_root_dir)
+                self._context = DataContext(self.config.context_root_dir)
             else:
                 # create an in-memory data context configuration that is not
                 # backed by a local YAML file (see https://docs.greatexpectations.io/docs/guides/setup/configuring_data_contexts/how_to_instantiate_a_data_context_without_a_yml_file/).
@@ -306,11 +284,11 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                         site_name
                     ] = site_config
 
-            if self.configure_local_docs:
+            if self.config.configure_local_docs:
 
-                repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-                artifact_store = repo.active_stack.artifact_store
-                if artifact_store.FLAVOR != "local":
+                client = Client(skip_client_check=True)  # type: ignore[call-arg]
+                artifact_store = client.active_stack.artifact_store
+                if artifact_store.flavor != "local":
                     self._context.config.data_docs_sites[
                         "zenml_local"
                     ] = self.get_data_docs_config("data_docs", local=True)
@@ -326,8 +304,8 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         """
         path = os.path.join(
             io_utils.get_global_config_directory(),
-            self.FLAVOR,
-            str(self.uuid),
+            self.flavor,
+            str(self.id),
         )
 
         if not os.path.exists(path):

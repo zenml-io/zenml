@@ -12,13 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.config import DockerSettings
+from zenml.integrations.constants import FACETS, SKLEARN
 from zenml.pipelines import pipeline
 
+docker_settings = DockerSettings(required_integrations=[SKLEARN, FACETS])
 
-@pipeline(
-    enable_cache=False,
-    required_integrations=["sklearn", "facets"],
-)
+
+@pipeline(enable_cache=False, settings={"docker": docker_settings})
 def kubernetes_example_pipeline(importer, trainer, evaluator, skew_comparison):
     """data loading -> train -> test with skew comparison in parallel."""
     X_train, X_test, y_train, y_test = importer()

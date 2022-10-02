@@ -370,7 +370,7 @@ zenml model-deployer register kserve_gke --flavor=kserve \
   --secret=kserve_secret
 zenml artifact-store register gcp_artifact_store --flavor=fcp --path gs://my-bucket
 zenml secrets-manager register local --flavor=local
-zenml stack register local_gcp_kserve_stack -m default -a gcp_artifact_store -o default -d kserve_gke -x local --set
+zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d kserve_gke -x local --set
 ```
 
 ##### KServe and Remote orchestrator like Kubeflow

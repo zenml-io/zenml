@@ -19,6 +19,18 @@ from enum import Enum
 from zenml.utils.enum_utils import StrEnum
 
 
+class ArtifactType(StrEnum):
+    """All possible types an artifact can have."""
+
+    DATAANALYSIS = "DataAnalysisArtifact"
+    DATA = "DataArtifact"
+    MODEL = "ModelArtifact"
+    SCHEMA = "SchemaArtifact"
+    SERVICE = "ServiceArtifact"
+    STATISTICS = "StatisticsArtifact"
+    BASE = "BaseArtifact"
+
+
 class ExecutionStatus(StrEnum):
     """Enum that represents the current status of a step or pipeline run."""
 
@@ -49,7 +61,6 @@ class StackComponentType(StrEnum):
     DATA_VALIDATOR = "data_validator"
     EXPERIMENT_TRACKER = "experiment_tracker"
     FEATURE_STORE = "feature_store"
-    METADATA_STORE = "metadata_store"
     MODEL_DEPLOYER = "model_deployer"
     ORCHESTRATOR = "orchestrator"
     SECRETS_MANAGER = "secrets_manager"
@@ -71,7 +82,6 @@ class StackComponentType(StrEnum):
 class StoreType(StrEnum):
     """Repository Store Backend Types."""
 
-    LOCAL = "local"
     SQL = "sql"
     REST = "rest"
 
@@ -116,7 +126,17 @@ class SecretValidationLevel(StrEnum):
     NONE = "NONE"
 
 
+class ServerProviderType(StrEnum):
+    """ZenML server providers."""
+
+    LOCAL = "local"
+    DOCKER = "docker"
+    AWS = "aws"
+
+
 class AnalyticsEventSource(StrEnum):
     """Enum to identify analytics events source."""
 
     ZENML_GO = "zenml go"
+    ZENML_CONNECT = "zenml connect"
+    ZENML_SERVER_OPT_IN = "zenml server opt-in"

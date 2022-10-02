@@ -12,6 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from datetime import datetime
+from uuid import uuid4
+
 from zenml.enums import StackComponentType
 from zenml.integrations.airflow.orchestrators import AirflowOrchestrator
 
@@ -19,7 +22,17 @@ from zenml.integrations.airflow.orchestrators import AirflowOrchestrator
 def test_airflow_orchestrator_attributes():
     """Tests that the basic attributes of the airflow orchestrator are set
     correctly."""
-    orchestrator = AirflowOrchestrator(name="")
+    orchestrator = AirflowOrchestrator(
+        name="",
+        id=uuid4(),
+        config={},
+        flavor="airflow",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
 
-    assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
-    assert orchestrator.FLAVOR == "airflow"
+    assert orchestrator.type == StackComponentType.ORCHESTRATOR
+    assert orchestrator.flavor == "airflow"

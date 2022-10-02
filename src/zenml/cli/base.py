@@ -24,6 +24,7 @@ import click
 from zenml import __version__ as zenml_version
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
@@ -31,12 +32,8 @@ from zenml.enums import AnalyticsEventSource
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.repository import Repository
-from zenml.utils.analytics_utils import (
-    AnalyticsEvent,
-    identify_user,
-    track_event,
-)
+from zenml.stack.stack_component import StackComponent
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
 
 logger = get_logger(__name__)
@@ -65,20 +62,18 @@ def init(path: Optional[Path]) -> None:
 
     with console.status(f"Initializing ZenML repository at {path}.\n"):
         try:
-            Repository.initialize(root=path)
+            Client.initialize(root=path)
             declare(f"ZenML repository initialized at {path}.")
         except InitializationException as e:
             error(f"{e}")
 
-    gc = GlobalConfiguration()
     declare(
-        f"The local active profile was initialized to "
-        f"'{gc.active_profile_name}' and the local active stack to "
-        f"'{gc.active_stack_name}'. This local configuration will only take "
-        f"effect when you're running ZenML from the initialized repository "
-        f"root, or from a subdirectory. For more information on profile "
-        f"and stack configuration, please visit "
-        f"https://docs.zenml.io/developer-guide/stacks-profiles-repositories."
+        f"The local active stack was initialized to "
+        f"'{Client().active_stack_model.name}'. This local configuration "
+        f"will only take effect when you're running ZenML from the initialized "
+        f"repository root, or from a subdirectory. For more information on "
+        f"repositories and configurations, please visit "
+        f"https://docs.zenml.io/developer-guide/stacks-repositories."
     )
 
 
@@ -90,18 +85,21 @@ def _delete_local_files(force_delete: bool = False) -> None:
     """
     if not force_delete:
         confirm = confirmation(
-            "DANGER: This will completely delete metadata, artifacts and so on associated with all active stack components. \n\n"
+            "DANGER: This will completely delete metadata, artifacts and so "
+            "on associated with all active stack components. \n\n"
             "Are you sure you want to proceed?"
         )
         if not confirm:
             declare("Aborting clean.")
             return
 
-    repo = Repository()
-    if repo.active_stack:
-        stack_components = repo.active_stack.components
-        for _, component in stack_components.items():
-            local_path = component.local_path
+    client = Client()
+    if client.active_stack_model:
+        stack_components = client.active_stack_model.components
+        for _, components in stack_components.items():
+            # TODO: [server] this needs to be adjusted as the ComponentModel
+            #  does not have the local_path property anymore
+            local_path = StackComponent.from_model(components[0]).local_path
             if local_path:
                 for path in Path(local_path).iterdir():
                     if fileio.isdir(str(path)):
@@ -115,7 +113,7 @@ def _delete_local_files(force_delete: bool = False) -> None:
 @cli.command(
     "clean",
     hidden=True,
-    help="Delete all ZenML metadata, artifacts, profiles and stacks.",
+    help="Delete all ZenML metadata, artifacts and stacks.",
 )
 @click.option(
     "--yes",
@@ -132,7 +130,7 @@ def _delete_local_files(force_delete: bool = False) -> None:
     help="Delete local files relating to the active stack.",
 )
 def clean(yes: bool = False, local: bool = False) -> None:
-    """Delete all ZenML metadata, artifacts, profiles and stacks.
+    """Delete all ZenML metadata, artifacts and stacks.
 
     This is a destructive operation, primarily intended for use in development.
 
@@ -146,7 +144,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
 
     if not yes:
         confirm = confirmation(
-            "DANGER: This will completely delete all artifacts, metadata, stacks and profiles \n"
+            "DANGER: This will completely delete all artifacts, metadata and stacks \n"
             "ever created during the use of ZenML. Pipelines and stack components running non-\n"
             "locally will still exist. Please delete those manually. \n\n"
             "Are you sure you want to proceed?"
@@ -159,7 +157,8 @@ def clean(yes: bool = False, local: bool = False) -> None:
             fileio.rmtree(str(local_zen_repo_config))
             declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
 
-        # delete the profiles (and stacks)
+        # delete the zen store and all other files and directories used by ZenML
+        # to persist information locally (e.g. artifacts)
         global_zen_config = Path(get_global_config_directory())
         if fileio.exists(str(global_zen_config)):
             gc = GlobalConfiguration()
@@ -174,9 +173,8 @@ def clean(yes: bool = False, local: bool = False) -> None:
                 user_id=gc.user_id,
                 analytics_opt_in=gc.analytics_opt_in,
                 version=gc.version,
-                user_metadata=gc.user_metadata,
             )
-            fresh_gc._add_and_activate_default_profile()
+            fresh_gc.set_default_store()
             declare(f"Reinitialized ZenML global config at {Path.cwd()}.")
 
     else:
@@ -195,15 +193,20 @@ def go() -> None:
         zenml_go_privacy_message,
         zenml_go_welcome_message,
     )
-    from zenml.config.global_config import GlobalConfiguration
 
-    gc = GlobalConfiguration()
     metadata = {}
 
     console.print(zenml_go_welcome_message, width=80)
 
-    if not gc.user_metadata:
-        gave_email = _prompt_email(gc)
+    client = Client()
+
+    # Only ask them if they haven't been asked before and the email
+    # hasn't been supplied by other means
+    if (
+        not GlobalConfiguration().user_email
+        and client.active_user.email_opted_in is None
+    ):
+        gave_email = _prompt_email()
         metadata = {"gave_email": gave_email}
 
     # Add telemetry
@@ -258,11 +261,8 @@ def go() -> None:
     subprocess.check_call(["jupyter", "notebook"], cwd=notebook_path)
 
 
-def _prompt_email(gc: GlobalConfiguration) -> bool:
+def _prompt_email() -> bool:
     """Ask the user to give their email address.
-
-    Args:
-        gc (GlobalConfiguration): The global configuration object.
 
     Returns:
         bool: True if the user gave an email address, False otherwise.
@@ -277,17 +277,30 @@ def _prompt_email(gc: GlobalConfiguration) -> bool:
     email = click.prompt(
         click.style("Email", fg="blue"), default="", show_default=False
     )
+    client = Client()
     if email:
         if len(email) > 0 and email.count("@") != 1:
             warning("That doesn't look like an email. Skipping ...")
         else:
-
             console.print(zenml_go_thank_you_message, width=80)
 
-            gc.user_metadata = {"email": email}
             # For now, hard-code to ZENML GO as the source
-            identify_user(
-                {"email": email, "source": AnalyticsEventSource.ZENML_GO}
+            GlobalConfiguration().set_email_address(
+                email, source=AnalyticsEventSource.ZENML_GO
+            )
+
+            # Add consent and email to user model
+
+            client.zen_store.user_email_opt_in(
+                client.active_user.id,
+                user_opt_in_response=True,
+                email=email,
             )
             return True
+    else:
+        # This is the case where user opts out
+        client.zen_store.user_email_opt_in(
+            client.active_user.id, user_opt_in_response=False
+        )
+
     return False

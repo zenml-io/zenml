@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
 
-import base64
 import datetime
+import json
 import os
 import subprocess
 import sys
@@ -32,9 +32,9 @@ from typing import (
     TypeVar,
     Union,
 )
+from uuid import UUID
 
 import click
-import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
@@ -43,20 +43,28 @@ from rich.prompt import Confirm
 from rich.style import Style
 from rich.text import Text
 
+from zenml.client import Client
+from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
+from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.models.stack_models import HydratedStackModel
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.config.profile_config import ProfileConfiguration
-    from zenml.enums import StackComponentType
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
+    from zenml.models import (
+        ComponentModel,
+        FlavorModel,
+        HydratedComponentModel,
+        StackModel,
+    )
     from zenml.secret import BaseSecretSchema
-    from zenml.services import BaseService
-    from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
+    from zenml.services import BaseService, ServiceState
+    from zenml.zen_server.deploy.deployment import ServerDeployment
 
 
 def title(text: str) -> None:
@@ -86,6 +94,7 @@ def declare(
     text: Union[str, Text],
     bold: Optional[bool] = None,
     italic: Optional[bool] = None,
+    **kwargs: Any,
 ) -> None:
     """Echo a declaration on the CLI.
 
@@ -93,10 +102,11 @@ def declare(
         text: Input text string.
         bold: Optional boolean to bold the text.
         italic: Optional boolean to italicize the text.
+        **kwargs: Optional kwargs to be passed to console.print().
     """
     base_style = zenml_style_defaults["info"]
     style = Style.chain(base_style, Style(bold=bold, italic=italic))
-    console.print(text, style=style)
+    console.print(text, style=style, **kwargs)
 
 
 def error(text: str) -> NoReturn:
@@ -115,6 +125,7 @@ def warning(
     text: str,
     bold: Optional[bool] = None,
     italic: Optional[bool] = None,
+    **kwargs: Any,
 ) -> None:
     """Echo a warning string on the CLI.
 
@@ -122,22 +133,11 @@ def warning(
         text: Input text string.
         bold: Optional boolean to bold the text.
         italic: Optional boolean to italicize the text.
+        **kwargs: Optional kwargs to be passed to console.print().
     """
     base_style = zenml_style_defaults["warning"]
     style = Style.chain(base_style, Style(bold=bold, italic=italic))
-    console.print(text, style=style)
-
-
-def pretty_print(obj: Any) -> None:
-    """Pretty print an object on the CLI using `rich.print`.
-
-    Args:
-        obj: Any object with a __str__ method defined.
-
-    # TODO: [LOW] check whether this needs to be converted to a string first
-    # TODO: [LOW] use rich prettyprint for this instead
-    """
-    console.print(obj)
+    console.print(text, style=style, **kwargs)
 
 
 def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
@@ -216,8 +216,11 @@ def print_pydantic_models(
             else {key: str(model.dict()[key]) for key in columns}
         )
         # prepend an active marker if a function to mark active was passed
+        marker = "active"
+        if marker in items:
+            marker = "current"
         return (
-            dict(active=":point_right:" if is_active(model) else "", **items)
+            {marker: ":point_right:" if is_active(model) else "", **items}
             if is_active is not None
             else items
         )
@@ -253,50 +256,14 @@ def format_integration_list(
     return list_of_dicts
 
 
-def print_stack_component_list(
-    components: List["ComponentWrapper"],
-    active_component_name: Optional[str] = None,
-) -> None:
-    """Prints a table with configuration options for a list of stack components.
-
-    If a component is active (its name matches the `active_component_name`),
-    it will be highlighted in a separate table column.
-
-    Args:
-        components: List of stack components to print.
-        active_component_name: Name of the component that is currently
-            active.
-    """
-    configurations = []
-    for component in components:
-        is_active = component.name == active_component_name
-        component_config = {
-            "ACTIVE": ":point_right:" if is_active else "",
-            "NAME": component.name,
-            "FLAVOR": component.flavor,
-            "UUID": component.uuid,
-            **{
-                key.upper(): str(value)
-                for key, value in yaml.safe_load(
-                    base64.b64decode(component.config).decode()
-                ).items()
-            },
-        }
-        configurations.append(component_config)
-    print_table(configurations)
-
-
-def print_stack_configuration(
-    config: Dict["StackComponentType", str], active: bool, stack_name: str
-) -> None:
+def print_stack_configuration(stack: HydratedStackModel, active: bool) -> None:
     """Prints the configuration options of a stack.
 
     Args:
-        config: Configuration options of the stack.
+        stack: Instance of a stack model.
         active: Whether the stack is active.
-        stack_name: Name of the stack.
     """
-    stack_caption = f"'{stack_name}' stack"
+    stack_caption = f"'{stack.name}' stack"
     if active:
         stack_caption += " (ACTIVE)"
     rich_table = table.Table(
@@ -307,8 +274,8 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
-    for component_type, name in config.items():
-        rich_table.add_row(component_type.value, name)
+    for component_type, components in stack.components.items():
+        rich_table.add_row(component_type, components[0].name)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
@@ -316,73 +283,39 @@ def print_stack_configuration(
         for component in rich_table.columns[0]._cells
     ]
     console.print(rich_table)
+    declare(
+        f"Stack '{stack.name}' with id '{stack.id}' is owned by "
+        f"user '{stack.user.name}' and is "
+        f"'{'shared' if stack.is_shared else 'private'}'."
+    )
 
 
-def print_flavor_list(
-    flavors: List["FlavorWrapper"],
-    component_type: "StackComponentType",
-) -> None:
+def print_flavor_list(flavors: List["FlavorModel"]) -> None:
     """Prints the list of flavors.
 
     Args:
         flavors: List of flavors to print.
-        component_type: Type of component the flavors belong to.
     """
-    from zenml.integrations.registry import integration_registry
-    from zenml.utils.source_utils import validate_flavor_source
-
     flavor_table = []
     for f in flavors:
-        reachable = False
-
-        if f.integration:
-            if f.integration == "built-in":
-                reachable = True
-            else:
-                reachable = integration_registry.is_installed(f.integration)
-
-        else:
-            try:
-                validate_flavor_source(f.source, component_type=component_type)
-                reachable = True
-            except (
-                AssertionError,
-                ModuleNotFoundError,
-                ImportError,
-                ValueError,
-            ):
-                pass
-
         flavor_table.append(
             {
                 "FLAVOR": f.name,
                 "INTEGRATION": f.integration,
-                "READY-TO-USE": ":white_check_mark:" if reachable else "",
                 "SOURCE": f.source,
             }
         )
 
     print_table(flavor_table)
-    warning(
-        "The flag 'READY-TO-USE' indicates whether you can directly "
-        "create/use/manage a stack component with that specific flavor. "
-        "You can bring a flavor to a state where it is 'READY-TO-USE' in two "
-        "different ways. If the flavor belongs to a ZenML integration, "
-        "you can use `zenml integration install <name-of-the-integration>` and "
-        "if it doesn't, you can make sure that you are using ZenML in an "
-        "environment where ZenML can import the flavor through its source "
-        "path (also shown in the list)."
-    )
 
 
 def print_stack_component_configuration(
-    component: "ComponentWrapper", display_name: str, active_status: bool
+    component: "HydratedComponentModel", active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component.
 
     Args:
         component: The stack component to print.
-        display_name: The name of the stack component.
         active_status: Whether the stack component is active.
     """
     title = f"{component.type.value.upper()} Component Configuration"
@@ -397,11 +330,10 @@ def print_stack_component_configuration(
     rich_table.add_column("VALUE", overflow="fold")
 
     component_dict = component.dict()
-    component_dict.pop("config")
-    component_dict.update(
-        yaml.safe_load(base64.b64decode(component.config).decode())
-    )
-    items = component_dict.items()
+    component_dict.pop("configuration")
+    component_dict.update(component.configuration)
+
+    items = component.configuration.items()
     for item in items:
         elements = []
         for idx, elem in enumerate(item):
@@ -412,59 +344,47 @@ def print_stack_component_configuration(
         rich_table.add_row(*elements)
 
     console.print(rich_table)
-
-
-def print_active_profile() -> None:
-    """Print active profile."""
-    from zenml.repository import Repository
-
-    repo = Repository()
-    scope = "local" if repo.root else "global"
     declare(
-        f"Running with active profile: '{repo.active_profile_name}' ({scope})"
+        f"{component.type.value.title()} '{component.name}' of flavor "
+        f"'{component.flavor}' with id '{component.id}' is owned by "
+        f"user '{component.user.name}' and is "
+        f"'{'shared' if component.is_shared else 'private'}'."
     )
+
+
+def print_active_config() -> None:
+    """Print the active configuration."""
+    from zenml.client import Client
+
+    gc = GlobalConfiguration()
+    client = Client()
+    if not gc.store:
+        return
+
+    if gc.store.type == StoreType.SQL:
+        if gc.store.url == gc.get_default_store().url:
+            declare("Using the default local database.")
+        else:
+            declare(f"Using the SQL database: '{gc.store.url}'.")
+    elif gc.store.type == StoreType.REST:
+        declare(f"Connected to the ZenML server: '{gc.store.url}'")
+    if gc.active_project_name:
+        scope = "repository" if client.uses_local_configuration else "global"
+        declare(
+            f"Running with active project: '{gc.active_project_name}' "
+            f"({scope})"
+        )
 
 
 def print_active_stack() -> None:
     """Print active stack."""
-    from zenml.repository import Repository
+    from zenml.client import Client
 
-    repo = Repository()
-    declare(f"Running with active stack: '{repo.active_stack_name}'")
-
-
-def print_profile(
-    profile: "ProfileConfiguration",
-    active: bool,
-) -> None:
-    """Prints the configuration options of a profile.
-
-    Args:
-        profile: Profile to print.
-        active: Whether the profile is active.
-    """
-    profile_title = f"'{profile.name}' Profile Configuration"
-    if active:
-        profile_title += " (ACTIVE)"
-
-    rich_table = table.Table(
-        box=box.HEAVY_EDGE,
-        title=profile_title,
-        show_lines=True,
+    client = Client()
+    scope = "repository" if client.uses_local_configuration else "global"
+    declare(
+        f"Running with active stack: '{client.active_stack_model.name}' ({scope})"
     )
-    rich_table.add_column("PROPERTY")
-    rich_table.add_column("VALUE", overflow="fold")
-    items = profile.dict().items()
-    for item in items:
-        elements = []
-        for idx, elem in enumerate(item):
-            if idx == 0:
-                elements.append(f"{elem.upper()}")
-            else:
-                elements.append(elem)
-        rich_table.add_row(*elements)
-
-    console.print(rich_table)
 
 
 def format_date(
@@ -558,6 +478,7 @@ def parse_unknown_options(
     Returns:
         Dict of parsed args.
     """
+    # TODO: Should we add the cli_utils.error here?
     warning_message = (
         "Please provide args with a proper "
         "identifier as the key and the following structure: "
@@ -683,22 +604,22 @@ def print_list_items(list_items: List[str], column_title: str) -> None:
     console.print(rich_table)
 
 
-def get_service_status_emoji(service: "BaseService") -> str:
-    """Get the rich emoji representing the operational status of a Service.
+def get_service_state_emoji(state: "ServiceState") -> str:
+    """Get the rich emoji representing the operational state of a Service.
 
     Args:
-        service: Service to get emoji for.
+        state: Service state to get emoji for.
 
     Returns:
         String representing the emoji.
     """
     from zenml.services.service_status import ServiceState
 
-    if service.status.state == ServiceState.ACTIVE:
+    if state == ServiceState.ACTIVE:
         return ":white_check_mark:"
-    if service.status.state == ServiceState.INACTIVE:
+    if state == ServiceState.INACTIVE:
         return ":pause_button:"
-    if service.status.state == ServiceState.ERROR:
+    if state == ServiceState.ERROR:
         return ":heavy_exclamation_mark:"
     return ":hourglass_not_done:"
 
@@ -721,7 +642,7 @@ def pretty_print_model_deployer(
         dict_model_name = served_model_info.get("MODEL_NAME", "")
         model_service_dicts.append(
             {
-                "STATUS": get_service_status_emoji(model_service),
+                "STATUS": get_service_state_emoji(model_service.status.state),
                 "UUID": dict_uuid,
                 "PIPELINE_NAME": dict_pl_name,
                 "PIPELINE_STEP_NAME": dict_pl_stp_name,
@@ -758,7 +679,7 @@ def print_served_model_configuration(
     served_model_info = {
         **served_model_info,
         "UUID": str(model_service.uuid),
-        "STATUS": get_service_status_emoji(model_service),
+        "STATUS": get_service_state_emoji(model_service.status.state),
         "STATUS_MESSAGE": model_service.status.last_error,
         "PIPELINE_NAME": model_service.config.pipeline_name,
         "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
@@ -777,3 +698,373 @@ def print_served_model_configuration(
         for component in rich_table.columns[0]._cells
     ]
     console.print(rich_table)
+
+
+def print_server_deployment_list(servers: List["ServerDeployment"]) -> None:
+    """Print a table with a list of ZenML server deployments.
+
+    Args:
+        servers: list of ZenML server deployments
+    """
+    server_dicts = []
+    for server in servers:
+        status = ""
+        url = ""
+        connected = ""
+        if server.status:
+            status = get_service_state_emoji(server.status.status)
+            if server.status.url:
+                url = server.status.url
+            if server.status.connected:
+                connected = ":point_left:"
+        server_dicts.append(
+            {
+                "STATUS": status,
+                "NAME": server.config.name,
+                "PROVIDER": server.config.provider.value,
+                "URL": url,
+                "CONNECTED": connected,
+            }
+        )
+    print_table(server_dicts)
+
+
+def print_server_deployment(server: "ServerDeployment") -> None:
+    """Prints the configuration and status of a ZenML server deployment.
+
+    Args:
+        server: Server deployment to print
+    """
+    server_name = server.config.name
+    title = f"ZenML server '{server_name}'"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title,
+        show_header=False,
+        show_lines=True,
+    )
+    rich_table.add_column("", overflow="fold")
+    rich_table.add_column("", overflow="fold")
+
+    server_info = []
+
+    if server.status:
+        server_info.extend(
+            [
+                ("URL", server.status.url or ""),
+                ("STATUS", get_service_state_emoji(server.status.status)),
+                ("STATUS_MESSAGE", server.status.status_message or ""),
+                (
+                    "CONNECTED",
+                    ":white_check_mark:" if server.status.connected else "",
+                ),
+            ]
+        )
+
+    for item in server_info:
+        rich_table.add_row(*item)
+
+    console.print(rich_table)
+
+
+def describe_pydantic_object(schema_json: str) -> None:
+    """Describes a Pydantic object based on the json of its schema.
+
+    Args:
+        schema_json: str, represents the schema of a Pydantic object, which
+            can be obtained through BaseModelClass.schema_json()
+    """
+    # Get the schema dict
+    schema = json.loads(schema_json)
+
+    # Extract values with defaults
+    schema_title = schema["title"]
+    required = schema.get("required", [])
+    description = schema.get("description", "")
+    properties = schema.get("properties", {})
+
+    # Pretty print the schema
+    warning(f"Configuration class: {schema_title}\n", bold=True)
+
+    if description:
+        declare(f"{description}\n")
+
+    if properties:
+        warning("Properties", bold=True)
+        for prop, prop_schema in properties.items():
+            warning(
+                f"{prop}, {prop_schema['type']}"
+                f"{', required' if prop_schema in required else ''}"
+            )
+
+            if "description" in prop_schema:
+                declare(f"{prop_schema['description']}", width=80)
+
+
+def get_stack_by_id_or_name_or_prefix(
+    client: Client,
+    id_or_name_or_prefix: str,
+) -> "StackModel":
+    """Fetches a stack within active project using the name, id or partial id.
+
+    Args:
+        client: Instance of the Repository singleton
+        id_or_name_or_prefix: The id, name or partial id of the stack to
+                              fetch.
+
+    Returns:
+        The stack with the given name.
+
+    Raises:
+        KeyError: If no stack with the given name exists.
+    """
+    # First interpret as full UUID
+    try:
+        stack_id = UUID(id_or_name_or_prefix)
+        return client.zen_store.get_stack(stack_id)
+    except ValueError:
+        pass
+
+    stacks = client.zen_store.list_stacks(
+        project_name_or_id=client.active_project.name,
+        name=id_or_name_or_prefix,
+    )
+    if len(stacks) > 1:
+        hydrated_stacks = [s.to_hydrated_model() for s in stacks]
+        print_stacks_table(client=client, stacks=hydrated_stacks)
+        error(
+            f"Multiple stacks have been found for name "
+            f"'{id_or_name_or_prefix}'. The stacks listed above all share "
+            f"this name. Please specify the stack by full or partial id."
+        )
+
+    elif len(stacks) == 1:
+        return stacks[0]
+    else:
+        logger.debug(
+            f"No stack with name '{id_or_name_or_prefix}' "
+            f"exists. Trying to resolve as partial_id"
+        )
+
+        # TODO: This is ugly, an _or filter should be set on the sql_zen_store
+        stacks = list(
+            set(
+                client.zen_store.list_stacks(
+                    project_name_or_id=client.active_project.name,
+                    user_name_or_id=client.active_user.name,
+                )
+                + client.zen_store.list_stacks(
+                    project_name_or_id=client.active_project.name,
+                    is_shared=True,
+                )
+            )
+        )
+
+        filtered_stacks = [
+            stack
+            for stack in stacks
+            if str(stack.id).startswith(id_or_name_or_prefix)
+        ]
+        if len(filtered_stacks) > 1:
+            hydrated_stacks = [s.to_hydrated_model() for s in filtered_stacks]
+            print_stacks_table(client=client, stacks=hydrated_stacks)
+            error(
+                f"The stacks listed above all share the provided prefix "
+                f"'{id_or_name_or_prefix}' on their ids. Please provide more "
+                f"characters to uniquely identify only one stack."
+            )
+
+        elif len(filtered_stacks) == 1:
+            return filtered_stacks[0]
+        else:
+            raise KeyError(
+                f"No stack with name or id prefix "
+                f"'{id_or_name_or_prefix}' exists."
+            )
+
+
+def print_stacks_table(
+    client: Client, stacks: List[HydratedStackModel]
+) -> None:
+    """Print a prettified list of all stacks supplied to this method.
+
+    Args:
+        client: Repository instance
+        stacks: List of stacks
+    """
+    stack_dicts = []
+    for stack in stacks:
+        active_stack_id = client.active_stack_model.id
+        is_active = stack.id == active_stack_id
+        stack_config = {
+            "ACTIVE": ":point_right:" if is_active else "",
+            "STACK NAME": stack.name,
+            "STACK ID": stack.id,
+            "SHARED": ":white_check_mark:" if stack.is_shared else ":x:",
+            "OWNER": stack.user.name,
+            **{
+                component_type.upper(): components[0].name
+                for component_type, components in stack.components.items()
+            },
+        }
+        stack_dicts.append(stack_config)
+
+    print_table(stack_dicts)
+
+
+def print_components_table(
+    client: Client,
+    component_type: StackComponentType,
+    components: List["HydratedComponentModel"],
+) -> None:
+    """Prints a table with configuration options for a list of stack components.
+
+    If a component is active (its name matches the `active_component_name`),
+    it will be highlighted in a separate table column.
+
+    Args:
+        client: Instance of the Repository singleton
+        component_type: Type of stack component
+        components: List of stack components to print.
+    """
+    display_name = _component_display_name(component_type, plural=True)
+    if len(components) == 0:
+        warning(f"No {display_name} registered.")
+        return
+    active_stack = client.active_stack_model
+    active_component_name = None
+    if component_type in active_stack.components.keys():
+        active_components = active_stack.components[component_type]
+        active_component_name = (
+            active_components[0].name if active_components else None
+        )
+
+    configurations = []
+    for component in components:
+        is_active = component.name == active_component_name
+        component_config = {
+            "ACTIVE": ":point_right:" if is_active else "",
+            "NAME": component.name,
+            "COMPONENT ID": component.id,
+            "FLAVOR": component.flavor,
+            "SHARED": ":white_check_mark:" if component.is_shared else ":x:",
+            "OWNER": component.user.name,
+            # **{
+            #     key.upper(): str(value)
+            #     for key, value in component.configuration.items()
+            # },
+        }
+        configurations.append(component_config)
+    print_table(configurations)
+
+
+def _component_display_name(
+    component_type: "StackComponentType", plural: bool = False
+) -> str:
+    """Human-readable name for a stack component.
+
+    Args:
+        component_type: Type of the component to get the display name for.
+        plural: Whether the display name should be plural or not.
+
+    Returns:
+        A human-readable name for the given stack component type.
+    """
+    name = component_type.plural if plural else component_type.value
+    return name.replace("_", " ")
+
+
+def get_component_by_id_or_name_or_prefix(
+    client: Client,
+    id_or_name_or_prefix: str,
+    component_type: StackComponentType,
+) -> "ComponentModel":
+    """Fetches a component of given type within active project using the name, id or partial id.
+
+    Args:
+        client: Instance of the Client singleton
+        id_or_name_or_prefix: The id, name or partial id of the component to
+                              fetch.
+        component_type: The type of the component to fetch.
+
+    Returns:
+        The component with the given name.
+
+    Raises:
+        KeyError: If no stack with the given name exists.
+    """
+    # First interpret as full UUID
+    try:
+        component_id = UUID(id_or_name_or_prefix)
+        return client.zen_store.get_stack_component(component_id)
+    except ValueError:
+        pass
+
+    components = client.zen_store.list_stack_components(
+        project_name_or_id=client.active_project.name,
+        name=id_or_name_or_prefix,
+        type=component_type,
+    )
+    if len(components) > 1:
+        hydrated_components = [c.to_hydrated_model() for c in components]
+        print_components_table(
+            client=client,
+            component_type=component_type,
+            components=hydrated_components,
+        )
+        error(
+            f"Multiple components have been found for name "
+            f"'{id_or_name_or_prefix}'. The components listed above all share "
+            f"this name. Please specify the component by full or partial id."
+        )
+
+    elif len(components) == 1:
+        return components[0]
+    else:
+        logger.debug(
+            f"No component with name '{id_or_name_or_prefix}' "
+            f"exists. Trying to resolve as partial_id"
+        )
+
+        # TODO: This is ugly, an _or filter should be set on the sql_zen_store
+        components = list(
+            set(
+                client.zen_store.list_stack_components(
+                    project_name_or_id=client.active_project.name,
+                    user_name_or_id=client.active_user.name,
+                    type=component_type,
+                )
+                + client.zen_store.list_stack_components(
+                    project_name_or_id=client.active_project.name,
+                    is_shared=True,
+                    type=component_type,
+                )
+            )
+        )
+
+        filtered_comps = [
+            component
+            for component in components
+            if str(component.id).startswith(id_or_name_or_prefix)
+        ]
+        if len(filtered_comps) > 1:
+            hydrated_comps = [s.to_hydrated_model() for s in filtered_comps]
+            print_components_table(
+                client=client,
+                component_type=component_type,
+                components=hydrated_comps,
+            )
+            error(
+                f"The components listed above all share the provided prefix "
+                f"'{id_or_name_or_prefix}' on their ids. Please provide more "
+                f"characters to uniquely identify only one component."
+            )
+
+        elif len(filtered_comps) == 1:
+            return filtered_comps[0]
+        else:
+            raise KeyError(
+                f"No component of type `{component_type}` with name or id "
+                f"prefix '{id_or_name_or_prefix}' exists."
+            )

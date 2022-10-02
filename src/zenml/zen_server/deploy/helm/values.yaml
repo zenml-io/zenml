@@ -1,0 +1,124 @@
+# Default values for zenml.
+
+replicaCount: 1
+
+image:
+  repository: zenmldocker/zenml-server
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+zenml:
+  debug: True
+
+  # ZenML server deployment type
+  deploymentType:
+
+  # Unique server UUID
+  serverId:
+
+  # The ZenML authentication scheme. Use one of:
+  # 
+  # NO_AUTH - No authentication
+  # HTTP_BASIC - HTTP Basic authentication
+  # OAUTH2_PASSWORD_BEARER - OAuth2 password bearer
+  authType: OAUTH2_PASSWORD_BEARER
+
+  # The root URL path to use when behind a proxy. This is useful when the
+  # `rewrite-target` annotation is used in the ingress controller, e.g.:
+  #
+  # ```yaml
+  # rootUrlPath: /zenml
+  #
+  # ingress:
+  #   enabled: true
+  #   className: "nginx"
+  #   annotations:
+  #     nginx.ingress.kubernetes.io/rewrite-target: /$1
+  #   host:
+  #   path: /zenml/?(.*)
+  # ```
+  rootUrlPath:
+
+  defaultProject: "default"
+  defaultUsername: default
+  # Use your own password here
+  defaultPassword: zenml
+
+  # MySQL database configuration. If not set, a local sqlite database will be used.
+  database: {}
+    # url: "mysql://admin:password@zenml-mysql:3306/database"
+    # sslCa: /path/to/ca.pem
+    # sslCert: /path/to/client-cert.pem
+    # sslKey: /path/to/client-key.pem
+    # sslVerifyServerCert: True
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "zenml"
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    # nginx.ingress.kubernetes.io/rewrite-target: /$1
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+    # cert-manager.io/cluster-issuer: "letsencrypt"
+  host:
+  path: /
+  tls:
+    enabled: false
+    generateCerts: false
+    secretName: zenml-tls-certs
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

@@ -14,19 +14,62 @@
 """Implementation of the post-execution pipeline run class."""
 
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from ml_metadata import proto
-
+from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
+from zenml.models import PipelineRunModel
 from zenml.post_execution.step import StepView
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
-
-if TYPE_CHECKING:
-    from zenml.metadata_stores import BaseMetadataStore
 
 logger = get_logger(__name__)
+
+
+def get_run(name: str) -> "PipelineRunView":
+    """Fetches the post-execution view of a run with the given name.
+
+    Args:
+        name: The name of the run to fetch.
+
+    Returns:
+        The post-execution view of the run with the given name.
+
+    Raises:
+        KeyError: If no run with the given name exists.
+        RuntimeError: If multiple runs with the given name exist.
+    """
+    client = Client()
+    active_project_id = client.active_project.id
+    runs = client.zen_store.list_runs(
+        run_name=name,
+        project_name_or_id=active_project_id,
+    )
+
+    # TODO: [server] this error handling could be improved
+    if not runs:
+        raise KeyError(f"No run with name '{name}' exists.")
+    elif len(runs) > 1:
+        raise RuntimeError(
+            f"Multiple runs have been found for name  '{name}'.", runs
+        )
+    return PipelineRunView(runs[0])
+
+
+def get_unlisted_runs() -> List["PipelineRunView"]:
+    """Fetches post-execution views of all unlisted runs.
+
+    Unlisted runs are runs that are not associated with any pipeline.
+
+    Returns:
+        A list of post-execution run views.
+    """
+    client = Client()
+    runs = client.zen_store.list_runs(
+        project_name_or_id=client.active_project.id,
+        unlisted=True,
+    )
+    return [PipelineRunView(model) for model in runs]
 
 
 class PipelineRunView:
@@ -36,35 +79,27 @@ class PipelineRunView:
     pipeline execution.
     """
 
-    def __init__(
-        self,
-        id_: int,
-        name: str,
-        executions: List[proto.Execution],
-        metadata_store: "BaseMetadataStore",
-    ):
+    def __init__(self, model: PipelineRunModel):
         """Initializes a post-execution pipeline run object.
 
         In most cases `PipelineRunView` objects should not be created manually
         but retrieved from a `PipelineView` object instead.
 
         Args:
-            id_: The context id of this pipeline run.
-            name: The name of this pipeline run.
-            executions: All executions associated with this pipeline run.
-            metadata_store: The metadata store which should be used to fetch
-                additional information related to this pipeline run.
+            model: The model to initialize this object from.
         """
-        self._id = id_
-        self._name = name
-        self._metadata_store = metadata_store
-
-        self._executions = executions
+        self._model = model
         self._steps: Dict[str, StepView] = OrderedDict()
 
-        # This might be set from the parent pipeline view in case this run
-        # is also tracked in the ZenStore
-        self._run_wrapper: Optional[PipelineRunWrapper] = None
+    @property
+    def id(self) -> UUID:
+        """Returns the ID of this pipeline run.
+
+        Returns:
+            The ID of this pipeline run.
+        """
+        assert self._model.id is not None
+        return self._model.id
 
     @property
     def name(self) -> str:
@@ -73,7 +108,16 @@ class PipelineRunView:
         Returns:
             The name of the pipeline run.
         """
-        return self._name
+        return self._model.name
+
+    @property
+    def pipeline_configuration(self) -> Dict[str, Any]:
+        """Returns the pipeline configuration.
+
+        Returns:
+            The pipeline configuration.
+        """
+        return self._model.pipeline_configuration
 
     @property
     def zenml_version(self) -> Optional[str]:
@@ -82,9 +126,7 @@ class PipelineRunView:
         Returns:
             The version of ZenML that this pipeline run was performed with.
         """
-        if self._run_wrapper:
-            return self._run_wrapper.zenml_version
-        return None
+        return self._model.zenml_version
 
     @property
     def git_sha(self) -> Optional[str]:
@@ -96,9 +138,7 @@ class PipelineRunView:
         Returns:
             The git commit SHA that this pipeline run was performed on.
         """
-        if self._run_wrapper:
-            return self._run_wrapper.git_sha
-        return None
+        return self._model.git_sha
 
     @property
     def status(self) -> ExecutionStatus:
@@ -212,14 +252,9 @@ class PipelineRunView:
             # we already fetched the steps, no need to do anything
             return
 
-        self._steps = self._metadata_store.get_pipeline_run_steps(self)
-
-        if self._run_wrapper:
-            # If we have the run wrapper from the ZenStore, pass on the step
-            # wrapper so users can access additional information about the step.
-            for step_wrapper in self._run_wrapper.pipeline.steps:
-                if step_wrapper.name in self._steps:
-                    self._steps[step_wrapper.name]._step_wrapper = step_wrapper
+        assert self._model.id is not None
+        steps = Client().zen_store.list_run_steps(self._model.id)
+        self._steps = {step.name: StepView(step) for step in steps}
 
     def __repr__(self) -> str:
         """Returns a string representation of this pipeline run.
@@ -228,8 +263,8 @@ class PipelineRunView:
             A string representation of this pipeline run.
         """
         return (
-            f"{self.__class__.__qualname__}(id={self._id}, "
-            f"name='{self._name}')"
+            f"{self.__class__.__qualname__}(id={self.id}, "
+            f"name='{self.name}')"
         )
 
     def __eq__(self, other: Any) -> bool:
@@ -242,8 +277,5 @@ class PipelineRunView:
             True if the other object is referring to the same pipeline run.
         """
         if isinstance(other, PipelineRunView):
-            return (
-                self._id == other._id
-                and self._metadata_store.uuid == other._metadata_store.uuid
-            )
+            return self.id == other.id
         return NotImplemented

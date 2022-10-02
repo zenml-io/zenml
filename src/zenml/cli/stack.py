@@ -16,23 +16,22 @@
 import getpass
 import json
 from typing import Dict, Optional
+from uuid import UUID
 
 import click
 
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.stack_components import (
-    _component_display_name,
-    _register_stack_component,
-)
+from zenml.cli.utils import _component_display_name, print_stacks_table
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import ProvisioningError, StackValidationError
-from zenml.repository import Repository
+from zenml.exceptions import ProvisioningError
+from zenml.models import ComponentModel
+from zenml.models.stack_models import StackModel
 from zenml.secret import ArbitrarySecretSchema
-from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -52,14 +51,6 @@ def stack() -> None:
     help="Register a stack with components.",
 )
 @click.argument("stack_name", type=str, required=True)
-@click.option(
-    "-m",
-    "--metadata-store",
-    "metadata_store_name",
-    help="Name of the metadata store for this stack.",
-    type=str,
-    required=True,
-)
 @click.option(
     "-a",
     "--artifact-store",
@@ -156,15 +147,14 @@ def stack() -> None:
     type=click.BOOL,
 )
 @click.option(
-    "--decouple_stores",
-    "decouple_stores",
+    "--share",
+    "share",
     is_flag=True,
-    help="Decouple the given artifact/metadata store from prior associations.",
+    help="Use this flag to share this stack with other users.",
     type=click.BOOL,
 )
 def register_stack(
     stack_name: str,
-    metadata_store_name: str,
     artifact_store_name: str,
     orchestrator_name: str,
     container_registry_name: Optional[str] = None,
@@ -177,13 +167,12 @@ def register_stack(
     annotator_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
     set_stack: bool = False,
-    decouple_stores: bool = False,
+    share: bool = False,
 ) -> None:
     """Register a stack.
 
     Args:
         stack_name: Unique name of the stack
-        metadata_store_name: Name of the metadata store for this stack.
         artifact_store_name: Name of the artifact store for this stack.
         orchestrator_name: Name of the orchestrator for this stack.
         container_registry_name: Name of the container registry for this stack.
@@ -196,109 +185,51 @@ def register_stack(
         annotator_name: Name of the annotator for this stack.
         data_validator_name: Name of the data validator for this stack.
         set_stack: Immediately set this stack as active.
-        decouple_stores: Resets the previous couplings of the given
-            artifact/metadata stores and creates a new one.
+        share: Share the stack with other users.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
     with console.status(f"Registering stack '{stack_name}'...\n"):
-        repo = Repository()
+        client = Client()
 
-        stack_components = {
-            StackComponentType.METADATA_STORE: repo.get_stack_component(
-                StackComponentType.METADATA_STORE, name=metadata_store_name
-            ),
-            StackComponentType.ARTIFACT_STORE: repo.get_stack_component(
-                StackComponentType.ARTIFACT_STORE, name=artifact_store_name
-            ),
-            StackComponentType.ORCHESTRATOR: repo.get_stack_component(
-                StackComponentType.ORCHESTRATOR, name=orchestrator_name
-            ),
+        type_component_mapping: Dict[StackComponentType, Optional[str]] = {
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ALERTER: alerter_name,
+            StackComponentType.ANNOTATOR: annotator_name,
+            StackComponentType.CONTAINER_REGISTRY: container_registry_name,
+            StackComponentType.DATA_VALIDATOR: data_validator_name,
+            StackComponentType.EXPERIMENT_TRACKER: experiment_tracker_name,
+            StackComponentType.FEATURE_STORE: feature_store_name,
+            StackComponentType.MODEL_DEPLOYER: model_deployer_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+            StackComponentType.SECRETS_MANAGER: secrets_manager_name,
+            StackComponentType.STEP_OPERATOR: step_operator_name,
         }
+        stack_components = dict()
 
-        if container_registry_name:
-            stack_components[
-                StackComponentType.CONTAINER_REGISTRY
-            ] = repo.get_stack_component(
-                StackComponentType.CONTAINER_REGISTRY,
-                name=container_registry_name,
-            )
+        for c_type, name in type_component_mapping.items():
+            if name:
+                stack_components[c_type] = [
+                    cli_utils.get_component_by_id_or_name_or_prefix(
+                        client=client,
+                        component_type=c_type,
+                        id_or_name_or_prefix=name,
+                    ).id
+                ]
 
-        if secrets_manager_name:
-            stack_components[
-                StackComponentType.SECRETS_MANAGER
-            ] = repo.get_stack_component(
-                StackComponentType.SECRETS_MANAGER,
-                name=secrets_manager_name,
-            )
-
-        if step_operator_name:
-            stack_components[
-                StackComponentType.STEP_OPERATOR
-            ] = repo.get_stack_component(
-                StackComponentType.STEP_OPERATOR,
-                name=step_operator_name,
-            )
-
-        if feature_store_name:
-            stack_components[
-                StackComponentType.FEATURE_STORE
-            ] = repo.get_stack_component(
-                StackComponentType.FEATURE_STORE,
-                name=feature_store_name,
-            )
-        if model_deployer_name:
-            stack_components[
-                StackComponentType.MODEL_DEPLOYER
-            ] = repo.get_stack_component(
-                StackComponentType.MODEL_DEPLOYER,
-                name=model_deployer_name,
-            )
-
-        if experiment_tracker_name:
-            stack_components[
-                StackComponentType.EXPERIMENT_TRACKER
-            ] = repo.get_stack_component(
-                StackComponentType.EXPERIMENT_TRACKER,
-                name=experiment_tracker_name,
-            )
-
-        if alerter_name:
-            stack_components[
-                StackComponentType.ALERTER
-            ] = repo.get_stack_component(
-                StackComponentType.ALERTER,
-                name=alerter_name,
-            )
-
-        if annotator_name:
-            stack_components[
-                StackComponentType.ANNOTATOR
-            ] = repo.get_stack_component(
-                StackComponentType.ANNOTATOR,
-                name=annotator_name,
-            )
-
-        if data_validator_name:
-            stack_components[
-                StackComponentType.DATA_VALIDATOR
-            ] = repo.get_stack_component(
-                StackComponentType.DATA_VALIDATOR,
-                name=data_validator_name,
-            )
-
-        stack_ = Stack.from_components(
-            name=stack_name, components=stack_components
+        stack_ = StackModel(
+            name=stack_name,
+            components=stack_components,
+            is_shared=share,
+            project=client.active_project.id,
+            user=client.active_user.id,
         )
-        try:
-            repo.register_stack(stack_, decouple_stores=decouple_stores)
-        except StackValidationError as e:
-            cli_utils.error(e)  # type: ignore[arg-type]
 
+        created_stack = client.register_stack(stack_)
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
     if set_stack:
-        set_active_stack(stack_name=stack_name)
+        client.activate_stack(stack=created_stack)
 
 
 @stack.command(
@@ -306,15 +237,7 @@ def register_stack(
     context_settings=dict(ignore_unknown_options=True),
     help="Update a stack with new components.",
 )
-@click.argument("stack_name", type=str, required=False)
-@click.option(
-    "-m",
-    "--metadata-store",
-    "metadata_store_name",
-    help="Name of the new metadata store for this stack.",
-    type=str,
-    required=False,
-)
+@click.argument("stack_name_or_id", type=str, required=False)
 @click.option(
     "-a",
     "--artifact-store",
@@ -403,16 +326,8 @@ def register_stack(
     type=str,
     required=False,
 )
-@click.option(
-    "--decouple_stores",
-    "decouple_stores",
-    is_flag=True,
-    help="Decouple the given artifact/metadata store from prior associations.",
-    type=click.BOOL,
-)
 def update_stack(
-    stack_name: Optional[str],
-    metadata_store_name: Optional[str] = None,
+    stack_name_or_id: Optional[str],
     artifact_store_name: Optional[str] = None,
     orchestrator_name: Optional[str] = None,
     container_registry_name: Optional[str] = None,
@@ -424,20 +339,17 @@ def update_stack(
     alerter_name: Optional[str] = None,
     annotator_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
-    decouple_stores: bool = False,
 ) -> None:
     """Update a stack.
 
     Args:
-        stack_name: Name of the stack to update.
-        metadata_store_name: Name of the new metadata store for this stack.
+        stack_name_or_id: Name or id of the stack to update.
         artifact_store_name: Name of the new artifact store for this stack.
         orchestrator_name: Name of the new orchestrator for this stack.
         container_registry_name: Name of the new container registry for this
             stack.
         step_operator_name: Name of the new step operator for this stack.
-        secrets_manager_name: Name of the new secrets manager for this
-            stack.
+        secrets_manager_name: Name of the new secrets manager for this stack.
         feature_store_name: Name of the new feature store for this stack.
         model_deployer_name: Name of the new model deployer for this stack.
         experiment_tracker_name: Name of the new experiment tracker for this
@@ -445,132 +357,116 @@ def update_stack(
         alerter_name: Name of the new alerter for this stack.
         annotator_name: Name of the new annotator for this stack.
         data_validator_name: Name of the new data validator for this stack.
-        decouple_stores: Resets the previous couplings of the given
-            artifact/metadata stores and creates a new one.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
-    repo = Repository()
+    client = Client()
 
-    active_stack_name = repo.active_stack_name
-    stack_name = stack_name or active_stack_name
+    active_stack_name = client.active_stack_model.name
+    stack_name_or_id = stack_name_or_id or active_stack_name
 
-    with console.status(f"Updating stack `{stack_name}`...\n"):
-        repo = Repository()
+    with console.status(f"Updating stack `{stack_name_or_id}`...\n"):
+        client = Client()
         try:
-            current_stack = repo.get_stack(stack_name)
+            stack_to_update = cli_utils.get_stack_by_id_or_name_or_prefix(
+                client=client, id_or_name_or_prefix=stack_name_or_id
+            )
         except KeyError:
             cli_utils.error(
-                f"Stack `{stack_name}` cannot be updated as it does not exist.",
-            )
-        stack_components = current_stack.components
-
-        if metadata_store_name:
-            stack_components[
-                StackComponentType.METADATA_STORE
-            ] = repo.get_stack_component(
-                StackComponentType.METADATA_STORE, name=metadata_store_name
+                f"Stack `{stack_name_or_id}` cannot be updated as it does not"
+                f" exist.",
             )
 
-        if artifact_store_name:
-            stack_components[
-                StackComponentType.ARTIFACT_STORE
-            ] = repo.get_stack_component(
-                StackComponentType.ARTIFACT_STORE, name=artifact_store_name
-            )
+        type_component_mapping: Dict[StackComponentType, Optional[str]] = {
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ALERTER: alerter_name,
+            StackComponentType.ANNOTATOR: annotator_name,
+            StackComponentType.CONTAINER_REGISTRY: container_registry_name,
+            StackComponentType.DATA_VALIDATOR: data_validator_name,
+            StackComponentType.EXPERIMENT_TRACKER: experiment_tracker_name,
+            StackComponentType.FEATURE_STORE: feature_store_name,
+            StackComponentType.MODEL_DEPLOYER: model_deployer_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+            StackComponentType.SECRETS_MANAGER: secrets_manager_name,
+            StackComponentType.STEP_OPERATOR: step_operator_name,
+        }
 
-        if orchestrator_name:
-            stack_components[
-                StackComponentType.ORCHESTRATOR
-            ] = repo.get_stack_component(
-                StackComponentType.ORCHESTRATOR, name=orchestrator_name
-            )
+        stack_components = stack_to_update.components
 
-        if container_registry_name:
-            stack_components[
-                StackComponentType.CONTAINER_REGISTRY
-            ] = repo.get_stack_component(
-                StackComponentType.CONTAINER_REGISTRY,
-                name=container_registry_name,
-            )
+        for c_type, name in type_component_mapping.items():
+            if name:
+                stack_components[c_type] = [
+                    cli_utils.get_component_by_id_or_name_or_prefix(
+                        client=client,
+                        component_type=c_type,
+                        id_or_name_or_prefix=name,
+                    ).id
+                ]
 
-        if step_operator_name:
-            stack_components[
-                StackComponentType.STEP_OPERATOR
-            ] = repo.get_stack_component(
-                StackComponentType.STEP_OPERATOR,
-                name=step_operator_name,
-            )
+        stack_to_update.components = stack_components
 
-        if secrets_manager_name:
-            stack_components[
-                StackComponentType.SECRETS_MANAGER
-            ] = repo.get_stack_component(
-                StackComponentType.SECRETS_MANAGER,
-                name=secrets_manager_name,
-            )
-
-        if feature_store_name:
-            stack_components[
-                StackComponentType.FEATURE_STORE
-            ] = repo.get_stack_component(
-                StackComponentType.FEATURE_STORE,
-                name=feature_store_name,
-            )
-
-        if model_deployer_name:
-            stack_components[
-                StackComponentType.MODEL_DEPLOYER
-            ] = repo.get_stack_component(
-                StackComponentType.MODEL_DEPLOYER,
-                name=model_deployer_name,
-            )
-
-        if experiment_tracker_name:
-            stack_components[
-                StackComponentType.EXPERIMENT_TRACKER
-            ] = repo.get_stack_component(
-                StackComponentType.EXPERIMENT_TRACKER,
-                name=experiment_tracker_name,
-            )
-
-        if alerter_name:
-            stack_components[
-                StackComponentType.ALERTER
-            ] = repo.get_stack_component(
-                StackComponentType.ALERTER,
-                name=alerter_name,
-            )
-
-        if annotator_name:
-            stack_components[
-                StackComponentType.ANNOTATOR
-            ] = repo.get_stack_component(
-                StackComponentType.ANNOTATOR,
-                name=annotator_name,
-            )
-
-        if data_validator_name:
-            stack_components[
-                StackComponentType.DATA_VALIDATOR
-            ] = repo.get_stack_component(
-                StackComponentType.DATA_VALIDATOR,
-                name=data_validator_name,
-            )
-
-        stack_ = Stack.from_components(
-            name=stack_name, components=stack_components
+        client.update_stack(stack_to_update)
+        cli_utils.declare(
+            f"Stack `{stack_to_update.name}` successfully " f"updated!"
         )
-        try:
-            repo.update_stack(
-                name=stack_name,
-                stack=stack_,
-                decouple_stores=decouple_stores,
-            )
-        except StackValidationError as e:
-            cli_utils.error(e)  # type: ignore[arg-type]
 
-        cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
+
+
+@stack.command(
+    "share",
+    context_settings=dict(ignore_unknown_options=True),
+    help="Share a stack and all its components.",
+)
+@click.argument("stack_name_or_id", type=str, required=False)
+def share_stack(
+    stack_name_or_id: Optional[str],
+) -> None:
+    """Share a stack with your team.
+
+    Args:
+        stack_name_or_id: Name or id of the stack to share.
+    """
+    cli_utils.print_active_config()
+
+    client = Client()
+
+    active_stack_name = client.active_stack_model.name
+    stack_name_or_id = stack_name_or_id or active_stack_name
+
+    client = Client()
+    try:
+        stack_to_share = cli_utils.get_stack_by_id_or_name_or_prefix(
+            client=client, id_or_name_or_prefix=stack_name_or_id
+        )
+    except KeyError:
+        cli_utils.error(
+            f"Stack `{stack_name_or_id}` cannot be updated as it does not "
+            f"exist.",
+        )
+    else:
+        for c_t, c in stack_to_share.to_hydrated_model().components.items():
+            only_component = c[0]  # For future compatibility
+            # with console.status(
+            #     f"Sharing component `{only_component.name}`" f"...\n"
+            # ):
+            cli_utils.declare(
+                f"A Stack can only be shared when all its "
+                f"components are also shared. Component "
+                f"'{only_component.name}' is also set to "
+                f"shared."
+            )
+
+            only_component.is_shared = True
+            client.update_stack_component(component=only_component)
+
+        with console.status(f"Sharing stack `{stack_to_share.name}` ...\n"):
+
+            stack_to_share.is_shared = True
+
+            client.update_stack(stack_to_share)
+            cli_utils.declare(
+                f"Stack `{stack_to_share.name}` successfully shared!"
+            )
 
 
 @stack.command(
@@ -578,7 +474,7 @@ def update_stack(
     context_settings=dict(ignore_unknown_options=True),
     help="Remove stack components from a stack.",
 )
-@click.argument("stack_name", type=str, required=False)
+@click.argument("stack_name_or_id", type=str, required=False)
 @click.option(
     "-c",
     "--container_registry",
@@ -652,7 +548,7 @@ def update_stack(
     required=False,
 )
 def remove_stack_component(
-    stack_name: Optional[str],
+    stack_name_or_id: Optional[str],
     container_registry_flag: Optional[bool] = False,
     step_operator_flag: Optional[bool] = False,
     secrets_manager_flag: Optional[bool] = False,
@@ -666,8 +562,9 @@ def remove_stack_component(
     """Remove stack components from a stack.
 
     Args:
-        stack_name: Name of the stack to remove components from.
-        container_registry_flag: To remove the container registry from this stack.
+        stack_name_or_id: Name of the stack to remove components from.
+        container_registry_flag: To remove the container registry from this
+            stack.
         step_operator_flag: To remove the step operator from this stack.
         secrets_manager_flag: To remove the secrets manager from this stack.
         feature_store_flag: To remove the feature store from this stack.
@@ -678,83 +575,98 @@ def remove_stack_component(
         annotator_flag: To remove the annotator from this stack.
         data_validator_flag: To remove the data validator from this stack.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
-    repo = Repository()
+    client = Client()
 
-    active_stack_name = repo.active_stack_name
-    stack_name = stack_name or active_stack_name
+    stack_name_or_id = stack_name_or_id or client.active_stack_model.name
 
-    with console.status(f"Updating stack `{stack_name}`...\n"):
-        repo = Repository()
+    with console.status(f"Updating stack `{stack_name_or_id}`...\n"):
+        client = Client()
         try:
-            current_stack = repo.get_stack(stack_name)
+            stack_to_update = cli_utils.get_stack_by_id_or_name_or_prefix(
+                client=client, id_or_name_or_prefix=stack_name_or_id
+            )
         except KeyError:
             cli_utils.error(
-                f"Stack `{stack_name}` cannot be updated as it does not exist.",
+                f"Stack `{stack_name_or_id}` cannot be updated as it does not "
+                f"exist.",
             )
-        stack_components = current_stack.components
 
         if container_registry_flag:
-            stack_components.pop(StackComponentType.CONTAINER_REGISTRY, None)
+            stack_to_update.components.pop(
+                StackComponentType.CONTAINER_REGISTRY, None
+            )
 
         if step_operator_flag:
-            stack_components.pop(StackComponentType.STEP_OPERATOR, None)
+            stack_to_update.components.pop(
+                StackComponentType.STEP_OPERATOR, None
+            )
 
         if secrets_manager_flag:
-            stack_components.pop(StackComponentType.SECRETS_MANAGER, None)
+            stack_to_update.components.pop(
+                StackComponentType.SECRETS_MANAGER, None
+            )
 
         if feature_store_flag:
-            stack_components.pop(StackComponentType.FEATURE_STORE, None)
+            stack_to_update.components.pop(
+                StackComponentType.FEATURE_STORE, None
+            )
 
         if model_deployer_flag:
-            stack_components.pop(StackComponentType.MODEL_DEPLOYER, None)
+            stack_to_update.components.pop(
+                StackComponentType.MODEL_DEPLOYER, None
+            )
 
         if experiment_tracker_flag:
-            stack_components.pop(StackComponentType.EXPERIMENT_TRACKER, None)
+            stack_to_update.components.pop(
+                StackComponentType.EXPERIMENT_TRACKER, None
+            )
 
         if alerter_flag:
-            stack_components.pop(StackComponentType.ALERTER, None)
+            stack_to_update.components.pop(StackComponentType.ALERTER, None)
 
         if annotator_flag:
-            stack_components.pop(StackComponentType.ANNOTATOR, None)
+            stack_to_update.components.pop(StackComponentType.ANNOTATOR, None)
 
         if data_validator_flag:
-            stack_components.pop(StackComponentType.DATA_VALIDATOR, None)
+            stack_to_update.components.pop(
+                StackComponentType.DATA_VALIDATOR, None
+            )
 
-        stack_ = Stack.from_components(
-            name=stack_name, components=stack_components
-        )
-        repo.update_stack(stack_name, stack_)
-        cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
+        client.update_stack(stack_to_update)
+        cli_utils.declare(f"Stack `{stack_name_or_id}` successfully updated!")
 
 
 @stack.command("rename", help="Rename a stack.")
-@click.argument("current_stack_name", type=str, required=True)
+@click.argument("current_stack_name_or_id", type=str, required=True)
 @click.argument("new_stack_name", type=str, required=True)
 def rename_stack(
-    current_stack_name: str,
+    current_stack_name_or_id: str,
     new_stack_name: str,
 ) -> None:
     """Rename a stack.
 
     Args:
-        current_stack_name: Name of the stack to rename.
+        current_stack_name_or_id: Name of the stack to rename.
         new_stack_name: New name of the stack.
     """
-    with console.status(f"Renaming stack `{current_stack_name}`...\n"):
-        repo = Repository()
+    with console.status(f"Renaming stack `{current_stack_name_or_id}`...\n"):
+        client = Client()
         try:
-            current_stack = repo.get_stack(current_stack_name)
+            stack_to_rename = cli_utils.get_stack_by_id_or_name_or_prefix(
+                client=client, id_or_name_or_prefix=current_stack_name_or_id
+            )
         except KeyError:
             cli_utils.error(
-                f"Stack `{current_stack_name}` cannot be renamed as it does "
-                f"not exist.",
+                f"Stack `{current_stack_name_or_id}` cannot be renamed as it "
+                f"does not exist.",
             )
-        stack_components = current_stack.components
 
         try:
-            repo.zen_store.get_stack(new_stack_name)
+            cli_utils.get_stack_by_id_or_name_or_prefix(
+                client=client, id_or_name_or_prefix=new_stack_name
+            )
             cli_utils.error(
                 f"Stack `{new_stack_name}` already exists. Please choose a "
                 f"different name.",
@@ -762,41 +674,22 @@ def rename_stack(
         except KeyError:
             pass
 
-        new_stack_ = Stack.from_components(
-            name=new_stack_name, components=stack_components
-        )
-        repo.update_stack(current_stack_name, new_stack_)
+        stack_to_rename.name = new_stack_name
+        client.update_stack(stack_to_rename)
         cli_utils.declare(
-            f"Stack `{current_stack_name}` successfully renamed as `{new_stack_name}`!"
+            f"Stack `{current_stack_name_or_id}` successfully renamed to `"
+            f"{new_stack_name}`!"
         )
 
 
 @stack.command("list")
 def list_stacks() -> None:
-    """List all available stacks in the active profile."""
-    cli_utils.print_active_profile()
+    """List all available stacks."""
+    cli_utils.print_active_config()
 
-    repo = Repository()
-
-    if len(repo.stack_configurations) == 0:
-        cli_utils.error("No stacks registered!")
-
-    active_stack_name = repo.active_stack_name
-
-    stack_dicts = []
-    for stack_name, stack_configuration in repo.stack_configurations.items():
-        is_active = stack_name == active_stack_name
-        stack_config = {
-            "ACTIVE": ":point_right:" if is_active else "",
-            "STACK NAME": stack_name,
-            **{
-                component_type.value.upper(): value
-                for component_type, value in stack_configuration.items()
-            },
-        }
-        stack_dicts.append(stack_config)
-
-    cli_utils.print_table(stack_dicts)
+    client = Client()
+    stacks = client.stacks
+    print_stacks_table(client, stacks)
 
 
 @stack.command(
@@ -804,54 +697,45 @@ def list_stacks() -> None:
     help="Show details about the current active stack.",
 )
 @click.argument(
-    "stack_name",
+    "stack_name_or_id",
     type=click.STRING,
     required=False,
 )
-def describe_stack(stack_name: Optional[str]) -> None:
+def describe_stack(stack_name_or_id: Optional[str]) -> None:
     """Show details about a named stack or the active stack.
 
     Args:
-        stack_name: Name of the stack to describe.
+        stack_name_or_id: Name of the stack to describe.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
-    repo = Repository()
+    client = Client()
+    active_stack = client.active_stack_model
 
-    stack_configurations = repo.stack_configurations
-    if len(stack_configurations) == 0:
-        cli_utils.error("No stacks registered.")
-
-    active_stack_name = repo.active_stack_name
-    stack_name = stack_name or active_stack_name
-    if not stack_name:
-        cli_utils.error(
-            "Argument 'stack_name' was not provided and no stack is set as active."
-        )
-
-    try:
-        stack_configuration = stack_configurations[stack_name]
-    except KeyError:
-        cli_utils.error(f"Stack '{stack_name}' does not exist.")
+    if stack_name_or_id:
+        stack_to_describe = cli_utils.get_stack_by_id_or_name_or_prefix(
+            client=client, id_or_name_or_prefix=stack_name_or_id
+        ).to_hydrated_model()
+    else:
+        stack_to_describe = active_stack
 
     cli_utils.print_stack_configuration(
-        stack_configuration,
-        active=stack_name == active_stack_name,
-        stack_name=stack_name,
+        stack_to_describe,
+        active=stack_to_describe.id == active_stack.id,
     )
 
 
 @stack.command("delete", help="Delete a stack given its name.")
-@click.argument("stack_name", type=str)
+@click.argument("stack_name_or_id", type=str)
 @click.option("--yes", "-y", is_flag=True, required=False)
 @click.option("--force", "-f", "old_force", is_flag=True, required=False)
 def delete_stack(
-    stack_name: str, yes: bool = False, old_force: bool = False
+    stack_name_or_id: str, yes: bool = False, old_force: bool = False
 ) -> None:
     """Delete a stack.
 
     Args:
-        stack_name: Name of the stack to delete.
+        stack_name_or_id: Name or id of the stack to delete.
         yes: Stack will be deleted without prompting for
             confirmation.
         old_force: Stack will be deleted without prompting for
@@ -863,101 +747,95 @@ def delete_stack(
             "The `--force` flag will soon be deprecated. Use `--yes` or "
             "`-y` instead."
         )
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     confirmation = yes or cli_utils.confirmation(
-        f"This will delete stack '{stack_name}' from your repository. \n"
+        f"This will delete stack '{stack_name_or_id}'. \n"
         "Are you sure you want to proceed?"
     )
 
     if not confirmation:
         cli_utils.declare("Stack deletion canceled.")
 
-    with console.status(f"Deleting stack '{stack_name}'...\n"):
+    with console.status(f"Deleting stack '{stack_name_or_id}'...\n"):
         cfg = GlobalConfiguration()
-        repo = Repository()
+        client = Client()
+        stack_to_delete = cli_utils.get_stack_by_id_or_name_or_prefix(
+            client=client, id_or_name_or_prefix=stack_name_or_id
+        )
 
-        if cfg.active_stack_name == stack_name:
-            cli_utils.error(
-                f"Stack {stack_name} cannot be deleted while it is globally "
-                f"active. Please choose a different active global stack first "
-                f"by running 'zenml stack set --global STACK'."
+        if cfg.active_stack_id is not None:
+            global_active_stack = client.zen_store.get_stack(
+                cfg.active_stack_id
             )
+            if global_active_stack.name == stack_name_or_id:
+                cli_utils.error(
+                    f"Stack {stack_to_delete.name} cannot be deleted while it "
+                    f"is globally active. Please choose a different active "
+                    f"global stack first by running 'zenml stack set --global "
+                    f"STACK'."
+                )
 
-        if repo.active_stack_name == stack_name:
+        if client.active_stack_model.name == stack_to_delete.name:
             cli_utils.error(
-                f"Stack {stack_name} cannot be deleted while it is "
+                f"Stack {stack_to_delete.name} cannot be deleted while it is "
                 f"active. Please choose a different active stack first by "
                 f"running 'zenml stack set STACK'."
             )
 
-    Repository().deregister_stack(stack_name)
-    cli_utils.declare(f"Deleted stack '{stack_name}'.")
+    Client().deregister_stack(stack_to_delete)
+    cli_utils.declare(f"Deleted stack '{stack_to_delete.name}'.")
 
 
 @stack.command("set", help="Sets a stack as active.")
-@click.argument("stack_name", type=str)
-@click.option(
-    "--global",
-    "-g",
-    "global_profile",
-    is_flag=True,
-    help="Set the active stack globally.",
-)
-def set_active_stack_command(
-    stack_name: str, global_profile: bool = False
-) -> None:
+@click.argument("stack_name_or_id", type=str)
+def set_active_stack_command(stack_name_or_id: str) -> None:
     """Sets a stack as active.
 
-    If the '--global' flag is set, the global active stack will be set,
-    otherwise the repository active stack takes precedence.
-
     Args:
-        stack_name: Name of the stack to set as active.
-        global_profile: Set the active stack globally.
+        stack_name_or_id: Name of the stack to set as active.
     """
-    set_active_stack(stack_name, global_profile)
+    cli_utils.print_active_config()
+    scope = " repository" if Client().root else " global"
+    client = Client()
 
-
-def set_active_stack(stack_name: str, global_profile: bool = False) -> None:
-    """Sets a stack as active.
-
-    If the '--global' flag is set, the global active stack will be set,
-    otherwise the repository active stack takes precedence.
-
-    Args:
-        stack_name: Unique name of the stack
-        global_profile: If the stack should be created on the global profile
-    """
-    cli_utils.print_active_profile()
-    scope = " global" if global_profile else ""
-    repo = Repository()
-    with console.status(
-        f"Setting the{scope} active stack to '{stack_name}'..."
-    ):
-        if global_profile:
-            repo.active_profile.activate_stack(stack_name)
-        else:
-            repo.activate_stack(stack_name)
-
-        cli_utils.declare(f"Active{scope} stack set to: '{stack_name}'")
+    try:
+        stack_to_set_active = cli_utils.get_stack_by_id_or_name_or_prefix(
+            client=client, id_or_name_or_prefix=stack_name_or_id
+        )
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        with console.status(
+            f"Setting the{scope} active stack to "
+            f"'{stack_to_set_active.name}'..."
+        ):
+            client.activate_stack(stack_to_set_active)
+            cli_utils.declare(
+                f"Active{scope} stack set to: " f"'{stack_to_set_active.name}'"
+            )
 
 
 @stack.command("get")
 def get_active_stack() -> None:
     """Gets the active stack."""
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
+
+    scope = " repository" if Client().uses_local_configuration else " global"
 
     with console.status("Getting the active stack..."):
-        repo = Repository()
-        cli_utils.declare(f"The active stack is: '{repo.active_stack_name}'")
+        client = Client()
+        cli_utils.declare(
+            f"The{scope} active stack is: '{client.active_stack_model.name}'"
+        )
 
 
 @stack.command("up")
 def up_stack() -> None:
     """Provisions resources for the active stack."""
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
-    stack_ = Repository().active_stack
+    # TODO[Server]: Make this call a function in repo
+    stack_ = Client().active_stack
     cli_utils.declare(
         f"Provisioning resources for active stack '{stack_.name}'."
     )
@@ -1000,9 +878,10 @@ def down_stack(force: bool = False, old_force: bool = False) -> None:
             "The `--yes` flag will soon be deprecated. Use `--force` "
             "or `-f` instead."
         )
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
-    stack_ = Repository().active_stack
+    # TODO[Server]: Make this call a function in repo
+    stack_ = Client().active_stack
 
     if force:
         cli_utils.declare(
@@ -1017,74 +896,76 @@ def down_stack(force: bool = False, old_force: bool = False) -> None:
 
 
 def _get_component_as_dict(
-    component_type: StackComponentType, component_name: str
+    component_type: StackComponentType, component_name_or_id: str
 ) -> Dict[str, str]:
     """Return a dict representation of a component's key config values.
 
     Args:
         component_type: The type of component to get.
-        component_name: The name of the component to get.
+        component_name_or_id: The name of the component to get.
 
     Returns:
         A dict representation of the component's key config values.
     """
-    repo = Repository()
-    component = repo.get_stack_component(component_type, name=component_name)
+    client = Client()
+    component = cli_utils.get_component_by_id_or_name_or_prefix(
+        client=client,
+        component_type=component_type,
+        id_or_name_or_prefix=component_name_or_id,
+    )
     component_dict = {
         key: value
         for key, value in json.loads(component.json()).items()
         if key != "uuid" and value is not None
     }
-    component_dict["flavor"] = component.FLAVOR
+    component_dict["flavor"] = component.flavor
     return component_dict
 
 
 @stack.command("export", help="Exports a stack to a YAML file.")
-@click.argument("stack_name", type=str, required=True)
+@click.argument("stack_name_or_id", type=str, required=False)
 @click.argument("filename", type=str, required=False)
-def export_stack(stack_name: str, filename: Optional[str]) -> None:
+def export_stack(
+    stack_name_or_id: Optional[str], filename: Optional[str]
+) -> None:
     """Export a stack to YAML.
 
     Args:
-        stack_name: The name of the stack to export.
+        stack_name_or_id: The name of the stack to export.
         filename: The filename to export the stack to.
     """
     track_event(AnalyticsEvent.EXPORT_STACK)
 
     # Get configuration of given stack
     # TODO [ENG-893]: code duplicate with describe_stack()
-    repo = Repository()
+    client = Client()
+    active_stack = client.active_stack_model
 
-    stack_configurations = repo.stack_configurations
-    if len(stack_configurations) == 0:
-        cli_utils.error("No stacks registered.")
-
-    try:
-        stack_configuration = stack_configurations[stack_name]
-    except KeyError:
-        cli_utils.error(f"Stack '{stack_name}' does not exist.")
-
-    # create a dict of all components in the specified stack
-    component_data = {}
-    for component_type, component_name in stack_configuration.items():
-        component_dict = _get_component_as_dict(component_type, component_name)
-        component_data[str(component_type)] = component_dict
+    if stack_name_or_id:
+        try:
+            stack_to_export = cli_utils.get_stack_by_id_or_name_or_prefix(
+                client=client, id_or_name_or_prefix=stack_name_or_id
+            ).to_hydrated_model()
+        except KeyError:
+            cli_utils.error(f"Stack '{stack_name_or_id}' does not exist.")
+    else:
+        stack_to_export = active_stack
 
     # write zenml version and stack dict to YAML
-    yaml_data = {
-        "zenml_version": zenml.__version__,
-        "stack_name": stack_name,
-        "components": component_data,
-    }
+    yaml_data = stack_to_export.to_yaml()
+    yaml_data["zenml_version"] = zenml.__version__
+
     if filename is None:
-        filename = stack_name + ".yaml"
+        filename = stack_to_export.name + ".yaml"
     write_yaml(filename, yaml_data)
-    cli_utils.declare(f"Exported stack '{stack_name}' to file '{filename}'.")
+    cli_utils.declare(
+        f"Exported stack '{stack_to_export.name}' to file '{filename}'."
+    )
 
 
 def _import_stack_component(
     component_type: StackComponentType, component_config: Dict[str, str]
-) -> str:
+) -> UUID:
     """Import a single stack component with given type/config.
 
     Args:
@@ -1097,31 +978,35 @@ def _import_stack_component(
     component_type = StackComponentType(component_type)
     component_name = component_config.pop("name")
     component_flavor = component_config.pop("flavor")
+    component_id = component_config.pop("id")
 
     # make sure component can be registered, otherwise ask for new name
-    while True:
-        # check if component already exists
-        try:
-            other_component = _get_component_as_dict(
-                component_type, component_name
+    client = Client()
+    try:
+        other_component = client.zen_store.get_stack_component(
+            component_id=UUID(component_id)
+        )
+    except KeyError:
+        pass
+    else:
+        return other_component.id
+
+    try:
+        component = cli_utils.get_stack_by_id_or_name_or_prefix(
+            client=client, id_or_name_or_prefix=component_name
+        )
+        if component:
+            # component with same name
+            display_name = _component_display_name(component_type)
+            component_name = click.prompt(
+                f"A component of type '{display_name}' with the name "
+                f"'{component_name}' already exists, "
+                f"but is configured differently. "
+                f"Please choose a different name.",
+                type=str,
             )
-
-        # component didn't exist yet, so we create it.
-        except KeyError:
-            break
-
-        # check whether other component has exactly same config as export
-        other_is_same = True
-        for key, value in component_config.items():
-            if key not in other_component or other_component[key] != value:
-                other_is_same = False
-                break
-
-        # component already exists and is correctly configured -> done
-        if other_is_same:
-            return component_name
-
-        # component already exists but with different config -> rename
+    except click.ClickException:
+        # component with same name
         display_name = _component_display_name(component_type)
         component_name = click.prompt(
             f"A component of type '{display_name}' with the name "
@@ -1130,14 +1015,20 @@ def _import_stack_component(
             f"Please choose a different name.",
             type=str,
         )
+    except KeyError:
+        pass
 
-    _register_stack_component(
-        component_type=component_type,
-        component_name=component_name,
-        component_flavor=component_flavor,
-        **component_config,
+    registered_component = client.register_stack_component(
+        ComponentModel(
+            user=client.active_user.id,
+            project=client.active_project.id,
+            type=component_type,
+            name=component_name,
+            flavor=component_flavor,
+            configuration=component_config["configuration"],
+        )
     )
-    return component_name
+    return registered_component.id
 
 
 @stack.command("import", help="Import a stack from YAML.")
@@ -1149,19 +1040,12 @@ def _import_stack_component(
     help="Import stack components even if the installed version of ZenML "
     "is different from the one specified in the stack YAML file",
 )
-@click.option(
-    "--decouple-stores",
-    is_flag=True,
-    help="Decouple the given artifact/metadata store from prior associations.",
-    type=click.BOOL,
-)
 @click.pass_context
 def import_stack(
     ctx: click.Context,
     stack_name: str,
     filename: Optional[str],
     ignore_version_mismatch: bool = False,
-    decouple_stores: bool = False,
 ) -> None:
     """Import a stack from YAML.
 
@@ -1172,8 +1056,6 @@ def import_stack(
         ignore_version_mismatch: Import stack components even if
             the installed version of ZenML is different from the
             one specified in the stack YAML file.
-        decouple_stores: Resets the previous couplings of the given
-            artifact/metadata stores and creates a new one.
     """
     track_event(AnalyticsEvent.IMPORT_STACK)
 
@@ -1212,9 +1094,9 @@ def import_stack(
                 "fail or lead to other unexpected behavior."
             )
 
-    # ask user for new stack_name if current one already exists
-    repo = Repository()
-    while stack_name in repo.stack_configurations:
+    # ask user for a new stack_name if current one already exists
+    client = Client()
+    if stack_name in [s.name for s in client.stacks]:
         stack_name = click.prompt(
             f"Stack `{stack_name}` already exists. "
             f"Please choose a different name.",
@@ -1222,103 +1104,76 @@ def import_stack(
         )
 
     # import stack components
-    component_names = {}
+    component_ids = {}
     for component_type, component_config in data["components"].items():
-        component_name = _import_stack_component(
+        component_id = _import_stack_component(
             component_type=component_type,
             component_config=component_config,
         )
-        component_names[component_type + "_name"] = component_name
+        component_ids[component_type + "_name"] = str(component_id)
 
     # register new stack
     ctx.invoke(
         register_stack,
         stack_name=stack_name,
-        decouple_stores=decouple_stores,
-        **component_names,
+        **component_ids,
     )
 
 
 @stack.command("copy", help="Copy a stack to a new stack name.")
-@click.argument("source_stack", type=str, required=True)
+@click.argument("source_stack_name_or_id", type=str, required=True)
 @click.argument("target_stack", type=str, required=True)
-@click.option(
-    "--from",
-    "source_profile_name",
-    type=str,
-    required=False,
-    help="The profile from which to copy the stack.",
-)
-@click.option(
-    "--to",
-    "target_profile_name",
-    type=str,
-    required=False,
-    help="The profile to which to copy the stack.",
-)
 def copy_stack(
-    source_stack: str,
+    source_stack_name_or_id: str,
     target_stack: str,
-    source_profile_name: Optional[str] = None,
-    target_profile_name: Optional[str] = None,
 ) -> None:
     """Copy a stack.
 
     Args:
-        source_stack: The name of the stack to copy.
+        source_stack_name_or_id: The name or id of the stack to copy.
         target_stack: Name of the copied stack.
-        source_profile_name: Name of the profile from which to copy.
-        target_profile_name: Name of the profile to which to copy.
     """
     track_event(AnalyticsEvent.COPIED_STACK)
 
-    if source_profile_name:
+    client = Client()
+
+    with console.status(f"Copying stack `{source_stack_name_or_id}`...\n"):
         try:
-            source_profile = GlobalConfiguration().profiles[source_profile_name]
+            stack_to_copy = cli_utils.get_stack_by_id_or_name_or_prefix(
+                client=client, id_or_name_or_prefix=source_stack_name_or_id
+            )
         except KeyError:
             cli_utils.error(
-                f"Unable to find source profile '{source_profile_name}'."
+                f"Stack `{source_stack_name_or_id}` cannot be copied as it "
+                f"does not exist."
             )
-    else:
-        source_profile = Repository().active_profile
 
-    if target_profile_name:
         try:
-            target_profile = GlobalConfiguration().profiles[target_profile_name]
+            cli_utils.get_stack_by_id_or_name_or_prefix(
+                client=client, id_or_name_or_prefix=target_stack
+            )
+            cli_utils.error(
+                f"Can't copy stack because a stack with the name "
+                f"'{target_stack}' already exists."
+            )
         except KeyError:
-            cli_utils.error(
-                f"Unable to find target profile '{target_profile_name}'."
-            )
-    else:
-        target_profile = Repository().active_profile
+            pass
 
-    # Use different repositories for fetching/registering the stack depending
-    # on the source/target profile
-    source_repo = Repository(profile=source_profile)
-    target_repo = Repository(profile=target_profile)
+        stack_to_copy.name = target_stack
+        stack_to_copy.user = client.active_user.id
+        stack_to_copy.project = client.active_project.id
 
-    with console.status(f"Copying stack `{source_stack}`...\n"):
-        try:
-            stack_wrapper = source_repo.zen_store.get_stack(source_stack)
-        except KeyError:
-            cli_utils.error(
-                f"Stack `{source_stack}` cannot be copied as it does not exist."
-            )
-
-        if target_stack in target_repo.stack_configurations:
-            cli_utils.error(
-                f"Can't copy stack as a stack with the name '{target_stack}' "
-                "already exists."
-            )
-        stack_wrapper.name = target_stack
-        target_repo.zen_store.register_stack(stack_wrapper)
+        copied_stack = StackModel.parse_obj(
+            stack_to_copy.dict(exclude={"id", "created", "updated"})
+        )
+        client.register_stack(copied_stack)
 
 
 @stack.command(
     "register-secrets",
     help="Interactively register all required secrets for a stack.",
 )
-@click.argument("stack_name", type=str, required=False)
+@click.argument("stack_name_or_id", type=str, required=False)
 @click.option(
     "--skip-existing",
     "skip_existing",
@@ -1329,25 +1184,32 @@ def copy_stack(
 )
 def register_secrets(
     skip_existing: bool,
-    stack_name: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
 ) -> None:
     """Interactively registers all required secrets for a stack.
 
     Args:
         skip_existing: If `True`, skip asking for secret values that already
             exist.
-        stack_name: Name of the stack for which to register secrets. If empty,
-            the active stack will be used.
+        stack_name_or_id: Name of the stack for which to register secrets.
+                          If empty, the active stack will be used.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
-    if stack_name:
+    from zenml.stack.stack import Stack
+
+    client = Client()
+
+    if stack_name_or_id:
         try:
-            stack_ = Repository().get_stack(stack_name)
+            stack_model = cli_utils.get_stack_by_id_or_name_or_prefix(
+                client=client, id_or_name_or_prefix=stack_name_or_id
+            )
+            stack_ = Stack.from_model(stack_model.to_hydrated_model())
         except KeyError:
-            cli_utils.error(f"No stack found for name `{stack_name}`.")
+            cli_utils.error(f"No stack found for name `{stack_name_or_id}`.")
     else:
-        stack_ = Repository().active_stack
+        stack_ = Client().active_stack
         cli_utils.declare(
             f"No stack name specified, using the active stack `{stack_.name}`."
         )

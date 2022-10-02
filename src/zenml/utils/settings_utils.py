@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for ZenML settings."""
 import re
-from typing import TYPE_CHECKING, Dict, Sequence, Type, Union
+from typing import TYPE_CHECKING, Dict, Sequence, Type
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.enums import StackComponentType
@@ -21,24 +21,35 @@ from zenml.enums import StackComponentType
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.stack import StackComponent
+    from zenml.stack.flavor import Flavor
 
 STACK_COMPONENT_REGEX = re.compile(
     "(" + "|".join(StackComponentType.values()) + r")\..*"
 )
 
 
-def get_stack_component_setting_key(
-    stack_component: Union["StackComponent", Type["StackComponent"]],
-) -> str:
+def get_stack_component_setting_key(stack_component: "StackComponent") -> str:
     """Gets the setting key for a stack component.
 
     Args:
-        stack_component: The stack component (class) for which to get the key.
+        stack_component: The stack component for which to get the key.
 
     Returns:
         The setting key for the stack component.
     """
-    return f"{stack_component.TYPE}.{stack_component.FLAVOR}"
+    return f"{stack_component.type}.{stack_component.flavor}"
+
+
+def get_flavor_setting_key(flavor: "Flavor") -> str:
+    """Gets the setting key for a flavor.
+
+    Args:
+        flavor: The flavor for which to get the key.
+
+    Returns:
+        The setting key for the flavor.
+    """
+    return f"{flavor.type}.{flavor.name}"
 
 
 def is_valid_setting_key(key: str) -> bool:

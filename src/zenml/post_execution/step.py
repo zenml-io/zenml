@@ -13,14 +13,13 @@
 #  permissions and limitations under the License.
 """Implementation of a post-execution step class."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
+from zenml.client import Client
 from zenml.enums import ExecutionStatus
+from zenml.models import StepRunModel
 from zenml.post_execution.artifact import ArtifactView
-from zenml.zen_stores.models.pipeline_models import StepWrapper
-
-if TYPE_CHECKING:
-    from zenml.metadata_stores import BaseMetadataStore
 
 
 class StepView:
@@ -29,73 +28,38 @@ class StepView:
     This can be used to query artifact information associated with a pipeline step.
     """
 
-    def __init__(
-        self,
-        id_: int,
-        parents_step_ids: List[int],
-        entrypoint_name: str,
-        name: str,
-        parameters: Dict[str, Any],
-        metadata_store: "BaseMetadataStore",
-    ):
+    def __init__(self, model: StepRunModel):
         """Initializes a post-execution step object.
 
         In most cases `StepView` objects should not be created manually
         but retrieved from a `PipelineRunView` object instead.
 
         Args:
-            id_: The execution id of this step.
-            parents_step_ids: The execution ids of the parents of this step.
-            entrypoint_name: The name of this step.
-            name: The name of this step within the pipeline
-            parameters: Parameters that were used to run this step.
-            metadata_store: The metadata store which should be used to fetch
-                additional information related to this step.
+            model: The model to initialize this object from.
         """
-        self._id = id_
-        self._parents_step_ids = parents_step_ids
-        self._entrypoint_name = entrypoint_name
-        self._name = name
-        self._parameters = parameters
-        self._metadata_store = metadata_store
-
+        self._model = model
         self._inputs: Dict[str, ArtifactView] = {}
         self._outputs: Dict[str, ArtifactView] = {}
 
-        # This might be set from the parent pipeline run view in case the run
-        # is also tracked in the ZenStore
-        self._step_wrapper: Optional[StepWrapper] = None
-
     @property
-    def id(self) -> int:
+    def id(self) -> UUID:
         """Returns the step id.
 
         Returns:
             The step id.
         """
-        return self._id
+        assert self._model.id
+        return self._model.id
 
     @property
-    def parents_step_ids(self) -> List[int]:
+    def parent_step_ids(self) -> List[UUID]:
         """Returns a list of IDs of all parents of this step.
 
         Returns:
             A list of IDs of all parents of this step.
         """
-        return self._parents_step_ids
-
-    @property
-    def parent_steps(self) -> List["StepView"]:
-        """Returns a list of all parent steps of this step.
-
-        Returns:
-            A list of all parent steps of this step.
-        """
-        steps = [
-            self._metadata_store.get_step_by_id(s)
-            for s in self.parents_step_ids
-        ]
-        return steps
+        assert self._model.parent_step_ids
+        return self._model.parent_step_ids
 
     @property
     def entrypoint_name(self) -> str:
@@ -116,7 +80,7 @@ class StepView:
         Returns:
             The step entrypoint_name.
         """
-        return self._entrypoint_name
+        return self._model.entrypoint_name
 
     @property
     def name(self) -> str:
@@ -141,7 +105,7 @@ class StepView:
         Returns:
             The name of this step.
         """
-        return self._name
+        return self._model.name
 
     @property
     def docstring(self) -> Optional[str]:
@@ -150,18 +114,25 @@ class StepView:
         Returns:
             The docstring of the step function or class.
         """
-        if self._step_wrapper:
-            return self._step_wrapper.docstring
-        return None
+        return self._model.docstring
 
     @property
-    def parameters(self) -> Dict[str, Any]:
+    def parameters(self) -> Dict[str, str]:
         """The parameters used to run this step.
 
         Returns:
             The parameters used to run this step.
         """
-        return self._parameters
+        return self._model.parameters
+
+    @property
+    def step_configuration(self) -> Dict[str, Any]:
+        """Returns the step configuration.
+
+        Returns:
+            The step configuration.
+        """
+        return self._model.step_configuration
 
     @property
     def status(self) -> ExecutionStatus:
@@ -170,7 +141,7 @@ class StepView:
         Returns:
             The current status of the step.
         """
-        return self._metadata_store.get_step_status(self)
+        return Client().zen_store.get_run_step_status(self.id)
 
     @property
     def is_cached(self) -> bool:
@@ -197,7 +168,7 @@ class StepView:
         Returns:
             A dictionary of artifact names to artifact views.
         """
-        self._ensure_inputs_outputs_fetched()
+        self._ensure_inputs_fetched()
         return self._inputs
 
     @property
@@ -224,7 +195,7 @@ class StepView:
         Returns:
             A dictionary of artifact names to artifact views.
         """
-        self._ensure_inputs_outputs_fetched()
+        self._ensure_outputs_fetched()
         return self._outputs
 
     @property
@@ -244,15 +215,29 @@ class StepView:
             )
         return next(iter(self.outputs.values()))
 
-    def _ensure_inputs_outputs_fetched(self) -> None:
-        """Fetches all step inputs and outputs from the metadata store."""
-        if self._inputs or self._outputs:
-            # we already fetched inputs/outputs, no need to do anything
+    def _ensure_inputs_fetched(self) -> None:
+        """Fetches all step inputs from the ZenStore."""
+        if self._inputs:
+            # we already fetched inputs, no need to do anything
             return
 
-        self._inputs, self._outputs = self._metadata_store.get_step_artifacts(
-            self
-        )
+        inputs = Client().zen_store.get_run_step_inputs(self.id)
+        self._inputs = {
+            input_name: ArtifactView(input)
+            for input_name, input in inputs.items()
+        }
+
+    def _ensure_outputs_fetched(self) -> None:
+        """Fetches all step outputs from the ZenStore."""
+        if self._outputs:
+            # we already fetched outputs, no need to do anything
+            return
+
+        outputs = Client().zen_store.get_run_step_outputs(self.id)
+        self._outputs = {
+            output_name: ArtifactView(output)
+            for output_name, output in outputs.items()
+        }
 
     def __repr__(self) -> str:
         """Returns a string representation of this step.
@@ -261,9 +246,8 @@ class StepView:
             A string representation of this step.
         """
         return (
-            f"{self.__class__.__qualname__}(id={self._id}, "
-            f"name='{self.name}', entrypoint_name='{self.entrypoint_name}', "
-            f"parameters={self._parameters})"
+            f"{self.__class__.__qualname__}(id={self.id}, "
+            f"name='{self.name}', entrypoint_name='{self.entrypoint_name}'"
         )
 
     def __eq__(self, other: Any) -> bool:
@@ -277,8 +261,5 @@ class StepView:
             otherwise.
         """
         if isinstance(other, StepView):
-            return (
-                self._id == other._id
-                and self._metadata_store.uuid == other._metadata_store.uuid
-            )
+            return self.id == other.id
         return NotImplemented

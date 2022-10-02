@@ -120,7 +120,6 @@ in Kubeflow Pipelines.
 zenml container-registry register local_registry --flavor=default --uri=localhost:5000 
 zenml orchestrator register local_kubeflow_orchestrator --flavor=kubeflow
 zenml stack register local_kubeflow_stack \
-    -m default \
     -a default \
     -o local_kubeflow_orchestrator \
     -c local_registry \
@@ -278,11 +277,9 @@ zenml integration install gcp
 
 # Create and activate the stack and its components
 zenml container-registry register gcr_registry --flavor=gcp --uri=<PATH_TO_YOUR_CONTAINER_REGISTRY>
-zenml metadata-store register kubeflow_metadata_store --flavor=kubeflow
 zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YOUR_GCP_BUCKET>
 zenml orchestrator register gcp_kubeflow_orchestrator --flavor=kubeflow --kubernetes_context=<NAME_OF_GCP_KUBERNETES_CONTEXT>
 zenml stack register gcp_kubeflow_stack \
-    -m kubeflow_metadata_store \
     -a gcp_artifact_store \
     -o gcp_kubeflow_orchestrator \
     -c gcr_registry \

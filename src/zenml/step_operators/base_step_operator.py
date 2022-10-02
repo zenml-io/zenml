@@ -14,20 +14,31 @@
 """Base class for ZenML step operators."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, List
+from typing import TYPE_CHECKING, List, Type, cast
 
 from zenml.enums import StackComponentType
-from zenml.stack import StackComponent
+from zenml.stack import Flavor, StackComponent
+from zenml.stack.stack_component import StackComponentConfig
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
 
 
+class BaseStepOperatorConfig(StackComponentConfig):
+    """Base config for step operators."""
+
+
 class BaseStepOperator(StackComponent, ABC):
     """Base class for all ZenML step operators."""
 
-    # Class Configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.STEP_OPERATOR
+    @property
+    def config(self) -> BaseStepOperatorConfig:
+        """Returns the config of the step operator.
+
+        Returns:
+            The config of the step operator.
+        """
+        return cast(BaseStepOperatorConfig, self._config)
 
     @abstractmethod
     def launch(
@@ -43,4 +54,35 @@ class BaseStepOperator(StackComponent, ABC):
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
+        """
+
+
+class BaseStepOperatorFlavor(Flavor):
+    """Base class for all ZenML step operator flavors."""
+
+    @property
+    def type(self) -> StackComponentType:
+        """Returns the flavor type.
+
+        Returns:
+            The type of the flavor.
+        """
+        return StackComponentType.STEP_OPERATOR
+
+    @property
+    def config_class(self) -> Type[BaseStepOperatorConfig]:
+        """Returns the config class for this flavor.
+
+        Returns:
+            The config class for this flavor.
+        """
+        return BaseStepOperatorConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type[BaseStepOperator]:
+        """Returns the implementation class for this flavor.
+
+        Returns:
+            The implementation class for this flavor.
         """

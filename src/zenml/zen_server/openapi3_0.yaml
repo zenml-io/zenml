@@ -1,0 +1,2847 @@
+openapi: 3.0.2
+info:
+  title: ZenML
+  version: 0.xx.0
+  description: >-
+    The Zen API allows access to ZenML programmatically. These docs DO NOT represent the status quo but instead are the Design that is being aimed at.
+    
+tags:
+  - name: health
+  - name: auth
+    description: >-
+      All things related to the login, logout and registration.
+  - name: pipeline
+    description: >-
+      The pipeline resource is the mostly construct that defines a specific techincal goal 
+      (like "price prediction training pipeline"). And it groups together all users'  
+      attempts towards this goal in the form of pipeline runs.
+  - name: trigger
+    description: >-
+      A pipeline trigger is the combination of the actual trigger (`schedule`, `event`, `once-off`) 
+      and the configuration in which to run, namely the pipeline configuration (like the config.yaml) and
+      the stack to be run on. 
+  - name: run
+    description: >-
+      A pipeline run contains all the information pertaining to a specific pipeline
+      execution. This includes user who ran it, trigger that was used, stack it was
+      run on, configuration that was used. Additionally, the run also affords 
+      access to the used steps and optionally access to their outputs and artifacts.
+      The run is also where information can be found regarding generated reports 
+      from `data validators`, dashboards from `experiment trackers` and served models
+      from `model deployers`.
+  - name: step
+    description: >-
+      The step that was used in a given pipeline run.
+  - name: stack
+    description: >-
+      A project can contain many different stacks (for example `dev-stack`,
+      `qa-stack` and `prod-stack`). The stacks themselfes are made up from
+      stack components.
+  - name: component
+    description: >-
+      Stack components are the building blocks of the stack. There are two levels
+      of abstraction captured by this resource. The `type` refers to the 
+      task that the component performs (e.g `data validation`, `model deployment`). 
+      The flavor refers to the actual tool that is used for this (e.g. `evidently`,
+      `seldon`)
+  - name: project
+    description: >-
+      The project is the encapsulating entity that contains stacks, compontents
+      and pipelines. Users can gain access through their roles. Each project contains 
+      a default stack which is used by default by all the pipeline triggers within
+      unless specified otherwise.
+  - name: repository
+    description: >-
+      Code Repositories can be defined at Project level and used to define the pipeline
+      entrypoint. Additionally, Triggers can be configured to use the code of the repository to 
+      run pipelines fromthe centralized ZenServer and even trigger on commits or other repo events.
+  - name: user
+    description: >- 
+      The user is the user.
+  - name: role
+    description: >-
+      A role dictates which resources a user is permitted to read, write or delete.
+  - name: metadata-config
+    description: >-
+      Returns the configuration that allows the orchestrator to directly connect to the 
+      metadata store. This is not used by the UI.
+paths:
+  #-------------------------------
+  # Health
+  #-------------------------------
+  /health:
+    get:
+      summary: Check the status of ZenML
+      description: Check the status ofZenML
+      tags:
+        - health
+      operationId: get_health
+      responses:
+        '200':
+          description: The health status of ZenML          
+          content:
+            application/json:
+              schema:
+                title: Healt Status of ZenML
+                type: array
+                items:
+                  $ref: '#/components/schemas/HealthStatus'
+        '500':
+          $ref: '#/components/responses/500'
+  #-------------------------------
+  # Pipelines
+  #-------------------------------
+  /pipelines:
+    get:
+      summary: List pipelines
+      tags:
+        - pipeline
+      description: |-
+        Get a list of pipelines.
+      operationId: get_pipelines      
+      parameters:      
+        - in: query
+          name: project_name
+          required: false
+          schema:
+            title: Project Name
+            type: string
+          description: >-
+            Pipelines are unique and defined within the project scope. It is
+            expected that this endpoint will be used at project scope most of 
+            the time.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Pipelines
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pipeline'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /pipelines/{pipeline_id}:
+    get:
+      summary: Get a specific pipeline
+      tags:
+        - pipeline
+      description: |-
+        Get a specific pipeline using its unique id.
+      operationId: get_pipeline_by_id
+      parameters:
+        - $ref: '#/components/parameters/pipelineId'
+      responses:
+        '200':
+          description: Returns the requested pipeline.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pipeline'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+
+      security:
+        - HTTPBasic: []
+    put:
+      summary: Update a specific pipeline
+      tags:
+        - pipeline
+      description: |-
+        Updates the attribute on a pipeline.
+      operationId: update_pipeline_by_id
+      parameters:
+        - $ref: '#/components/parameters/pipelineId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pipeline'
+        required: true
+      responses:
+        '200':
+          description: Returns the updated pipeline.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pipeline'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    delete:
+      summary: Delete a specific pipeline
+      tags:
+        - pipeline
+      description: |-
+        Deletes a pipeline.
+      operationId: delete_pipeline_by_id
+      parameters:
+        - $ref: '#/components/parameters/pipelineId'
+      responses:
+        '200': 
+          $ref: '#/components/responses/200'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /pipelines/{pipeline_id}/triggers:
+    get:
+      summary: Get triggers that are configured for a pipeline
+      tags:
+        - pipeline
+      description: |-
+        Returns a list of triggers from the pipeline.
+      operationId: get_triggers_in_pipeline
+      parameters:
+        - $ref: '#/components/parameters/pipelineId'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Triggers of the Pipeline
+                type: array
+                items:
+                  $ref: '#/components/schemas/Trigger'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    post:
+      summary: Create a trigger for a pipeline
+      tags:
+        - pipeline
+      description: |-
+        Create a trigger for a pipeline.
+      operationId: create_trigger_for_pipeline
+      parameters:
+        - $ref: '#/components/parameters/pipelineId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Trigger'
+        required: true
+      responses:
+        '200': 
+          $ref: '#/components/responses/200'
+        '401': 
+          $ref: '#/components/responses/401'
+        '409': 
+          $ref: '#/components/responses/409'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /pipelines/{pipeline_id}/runs:
+    get:
+      summary: Get pipeline runs of a specific pipeline
+      tags:
+        - pipeline
+      description: |-
+        Returns a list of runs from the pipeline.
+      operationId: get_pipeline_runs_in_pipeline
+      parameters:
+        - $ref: '#/components/parameters/pipelineId'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List the pipeline runs of the pipeline
+                type: array
+                items:
+                  $ref: '#/components/schemas/Run'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    post:
+      summary: Create a new run for a pipeline
+      tags:
+        - pipeline
+      description: |-
+        Create a run for a pipeline. This endpoint is not meant to be used explicitly once ZenML follows the 
+        centralized paradigm where runs are authored by the ZenServer and not on the users machine.
+      operationId: create_pipeline_run_for_pipeline
+      parameters:
+        - $ref: '#/components/parameters/pipelineId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Run'
+        required: true
+      responses:
+        '200': 
+          $ref: '#/components/responses/200'
+        '401': 
+          $ref: '#/components/responses/401'
+        '409': 
+          $ref: '#/components/responses/409'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /pipeline/{pipeline_id}/pipeline-configuration:
+    get:
+      summary: Get the pipeline-configuration for a given pipeline
+      tags:
+        - pipeline
+      description: |-
+        A pipeline uses a specific pipeline-configuration. 
+      operationId: get_pipeline_pipeline_configuration
+      parameters:
+        - $ref: '#/components/parameters/pipelineId'
+      responses:
+        '200':
+          description: Returns the requested pipeline's configuration.
+          content:
+            application/json:
+              schema:
+                type: object
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  #-------------------------------
+  # Triggers
+  #-------------------------------
+  /triggers/{trigger_id}:
+    get:
+      summary: Get a specific trigger
+      tags:
+        - trigger
+      description: |-
+        Get a specific trigger using its unique id.
+      operationId: get_trigger_by_id
+      parameters:
+        - $ref: '#/components/parameters/triggerId'
+      responses:
+        '200':
+          description: Returns the requested trigger.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trigger'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+
+      security:
+        - HTTPBasic: []
+    put:
+      summary: Update a specific trigger
+      tags:
+        - trigger
+      description: |-
+        Updates the attribute on a trigger. For a schedule this might be the schedule interval.
+      operationId: update_trigger_by_id
+      parameters:
+        - $ref: '#/components/parameters/triggerId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Trigger'
+        required: true
+      responses:
+        '200':
+          description: Returns the updated trigger.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trigger'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    delete:
+      summary: Delete a specific trigger.
+      tags:
+        - trigger
+      description: |-
+        Deletes a pipeline trigger, runs that are in progress are not
+        cancelled by this.
+      operationId: delete_trigger_by_id
+      parameters:
+        - $ref: '#/components/parameters/triggerId'
+      responses:
+        '200': 
+          $ref: '#/components/responses/200'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /triggers/{trigger_id}/default-stack:
+    get:
+      summary: Get default stack used by trigger
+      tags:
+        - trigger
+      description: |-
+        Returns the stack used by the trigger.
+      operationId: get_trigger_default_stack
+      parameters:
+        - $ref: '#/components/parameters/triggerId'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Trigger Default Stack
+                type: array
+                items:
+                  $ref: '#/components/schemas/DefaultStack'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /triggers/{trigger_id}/default-stack/{stack_id}:
+    put:
+      summary: Update the stack used by the trigger
+      tags:
+        - trigger
+      description: |-
+        Updates the stack used for triggered runs.
+      operationId: update_trigger_stack
+      parameters:
+        - $ref: '#/components/parameters/triggerId'
+        - $ref: '#/components/parameters/stackId'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Project Settings
+                type: array
+                items:
+                  $ref: '#/components/schemas/DefaultStack'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /triggers/{trigger_id}/runtime-configuration:
+    put:
+      summary: Update the pipeline runtime configuration used by the trigger
+      tags:
+        - trigger
+      description: |-
+        Updates the pipeline runtime configuration used for triggered runs.
+      operationId: update_trigger_pipeline_conf
+      parameters:
+        - $ref: '#/components/parameters/triggerId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Trigger'
+        required: true
+      responses:
+        '200':
+          description: Returns the updated trigger.
+          content:
+            application/json:
+              schema:
+                type: object
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  #-------------------------------
+  # Runs
+  #-------------------------------
+  /runs:
+    get:
+      summary: Get all pipeline runs
+      tags:
+        - run
+      description: |-
+        Get pipeline runs according to query filters.
+      operationId: get_pipeline_runs
+      parameters:    
+        - in: query
+          name: project_name
+          required: false
+          schema:
+            title: Project Name
+            type: string
+        - name: stack_id
+          in: query
+          required: false
+          schema:
+            title: Stack Id
+            type: string
+        - name: pipeline_id
+          in: query
+          required: false
+          schema:
+            title: Pipeline Id
+            type: string
+        - name: trigger_id
+          in: query
+          required: false
+          schema:
+            title: Trigger Id
+            type: string
+      responses:
+        '200':
+          description: Returns the requested pipeline run.
+          content:
+            application/json:
+              schema:
+                title: List all pipeline runs
+                type: array
+                items:
+                  $ref: '#/components/schemas/Run'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+
+      security:
+        - HTTPBasic: []
+  /runs/{run_id}:
+    get:
+      summary: Get a specific pipeline run
+      tags:
+        - run
+      description: |-
+        Get a specific pipeline run using its unique id.
+      operationId: get_pipeline_run_by_id
+      parameters:
+        - $ref: '#/components/parameters/runId'
+      responses:
+        '200':
+          description: Returns the requested pipeline run.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+
+      security:
+        - HTTPBasic: []
+    put:
+      summary: Update a specific pipeline run
+      tags:
+        - run
+      description: |-
+        Updates the attributes on a pipeline run.
+      operationId: update_pipeline_run_by_id
+      parameters:
+        - $ref: '#/components/parameters/runId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Run'
+        required: true
+      responses:
+        '200':
+          description: Returns the updated pipeline run.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    delete:
+      summary: Delete a specific pipeline run
+      tags:
+        - run
+      description: |-
+        Deletes a pipeline run
+      operationId: delete_pipeline_run_by_id
+      parameters:
+        - $ref: '#/components/parameters/runId'
+      responses:
+        '200': 
+          $ref: '#/components/responses/200'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /runs/{run_id}/graph:
+    get:
+      summary: Get the dag graph for a given pipeline run
+      tags:
+        - run
+      description: |-
+        Gets the dag graph of a given pipeline run.
+      operationId: get_pipeline_run_graph
+      parameters:
+        - $ref: '#/components/parameters/runId'
+      responses:
+        '200':
+          description: Returns the requested graph to visualize the run
+          content:
+            image/*:     # Media type
+             schema: 
+               type: string
+               format: binary
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /runs/{run_id}/steps:
+    get:
+      summary: Get all steps for a given pipeline run
+      tags:
+        - run
+      description: |-
+        A pipeline run uses specific steps. This endpoint returns all steps from a pipeline run.
+      operationId: get_pipeline_run_step
+      parameters:
+        - $ref: '#/components/parameters/runId'
+      responses:
+        '200':
+          description: Returns the requested pipeline run steps.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Step'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /runs/{run_id}/runtime-configuration:
+    get:
+      summary: Get the runtime-configuration for a given pipeline run
+      tags:
+        - run
+      description: |-
+        A pipeline run uses a specific runtime-configuration. 
+      operationId: get_pipeline_runtime_configuration
+      parameters:
+        - $ref: '#/components/parameters/runId'
+      responses:
+        '200':
+          description: Returns the requested pipeline run steps.
+          content:
+            application/json:
+              schema:
+                type: object
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /runs/{run_id}/component-side-effects:
+    get:
+      summary: >-
+        Get the side-effects produced by stack components
+      tags:
+        - run
+      description: |-
+        A pipeline run not only produces artifacts at the inputs and outputs of steps, but also 
+        potentially component-based side effects like mlflow experiment runs, seldon deployed models, etc.
+        This resource will contain relevant links that the user can follow.
+      operationId: get_pipeline_run_component_side_effect
+      parameters:
+        - $ref: '#/components/parameters/runId'
+        - name: component_id
+          in: query
+          required: false
+          schema:
+            title: Component Id
+            type: string
+        - name: component_type
+          in: query
+          required: false
+          schema:
+            title: Component Type
+            type: string
+      responses:
+        '200':
+          description: >-
+            Returns the requested component side effects for the given run. Optionally filter by specific component type or component id.
+          content:
+            application/json:
+              schema:
+                type: object
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  #-------------------------------
+  # Steps
+  #-------------------------------
+  /steps/{step_id}:
+    get:
+      summary: Get one specific step
+      tags:
+        - step
+      description: |-
+        This endpoint returns one specific step uniquely identified by its id.
+      operationId: get_pipeline_run_step_by_id
+      parameters:
+        - $ref: '#/components/parameters/stepId'
+      responses:
+        '200':
+          description: Returns the requested outputs from the step.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Step'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+
+      security:
+        - HTTPBasic: []
+  /steps/{step_id}/outputs:
+    get:
+      summary: Get all outputs from a specific step
+      tags:
+        - step
+      description: |-
+        Gets a list of outputs for a specific step.
+      operationId: get_pipeline_run_step_outputs
+      parameters:
+        - $ref: '#/components/parameters/stepId'
+        - in: query
+          required: false
+          schema:
+            title: Component id
+            type: string
+          name: component_id
+          description: >- 
+            Get all the entities associated with a specific components of the given 
+            stack. For example this would allow the user to get the reports generated
+            by the data validator or see a link to the served models from the 
+            model deployer.
+        - in: query
+          required: false
+          schema:
+            title: Artifact Type
+            type: string
+          name: artifact_type
+          description: >- 
+            Get all the entities of a specific artifact type.
+      responses:
+        '200':
+          description: Returns the requested outputs from the step.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Output'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+
+      security:
+        - HTTPBasic: []
+  #-------------------------------
+  # Stacks
+  #-------------------------------
+  /stacks:
+    get:
+      summary: List stacks
+      tags:
+        - stack
+      description: |-
+        Get a list of stacks.
+      operationId: get_stacks      
+      parameters:        
+        - in: query
+          name: project_name
+          required: false
+          schema:
+            title: Project Name
+            type: string
+          description: >-
+            Stacks are  defined within the project scope. It is
+            expected that this endpoint will be used at project scope most of 
+            the time.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Stacks
+                type: array
+                items:
+                  $ref: '#/components/schemas/Stack'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /stacks/{stack_id}:
+    get:
+      summary: Get a specific stack
+      tags:
+        - stack
+      description: |-
+        Get a specific stack using its unique id.
+      operationId: get_stack_by_id
+      parameters:
+        - $ref: '#/components/parameters/stackId'
+      responses:
+        '200':
+          description: Returns the requested stack.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stack'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+
+      security:
+        - HTTPBasic: []
+    put:
+      summary: Update a specific stack
+      tags:
+        - stack
+      description: |-
+        Updates the attribute on a stack.
+      operationId: update_stack_by_id
+      parameters:
+        - $ref: '#/components/parameters/stackId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Stack'
+        required: true
+      responses:
+        '200':
+          description: Returns the updated stack.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stack'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    delete:
+      summary: Delete a specific stack
+      tags:
+        - stack
+      description: |-
+        Deletes a stack.
+      operationId: delete_stack_by_id
+      parameters:
+        - $ref: '#/components/parameters/stackId'
+      responses:
+        '200': 
+          $ref: '#/components/responses/200'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /stack/{stack_id}/components:
+    get:
+      summary: Get components that are part of the stack
+      tags:
+        - stack
+      description: |-
+        Returns a list of stack components within the stack.
+      operationId: get_components_in_stack
+      parameters:
+        - $ref: '#/components/parameters/stackId'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Stack Components in Stack
+                type: array
+                items:
+                  $ref: '#/components/schemas/Component'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  #-------------------------------
+  # Stack Components
+  #-------------------------------
+  /components/types:
+    get:
+      summary: Get a list of all stack component types
+      tags:
+        - component
+      description: |-
+        Returns a list of stack components. This endpoint assumes tha
+      operationId: get_component_types    
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Stack Components
+                type: array
+                items:
+                  $ref: '#/components/schemas/ComponentType'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []    
+  /components/{component_type}:
+    get:
+      summary: Get a list of all stack component types
+      tags:
+        - component
+      description: |-
+        Returns a list of stack components 
+      operationId: get_component_type_schema    
+      parameters:
+        - $ref: '#/components/parameters/componentType'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Stack Components
+                type: array
+                items:
+                  $ref: '#/components/schemas/ComponentType'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []    
+  /components/{component_type}/flavors:
+    get:
+      summary: Get list of stack component flavors for a component type
+      tags:
+        - component
+      description: |-
+        Get list of flavors including their configuration schema for stack component types
+      operationId: get_component_type_flavor    
+      parameters:
+        - $ref: '#/components/parameters/componentType'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Stack Components Flavors
+                type: array
+                items:
+                  oneOf:
+                    - $ref: '#/components/schemas/AlerterFlavorSchema'
+                    - $ref: '#/components/schemas/DeployerFlavorSchema'
+                  discriminator:
+                    propertyName: component_type
+                    mapping:
+                      alerter: '#/components/schemas/AlerterFlavor'
+                      deployer: '#/components/schemas/DeployerFlavor'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []   
+  /components/{component_id}:
+    get:
+      summary: Get a specific stack component
+      tags:
+        - component
+      description: |-
+        Get a specific stack component using its unique id.
+      operationId: get_component_by_id
+      parameters:
+        - $ref: '#/components/parameters/componentId'
+      responses:
+        '200':
+          description: Returns the requested component.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Component'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+
+      security:
+        - HTTPBasic: []
+    put:
+      summary: Update a specific component
+      tags:
+        - component
+      description: |-
+        Updates the attribute on a component.
+      operationId: update_component_by_id
+      parameters:
+        - $ref: '#/components/parameters/componentId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Component'
+        required: true
+      responses:
+        '200':
+          description: Returns the updated component.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Component'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    delete:
+      summary: Delete a specific component
+      tags:
+        - component
+      description: |-
+        Deletes a project.
+      operationId: delete_component_by_id
+      parameters:
+        - $ref: '#/components/parameters/componentId'
+      responses:
+        '200': 
+          $ref: '#/components/responses/200'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /components/{component_id}/component-side-effects:
+    get:
+      summary: >-
+        Get the side-effects produced by the stack component
+      tags:
+        - component
+      description: |-
+        A pipeline run not only produces artifacts at the inputs and outputs of steps, but also 
+        potentially component-based side effects like mlflow experiment runs, seldon deployed models, etc.
+        This resource will contain relevant links that the user can follow.
+      operationId: get_component_side_effects
+      parameters:
+        - $ref: '#/components/parameters/componentId'
+        - name: run_id
+          in: query
+          required: false
+          schema:
+            title: Run Id
+            type: string
+          description: >-
+            Filter by specific run ID. Might be a duplicate of `/runs/{run_id}/component-side-effects`.
+        - name: pipeline_id
+          in: query
+          required: false
+          schema:
+            title: Pipeline Id
+            type: string
+          description: >-
+            Filter by specific pipeline ID. 
+        - name: stack_id
+          in: query
+          required: false
+          schema:
+            title: Pipeline Id
+            type: string
+          description: >-
+            Filter by specific stack ID. 
+      responses:
+        '200':
+          description: >-
+            Returns the requested component side effects for the given component. Optionally filter by specific pipeline, run or stack
+          content:
+            application/json:
+              schema:
+                type: object
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  #-------------------------------
+  # Projects
+  #-------------------------------
+  /projects:
+    get:
+      description: >-
+        This call lists all projects in the organization based on the
+        queried parameters.
+      summary: List projects
+      tags:
+        - project
+      operationId: get_projects_list
+      responses:
+        '200':
+          description: Return all matched projects.
+          content:
+            application/json:
+              schema:
+                title: List of Projects
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    post:
+      summary: Create Project
+      tags:
+        - project
+      description: |-
+        Creates a project based on the requestBody.
+      operationId: create_project
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Project'
+        required: true
+      responses:
+        '200':
+          description: Returns the created Project.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401': 
+          $ref: '#/components/responses/401'
+        '409': 
+          $ref: '#/components/responses/409'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /projects/{project_name}:
+    get:
+      summary: Get a specific Project
+      tags:
+        - project
+      description: |-
+        Get a specific project using its unique name.
+      operationId: get_project_by_name
+      parameters:
+        - $ref: '#/components/parameters/projectName'
+      responses:
+        '200':
+          description: Returns the requested Project.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+
+      security:
+        - HTTPBasic: []
+    put:
+      summary: Update a specific Project
+      tags:
+        - project
+      description: |-
+        Updates the attribute on a project.
+      operationId: update_project_by_name
+      parameters:
+        - $ref: '#/components/parameters/projectName'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Project'
+        required: true
+      responses:
+        '200':
+          description: Returns the updated project.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    delete:
+      summary: Delete a specific Project
+      tags:
+        - project
+      description: |-
+        Deletes a project.
+      operationId: delete_project_by_name
+      parameters:
+        - $ref: '#/components/parameters/projectName'
+      responses:
+        '200': 
+          $ref: '#/components/responses/200'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /projects/{project_name}/stacks:
+    get:
+      summary: Get stacks that are part of the project
+      tags:
+        - project
+      description: |-
+        Returns all stacks within the project.
+      operationId: get_stacks_in_project
+      parameters:
+        - $ref: '#/components/parameters/projectName'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Stacks in Project
+                type: array
+                items:
+                  $ref: '#/components/schemas/Stack'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    post:
+      summary: Create a stack
+      tags:
+        - project
+      description: |-
+        Creates a stack based on the requestBody.
+      operationId: create_stack_in_project
+      parameters:
+        - $ref: '#/components/parameters/projectName'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Stack'
+        required: true
+      responses:
+        '200':
+          description: Returns the created Stack.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stack'
+        '401': 
+          $ref: '#/components/responses/401'
+        '409': 
+          $ref: '#/components/responses/409'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /projects/{project_name}/components:
+    get:
+      summary: Get components of all types that are part of the project
+      tags:
+        - project
+      description: |-
+        Returns all stack components within the project.
+      operationId: get_components_in_project
+      parameters:
+        - $ref: '#/components/parameters/projectName'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Stack Components in Project
+                type: array
+                items:
+                  $ref: '#/components/schemas/Component'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /projects/{project_name}/components/{component_type}:
+    get:
+      summary: Get components of type that are part of the project
+      tags:
+        - project
+      description: |-
+        Returns all stack components within the project.
+      operationId: get_components_of_type_in_project
+      parameters:
+        - $ref: '#/components/parameters/componentType'
+        - $ref: '#/components/parameters/projectName'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Stack Components in Project
+                type: array
+                items:
+                  $ref: '#/components/schemas/Component'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    post:
+      summary: Create a component of type
+      tags:
+        - project
+      description: |-
+        Creates a component of type based on the requestBody.
+      operationId: create_component_of_type_in_project
+      parameters:
+        - $ref: '#/components/parameters/componentType'
+        - $ref: '#/components/parameters/projectName'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Component'
+        required: true
+      responses:
+        '200':
+          description: Returns the created Component.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Component'
+        '401': 
+          $ref: '#/components/responses/401'
+        '409': 
+          $ref: '#/components/responses/409'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /projects/{project_name}/pipelines:
+    get:
+      summary: Get pipelines that are defined within a project
+      tags:
+        - project
+      description: |-
+        Returns all pipelines within the project.
+      operationId: get_pipelines_in_project
+      parameters:
+        - $ref: '#/components/parameters/projectName'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Stack Components in Project
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pipeline'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    post:
+      summary: Create a pipeline within a project
+      tags:
+        - project
+      description: |-
+        Creates a pipeline based on the requestBody.
+      operationId: create_pipeline
+      parameters:
+        - $ref: '#/components/parameters/projectName'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pipeline'
+        required: true
+      responses:
+        '200':
+          description: Returns the created Pipeline.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pipeline'
+        '401': 
+          $ref: '#/components/responses/401'
+        '409': 
+          $ref: '#/components/responses/409'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /projects/{project_name}/default-stack:
+    get:
+      summary: Get projects default stack for the project
+      tags:
+        - project
+      description: |-
+        Returns the project settings of the project.
+      operationId: get_project_default_stack
+      parameters:
+        - $ref: '#/components/parameters/projectName'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Project Default Stack
+                type: array
+                items:
+                  $ref: '#/components/schemas/DefaultStack'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /projects/{project_name}/default-stack/{stack_id}:
+    put:
+      summary: Update the stack used by default for this project.
+      tags:
+        - project
+      description: |-
+        Updates the stack use as default for this project. All Triggers will automatically use this stack unless otherwise configured.
+      operationId: update_default_stack_for_project
+      parameters:
+        - $ref: '#/components/parameters/projectName'
+        - $ref: '#/components/parameters/stackId'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Project Settings
+                type: array
+                items:
+                  $ref: '#/components/schemas/DefaultStack'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /project/{project_name}/repositories:
+    get:
+      summary: Get repositories that are part of the project
+      tags:
+        - project
+      description: |-
+        Returns all repositories attached to the project.
+      operationId: get_repositories_in_project
+      parameters:
+        - $ref: '#/components/parameters/projectName'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Repositories in Project
+                type: array
+                items:
+                  $ref: '#/components/schemas/Repository'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    post:
+      summary: Connect a repository
+      tags:
+        - project
+      description: |-
+        Attach a repository
+      operationId: attach_repository_to_project
+      parameters:
+        - $ref: '#/components/parameters/projectName'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Repository'
+        required: true
+      responses:
+        '200':
+          description: Returns the attached Repository
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repository'
+        '401': 
+          $ref: '#/components/responses/401'
+        '409': 
+          $ref: '#/components/responses/409'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  #-------------------------------
+  # Repositories
+  #-------------------------------
+  /repositories/{repository_id}:
+    get:
+      summary: Get a specific repository
+      tags:
+        - repository
+      description: |-
+        Get a specific repository using its unique id.
+      operationId: get_repository_by_id
+      parameters:
+        - $ref: '#/components/parameters/repositoryId'
+      responses:
+        '200':
+          description: Returns the requested repository.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repository'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+
+      security:
+        - HTTPBasic: []
+    put:
+      summary: Update a specific repository
+      tags:
+        - repository
+      description: |-
+        Updates the attributes on a pipeline run.
+      operationId: update_repository_by_id
+      parameters:
+        - $ref: '#/components/parameters/repositoryId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+                $ref: '#/components/schemas/Repository'
+        required: true
+      responses:
+        '200':
+          description: Returns the updated repository.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    delete:
+      summary: Delete a specific repository
+      tags:
+        - repository
+      description: |-
+        Deletes a pipeline run
+      operationId: delete_repository_by_id
+      parameters:
+        - $ref: '#/components/parameters/repositoryId'
+      responses:
+        '200': 
+          $ref: '#/components/responses/200'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  #-------------------------------
+  # Users
+  #-------------------------------
+  /users:
+    get:
+      summary: Users
+      tags:
+        - user
+      description: |-
+        Returns a list of all users.
+      operationId: get_users_list      
+      parameters:    
+        - in: query
+          name: project_name
+          required: false
+          schema:
+            title: Project Name
+            type: string    
+        - in: query
+          name: invite_token
+          required: false
+          schema:
+            title: Invite Token
+            type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Users
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    post:
+      summary: Create User
+      tags:
+        - user
+      description: |-
+        Creates a user based on the requestBody.
+      operationId: create_user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401': 
+          $ref: '#/components/responses/401'
+        '409': 
+          $ref: '#/components/responses/409'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /users/{user_id}:
+    get:
+      summary: Get a specific User
+      tags:
+        - user
+      description: |-
+        Get a specific project using its unique name.
+      operationId: get_user_by_id
+      parameters:
+        - $ref: '#/components/parameters/userId'
+        - in: query
+          required: false
+          schema:
+            title: Invite Token
+            type: string
+          name: invite_token
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    put:
+      summary: Update a specific User
+      tags:
+        - user
+      description: |-
+        Updates attributes for a specific user.
+      operationId: update_user_by_id
+      parameters:
+        - $ref: '#/components/parameters/userId'
+
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401': 
+          $ref: '#/components/responses/401'
+        '409': 
+          $ref: '#/components/responses/409'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    delete:
+      summary: Delete a specific User
+      tags:
+        - user
+      description: |-
+        Deletes a user.
+      operationId: delete_user_by_id
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      responses:
+        '200':
+          description: Successfully deleted User
+          content:
+            application/json:
+              schema: {}
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /users/{user_id}/roles:
+    get:
+      summary: Get all roles assigned to a user
+      tags:
+        - user
+      description: |-
+        Returns all roles that are assigned to a user
+      operationId: get_roles_for_user
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Roles assigned to user
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    post:
+      summary: Assign a role to a user
+      tags:
+        - user
+      description: |-
+        Assign a role to a user for all resources within a given project or globally.
+      operationId: assign_role_to_user
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+        required: true
+      responses:
+        '200': 
+          $ref: '#/components/responses/200'
+        '401': 
+          $ref: '#/components/responses/401'
+        '409': 
+          $ref: '#/components/responses/409'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /users/{user_id}/invite-token:
+    get:
+      summary: Get an invite token for a user
+      tags:
+        - user
+      description: |-
+        Gets an invite token for a given user, if no invite token exists, one is created.
+      operationId: get_invite_token_of_user
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: The Activation token
+                type: string
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+    delete:
+      summary: Invalidate an invite-token of a user
+      tags:
+        - user
+      description: |-
+        Assign a role to a user for all resources within a given project or globally.
+      operationId: invalidate_invite_token_of_user
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      responses:
+        '200': 
+          $ref: '#/components/responses/200'
+        '401': 
+          $ref: '#/components/responses/401'
+        '409': 
+          $ref: '#/components/responses/409'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /users/{user_id}/roles/{role_id}:
+    delete:
+      summary: Remove a users role.
+      tags:
+        - user
+      description: |-
+        Remove a users role within a project or globally.
+      operationId: remove_user_role_in_project
+      parameters:
+        - $ref: '#/components/parameters/userId'
+        - $ref: '#/components/parameters/roleId'
+        - in: query
+          required: false
+          schema:
+            title: Project Name
+            type: string
+          name: project_name
+      responses:
+        '200': 
+          $ref: '#/components/responses/200'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  #-------------------------------
+  # Roles
+  #-------------------------------
+  /roles:
+    get:
+      summary: Roles
+      tags:
+        - role
+      description: |-
+        Returns a list of all roles.
+      operationId: get_roles_list      
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: List of Roles
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  #-------------------------------
+  # Auth  related things
+  #-------------------------------
+  /login:
+    post:
+      summary: Login
+      tags:
+        - auth
+      description: |-
+        Login as a user
+      operationId: perform_login    
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  /logout:
+    post:
+      summary: Logout
+      tags:
+        - auth
+      description: |-
+        Logout
+      operationId: perform_logout  
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: []
+  #-------------------------------
+  # Metadata Config
+  #-------------------------------
+  /metadata-config:
+    get:
+      summary: Metadata Config
+      tags:
+        - metadata-config
+      description: |-
+        Metadata config that allows the Orchestrator to bypass the API and connect directly to the
+        Metadata Database tables to read and write run data.
+      operationId: get_metadata_config
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Metadata Config
+                type: object
+        '401': 
+          $ref: '#/components/responses/401'
+        '404': 
+          $ref: '#/components/responses/404'
+        '422': 
+          $ref: '#/components/responses/422'
+      security:
+        - HTTPBasic: [] 
+components:
+  #-------------------------------
+  # Reusable schemas (data models)
+  #-------------------------------
+  schemas:
+    HealthStatus:
+      title: HealthStatus
+      type: object
+      description: The system health status
+      properties:
+        status:
+          type: string
+          description: The overall health status. 
+    Pipeline:
+      title: Pipeline
+      required:
+        - name
+        - id
+      type: object
+      properties:
+        id:
+          title: id
+          type: string
+          readOnly: True
+          example: 9eaa2d6
+        name:
+          title: Name
+          type: string
+          example: cat_detection_training_pipeline
+        description:
+          title: Description
+          type: string
+          example: >-
+            Pipeline to create a cat detector.
+        status:
+          $ref: '#/components/schemas/PreviousRunsStatus'
+        owner:
+          title: Owner
+          type: object
+          properties:
+            id:
+              title: id
+              type: string
+              readOnly: True
+            name:
+              title: Name
+              type: string   
+          readOnly: True
+          description: >-
+            User that created the trigger.
+          example:
+            {name: htahir, id: w813dw}
+        created_at:
+          title: Created at
+          type: string
+          format: date-time
+          readOnly: True
+          description: >-
+            Time when this pipeline was first created.
+          example: 2022-08-12T07:12:45.931Z
+      description: |-
+        A Pipeline is the blueprint for a collection of functions (or steps) 
+        that are meant to fulfill one overarching task. 
+        The flow of information through these functions is defined by a
+        dag (directed acyclic graph).
+    Step:
+      title: Step
+      type: object
+      properties:
+        name:
+          title: Name
+          type: string
+          readOnly: True
+        source:
+          title: Source
+          type: string
+          readOnly: True
+        step_configuration:
+          title: Step Configuration
+          type: object
+        status:
+          type: string
+          enum:
+            - Completed
+            - Failed
+            - Cached
+          example: Completed
+      description: |-
+        Step that was used in a given Pipeline Run.
+    Output:
+      title: Output
+      type: array
+      items:
+        type: object
+    Run:
+      title: Run
+      required:
+        - id
+        - name
+        - pipeline
+        - stack
+        - runtime_configuration
+        - user_id
+        - project_name
+      type: object
+      properties:
+        id:
+          title: id
+          type: string
+          readOnly: True
+          example: 68be3034
+        name:
+          title: Name
+          type: string
+          example: cat_detection_training_pipeline_run_4921
+        zenml_version:
+          title: Zenml Version
+          type: string
+          description: >-
+            The ZenML Version that the pipeline was run on.
+          example: 0.12.0
+        duration:
+          title: duration
+          type: string
+          description: >-
+            The dureation of the last run.
+          readOnly: True
+        git_sha:
+          title: Git Sha
+          type: string
+          description: >-
+            The GitSha of the code repository this pipeline was run with
+          example: 73841b4
+        pipeline:
+          type: object
+          properties:
+            id:
+              title: id
+              type: string
+              readOnly: True
+            name:
+              title: Name
+              type: string   
+          description: >-
+            The pipeline that the run is an instance of.
+          example:
+            {name: cat_detection_training_pipeline, id: 9eaa2d6}
+        stack:
+          type: object
+          properties:
+            id:
+              title: id
+              type: string
+              readOnly: True
+            name:
+              title: Name
+              type: string
+          description: >-
+            The stack that was used for this run.
+          example:
+            {name: prod_stack, id: 9lg2jk3}
+        trigger:
+          type: object
+          properties:
+            id:
+              title: id
+              type: string
+              readOnly: True
+            name:
+              title: Name
+              type: string
+          description: >-
+            The trigger that was used for this run.
+          example:
+            {name: weekly_prod_trigger, id: 381jd1k}
+        status:
+          type: string
+          enum:
+            - Running
+            - Failed
+            - Finished
+          readOnly: True
+          example: Finished
+        owner:
+          title: Owner
+          type: object
+          properties:
+            id:
+              title: id
+              type: string
+              readOnly: True
+            name:
+              title: Name
+              type: string   
+          readOnly: True
+          description: >-
+            User that owns this run.
+          example:
+            {name: htahir, id: w813dw}
+        project_name:
+          title: Project Name
+          type: string
+          example: demo_prj
+        created_at:
+          title: Run started at 
+          type: string
+          format: date-time
+          readOnly: True
+          description: >-
+            Run started at.
+          example: 2022-08-12T07:12:45.931Z
+      description: |-
+        A single Pipeline run. 
+    Trigger:
+      title: Trigger
+      required:
+        - id
+        - type
+        - configuration
+      type: object
+      properties:
+        id:
+          title: id
+          type: string
+          readOnly: True
+          example: 381jd1k
+        type:
+          title: TriggerType
+          enum:
+            - ad_hoc
+            - event
+            - scheduler
+          type: string
+          description: >-
+            All possible types a `Trigger` can have.
+          example: scheduler
+        configuration:
+          title: configuration
+          type: object
+          description: >-
+            The exact schema for this configuration is currently not yet defined.
+        status:
+          $ref: '#/components/schemas/PreviousRunsStatus'
+        owner:
+          title: Owner
+          type: object
+          properties:
+            id:
+              title: id
+              type: string
+              readOnly: True
+            name:
+              title: Name
+              type: string   
+          readOnly: True
+          description: >-
+            User that created the trigger.
+          example:
+            {name: htahir, id: w813dw}
+        created_at:
+          title: Created by
+          type: string
+          format: date-time
+          readOnly: True
+          description: >-
+            User that created the trigger.
+      description: >-
+        Serializable Configuration of a Trigger.
+    PreviousRunsStatus:
+      title: Status' of the Previous Run
+      type: object
+      properties:
+        1:
+          $ref: '#/components/schemas/RunStatus'
+        2:
+          $ref: '#/components/schemas/RunStatus'
+        3:
+          $ref: '#/components/schemas/RunStatus'
+    RunStatus:
+      title: Run status
+      type: object
+      properties:
+        status: 
+          type: string
+          enum:
+            - Running
+            - Failed
+            - Finished
+          readOnly: True
+          example: Finished
+        run:
+          type: object
+          properties:
+            id:
+              title: id
+              type: string
+              readOnly: True
+            name:
+              title: Name
+              type: string
+          description: >-
+            The run.
+    Stack:
+      title: Stack
+      required:
+        - id
+        - name
+        - components
+      type: object
+      properties:
+        id:
+          title: id
+          type: string
+          readOnly: True
+          example: 9lg2jk3
+        name:
+          title: Name
+          type: string
+          example: prod_stack
+        components:
+          title: Components
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+        creator:
+          title: Name
+          type: string
+          example: Hamza Tahir
+        created_at:
+          title: Name
+          type: string
+          example: "2022-08-12T07:12:45.931Z"
+      description: >-
+        Description of a stack which is a combination of multiple stack
+        components.
+    Component:
+      title: Component
+      required:
+        - type
+        - flavor
+        - name
+        - id
+        - config
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/ComponentType'
+        flavor:
+          title: Flavor
+          type: string
+        name:
+          title: Name
+          type: string
+        id:
+          title: id
+          type: string
+          format: uuid
+          readOnly: True
+        config:
+          type: object
+          oneOf:
+            - $ref: '#/components/schemas/SlackAlerterFlavor'
+            - $ref: '#/components/schemas/SeldonDeployerFlavor'
+          discriminator:
+            propertyName: flavor
+      description: Serializable Configuration of a StackComponent.
+      example:        
+        id: asdf2-asdf1-ad143
+        type: alerter
+        flavor: slack
+        name: slack_alerter
+        config: {slack_token: INFU1328UJ, default_slack_channel_id: 184195}
+    ComponentType:
+      title: ComponentType
+      enum:
+        - alerter
+        - annotator
+        - artifact_store
+        - container_registry
+        - data_validator
+        - experiment_tracker
+        - feature_store
+        - metadata_store
+        - model_deployer
+        - orchestrator
+        - secrets_manager
+        - step_operator
+      type: string
+      description: All possible types a `StackComponent` can have.
+    AlerterFlavorSchema:
+      title: AlerterFlavor
+      properties:
+        type: 
+          type: string
+        slack:
+          $ref: '#/components/schemas/SlackAlerterFlavorSchema'
+    SlackAlerterFlavor:
+      title: SlackAlerterFlavor
+      required:
+        - slack_token
+      type: object
+      properties:
+        slack_token:
+          title: configuration
+          type: string
+        default_slack_channel_id:
+          title: configuration
+          type: string
+      description: Serializable Configuration for the Slack Alerter with default values prefilled.
+    SlackAlerterFlavorSchema:
+      title: SlackAlerterFlavorSchema
+      type: object
+      properties:
+        slack_token: 
+          type: object
+        default_slack_channel_id:
+          type: object
+      description: Configuration Schema for the Slack Alerter.
+      example:
+        slack_token: 
+          {type: string, required: True}
+        default_slack_channel_id: 
+          {type: string, required: True}
+    DeployerFlavorSchema:
+      title: DeployerFlavor
+      properties:
+        seldon:
+          $ref: '#/components/schemas/SeldonDeployerFlavorSchema'
+    SeldonDeployerFlavor:
+      title: SeldonDeployerFlavor
+      required:
+        - base_url
+      type: object
+      properties:
+        kubernetes_context:
+          title: configuration
+          type: string
+        kubernetes_namespace:
+          title: configuration
+          type: string
+        base_url:
+          title: base_url
+          type: string
+      description: Serializable Configuration for the Seldon Deployer with default values prefilled.
+    SeldonDeployerFlavorSchema:
+      title: SeldonDeployerFlavorSchema
+      type: object
+      properties:
+        kubernetes_context: 
+          type: object
+        kubernetes_namespace:
+          type: object
+        base_url:
+          type: object
+      description: Configuration Schema for the Slack Alerter.
+      example:
+        kubernetes_context: 
+          {type: string, required: True}
+        kubernetes_namespace: 
+          {type: string, required: True}
+        base_url: 
+          {type: string, required: True}
+    Project:
+      title: Project
+      required:
+        - name
+      type: object
+      properties:
+        id:
+          title: Id
+          type: string
+          format: uuid
+          readOnly: True
+        created_at:
+          title: Creation Date
+          type: string
+          format: date-time
+          readOnly: True
+        name:
+          title: Name
+          type: string
+        description:
+          title: Description
+          type: string
+      description: |-
+        A Project is the encapsulation of all business use-case with all the required pipelines, infrastructure configurations and users with project-scoped permissions.
+    DefaultStack:
+      title: DefaultStack
+      type: object
+      properties:
+        default_stack:
+          title: default_stack_id
+          type: string
+          format: uuid
+    Repository:
+      title: Repository
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          title: id
+          type: string
+          readOnly: True
+        uri:
+          title: uri
+          type: string
+      description: >-
+        Code Repository that contains pipelines for this project.
+      example:
+        id: 1d81-a92s-19lo
+        uri: https://github.com/zenml-io/zenbytes
+    User:
+      title: User
+      required:
+        - name
+      type: object
+      properties:
+        id:
+          title: Id
+          type: string
+          readOnly: True
+          example: w813dw
+        name:
+          title: Name
+          type: string
+          example: htahir
+        created_at:
+          title: Creation Date
+          type: string
+          format: date-time
+          readOnly: True
+      description: |-
+        The user with all their properties.
+    Role:
+      title: Role
+      required:
+        - name
+      type: object
+      properties:
+        id:
+          title: Id
+          type: string
+          format: uuid
+          readOnly: True
+        created_at:
+          title: Creation Date
+          type: string
+          format: date-time
+          readOnly: True
+        name:
+          title: Name
+          type: string
+      description: |-
+        Roles that a user can have in a global/project setting.
+    ErrorModel:
+      title: ErrorModel
+      type: object
+      properties:
+        detail:
+          title: Detail
+      description: Base class for error responses.
+    ValidationError:
+      title: ValidationError
+      required:
+        - loc
+        - msg
+        - type
+      type: object
+      properties:
+        loc:
+          title: Location
+          type: array
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+    HTTPValidationError:
+      title: HTTPValidationError
+      type: object
+      properties:
+        detail:
+          title: Detail
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+  #-------------------------------
+  # Reusable operation parameters
+  #-------------------------------
+  parameters:
+    pipelineId:
+      name: pipeline_id
+      in: path
+      required: true
+      schema:
+        title: Pipeline ID
+        type: string
+    stepId:
+      name: step_id
+      in: path
+      required: true
+      schema:
+        title: Step ID
+        type: string
+    triggerId:
+      name: trigger_id
+      in: path
+      required: true
+      schema:
+        title: Trigger ID
+        type: string
+    runId:
+      name: run_id
+      in: path
+      required: true
+      schema:
+        title: Run ID
+        type: string
+    projectName:
+      name: project_name
+      in: path
+      required: true
+      schema:
+        title: Project Name
+        type: string
+    repositoryId:
+      name: repository_id
+      in: path
+      required: true
+      schema:
+        title: Repository ID
+        type: string
+    userId:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        title: User ID
+        type: string
+    roleId:
+      name: role_id
+      in: path
+      required: true
+      schema:
+        title: Role Id
+        type: string
+    stackId:
+      name: stack_id
+      in: path
+      required: true
+      schema:
+        title: Stack Id
+        type: string
+    componentId:
+      name: component_id
+      in: path
+      required: true
+      schema:
+        title: Component Id
+        type: string
+    componentType:
+      name: component_type
+      in: path
+      required: true
+      schema:
+        title: Component Id
+        type: string
+        enum:
+          - alerter
+          - annotator
+          - artifact_store
+          - container_registry
+          - data_validator
+          - experiment_tracker
+          - feature_store
+          - metadata_store
+          - model_deployer
+          - orchestrator
+          - secrets_manager
+          - step_operator
+  #-------------------------------
+  # Reusable responses
+  #-------------------------------
+  responses:
+    '200':
+      description: Successful Response
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorModel'
+    '404':
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorModel'        
+    '409':
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorModel'
+    '422':
+      description: Validation Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HTTPValidationError'
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorModel'      
+  #-------------------------------
+  # Security Schemes
+  #-------------------------------
+  securitySchemes:
+    HTTPBasic:
+      type: http
+      scheme: basic

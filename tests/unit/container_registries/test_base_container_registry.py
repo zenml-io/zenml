@@ -12,11 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
 from typing import ClassVar
+from uuid import uuid4
 
 import pytest
 
 from zenml.container_registries import BaseContainerRegistry
+from zenml.container_registries.base_container_registry import (
+    BaseContainerRegistryConfig,
+)
+from zenml.stack.stack_component import StackComponentType
 
 
 class StubContainerRegistry(BaseContainerRegistry):
@@ -25,23 +31,38 @@ class StubContainerRegistry(BaseContainerRegistry):
     FLAVOR: ClassVar[str] = "test"
 
 
-def test_base_container_registry_removes_trailing_slashes():
-    """Tests that the base container registry removes trailing slashes from
-    the URI.
-    """
-    assert StubContainerRegistry(name="", uri="test/").uri == "test"
-
-
 def test_base_container_registry_requires_authentication_if_secret_provided():
     """Tests that the base container registry requires authentication if a
     secret name is provided.
     """
     assert (
-        StubContainerRegistry(name="", uri="").requires_authentication is False
+        StubContainerRegistry(
+            name="",
+            id=uuid4(),
+            config=BaseContainerRegistryConfig(uri=""),
+            flavor="default",
+            type=StackComponentType.CONTAINER_REGISTRY,
+            user=uuid4(),
+            project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        ).requires_authentication
+        is False
     )
     assert (
         StubContainerRegistry(
-            name="", uri="", authentication_secret="secret"
+            name="",
+            id=uuid4(),
+            config=BaseContainerRegistryConfig(
+                authentication_secret="arias_secret",
+                uri="",
+            ),
+            flavor="default",
+            type=StackComponentType.CONTAINER_REGISTRY,
+            user=uuid4(),
+            project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         ).requires_authentication
         is True
     )
@@ -49,15 +70,57 @@ def test_base_container_registry_requires_authentication_if_secret_provided():
 
 def test_base_container_registry_local_property():
     """Tests the base container registry `is_local` property."""
-    assert StubContainerRegistry(name="", uri="localhost:8000").is_local is True
-    assert StubContainerRegistry(name="", uri="gcr.io").is_local is False
+    assert (
+        StubContainerRegistry(
+            name="",
+            id=uuid4(),
+            config=BaseContainerRegistryConfig(
+                uri="localhost:8000",
+            ),
+            flavor="default",
+            type=StackComponentType.CONTAINER_REGISTRY,
+            user=uuid4(),
+            project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        ).is_local
+        is True
+    )
+    assert (
+        StubContainerRegistry(
+            name="",
+            id=uuid4(),
+            config=BaseContainerRegistryConfig(
+                uri="gcr.io",
+            ),
+            flavor="default",
+            type=StackComponentType.CONTAINER_REGISTRY,
+            user=uuid4(),
+            project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        ).is_local
+        is False
+    )
 
 
 def test_base_container_registry_prevents_push_if_uri_does_not_match(mocker):
     """Tests the base container registry push only works if the URI matches."""
     mocker.patch("zenml.utils.docker_utils.push_image")
 
-    registry = StubContainerRegistry(name="", uri="some_uri")
+    registry = StubContainerRegistry(
+        name="",
+        id=uuid4(),
+        config=BaseContainerRegistryConfig(
+            uri="some_uri",
+        ),
+        flavor="default",
+        type=StackComponentType.CONTAINER_REGISTRY,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
     with does_not_raise():
         registry.push_image("some_uri/image_name")
 

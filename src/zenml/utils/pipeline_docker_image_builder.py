@@ -20,8 +20,6 @@ import sys
 from pathlib import PurePath, PurePosixPath
 from typing import TYPE_CHECKING, Iterator, List, Optional, Sequence, Tuple
 
-from pydantic import BaseModel
-
 import zenml
 from zenml.config import DockerSettings
 from zenml.config.global_config import GlobalConfiguration
@@ -54,11 +52,11 @@ DEFAULT_DOCKER_PARENT_IMAGE = (
 
 
 @contextlib.contextmanager
-def _include_active_profile(
+def _include_global_config(
     build_context_root: str,
     load_config_path: PurePath = PurePosixPath(DOCKER_IMAGE_ZENML_CONFIG_PATH),
 ) -> Iterator[None]:
-    """Context manager to include the active profile in a Docker build context.
+    """Context manager to include the global configuration in a Docker build context.
 
     Args:
         build_context_root: The root of the build context.
@@ -69,14 +67,14 @@ def _include_active_profile(
         None.
     """
     # Save a copy of the current global configuration with the
-    # active profile and the active stack configuration into the build
-    # context, to have the active profile and active stack accessible from
+    # store configuration and the active stack configuration into the build
+    # context, to have the store and active stack accessible from
     # within the container.
     config_path = os.path.join(
         build_context_root, DOCKER_IMAGE_ZENML_CONFIG_DIR
     )
     try:
-        GlobalConfiguration().copy_active_configuration(
+        GlobalConfiguration().copy_configuration(
             config_path, load_config_path=load_config_path
         )
         yield
@@ -84,7 +82,7 @@ def _include_active_profile(
         fileio.rmtree(config_path)
 
 
-class PipelineDockerImageBuilder(BaseModel):
+class PipelineDockerImageBuilder:
     """Builds Docker images to run a ZenML pipeline.
 
     **Usage**:
@@ -94,21 +92,7 @@ class PipelineDockerImageBuilder(BaseModel):
             image_identifier = self.build_and_push_docker_image(...)
             # use the image ID
     ```
-
-    Attributes:
-        docker_parent_image: Full name of the Docker image that should be
-            used as the parent for the image that will be built. Defaults to
-            a ZenML image built for the active Python and ZenML version.
-
-            Additional information to consider:
-            * If you specify a custom image here, you need to make sure it has
-            ZenML installed.
-            * If this is a non-local image, the environment which is running
-            the pipeline and building the Docker image needs to be able to pull
-            this image.
     """
-
-    docker_parent_image: Optional[str] = None
 
     def build_and_push_docker_image(
         self,
@@ -183,7 +167,9 @@ class PipelineDockerImageBuilder(BaseModel):
             f"{docker_settings.target_repository}:{pipeline_name}"
         )
         if container_registry:
-            target_image_name = f"{container_registry.uri}/{target_image_name}"
+            target_image_name = (
+                f"{container_registry.config.uri}/{target_image_name}"
+            )
 
         return target_image_name
 
@@ -225,7 +211,7 @@ class PipelineDockerImageBuilder(BaseModel):
                 docker_settings.install_stack_requirements,
                 docker_settings.environment,
                 docker_settings.copy_files,
-                docker_settings.copy_profile,
+                docker_settings.copy_global_config,
                 entrypoint,
             ]
         )
@@ -233,9 +219,7 @@ class PipelineDockerImageBuilder(BaseModel):
         # Fallback to the value defined on the stack component if the
         # pipeline configuration doesn't have a configured value
         parent_image = (
-            docker_settings.parent_image
-            or self.docker_parent_image
-            or DEFAULT_DOCKER_PARENT_IMAGE
+            docker_settings.parent_image or DEFAULT_DOCKER_PARENT_IMAGE
         )
 
         if docker_settings.dockerfile:
@@ -307,19 +291,19 @@ class PipelineDockerImageBuilder(BaseModel):
 
             # Leave the build context empty if we don't want to copy any files
             requires_build_context = (
-                docker_settings.copy_files or docker_settings.copy_profile
+                docker_settings.copy_files or docker_settings.copy_global_config
             )
             build_context_root = (
                 source_utils.get_source_root_path()
                 if requires_build_context
                 else None
             )
-            maybe_include_active_profile = (
-                _include_active_profile(build_context_root=build_context_root)  # type: ignore[arg-type]
-                if docker_settings.copy_profile
+            maybe_include_global_config = (
+                _include_global_config(build_context_root=build_context_root)  # type: ignore[arg-type]
+                if docker_settings.copy_global_config
                 else contextlib.nullcontext()
             )
-            with maybe_include_active_profile:
+            with maybe_include_global_config:
                 docker_utils.build_image(
                     image_name=target_image_name,
                     dockerfile=dockerfile,
@@ -449,7 +433,7 @@ class PipelineDockerImageBuilder(BaseModel):
         if docker_settings.user:
             lines.append(f"USER {docker_settings.user}")
 
-        if docker_settings.copy_profile:
+        if docker_settings.copy_global_config:
             lines.append(
                 f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
             )
@@ -463,7 +447,7 @@ class PipelineDockerImageBuilder(BaseModel):
 
         if docker_settings.copy_files:
             lines.append("COPY . .")
-        elif docker_settings.copy_profile:
+        elif docker_settings.copy_global_config:
             lines.append(f"COPY {DOCKER_IMAGE_ZENML_CONFIG_DIR} .")
 
         lines.append("RUN chmod -R a+rw .")

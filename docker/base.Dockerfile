@@ -14,3 +14,14 @@ RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}
 
 FROM base AS server
 RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server]
+
+WORKDIR /zenml
+
+RUN mkdir -p .zenconfig/local_stores/default_zen_store
+
+ENV ZENML_CONFIG_PATH=/zenml/.zenconfig \
+    ZENML_DEBUG=true \
+    ZENML_ANALYTICS_OPT_IN=false
+
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app",  "--log-level", "debug"]
+CMD ["--proxy-headers", "--port", "80", "--host",  "0.0.0.0"]

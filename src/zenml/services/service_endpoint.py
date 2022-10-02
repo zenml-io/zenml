@@ -79,7 +79,7 @@ class ServiceEndpointStatus(ServiceStatus):
             # port and protocol are known
             return None
 
-        return f"{self.protocol.value}://{self.hostname}:{self.port}/"
+        return f"{self.protocol.value}://{self.hostname}:{self.port}"
 
 
 class BaseServiceEndpoint(BaseTypedModel):

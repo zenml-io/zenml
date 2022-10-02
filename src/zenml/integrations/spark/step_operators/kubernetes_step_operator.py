@@ -13,12 +13,14 @@
 #  permissions and limitations under the License.
 """Implementation of the Kubernetes Spark Step Operator."""
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, cast
 
 from pyspark.conf import SparkConf
 
 from zenml.entrypoints import entrypoint
-from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
+from zenml.integrations.spark.flavors.spark_on_kubernetes_step_operator_flavor import (
+    KubernetesSparkStepOperatorConfig,
+)
 from zenml.integrations.spark.step_operators.spark_step_operator import (
     SparkStepOperator,
 )
@@ -43,27 +45,17 @@ ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
 SPARK_DOCKER_IMAGE_KEY = "spark_docker_image"
 
 
-class KubernetesSparkStepOperator(
-    SparkStepOperator, PipelineDockerImageBuilder
-):
-    """Step operator which runs Steps with Spark on Kubernetes.
+class KubernetesSparkStepOperator(SparkStepOperator):
+    """Step operator which runs Steps with Spark on Kubernetes."""
 
-    Attributes:
-        namespace: the namespace under which the driver and executor pods
-            will run.
-        service_account: the service account that will be used by various Spark
-            components (to create and watch the pods).
-        docker_parent_image: (which originally comes from the
-            PipelineDockerImageBuilder base class) indicates the name of a
-            base image that has Spark enabled.
-    """
+    @property
+    def config(self) -> KubernetesSparkStepOperatorConfig:
+        """Returns the `KubernetesSparkStepOperatorConfig` config.
 
-    # Parameters for kubernetes
-    namespace: Optional[str] = None
-    service_account: Optional[str] = None
-
-    # Class configuration
-    FLAVOR: ClassVar[str] = SPARK_KUBERNETES_STEP_OPERATOR
+        Returns:
+            The configuration.
+        """
+        return cast(KubernetesSparkStepOperatorConfig, self._config)
 
     @property
     def application_path(self) -> Any:
@@ -108,7 +100,9 @@ class KubernetesSparkStepOperator(
             )
 
         try:
-            image_digest = self.build_and_push_docker_image(
+            # Build and push the image
+            docker_image_builder = PipelineDockerImageBuilder()
+            image_digest = docker_image_builder.build_and_push_docker_image(
                 deployment=deployment, stack=stack
             )
         finally:
@@ -135,13 +129,13 @@ class KubernetesSparkStepOperator(
         docker_image = step_config.extra[SPARK_DOCKER_IMAGE_KEY]
         # Adjust the spark configuration
         spark_config.set("spark.kubernetes.container.image", docker_image)
-        if self.namespace:
+        if self.config.namespace:
             spark_config.set(
                 "spark.kubernetes.namespace",
-                self.namespace,
+                self.config.namespace,
             )
-        if self.service_account:
+        if self.config.service_account:
             spark_config.set(
                 "spark.kubernetes.authenticate.driver.serviceAccountName",
-                self.service_account,
+                self.config.service_account,
             )

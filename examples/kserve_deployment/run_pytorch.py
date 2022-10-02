@@ -19,15 +19,18 @@ from pipelines import (
     pytorch_training_deployment_pipeline,
 )
 from rich import print
-from steps.deployment_trigger import DeploymentTriggerConfig, deployment_trigger
+from steps.deployment_trigger import (
+    DeploymentTriggerParameters,
+    deployment_trigger,
+)
 from steps.prediction_service_loader import (
-    PredectionServiceLoaderStepConfig,
+    PredectionServiceLoaderStepParameters,
     prediction_service_loader,
 )
 from steps.pytorch_steps import (
-    PytorchDataLoaderConfig,
-    PyTorchInferenceProcessorStepConfig,
-    PytorchTrainerConfig,
+    PytorchDataLoaderParameters,
+    PyTorchInferenceProcessorStepParameters,
+    PytorchTrainerParameters,
     pytorch_data_loader,
     pytorch_evaluator,
     pytorch_inference_processor,
@@ -109,16 +112,18 @@ def main(
         # Initialize and run a continuous deployment pipeline run
         pytorch_training_deployment_pipeline(
             data_loader=pytorch_data_loader(
-                PytorchDataLoaderConfig(
+                PytorchDataLoaderParameters(
                     train_batch_size=batch_size, test_batch_size=batch_size
                 )
             ),
             trainer=pytorch_trainer(
-                PytorchTrainerConfig(epochs=epochs, lr=lr, momentum=momentum)
+                PytorchTrainerParameters(
+                    epochs=epochs, lr=lr, momentum=momentum
+                )
             ),
             evaluator=pytorch_evaluator(),
             deployment_trigger=deployment_trigger(
-                config=DeploymentTriggerConfig(
+                params=DeploymentTriggerParameters(
                     min_accuracy=min_accuracy,
                 )
             ),
@@ -131,12 +136,12 @@ def main(
         # Initialize an inference pipeline run
         pytorch_inference_pipeline(
             pytorch_inference_processor=pytorch_inference_processor(
-                PyTorchInferenceProcessorStepConfig(
+                PyTorchInferenceProcessorStepParameters(
                     img_url=img_url,
                 ),
             ),
             prediction_service_loader=prediction_service_loader(
-                PredectionServiceLoaderStepConfig(
+                PredectionServiceLoaderStepParameters(
                     pipeline_name=deployment_pipeline_name,
                     step_name=deployer_step_name,
                     model_name=model_name,

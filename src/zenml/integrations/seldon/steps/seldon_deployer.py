@@ -19,6 +19,7 @@ from typing import Optional, cast
 from pydantic import BaseModel, validator
 
 from zenml.artifacts.model_artifact import ModelArtifact
+from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
@@ -332,7 +333,7 @@ def seldon_custom_model_deployer_step(
             "No active stack is available. "
             "Please make sure that you have registered and set a stack."
         )
-    stack = context.stack
+    context.stack
 
     docker_image = step_env.step_run_info.pipeline.extra[
         SELDON_DOCKER_IMAGE_KEY
@@ -345,7 +346,7 @@ def seldon_custom_model_deployer_step(
 
     # Get the model artifact to extract information about the model
     # and how it can be loaded again later in the deployment environment.
-    artifact = stack.metadata_store.store.get_artifacts_by_uri(model.uri)
+    artifact = Client().zen_store.list_artifacts(artifact_uri=model.uri)
     if not artifact:
         raise DoesNotExistException("No artifact found at {}".format(model.uri))
 

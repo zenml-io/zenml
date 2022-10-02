@@ -15,12 +15,13 @@
 
 import os
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Dict
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
 from zenml.stack import Stack
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
@@ -30,14 +31,12 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
+class LocalDockerOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally using Docker.
 
     This orchestrator does not allow for concurrent execution of steps and also
     does not support running on a schedule.
     """
-
-    FLAVOR: ClassVar[str] = "local_docker"
 
     def prepare_pipeline_deployment(
         self,
@@ -50,17 +49,18 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             deployment: The pipeline deployment configuration.
             stack: The stack on which the pipeline will be deployed.
         """
+        docker_image_builder = PipelineDockerImageBuilder()
         if stack.container_registry:
-            repo_digest = self.build_and_push_docker_image(
+            repo_digest = docker_image_builder.build_and_push_docker_image(
                 deployment=deployment, stack=stack
             )
             deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
         else:
             # If there is no container registry, we only build the image
-            target_image_name = self.get_target_image_name(
+            target_image_name = docker_image_builder.get_target_image_name(
                 deployment=deployment
             )
-            self.build_docker_image(
+            docker_image_builder.build_docker_image(
                 target_image_name=target_image_name,
                 deployment=deployment,
                 stack=stack,
@@ -82,8 +82,8 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         volumes = {}
 
         # Add a volume for all local paths of stack components
-        for stack_comp in stack.components.values():
-            local_path = stack_comp.local_path
+        for stack_component in stack.components.values():
+            local_path = stack_component.local_path
             if not local_path:
                 continue
 
@@ -144,3 +144,25 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
             for line in logs:
                 logger.info(line.strip().decode())
+
+
+class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Flavor for the local Docker orchestrator."""
+
+    @property
+    def name(self) -> str:
+        """Name of the orchestrator flavor.
+
+        Returns:
+            Name of the orchestrator flavor.
+        """
+        return "local_docker"
+
+    @property
+    def implementation_class(self) -> Type["LocalDockerOrchestrator"]:
+        """Implementation class for this flavor.
+
+        Returns:
+            Implementation class for this flavor.
+        """
+        return LocalDockerOrchestrator

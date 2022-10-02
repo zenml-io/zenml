@@ -34,12 +34,11 @@ import datetime
 import functools
 import os
 import time
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional
 
-from pydantic import root_validator
-
+from zenml.constants import ENV_ZENML_SKIP_PIPELINE_REGISTRATION
 from zenml.environment import Environment
-from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
@@ -54,17 +53,37 @@ if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.stack import Stack
 
-AIRFLOW_ROOT_DIR = "airflow_root"
+AIRFLOW_ROOT_DIR = "airflow"
 DAG_FILEPATH_OPTION_KEY = "dag_filepath"
+
+
+@contextmanager
+def set_environment_variable(key: str, value: str) -> Iterator[None]:
+    """Temporarily sets an environment variable.
+
+    The value will only be set while this context manager is active and will
+    be reset to the previous value afterward.
+
+    Args:
+        key: The environment variable key.
+        value: The environment variable value.
+
+    Yields:
+        None.
+    """
+    old_value = os.environ.get(key, None)
+    try:
+        os.environ[key] = value
+        yield
+    finally:
+        if old_value:
+            os.environ[key] = old_value
+        else:
+            del os.environ[key]
 
 
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
-
-    airflow_home: str = ""
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = AIRFLOW_ORCHESTRATOR_FLAVOR
 
     def __init__(self, **values: Any):
         """Sets environment variables to configure airflow.
@@ -73,6 +92,11 @@ class AirflowOrchestrator(BaseOrchestrator):
             **values: Values to set in the orchestrator.
         """
         super().__init__(**values)
+        self.airflow_home = os.path.join(
+            io_utils.get_global_config_directory(),
+            AIRFLOW_ROOT_DIR,
+            str(self.id),
+        )
         self._set_env()
 
     @staticmethod
@@ -94,8 +118,14 @@ class AirflowOrchestrator(BaseOrchestrator):
         """
         if schedule:
             if schedule.cron_expression:
+                start_time = schedule.start_time or (
+                    datetime.datetime.now() - datetime.timedelta(1)
+                )
                 return {
                     "schedule_interval": schedule.cron_expression,
+                    "start_date": start_time,
+                    "end_date": schedule.end_time,
+                    "catchup": schedule.catchup,
                 }
             else:
                 return {
@@ -147,7 +177,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         # Instantiate and configure airflow Dag with name and schedule
         airflow_dag = airflow.DAG(
-            dag_id=deployment.name,
+            dag_id=deployment.pipeline.name,
             is_paused_upon_creation=False,
             **self._translate_schedule(deployment.schedule),
         )
@@ -170,12 +200,14 @@ class AirflowOrchestrator(BaseOrchestrator):
                 # Extract run name for the kwargs that will be passed to the
                 # callable
                 run_name = kwargs["ti"].get_dagrun().run_id
+                self._prepare_run(deployment=deployment)
                 self.run_step(step=step_instance, run_name=run_name)
+                self._cleanup_run()
 
             # Create airflow python operator that contains the step callable
             airflow_operator = airflow_python.PythonOperator(
                 dag=airflow_dag,
-                task_id=step.name,
+                task_id=step.config.name,
                 provide_context=True,
                 python_callable=functools.partial(
                     _step_callable, step_instance=step
@@ -192,28 +224,6 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         # Return the finished airflow dag
         return airflow_dag
-
-    @root_validator(skip_on_failure=True)
-    def set_airflow_home(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Sets Airflow home according to orchestrator UUID.
-
-        Args:
-            values: Dictionary containing all orchestrator attributes values.
-
-        Returns:
-            Dictionary containing all orchestrator attributes values and the airflow home.
-
-        Raises:
-            ValueError: If the orchestrator UUID is not set.
-        """
-        if "uuid" not in values:
-            raise ValueError("`uuid` needs to exist for AirflowOrchestrator.")
-        values["airflow_home"] = os.path.join(
-            io_utils.get_global_config_directory(),
-            AIRFLOW_ROOT_DIR,
-            str(values["uuid"]),
-        )
-        return values
 
     @property
     def dags_directory(self) -> str:
@@ -405,14 +415,22 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         try:
             command = StandaloneCommand()
-            # Run the daemon with a working directory inside the current
-            # zenml repo so the same repo will be used to run the DAGs
-            daemon.run_as_daemon(
-                command.run,
-                pid_file=self.pid_file,
-                log_file=self.log_file,
-                working_directory=get_source_root_path(),
-            )
+            # Skip pipeline registration inside the airflow server process.
+            # When searching for DAGs, airflow imports the runner file in a
+            # randomly generated module. If we don't skip pipeline registration,
+            # it would fail by trying to register a pipeline with an existing
+            # name but different module sources for the steps.
+            with set_environment_variable(
+                key=ENV_ZENML_SKIP_PIPELINE_REGISTRATION, value="True"
+            ):
+                # Run the daemon with a working directory inside the current
+                # zenml repo so the same repo will be used to run the DAGs
+                daemon.run_as_daemon(
+                    command.run,
+                    pid_file=self.pid_file,
+                    log_file=self.log_file,
+                    working_directory=get_source_root_path(),
+                )
             while not self.is_running:
                 # Wait until the daemon started all the relevant airflow
                 # processes

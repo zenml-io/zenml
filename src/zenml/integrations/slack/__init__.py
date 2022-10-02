@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 """Slack integration for alerter components."""
 
-from typing import List
+from typing import List, Type
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import SLACK
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 SLACK_ALERTER_FLAVOR = "slack"
 
@@ -33,20 +34,15 @@ class SlackIntegration(Integration):
     REQUIREMENTS = ["slack-sdk>=3.16.1", "aiohttp>=3.8.1"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Slack integration.
 
         Returns:
             List of new flavors defined by the Slack integration.
         """
-        return [
-            FlavorWrapper(
-                name=SLACK_ALERTER_FLAVOR,
-                source="zenml.integrations.slack.alerters.slack_alerter.SlackAlerter",
-                type=StackComponentType.ALERTER,
-                integration=cls.NAME,
-            )
-        ]
+        from zenml.integrations.slack.flavors import SlackAlerterFlavor
+
+        return [SlackAlerterFlavor]
 
 
 SlackIntegration.check_installation()

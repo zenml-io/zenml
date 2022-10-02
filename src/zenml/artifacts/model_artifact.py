@@ -14,9 +14,10 @@
 """Class for all ZenML model artifacts."""
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.enums import ArtifactType
 
 
 class ModelArtifact(BaseArtifact):
     """Class for all ZenML model artifacts."""
 
-    TYPE_NAME = "ModelArtifact"
+    TYPE_NAME = ArtifactType.MODEL

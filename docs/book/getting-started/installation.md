@@ -2,7 +2,7 @@
 description: How to install ZenML
 ---
 
-# Installation
+# Installation (Python Package)
 
 **ZenML** is a Python package that can be installed directly via `pip`:
 ```
@@ -13,6 +13,18 @@ pip install zenml
 Please note that ZenML currently only supports Python 3.7, 3.8, and 3.9.
 Please adjust your Python environment accordingly.
 {% endhint %}
+
+In order to get access to the dashboard locally, install the optional dependencies for the ZenML server:
+
+```shell
+pip install "zenml[server]"
+```
+
+If you do not have deployed infrastructure, and want to quickly spin up combinations of tools on the cloud, the [MLOps stack sister repository](https://github.com/zenml-io/mlops-stacks) contains a series of Terraform-based recipes to provision such stacks. These recipes can be used directly with ZenML:
+
+```bash
+pip install "zenml[stacks]"
+```
 
 ## Virtual Environments
 
@@ -113,3 +125,29 @@ docker build -t <IMAGE_NAME> -f docker/local-dev.Dockerfile .
 ```
 docker build --platform linux/amd64 -t <IMAGE_NAME> -f docker/local-dev.Dockerfile .
 ```
+
+# Installation (Dashboard)
+
+The ZenML Dashboard is a Javascript React-based application that lives inside a [sister repository](https://github.com/zenml-io/zenml-dashboard) of the main [ZenML python package repo](https://github.com/zenml-io/zenml).
+
+The dashboard build files come bundled into the [ZenML PyPi package](https://pypi.org/project/zenml/) and can be [served locally](../getting-started/deploying-zenml/using-cli.md) and/or [deployed on the cloud](../getting-started/deploying-zenml/deployment.md) through the main ZenML python package.
+
+However, the ZenML dashboard can also be run stand-alone with the following commands:
+
+```
+yarn install  # to install libraries
+yarn start  # to run locally
+yarn build  # to build the dashboard static files
+```
+
+In order to connect to the ZenML server, the following env variable needs to be set:
+
+```
+REACT_APP_BASE_API_URL="<YOUR_ZENML_SERVER_DEPLOYMENT>/api/v1"
+```
+
+In order to deploy the ZenML server, please read the [deployment guide](../getting-started/deploying-zenml/deployment.md).
+
+{% hint style="warning" %}
+Please note that the ZenML dashboard only supports npm version 14.20.0 exactly.
+{% endhint %}

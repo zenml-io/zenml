@@ -12,12 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import uuid
+from datetime import datetime
 from typing import Dict, List, Optional, Type
+from uuid import uuid4
 
 import pytest
 from pydantic import BaseModel
 
+from zenml.enums import StackComponentType
+from zenml.integrations.gcp.flavors.gcp_secrets_manager_flavor import (
+    GCPSecretsManagerConfig,
+)
 from zenml.integrations.gcp.secrets_manager.gcp_secrets_manager import (
     GCPSecretsManager,
     remove_group_name_from_key,
@@ -123,10 +128,18 @@ ZENML_SECRET = [
 @pytest.mark.parametrize("parametrized_input", ZENML_SECRET)
 def test_prepend_group_name_to_keys(parametrized_input: ZenMLSecret):
     secrets_manager = GCPSecretsManager(
-        name="test",
-        scope="none",
-        uuid=uuid.uuid4(),
-        project_id="fake_project",
+        name="",
+        id=uuid4(),
+        config=GCPSecretsManagerConfig(
+            scope="none",
+            project_id="fake_project",
+        ),
+        flavor="gcp",
+        type=StackComponentType.SECRETS_MANAGER,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     secret_schema = ArbitrarySecretSchema(
         name=parametrized_input.zenml_secret_name

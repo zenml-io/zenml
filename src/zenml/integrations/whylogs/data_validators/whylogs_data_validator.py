@@ -25,10 +25,13 @@ from whylogs.core import DatasetProfileView  # type: ignore
 from zenml.config.base_settings import BaseSettings
 from zenml.data_validators import BaseDataValidator
 from zenml.environment import Environment
-from zenml.integrations.whylogs import WHYLOGS_DATA_VALIDATOR_FLAVOR
 from zenml.integrations.whylogs.constants import (
     WHYLABS_DATASET_ID_ENV,
     WHYLABS_LOGGING_ENABLED_ENV,
+)
+from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
+    WhylogsDataValidatorConfig,
+    WhylogsDataValidatorSettings,
 )
 from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
     WhylabsSecretSchema,
@@ -43,20 +46,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class WhylogsDataValidatorSettings(BaseSettings):
-    """Settings for the Whylogs data validator.
-
-    Attributes:
-        enable_whylabs: If set to `True` for a step, all the whylogs data
-            profile views returned by the step will automatically be uploaded
-            to the Whylabs platform if Whylabs credentials are configured.
-        dataset_id: Dataset ID to use when uploading profiles to Whylabs.
-    """
-
-    enable_whylabs: bool = False
-    dataset_id: Optional[str] = None
-
-
 class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
     """Whylogs data validator stack component.
 
@@ -67,9 +56,16 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
             stored in the ZenML Artifact Store.
     """
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = WHYLOGS_DATA_VALIDATOR_FLAVOR
     NAME: ClassVar[str] = "whylogs"
+
+    @property
+    def config(self) -> WhylogsDataValidatorConfig:
+        """Returns the `WhylogsDataValidatorConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(WhylogsDataValidatorConfig, self._config)
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
@@ -141,7 +137,9 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
         return profile.view()
 
     def upload_profile_view(
-        self, profile_view: DatasetProfileView, dataset_id: Optional[str] = None
+        self,
+        profile_view: DatasetProfileView,
+        dataset_id: Optional[str] = None,
     ) -> None:
         """Upload a whylogs data profile view to Whylabs, if configured to do so.
 

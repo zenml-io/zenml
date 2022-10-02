@@ -33,23 +33,26 @@ from typing import (
 import yaml
 
 from zenml import constants
+from zenml.client import Client
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
+from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
     PipelineRunConfiguration,
+    PipelineSpec,
 )
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.enums import StoreType
 from zenml.environment import Environment
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
-from zenml.post_execution import PipelineRunView
-from zenml.repository import Repository
+from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
 from zenml.steps.utils import clone_step
@@ -64,7 +67,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
-    from zenml.stack import Stack
+    from zenml.post_execution import PipelineRunView
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -380,13 +383,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     custom_artifact = True
 
         stack_metadata = {
-            component_type.value: component.FLAVOR
+            component_type.value: component.flavor
             for component_type, component in stack.components.items()
         }
         track_event(
             event=AnalyticsEvent.RUN_PIPELINE,
             metadata={
-                "store_type": Repository().active_profile.store_type.value,
+                "store_type": Client().zen_store.type.value,
                 **stack_metadata,
                 "total_steps": len(self.steps),
                 "schedule": bool(deployment.schedule),
@@ -407,6 +410,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         ] = None,
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
+        unlisted: bool = False,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -422,6 +426,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 object. Options provided in this file will be overwritten by
                 options provided in code using the other arguments of this
                 method.
+            unlisted: Whether the pipeline run should be unlisted (not assigned
+                to any pipeline).
 
         Returns:
             The result of the pipeline.
@@ -440,7 +446,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             return
 
-        stack = Repository().active_stack
+        stack = Client().active_stack
 
         # Activating the built-in integrations through lazy loading
         from zenml.integrations.registry import integration_registry
@@ -482,17 +488,46 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline=self, stack=stack, run_configuration=run_config
         )
 
-        logger.info(
-            "Creating run for pipeline `%s` (Caching %s)",
-            self.name,
+        skip_pipeline_registration = constants.handle_bool_env_var(
+            constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
+        )
+        caching_status = (
             "enabled"
             if pipeline_deployment.pipeline.enable_cache
-            else "disabled",
+            else "disabled"
         )
+        register_pipeline = not (skip_pipeline_registration or unlisted)
+        if register_pipeline:
+            step_specs = [
+                step.spec for step in pipeline_deployment.steps.values()
+            ]
+            pipeline_spec = PipelineSpec(steps=step_specs)
+
+            pipeline_id = Client().register_pipeline(
+                pipeline_name=pipeline_deployment.pipeline.name,
+                pipeline_spec=pipeline_spec,
+            )
+            pipeline_deployment = pipeline_deployment.copy(
+                update={"pipeline_id": pipeline_id}
+            )
+            logger.info(
+                "Creating run `%s` for pipeline `%s` (Caching %s)",
+                pipeline_deployment.run_name,
+                self.name,
+                caching_status,
+            )
+        else:
+            logger.info(
+                "Creating unlisted run `%s` (Caching %s)",
+                pipeline_deployment.run_name,
+                caching_status,
+            )
 
         self._track_pipeline_deployment(
             deployment=pipeline_deployment, stack=stack
         )
+
+        stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
 
         # Prevent execution of nested pipelines which might lead to unexpected
         # behavior
@@ -501,6 +536,32 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return_value = stack.deploy_pipeline(pipeline_deployment)
         finally:
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+
+        gc = GlobalConfiguration()
+
+        if gc.store and gc.store.type == StoreType.REST:
+            # Connected to ZenServer
+            client = Client()
+
+            # Get the runs from the zen_store
+            runs = client.zen_store.list_runs(
+                run_name=pipeline_deployment.run_name
+            )
+
+            # We should only do the log if runs exist
+            if runs:
+                # For now, take the first index to get the latest run
+                run = runs[0]
+                url = (
+                    f"{gc.store.url}/pipelines/{pipeline_id}/runs/{run.id}/dag"
+                )
+                logger.info(f"Dashboard URL: {url}")
+        elif gc.store and gc.store.type == StoreType.SQL:
+            # Connected to SQL Store Type, we're local
+            logger.info(
+                "Pipeline visualization can be seen in the ZenML Dashboard. "
+                "Run `zenml up` to see your pipeline!"
+            )
 
         return return_value
 
@@ -612,33 +673,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             RuntimeError: In case the repository does not contain the view
                 of the current pipeline.
         """
-        pipeline_view = Repository().get_pipeline(cls)
+        from zenml.post_execution import get_pipeline
+
+        pipeline_view = get_pipeline(cls)
         if pipeline_view:
             return pipeline_view.runs  # type: ignore[no-any-return]
-        else:
-            raise RuntimeError(
-                f"The PipelineView for `{cls.__name__}` could "
-                f"not be found. Are you sure this pipeline has "
-                f"been run already?"
-            )
-
-    @classmethod
-    def get_run(cls, run_name: str) -> Optional["PipelineRunView"]:
-        """Get a specific past run from the associated PipelineView.
-
-        Args:
-            run_name: Name of the run
-
-        Returns:
-            The PipelineRunView of the specific pipeline run.
-
-        Raises:
-            RuntimeError: In case the repository does not contain the view
-                of the current pipeline.
-        """
-        pipeline_view = Repository().get_pipeline(cls)
-        if pipeline_view:
-            return pipeline_view.get_run(run_name)  # type: ignore[no-any-return]
         else:
             raise RuntimeError(
                 f"The PipelineView for `{cls.__name__}` could "
@@ -661,7 +700,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             PartialArtifactConfiguration,
         )
 
-        stack = stack or Repository().active_stack
+        stack = stack or Client().active_stack
 
         setting_classes = stack.setting_classes
         setting_classes.update(settings_utils.get_general_settings())

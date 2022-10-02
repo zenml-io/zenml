@@ -354,7 +354,7 @@ class SeldonDeploymentService(BaseService):
         namespace = self._get_client().namespace
         model_deployer = SeldonModelDeployer.get_active_model_deployer()
         return os.path.join(
-            model_deployer.base_url,
+            model_deployer.config.base_url,
             "seldon",
             namespace,
             self.seldon_deployment_name,

@@ -29,11 +29,12 @@ from zenml.cli.utils import (
     print_list_items,
     warning,
 )
+from zenml.client import Client
 from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.exceptions import SecretExistsError
-from zenml.repository import Repository
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
+from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
     from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
@@ -56,18 +57,17 @@ def register_secrets_manager_subcommands() -> None:
         Args:
             ctx: Click context.
         """
-        repo = Repository()
-        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-        secrets_manager_wrapper = active_stack.get_component_wrapper(
+        client = Client()
+        secrets_manager_models = client.active_stack_model.components[
             StackComponentType.SECRETS_MANAGER
-        )
-        if secrets_manager_wrapper is None:
+        ]
+        if secrets_manager_models is None:
             error(
-                "No active secrets manager found. Please create a secrets manager "
-                "first and add it to your stack."
+                "No active secrets manager found. Please create a secrets "
+                "manager first and add it to your stack."
             )
 
-        ctx.obj = secrets_manager_wrapper.to_component()
+        ctx.obj = StackComponent.from_model(secrets_manager_models[0])
 
     @secret.command(
         "register",

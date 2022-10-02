@@ -17,13 +17,13 @@ from pyspark.ml.feature import OneHotEncoder, StandardScaler, VectorAssembler
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col
 
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import Output, step
 
-step_operator = Repository().active_stack.step_operator
+step_operator = Client().active_stack.step_operator
 
 
-@step(custom_step_operator=step_operator.name)
+@step(step_operator=step_operator.name)
 def transformer_step(
     train: DataFrame,
 ) -> Output(train_xf=DataFrame, scaler=Transformer, encoder=Transformer,):

@@ -20,22 +20,22 @@ from kserve_tensorflow.pipelines.kserve_tensorflow_pipelines import (
 )
 from kserve_tensorflow.steps.deployer import kserve_tensorflow_custom_deployment
 from kserve_tensorflow.steps.deployment_trigger import (
-    DeploymentTriggerConfig,
+    DeploymentTriggerParameters,
     deployment_trigger,
 )
 from kserve_tensorflow.steps.inference_image_loader import (
-    InferenceImageLoaderStepConfig,
+    InferenceImageLoaderStepParameters,
     inference_image_loader,
 )
 from kserve_tensorflow.steps.predection_service_loader import (
-    PredectionServiceLoaderStepConfig,
+    PredectionServiceLoaderStepParameters,
     kserve_prediction_service_loader,
 )
 from kserve_tensorflow.steps.predictor import kserve_predictor
 from kserve_tensorflow.steps.tf_data_loader import tf_data_loader
 from kserve_tensorflow.steps.tf_evaluator import tf_evaluator
 from kserve_tensorflow.steps.tf_trainer import (
-    TensorflowTrainerConfig,
+    TensorflowTrainerParameters,
     tf_trainer,
 )
 from rich import print
@@ -128,10 +128,10 @@ def main(
         # Initialize and run a continuous deployment pipeline run
         tensorflow_custom_code_pipeline(
             data_loader=tf_data_loader(),
-            trainer=tf_trainer(TensorflowTrainerConfig()),
+            trainer=tf_trainer(TensorflowTrainerParameters()),
             evaluator=tf_evaluator(),
             deployment_trigger=deployment_trigger(
-                config=DeploymentTriggerConfig(
+                params=DeploymentTriggerParameters(
                     min_accuracy=min_accuracy,
                 )
             ),
@@ -142,12 +142,12 @@ def main(
         # Initialize an inference pipeline run
         tensorflow_inference_pipeline(
             inference_image_loader=inference_image_loader(
-                InferenceImageLoaderStepConfig(
+                InferenceImageLoaderStepParameters(
                     img_url=prediction_image_url,
                 ),
             ),
             prediction_service_loader=kserve_prediction_service_loader(
-                PredectionServiceLoaderStepConfig(
+                PredectionServiceLoaderStepParameters(
                     pipeline_name=deployment_pipeline_name,
                     step_name=step_name,
                     model_name=model_name,

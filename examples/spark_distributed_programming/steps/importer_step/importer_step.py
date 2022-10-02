@@ -14,17 +14,17 @@
 
 from pyspark.sql import DataFrame, SparkSession
 
-from zenml.repository import Repository
-from zenml.steps import BaseStepConfig, step
+from zenml.client import Client
+from zenml.steps import BaseParameters, step
 
-step_operator = Repository().active_stack.step_operator
+step_operator = Client().active_stack.step_operator
 
 
-class ImporterConfig(BaseStepConfig):
+class ImporterParameters(BaseParameters):
     path: str
 
 
-@step(custom_step_operator=step_operator.name)
-def importer_step(config: ImporterConfig) -> DataFrame:
+@step(step_operator=step_operator.name)
+def importer_step(params: ImporterParameters) -> DataFrame:
     spark = SparkSession.builder.getOrCreate()
-    return spark.read.csv(config.path, header=True)
+    return spark.read.csv(params.path, header=True)

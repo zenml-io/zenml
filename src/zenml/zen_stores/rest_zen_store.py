@@ -13,102 +13,217 @@
 #  permissions and limitations under the License.
 """REST Zen Store implementation."""
 
+import os
 import re
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from pathlib import Path, PurePath
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 import requests
-from pydantic import BaseModel
+from google.protobuf.json_format import Parse
+from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+from pydantic import BaseModel, validator
 
+from zenml.config.global_config import GlobalConfiguration
+from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    API,
+    ARTIFACTS,
+    EMAIL_ANALYTICS,
     FLAVORS,
-    PIPELINE_RUNS,
+    INFO,
+    INPUTS,
+    LOGIN,
+    METADATA_CONFIG,
+    OUTPUTS,
+    PIPELINES,
     PROJECTS,
-    ROLE_ASSIGNMENTS,
     ROLES,
+    RUNS,
     STACK_COMPONENTS,
-    STACK_CONFIGURATIONS,
     STACKS,
-    STACKS_EMPTY,
-    STORE_ASSOCIATIONS,
+    STEPS,
     TEAMS,
     USERS,
+    VERSION_1,
 )
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
+    AuthorizationException,
     DoesNotExistException,
     EntityExistsError,
     StackComponentExistsError,
     StackExistsError,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.zen_stores import BaseZenStore
-from zenml.zen_stores.models import (
-    ComponentWrapper,
-    FlavorWrapper,
-    Project,
-    Role,
-    RoleAssignment,
-    StackWrapper,
-    StoreAssociation,
-    Team,
-    User,
+from zenml.models import (
+    ArtifactModel,
+    ComponentModel,
+    FlavorModel,
+    PipelineModel,
+    PipelineRunModel,
+    ProjectModel,
+    RoleAssignmentModel,
+    RoleModel,
+    StackModel,
+    StepRunModel,
+    TeamModel,
+    UserModel,
 )
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
+from zenml.models.server_models import ServerModel
+from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.zen_server.models.base_models import (
+    CreateRequest,
+    CreateResponse,
+    UpdateRequest,
+    UpdateResponse,
+)
+from zenml.zen_server.models.pipeline_models import (
+    CreatePipelineRequest,
+    UpdatePipelineRequest,
+)
+from zenml.zen_server.models.projects_models import (
+    CreateProjectRequest,
+    UpdateProjectRequest,
+)
+from zenml.zen_server.models.stack_models import (
+    CreateStackRequest,
+    UpdateStackRequest,
+)
+from zenml.zen_server.models.user_management_models import (
+    CreateRoleRequest,
+    CreateTeamRequest,
+    CreateUserRequest,
+    CreateUserResponse,
+    EmailOptInModel,
+    UpdateRoleRequest,
+    UpdateTeamRequest,
+    UpdateUserRequest,
+)
+from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
+AnyModel = TypeVar("AnyModel", bound=DomainModel)
+AnyProjectScopedModel = TypeVar(
+    "AnyProjectScopedModel", bound=ProjectScopedDomainModel
+)
 
-class RestZenStore(BaseZenStore):
-    """ZenStore implementation for accessing data from a REST API."""
 
-    def initialize(
-        self,
-        url: str,
-        *args: Any,
-        **kwargs: Any,
-    ) -> "RestZenStore":
-        """Initializes a rest zen store instance.
+class RestZenStoreConfiguration(StoreConfiguration):
+    """REST ZenML store configuration.
+
+    Attributes:
+        username: The username to use to connect to the Zen server.
+        password: The password to use to connect to the Zen server.
+        verify_ssl: Either a boolean, in which case it controls whether we
+            verify the server's TLS certificate, or a string, in which case it
+            must be a path to a CA bundle to use or the CA bundle value itself.
+    """
+
+    type: StoreType = StoreType.REST
+    username: str
+    password: str = ""
+    verify_ssl: Union[bool, str] = True
+
+    @validator("url")
+    def validate_url(cls, url: str) -> str:
+        """Validates that the URL is a well formed REST store URL.
 
         Args:
-            url: Endpoint URL of the service for zen storage.
-            args: additional positional arguments (ignored).
-            kwargs: additional keyword arguments (ignored).
+            url: The URL to be validated.
 
         Returns:
-            The initialized zen store instance.
+            The validated URL without trailing slashes.
 
         Raises:
-            ValueError: if the url is not a valid URL.
+            ValueError: If the URL is not a well formed REST store URL.
         """
-        if not self.is_valid_url(url.strip("/")):
-            raise ValueError("Invalid URL for REST store: {url}")
-        self._url = url.strip("/")
-        super().initialize(url, *args, **kwargs)
-        return self
+        url = url.rstrip("/")
+        scheme = re.search("^([a-z0-9]+://)", url)
+        if scheme is None or scheme.group() not in ("https://", "http://"):
+            raise ValueError(
+                "Invalid URL for REST store: {url}. Should be in the form "
+                "https://hostname[:port] or http://hostname[:port]."
+            )
 
-    def _migrate_store(self) -> None:
-        """Migrates the store to the latest version."""
-        # Don't do anything here in the rest store, as the migration has to be
-        # done server-side.
+        return url
 
-    # Static methods:
-
-    @staticmethod
-    def get_path_from_url(url: str) -> Optional[Path]:
-        """Get the path from a URL, if it points or is backed by a local file.
+    @validator("verify_ssl")
+    def validate_verify_ssl(
+        cls, verify_ssl: Union[bool, str]
+    ) -> Union[bool, str]:
+        """Validates that the verify_ssl field either points to a file or is a bool.
 
         Args:
-            url: The URL to get the path from.
+            verify_ssl: The verify_ssl value to be validated.
 
         Returns:
-            None, because there are no local paths from REST URLs.
+            The validated verify_ssl value.
         """
-        return None
+        secret_folder = Path(
+            GlobalConfiguration().local_stores_path,
+            "certificates",
+        )
+        if isinstance(verify_ssl, bool) or verify_ssl.startswith(
+            str(secret_folder)
+        ):
+            return verify_ssl
+
+        if os.path.isfile(verify_ssl):
+            with open(verify_ssl, "r") as f:
+                verify_ssl = f.read()
+
+        fileio.makedirs(str(secret_folder))
+        file_path = Path(secret_folder, "ca_bundle.pem")
+        with open(file_path, "w") as f:
+            f.write(verify_ssl)
+        file_path.chmod(0o600)
+        verify_ssl = str(file_path)
+
+        return verify_ssl
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Don't validate attributes when assigning them. This is necessary
+        # because the `verify_ssl` attribute can be expanded to the contents
+        # of the certificate file.
+        validate_assignment = False
+        # Forbid extra attributes set in the class.
+        extra = "forbid"
+
+
+class RestZenStore(BaseZenStore):
+    """Store implementation for accessing data from a REST API."""
+
+    config: RestZenStoreConfiguration
+    TYPE: ClassVar[StoreType] = StoreType.REST
+    CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = RestZenStoreConfiguration
+    _api_token: Optional[str] = None
+    _session: Optional[requests.Session] = None
+
+    def _initialize_database(self) -> None:
+        """Initialize the database."""
+        # don't do anything for a REST store
+
+    # ====================================
+    # ZenML Store interface implementation
+    # ====================================
+
+    # --------------------------------
+    # Initialization and configuration
+    # --------------------------------
+
+    def _initialize(self) -> None:
+        """Initialize the REST store."""
+        # try to connect to the server to validate the configuration
+        self.active_user
 
     @staticmethod
     def get_local_url(path: str) -> str:
@@ -122,1017 +237,1230 @@ class RestZenStore(BaseZenStore):
         """
         raise NotImplementedError("Cannot build a REST url from a path.")
 
-    @staticmethod
-    def is_valid_url(url: str) -> bool:
-        """Check if the given url is a valid local path.
+    @classmethod
+    def copy_local_store(
+        cls,
+        config: StoreConfiguration,
+        path: str,
+        load_config_path: Optional[PurePath] = None,
+    ) -> StoreConfiguration:
+        """Copy a local store to a new location.
+
+        Use this method to create a copy of a store database to a new location
+        and return a new store configuration pointing to the database copy. This
+        only applies to stores that use the local filesystem to store their
+        data. Calling this method for remote stores simply returns the input
+        store configuration unaltered.
 
         Args:
-            url: The url to check.
+            config: The configuration of the store to copy.
+            path: The new local path where the store DB will be copied.
+            load_config_path: path that will be used to load the copied store
+                database. This can be set to a value different from `path`
+                if the local database copy will be loaded from a different
+                environment, e.g. when the database is copied to a container
+                image and loaded using a different absolute path. This will be
+                reflected in the paths and URLs encoded in the copied store
+                configuration.
 
         Returns:
-            True, if the url is a valid local path, False otherwise.
+            The store configuration of the copied store.
         """
-        scheme = re.search("^([a-z0-9]+://)", url)
-        return (
-            scheme is not None
-            and scheme.group() in ("https://", "http://")
-            and url[-1] != "/"
-        )
+        assert isinstance(config, RestZenStoreConfiguration)
+        if isinstance(config.verify_ssl, str) and os.path.isfile(
+            config.verify_ssl
+        ):
+            config = config.copy(deep=True)
+            with open(config.verify_ssl, "r") as f:
+                config.verify_ssl = f.read()
+        return config
 
-    # Public Interface:
-
-    @property
-    def type(self) -> StoreType:
-        """The type of stack store.
+    def get_store_info(self) -> ServerModel:
+        """Get information about the server.
 
         Returns:
-            The type of the stack store.
+            Information about the server.
         """
-        return StoreType.REST
+        body = self.get(INFO)
+        return ServerModel.parse_obj(body)
 
-    @property
-    def url(self) -> str:
-        """Get the stack store URL.
+    # ------------
+    # TFX Metadata
+    # ------------
 
-        Returns:
-            The URL of the stack store.
-        """
-        return self._url
+    def get_metadata_config(
+        self, expand_certs: bool = False
+    ) -> ConnectionConfig:
+        """Get the TFX metadata config of this ZenStore.
 
-    @property
-    def stacks_empty(self) -> bool:
-        """Check if the store is empty (no stacks are configured).
-
-        The implementation of this method should check if the store is empty
-        without having to load all the stacks from the persistent storage.
-
-        Returns:
-            True, if the store is empty, False otherwise.
+        Args:
+            expand_certs: Whether to expand the certificate paths in the
+                connection config to their value.
 
         Raises:
-            ValueError: if the response is not a boolean.
+            ValueError: if the server response is invalid.
+
+        Returns:
+            The TFX metadata config of this ZenStore.
         """
-        empty = self.get(STACKS_EMPTY)
-        if not isinstance(empty, bool):
+        body = self.get(f"{METADATA_CONFIG}")
+        if not isinstance(body, str):
             raise ValueError(
-                f"Bad API Response. Expected boolean, got:\n{empty}"
+                f"Invalid response from server: {body}. Expected string."
             )
-        return empty
+        metadata_config_pb = Parse(body, ConnectionConfig())
 
-    def get_stack_configuration(
-        self, name: str
-    ) -> Dict[StackComponentType, str]:
-        """Fetches a stack configuration by name.
+        if not expand_certs:
+            if metadata_config_pb.HasField(
+                "mysql"
+            ) and metadata_config_pb.mysql.HasField("ssl_options"):
+                # Save the certificates in a secure location on disk
+                secret_folder = Path(
+                    GlobalConfiguration().local_stores_path,
+                    "certificates",
+                )
+                for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+                    if not metadata_config_pb.mysql.ssl_options.HasField(
+                        key.lstrip("ssl_")
+                    ):
+                        continue
+                    content = getattr(
+                        metadata_config_pb.mysql.ssl_options, key.lstrip("ssl_")
+                    )
+                    if content and not os.path.isfile(content):
+                        fileio.makedirs(str(secret_folder))
+                        file_path = Path(secret_folder, f"{key}.pem")
+                        with open(file_path, "w") as f:
+                            f.write(content)
+                        file_path.chmod(0o600)
+                        setattr(
+                            metadata_config_pb.mysql.ssl_options,
+                            key.lstrip("ssl_"),
+                            str(file_path),
+                        )
+
+        return metadata_config_pb
+
+    # ------
+    # Stacks
+    # ------
+
+    @track(AnalyticsEvent.REGISTERED_STACK)
+    def create_stack(
+        self,
+        stack: StackModel,
+    ) -> StackModel:
+        """Register a new stack.
 
         Args:
-            name: The name of the stack to fetch.
+            stack: The stack to register.
 
         Returns:
-            Dict[StackComponentType, str] for the requested stack name.
+            The registered stack.
         """
-        return self._parse_stack_configuration(
-            self.get(f"{STACK_CONFIGURATIONS}/{name}")
+        return self._create_project_scoped_resource(
+            resource=stack,
+            route=STACKS,
+            request_model=CreateStackRequest,
         )
 
-    @property
-    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-        """Configurations for all stacks registered in this stack store.
+    def get_stack(self, stack_id: UUID) -> StackModel:
+        """Get a stack by its unique ID.
+
+        Args:
+            stack_id: The ID of the stack to get.
 
         Returns:
-            Dictionary mapping stack names to Dict[StackComponentType, str]'s
+            The stack with the given ID.
+        """
+        return self._get_resource(
+            resource_id=stack_id,
+            route=STACKS,
+            resource_model=StackModel,
+        )
+
+    def list_stacks(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        component_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+    ) -> List[StackModel]:
+        """List all stacks matching the given filter criteria.
+
+        Args:
+            project_name_or_id: Id or name of the Project containing the stack
+            user_name_or_id: Optionally filter stacks by their owner
+            component_id: Optionally filter for stacks that contain the
+                          component
+            name: Optionally filter stacks by their name
+            is_shared: Optionally filter out stacks by whether they are shared
+                or not
+
+        Returns:
+            A list of all stacks matching the filter criteria.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=STACKS,
+            resource_model=StackModel,
+            **filters,
+        )
+
+    @track(AnalyticsEvent.UPDATED_STACK)
+    def update_stack(
+        self,
+        stack: StackModel,
+    ) -> StackModel:
+        """Update a stack.
+
+        Args:
+            stack: The stack to use for the update.
+
+        Returns:
+            The updated stack.
+        """
+        return self._update_resource(
+            resource=stack,
+            route=STACKS,
+            request_model=UpdateStackRequest,
+        )
+
+    @track(AnalyticsEvent.DELETED_STACK)
+    def delete_stack(self, stack_id: UUID) -> None:
+        """Delete a stack.
+
+        Args:
+            stack_id: The ID of the stack to delete.
+        """
+        self._delete_resource(
+            resource_id=stack_id,
+            route=STACKS,
+        )
+
+    # ----------------
+    # Stack components
+    # ----------------
+
+    @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
+    def create_stack_component(
+        self,
+        component: ComponentModel,
+    ) -> ComponentModel:
+        """Create a stack component.
+
+        Args:
+            component: The stack component to create.
+
+        Returns:
+            The created stack component.
+        """
+        return self._create_project_scoped_resource(
+            resource=component,
+            route=STACK_COMPONENTS,
+            # TODO[Stefan]: for when the request model is ready
+            # request_model=CreateStackComponentRequest,
+        )
+
+    def get_stack_component(self, component_id: UUID) -> ComponentModel:
+        """Get a stack component by ID.
+
+        Args:
+            component_id: The ID of the stack component to get.
+
+        Returns:
+            The stack component.
+        """
+        return self._get_resource(
+            resource_id=component_id,
+            route=STACK_COMPONENTS,
+            resource_model=ComponentModel,
+        )
+
+    def list_stack_components(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        type: Optional[str] = None,
+        flavor_name: Optional[str] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+    ) -> List[ComponentModel]:
+        """List all stack components matching the given filter criteria.
+
+        Args:
+            project_name_or_id: The ID or name of the Project to which the stack
+                components belong
+            type: Optionally filter by type of stack component
+            flavor_name: Optionally filter by flavor
+            user_name_or_id: Optionally filter stack components by the owner
+            name: Optionally filter stack component by name
+            is_shared: Optionally filter out stack component by whether they are
+                shared or not
+
+        Returns:
+            A list of all stack components matching the filter criteria.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=STACK_COMPONENTS,
+            resource_model=ComponentModel,
+            **filters,
+        )
+
+    @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
+    def update_stack_component(
+        self,
+        component: ComponentModel,
+    ) -> ComponentModel:
+        """Update an existing stack component.
+
+        Args:
+            component: The stack component to use for the update.
+
+        Returns:
+            The updated stack component.
+        """
+        return self._update_resource(
+            resource=component,
+            route=STACK_COMPONENTS,
+            # TODO[Stefan]: for when the request model is ready
+            # request_model=UpdateComponentRequest,
+        )
+
+    @track(AnalyticsEvent.DELETED_STACK_COMPONENT)
+    def delete_stack_component(self, component_id: UUID) -> None:
+        """Delete a stack component.
+
+        Args:
+            component_id: The ID of the stack component to delete.
+        """
+        self._delete_resource(
+            resource_id=component_id,
+            route=STACK_COMPONENTS,
+        )
+
+    def get_stack_component_side_effects(
+        self,
+        component_id: UUID,
+        run_id: UUID,
+        pipeline_id: UUID,
+        stack_id: UUID,
+    ) -> Dict[Any, Any]:
+        """Get the side effects of a stack component.
+
+        Args:
+            component_id: The ID of the stack component to get side effects for.
+            run_id: The ID of the run to get side effects for.
+            pipeline_id: The ID of the pipeline to get side effects for.
+            stack_id: The ID of the stack to get side effects for.
+        """
+
+    # -----------------------
+    # Stack component flavors
+    # -----------------------
+
+    @track(AnalyticsEvent.CREATED_FLAVOR)
+    def create_flavor(
+        self,
+        flavor: FlavorModel,
+    ) -> FlavorModel:
+        """Creates a new stack component flavor.
+
+        Args:
+            flavor: The stack component flavor to create.
+
+        Returns:
+            The newly created flavor.
+        """
+        return self._create_project_scoped_resource(
+            resource=flavor,
+            route=FLAVORS,
+            # TODO[Stefan]: for when the request model is ready
+            # request_model=CreateFlavorRequest,
+        )
+
+    def get_flavor(self, flavor_id: UUID) -> FlavorModel:
+        """Get a stack component flavor by ID.
+
+        Args:
+            flavor_id: The ID of the stack component flavor to get.
+
+        Returns:
+            The stack component flavor.
+        """
+        return self._get_resource(
+            resource_id=flavor_id,
+            route=FLAVORS,
+            resource_model=FlavorModel,
+        )
+
+    def list_flavors(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        component_type: Optional[StackComponentType] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+    ) -> List[FlavorModel]:
+        """List all stack component flavors matching the given filter criteria.
+
+        Args:
+            project_name_or_id: Optionally filter by the Project to which the
+                component flavors belong
+            user_name_or_id: Optionally filter by the owner
+            component_type: Optionally filter by type of stack component
+            name: Optionally filter flavors by name
+            is_shared: Optionally filter out flavors by whether they are
+                shared or not
+
+        Returns:
+            List of all the stack component flavors matching the given criteria.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=FLAVORS,
+            resource_model=FlavorModel,
+            **filters,
+        )
+
+    @track(AnalyticsEvent.UPDATED_FLAVOR)
+    def update_flavor(self, flavor: FlavorModel) -> FlavorModel:
+        """Update an existing stack component flavor.
+
+        Args:
+            flavor: The stack component flavor to use for the update.
+
+        Returns:
+            The updated stack component flavor.
+        """
+        return self._update_resource(
+            resource=flavor,
+            route=FLAVORS,
+            # TODO[Stefan]: for when the request model is ready
+            # request_model=UpdateFlavorRequest,
+        )
+
+    @track(AnalyticsEvent.DELETED_FLAVOR)
+    def delete_flavor(self, flavor_id: UUID) -> None:
+        """Delete a stack component flavor.
+
+        Args:
+            flavor_id: The ID of the stack component flavor to delete.
+        """
+        self._delete_resource(
+            resource_id=flavor_id,
+            route=FLAVORS,
+        )
+
+    # -----
+    # Users
+    # -----
+
+    @property
+    def active_user_name(self) -> str:
+        """Gets the active username.
+
+        Returns:
+            The active username.
+        """
+        return self.config.username
+
+    @track(AnalyticsEvent.CREATED_USER)
+    def create_user(self, user: UserModel) -> UserModel:
+        """Creates a new user.
+
+        Args:
+            user: User to be created.
+
+        Returns:
+            The newly created user.
+        """
+        return self._create_resource(
+            resource=user,
+            route=USERS,
+            request_model=CreateUserRequest,
+            response_model=CreateUserResponse,
+        )
+
+    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserModel:
+        """Gets a specific user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+
+        Returns:
+            The requested user, if it was found.
+        """
+        return self._get_resource(
+            resource_id=user_name_or_id,
+            route=USERS,
+            resource_model=UserModel,
+        )
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_users(self) -> List[UserModel]:
+        """List all users.
+
+        Returns:
+            A list of all users.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=USERS,
+            resource_model=UserModel,
+            **filters,
+        )
+
+    @track(AnalyticsEvent.UPDATED_USER)
+    def update_user(self, user: UserModel) -> UserModel:
+        """Updates an existing user.
+
+        Args:
+            user: The user model to use for the update.
+
+        Returns:
+            The updated user.
+        """
+        return self._update_resource(
+            resource=user,
+            route=USERS,
+            request_model=UpdateUserRequest,
+        )
+
+    @track(AnalyticsEvent.DELETED_USER)
+    def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to delete.
+        """
+        self._delete_resource(
+            resource_id=user_name_or_id,
+            route=USERS,
+        )
+
+    @track(AnalyticsEvent.OPT_IN_OUT_EMAIL)
+    def user_email_opt_in(
+        self,
+        user_name_or_id: Union[str, UUID],
+        user_opt_in_response: bool,
+        email: Optional[str] = None,
+    ) -> UserModel:
+        """Persist user response to the email prompt.
+
+        Args:
+            user_name_or_id: The name or the ID of the user.
+            user_opt_in_response: Whether this email should be associated
+                with the user id in the telemetry
+            email: The users email
+
+        Returns:
+            The updated user.
+        """
+        request = EmailOptInModel(
+            email=email, email_opted_in=user_opt_in_response
+        )
+        route = f"{USERS}/{str(user_name_or_id)}{EMAIL_ANALYTICS}"
+
+        response_body = self.put(route, body=request)
+        user = UserModel.parse_obj(response_body)
+        return user
+
+    # -----
+    # Teams
+    # -----
+
+    @track(AnalyticsEvent.CREATED_TEAM)
+    def create_team(self, team: TeamModel) -> TeamModel:
+        """Creates a new team.
+
+        Args:
+            team: The team model to create.
+
+        Returns:
+            The newly created team.
+        """
+        return self._create_resource(
+            resource=team,
+            route=TEAMS,
+            request_model=CreateTeamRequest,
+        )
+
+    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamModel:
+        """Gets a specific team.
+
+        Args:
+            team_name_or_id: Name or ID of the team to get.
+
+        Returns:
+            The requested team.
+        """
+        return self._get_resource(
+            resource_id=team_name_or_id,
+            route=TEAMS,
+            resource_model=TeamModel,
+        )
+
+    def list_teams(self) -> List[TeamModel]:
+        """List all teams.
+
+        Returns:
+            A list of all teams.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=TEAMS,
+            resource_model=TeamModel,
+            **filters,
+        )
+
+    @track(AnalyticsEvent.UPDATED_TEAM)
+    def update_team(self, team: TeamModel) -> TeamModel:
+        """Update an existing team.
+
+        Args:
+            team: The team to use for the update.
+
+        Returns:
+            The updated team.
+        """
+        return self._update_resource(
+            resource=team,
+            route=TEAMS,
+            request_model=UpdateTeamRequest,
+        )
+
+    @track(AnalyticsEvent.DELETED_TEAM)
+    def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a team.
+
+        Args:
+            team_name_or_id: Name or ID of the team to delete.
+        """
+        self._delete_resource(
+            resource_id=team_name_or_id,
+            route=TEAMS,
+        )
+
+    # ---------------
+    # Team membership
+    # ---------------
+
+    def get_users_for_team(
+        self, team_name_or_id: Union[str, UUID]
+    ) -> List[UserModel]:
+        """Fetches all users of a team.
+
+        Args:
+            team_name_or_id: The name or ID of the team for which to get users.
+        """
+
+    def get_teams_for_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> List[TeamModel]:
+        """Fetches all teams for a user.
+
+        Args:
+            user_name_or_id: The name or ID of the user for which to get all
+                teams.
+        """
+
+    def add_user_to_team(
+        self,
+        user_name_or_id: Union[str, UUID],
+        team_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Adds a user to a team.
+
+        Args:
+            user_name_or_id: Name or ID of the user to add to the team.
+            team_name_or_id: Name or ID of the team to which to add the user to.
+        """
+
+    def remove_user_from_team(
+        self,
+        user_name_or_id: Union[str, UUID],
+        team_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Removes a user from a team.
+
+        Args:
+            user_name_or_id: Name or ID of the user to remove from the team.
+            team_name_or_id: Name or ID of the team from which to remove the user.
+        """
+
+    # -----
+    # Roles
+    # -----
+
+    @track(AnalyticsEvent.CREATED_ROLE)
+    def create_role(self, role: RoleModel) -> RoleModel:
+        """Creates a new role.
+
+        Args:
+            role: The role model to create.
+
+        Returns:
+            The newly created role.
+        """
+        return self._create_resource(
+            resource=role,
+            route=ROLES,
+            request_model=CreateRoleRequest,
+        )
+
+    # TODO: consider using team_id instead
+    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleModel:
+        """Gets a specific role.
+
+        Args:
+            role_name_or_id: Name or ID of the role to get.
+
+        Returns:
+            The requested role.
+        """
+        return self._get_resource(
+            resource_id=role_name_or_id,
+            route=ROLES,
+            resource_model=RoleModel,
+        )
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_roles(self) -> List[RoleModel]:
+        """List all roles.
+
+        Returns:
+            A list of all roles.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=ROLES,
+            resource_model=RoleModel,
+            **filters,
+        )
+
+    @track(AnalyticsEvent.UPDATED_ROLE)
+    def update_role(self, role: RoleModel) -> RoleModel:
+        """Update an existing role.
+
+        Args:
+            role: The role to use for the update.
+
+        Returns:
+            The updated role.
+        """
+        return self._update_resource(
+            resource=role,
+            route=ROLES,
+            request_model=UpdateRoleRequest,
+        )
+
+    @track(AnalyticsEvent.DELETED_ROLE)
+    def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a role.
+
+        Args:
+            role_name_or_id: Name or ID of the role to delete.
+        """
+        self._delete_resource(
+            resource_id=role_name_or_id,
+            route=ROLES,
+        )
+
+    # ----------------
+    # Role assignments
+    # ----------------
+
+    def list_role_assignments(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        team_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> List[RoleAssignmentModel]:
+        """List all role assignments.
+
+        Args:
+            project_name_or_id: If provided, only list assignments for the given
+                project
+            team_name_or_id: If provided, only list assignments for the given
+                team
+            user_name_or_id: If provided, only list assignments for the given
+                user
+
+        Returns:
+            A list of all role assignments.
+        """
+        roles: List[RoleAssignmentModel] = []
+        if user_name_or_id:
+            roles.extend(
+                self._list_resources(
+                    route=f"{USERS}/{user_name_or_id}{ROLES}",
+                    resource_model=RoleAssignmentModel,
+                    project_name_or_id=project_name_or_id,
+                )
+            )
+        if team_name_or_id:
+            roles.extend(
+                self._list_resources(
+                    route=f"{TEAMS}/{team_name_or_id}{ROLES}",
+                    resource_model=RoleAssignmentModel,
+                    project_name_or_id=project_name_or_id,
+                )
+            )
+        return roles
+
+    def assign_role(
+        self,
+        role_name_or_id: Union[str, UUID],
+        user_or_team_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        is_user: bool = True,
+    ) -> None:
+        """Assigns a role to a user or team, scoped to a specific project.
+
+        Args:
+            role_name_or_id: Name or ID of the role to assign.
+            user_or_team_name_or_id: Name or ID of the user or team to which to
+                assign the role.
+            is_user: Whether `user_or_team_id` refers to a user or a team.
+            project_name_or_id: Optional Name or ID of a project in which to
+                assign the role. If this is not provided, the role will be
+                assigned globally.
+        """
+
+    def revoke_role(
+        self,
+        role_name_or_id: Union[str, UUID],
+        user_or_team_name_or_id: Union[str, UUID],
+        is_user: bool = True,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> None:
+        """Revokes a role from a user or team for a given project.
+
+        Args:
+            role_name_or_id: ID of the role to revoke.
+            user_or_team_name_or_id: Name or ID of the user or team from which
+                to revoke the role.
+            is_user: Whether `user_or_team_id` refers to a user or a team.
+            project_name_or_id: Optional ID of a project in which to revoke
+                the role. If this is not provided, the role will be revoked
+                globally.
+        """
+
+    # --------
+    # Projects
+    # --------
+
+    @track(AnalyticsEvent.CREATED_PROJECT)
+    def create_project(self, project: ProjectModel) -> ProjectModel:
+        """Creates a new project.
+
+        Args:
+            project: The project to create.
+
+        Returns:
+            The newly created project.
+        """
+        return self._create_resource(
+            resource=project,
+            route=PROJECTS,
+            request_model=CreateProjectRequest,
+        )
+
+    def get_project(self, project_name_or_id: Union[UUID, str]) -> ProjectModel:
+        """Get an existing project by name or ID.
+
+        Args:
+            project_name_or_id: Name or ID of the project to get.
+
+        Returns:
+            The requested project.
+        """
+        return self._get_resource(
+            resource_id=project_name_or_id,
+            route=PROJECTS,
+            resource_model=ProjectModel,
+        )
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_projects(self) -> List[ProjectModel]:
+        """List all projects.
+
+        Returns:
+            A list of all projects.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=PROJECTS,
+            resource_model=ProjectModel,
+            **filters,
+        )
+
+    @track(AnalyticsEvent.UPDATED_PROJECT)
+    def update_project(self, project: ProjectModel) -> ProjectModel:
+        """Update an existing project.
+
+        Args:
+            project: The project to use for the update.
+
+        Returns:
+            The updated project.
+        """
+        return self._update_resource(
+            resource=project,
+            route=PROJECTS,
+            request_model=UpdateProjectRequest,
+        )
+
+    @track(AnalyticsEvent.DELETED_PROJECT)
+    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a project.
+
+        Args:
+            project_name_or_id: Name or ID of the project to delete.
+        """
+        self._delete_resource(
+            resource_id=project_name_or_id,
+            route=PROJECTS,
+        )
+
+    # ---------
+    # Pipelines
+    # ---------
+
+    @track(AnalyticsEvent.CREATE_PIPELINE)
+    def create_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
+        """Creates a new pipeline in a project.
+
+        Args:
+            pipeline: The pipeline to create.
+
+        Returns:
+            The newly created pipeline.
+        """
+        return self._create_project_scoped_resource(
+            resource=pipeline,
+            route=PIPELINES,
+            request_model=CreatePipelineRequest,
+        )
+
+    def get_pipeline(self, pipeline_id: UUID) -> PipelineModel:
+        """Get a pipeline with a given ID.
+
+        Args:
+            pipeline_id: ID of the pipeline.
+
+        Returns:
+            The pipeline.
+        """
+        return self._get_resource(
+            resource_id=pipeline_id,
+            route=PIPELINES,
+            resource_model=PipelineModel,
+        )
+
+    def list_pipelines(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        name: Optional[str] = None,
+    ) -> List[PipelineModel]:
+        """List all pipelines in the project.
+
+        Args:
+            project_name_or_id: If provided, only list pipelines in this project.
+            user_name_or_id: If provided, only list pipelines from this user.
+            name: If provided, only list pipelines with this name.
+
+        Returns:
+            A list of pipelines.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=PIPELINES,
+            resource_model=PipelineModel,
+            **filters,
+        )
+
+    @track(AnalyticsEvent.UPDATE_PIPELINE)
+    def update_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
+        """Updates a pipeline.
+
+        Args:
+            pipeline: The pipeline to use for the update.
+
+        Returns:
+            The updated pipeline.
+        """
+        return self._update_resource(
+            resource=pipeline,
+            route=PIPELINES,
+            request_model=UpdatePipelineRequest,
+        )
+
+    @track(AnalyticsEvent.DELETE_PIPELINE)
+    def delete_pipeline(self, pipeline_id: UUID) -> None:
+        """Deletes a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to delete.
+        """
+        self._delete_resource(
+            resource_id=pipeline_id,
+            route=PIPELINES,
+        )
+
+    # --------------
+    # Pipeline steps
+    # --------------
+
+    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
+    # TODO: Discuss whether we even need this, given that the endpoint is on
+    # pipeline runs
+    # TODO: [ALEX] add filtering param(s)
+    def list_steps(self, pipeline_id: UUID) -> List[StepRunModel]:
+        """List all steps.
+
+        Args:
+            pipeline_id: The ID of the pipeline to list steps for.
+        """
+
+    # --------------
+    # Pipeline runs
+    # --------------
+
+    def get_run(self, run_id: UUID) -> PipelineRunModel:
+        """Gets a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The pipeline run.
+        """
+        return self._get_resource(
+            resource_id=run_id,
+            route=RUNS,
+            resource_model=PipelineRunModel,
+        )
+
+    # TODO: Figure out what exactly gets returned from this
+    def get_run_component_side_effects(
+        self,
+        run_id: UUID,
+        component_id: Optional[UUID] = None,
+    ) -> Dict[str, Any]:
+        """Gets the side effects for a component in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+            component_id: The ID of the component to get.
+        """
+
+    def list_runs(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[UUID] = None,
+        component_id: Optional[UUID] = None,
+        run_name: Optional[str] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[UUID] = None,
+        unlisted: bool = False,
+    ) -> List[PipelineRunModel]:
+        """Gets all pipeline runs.
+
+        Args:
+            project_name_or_id: If provided, only return runs for this project.
+            stack_id: If provided, only return runs for this stack.
+            component_id: Optionally filter for runs that used the
+                          component
+            run_name: Run name if provided
+            user_name_or_id: If provided, only return runs for this user.
+            pipeline_id: If provided, only return runs for this pipeline.
+            unlisted: If True, only return unlisted runs that are not
+                associated with any pipeline (filter by `pipeline_id==None`).
+
+        Returns:
+            A list of all pipeline runs.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=RUNS,
+            resource_model=PipelineRunModel,
+            **filters,
+        )
+
+    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
+        """Gets the execution status of a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get the status for.
 
         Raises:
-            ValueError: If the API response is not a dict.
+            NotImplementedError: since it is not implemented.
         """
-        body = self.get(STACK_CONFIGURATIONS)
+        # TODO
+        raise NotImplementedError
+
+    # ------------------
+    # Pipeline run steps
+    # ------------------
+
+    def get_run_step(self, step_id: UUID) -> StepRunModel:
+        """Get a step by ID.
+
+        Args:
+            step_id: The ID of the step to get.
+
+        Returns:
+            The step.
+        """
+        return self._get_resource(
+            resource_id=step_id,
+            route=STEPS,
+            resource_model=StepRunModel,
+        )
+
+    def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+        """Get a list of outputs for a specific step.
+
+        Args:
+            step_id: The id of the step to get outputs for.
+
+        Returns:
+            A dict mapping artifact names to the output artifacts for the step.
+
+        Raises:
+            ValueError: if the response from the API is not a dict.
+        """
+        body = self.get(f"{STEPS}/{str(step_id)}{OUTPUTS}")
         if not isinstance(body, dict):
             raise ValueError(
                 f"Bad API Response. Expected dict, got {type(body)}"
             )
         return {
-            key: self._parse_stack_configuration(value)
-            for key, value in body.items()
+            name: ArtifactModel.parse_obj(entry) for name, entry in body.items()
         }
 
-    def _register_stack_component(
-        self,
-        component: ComponentWrapper,
-    ) -> None:
-        """Register a stack component.
+    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+        """Get a list of inputs for a specific step.
 
         Args:
-            component: The component to register.
-        """
-        self.post(STACK_COMPONENTS, body=component)
-
-    def _update_stack_component(
-        self,
-        name: str,
-        component_type: StackComponentType,
-        component: ComponentWrapper,
-    ) -> Dict[str, str]:
-        """Update a stack component.
-
-        Args:
-            name: The original name of the stack component.
-            component_type: The type of the stack component to update.
-            component: The new component to update with.
+            step_id: The id of the step to get inputs for.
 
         Returns:
-            The updated component.
+            A dict mapping artifact names to the input artifacts for the step.
 
         Raises:
-            ValueError: in cases of a bad API response.
+            ValueError: if the response from the API is not a dict.
         """
-        body = self.put(
-            f"{STACK_COMPONENTS}/{component_type}/{name}", body=component
-        )
-        if isinstance(body, dict):
-            return cast(Dict[str, str], body)
-        else:
+        body = self.get(f"{STEPS}/{str(step_id)}{INPUTS}")
+        if not isinstance(body, dict):
             raise ValueError(
                 f"Bad API Response. Expected dict, got {type(body)}"
             )
-
-    def _deregister_stack(self, name: str) -> None:
-        """Delete a stack from storage.
-
-        Args:
-            name: The name of the stack to be deleted.
-        """
-        self.delete(f"{STACKS}/{name}")
-
-    def _save_stack(
-        self,
-        name: str,
-        stack_configuration: Dict[StackComponentType, str],
-    ) -> None:
-        """Add a stack to storage.
-
-        Args:
-            name: The name to save the stack as.
-            stack_configuration: Dict[StackComponentType, str] to persist.
-
-        Raises:
-            NotImplementedError: always.
-        """
-        raise NotImplementedError
-
-    # Custom implementations:
-
-    @property
-    def stacks(self) -> List[StackWrapper]:
-        """All stacks registered in this repository.
-
-        Returns:
-            List[StackWrapper] of all stacks registered in this repository.
-
-        Raises:
-            ValueError: If the API response is not a list of stacks.
-        """
-        body = self.get(STACKS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [StackWrapper.parse_obj(s) for s in body]
-
-    def get_stack(self, name: str) -> StackWrapper:
-        """Fetch a stack by name.
-
-        Args:
-            name: The name of the stack to retrieve.
-
-        Returns:
-            StackWrapper instance if the stack exists.
-        """
-        return StackWrapper.parse_obj(self.get(f"{STACKS}/{name}"))
-
-    def _register_stack(self, stack: StackWrapper) -> None:
-        """Register a stack and its components.
-
-        If any of the stacks' components aren't registered in the stack store
-        yet, this method will try to register them as well.
-
-        Args:
-            stack: The stack to register.
-        """
-        self.post(STACKS, stack)
-
-    def _update_stack(self, name: str, stack: StackWrapper) -> None:
-        """Update a stack and its components.
-
-        If any of the stack's components aren't registered in the stack store
-        yet, this method will try to register them as well.
-
-        Args:
-            name: The original name of the stack.
-            stack: The new stack to use in the update.
-        """
-        self.put(f"{STACKS}/{name}", body=stack)
-        if name != stack.name:
-            self.deregister_stack(name)
-
-    def get_stack_component(
-        self, component_type: StackComponentType, name: str
-    ) -> ComponentWrapper:
-        """Get a registered stack component.
-
-        Args:
-            component_type: The type of the component to retrieve.
-            name: The name of the component to retrieve.
-
-        Returns:
-            ComponentWrapper instance if the component exists.
-        """
-        return ComponentWrapper.parse_obj(
-            self.get(f"{STACK_COMPONENTS}/{component_type}/{name}")
-        )
-
-    def get_stack_components(
-        self, component_type: StackComponentType
-    ) -> List[ComponentWrapper]:
-        """Fetches all registered stack components of the given type.
-
-        Args:
-            component_type: StackComponentType to list members of
-
-        Returns:
-            A list of StackComponentConfiguration instances.
-
-        Raises:
-            ValueError: If the API response is not a list of components.
-        """
-        body = self.get(f"{STACK_COMPONENTS}/{component_type}")
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [ComponentWrapper.parse_obj(c) for c in body]
-
-    def deregister_stack_component(
-        self, component_type: StackComponentType, name: str
-    ) -> None:
-        """Deregisters a stack component.
-
-        Args:
-            component_type: The type of the component to deregister.
-            name: The name of the component to deregister.
-        """
-        self.delete(f"{STACK_COMPONENTS}/{component_type}/{name}")
-
-    # User, project and role management
-
-    @property
-    def users(self) -> List[User]:
-        """All registered users.
-
-        Returns:
-            A list of all registered users.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        body = self.get(USERS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [User.parse_obj(user_dict) for user_dict in body]
-
-    def _get_user(self, user_name: str) -> User:
-        """Get a specific user by name.
-
-        Args:
-            user_name: Name of the user to get.
-
-        Returns:
-            The requested user, if it was found.
-        """
-        return User.parse_obj(self.get(f"{USERS}/{user_name}"))
-
-    def _create_user(self, user_name: str) -> User:
-        """Creates a new user.
-
-        Args:
-            user_name: Unique username.
-
-        Returns:
-            The newly created user.
-        """
-        user = User(name=user_name)
-        return User.parse_obj(self.post(USERS, body=user))
-
-    def _delete_user(self, user_name: str) -> None:
-        """Deletes a user.
-
-        Args:
-            user_name: Name of the user to delete.
-        """
-        self.delete(f"{USERS}/{user_name}")
-
-    @property
-    def teams(self) -> List[Team]:
-        """All registered teams.
-
-        Returns:
-            A list of all registered teams.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        body = self.get(TEAMS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [Team.parse_obj(team_dict) for team_dict in body]
-
-    def _get_team(self, team_name: str) -> Team:
-        """Gets a specific team.
-
-        Args:
-            team_name: Name of the team to get.
-
-        Returns:
-            The requested team.
-        """
-        return Team.parse_obj(self.get(f"{TEAMS}/{team_name}"))
-
-    def _create_team(self, team_name: str) -> Team:
-        """Creates a new team.
-
-        Args:
-            team_name: Unique team name.
-
-        Returns:
-            The newly created team.
-        """
-        team = Team(name=team_name)
-        return Team.parse_obj(self.post(TEAMS, body=team))
-
-    def _delete_team(self, team_name: str) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name: Name of the team to delete.
-        """
-        self.delete(f"{TEAMS}/{team_name}")
-
-    def add_user_to_team(self, team_name: str, user_name: str) -> None:
-        """Adds a user to a team.
-
-        Args:
-            team_name: Name of the team.
-            user_name: Name of the user.
-        """
-        user = User(name=user_name)
-        self.post(f"{TEAMS}/{team_name}/users", user)
-
-    def remove_user_from_team(self, team_name: str, user_name: str) -> None:
-        """Removes a user from a team.
-
-        Args:
-            team_name: Name of the team.
-            user_name: Name of the user.
-        """
-        self.delete(f"{TEAMS}/{team_name}/users/{user_name}")
-
-    @property
-    def projects(self) -> List[Project]:
-        """All registered projects.
-
-        Returns:
-            A list of all registered projects.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        body = self.get(PROJECTS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [Project.parse_obj(project_dict) for project_dict in body]
-
-    def _get_project(self, project_name: str) -> Project:
-        """Get an existing project by name.
-
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            The requested project if one was found.
-        """
-        return Project.parse_obj(self.get(f"{PROJECTS}/{project_name}"))
-
-    def _create_project(
-        self, project_name: str, description: Optional[str] = None
-    ) -> Project:
-        """Creates a new project.
-
-        Args:
-            project_name: Unique project name.
-            description: Optional project description.
-
-        Returns:
-            The newly created project.
-        """
-        project = Project(name=project_name, description=description)
-        return Project.parse_obj(self.post(PROJECTS, body=project))
-
-    def _delete_project(self, project_name: str) -> None:
-        """Deletes a project.
-
-        Args:
-            project_name: Name of the project to delete.
-        """
-        self.delete(f"{PROJECTS}/{project_name}")
-
-    @property
-    def roles(self) -> List[Role]:
-        """All registered roles.
-
-        Returns:
-            A list of all registered roles.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        body = self.get(ROLES)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [Role.parse_obj(role_dict) for role_dict in body]
-
-    @property
-    def role_assignments(self) -> List[RoleAssignment]:
-        """All registered role assignments.
-
-        Returns:
-            A list of all registered role assignments.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        body = self.get(ROLE_ASSIGNMENTS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [
-            RoleAssignment.parse_obj(assignment_dict)
-            for assignment_dict in body
-        ]
-
-    def _get_role(self, role_name: str) -> Role:
-        """Gets a specific role.
-
-        Args:
-            role_name: Name of the role to get.
-
-        Returns:
-            The requested role.
-        """
-        return Role.parse_obj(self.get(f"{ROLES}/{role_name}"))
-
-    def _create_role(self, role_name: str) -> Role:
-        """Creates a new role.
-
-        Args:
-            role_name: Unique role name.
-
-        Returns:
-            The newly created role.
-        """
-        role = Role(name=role_name)
-        return Role.parse_obj(self.post(ROLES, body=role))
-
-    def _delete_role(self, role_name: str) -> None:
-        """Deletes a role.
-
-        Args:
-            role_name: Name of the role to delete.
-        """
-        self.delete(f"{ROLES}/{role_name}")
-
-    def assign_role(
-        self,
-        role_name: str,
-        entity_name: str,
-        project_name: Optional[str] = None,
-        is_user: bool = True,
-    ) -> None:
-        """Assigns a role to a user or team.
-
-        Args:
-            role_name: Name of the role to assign.
-            entity_name: User or team name.
-            project_name: Optional project name.
-            is_user: Boolean indicating whether the given `entity_name` refers
-                to a user.
-        """
-        data = {
-            "role_name": role_name,
-            "entity_name": entity_name,
-            "project_name": project_name,
-            "is_user": is_user,
-        }
-        self._handle_response(
-            requests.post(
-                self.url + ROLE_ASSIGNMENTS,
-                json=data,
-                auth=self._get_authentication(),
-            )
-        )
-
-    def revoke_role(
-        self,
-        role_name: str,
-        entity_name: str,
-        project_name: Optional[str] = None,
-        is_user: bool = True,
-    ) -> None:
-        """Revokes a role from a user or team.
-
-        Args:
-            role_name: Name of the role to revoke.
-            entity_name: User or team name.
-            project_name: Optional project name.
-            is_user: Boolean indicating whether the given `entity_name` refers
-                to a user.
-        """
-        data = {
-            "role_name": role_name,
-            "entity_name": entity_name,
-            "project_name": project_name,
-            "is_user": is_user,
-        }
-        self._handle_response(
-            requests.delete(
-                self.url + ROLE_ASSIGNMENTS,
-                json=data,
-                auth=self._get_authentication(),
-            )
-        )
-
-    def get_users_for_team(self, team_name: str) -> List[User]:
-        """Fetches all users of a team.
-
-        Args:
-            team_name: Name of the team.
-
-        Returns:
-            List of users that are part of the team.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        body = self.get(f"{TEAMS}/{team_name}/users")
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [User.parse_obj(user_dict) for user_dict in body]
-
-    def get_teams_for_user(self, user_name: str) -> List[Team]:
-        """Fetches all teams for a user.
-
-        Args:
-            user_name: Name of the user.
-
-        Returns:
-            List of teams that the user is part of.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        body = self.get(f"{USERS}/{user_name}/teams")
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [Team.parse_obj(team_dict) for team_dict in body]
-
-    def get_role_assignments_for_user(
-        self,
-        user_name: str,
-        project_name: Optional[str] = None,
-        include_team_roles: bool = True,
-    ) -> List[RoleAssignment]:
-        """Fetches all role assignments for a user.
-
-        Args:
-            user_name: Name of the user.
-            project_name: Optional filter to only return roles assigned for
-                this project.
-            include_team_roles: If `True`, includes roles for all teams that
-                the user is part of.
-
-        Returns:
-            List of role assignments for this user.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        path = f"{USERS}/{user_name}/role_assignments"
-        if project_name:
-            path += f"?project_name={project_name}"
-
-        body = self.get(path)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        assignments = [
-            RoleAssignment.parse_obj(assignment_dict)
-            for assignment_dict in body
-        ]
-        if include_team_roles:
-            for team in self.get_teams_for_user(user_name):
-                assignments += self.get_role_assignments_for_team(
-                    team.name, project_name=project_name
-                )
-        return assignments
-
-    def get_role_assignments_for_team(
-        self,
-        team_name: str,
-        project_name: Optional[str] = None,
-    ) -> List[RoleAssignment]:
-        """Fetches all role assignments for a team.
-
-        Args:
-            team_name: Name of the user.
-            project_name: Optional filter to only return roles assigned for
-                this project.
-
-        Returns:
-            List of role assignments for this team.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        path = f"{TEAMS}/{team_name}/role_assignments"
-        if project_name:
-            path += f"?project_name={project_name}"
-
-        body = self.get(path)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [
-            RoleAssignment.parse_obj(assignment_dict)
-            for assignment_dict in body
-        ]
-
-    @property
-    def store_associations(self) -> List[StoreAssociation]:
-        """Fetches all artifact/metadata store associations.
-
-        Returns:
-            A list of all artifact/metadata store associations.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        body = self.get(STORE_ASSOCIATIONS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [
-            StoreAssociation.parse_obj(association_dict)
-            for association_dict in body
-        ]
-
-    def create_store_association(
-        self,
-        artifact_store_uuid: UUID,
-        metadata_store_uuid: UUID,
-    ) -> StoreAssociation:
-        """Creates an association between an artifact- and a metadata store.
-
-        Args:
-            artifact_store_uuid: The UUID of the artifact store.
-            metadata_store_uuid: The UUID of the metadata store.
-
-        Returns:
-            The newly created store association.
-        """
-        association = StoreAssociation(
-            artifact_store_uuid=artifact_store_uuid,
-            metadata_store_uuid=metadata_store_uuid,
-        )
-        return StoreAssociation.parse_obj(
-            self.post(STORE_ASSOCIATIONS, body=association)
-        )
-
-    def get_store_associations_for_artifact_store(
-        self,
-        artifact_store_uuid: UUID,
-    ) -> List[StoreAssociation]:
-        """Fetches all associations for a given artifact store.
-
-        Args:
-            artifact_store_uuid: The UUID of the selected artifact store.
-
-        Returns:
-            A list of store associations for the given artifact store.
-        """
-        return [
-            association
-            for association in self.store_associations
-            if association.artifact_store_uuid == artifact_store_uuid
-        ]
-
-    def get_store_associations_for_metadata_store(
-        self,
-        metadata_store_uuid: UUID,
-    ) -> List[StoreAssociation]:
-        """Fetches all associations for a given metadata store.
-
-        Args:
-            metadata_store_uuid: The UUID of the selected metadata store.
-
-        Returns:
-            A list of store associations for the given metadata store.
-        """
-        return [
-            association
-            for association in self.store_associations
-            if association.metadata_store_uuid == metadata_store_uuid
-        ]
-
-    def get_store_associations_for_artifact_and_metadata_store(
-        self,
-        artifact_store_uuid: UUID,
-        metadata_store_uuid: UUID,
-    ) -> List[StoreAssociation]:
-        """Fetches all associations for a given artifact/metadata store pair.
-
-        Args:
-            artifact_store_uuid: The UUID of the selected artifact store.
-            metadata_store_uuid: The UUID of the selected metadata store.
-
-        Returns:
-            A list of store associations for the given combination.
-        """
-        return [
-            association
-            for association in self.store_associations
-            if association.metadata_store_uuid == metadata_store_uuid
-            and association.artifact_store_uuid == artifact_store_uuid
-        ]
-
-    def delete_store_association_for_artifact_and_metadata_store(
-        self,
-        artifact_store_uuid: UUID,
-        metadata_store_uuid: UUID,
-    ) -> None:
-        """Deletes associations between a given artifact/metadata store pair.
-
-        Args:
-            artifact_store_uuid: The UUID of the selected artifact store.
-            metadata_store_uuid: The UUID of the selected metadata store.
-        """
-        self.delete(
-            f"{STORE_ASSOCIATIONS}/{artifact_store_uuid}/{metadata_store_uuid}"
-        )
-
-    # Pipelines and pipeline runs
-
-    def get_pipeline_run(
-        self,
-        pipeline_name: str,
-        run_name: str,
-        project_name: Optional[str] = None,
-    ) -> PipelineRunWrapper:
-        """Gets a pipeline run.
-
-        Args:
-            pipeline_name: Name of the pipeline for which to get the run.
-            run_name: Name of the pipeline run to get.
-            project_name: Optional name of the project from which to get the
-                pipeline run.
-
-        Returns:
-            A pipeline run object.
-        """
-        path = f"{PIPELINE_RUNS}/{pipeline_name}/{run_name}"
-        if project_name:
-            path += f"?project_name={project_name}"
-
-        body = self.get(path)
-        return PipelineRunWrapper.parse_obj(body)
-
-    def get_pipeline_runs(
-        self, pipeline_name: str, project_name: Optional[str] = None
-    ) -> List[PipelineRunWrapper]:
-        """Gets pipeline runs.
-
-        Args:
-            pipeline_name: Name of the pipeline for which to get runs.
-            project_name: Optional name of the project from which to get the
-                pipeline runs.
-
-        Returns:
-            List of pipeline runs.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        path = f"{PIPELINE_RUNS}/{pipeline_name}"
-        if project_name:
-            path += f"?project_name={project_name}"
-
-        body = self.get(path)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [PipelineRunWrapper.parse_obj(dict_) for dict_ in body]
-
-    def register_pipeline_run(
-        self,
-        pipeline_run: PipelineRunWrapper,
-    ) -> None:
-        """Registers a pipeline run.
-
-        Args:
-            pipeline_run: The pipeline run to register.
-        """
-        self.post(PIPELINE_RUNS, body=pipeline_run)
-
-    # Private interface shall not be implemented for REST store, instead the
-    # API only provides all public methods, including the ones that would
-    # otherwise be inherited from the BaseZenStore in other implementations.
-    # Don't call these! ABC complains that they aren't implemented, but they
-    # aren't needed with the custom implementations of base methods.
-
-    def _create_stack(
-        self, name: str, stack_configuration: Dict[StackComponentType, str]
-    ) -> None:
-        """Add a stack to storage.
-
-        Args:
-            name: Name of the stack.
-            stack_configuration: Configuration of the stack.
-
-        Raises:
-            NotImplementedError: If this method is called.
-        """
-        raise NotImplementedError("Not to be accessed directly in client!")
-
-    def _get_component_flavor_and_config(
-        self, component_type: StackComponentType, name: str
-    ) -> Tuple[str, bytes]:
-        """Fetch the flavor and configuration for a stack component.
-
-        Args:
-            component_type: Type of the component.
-            name: Name of the component.
-
-        Raises:
-            NotImplementedError: If the component type is not supported.
-        """
-        raise NotImplementedError("Not to be accessed directly in client!")
-
-    def _get_stack_component_names(
-        self, component_type: StackComponentType
-    ) -> List[str]:
-        """Get names of all registered stack components of a given type.
-
-        Args:
-            component_type: Type of the components.
-
-        Raises:
-            NotImplementedError: always
-        """
-        raise NotImplementedError("Not to be accessed directly in client!")
-
-    def _delete_stack_component(
-        self, component_type: StackComponentType, name: str
-    ) -> None:
-        """Remove a StackComponent from storage.
-
-        Args:
-            component_type: Type of the component.
-            name: Name of the component.
-
-        Raises:
-            NotImplementedError: always.
-        """
-        raise NotImplementedError("Not to be accessed directly in client!")
-
-    # Handling stack component flavors
-
-    @property
-    def flavors(self) -> List[FlavorWrapper]:
-        """All registered flavors.
-
-        Returns:
-            A list of all registered flavors.
-
-        Raises:
-            ValueError: If the API response is not a list.
-        """
-        body = self.get(FLAVORS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [FlavorWrapper.parse_obj(flavor_dict) for flavor_dict in body]
-
-    def _create_flavor(
-        self,
-        source: str,
-        name: str,
-        stack_component_type: StackComponentType,
-    ) -> FlavorWrapper:
-        """Creates a new flavor.
-
-        Args:
-            source: the source path to the implemented flavor.
-            name: the name of the flavor.
-            stack_component_type: the corresponding StackComponentType.
-
-        Returns:
-            The newly created flavor.
-        """
-        flavor = FlavorWrapper(
-            name=name,
-            source=source,
-            type=stack_component_type,
-        )
-        return FlavorWrapper.parse_obj(self.post(FLAVORS, body=flavor))
-
-    def get_flavors_by_type(
-        self, component_type: StackComponentType
-    ) -> List[FlavorWrapper]:
-        """Fetch all flavor defined for a specific stack component type.
-
-        Args:
-            component_type: The type of the stack component.
-
-        Returns:
-            List of all the flavors for the given stack component type.
-
-        Raises:
-            ValueError: If a list of flavors is not returned.
-        """
-        body = self.get(f"{FLAVORS}/{component_type}")
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [FlavorWrapper.parse_obj(flavor_dict) for flavor_dict in body]
-
-    def get_flavor_by_name_and_type(
-        self,
-        flavor_name: str,
-        component_type: StackComponentType,
-    ) -> FlavorWrapper:
-        """Fetch a flavor by a given name and type.
-
-        Args:
-            flavor_name: The name of the flavor.
-            component_type: Optional, the type of the component.
-
-        Returns:
-            Flavor instance if it exists
-        """
-        return FlavorWrapper.parse_obj(
-            self.get(f"{FLAVORS}/{component_type}/{flavor_name}")
-        )
-
-    # Implementation specific methods:
-
-    def _parse_stack_configuration(
-        self, to_parse: Json
-    ) -> Dict[StackComponentType, str]:
-        """Parse an API response into `Dict[StackComponentType, str]`.
-
-        Args:
-            to_parse: The response to parse.
-
-        Returns:
-            A dictionary mapping the component type to the path to the
-            configuration.
-
-        Raises:
-            ValueError: If the response is not a dictionary.
-        """
-        if not isinstance(to_parse, dict):
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(to_parse)}."
-            )
         return {
-            StackComponentType(typ): component_name
-            for typ, component_name in to_parse.items()
+            name: ArtifactModel.parse_obj(entry) for name, entry in body.items()
         }
+
+    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
+        """Gets the execution status of a single step.
+
+        Args:
+            step_id: The ID of the step to get the status for.
+        """
+
+    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
+        """Gets all steps in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run for which to list runs.
+
+        Returns:
+            A mapping from step names to step models for all steps in the run.
+        """
+        return self._list_resources(
+            route=f"{RUNS}/{str(run_id)}{STEPS}",
+            resource_model=StepRunModel,
+        )
+
+    def list_artifacts(
+        self, artifact_uri: Optional[str] = None
+    ) -> List[ArtifactModel]:
+        """Lists all artifacts.
+
+        Args:
+            artifact_uri: If specified, only artifacts with the given URI will
+                be returned.
+
+        Returns:
+            A list of all artifacts.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=ARTIFACTS,
+            resource_model=ArtifactModel,
+            **filters,
+        )
+
+    # =======================
+    # Internal helper methods
+    # =======================
+
+    def _get_auth_token(self) -> str:
+        """Get the authentication token for the REST store.
+
+        Returns:
+            The authentication token.
+
+        Raises:
+            ValueError: if the response from the server isn't in the right format.
+        """
+        if self._api_token is None:
+            response = self._handle_response(
+                requests.post(
+                    self.url + API + VERSION_1 + LOGIN,
+                    data={
+                        "username": self.config.username,
+                        "password": self.config.password,
+                    },
+                    verify=self.config.verify_ssl,
+                )
+            )
+            if not isinstance(response, dict) or "access_token" not in response:
+                raise ValueError(
+                    f"Bad API Response. Expected access token dict, got "
+                    f"{type(response)}"
+                )
+            self._api_token = response["access_token"]
+        return self._api_token
+
+    @property
+    def session(self) -> requests.Session:
+        """Authenticate to the ZenML server.
+
+        Returns:
+            A requests session with the authentication token.
+        """
+        if self._session is None:
+            self._session = requests.Session()
+            self._session.verify = self.config.verify_ssl
+            token = self._get_auth_token()
+            self._session.headers.update({"Authorization": "Bearer " + token})
+            logger.debug("Authenticated to ZenML server.")
+        return self._session
 
     def _handle_response(self, response: requests.Response) -> Json:
         """Handle API response, translating http status codes to Exception.
@@ -1148,8 +1476,8 @@ class RestZenStore(BaseZenStore):
                 requested entity does not exist.
             EntityExistsError: If the response indicates that the requested
                 entity already exists.
-            HTTPError: If the response indicates that the requested entity
-                does not exist.
+            AuthorizationException: If the response indicates that the request
+                is not authorized.
             KeyError: If the response indicates that the requested entity
                 does not exist.
             RuntimeError: If the response indicates that the requested entity
@@ -1171,108 +1499,327 @@ class RestZenStore(BaseZenStore):
                     f"{response.text}"
                 )
         elif response.status_code == 401:
-            raise requests.HTTPError(
-                f"{response.status_code} Client Error: Unauthorized request to URL {response.url}: {response.json().get('detail')}"
+            raise AuthorizationException(
+                f"{response.status_code} Client Error: Unauthorized request to "
+                f"URL {response.url}: {response.json().get('detail')}"
             )
         elif response.status_code == 404:
             if "DoesNotExistException" not in response.text:
-                raise KeyError(*response.json().get("detail", (response.text,)))
+                raise KeyError(
+                    response.json().get("detail", (response.text,))[1]
+                )
             message = ": ".join(response.json().get("detail", (response.text,)))
             raise DoesNotExistException(message)
         elif response.status_code == 409:
             if "StackComponentExistsError" in response.text:
                 raise StackComponentExistsError(
-                    *response.json().get("detail", (response.text,))
+                    message=": ".join(
+                        response.json().get("detail", (response.text,))
+                    )
                 )
             elif "StackExistsError" in response.text:
                 raise StackExistsError(
-                    *response.json().get("detail", (response.text,))
+                    message=": ".join(
+                        response.json().get("detail", (response.text,))
+                    )
                 )
             elif "EntityExistsError" in response.text:
                 raise EntityExistsError(
-                    *response.json().get("detail", (response.text,))
+                    message=": ".join(
+                        response.json().get("detail", (response.text,))
+                    )
                 )
             else:
                 raise ValueError(
-                    *response.json().get("detail", (response.text,))
+                    ": ".join(response.json().get("detail", (response.text,)))
                 )
         elif response.status_code == 422:
-            raise RuntimeError(*response.json().get("detail", (response.text,)))
+            raise RuntimeError(
+                ": ".join(response.json().get("detail", (response.text,)))
+            )
         elif response.status_code == 500:
-            raise KeyError(response.text)
+            raise RuntimeError(response.text)
         else:
             raise RuntimeError(
                 "Error retrieving from API. Got response "
                 f"{response.status_code} with body:\n{response.text}"
             )
 
-    @staticmethod
-    def _get_authentication() -> Tuple[str, str]:
-        """Gets HTTP basic auth credentials.
+    def _request(
+        self,
+        method: str,
+        url: str,
+        params: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> Json:
+        """Make a request to the REST API.
+
+        Args:
+            method: The HTTP method to use.
+            url: The URL to request.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
-            A tuple of the username and password.
+            The parsed response.
         """
-        from zenml.repository import Repository
+        params = {k: str(v) for k, v in params.items()} if params else {}
+        try:
+            return self._handle_response(
+                self.session.request(
+                    method,
+                    url,
+                    params=params,
+                    verify=self.config.verify_ssl,
+                    **kwargs,
+                )
+            )
+        except AuthorizationException:
+            # The authentication token could have expired; refresh it and try
+            # again
+            self._session = None
+            return self._handle_response(
+                self.session.request(method, url, **kwargs)
+            )
 
-        return Repository().active_user_name, ""
-
-    def get(self, path: str) -> Json:
+    def get(
+        self, path: str, params: Optional[Dict[str, Any]] = None, **kwargs: Any
+    ) -> Json:
         """Make a GET request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
-        return self._handle_response(
-            requests.get(self.url + path, auth=self._get_authentication())
+        logger.debug(f"Sending GET request to {path}...")
+        return self._request(
+            "GET", self.url + API + VERSION_1 + path, params=params, **kwargs
         )
 
-    def delete(self, path: str) -> Json:
+    def delete(
+        self, path: str, params: Optional[Dict[str, Any]] = None, **kwargs: Any
+    ) -> Json:
         """Make a DELETE request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
-        return self._handle_response(
-            requests.delete(self.url + path, auth=self._get_authentication())
+        logger.debug(f"Sending DELETE request to {path}...")
+        return self._request(
+            "DELETE", self.url + API + VERSION_1 + path, params=params, **kwargs
         )
 
-    def post(self, path: str, body: BaseModel) -> Json:
+    def post(
+        self,
+        path: str,
+        body: BaseModel,
+        params: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> Json:
         """Make a POST request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
             body: The body to send.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
-        endpoint = self.url + path
-        return self._handle_response(
-            requests.post(
-                endpoint, data=body.json(), auth=self._get_authentication()
-            )
+        logger.debug(f"Sending POST request to {path}...")
+        return self._request(
+            "POST",
+            self.url + API + VERSION_1 + path,
+            data=body.json(),
+            params=params,
+            **kwargs,
         )
 
-    def put(self, path: str, body: BaseModel) -> Json:
+    def put(
+        self,
+        path: str,
+        body: BaseModel,
+        params: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> Json:
         """Make a PUT request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
             body: The body to send.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
-        endpoint = self.url + path
-        return self._handle_response(
-            requests.put(
-                endpoint, data=body.json(), auth=self._get_authentication()
-            )
+        logger.debug(f"Sending PUT request to {path}...")
+        return self._request(
+            "PUT",
+            self.url + API + VERSION_1 + path,
+            data=body.json(),
+            params=params,
+            **kwargs,
         )
+
+    def _create_resource(
+        self,
+        resource: AnyModel,
+        route: str,
+        request_model: Optional[Type[CreateRequest[AnyModel]]] = None,
+        response_model: Optional[Type[CreateResponse[AnyModel]]] = None,
+    ) -> AnyModel:
+        """Create a new resource.
+
+        Args:
+            resource: The resource to create.
+            route: The resource REST API route to use.
+            request_model: Optional model to use to serialize the request body.
+                If not provided, the resource object itself will be used.
+            response_model: Optional model to use to deserialize the response
+                body. If not provided, the resource class itself will be used.
+
+        Returns:
+            The created resource.
+        """
+        request: BaseModel = resource
+        if request_model is not None:
+            request = request_model.from_model(resource)
+        response_body = self.post(f"{route}", body=request)
+        if response_model is not None:
+            response = response_model.parse_obj(response_body)
+            created_resource = response.to_model()
+        else:
+            created_resource = resource.parse_obj(response_body)
+        return created_resource
+
+    def _create_project_scoped_resource(
+        self,
+        resource: AnyProjectScopedModel,
+        route: str,
+        request_model: Optional[
+            Type[CreateRequest[AnyProjectScopedModel]]
+        ] = None,
+        response_model: Optional[
+            Type[CreateResponse[AnyProjectScopedModel]]
+        ] = None,
+    ) -> AnyProjectScopedModel:
+        """Create a new project scoped resource.
+
+        Args:
+            resource: The resource to create.
+            route: The resource REST API route to use.
+            request_model: Optional model to use to serialize the request body.
+                If not provided, the resource object itself will be used.
+            response_model: Optional model to use to deserialize the response
+                body. If not provided, the resource class itself will be used.
+
+        Returns:
+            The created resource.
+        """
+        return self._create_resource(
+            resource=resource,
+            route=f"{PROJECTS}/{str(resource.project)}{route}",
+            request_model=request_model,
+            response_model=response_model,
+        )
+
+    def _get_resource(
+        self,
+        resource_id: Union[str, UUID],
+        route: str,
+        resource_model: Type[AnyModel],
+    ) -> AnyModel:
+        """Retrieve a single resource.
+
+        Args:
+            resource_id: The ID of the resource to retrieve.
+            route: The resource REST API route to use.
+            resource_model: Model to use to serialize the response body.
+
+        Returns:
+            The retrieved resource.
+        """
+        body = self.get(f"{route}/{str(resource_id)}")
+        return resource_model.parse_obj(body)
+
+    def _list_resources(
+        self,
+        route: str,
+        resource_model: Type[AnyModel],
+        **filters: Any,
+    ) -> List[AnyModel]:
+        """Retrieve a list of resources filtered by some criteria.
+
+        Args:
+            route: The resource REST API route to use.
+            resource_model: Model to use to serialize the response body.
+            filters: Filter parameters to use in the query.
+
+        Returns:
+            List of retrieved resources matching the filter criteria.
+
+        Raises:
+            ValueError: If the value returned by the server is not a list.
+        """
+        # leave out filter params that are not supplied
+        params = dict(filter(lambda x: x[1] is not None, filters.items()))
+        body = self.get(f"{route}", params=params)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [resource_model.parse_obj(entry) for entry in body]
+
+    def _update_resource(
+        self,
+        resource: AnyModel,
+        route: str,
+        request_model: Optional[Type[UpdateRequest[AnyModel]]] = None,
+        response_model: Optional[Type[UpdateResponse[AnyModel]]] = None,
+    ) -> AnyModel:
+        """Update an existing resource.
+
+        Args:
+            resource: The resource to update.
+            route: The resource REST API route to use.
+            request_model: Optional model to use to serialize the request body.
+                If not provided, the resource object itself will be used.
+            response_model: Optional model to use to deserialize the response
+                body. If not provided, the resource class itself will be used.
+
+        Returns:
+            The updated resource.
+        """
+        request: BaseModel = resource
+        if request_model is not None:
+            request = request_model.from_model(resource)
+        response_body = self.put(f"{route}/{str(resource.id)}", body=request)
+        if response_model is not None:
+            response = response_model.parse_obj(response_body)
+            updated_resource = response.to_model()
+        else:
+            updated_resource = resource.parse_obj(response_body)
+
+        return updated_resource
+
+    def _delete_resource(
+        self, resource_id: Union[str, UUID], route: str
+    ) -> None:
+        """Delete a resource.
+
+        Args:
+            resource_id: The ID of the resource to delete.
+            route: The resource REST API route to use.
+        """
+        self.delete(f"{route}/{str(resource_id)}")

@@ -41,7 +41,7 @@ from tfx.types import artifact, channel, standard_artifacts
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.artifacts.model_artifact import ModelArtifact
-from zenml.repository import Repository
+from zenml.client import Client
 
 
 def mount_config_map_op(
@@ -320,7 +320,7 @@ def dump_ui_metadata(
 
             # For local artifact repository, use a path that is relative to
             # the point where the local artifact folder is mounted as a volume
-            artifact_store = Repository().active_stack.artifact_store
+            artifact_store = Client().active_stack.artifact_store
             if isinstance(artifact_store, LocalArtifactStore):
                 source = os.path.relpath(source, artifact_store.path)
                 source = f"volume://local-artifact-store/{source}"

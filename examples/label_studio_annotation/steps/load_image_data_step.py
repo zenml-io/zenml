@@ -19,23 +19,22 @@ from typing import Dict
 
 from PIL import Image
 
-from zenml.steps import Output, step
-from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps import BaseParameters, Output, step
 from zenml.steps.step_context import StepContext
 
 
-class LoadImageDataConfig(BaseStepConfig):
+class LoadImageDataParameters(BaseParameters):
     base_path = Path(__file__).parent.absolute().parent.absolute() / "data"
     dir_name = "batch_1"
 
 
 @step(enable_cache=False)
 def load_image_data(
-    config: LoadImageDataConfig,
+    params: LoadImageDataParameters,
     context: StepContext,
 ) -> Output(images=Dict, uri=str):
     """Gets images from a cloud artifact store directory."""
-    image_dir_path = os.path.join(config.base_path, config.dir_name)
+    image_dir_path = os.path.join(params.base_path, params.dir_name)
     image_files = glob.glob(f"{image_dir_path}/*.jpeg")
     images = {}
     for image_file in image_files:

@@ -14,28 +14,19 @@
 """Implementation for the wandb experiment tracker."""
 
 import os
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Type,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 
 import wandb
-from pydantic import validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
-from zenml.integrations.wandb import WANDB_EXPERIMENT_TRACKER_FLAVOR
+from zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor import (
+    WandbExperimentTrackerConfig,
+    WandbExperimentTrackerSettings,
+)
 from zenml.logger import get_logger
-from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -46,53 +37,17 @@ logger = get_logger(__name__)
 WANDB_API_KEY = "WANDB_API_KEY"
 
 
-class WandbExperimentTrackerSettings(BaseSettings):
-    """Settings for the Wandb experiment tracker.
+class WandbExperimentTracker(BaseExperimentTracker):
+    """Track experiment using Wandb."""
 
-    Attributes:
-        run_name: The Wandb run name.
-        tags: Tags for the Wandb run.
-        settings: Settings for the Wandb run.
-    """
-
-    run_name: Optional[str] = None
-    tags: List[str] = []
-    settings: Dict[str, Any] = {}
-
-    @validator("settings", pre=True)
-    def _convert_settings(
-        cls, value: Union[Dict[str, Any], wandb.Settings]
-    ) -> Dict[str, Any]:
-        """Converts settings to a dictionary.
-
-        Args:
-            value: The settings.
+    @property
+    def config(self) -> WandbExperimentTrackerConfig:
+        """Returns the `WandbExperimentTrackerConfig` config.
 
         Returns:
-            Dict representation of the settings.
+            The configuration.
         """
-        if isinstance(value, wandb.Settings):
-            return cast(Dict[str, Any], value.make_static())
-        else:
-            return value
-
-
-class WandbExperimentTracker(BaseExperimentTracker):
-    """Stores wandb configuration options.
-
-    Attributes:
-        entity: Name of an existing wandb entity.
-        project_name: Name of an existing wandb project to log to.
-        api_key: API key to should be authorized to log to the configured wandb
-            entity and project.
-    """
-
-    api_key: str = SecretField()
-    entity: Optional[str] = None
-    project_name: Optional[str] = None
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = WANDB_EXPERIMENT_TRACKER_FLAVOR
+        return cast(WandbExperimentTrackerConfig, self._config)
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
@@ -109,7 +64,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
         Args:
             info: Info about the step that will be executed.
         """
-        os.environ[WANDB_API_KEY] = self.api_key
+        os.environ[WANDB_API_KEY] = self.config.api_key
         settings = cast(
             WandbExperimentTrackerSettings,
             self.get_settings(info) or WandbExperimentTrackerSettings(),
@@ -146,12 +101,12 @@ class WandbExperimentTracker(BaseExperimentTracker):
             settings: Additional settings for the wandb run.
         """
         logger.info(
-            f"Initializing wandb with entity {self.entity}, project name: "
-            f"{self.project_name}, run_name: {run_name}."
+            f"Initializing wandb with entity {self.config.entity}, project "
+            f"name: {self.config.project_name}, run_name: {run_name}."
         )
         wandb.init(
-            entity=self.entity,
-            project=self.project_name,
+            entity=self.config.entity,
+            project=self.config.project_name,
             name=run_name,
             tags=tags,
             settings=settings,

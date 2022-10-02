@@ -162,13 +162,13 @@ action. If you want to train on the full datasets, just pass `--full_set` as a f
 ### 🧪 Test pipeline
 
 ```python
-from zenml.repository import Repository
+from zenml.client import Client
 from transformers import pipeline
+from zenml.post_execution import get_pipeline
 
 # 1. Load sequence-classification and inference
-repo = Repository()
-pipeline_instance = repo.get_pipeline(
-    pipeline="seq_classifier_train_eval_pipeline"
+pipeline_instance = get_pipeline(
+  pipeline="seq_classifier_train_eval_pipeline"
 )
 runs = pipeline_instance.runs
 print(f"Pipeline `seq_classifier_train_eval_pipeline` has {len(runs)} run(s)")
@@ -180,14 +180,13 @@ load_tokenizer_step = latest_run.get_step("load_tokenizer")
 model = trainer_step.output.read()
 tokenizer = load_tokenizer_step.output.read()
 sentiment_classifier = pipeline(
-    "text-classification", model=model, tokenizer=tokenizer
+  "text-classification", model=model, tokenizer=tokenizer
 )
 
 print(sentiment_classifier("MLOps movie by Zenml-io was awesome."))
 
 # 2. Load token-classification and inference
-repo = Repository()
-pipeline_instance = repo.get_pipeline(
+pipeline_instance = get_pipeline(
   pipeline="token_classifier_train_eval_pipeline"
 )
 runs = pipeline_instance.runs
@@ -199,7 +198,9 @@ load_tokenizer_step = latest_run.get_step("load_tokenizer")
 # load model and pipeline
 model = trainer_step.output.read()
 tokenizer = load_tokenizer_step.output.read()
-token_classifier = pipeline("token-classification", model=model, tokenizer=tokenizer)
+token_classifier = pipeline(
+  "token-classification", model=model, tokenizer=tokenizer
+  )
 
 print(token_classifier("Zenml-io is based out of Munich, Germany"))
 ```

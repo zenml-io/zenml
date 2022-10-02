@@ -14,71 +14,83 @@
 """Implementation of the ZenML local secrets manager."""
 
 import os
-import uuid
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List
-
-from pydantic import root_validator
+from typing import TYPE_CHECKING, Dict, List, Type, cast
 
 from zenml.cli.utils import error
-from zenml.constants import LOCAL_SECRETS_FILENAME, LOCAL_STORES_DIRECTORY_NAME
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import LOCAL_SECRETS_FILENAME
 from zenml.exceptions import SecretExistsError
 from zenml.io.fileio import remove
 from zenml.logger import get_logger
 from zenml.secret import SecretSchemaClassRegistry
-from zenml.secret.base_secret import BaseSecretSchema
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+from zenml.secrets_managers.base_secrets_manager import (
+    BaseSecretsManager,
+    BaseSecretsManagerConfig,
+    BaseSecretsManagerFlavor,
+)
 from zenml.secrets_managers.utils import decode_secret_dict, encode_secret
 from zenml.utils import yaml_utils
-from zenml.utils.io_utils import (
-    create_file_if_not_exists,
-    get_global_config_directory,
-)
+from zenml.utils.io_utils import create_file_if_not_exists
+
+if TYPE_CHECKING:
+    from uuid import UUID
+
+    from zenml.secret.base_secret import BaseSecretSchema
+
 
 logger = get_logger(__name__)
+
+
+class LocalSecretsManagerConfig(BaseSecretsManagerConfig):
+    """Configuration for the local secrets manager.
+
+    Attributes:
+        secrets_file: The path to the secrets file.
+    """
+
+    secrets_file: str = ""
 
 
 class LocalSecretsManager(BaseSecretsManager):
     """Class for ZenML local file-based secret manager."""
 
-    secrets_file: str = ""
-
-    # Class configuration
-    FLAVOR: ClassVar[str] = "local"
-
-    @root_validator(skip_on_failure=True)
-    def set_secrets_file(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Sets the secrets_file attribute value according to the component UUID.
-
-        Args:
-            values: The values to validate.
+    @property
+    def config(self) -> LocalSecretsManagerConfig:
+        """Returns the `LocalSecretsManagerConfig` config.
 
         Returns:
-            The validated values.
+            The configuration.
         """
-        if values.get("secrets_file"):
-            return values
+        return cast(LocalSecretsManagerConfig, self._config)
 
-        # not likely to happen, due to Pydantic validation, but mypy complains
-        assert "uuid" in values
+    @property
+    def secrets_file(self) -> str:
+        """Gets the secrets file path.
 
-        values["secrets_file"] = cls.get_secret_store_path(values["uuid"])
-        return values
+        If the secrets file was not provided in the config by the user, this
+        will return the default secrets file path based on the component ID.
+
+        Returns:
+            The secrets file path.
+        """
+        if self.config.secrets_file:
+            return self.config.secrets_file
+        return self.get_default_secret_store_path(self.id)
 
     @staticmethod
-    def get_secret_store_path(uuid: uuid.UUID) -> str:
+    def get_default_secret_store_path(id_: "UUID") -> str:
         """Get the path to the secret store.
 
         Args:
-            uuid: The UUID of the secret store.
+            id_: The ID of the secret store.
 
         Returns:
             The path to the secret store.
         """
         return os.path.join(
-            get_global_config_directory(),
-            LOCAL_STORES_DIRECTORY_NAME,
-            str(uuid),
+            GlobalConfiguration().local_stores_path,
+            str(id_),
             LOCAL_SECRETS_FILENAME,
         )
 
@@ -120,7 +132,7 @@ class LocalSecretsManager(BaseSecretsManager):
         self._create_secrets_file__if_not_exists()
         return yaml_utils.read_yaml(self.secrets_file) or {}
 
-    def register_secret(self, secret: BaseSecretSchema) -> None:
+    def register_secret(self, secret: "BaseSecretSchema") -> None:
         """Registers a new secret.
 
         Args:
@@ -139,7 +151,7 @@ class LocalSecretsManager(BaseSecretsManager):
         secrets_store_items[secret.name] = encoded_secret
         yaml_utils.append_yaml(self.secrets_file, secrets_store_items)
 
-    def get_secret(self, secret_name: str) -> BaseSecretSchema:
+    def get_secret(self, secret_name: str) -> "BaseSecretSchema":
         """Gets a specific secret.
 
         Args:
@@ -177,7 +189,7 @@ class LocalSecretsManager(BaseSecretsManager):
         secrets_store_items = self._get_all_secrets()
         return list(secrets_store_items.keys())
 
-    def update_secret(self, secret: BaseSecretSchema) -> None:
+    def update_secret(self, secret: "BaseSecretSchema") -> None:
         """Update an existing secret.
 
         Args:
@@ -221,3 +233,34 @@ class LocalSecretsManager(BaseSecretsManager):
         """Delete all existing secrets."""
         self._create_secrets_file__if_not_exists()
         remove(self.secrets_file)
+
+
+class LocalSecretsManagerFlavor(BaseSecretsManagerFlavor):
+    """Class for the `LocalSecretsManagerFlavor`."""
+
+    @property
+    def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
+        return "local"
+
+    @property
+    def config_class(self) -> Type[LocalSecretsManagerConfig]:
+        """The config class for this flavor.
+
+        Returns:
+            The config class for this flavor.
+        """
+        return LocalSecretsManagerConfig
+
+    @property
+    def implementation_class(self) -> Type["LocalSecretsManager"]:
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class for this flavor.
+        """
+        return LocalSecretsManager

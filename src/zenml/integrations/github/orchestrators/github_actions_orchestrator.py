@@ -17,7 +17,7 @@ import copy
 import os
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 
 from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
@@ -25,7 +25,10 @@ from git.repo.base import Repo
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.container_registries import (
     BaseContainerRegistry,
-    GitHubContainerRegistry,
+    GitHubContainerRegistryFlavor,
+)
+from zenml.integrations.github.flavors.github_actions_orchestrator_flavor import (
+    GitHubActionsOrchestratorConfig,
 )
 from zenml.integrations.github.orchestrators.github_actions_entrypoint_configuration import (
     GitHubActionsEntrypointConfiguration,
@@ -39,14 +42,13 @@ from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack import Stack
-from zenml.utils import deprecation_utils, yaml_utils
+from zenml.utils import yaml_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
 
 from zenml.enums import StackComponentType
-from zenml.integrations.github import GITHUB_ORCHESTRATOR_FLAVOR
 from zenml.stack import StackValidator
 
 logger = get_logger(__name__)
@@ -57,41 +59,19 @@ GITHUB_REMOTE_URL_PREFIXES = ["git@github.com", "https://github.com"]
 DOCKER_LOGIN_ACTION = "docker/login-action@v1"
 
 
-class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
-    """Orchestrator responsible for running pipelines using GitHub Actions.
-
-    Attributes:
-        custom_docker_base_image_name: Name of a docker image that should be
-            used as the base for the image that will be run on GitHub Action
-            runners. If no custom image is given, a basic image of the active
-            ZenML version will be used. **Note**: This image needs to have
-            ZenML installed, otherwise the pipeline execution will fail. For
-            that reason, you might want to extend the ZenML docker images
-            found here: https://hub.docker.com/r/zenmldocker/zenml/
-        skip_dirty_repository_check: If `True`, this orchestrator will not
-            raise an exception when trying to run a pipeline while there are
-            still untracked/uncommitted files in the git repository.
-        skip_github_repository_check: If `True`, the orchestrator will not check
-            if your git repository is pointing to a GitHub remote.
-        push: If `True`, this orchestrator will automatically commit and push
-            the GitHub workflow file when running a pipeline. If `False`, the
-            workflow file will be written to the correct location but needs to
-            be committed and pushed manually.
-    """
-
-    custom_docker_base_image_name: Optional[str] = None
-    skip_dirty_repository_check: bool = False
-    skip_github_repository_check: bool = False
-    push: bool = False
+class GitHubActionsOrchestrator(BaseOrchestrator):
+    """Orchestrator responsible for running pipelines using GitHub Actions."""
 
     _git_repo: Optional[Repo] = None
 
-    # Class configuration
-    FLAVOR: ClassVar[str] = GITHUB_ORCHESTRATOR_FLAVOR
+    @property
+    def config(self) -> GitHubActionsOrchestratorConfig:
+        """Returns the `GitHubActionsOrchestratorConfig` config.
 
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("custom_docker_base_image_name", "docker_parent_image")
-    )
+        Returns:
+            The configuration.
+        """
+        return cast(GitHubActionsOrchestratorConfig, self._config)
 
     @property
     def git_repo(self) -> Repo:
@@ -118,7 +98,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 remote_url.startswith(prefix)
                 for prefix in GITHUB_REMOTE_URL_PREFIXES
             )
-            if not (is_github_repo or self.skip_github_repository_check):
+            if not (is_github_repo or self.config.skip_github_repository_check):
                 raise RuntimeError(
                     f"The remote URL '{remote_url}' of your git repo "
                     f"({self._git_repo.git_dir}) is not pointing to a GitHub "
@@ -162,26 +142,26 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     "The GitHub Actions orchestrator requires a remote "
                     f"container registry, but the '{container_registry.name}' "
                     "container registry of your active stack points to a local "
-                    f"URI '{container_registry.uri}'. Please make sure stacks "
-                    "with a GitHub Actions orchestrator always contain remote "
-                    "container registries."
+                    f"URI '{container_registry.config.uri}'. Please make sure "
+                    "stacks with a GitHub Actions orchestrator always contain "
+                    "remote container registries."
                 )
 
             if container_registry.requires_authentication:
                 return False, (
                     "The GitHub Actions orchestrator currently only works with "
                     "GitHub container registries or public container "
-                    f"registries, but your {container_registry.FLAVOR} "
+                    f"registries, but your {container_registry.flavor} "
                     f"container registry '{container_registry.name}' requires "
                     "authentication."
                 )
 
             for component in stack.components.values():
-                if component.local_path:
+                if component.local_path is not None:
                     return False, (
                         "The GitHub Actions orchestrator runs pipelines on "
                         "remote GitHub Actions runners, but the "
-                        f"'{component.name}' {component.TYPE.value} of your "
+                        f"'{component.name}' {component.type.value} of your "
                         "active stack is a local component. Please make sure "
                         "to only use remote stack components in combination "
                         "with the GitHub Actions orchestrator. "
@@ -209,8 +189,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             with the container registry if that is required, `None` otherwise.
         """
         if (
-            isinstance(container_registry, GitHubContainerRegistry)
-            and container_registry.automatic_token_authentication
+            isinstance(container_registry, GitHubContainerRegistryFlavor)
+            and container_registry.config.automatic_token_authentication
         ):
             # Use GitHub Actions specific placeholder if the container registry
             # specifies automatic token authentication
@@ -295,8 +275,9 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             RuntimeError: If the orchestrator should only run in a clean git
                 repository and the repository is dirty.
         """
-        if not self.skip_dirty_repository_check and self.git_repo.is_dirty(
-            untracked_files=True
+        if (
+            not self.config.skip_dirty_repository_check
+            and self.git_repo.is_dirty(untracked_files=True)
         ):
             raise RuntimeError(
                 "Trying to run a pipeline from within a dirty (=containing "
@@ -306,7 +287,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 "--skip_dirty_repository_check=true`"
             )
 
-        repo_digest = self.build_and_push_docker_image(
+        docker_image_builder = PipelineDockerImageBuilder()
+        repo_digest = docker_image_builder.build_and_push_docker_image(
             deployment=deployment, stack=stack
         )
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
@@ -462,7 +444,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         yaml_utils.write_yaml(workflow_path, workflow_dict, sort_keys=False)
         logger.info("Wrote GitHub workflow file to %s", workflow_path)
 
-        if self.push:
+        if self.config.push:
             # Add, commit and push the pipeline workflow yaml
             self.git_repo.index.add(workflow_path)
             self.git_repo.index.commit(

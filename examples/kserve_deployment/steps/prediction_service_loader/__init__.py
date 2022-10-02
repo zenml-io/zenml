@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 
 from .prediction_service_loader import (
-    PredectionServiceLoaderStepConfig,
+    PredectionServiceLoaderStepParameters,
     prediction_service_loader,
 )
 
 __all__ = [
     "prediction_service_loader",
-    "PredectionServiceLoaderStepConfig",
+    "PredectionServiceLoaderStepParameters",
 ]

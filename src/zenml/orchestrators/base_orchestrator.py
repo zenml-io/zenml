@@ -32,7 +32,16 @@
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    cast,
+)
 
 from google.protobuf import json_format
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -57,24 +66,23 @@ from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 from tfx.types.artifact import Artifact
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.utils import get_cache_status
-from zenml.repository import Repository
-from zenml.stack import StackComponent
+from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.utils import proto_utils, source_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step, StepConfiguration
-    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
 
-### TFX PATCH
+# TFX PATCH ####################################################################
 # The following code patches a function in tfx which leads to an OSError on
 # Windows.
 def _patched_remove_stateful_working_dir(stateful_working_dir: str) -> None:
@@ -135,7 +143,13 @@ setattr(
     "remove_output_dirs",
     _patched_remove_output_dirs,
 )
-### END OF TFX PATCH
+
+
+# END OF TFX PATCH #############################################################
+
+
+class BaseOrchestratorConfig(StackComponentConfig):
+    """Base orchestrator config."""
 
 
 class BaseOrchestrator(StackComponent, ABC):
@@ -154,20 +168,21 @@ class BaseOrchestrator(StackComponent, ABC):
     `prepare_or_run_pipeline(...)` method. BaseOrchestrator subclasses must
     implement this method and either run the pipeline steps directly or deploy
     the pipeline to some remote infrastructure.
-
-    How to subclass:
-    ------------------
-    When subclassing the BaseOrchestrator, the only
-    from this class and implement the `prepare_or_run_pipeline(...)`
-    method. Overwriting other methods is NOT recommended but possible.
-    See the docstring of the `prepare_or_run_pipeline()` method to find out
-    details of what needs to be implemented within it.
     """
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
     _active_deployment: Optional["PipelineDeployment"] = None
     _active_pb2_pipeline: Optional[Pb2Pipeline] = None
+
+    @property
+    def config(self) -> BaseOrchestratorConfig:
+        """Returns the `BaseOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(BaseOrchestratorConfig, self._config)
 
     @abstractmethod
     def prepare_or_run_pipeline(
@@ -273,12 +288,11 @@ class BaseOrchestrator(StackComponent, ABC):
             deployment_config, step_name
         )
 
+        metadata_connection_cfg = Client().zen_store.get_metadata_config()
+
         # At this point the active metadata store is queried for the
         # metadata_connection
-        stack = Repository().active_stack
-        metadata_connection = metadata.Metadata(
-            stack.metadata_store.get_tfx_metadata_config()
-        )
+        stack = Client().active_stack
         executor_operator = self._get_executor_operator(
             step_operator=step.config.step_operator
         )
@@ -304,7 +318,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         component_launcher = launcher.Launcher(
             pipeline_node=pipeline_node,
-            mlmd_connection=metadata_connection,
+            mlmd_connection=metadata.Metadata(metadata_connection_cfg),
             pipeline_info=pb2_pipeline.pipeline_info,
             pipeline_runtime_spec=pb2_pipeline.runtime_spec,
             executor_spec=executor_spec,
@@ -463,3 +477,34 @@ class BaseOrchestrator(StackComponent, ABC):
             f"Step {step_name} not found in Pipeline "
             f"{self._active_pb2_pipeline.pipeline_info.id}"
         )
+
+
+class BaseOrchestratorFlavor(Flavor):
+    """Base orchestrator flavor class."""
+
+    @property
+    def type(self) -> StackComponentType:
+        """Returns the flavor type.
+
+        Returns:
+            The flavor type.
+        """
+        return StackComponentType.ORCHESTRATOR
+
+    @property
+    def config_class(self) -> Type[BaseOrchestratorConfig]:
+        """Config class for the base orchestrator flavor.
+
+        Returns:
+            The config class.
+        """
+        return BaseOrchestratorConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type["BaseOrchestrator"]:
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """

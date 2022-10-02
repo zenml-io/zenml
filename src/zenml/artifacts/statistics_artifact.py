@@ -14,9 +14,10 @@
 """Class for a statistics artifact."""
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.enums import ArtifactType
 
 
 class StatisticsArtifact(BaseArtifact):
     """Class for all ZenML statistics artifacts."""
 
-    TYPE_NAME = "StatisticsArtifact"
+    TYPE_NAME = ArtifactType.STATISTICS

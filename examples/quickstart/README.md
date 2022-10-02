@@ -7,66 +7,109 @@ Then open [notebooks/quickstart.ipynb](notebooks/quickstart.ipynb) to get starte
 
 ## :earth_americas: Overview
 
-This quickstart aims to give you a small illustration of what ZenML can do. To do so, we will:
-- Train a model on the iris flower classification dataset, evaluate it, deploy it, and embed it in an inference pipeline,
+This quickstart aims to give you a small illustration of what ZenML can do. 
+In order to achieve that, we will:
+- Train a model on the iris flower classification dataset, evaluate it, deploy 
+it, and embed it in an inference pipeline,
 - Automatically version, track, and cache data, models, and other artifacts,
 - Track model hyperparameters and metrics in an experiment tracking tool,
 - Measure and visualize train-test skew, training-serving skew, and data drift.
 
-**New to MLOps?** You might want to start with our [**ZenBytes**](https://github.com/zenml-io/zenbytes) lesson series instead where we cover each MLOps concept in much more detail. This quickstart assumes you are already familiar with basic MLOps concepts and just want to learn how to approach them with ZenML.
+## :star: Introduction to ZenML
+
+Before we dive into the code, let us briefly introduce you to some of the 
+fundamental concepts of ZenML that we will use in this quickstart. If you are 
+already familiar with these concepts, feel free to skip to the next section.
+
+#### Steps
+
+The first concept that we will cover in this section is the ZenML **Step**. In 
+ZenML, a step provides a simple python interface to our users to design a 
+stand-alone process in an ML workflow. They consume input artifacts 
+and generate output artifacts. As an example, we can take a closer look at one 
+of the steps in the pipeline above:
+
+```python
+import pandas as pd
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+
+from zenml.steps import step, Output
+
+@step
+def training_data_loader() -> Output(
+    X_train=pd.DataFrame,
+    X_test=pd.DataFrame,
+    y_train=pd.Series,
+    y_test=pd.Series,
+):
+    """Load the iris dataset as tuple of Pandas DataFrame / Series."""
+    iris = load_iris(as_frame=True)
+    X_train, X_test, y_train, y_test = train_test_split(
+        iris.data, iris.target, test_size=0.2, shuffle=True, random_state=42
+    )
+    return X_train, X_test, y_train, y_test
+```
+
+#### Pipelines
+
+Following the steps, you will go over the concepts of **Pipelines**. These 
+pipelines provide our users a simple python interface to design their ML 
+workflows by linking different steps together. For instance, the training 
+pipeline that we will use in this example looks like this:
+
+```python
+from zenml.pipelines import pipeline
+
+@pipeline(enable_cache=False)
+def training_pipeline(
+    training_data_loader,
+    trainer,
+    evaluator,
+    deployment_trigger,
+    model_deployer,
+):
+    """Train, evaluate, and deploy a model."""
+    X_train, X_test, y_train, y_test = training_data_loader()
+    model = trainer(X_train=X_train, y_train=y_train)
+    test_acc = evaluator(X_test=X_test, y_test=y_test, model=model)
+    deployment_decision = deployment_trigger(test_acc)
+    model_deployer(deployment_decision, model)
+```
+
+#### Stacks & Stack Components
+
+As for the execution of these pipelines, you need a **stack**. In ZenML, 
+a stack stands for a set of configurations of your MLOps tools and 
+infrastructure. Each stack consists of multiple **stack components** and
+depending on their type, these components serve different purposes.
+
+If you look at some examples of different flavors of stack components, you 
+will see examples such as:
+
+- [Kubeflow**Orchestrator**]() which orchestrates your ML workflows on Kubeflow 
+- [S3**ArtifactStore**]() which can store your artifacts in an S3 storage 
+- [MLflow**ExperimentTracker**]() which can track your experiments with MLFlow
+- [Evidently**DataValidator**]() which can help you validate your data
+
+Any such combination of tools and infrastructure can be registered as a 
+separate stack in ZenML. Since ZenML code is tooling-independent, you can 
+switch between stacks with a single command and then automatically execute your
+ML workflows on the desired stack without having to modify your code.
+
+#### Integrations
+
+Finally, ZenML comes equipped with a wide variety of stack components flavors. 
+While some of these flavors come built-in with the ZenML package, the others 
+are implemented as a part of one of our integrations. Since our quickstart 
+features some of these integrations, you will see a practical example on how 
+to install these integrations in the of this in the upcoming sections.
 
 ## :cloud: Run on Colab
 You can use Google Colab to see ZenML in action, no signup / installation required!
 
 <a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
-## :cloud: The Zen 🧘 way to run on a cloud provider of your choice
-
-If you're looking for a quick way to test the quickstart out on your cloud but don't want to go through the pain-staking process of creating all the required resources, we have just the solution for you: [stack recipes!](../../docs/book/stack-deployment-guide/stack-recipes.md) 🥗
-
-A flow to get started for this example can be the following:
-
-1. 📃 List all available stack recipes.
-
-    ```shell
-    zenml stack recipe list
-    ```
-2. Pull the recipe that you wish to deploy, to your local system.
-
-    ```shell
-    zenml stack recipe pull <STACK-RECIPE-NAME>
-
-3. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
-
-3. 🚀 Deploy the recipe with this simple command.
-
-    ```shell
-    zenml stack recipe deploy <STACK-RECIPE-NAME>
-    ```
-    > **Note**
-    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
-
-    > **Note**
-    > You should also have [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [docker](https://docs.docker.com/engine/install/) installed on your local system with the local [docker client authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker) to push to your cloud registry.
-    
-4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually.
-
-    ```shell
-    zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
-
-    # set the imported stack as the active stack
-    zenml stack set <STACK_NAME>
-    ```
-
-5. You should now create secrets for your newly-created MySQL instance. If you're using a GCP recipe, you can refer to the [Kubeflow example README](../kubeflow_pipelines_orchestration/README.md#🚅-that-seems-like-a-lot-of-infrastructure-work-is-there-a-zen-🧘-way-to-run-this-example) for the necessary commands. For AWS, check out the [Kubernetes Orchestrator example README.](../kubernetes_orchestration/README.md#🚅-that-seems-like-a-lot-of-infrastructure-work-is-there-a-zen-🧘-way-to-run-this-example)
-
-
-You can now run the quickstart pipeline by executing the `run.py` file in the root directory!
-
-```bash
-python run.py
-```
-
 
 ## :computer: Run Locally
 
@@ -100,10 +143,6 @@ zenml integration install dash sklearn mlflow evidently facets
 # Initialize ZenML
 zenml init
 
-# Create a new ZenML profile and set it as active
-zenml profile create quickstart
-zenml profile set quickstart
-
 # Register required ZenML stack
 zenml data-validator register evidently_data_validator --flavor=evidently
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
@@ -114,22 +153,37 @@ zenml stack update default -d mlflow_deployer -e mlflow_tracker -dv evidently_da
 python run.py
 ```
 
-### :sponge: Clean up
+## :dart: Dashboard
+
+In addition to the visualizations you generated by running the `run.py`, you 
+can also take a look at our **dashboard** where you can inspect the quickstart 
+pipeline run and much more. Simply execute:
+
+```shell
+zenml up
+```
+
+## :sponge: Clean up
 
 To clean up, simply delete the examples folder we downloaded earlier:
 
 ```shell
+zenml down
+
 rm -rf zenml_examples
 ```
 
 ## :bulb: Learn More
 
-If you want to learn more about ZenML, 
-then the [:page_facing_up: **ZenML Docs**](https://docs.zenml.io/) 
-are the perfect place to get started.
+If you want to learn more about ZenML as a tool, then the 
+[:page_facing_up: **ZenML Docs**](https://docs.zenml.io/) are the perfect place 
+to get started.
 
-Already have an MLOps stack in mind?
-ZenML most likely has
+If you are new to MLOps, you might want to take a look at our 
+[**ZenBytes**](https://github.com/zenml-io/zenbytes) lesson series instead 
+where we cover each MLOps concept in much more detail.
+
+Already have an MLOps stack in mind? ZenML most likely has
 [**:link: Integrations**](https://docs.zenml.io/mlops-stacks/integrations) 
 for whatever tools you plan to use. Check out the
 [**:pray: ZenML Examples**](https://github.com/zenml-io/zenml/tree/main/examples)
@@ -143,3 +197,5 @@ Also, make sure to join our <a href="https://zenml.io/slack-invite" target="_bla
     <img width="15" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
     <b>Slack Community</b> 
 </a> to become part of the ZenML family!
+
+

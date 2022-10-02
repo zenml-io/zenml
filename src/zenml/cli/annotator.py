@@ -19,8 +19,9 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.client import Client
 from zenml.enums import StackComponentType
-from zenml.repository import Repository
+from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
     from zenml.annotators.base_annotator import BaseAnnotator
@@ -43,19 +44,17 @@ def register_annotator_subcommands() -> None:
         Args:
             ctx: The click Context object.
         """
-        repo = Repository()
-        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-        annotator_wrapper = active_stack.get_component_wrapper(
+        annotator_models = Client().active_stack_model.components[
             StackComponentType.ANNOTATOR
-        )
-        if annotator_wrapper is None:
+        ]
+        if annotator_models is None:
             cli_utils.error(
                 "No active annotator found. Please register an annotator "
                 "first and add it to your stack."
             )
             return
 
-        ctx.obj = annotator_wrapper.to_component()
+        ctx.obj = StackComponent.from_model(annotator_models[0])
 
     @dataset.command(
         "list",

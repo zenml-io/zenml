@@ -20,25 +20,25 @@ from kserve_pytorch.pipelines.kserve_pytroch_pipelines import (
 )
 from kserve_pytorch.steps.deployer import kserve_pytorch_custom_deployment
 from kserve_pytorch.steps.deployment_trigger import (
-    DeploymentTriggerConfig,
+    DeploymentTriggerParameters,
     deployment_trigger,
 )
 from kserve_pytorch.steps.inference_image_loader import (
-    InferenceImageLoaderStepConfig,
+    InferenceImageLoaderStepParameters,
     inference_image_loader,
 )
 from kserve_pytorch.steps.predection_service_loader import (
-    PredectionServiceLoaderStepConfig,
+    PredectionServiceLoaderStepParameters,
     kserve_prediction_service_loader,
 )
 from kserve_pytorch.steps.predictor import kserve_predictor
 from kserve_pytorch.steps.pytorch_data_loader import (
-    PytorchDataLoaderConfig,
+    PytorchDataLoaderParameters,
     pytorch_data_loader,
 )
 from kserve_pytorch.steps.pytorch_evaluator import pytorch_evaluator
 from kserve_pytorch.steps.pytorch_trainer import (
-    PytorchTrainerConfig,
+    PytorchTrainerParameters,
     pytorch_trainer,
 )
 from rich import print
@@ -131,16 +131,18 @@ def main(
         # Initialize and run a continuous deployment pipeline run
         pytorch_custom_code_pipeline(
             data_loader=pytorch_data_loader(
-                PytorchDataLoaderConfig(
+                PytorchDataLoaderParameters(
                     train_batch_size=batch_size, test_batch_size=batch_size
                 )
             ),
             trainer=pytorch_trainer(
-                PytorchTrainerConfig(epochs=epochs, lr=lr, momentum=momentum)
+                PytorchTrainerParameters(
+                    epochs=epochs, lr=lr, momentum=momentum
+                )
             ),
             evaluator=pytorch_evaluator(),
             deployment_trigger=deployment_trigger(
-                config=DeploymentTriggerConfig(
+                params=DeploymentTriggerParameters(
                     min_accuracy=min_accuracy,
                 )
             ),
@@ -151,12 +153,12 @@ def main(
         # Initialize an inference pipeline run
         pytorch_inference_pipeline(
             inference_image_loader=inference_image_loader(
-                InferenceImageLoaderStepConfig(
+                InferenceImageLoaderStepParameters(
                     img_url=prediction_image_url,
                 ),
             ),
             prediction_service_loader=kserve_prediction_service_loader(
-                PredectionServiceLoaderStepConfig(
+                PredectionServiceLoaderStepParameters(
                     pipeline_name=deployment_pipeline_name,
                     step_name=step_name,
                     model_name=model_name,

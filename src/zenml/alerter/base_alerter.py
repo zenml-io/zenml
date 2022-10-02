@@ -14,21 +14,31 @@
 """Base class for all ZenML alerters."""
 
 from abc import ABC
-from typing import ClassVar, Optional
+from typing import Optional, Type, cast
 
 from zenml.enums import StackComponentType
-from zenml.stack import StackComponent
+from zenml.stack import Flavor, StackComponent
+from zenml.stack.stack_component import StackComponentConfig
 from zenml.steps.step_interfaces.base_alerter_step import (
     BaseAlerterStepParameters,
 )
 
 
+class BaseAlerterConfig(StackComponentConfig):
+    """Base config for alerters."""
+
+
 class BaseAlerter(StackComponent, ABC):
     """Base class for all ZenML alerters."""
 
-    # Class configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.ALERTER
-    FLAVOR: ClassVar[str]
+    @property
+    def config(self) -> BaseAlerterConfig:
+        """Returns the `BaseAlerterConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(BaseAlerterConfig, self._config)
 
     def post(
         self, message: str, params: Optional[BaseAlerterStepParameters]
@@ -60,3 +70,34 @@ class BaseAlerter(StackComponent, ABC):
             bool: True if operation succeeded and was approved, else False.
         """
         return True
+
+
+class BaseAlerterFlavor(Flavor, ABC):
+    """Base class for all ZenML alerter flavors."""
+
+    @property
+    def type(self) -> StackComponentType:
+        """Returns the flavor type.
+
+        Returns:
+            The flavor type.
+        """
+        return StackComponentType.ALERTER
+
+    @property
+    def config_class(self) -> Type[BaseAlerterConfig]:
+        """Returns BaseAlerterConfig class.
+
+        Returns:
+            The BaseAlerterConfig class.
+        """
+        return BaseAlerterConfig
+
+    @property
+    def implementation_class(self) -> Type[BaseAlerter]:
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """
+        return BaseAlerter

@@ -21,6 +21,9 @@ from whylogs.core import DatasetProfileView  # type: ignore
 
 from zenml.integrations.whylogs.data_validators.whylogs_data_validator import (
     WhylogsDataValidator,
+)
+from zenml.integrations.whylogs.flavors import WhylogsDataValidatorFlavor
+from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorSettings,
 )
 from zenml.steps.base_step import BaseStep
@@ -92,7 +95,8 @@ def whylogs_profiler_step(
     step_class = clone_step(WhylogsProfilerStep, step_name)
     step_instance = step_class(params=params)
 
-    key = settings_utils.get_stack_component_setting_key(WhylogsDataValidator)
+    key = settings_utils.get_flavor_setting_key(WhylogsDataValidatorFlavor())
+
     settings = WhylogsDataValidatorSettings(
         enable_whylabs=True, dataset_id=dataset_id
     )

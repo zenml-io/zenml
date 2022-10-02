@@ -15,10 +15,10 @@ from typing import cast
 
 import click
 from pipeline import (
-    DeploymentTriggerConfig,
-    SeldonDeploymentLoaderStepConfig,
-    SklearnTrainerConfig,
-    TensorflowTrainerConfig,
+    DeploymentTriggerParameters,
+    SeldonDeploymentLoaderStepParameters,
+    SklearnTrainerParameters,
+    TensorflowTrainerParameters,
     continuous_deployment_pipeline,
     deployment_trigger,
     dynamic_importer,
@@ -42,7 +42,7 @@ from zenml.integrations.seldon.services import (
     SeldonDeploymentService,
 )
 from zenml.integrations.seldon.steps import (
-    SeldonDeployerStepConfig,
+    SeldonDeployerStepParameters,
     seldon_model_deployer_step,
 )
 
@@ -139,19 +139,19 @@ def main(
 
     if model_flavor == "tensorflow":
         seldon_implementation = "TENSORFLOW_SERVER"
-        trainer_config = TensorflowTrainerConfig(epochs=epochs, lr=lr)
-        trainer = tf_trainer(trainer_config)
+        trainer_params = TensorflowTrainerParameters(epochs=epochs, lr=lr)
+        trainer = tf_trainer(trainer_params)
         evaluator = tf_evaluator()
         predict_preprocessor = tf_predict_preprocessor()
     else:
         seldon_implementation = "SKLEARN_SERVER"
-        trainer_config = SklearnTrainerConfig(
+        trainer_params = SklearnTrainerParameters(
             solver=solver,
             penalty=penalty,
             C=penalty_strength,
             tol=toleration,
         )
-        trainer = sklearn_trainer(trainer_config)
+        trainer = sklearn_trainer(trainer_params)
         evaluator = sklearn_evaluator()
         predict_preprocessor = sklearn_predict_preprocessor()
 
@@ -163,12 +163,12 @@ def main(
             trainer=trainer,
             evaluator=evaluator,
             deployment_trigger=deployment_trigger(
-                config=DeploymentTriggerConfig(
+                params=DeploymentTriggerParameters(
                     min_accuracy=min_accuracy,
                 )
             ),
             model_deployer=seldon_model_deployer_step(
-                config=SeldonDeployerStepConfig(
+                params=SeldonDeployerStepParameters(
                     service_config=SeldonDeploymentConfig(
                         model_name=model_name,
                         replicas=1,
@@ -187,7 +187,7 @@ def main(
             dynamic_importer=dynamic_importer(),
             predict_preprocessor=predict_preprocessor,
             prediction_service_loader=prediction_service_loader(
-                SeldonDeploymentLoaderStepConfig(
+                SeldonDeploymentLoaderStepParameters(
                     pipeline_name=deployment_pipeline_name,
                     step_name=deployer_step_name,
                     model_name=model_name,
