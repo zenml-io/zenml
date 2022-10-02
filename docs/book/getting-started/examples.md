@@ -2,16 +2,9 @@
 description: Get started with code examples.
 ---
 
-# Things to change
+# ZenML In Code: See examples of how ZenML is used
 
-- [ ]  This should be a page that consists of different examples:
-  - [ ]  Singular examples: Examples
-  - [ ]  Stacks: ZenFiles
-  - [ ]  Have tables to point to other things
-
-
-
-# Relevant text
+This documents a series of resources to learn how to use ZenML practically.
 
 ## ZenML Examples: See how all the integrations work
 
@@ -46,3 +39,11 @@ The ZenFiles project is fully maintained and can be viewed as a sister
 repository of ZenML. 
 
 [Click here to go to ZenFiles](https://github.com/zenml-io/zenfiles)
+
+## YouTube Tutorials
+
+If you're a visual learner, then the [official ZenML YouTube channel](https://www.youtube.com/c/ZenML) is the place to go. It features tutorials, community meetups, and various other annoucements regarding the product.
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/RlBjci8iHxU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+##
