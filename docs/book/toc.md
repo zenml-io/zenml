@@ -6,6 +6,10 @@
 * [Core Concepts](./getting-started/core-concepts.md)
 * [Installation](./getting-started/installation.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
+* [Deploying ZenML](./getting-started/deploying-zenml/how-it-works.md)
+  * [Options for Deploying ZenML](./getting-started/deploying-zenml/deployment.md)
+  * [One Click Deployment using CLI](./getting-started/deploying-zenml/using-cli.md)
+  * [Using Docker or Helm](./getting-started/deploying-zenml/docker-helm.md)
 * [Examples](./getting-started/examples.md)
 
 ## Starter Guide
@@ -30,10 +34,6 @@
   * [Tracking experiments](./advanced-guide/practical/tracking-experiments.md)
   * [Validating data](./advanced-guide/practical/validating-data.md)
   * [Deploying models and batch inference](./advanced-guide/practical/deploying-models.md)
-* [Deploying ZenML](advanced-guide/deploying-zenml/how-it-works.md)
-  * [Options for Deploying ZenML](./advanced-guide/deploying-zenml/deployment.md)
-  * [One Click Deployment using CLI](./advanced-guide/deploying-zenml/using-cli.md)
-  * [Using Docker or Helm](./advanced-guide/deploying-zenml/docker-helm.md)
 * [Configuring Pipelines](./advanced-guide/pipelines/pipelines.md)
   * [Runtime configuration](./advanced-guide/pipelines/runtime-configuration.md)
   * [Pass custom data types through steps (Materializers)](./advanced-guide/pipelines/materializers.md)
