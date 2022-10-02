@@ -8,7 +8,7 @@ There are many reasons why you might want to move your ML application setup to a
 
 With ZenML, there are two kinds of deployments to keep in mind:
 
-- The ZenML Core infrastructure deployment - this pertains to deploying ZenML itself. Read [this section](../advanced-guide/deploying-zenml/deployment.md) for details.
+- The ZenML Core infrastructure deployment - this pertains to deploying ZenML itself. Read [this section](../getting-started/deploying-zenml/deployment.md) for details.
 - The ZenML Stack infrastructure deployment - this comprises the resources that form a part of your ZenML stack like [orchestrators](../component-gallery/orchestrators/orchestrators.md), [artifact stores](../component-gallery/artifact-stores/artifact-stores.md), [model deployers](../component-gallery/model-deployers/model-deployers.md) and more!
 
 This guide focuses on the stack infrastructure deployment and has three sections, each corresponding to a common scenario.
