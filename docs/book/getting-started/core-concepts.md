@@ -89,7 +89,7 @@ The only change is in the stack and its components.
 
 Below is an illustration showing how the same pipeline on a local machine can be scaled up to run on a full-fledged cloud infrastructure by switching stacks. You get all the benefits of using cloud infrastructures with minimal changes in your code.
 
-![Running your pipeline in the cloud](../assets/core_concepts/switching_stacks.png.png)
+![Running your pipeline in the cloud](../assets/core_concepts/switching_stacks.png)
 
 ## ZenML Server and Dashboard
 
