@@ -22,7 +22,6 @@ pipelines -> runs -> steps -> outputs
 
 Let us investigate how to traverse this hierarchy level by level:
 
-
 ### Pipelines
 
 ZenML keeps a collection of all created pipelines with at least one
@@ -55,7 +54,21 @@ the pipeline class, an instance of the class or even the name of the
 pipeline as a string: `get_pipeline(pipeline=...)`.
 {% endhint %}
 
+<details>
+<summary>Using the CLI</summary>
+
+You can also access your pipelines through the CLI by executing the following command on the terminal:
+
+```
+zenml pipeline list
+```
+
+</details>
+
+
 ### Runs
+
+#### Getting runs from a fetched pipeline
 
 Each pipeline can be executed many times. You can get a list of all runs using
 the `runs` attribute of a pipeline.
@@ -68,17 +81,13 @@ runs = pipeline_x.runs
 last_run = runs[-1]
 
 # or get a specific run by name
-run = pipeline_x.get_run(run_name=...)
+run = pipeline_x.get_run(run_name="my_run_name")
 ```
 
-{% hint style="warning" %}
-Calling `pipeline.runs` can currently be very slow when using remote metadata
-stores as all run data need to be transferred from the cloud to the local
-machine. 
-{% endhint %}
+#### Getting runs from a pipeline instance:
 
 Alternatively, you can also access the runs from the pipeline class/instance
-itself. 
+itself:
 
 ```python
 from zenml.pipelines import pipeline
@@ -105,11 +114,25 @@ last_run = runs[-1]
 run = example_pipeline.get_run(run_name=...)
 ```
 
-Finally, you can also access a run directly with the `get_run(run_name=...)` and `get_unlisted_runs` 
-method:
+#### Directly getting a run
+
+Finally, you can also access a run directly with the `get_run(run_name=...)`:
+
+```python
+run = get_run(run_name="my_run_name")
+```
+
+<details>
+<summary>Using the CLI</summary>
+
+You can also access your runs through the CLI by executing the following command on the terminal:
 
 ```
+zenml pipeline runs list
+zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
 ```
+
+</details>
 
 ### Runs Configuration
 

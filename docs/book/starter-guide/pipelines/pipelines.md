@@ -84,7 +84,7 @@ svc_trainer.entrypoint(X_train=..., y_train=...)
 
 
 <details>
-    <summary>Using the Class-based API</summary>
+<summary>Using the Class-based API</summary>
 
 In ZenML there are two different ways how you can define pipelines or steps. What you have seen in this section so far is the Functional API, where steps and pipelines are defined as Python functions with a @step or @pipeline decorator respectively. This is the API that is used primarily throughout the ZenML docs and examples.
 
@@ -133,7 +133,7 @@ def first_pipeline(step_1, step_2):
 ```
 
 <details>
-    <summary>Using the Class-based API</summary>
+<summary>Using the Class-based API</summary>
 
 In ZenML there are two different ways how you can define pipelines or steps. What you have seen in this section so far is the Functional API, where steps and pipelines are defined as Python functions with a @step or @pipeline decorator respectively. This is the API that is used primarily throughout the ZenML docs and examples.
 
@@ -153,8 +153,6 @@ first_pipeline_instance = FirstPipeline(
     step_1=digits_data_loader(),
     step_2=SVCTrainerStep(SVCTrainerStepConfig(gamma=0.01)),
 )
-
-first_pipeline_instance.run()
 ```
 </details>
 
@@ -233,7 +231,7 @@ plan to run your pipeline multiple times.
 ## Code Summary
 
 <details>
-    <summary>Code Example for this Section</summary>
+<summary>Code Example for this Section</summary>
 
 ```python
 import numpy as np
