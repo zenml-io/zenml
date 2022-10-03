@@ -2,13 +2,6 @@
 description: How to inspect a finished pipeline run
 ---
 
-# Things to change
-
-- Similar to before but perhaps also focused on reproducibility elements that can be fetched from the new IR (if applicable)
-- Also in passing mention class-based vs functional-based API
-
-# Older content (Page 1)
-
 # Inspecting Pipeline Runs
 
 Once a pipeline run has completed, we can access it using the post-execution
@@ -65,8 +58,7 @@ pipeline as a string: `get_pipeline(pipeline=...)`.
 ### Runs
 
 Each pipeline can be executed many times. You can get a list of all runs using
-the `runs` attribute of a pipeline. Or, you can query a specific run by run
-name using the `get_run(run_name=...)` method:
+the `runs` attribute of a pipeline.
 
 ```python
 # get all runs of a pipeline chronologically ordered
@@ -112,6 +104,14 @@ last_run = runs[-1]
 # or get a specific run by name
 run = example_pipeline.get_run(run_name=...)
 ```
+
+Finally, you can also access a run directly with the `get_run(run_name=...)` and `get_unlisted_runs` 
+method:
+
+```
+```
+
+### Runs Configuration
 
 Each run has a collection of useful metadata which you can access:
 
