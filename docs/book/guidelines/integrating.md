@@ -9,7 +9,7 @@ description: How to integrate with ZenML
 One of the main goals of ZenML is to find some semblance of order in the 
 ever-growing MLOps landscape. ZenML already provides 
 [numerous integrations](https://zenml.io/integrations) into many popular tools, 
-and allows you to [extend ZenML](../developer-guide/advanced-usage/custom-flavors.md) 
+and allows you to [extend ZenML](../advanced-guide/stacks/custom-flavors.md) 
 in order to fill in any gaps that are remaining.
 
 However, what if you want to make your extension of ZenML part of the main 
@@ -19,7 +19,7 @@ to ZenML, this guide is intended for you.
 
 ## Step 1: Categorize your integration
 
-In [Extending ZenML](../developer-guide/advanced-usage/custom-flavors.md), 
+In [Extending ZenML](../advanced-guide/stacks/custom-flavors.md), 
 we already looked at the categories and abstractions that core ZenML defines. 
 In order to create a new integration into ZenML, you would need to first find 
 the categories that your integration belongs to. The list of categories can be 
@@ -32,17 +32,17 @@ cloud integrations (AWS/GCP/Azure) contain
 [secrets managers](../component-gallery/secrets-managers/secrets-managers.md) 
 etc.
 
-## Step 2: Create individual stack components
+## Step 2: Create individual stack component flavors
 
 Each category selected above would correspond to a 
-[stack component](../starter-guide/stacks/stacks.md). You can now start 
-developing these individual stack components by following the detailed 
+[stack component flavor](../starter-guide/stacks/stacks.md). You can now start 
+developing these individual stack component flavors by following the detailed 
 instructions on each stack component page.
 
 Before you package your new components into an integration, you may want to 
 first register them with the `zenml <STACK_COMPONENT> flavor register` command 
 and use/test them as a regular custom flavor. E.g., when 
-[developing an orchestrator](../mlops-stacks/orchestrators/custom.md) 
+[developing an orchestrator](../component-gallery/orchestrators/custom.md) 
 you can use:
 
 ```
@@ -50,7 +50,7 @@ zenml orchestrator flavor register <THE-SOURCE-PATH-OF-YOUR-ORCHESTRATOR>
 ```
 
 See the docs on extensibility of the different components 
-[here ](../developer-guide/advanced-usage/custom-flavors.md) or get inspired 
+[here ](../advanced-guide/stacks/custom-flavors.md) or get inspired 
 by the many integrations that are already implemented, for example the mlflow 
 [experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/mlflow_experiment_tracker.py).
 
@@ -72,6 +72,28 @@ All integrations live within [`src/zenml/integrations/`](https://github.com/zenm
 in their own sub-folder. You should create a new folder in this directory with 
 the name of your integration.
 
+
+### Example integration directory structure
+
+```
+/src/zenml/integrations/                        <- ZenML integration directory
+    <example-integration>                       <- Root integration directory
+        |
+        ├── artifact-stores                     <- Seperated directory for  
+        |      ├── __init_.py                      every type
+        |      └── <example-artifact-store>     <- Implementation class for the  
+        ├── secrets-managers                       artifact store flavor
+        |      ├── __init_.py
+        |      └── <example-secrets-manager>    <- Implementation class for the  
+        |                                          flavor secrets manager
+        ├── flavors 
+        |      ├── __init_.py 
+        |      ├── <example-artifact-store-flavor>  <- Config class and flavor
+        |      └── <example-secrets-manager-flavor> <- Config class and flavor
+        |
+        └── __init_.py                          <- Integration class 
+```
+
 ### Define the name of your integration in constants
 
 In [`zenml/integrations/constants.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/constants.py), add:
@@ -86,31 +108,21 @@ This will be the name of the integration when you run:
  zenml integration install <name-of-integration>
 ```
 
-Or when you specify pipeline requirements:
-
-```python
-from zenml.pipelines import pipeline
-from zenml.integrations.constants import <EXAMPLE_INTEGRATION>
-
-@pipeline(required_integrations=[<EXAMPLE_INTEGRATION>])
-def custom_pipeline():
-    ...
-```
-
 ### Create the integration class \_\_init\_\_.py
 
-In `src/zenml/integrations/<YOUR_INTEGRATION>/`\_\_`init__.py` you must now 
+In `src/zenml/integrations/<YOUR_INTEGRATION>/init__.py` you must now 
 create an new class, which is a subclass of the `Integration` class, set some 
 important attributes (`NAME` and `REQUIREMENTS`), and overwrite the `flavors` 
 class method.
 
 ```python
-from typing import List
+
+from typing import List, Type
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import <EXAMPLE_INTEGRATION>
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.stack import Flavor
 
 # This is the flavor that will be used when registering this stack component
 #  `zenml <type-of-stack-component> register ... -f example-orchestrator-flavor`
@@ -124,45 +136,25 @@ class ExampleIntegration(Integration):
     REQUIREMENTS = ["<INSERT PYTHON REQUIREMENTS HERE>"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the <EXAMPLE> integration."""
-        return [
-            # Create a FlavorWrapper for each Stack Component this Integration implements
-            FlavorWrapper(
-                name=EXAMPLE_ORCHESTRATOR_FLAVOR,    
-                source="<path.to.the.implementation.of.the.component",      # Give the source of the component implementation
-                type=StackComponentType.<TYPE-OF-STACK-COMPONENT>,      # Define which component is implemented
-                integration=cls.NAME,
-            )
-        ]
-
+        from zenml.integrations.<example_flavor> import <ExampleFlavor>
+        
+        return [<ExampleFlavor>]
+        
 ExampleIntegration.check_installation() # this checks if the requirements are installed
 ```
 
 Have a look at the [MLflow Integration](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/__init__.py) 
 as an example for how it is done.
 
-### Copy your implementation(s)
-
-As said above, each Integration can have implementations for multiple ZenML 
-stack components. Generally the outer repository structure 
-`src/zenml/<stack-component>/<base-component-impl.py` is reflected inside 
-the integration folder: `integrations/<name-of-integration>/<stack-component>/<custom-component-impl.py`
-
-Here, you can now copy the code you created in 
-[Step 2](integrating.mdtep-2-create-individual-stack-components) above.&#x20;
 
 ### Import in all the right places
 
 The Integration itself must be imported within 
-[`src/zenml/integrations/__init__.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/\_\_init\_\_.py)`.`
+[`src/zenml/integrations/__init__.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/\_\_init\_\_.py).
 
-The implementation of the individual stack components also needs to be imported 
-within the submodules: `src/zenml/integrations/<name-of-integration>/<specifc-component>/__init__.py.`
-For example, in the mlflow integration, the 
-[experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/__init__.py) 
-and [deployer](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/model_deployers/__init__.py) 
-are imported in the sub-module `__init__.py` files.
+
 
 ## Step 4: Create a PR and celebrate :tada:
 

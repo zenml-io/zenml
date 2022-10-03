@@ -65,14 +65,12 @@ immediately after initialization:
 ```
 /home/stefan/.config/zenml   <- Global Config Directory
 ├── config.yaml              <- Global Configuration Settings
-├── local_stores             <- Every Stack component that stores information
-|   |                           locally will have its own subdirectory here.
-|   |                        
-│   └── a1a0d3d0-d552-4a80-be09-67e5e29be8ee   <- Local Store path for the `default`
-|                                                 local Artifact Store
-|
-└── zenml.db                 <- SQLite database where ZenML data (stacks, components,
-                                etc) are stored by default.
+└── local_stores             <- Every Stack component that stores information
+    |                           locally will have its own subdirectory here.              
+    ├── a1a0d3d0-d552-4a80-be09-67e5e29be8ee   <- e.g. Local Store path for the 
+    |                                             `default` local Artifact Store                                           
+    └── zenml.db             <- SQLite database where ZenML data (stacks, 
+                               components, etc) are stored by default.
 ```
 
 As shown above, the _Global Config Directory_ stores the following
@@ -83,17 +81,19 @@ ZenML user ID, the active database configuration, the analytics related options
 the active Stack and active Project. This is an example of the `global.yaml`
 file contents immediately after initialization:
 
-    ```yaml
-    active_project_name: null
-    active_stack_name: default
-    analytics_opt_in: true
-    store:
-        type: sql
-        url: sqlite:////home/stefan/.config/zenml/zenml.db
-    user_id: 5757e09d-f82d-43ba-98e4-59cca1d9daca
-    user_metadata: null
-    version: 0.13.1
-    ```
+   ```yaml
+   active_project_name: default
+   active_stack_id: ...
+   analytics_opt_in: true
+   store:
+     database: ...
+     url: ...
+     username: ...
+     ...
+   user_id: d980f13e-05d1-4765-92d2-1dc7eb7addb7
+   user_metadata: null
+   version: 0.13.2
+   ```
 
 2. The `local_stores` directory is where some "local" flavors of Stack Components,
 such as the `local` Artifact Store, the `sqlite` Metadata Store or the `local`

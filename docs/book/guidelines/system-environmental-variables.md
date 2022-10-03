@@ -18,7 +18,7 @@ ZENML_REPOSITORY_PATH
 ```
 
 Name of the active stack, see 
-[Setting Stacks with Environment Variables](../developer-guide/advanced-usage/stacks-environment-variables.md):
+[Setting Stacks with Environment Variables](../advanced-guide/stacks/stack-environment-variables.md):
 ```
 ZENML_ACTIVE_STACK_NAME
 ```
