@@ -27,7 +27,7 @@ This is the recommended way for production scenarios.
 ## Configuring from within code
 
 You can add a configuration to a step by creating your configuration as a
-subclass of the `BaseStepConfig`. When such a config object is passed to a step,
+subclass of the `BaseParams`. When such a config object is passed to a step,
 it is not treated like other artifacts. Instead, it gets passed into the step
 when the pipeline is instantiated.
 
@@ -36,17 +36,17 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
-from zenml.steps import step, BaseStepConfig
+from zenml.steps import step, BaseParams
 
 
-class SVCTrainerStepConfig(BaseStepConfig):
+class SVCTrainerParams(BaseParams):
     """Trainer params"""
     gamma: float = 0.001
 
 
 @step
 def svc_trainer(
-    config: SVCTrainerStepConfig,
+    config: SVCTrainerParams,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
@@ -62,18 +62,18 @@ the pipeline is instantiated you can override the default like this:
 ```python
 first_pipeline_instance = first_pipeline(
     step_1=digits_data_loader(),
-    step_2=svc_trainer(SVCTrainerStepConfig(gamma=0.01)),
+    step_2=svc_trainer(SVCTrainerParams(gamma=0.01)),
 )
 
 first_pipeline_instance.run()
 ```
 
 {% hint style="info" %}
-Behind the scenes, `BaseStepConfig` is implemented as a 
+Behind the scenes, `BaseParams` is implemented as a 
 [Pydantic BaseModel](https://pydantic-docs.helpmanual.io/usage/models/).
 Therefore, any type that 
 [Pydantic supports](https://pydantic-docs.helpmanual.io/usage/types/)
-is also supported as an attribute type in the `BaseStepConfig`.
+is also supported as an attribute type in the `BaseParams`.
 {% endhint %}
 
 ## Configuring with YAML config files
@@ -126,9 +126,9 @@ steps:
 
 {% hint style="info" %}
 Note that `svc_trainer()` still has to be defined to have a
-`config: SVCTrainerStepConfig` argument. The difference here is only that we
+`config: SVCTrainerParams` argument. The difference here is only that we
 provide `gamma` via a config file before running the pipeline, instead of
-explicitly passing a `SVCTrainerStepConfig` object during the step creation.
+explicitly passing a `SVCTrainerParams` object during the step creation.
 {% endhint %}
 
 ### Configuring the entire pipeline at runtime in YAML
@@ -266,7 +266,7 @@ from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
-from zenml.steps import BaseStepConfig, Output, step
+from zenml.steps import BaseParams, Output, step
 from zenml.pipelines import pipeline
 
 
@@ -283,14 +283,14 @@ def digits_data_loader() -> Output(
     return X_train, X_test, y_train, y_test
 
 
-class SVCTrainerStepConfig(BaseStepConfig):
+class SVCTrainerParams(BaseParams):
     """Trainer params"""
     gamma: float = 0.001
 
 
 @step
 def svc_trainer(
-    config: SVCTrainerStepConfig,
+    config: SVCTrainerParams,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
@@ -329,7 +329,7 @@ This is what the same pipeline run would look like if triggered from within pyth
 ```python
 first_pipeline_instance = first_pipeline(
     step_1=digits_data_loader(),
-    step_2=svc_trainer(SVCTrainerStepConfig(gamma=0.01)),
+    step_2=svc_trainer(SVCTrainerParams(gamma=0.01)),
 )
 
 first_pipeline_instance.run()

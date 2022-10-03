@@ -42,7 +42,7 @@ To explore all possible operations that can be performed via the
 In general, when defining steps, you usually can only supply inputs that have
 been output by previous steps. However, there are two exceptions:
 
-* An object which is a subclass of `BaseStepConfig`: This object is used to
+* An object which is a subclass of `BaseParameters`: This object is used to
 pass run-time parameters to a pipeline run. It can be used to send parameters
 to a step that are not artifacts. You learned about this one already in the
 section on [Runtime Configuration](../steps-pipelines/runtime-configuration.md).
@@ -57,16 +57,16 @@ To use step fixtures in your steps, just pass a parameter with the right type
 hint and ZenML will automatically recognize it.
 
 ```python
-from zenml.steps import step, BaseStepConfig, StepContext
+from zenml.steps import step, BaseParameters, StepContext
 
 
-class SubClassBaseStepConfig(BaseStepConfig):
+class SubClassBaseParameters(BaseParameters):
     ...
 
 
 @step
 def my_step(
-    config: SubClassBaseStepConfig,  # must be subclass of `BaseStepConfig`
+    config: SubClassBaseParameters,  # must be subclass of `BaseParameters`
     context: StepContext,  # must be of class `StepContext`
     artifact: str,  # other parameters are assumed to be outputs of other steps
 ):
@@ -86,7 +86,7 @@ from within the step.
 
 ### Defining Steps with Step Contexts
 
-Unlike `BaseStepConfig`, you do not need to create a `StepContext` object
+Unlike `BaseParameters`, you do not need to create a `StepContext` object
 yourself and pass it when creating the step. As long as you specify a parameter
 of type `StepContext` in the signature of your step function or class, ZenML 
 will automatically create the `StepContext` and take care of passing it to your

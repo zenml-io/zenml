@@ -429,7 +429,7 @@ the `@enable_xxx` decorators)
 - The same configurations can also be defined in a yaml file
 - The users can think of configuring stacks and pipeline in terms of `Params`
 and `Settings`
-- `BaseStepConfig` is now renamed to `Params`
+- `BaseStepConfig` is now renamed to `BaseParameters`
 - `DockerConfiguration` is now renamed to `DockerSettings`
 
 All the aforementioned configurations as well as additional information required

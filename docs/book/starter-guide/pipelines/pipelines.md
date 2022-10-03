@@ -95,10 +95,10 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
-from zenml.steps import BaseStep, BaseStepConfig
+from zenml.steps import BaseStep, BaseParameters
 
 
-class SVCTrainerStepConfig(BaseStepConfig):
+class SVCTrainerParams(BaseParameters):
     """Trainer params"""
     gamma: float = 0.001
 
@@ -106,7 +106,7 @@ class SVCTrainerStepConfig(BaseStepConfig):
 class SVCTrainerStep(BaseStep):
     def entrypoint(
         self,
-        config: SVCTrainerStepConfig,
+        config: SVCTrainerParams,
         X_train: np.ndarray,
         y_train: np.ndarray,
     ) -> ClassifierMixin:
@@ -151,7 +151,7 @@ class FirstPipeline(BasePipeline):
 
 first_pipeline_instance = FirstPipeline(
     step_1=digits_data_loader(),
-    step_2=SVCTrainerStep(SVCTrainerStepConfig(gamma=0.01)),
+    step_2=SVCTrainerStep(SVCTrainerParams(gamma=0.01)),
 )
 ```
 </details>

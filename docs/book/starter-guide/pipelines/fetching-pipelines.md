@@ -203,7 +203,7 @@ pipe.get_runs()[-1].get_step(step="step_1")
 
 {% hint style="info" %}
 The steps are ordered by time of execution. Depending on the 
-[orchestrator](../../mlops-stacks/orchestrators/orchestrators.md), steps can be 
+[orchestrator](../../component-gallery/orchestrators/orchestrators.md), steps can be 
 run in parallel. Thus, accessing steps by index can be unreliable across 
 different runs, and it is recommended to access steps by the step class,
 an instance of the class or even the name of the step as a string: 
@@ -234,7 +234,6 @@ The names of the outputs can be found in the `Output` typing of your steps:
 
 ```python
 from zenml.steps import step, Output
-
 
 @step
 def some_step() -> Output(output_name=int):
