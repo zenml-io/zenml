@@ -28,7 +28,7 @@ High-level overview of the changes:
 role. All information about your ZenML Stacks, pipelines, and artifacts is now
 tracked by ZenML itself directly. If you are currently using remote Metadata
 Stores (e.g. deployed in cloud) in your stacks, you will probably need to
-replace them with [ZenML cloud deployments](../getting-started/deploying-zenml/how-it-works.md).
+replace them with [ZenML cloud deployments](../getting-started/deploying-zenml/deploying-zenml.md).
 * the [new ZenML Dashboard](#the-zenml-dashboard-is-now-available) is now
 available with all ZenML deployments.
 * [ZenML Profiles have been removed](#removal-of-profiles-and-the-local-yaml-database)
@@ -58,7 +58,7 @@ of the ZenML server and to access the pipeline and pipeline run information:
 - `zenml connect / disconnect / down / up / logs / status` can be used to
 configure your client to connect to a ZenML server, to start a local ZenML
 Dashboard or to deploy a ZenML server to a cloud environment. For more
-information on how to use these commands, see [the ZenML deployment documentation](../getting-started/deploying-zenml/how-it-works.md).
+information on how to use these commands, see [the ZenML deployment documentation](../getting-started/deploying-zenml/deploying-zenml.md).
 - `zenml pipeline list / runs / delete` can be used to display information and
 about and manage your pipelines and pipeline runs.
 
@@ -115,17 +115,17 @@ to ZenML 0.20.0, ZenML will automatically switch to using its local database.
 * if you're using the `kubeflow` Metadata Store flavor to connect to a remote
 Kubeflow Metadata Service such as those provided by a Kubeflow installation
 running in AWS, Google or Azure, there is currently no equivalent in ZenML
-0.20.0. You'll need to [deploy a ZenML Server](../getting-started/deploying-zenml/how-it-works.md)
+0.20.0. You'll need to [deploy a ZenML Server](../getting-started/deploying-zenml/deploying-zenml.md)
 instance close to where your Kubeflow service is running (e.g. in the same
 cloud region).
 
 * if you're using the `mysql` Metadata Store flavor to connect to a remote
 MySQL database service (e.g. a managed AWS, GCP or Azure MySQL service), you'll
-have to [deploy a ZenML Server](../getting-started/deploying-zenml/how-it-works.md)
+have to [deploy a ZenML Server](../getting-started/deploying-zenml/deploying-zenml.md)
 instance connected to that same database.
 
 * if you deployed a `kubernetes` Metadata Store flavor (i.e. a MySQL database
-service deployed in Kubernetes), you can [deploy a ZenML Server](../getting-started/deploying-zenml/how-it-works.md)
+service deployed in Kubernetes), you can [deploy a ZenML Server](../getting-started/deploying-zenml/deploying-zenml.md)
 in the same Kubernetes cluster and connect it to that same database. However,
 ZenML will no longer provide the `kubernetes` Metadata Store flavor and you'll
 have to manage the Kubernetes MySQL database service deployment yourself going
@@ -174,7 +174,7 @@ default:
 ![ZenML Dashboard Preview](../assets/migration/zenml-dashboard.png)
 
 For more details on other possible deployment options, see the
-[ZenML deployment documentation](../getting-started/deploying-zenml/how-it-works.md).
+[ZenML deployment documentation](../getting-started/deploying-zenml/deploying-zenml.md).
 
 ## Removal of Profiles and the local YAML database
 
@@ -205,7 +205,7 @@ ZenML 0.20.0 paradigm by following these steps:
 existing Profiles.
 
 2. decide the ZenML deployment model that you want to follow for your projects.
-See the [ZenML deployment documentation](../getting-started/deploying-zenml/how-it-works.md)
+See the [ZenML deployment documentation](../getting-started/deploying-zenml/deploying-zenml.md)
 for available deployment scenarios. If you decide on using a local or remote
 ZenML server to manage your pipelines, make sure that you first connect your
 client to it by running `zenml connect`.
