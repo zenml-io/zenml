@@ -128,7 +128,7 @@ cd zenml_examples/mlflow_tracking
 zenml init
 
 # Create and activate the stack with the mlflow experiment tracker component
-zenml experiment-tracker register mlflow_tracker --type=mlflow
+zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml stack register mlflow_stack \
     -a default \
     -o default \
