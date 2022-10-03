@@ -82,6 +82,43 @@ svc_trainer.entrypoint(X_train=..., y_train=...)
 ```
 {% endhint %}
 
+
+<details>
+    <summary>Using the Class-based API</summary>
+
+In ZenML there are two different ways how you can define pipelines or steps. What you have seen in the previous sections is the Functional API, where steps and pipelines are defined as Python functions with a @step or @pipeline decorator respectively. This is the API that is used primarily throughout the ZenML docs and examples.
+
+Alternatively, you can also define steps and pipelines using the Class-Based API by creating Python classes that subclass ZenML's abstract base classes BaseStep and BasePipeline directly. Internally, both APIs will result in similar definitions, so it is entirely up to you which API to use.
+
+Alternatively, you can also define steps and pipelines using the Class-Based API by creating Python classes that subclass ZenML's abstract base classes BaseStep and BasePipeline directly. Internally, both APIs will result in similar definitions, so it is entirely up to you which API to use.
+
+```python
+import numpy as np
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
+
+from zenml.steps import BaseStep, BaseStepConfig
+
+
+class SVCTrainerStepConfig(BaseStepConfig):
+    """Trainer params"""
+    gamma: float = 0.001
+
+
+class SVCTrainerStep(BaseStep):
+    def entrypoint(
+        self,
+        config: SVCTrainerStepConfig,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+    ) -> ClassifierMixin:
+        """Train a sklearn SVC classifier."""
+        model = SVC(gamma=config.gamma)
+        model.fit(X_train, y_train)
+        return model
+```
+</details>
+
 ## Pipeline
 
 Let us now define our first ML pipeline. This is agnostic of the implementation and can be
