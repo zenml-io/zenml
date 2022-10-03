@@ -140,29 +140,21 @@ In ZenML there are two different ways how you can define pipelines or steps. Wha
 Alternatively, you can also define steps and pipelines using the Class-Based API by creating Python classes that subclass ZenML's abstract base classes BaseStep and BasePipeline directly. Internally, both APIs will result in similar definitions, so it is entirely up to you which API to use.
 
 ```python
-import numpy as np
-from sklearn.base import ClassifierMixin
-from sklearn.svm import SVC
-
-from zenml.steps import BaseStep, BaseStepConfig
+from zenml.pipelines import BasePipeline
 
 
-class SVCTrainerStepConfig(BaseStepConfig):
-    """Trainer params"""
-    gamma: float = 0.001
+class FirstPipeline(BasePipeline):
+    def connect(self, step_1, step_2):
+        X_train, X_test, y_train, y_test = step_1()
+        step_2(X_train, y_train)
 
 
-class SVCTrainerStep(BaseStep):
-    def entrypoint(
-        self,
-        config: SVCTrainerStepConfig,
-        X_train: np.ndarray,
-        y_train: np.ndarray,
-    ) -> ClassifierMixin:
-        """Train a sklearn SVC classifier."""
-        model = SVC(gamma=config.gamma)
-        model.fit(X_train, y_train)
-        return model
+first_pipeline_instance = FirstPipeline(
+    step_1=digits_data_loader(),
+    step_2=SVCTrainerStep(SVCTrainerStepConfig(gamma=0.01)),
+)
+
+first_pipeline_instance.run()
 ```
 </details>
 
