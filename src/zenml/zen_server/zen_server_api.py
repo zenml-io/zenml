@@ -105,6 +105,9 @@ def dashboard(request: Request) -> Any:
 
     Returns:
         The ZenML dashboard.
+
+    Raises:
+        HTTPException: If the dashboard files are not included.
     """
     if not os.path.isfile(
         os.path.join(relative_path(DASHBOARD_DIRECTORY), "index.html")
@@ -193,7 +196,8 @@ def catch_all(request: Request, file_path: str) -> Any:
         The ZenML dashboard.
 
     Raises:
-        HTTPException: 404 error if a requested a non-existent static file.
+        HTTPException: 404 error if requested a non-existent static file or if
+            the dashboard files are not included.
     """
     # some static files need to be served directly from the root dashboard
     # directory

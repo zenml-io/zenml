@@ -6,8 +6,8 @@ Introduction to centralized tracking of metadata and to the ZenServer concept.
 
 ## Architecture
 
-A ZenML deployment consists of two components -
-- A FastAPI server tha.
+A ZenML deployment consists of two components:
+- A FastAPI server.
 - A SQL database.
 
 The server is configured to talk to the database which hosts all the tables pertaining to your data that is being tracked through ZenML. It provides the API that the client uses, through either the `zenml` CLI or the ZenML Dashboard.

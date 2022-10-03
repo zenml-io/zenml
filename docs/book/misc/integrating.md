@@ -150,7 +150,7 @@ stack components. Generally the outer repository structure
 the integration folder: `integrations/<name-of-integration>/<stack-component>/<custom-component-impl.py`
 
 Here, you can now copy the code you created in 
-[Step 2](integrating.mdtep-2-create-individual-stack-components) above.&#x20;
+[Step 2](integrating#step-2-create-individual-stack-components) above.&#x20;
 
 ### Import in all the right places
 
@@ -158,7 +158,7 @@ The Integration itself must be imported within
 [`src/zenml/integrations/__init__.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/\_\_init\_\_.py)`.`
 
 The implementation of the individual stack components also needs to be imported 
-within the submodules: `src/zenml/integrations/<name-of-integration>/<specifc-component>/__init__.py.`
+within the sub-modules: `src/zenml/integrations/<name-of-integration>/<specific-component>/__init__.py.`
 For example, in the mlflow integration, the 
 [experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/__init__.py) 
 and [deployer](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/model_deployers/__init__.py) 

@@ -1,5 +1,26 @@
 <!-- markdown-link-check-disable -->
 
+# 0.20.0
+
+## What's Changed
+* Fix error in checking Great Expectations results when exit_on_error=True by @TimovNiedek in https://github.com/zenml-io/zenml/pull/889
+* feat(user-dockerfile): Add user argument to DockerConfiguration by @cjidboon94 in https://github.com/zenml-io/zenml/pull/892
+* Minor doc updates for backporting by @htahir1 in https://github.com/zenml-io/zenml/pull/894
+* Removed feature request and replaced with hellonext board by @htahir1 in https://github.com/zenml-io/zenml/pull/897
+* Unit tests for (some) integrations by @strickvl in https://github.com/zenml-io/zenml/pull/880
+* Fixed integration installation command by @edshee in https://github.com/zenml-io/zenml/pull/900
+* Pipeline configuration and intermediate representation by @schustmi in https://github.com/zenml-io/zenml/pull/898
+* [Bugfix] Fix bug in auto-import of stack after recipe deploy by @wjayesh in https://github.com/zenml-io/zenml/pull/901
+* Update TOC on CONTRIBUTING.md by @strickvl in https://github.com/zenml-io/zenml/pull/907
+* ZenServer by @fa9r in https://github.com/zenml-io/zenml/pull/879
+
+## New Contributors
+* @TimovNiedek made their first contribution in https://github.com/zenml-io/zenml/pull/889
+* @cjidboon94 made their first contribution in https://github.com/zenml-io/zenml/pull/892
+* @edshee made their first contribution in https://github.com/zenml-io/zenml/pull/900
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.13.2...0.20.0
+
 # 0.13.2
 
 ZenML 0.13.2 comes with a new local Docker orchestrator and many other improvements and fixes:
