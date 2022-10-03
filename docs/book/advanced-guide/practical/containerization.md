@@ -2,8 +2,6 @@
 description: How ZenML uses Docker images to run your pipeline
 ---
 
-# Things to change
-
 When running locally, ZenML will execute the steps of your pipeline in the
 active Python environment. When using remote [orchestrators](../../mlops-stacks/orchestrators/orchestrators.md)
 or [step operators](../../mlops-stacks/step-operators/step-operators.md) instead,
