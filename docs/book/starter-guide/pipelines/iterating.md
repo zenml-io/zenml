@@ -2,8 +2,6 @@
 description: Iteration is native to ZenML.
 ---
 
-# Quickly experimenting with ZenML pipelines
-
 Machine learning pipelines are rerun many times over throughout their
 development lifecycle. 
 
