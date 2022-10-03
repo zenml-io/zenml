@@ -39,7 +39,7 @@ after the update.
 If you extended ZenML with custom stack component implementations, you may need
 to update the way they are registered in ZenML.
 * the updated ZenML server provides a new and improved collaborative experience.
-When connected to a ZenML server, you can now [share your ZenML Stacks and Stack Components](#sharing-your-stacks-and-stack-components) with other users. If you were
+When connected to a ZenML server, you can now [share your ZenML Stacks and Stack Components](#shared-zenml-stacks-and-stack-components) with other users. If you were
 previously using the ZenML Profiles or the ZenML server to share your ZenML
 Stacks, you should switch to the new ZenML server and Dashboard and update your
 existing workflows to reflect the new features.
@@ -373,7 +373,8 @@ for updated information on how to do this.
 
 With collaboration being the key part of ZenML, the 0.20.0 release puts the
 concepts of Users and Projects front and center and introduces
-the possibility to share stacks and stack components with other users.
+the possibility to share stacks and stack components with other users by
+means of the ZenML server.
 
 When your client is connected to a ZenML server, entities such as Stacks, Stack
 Components, Stack Component Flavors, Pipelines, Pipeline Runs, and Artifacts are
