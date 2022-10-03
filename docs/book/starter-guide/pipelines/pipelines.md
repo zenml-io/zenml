@@ -106,7 +106,7 @@ class SVCTrainerParams(BaseParameters):
 class SVCTrainerStep(BaseStep):
     def entrypoint(
         self,
-        config: SVCTrainerParams,
+        params SVCTrainerParams,
         X_train: np.ndarray,
         y_train: np.ndarray,
     ) -> ClassifierMixin:

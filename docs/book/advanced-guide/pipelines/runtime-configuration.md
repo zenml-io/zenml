@@ -46,7 +46,7 @@ class SVCTrainerParams(BaseParams):
 
 @step
 def svc_trainer(
-    config: SVCTrainerParams,
+    params SVCTrainerParams,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
@@ -126,7 +126,7 @@ steps:
 
 {% hint style="info" %}
 Note that `svc_trainer()` still has to be defined to have a
-`config: SVCTrainerParams` argument. The difference here is only that we
+`params SVCTrainerParams` argument. The difference here is only that we
 provide `gamma` via a config file before running the pipeline, instead of
 explicitly passing a `SVCTrainerParams` object during the step creation.
 {% endhint %}
@@ -290,7 +290,7 @@ class SVCTrainerParams(BaseParams):
 
 @step
 def svc_trainer(
-    config: SVCTrainerParams,
+    params SVCTrainerParams,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:

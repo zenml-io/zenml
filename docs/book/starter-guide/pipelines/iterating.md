@@ -36,7 +36,7 @@ class SVCTrainerParams(BaseParameters):
 
 @step
 def svc_trainer(
-    config: SVCTrainerParams,
+    params SVCTrainerParams,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
@@ -205,7 +205,7 @@ class SVCTrainerParams(BaseParameters):
 
 @step(enable_cache=False)  # never cache this step, always retrain
 def svc_trainer(
-    config: SVCTrainerParams,
+    params SVCTrainerParams,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
@@ -359,7 +359,7 @@ class SVCTrainerParams(BaseParameters):
 
 @step(enable_cache=False)  # never cache this step, always retrain
 def svc_trainer(
-    config: SVCTrainerParams,
+    params SVCTrainerParams,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:

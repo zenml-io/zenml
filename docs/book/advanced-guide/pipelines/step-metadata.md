@@ -66,7 +66,7 @@ class SubClassBaseParameters(BaseParameters):
 
 @step
 def my_step(
-    config: SubClassBaseParameters,  # must be subclass of `BaseParameters`
+    params: SubClassBaseParameters,  # must be subclass of `BaseParameters`
     context: StepContext,  # must be of class `StepContext`
     artifact: str,  # other parameters are assumed to be outputs of other steps
 ):
