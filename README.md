@@ -262,7 +262,7 @@ To visually see this in action, ZenML ships with a fully-featured dashboard, tha
 zenml up
 ```
 
-![ZenML Dashboard](docs/book/assets/pipelines_dashboard.png)
+![ZenML Dashboard](docs/book/assets/getting_started/zenml-up.gif)
 
 The dashboard can also be deployed with a server on any cloud service (see Deploy ZenML section).
 
