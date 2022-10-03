@@ -2,7 +2,7 @@
 description: Welcome to ZenML!
 ---
 
-## ZenML: Open-source pipeline framework that integrates all your ML tools
+# ZenML: Open-source MLOps framework that integrates all your ML tools
 
 🤹 Are you an ML engineer or data scientist shipping models to production and juggling a plethora of tools? 
 
