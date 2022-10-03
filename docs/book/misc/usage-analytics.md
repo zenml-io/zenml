@@ -54,73 +54,72 @@ GitHub repository.
 
 ```python
 # Pipelines
-    # Pipelines
-    RUN_PIPELINE = "Pipeline run"
-    GET_PIPELINES = "Pipelines fetched"
-    GET_PIPELINE = "Pipeline fetched"
+RUN_PIPELINE = "Pipeline run"
+GET_PIPELINES = "Pipelines fetched"
+GET_PIPELINE = "Pipeline fetched"
 
-    # Repo
-    INITIALIZE_REPO = "ZenML initialized"
+# Repo
+INITIALIZE_REPO = "ZenML initialized"
 
-    # Profile
-    INITIALIZED_PROFILE = "Profile initialized"
+# Profile
+INITIALIZED_PROFILE = "Profile initialized"
 
-    # Components
-    REGISTERED_STACK_COMPONENT = "Stack component registered"
-    UPDATED_STACK_COMPONENT = "Stack component updated"
-    COPIED_STACK_COMPONENT = "Stack component copied"
+# Components
+REGISTERED_STACK_COMPONENT = "Stack component registered"
+UPDATED_STACK_COMPONENT = "Stack component updated"
+COPIED_STACK_COMPONENT = "Stack component copied"
 
-    # Stack
-    REGISTERED_STACK = "Stack registered"
-    REGISTERED_DEFAULT_STACK = "Default stack registered"
-    SET_STACK = "Stack set"
-    UPDATED_STACK = "Stack updated"
-    COPIED_STACK = "Stack copied"
-    IMPORT_STACK = "Stack imported"
-    EXPORT_STACK = "Stack exported"
+# Stack
+REGISTERED_STACK = "Stack registered"
+REGISTERED_DEFAULT_STACK = "Default stack registered"
+SET_STACK = "Stack set"
+UPDATED_STACK = "Stack updated"
+COPIED_STACK = "Stack copied"
+IMPORT_STACK = "Stack imported"
+EXPORT_STACK = "Stack exported"
 
-    # Model Deployment
-    MODEL_DEPLOYED = "Model deployed"
+# Model Deployment
+MODEL_DEPLOYED = "Model deployed"
 
-    # Analytics opt in and out
-    OPT_IN_ANALYTICS = "Analytics opt-in"
-    OPT_OUT_ANALYTICS = "Analytics opt-out"
+# Analytics opt in and out
+OPT_IN_ANALYTICS = "Analytics opt-in"
+OPT_OUT_ANALYTICS = "Analytics opt-out"
 
-    # Examples
-    RUN_ZENML_GO = "ZenML go"
-    RUN_EXAMPLE = "Example run"
-    PULL_EXAMPLE = "Example pull"
+# Examples
+RUN_ZENML_GO = "ZenML go"
+RUN_EXAMPLE = "Example run"
+PULL_EXAMPLE = "Example pull"
 
-    # Integrations
-    INSTALL_INTEGRATION = "Integration installed"
+# Integrations
+INSTALL_INTEGRATION = "Integration installed"
 
-    # Users
-    CREATED_USER = "User created"
-    CREATED_DEFAULT_USER = "Default user created"
-    DELETED_USER = "User deleted"
+# Users
+CREATED_USER = "User created"
+CREATED_DEFAULT_USER = "Default user created"
+DELETED_USER = "User deleted"
 
-    # Teams
-    CREATED_TEAM = "Team created"
-    DELETED_TEAM = "Team deleted"
+# Teams
+CREATED_TEAM = "Team created"
+DELETED_TEAM = "Team deleted"
 
-    # Projects
-    CREATED_PROJECT = "Project created"
-    DELETED_PROJECT = "Project deleted"
+# Projects
+CREATED_PROJECT = "Project created"
+DELETED_PROJECT = "Project deleted"
 
-    # Role
-    CREATED_ROLE = "Role created"
-    DELETED_ROLE = "Role deleted"
+# Role
+CREATED_ROLE = "Role created"
+DELETED_ROLE = "Role deleted"
 
-    # Flavor
-    CREATED_FLAVOR = "Flavor created"
+# Flavor
+CREATED_FLAVOR = "Flavor created"
 
-    # Test event
-    EVENT_TEST = "Test event"
+# Test event
+EVENT_TEST = "Test event"
 
-    # Stack recipes
-    PULL_STACK_RECIPE = "Stack recipes pulled"
-    RUN_STACK_RECIPE = "Stack recipe created"
-    DESTROY_STACK_RECIPE = "Stack recipe destroyed"
+# Stack recipes
+PULL_STACK_RECIPE = "Stack recipes pulled"
+RUN_STACK_RECIPE = "Stack recipe created"
+DESTROY_STACK_RECIPE = "Stack recipe destroyed"
 ```
 Each Segment Track event collects the following metadata:
 
