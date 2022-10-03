@@ -223,7 +223,7 @@ different Project, you will not be able to visualize the migrated Stacks and
 Stack Components in the Dashboard. This will be fixed in a future release.
 {% endhint %}
 
-4. once you've migrated all your Profiles, you can delete the old YAML files.
+Once you've migrated all your Profiles, you can delete the old YAML files.
 
 Example of migrating a `default` profile into the `default` project:
 
