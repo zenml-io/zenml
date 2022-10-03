@@ -118,7 +118,10 @@ run = example_pipeline.get_run(run_name=...)
 Finally, you can also access a run directly with the `get_run(run_name=...)`:
 
 ```python
+from zenml.post_execution import get_run, get_unlisted_runs
+
 run = get_run(run_name="my_run_name")
+run = get_unlisted_runs()[-1]  # Get last unlisted run
 ```
 
 <details>
@@ -137,7 +140,7 @@ zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
 
 Each run has a collection of useful metadata which you can access:
 
-**git_sha**
+#### git_sha
 The Git commit SHA that the pipeline run was performed on. This will only be set 
 if the pipeline code is in a git repository and there are no uncommitted files 
 when running the pipeline.
@@ -145,14 +148,14 @@ when running the pipeline.
 commit = run.git_sha
 ```
 
-**status**
+#### status
 The status of a pipeline run can also be found here. There are four 
 possible states: failed, completed, running, cached:
 ```python
 status = run.status
 ```
 
-**runtime_configuration**
+#### runtime_configuration
 Currently the runtime configuration contains information about the schedule that
 was used for the run, the run_name and the path to the file containing the 
 pipeline. 

@@ -1,24 +1,79 @@
 ---
-description: How automated caching works in ZenML
+description: Iteration is native to ZenML.
 ---
 
-# Things to change
-
-- Here we should show how to configure a pipeline at run time with Params (no YAML stuff, just in code)
-- We should show another pipeline run and caching on the UI
-- For reference, I have put in content of 3 relevant pages. Not everything needs to be combined, a lot can be cut out
-
-# Older Content (Page 1)
+# Quickly experimenting with ZenML pipelines
 
 Machine learning pipelines are rerun many times over throughout their
-development lifecycle. Prototyping is often a fast and iterative process that
+development lifecycle. 
+
+## Runtime Configuration
+
+A ZenML pipeline clearly separates business logic from parameter configuration.
+Business logic is what defines a step or a pipeline. 
+Parameter configurations are used to dynamically set parameters of your steps 
+and pipelines at runtime.
+
+You can configure your pipelines at runtime in the following ways:
+
+You can add a configuration to a step by creating your configuration as a
+subclass of the `BaseStepConfig`. When such a config object is passed to a step,
+it is not treated like other artifacts. Instead, it gets passed into the step
+when the pipeline is instantiated.
+
+```python
+import numpy as np
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
+
+from zenml.steps import step, BaseStepConfig
+
+
+class SVCTrainerStepConfig(BaseStepConfig):
+    """Trainer params"""
+    gamma: float = 0.001
+
+
+@step
+def svc_trainer(
+    config: SVCTrainerStepConfig,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier."""
+    model = SVC(gamma=config.gamma)
+    model.fit(X_train, y_train)
+    return model
+```
+
+The default value for the `gamma` parameter is set to `0.001`. However, when
+the pipeline is instantiated you can override the default like this:
+
+```python
+first_pipeline_instance = first_pipeline(
+    step_1=digits_data_loader(),
+    step_2=svc_trainer(SVCTrainerStepConfig(gamma=0.01)),
+)
+
+first_pipeline_instance.run()
+```
+
+{% hint style="info" %}
+Behind the scenes, `BaseStepConfig` is implemented as a 
+[Pydantic BaseModel](https://pydantic-docs.helpmanual.io/usage/models/).
+Therefore, any type that 
+[Pydantic supports](https://pydantic-docs.helpmanual.io/usage/types/)
+is also supported as an attribute type in the `BaseStepConfig`.
+{% endhint %}
+
+## Caching in ZenML
+
+Prototyping is often a fast and iterative process that
 benefits a lot from caching. This makes caching a very powerful tool.
 Checkout this [ZenML Blogpost on Caching](https://blog.zenml.io/caching-ml-pipelines/)
 for more context on the benefits of caching and 
 [ZenBytes lesson 1.2](https://github.com/zenml-io/zenbytes/blob/main/1-2_Artifact_Lineage.ipynb)
 for a detailed example on how to configure and visualize caching.
-
-## Caching in ZenML
 
 ZenML comes with caching enabled by default. Since ZenML automatically tracks
 and versions all inputs, outputs, and parameters of steps and pipelines, ZenML
@@ -31,7 +86,7 @@ system or on external APIs. Make sure to set caching to `False` on steps that
 depend on external inputs or if the step should run regardless of caching.
 {% endhint %}
 
-## Configuring caching behavior of your pipelines
+### Configuring caching behavior of your pipelines
 
 Although caching is desirable in many circumstances, one might want to disable
 it in certain instances. For example, if you are quickly prototyping with
@@ -46,7 +101,7 @@ This is required for certain steps that depend on external input.
 - [Dynamically disabling caching for a pipeline run](#dynamically-disabling-caching-for-a-pipeline-run):
 This is useful to force a complete rerun of a pipeline.
 
-### Disabling caching for the entire pipeline
+#### Disabling caching for the entire pipeline
 
 On a pipeline level the caching policy can be set as a parameter within the decorator. 
 
@@ -61,7 +116,7 @@ If caching is explicitly turned off on a pipeline level, all steps are run
 without caching, even if caching is set to `True` for single steps.
 {% endhint %}
 
-### Disabling caching for individual steps
+#### Disabling caching for individual steps
 
 Caching can also be explicitly turned off at a step level. You might want to turn off caching for steps that take 
 external input (like fetching data from an API or File IO).
@@ -98,7 +153,7 @@ You can see an example of this in action in our [PyTorch
 Example](https://github.com/zenml-io/zenml/blob/develop/examples/pytorch/config.yaml),
 where caching is disabled for the `trainer` step.
 
-### Dynamically disabling caching for a pipeline run
+#### Dynamically disabling caching for a pipeline run
 
 Sometimes you want to have control over caching at runtime instead of defaulting to the backed in configurations of 
 your pipeline and its steps. ZenML offers a way to override all caching settings of the pipeline at runtime.
@@ -117,7 +172,7 @@ under the hood, checkout
 [ZenBytes lesson 1.2](https://github.com/zenml-io/zenbytes/blob/main/1-2_Artifact_Lineage.ipynb)!
 
 <details>
-    <summary>Code Example of this Section</summary>
+<summary>Code Example of this Section</summary>
 
 ```python
 import numpy as np
@@ -181,9 +236,7 @@ first_pipeline_instance.run()
 first_pipeline_instance.run(enable_cache=False)
 ```
 
-### Expected Output
-
-#### Run 1:
+#### Expected Output Run 1:
 
 ```
 Creating run for pipeline: first_pipeline
@@ -196,7 +249,7 @@ Step svc_trainer has finished in 0.109s.
 Pipeline run first_pipeline-07_Jul_22-12_05_54_573248 has finished in 0.417s.
 ```
 
-#### Run 2:
+#### Expected Output Run 2:
 
 ```
 Creating run for pipeline: first_pipeline
@@ -210,7 +263,7 @@ Step svc_trainer has finished in 0.051s.
 Pipeline run first_pipeline-07_Jul_22-12_05_55_813554 has finished in 0.161s.
 ```
 
-#### Run 3:
+#### Expected Output Run 3:
 
 ```
 Creating run for pipeline: first_pipeline
@@ -225,27 +278,6 @@ Pipeline run first_pipeline-07_Jul_22-12_05_56_718489 has finished in 0.219s.
 ```
 
 </details>
-
-# Older Content (Page 2)
-
-ZenML's **Dash** integration provides a `PipelineRunLineageVisualizer` that can
-be used to visualize pipeline runs in your local browser, as shown below:
-
-![Pipeline Run Visualization Example](../../assets/developer-guide/pipeline-visualization/run2.png)
-
-## Requirements
-
-Before you can use the Dash visualizer, you first need to install ZenML's Dash
-integration:
-
-```shell
-zenml integration install dash -y
-```
-
-{% hint style="info" %}
-See the [Integrations](../../mlops-stacks/integrations.md) page for more
-details on ZenML integrations and how to install and use them.
-{% endhint %}
 
 ## Visualizing Pipelines
 
@@ -284,7 +316,7 @@ In addition to `Completed`, `Running`, and `Failed`, there is also a separate
 you can see at a glance which steps were cached (green) and which were rerun (blue).
 See below for a detailed example.
 
-## Code Example
+### Code Example
 
 In the following example we use the `PipelineRunLineageVisualizer` to visualize
 the three pipeline runs from the [Caching Pipeline Runs Example](./caching.md#code-example):
@@ -380,73 +412,3 @@ PipelineRunLineageVisualizer().visualize(latest_run)
 ![Visualization Run 3](../../assets/developer-guide/pipeline-visualization/run3.png)
 
 </details>
-
-# Older Content (Page 3)
-
-# Runtime Configuration
-
-A ZenML pipeline clearly separates business logic from parameter configuration.
-Business logic is what defines a step or a pipeline. 
-Parameter configurations are used to dynamically set parameters of your steps 
-and pipelines at runtime.
-
-You can configure your pipelines at runtime in the following ways:
-
-* [Configuring from within code](#configuring-from-within-code): 
-Do this when you are quickly iterating on your code and don't want to change
-your actual step code. This is useful in the development phase.
-* [Configuring with YAML config files](#configuring-with-yaml-config-files): 
-Do this when you want to launch pipeline runs without modifying the code at all.
-This is the recommended way for production scenarios.
-
-## Configuring from within code
-
-You can add a configuration to a step by creating your configuration as a
-subclass of the `BaseStepConfig`. When such a config object is passed to a step,
-it is not treated like other artifacts. Instead, it gets passed into the step
-when the pipeline is instantiated.
-
-```python
-import numpy as np
-from sklearn.base import ClassifierMixin
-from sklearn.svm import SVC
-
-from zenml.steps import step, BaseStepConfig
-
-
-class SVCTrainerStepConfig(BaseStepConfig):
-    """Trainer params"""
-    gamma: float = 0.001
-
-
-@step
-def svc_trainer(
-    config: SVCTrainerStepConfig,
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> ClassifierMixin:
-    """Train a sklearn SVC classifier."""
-    model = SVC(gamma=config.gamma)
-    model.fit(X_train, y_train)
-    return model
-```
-
-The default value for the `gamma` parameter is set to `0.001`. However, when
-the pipeline is instantiated you can override the default like this:
-
-```python
-first_pipeline_instance = first_pipeline(
-    step_1=digits_data_loader(),
-    step_2=svc_trainer(SVCTrainerStepConfig(gamma=0.01)),
-)
-
-first_pipeline_instance.run()
-```
-
-{% hint style="info" %}
-Behind the scenes, `BaseStepConfig` is implemented as a 
-[Pydantic BaseModel](https://pydantic-docs.helpmanual.io/usage/models/).
-Therefore, any type that 
-[Pydantic supports](https://pydantic-docs.helpmanual.io/usage/types/)
-is also supported as an attribute type in the `BaseStepConfig`.
-{% endhint %}

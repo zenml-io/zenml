@@ -16,7 +16,7 @@
 
 * [Pipelines](./starter-guide/pipelines/pipelines.md)
   * [Fetching pipelines](./starter-guide/pipelines/fetching-pipelines.md)
-  * [Caching](./starter-guide/pipelines/caching.md)
+  * [Quickly iterating over pipelines](./starter-guide/pipelines/iterating.md)
 * [Stacks](./starter-guide/stacks/stacks.md)
   * [Stack Components and Flavors](./starter-guide/stacks/stacks-components.md)
   * [Managing stacks](./starter-guide/stacks/managing-stacks.md)

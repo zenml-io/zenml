@@ -228,6 +228,18 @@ Pipeline run names must be unique, so make sure to compute it dynamically if you
 plan to run your pipeline multiple times.
 {% endhint %}
 
+### Unlisted runs
+
+Once a pipeline has been executed, it is represented by a [`PipelineSpec`](https://apidocs.zenml.io) that uniques identifies it. 
+Therefore, you cannot edit a pipeline after it has been run once. In order to iterate quickly pipelines, there are three options:
+
+- Pipeline runs can be created without being associated with a pipeline explicitly. These are called `unlisted` runs and can be created by passing 
+the `unlisted` parameter when running a pipeline: `pipeline_instance.run(unlisted=True)`.
+- Pipelines can be deleted and created again using `zenml pipeline delete <PIPELINE_ID_OR_NAME>`.
+- Pipelines can be given [unique names](#give-each-pipeline-run-a-name) each time they are run to uniquely identify them.
+
+We will dive into quickly iterating over pipelines [later in this section](iterating.md).
+
 ## Code Summary
 
 <details>
