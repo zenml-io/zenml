@@ -109,8 +109,8 @@ class BaseSecretsManagerConfig(StackComponentConfig):
             # Secrets Manager that doesn't support scoping
             if scope != SecretsManagerScope.NONE and not cls.SUPPORTS_SCOPING:
                 raise ValueError(
-                    f"This Secrets Manager does not support "
-                    f"scoping. You can only use a `none` scope value."
+                    "This Secrets Manager does not support "
+                    "scoping. You can only use a `none` scope value."
                 )
         elif not cls.SUPPORTS_SCOPING:
             # disable scoping by default for Secrets Managers that don't
@@ -121,9 +121,9 @@ class BaseSecretsManagerConfig(StackComponentConfig):
         # Secrets Manager that does support scoping
         if scope == SecretsManagerScope.NONE and cls.SUPPORTS_SCOPING:
             logger.warning(
-                f"Unscoped support for this Secrets "
-                f"Manager is deprecated and will be removed in a future "
-                f"release. You should use the `global` scope instead."
+                "Unscoped support for this Secrets "
+                "Manager is deprecated and will be removed in a future "
+                "release. You should use the `global` scope instead."
             )
 
         return values

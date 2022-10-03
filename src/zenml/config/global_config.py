@@ -31,12 +31,20 @@ from zenml.constants import (
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
+from zenml.enums import AnalyticsEventSource, StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import (
+    AnalyticsEvent,
+    AnalyticsGroup,
+    identify_group,
+    identify_user,
+    track_event,
+)
 
 if TYPE_CHECKING:
+    from zenml.models.project_models import ProjectModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -117,6 +125,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
     Attributes:
         user_id: Unique user id.
+        user_email: Email address associated with this client.
         analytics_opt_in: If a user agreed to sending analytics or not.
         version: Version of ZenML that was last used to create or update the
             global config.
@@ -128,7 +137,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4, allow_mutation=False)
-    user_metadata: Optional[Dict[str, str]]
+    user_email: Optional[str] = None
     analytics_opt_in: bool = True
     version: Optional[str]
     store: Optional[StoreConfiguration]
@@ -138,6 +147,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
+    _active_project: Optional["ProjectModel"] = None
 
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
@@ -377,6 +387,21 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         if self.store != store.config or not self._zen_store:
             logger.debug(f"Configuring the global store to {store.config}")
             self.store = store.config
+
+            # We want to check if an email address has been set for
+            # the active user and if so, record it in the analytics. The
+            # call to `set_email_address` will only record the email address
+            # if it has not already been recorded in the past, so we don't
+            # flood the analytics with the same email address over and over.
+            active_user = store.active_user
+            if active_user.email_opted_in and active_user.email:
+                self.set_email_address(
+                    active_user.email,
+                    AnalyticsEventSource.ZENML_CONNECT
+                    if self._zen_store
+                    else AnalyticsEventSource.ZENML_SERVER_OPT_IN,
+                )
+
             self._zen_store = store
 
             # Sanitize the global configuration to reflect the new store
@@ -390,9 +415,11 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         are set to their default values, if possible.
         """
         active_project, active_stack = self.zen_store.validate_active_config(
-            self.active_project_name, self.active_stack_id
+            self.active_project_name,
+            self.active_stack_id,
+            config_name="global",
         )
-        self.active_project_name = active_project.name
+        self.set_active_project(active_project)
         self.active_stack_id = active_stack.id
 
     @staticmethod
@@ -544,9 +571,29 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         self._configure_store(config, skip_default_registrations, **kwargs)
         logger.info("Updated the global store configuration.")
+
+        if self.zen_store.type == StoreType.REST:
+            # Every time a client connects to a ZenML server, we want to
+            # group the client ID and the server ID together. This records
+            # only that a particular client has successfully connected to a
+            # particular server at least once, but no information about the
+            # user account is recorded here.
+            server_info = self.zen_store.get_store_info()
+
+            identify_group(
+                AnalyticsGroup.ZENML_SERVER_GROUP,
+                group_id=str(server_info.id),
+                group_metadata={
+                    "version": server_info.version,
+                    "deployment_type": str(server_info.deployment_type),
+                    "database_type": str(server_info.database_type),
+                },
+            )
+
+            track_event(AnalyticsEvent.ZENML_SERVER_CONNECTED)
+
         track_event(
-            AnalyticsEvent.INITIALIZED_STORE,
-            {"store_type": config.type.value},
+            AnalyticsEvent.INITIALIZED_STORE, {"store_type": config.type.value}
         )
 
     @property
@@ -567,6 +614,67 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         assert self._zen_store is not None
 
         return self._zen_store
+
+    @property
+    def active_project(self) -> "ProjectModel":
+        """Get the currently active project of the local client.
+
+        Returns:
+            The active project.
+
+        Raises:
+            RuntimeError: If no project is active.
+        """
+        if (
+            self._active_project
+            and self._active_project.name != self.active_project_name
+        ):
+            # in case someone tries to set the active project name directly
+            # outside of this class
+            self._active_project = None
+        if not self._active_project:
+            if not self.active_project_name:
+                raise RuntimeError(
+                    "No active project is configured. Run "
+                    "`zenml project set PROJECT_NAME` to set the active "
+                    "project."
+                )
+            self._active_project = self.zen_store.get_project(
+                project_name_or_id=self.active_project_name
+            )
+        return self._active_project
+
+    def set_active_project(self, project: "ProjectModel") -> None:
+        """Set the project for the local client.
+
+        Args:
+            project: The project to set active.
+        """
+        self.active_project_name = project.name
+        self._active_project = project
+
+    def set_email_address(
+        self, email: str, source: AnalyticsEventSource
+    ) -> None:
+        """Set the email address associated with this client.
+
+        Args:
+            email: The email address to use for this client.
+            source: The analytics event source.
+        """
+        # The first time an email address is associated with the client, we want
+        # to identify the client by an email address. If the email address has
+        # been changed, we also want to update the information.
+        if email:
+            if self.user_email != email:
+                identify_user(
+                    {
+                        "email": email,
+                        "source": source,
+                    }
+                )
+
+            self.user_email = email
 
     class Config:
         """Pydantic configuration class."""

@@ -19,10 +19,10 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.pillow.materializers.pillow_image_materializer import (
     PillowImageMaterializer,
 )
-from zenml.post_execution.pipeline import get_pipeline
+from zenml.post_execution.pipeline import PipelineRunView
 
 
-def test_materializer_works_for_pillow_image_objects(clean_repo):
+def test_materializer_works_for_pillow_image_objects(clean_client):
     """Check the materializer is able to handle PIL image objects."""
     with does_not_raise():
         _test_materializer(
@@ -30,6 +30,6 @@ def test_materializer_works_for_pillow_image_objects(clean_repo):
             materializer=PillowImageMaterializer,
         )
 
-    last_run = get_pipeline("test_pipeline").runs[-1]
+    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
     image = last_run.steps[-1].output.read()
     assert isinstance(image, Image.Image)

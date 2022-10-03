@@ -146,10 +146,10 @@ and then use it as a base path for artifact URIs, e.g.:
 
 ```python
 import os
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.io import fileio
 
-root_path = Repository().active_stack.artifact_store.path
+root_path = Client().active_stack.artifact_store.path
 
 artifact_contents = "example artifact"
 artifact_path = os.path.join(root_path, "artifacts", "examples")
@@ -176,9 +176,9 @@ import os
 from zenml.utils import io_utils
 from zenml.io import fileio
 
-from zenml.repository import Repository
+from zenml.client import Client
 
-root_path = Repository().active_stack.artifact_store.path
+root_path = Client().active_stack.artifact_store.path
 
 artifact_contents = "example artifact"
 artifact_path = os.path.join(root_path, "artifacts", "examples")
@@ -191,9 +191,9 @@ io_utils.write_file_contents_as_string(artifact_uri, artifact_contents)
 import os
 from zenml.utils import io_utils
 
-from zenml.repository import Repository
+from zenml.client import Client
 
-root_path = Repository().active_stack.artifact_store.path
+root_path = Client().active_stack.artifact_store.path
 
 artifact_path = os.path.join(root_path, "artifacts", "examples")
 artifact_uri = os.path.join(artifact_path, "test.txt")

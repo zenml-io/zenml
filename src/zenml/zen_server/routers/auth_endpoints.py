@@ -18,12 +18,12 @@ from typing import Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.param_functions import Form
 
-from zenml.constants import LOGIN, VERSION_1
+from zenml.constants import API, LOGIN, VERSION_1
 from zenml.zen_server.auth import authenticate_credentials
 from zenml.zen_server.utils import error_response
 
 router = APIRouter(
-    prefix=VERSION_1,
+    prefix=API + VERSION_1,
     tags=["auth"],
     responses={401: error_response},
 )

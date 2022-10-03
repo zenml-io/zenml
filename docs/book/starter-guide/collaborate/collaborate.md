@@ -4,7 +4,7 @@ description: How to collaborate with your team in ZenML
 
 # Things to change
 
-- We should focus here on the ZenServer
+- We should focus here on the ZenML Server
 - Perhaps mention import and export as a limited option to open this page
 - Show how collaboration is thought off - maybe mention roles
 - Maybe add an architecture diagram
@@ -58,9 +58,9 @@ If you need to quickly share your Stack configuration with someone else, there
 is nothing easier than [using the ZenML CLI to export a Stack](./stack-export-import.md)
 in the form of a YAML file and import it somewhere else.
 
-## Centralized ZenML Management with ZenServer
+## Centralized ZenML Management with ZenML Server
 
-With the [_ZenServer_](./zenml-server.md), you can deploy ZenML as a centralized
+With the [_ZenML Server_](./zenml-server.md), you can deploy ZenML as a centralized
 service and connect entire teams and organizations to an easy to manage
 collaboration platform that provides a unified view on the MLOps processes,
 tools and technologies that support your entire AI/ML project lifecycle.
@@ -87,7 +87,7 @@ This will create a FILENAME.yaml containing the config of your stack and all
 of its components, which you can then import again like this:
 
 ```bash
-zenml stack import STACK_NAME FILENAME.yaml
+zenml stack import STACK_NAME -f FILENAME.yaml
 ```
 
 ## Known Limitations

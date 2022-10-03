@@ -2,12 +2,6 @@
 description: How to create ML pipelines in ZenML
 ---
 
-# Things to change
-
-- Similar to before but also do `zenml up` and show dashboard after running a pipeline
-
-# Older Content
-
 # Steps & Pipelines
 
 ZenML helps you standardize your ML workflows as ML **Pipelines** consisting of
@@ -97,7 +91,6 @@ this as a recipe for how we want data to flow through our steps.
 ```python
 from zenml.pipelines import pipeline
 
-
 @pipeline
 def first_pipeline(step_1, step_2):
     X_train, X_test, y_train, y_test = step_1()
@@ -132,18 +125,33 @@ first_pipeline_instance.run()
 You should see the following output in your terminal:
 
 ```shell
-Creating run for pipeline: `first_pipeline`
-Cache disabled for pipeline `first_pipeline`
-Using stack `default` to run pipeline `first_pipeline`
+Registered new pipeline with name `first_pipeline`.
+Creating run `first_pipeline-03_Oct_22-14_08_44_284312` for pipeline `first_pipeline` (Caching enabled)
+Using stack `default` to run pipeline `first_pipeline`...
 Step `digits_data_loader` has started.
-Step `digits_data_loader` has finished in 0.049s.
+Step `digits_data_loader` has finished in 0.121s.
 Step `svc_trainer` has started.
-Step `svc_trainer` has finished in 0.067s.
-Pipeline run `first_pipeline-06_Jul_22-16_10_46_255748` has finished in 0.128s.
+Step `svc_trainer` has finished in 0.099s.
+Pipeline run `first_pipeline-03_Oct_22-14_08_44_284312` has finished in 0.236s.
+Pipeline visualization can be seen in the ZenML Dashboard. Run `zenml up` to see your pipeline!
 ```
 
 We will dive deeper into how to inspect the finished run within the chapter on
 [Accessing Pipeline Runs](./inspecting-pipeline-runs.md).
+
+### Inspect your pipeline in the dashboard
+
+Notice the last log, that indicates running a command to view the dashboard. Let's go ahead and do that:
+
+```
+zenml up
+```
+
+![ZenML Up](../../assets/getting_started/zenml-up.gif)
+
+The dashboard serves as a visual interface to see pipelines and pipeline runs.
+
+TODO: Add image when dashboard is done.
 
 ### Give each pipeline run a name
 

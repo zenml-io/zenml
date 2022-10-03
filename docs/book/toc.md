@@ -6,6 +6,10 @@
 * [Core Concepts](./getting-started/core-concepts.md)
 * [Installation](./getting-started/installation.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
+* [Deploying ZenML](./getting-started/deploying-zenml/how-it-works.md)
+  * [Options for Deploying ZenML](./getting-started/deploying-zenml/deployment.md)
+  * [One Click Deployment using CLI](./getting-started/deploying-zenml/using-cli.md)
+  * [Using Docker or Helm](./getting-started/deploying-zenml/docker-helm.md)
 * [Examples](./getting-started/examples.md)
 
 ## Starter Guide
@@ -30,10 +34,6 @@
   * [Tracking experiments](./advanced-guide/practical/tracking-experiments.md)
   * [Validating data](./advanced-guide/practical/validating-data.md)
   * [Deploying models and batch inference](./advanced-guide/practical/deploying-models.md)
-* [Deploying ZenML](advanced-guide/deploying-zenml/deployment.md)
-  * [AWS](./advanced-guide/deploying-zenml/aws.md)
-  * [GCP](./advanced-guide/deploying-zenml/gcp.md)
-  * [Azure](./advanced-guide/deploying-zenml/azure.md)
 * [Configuring Pipelines](./advanced-guide/pipelines/pipelines.md)
   * [Runtime configuration](./advanced-guide/pipelines/runtime-configuration.md)
   * [Pass custom data types through steps (Materializers)](./advanced-guide/pipelines/materializers.md)
@@ -58,7 +58,7 @@
   * [Kubernetes Orchestrator](./mlops-stacks/orchestrators/kubernetes.md)
   * [Google Cloud VertexAI Orchestrator](./mlops-stacks/orchestrators/gcloud-vertexai.md)
   * [Tekton Orchestrator](./mlops-stacks/orchestrators/tekton.md)
-  * [GithHub Actions Orchestrator](./mlops-stacks/orchestrators/github-actions.md)
+  * [GitHub Actions Orchestrator](./mlops-stacks/orchestrators/github-actions.md)
   * [Airflow Orchestrator](./mlops-stacks/orchestrators/airflow.md)
   * [Develop a Custom Orchestrator](./mlops-stacks/orchestrators/custom.md)
 * [Artifact Stores](./mlops-stacks/artifact-stores/artifact-stores.md)
@@ -130,9 +130,13 @@
 * [Best Practices](guidelines/best-practices.md)
 * [Global Configuration](guidelines/global-config.md)
 * [System Environmental Variables](guidelines/system-environmental-variables.md)
-* [Usage Analytics](guidelines/usage-analytics.md)
-* [Contribution Guide](guidelines/contributing.md)
-* [External Integration Guide](guidelines/integrating.md)
+* [Migration guide 0.20.0](guidelines/migration-zero-twenty.md)
+
+## Misc
+
+* [Contribution Guide](misc/contributing.md)
+* [External Integration Guide](misc/integrating.md)
+* [Usage Analytics](misc/usage-analytics.md)
 
 ## Reference
 

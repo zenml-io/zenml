@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zenml.fullname" . }}
+  labels:
+    {{- include "zenml.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "zenml.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "zenml.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "zenml.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: ZENML_DEBUG
+              value: {{ .Values.zenml.debug | quote }}
+            - name: ANALYTICS_OPT_IN
+              value: "False"
+            - name: ZENML_AUTH_TYPE
+              value: {{ .Values.zenml.authType | quote }}
+            {{- if .Values.zenml.rootUrlPath }}
+            - name: ZENML_SERVER_ROOT_URL_PATH
+              value: {{ .Values.zenml.rootUrlPath | quote }}
+            {{- end }}
+            - name: ZENML_DEFAULT_PROJECT_NAME
+              value: {{ .Values.zenml.defaultProject | quote }}
+            - name: ZENML_DEFAULT_USER_NAME
+              value: {{ .Values.zenml.defaultUsername | quote }}
+            {{- if .Values.zenml.database.url }}
+            - name: ZENML_STORE_TYPE
+              value: sql
+            - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
+              value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
+            {{- end }}
+            - name: ZENML_USER_ID
+              value: {{ .Values.zenml.serverId | default uuidv4 | quote}}
+            - name: ZENML_SERVER_DEPLOYMENT_TYPE
+              value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
+
+          envFrom:
+          - secretRef:
+              name: {{ include "zenml.fullname" . }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

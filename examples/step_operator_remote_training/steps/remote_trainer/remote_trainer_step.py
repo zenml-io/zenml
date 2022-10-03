@@ -15,10 +15,10 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import step
 
-step_operator = Repository().active_stack.step_operator
+step_operator = Client().active_stack.step_operator
 if not step_operator:
     raise RuntimeError(
         "Your active stack needs to contain a step operator for this "

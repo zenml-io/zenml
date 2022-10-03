@@ -18,11 +18,14 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+import zenml
+from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DEFAULT_PROJECT_NAME,
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
+    ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackExistsError
@@ -37,6 +40,11 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.pipeline_models import PipelineModel
+from zenml.models.server_models import (
+    ServerDatabaseType,
+    ServerDeploymentType,
+    ServerModel,
+)
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     AnalyticsTrackerMixin,
@@ -63,6 +71,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
     config: StoreConfiguration
     track_analytics: bool = True
+    _active_user: Optional[UserModel] = None
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
@@ -98,7 +107,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             ) from e
 
         if not skip_default_registrations:
+            logger.debug("Initializing database")
             self._initialize_database()
+        else:
+            logger.debug("Skipping database initialization")
 
     @staticmethod
     def get_store_class(store_type: StoreType) -> Type["BaseZenStore"]:
@@ -218,6 +230,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         self,
         active_project_name_or_id: Optional[Union[str, UUID]] = None,
         active_stack_id: Optional[UUID] = None,
+        config_name: str = "",
     ) -> Tuple[ProjectModel, StackModel]:
         """Validate the active configuration.
 
@@ -232,6 +245,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Args:
             active_project_name_or_id: The name or ID of the active project.
             active_stack_id: The ID of the active stack.
+            config_name: The name of the configuration to validate (used in the
+                displayed logs/messages).
 
         Returns:
             A tuple containing the active project and active stack.
@@ -244,13 +259,16 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 active_project = self.get_project(active_project_name_or_id)
             except KeyError:
                 logger.warning(
-                    "Project '%s' not found. Resetting the active project to "
-                    "the default.",
-                    active_project_name_or_id,
+                    "The current %s active project is no longer available. "
+                    "Resetting the active project to default.",
+                    config_name,
                 )
                 active_project = self._default_project
         else:
-            logger.warning("Active project not set. Setting it to the default.")
+            logger.info(
+                "Setting the %s active project to default.",
+                config_name,
+            )
             active_project = self._default_project
 
         active_stack: StackModel
@@ -275,36 +293,57 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 active_stack = self.get_stack(stack_id=active_stack_id)
             except KeyError:
                 logger.warning(
-                    "Stack with id '%s' not found. Setting the active "
-                    "stack to the default project stack.",
-                    active_stack_id,
+                    "The current %s active stack is no longer available. "
+                    "Resetting the active stack to default.",
+                    config_name,
                 )
                 active_stack = default_stack
             else:
                 if active_stack.project != active_project.id:
                     logger.warning(
-                        "The stack with id '%s' is not in the active project. "
-                        "Resetting the active stack to the default "
-                        "project stack.",
-                        active_stack_id,
+                        "The current %s active stack is not part of the active "
+                        "project. Resetting the active stack to default.",
+                        config_name,
                     )
                     active_stack = default_stack
                 elif active_stack.user != self.active_user.id:
                     logger.warning(
-                        "The stack with id '%s' is not owned by the active user. "
-                        "Resetting the active stack to the default "
-                        "project stack.",
-                        active_stack_id,
+                        "The current %s active stack is not owned by the "
+                        "active user. Resetting the active stack to default.",
+                        config_name,
                     )
                     active_stack = default_stack
         else:
             logger.warning(
-                "The active stack is not set. Setting the "
-                "active stack to the default project stack."
+                "Setting the %s active stack to default.",
+                config_name,
             )
             active_stack = default_stack
 
         return active_project, active_stack
+
+    def get_store_info(self) -> ServerModel:
+        """Get information about the store.
+
+        Returns:
+            Information about the store.
+        """
+        return ServerModel(
+            id=GlobalConfiguration().user_id,
+            version=zenml.__version__,
+            deployment_type=os.environ.get(
+                ENV_ZENML_SERVER_DEPLOYMENT_TYPE, ServerDeploymentType.OTHER
+            ),
+            database_type=ServerDatabaseType.OTHER,
+        )
+
+    def is_local_store(self) -> bool:
+        """Check if the store is a local store or connected to a locally deployed ZenML server.
+
+        Returns:
+            True if the store is local, False otherwise.
+        """
+        return self.get_store_info().is_local()
 
     # ------
     # Stacks
@@ -428,7 +467,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             The active user.
         """
-        return self.get_user(self.active_user_name)
+        if self._active_user is None:
+            self._active_user = self.get_user(self.active_user_name)
+        return self._active_user
 
     @property
     def users(self) -> List[UserModel]:
@@ -466,6 +507,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         user_password = os.getenv(
             ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
         )
+
         logger.info(f"Creating default user '{user_name}' ...")
         return self.create_user(
             UserModel(
@@ -604,6 +646,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             metadata: Additional metadata to track with the event.
         """
         if self.track_analytics:
+            # Server information is always tracked, if available.
             track_event(event, metadata)
 
     class Config:

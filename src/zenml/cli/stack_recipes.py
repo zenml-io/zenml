@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, List, Optional, cast
+from typing import Any, ClassVar, List, Optional, cast
 
 import click
 from packaging.version import Version, parse
@@ -31,6 +31,12 @@ from zenml.cli.stack import import_stack, stack
 from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.services.service_type import ServiceType
+from zenml.services.terraform.terraform_service import (
+    SERVICE_CONFIG_FILE_NAME,
+    TerraformService,
+    TerraformServiceConfig,
+)
 from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -40,6 +46,7 @@ EXCLUDED_RECIPE_DIRS = [""]
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 VARIABLES_FILE = "values.tfvars.json"
+STACK_FILE_NAME = "stack-yaml-path"
 ALPHA_MESSAGE = (
     "The stack recipes CLI is in alpha and actively being developed. "
     "Please avoid running mission-critical workloads on resources deployed "
@@ -65,16 +72,20 @@ except ImportError:
     terraform_installed = False
 
 
-class Terraform:
+class StackRecipeService(TerraformService):
     """Class to represent terraform applications."""
 
-    def __init__(self, path: str) -> None:
-        """Creates a client that can be used to call terraform commands.
+    SERVICE_TYPE = ServiceType(
+        name="stackrecipes",
+        description="Stack recipe service",
+        type="terraform",
+        flavor="recipes",
+    )
 
-        Args:
-            path: the path to the stack recipe.
-        """
-        self.tf = python_terraform.Terraform(working_dir=str(path))
+    STACK_RECIPES_CONFIG_PATH: ClassVar[str] = os.path.join(
+        io_utils.get_global_config_directory(),
+        "stack_recipes",
+    )
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.
@@ -82,12 +93,31 @@ class Terraform:
         Raises:
             RuntimeError: if any required tool is not installed.
         """
-        if not self._is_terraform_installed():
+        super().check_installation()
+
+        if not self._is_kubectl_installed():
             raise RuntimeError(
-                "Terraform is required for stack recipes to run and was not "
-                "found installed on your machine or not available on  "
-                "your $PATH. Please visit "
-                "https://learn.hashicorp.com/tutorials/terraform/install-cli "
+                "kubectl is not installed on your machine or not available on  "
+                "your $PATH. It is used by stack recipes to create some "
+                "resources on Kubernetes and to configure access to your "
+                "cluster. Please visit "
+                "https://kubernetes.io/docs/tasks/tools/#kubectl "
+                "to install it."
+            )
+        if not self._is_helm_installed():
+            raise RuntimeError(
+                "Helm is not installed on your machine or not available on  "
+                "your $PATH. It is required for stack recipes to create releases "
+                "on Kubernetes. Please visit "
+                "https://helm.sh/docs/intro/install/ "
+                "to install it."
+            )
+        if not self._is_docker_installed():
+            raise RuntimeError(
+                "Docker is not installed on your machine or not available on  "
+                "your $PATH. It is required for stack recipes to configure "
+                "access to the container registry. Please visit "
+                "https://docs.docker.com/engine/install/ "
                 "to install it."
             )
         if not self._is_kubectl_installed():
@@ -115,20 +145,6 @@ class Terraform:
                 "https://docs.docker.com/engine/install/ "
                 "to install it."
             )
-
-    def _is_terraform_installed(self) -> bool:
-        """Checks if terraform is installed on the host system.
-
-        Returns:
-            True if terraform is installed, false otherwise.
-        """
-        # check terraform version to verify installation.
-        try:
-            self.tf.cmd("-version")
-        except FileNotFoundError:
-            return False
-
-        return True
 
     def _is_kubectl_installed(self) -> bool:
         """Checks if kubectl is installed on the host system.
@@ -169,96 +185,58 @@ class Terraform:
 
         return True
 
-    def apply(self) -> str:
-        """Function to call terraform init and terraform apply.
-
-        The init call is not repeated if any successful execution has
-        happened already, to save time.
+    @property
+    def stack_file_path(self) -> str:
+        """Get the path to the stack yaml file.
 
         Returns:
-            The path to the stack YAML configuration file as a string.
-
-        Raises:
-            RuntimeError: if terraform init fails.
+            The path to the stack yaml file.
         """
-        # this directory gets created after a successful init
-        previous_run_dir = os.path.join(self.tf.working_dir, ".ignoreme")
-        if fileio.exists(previous_run_dir):
-            logger.info(
-                "Terraform already initialized, "
-                "terraform init will not be executed."
-            )
-        else:
-            ret_code, _, _ = self.tf.init(capture_output=False)
-            if ret_code != 0:
-                raise RuntimeError("The command 'terraform init' failed.")
-            fileio.mkdir(previous_run_dir)
-
-        # get variables from the recipe as a python dictionary
-        vars = self._get_vars(self.tf.working_dir)
-
-        # once init is successful, call terraform apply
-        self.tf.apply(
-            var=vars,
-            input=False,
-            capture_output=False,
-            raise_on_error=True,
-        )
-
         # return the path of the stack yaml file
-        _, stack_file_path, _ = self.tf.output(
-            "stack-yaml-path", full_value=True
+        stack_file_path = self.terraform_client.output(
+            STACK_FILE_NAME, full_value=True
         )
         return str(stack_file_path)
 
-    def _get_vars(self, path: str) -> Any:
-        """Get variables as a dictionary from values.tfvars.json.
+    @classmethod
+    def get_service(cls, recipe_path: str) -> Optional["StackRecipeService"]:
+        """Load and return the stack recipe service, if present.
 
         Args:
-            path: the path to the stack recipe.
+            recipe_path: The path to the directory that hosts the recipe.
 
         Returns:
-            A dictionary of variables to use for the stack recipes
-            derived from the tfvars.json file.
-
-        Raises:
-            FileNotFoundError: if the values.tfvars.json file is not
-                found in the stack recipe.
+            The stack recipe service or None, if the stack recipe
+            deployment is not found.
         """
-        import json
+        from zenml.services import ServiceRegistry
 
-        variables_file_path = os.path.join(path, VARIABLES_FILE)
-        if not fileio.exists(variables_file_path):
-            raise FileNotFoundError(
-                "The file values.tfvars.json was not found in the "
-                f"recipe's directory at {variables_file_path}. Please "
-                "verify if it exists."
-            )
-
-        # read values into a dict and return
-        with fileio.open(variables_file_path, "r") as f:
-            variables = json.load(f)
-
-            # update zenml-version variable to current version
-            variables["zenml-version"] = zenml.__version__
-        return variables
-
-    def set_log_level(self, log_level: str) -> None:
-        """Set TF_LOG env var to the log_level provided by the user.
-
-        Args:
-            log_level: One of TRACE, DEBUG, INFO, WARN or ERROR to set
-                as the log level for terraform CLI.
-        """
-        os.environ["TF_LOG"] = log_level
-
-    def destroy(self) -> None:
-        """Function to call terraform destroy on the given path."""
-        self.tf.destroy(
-            capture_output=False,
-            raise_on_error=True,
-            force=python_terraform.IsNotFlagged,
-        )
+        try:
+            for root, _, files in os.walk(str(cls.STACK_RECIPES_CONFIG_PATH)):
+                for file in files:
+                    if file == SERVICE_CONFIG_FILE_NAME:
+                        service_config_path = os.path.join(root, file)
+                        logger.debug(
+                            "Loading service daemon configuration from %s",
+                            service_config_path,
+                        )
+                        service_config = None
+                        with open(service_config_path, "r") as f:
+                            service_config = f.read()
+                        stack_recipe_service = cast(
+                            StackRecipeService,
+                            ServiceRegistry().load_service_from_json(
+                                service_config
+                            ),
+                        )
+                        if (
+                            stack_recipe_service.config.directory_path
+                            == recipe_path
+                        ):
+                            return stack_recipe_service
+            return None
+        except FileNotFoundError:
+            return None
 
 
 class LocalStackRecipe:
@@ -639,7 +617,7 @@ class GitStackRecipesHandler(object):
 pass_git_stack_recipes_handler = click.make_pass_decorator(
     GitStackRecipesHandler, ensure=True
 )
-pass_tf_client = click.make_pass_decorator(Terraform, ensure=True)
+pass_tf_client = click.make_pass_decorator(StackRecipeService, ensure=True)
 
 
 class RecipeGroup(TagGroup):
@@ -1028,16 +1006,6 @@ if terraform_installed:  # noqa: C901
                 )
 
             try:
-                # check if terraform is installed
-                tf_client = Terraform(str(local_stack_recipe.path))
-                try:
-                    tf_client.check_installation()
-                except RuntimeError as e:
-                    cli_utils.error(str(e))
-
-                # set terraform log level
-                tf_client.set_log_level(log_level=log_level)
-
                 # warn that prerequisites should be met
                 metadata = yaml_utils.read_yaml(
                     file_path=os.path.join(
@@ -1071,17 +1039,41 @@ if terraform_installed:  # noqa: C901
                     "resources with the same values as above don't already "
                     "exist on your cloud account."
                 ):
+                    from zenml.cli.stack_recipes import StackRecipeService
 
                     # Telemetry
                     track_event(
                         AnalyticsEvent.RUN_STACK_RECIPE,
                         {"stack_recipe_name": stack_recipe_name},
                     )
-                    # use the terraform client to apply recipe
-                    stack_yaml_file = os.path.join(
-                        local_stack_recipe.path,
-                        tf_client.apply(),
+                    terraform_config = TerraformServiceConfig(
+                        root_runtime_path=str(
+                            StackRecipeService.STACK_RECIPES_CONFIG_PATH
+                        ),
+                        directory_path=str(local_stack_recipe.path),
+                        log_level=log_level,
+                        variables_file_path=VARIABLES_FILE,
                     )
+                    # find an existing service with the same terraform path
+                    # create a new one if not found
+                    stack_recipe_service = StackRecipeService.get_service(
+                        str(local_stack_recipe.path)
+                    )
+                    if stack_recipe_service:
+                        cli_utils.declare(
+                            "An existing deployment of the recipe found. "
+                            f"with path {local_stack_recipe.path}. "
+                            "Proceeding to update or create resources. "
+                        )
+                    else:
+                        stack_recipe_service = StackRecipeService(
+                            config=terraform_config
+                        )
+                    # start the service (the init and apply operation)
+                    stack_recipe_service.start()
+
+                    # get the stack yaml path
+                    stack_yaml_file = stack_recipe_service.stack_file_path
 
                     logger.info(
                         "\nA stack configuration YAML file has been generated as "
@@ -1156,15 +1148,6 @@ if terraform_installed:  # noqa: C901
         default="zenml_stack_recipes",
         help="Relative path at which you want to install the stack_recipe(s)",
     )
-    @click.option(
-        "--log-level",
-        type=click.Choice(
-            ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"], case_sensitive=False
-        ),
-        help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive) as "
-        "log level for the destroy operation.",
-        default="ERROR",
-    )
     @pass_git_stack_recipes_handler
     @click.pass_context
     def destroy(
@@ -1172,7 +1155,6 @@ if terraform_installed:  # noqa: C901
         git_stack_recipes_handler: GitStackRecipesHandler,
         stack_recipe_name: str,
         path: str,
-        log_level: str,
     ) -> None:
         """Destroy all resources from the stack_recipe at the specified relative path.
 
@@ -1184,8 +1166,6 @@ if terraform_installed:  # noqa: C901
             git_stack_recipes_handler: The GitStackRecipesHandler instance.
             stack_recipe_name: The name of the stack_recipe.
             path: The path at which you want to install the stack_recipe(s).
-            log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
-                as log level for the deploy operation.
 
         Raises:
             ModuleNotFoundError: If the recipe is found at the given path.
@@ -1223,23 +1203,24 @@ if terraform_installed:  # noqa: C901
                 )
 
             try:
-                # check if terraform is installed
-                tf_client = Terraform(str(local_stack_recipe.path))
-                try:
-                    tf_client.check_installation()
-                except RuntimeError as e:
-                    cli_utils.error(str(e))
-
-                # set terraform log level
-                tf_client.set_log_level(log_level=log_level)
-
                 # Telemetry
                 track_event(
                     AnalyticsEvent.DESTROY_STACK_RECIPE,
                     {"stack_recipe_name": stack_recipe_name},
                 )
-                # use the terraform client to call destroy on the recipe
-                tf_client.destroy()
+                # use the stack recipe directory path to find the service instance
+                stack_recipe_service = StackRecipeService.get_service(
+                    str(local_stack_recipe.path)
+                )
+                if not stack_recipe_service:
+                    cli_utils.error(
+                        "No stack recipe found with the path "
+                        f"{local_stack_recipe.path}. You need to first deploy "
+                        "the recipe by running \nzenml stack recipe deploy "
+                        f"{stack_recipe_name}"
+                    )
+                # stop the service to destroy resources created by recipe
+                stack_recipe_service.stop()
 
                 cli_utils.declare(
                     "\n" + "Your active stack might now be invalid. Please run:"

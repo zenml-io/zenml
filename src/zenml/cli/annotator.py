@@ -19,8 +19,8 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.client import Client
 from zenml.enums import StackComponentType
-from zenml.repository import Repository
 from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
@@ -44,7 +44,7 @@ def register_annotator_subcommands() -> None:
         Args:
             ctx: The click Context object.
         """
-        annotator_models = Repository().active_stack_model.components[
+        annotator_models = Client().active_stack_model.components[
             StackComponentType.ANNOTATOR
         ]
         if annotator_models is None:

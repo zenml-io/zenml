@@ -34,6 +34,7 @@ import datetime
 import functools
 import os
 import time
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional
 
 from zenml.constants import ENV_ZENML_SKIP_PIPELINE_REGISTRATION
@@ -54,9 +55,6 @@ if TYPE_CHECKING:
 
 AIRFLOW_ROOT_DIR = "airflow"
 DAG_FILEPATH_OPTION_KEY = "dag_filepath"
-
-
-from contextlib import contextmanager
 
 
 @contextmanager

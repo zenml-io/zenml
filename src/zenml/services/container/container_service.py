@@ -405,7 +405,7 @@ class ContainerService(BaseService):
             self.docker_client.containers.run(
                 name=self.container_id,
                 image=self.config.image,
-                command=command,
+                entrypoint=command,
                 detach=True,
                 volumes=volumes,
                 environment=env,

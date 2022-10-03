@@ -52,7 +52,7 @@
   <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
 
   <p align="center">
-    A simple yet powerful open-source framework that scales your MLOps stack with your needs.
+    A simple yet powerful open-source framework that integrates all your ML tools.
     <br />
     <a href="https://docs.zenml.io/"><strong>Explore the docs »</strong></a>
     <br />
@@ -74,7 +74,7 @@
     ·
     <a href="#-meet-the-team">Meet the Team</a>
     <br />
-    🎉 Version 0.13.2 is out. Check out the release notes
+    🎉 Version 0.20.0 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />
@@ -102,11 +102,18 @@
       <ul>
         <li><a href="#-installation">Installation</a></li>
         <li><a href="#-first-run">First run</a></li>
+        <li><a href="#-collaborate-with-zenml">Collaborate with ZenML</a></li>
         <li><a href="#-zenbytes">ZenBytes</a></li>
         <li><a href="#-zenfiles">ZenFiles</a></li>
       </ul>
     </li>
-    <li><a href="#-collaborate-with-your-team">Collaborate with your team</a></li>
+    <li>
+      <a href="#%EF%B8%8F-infrastructure-requirements">Infrastructure Requirements</a>
+      <ul>
+        <li><a href="#-deploy-zenml">Deploy ZenML</a></li>
+        <li><a href="#-open-source-mlops-stack-recipes">MLOps Recipes</a></li>
+      </ul>
+    </li>
     <li><a href="#-learn-more">Learn More</a></li>
     <li><a href="#-roadmap">Roadmap</a></li>
     <li><a href="#-contributing-and-community">Contributing and Community</a></li>
@@ -120,28 +127,15 @@
 
 # 🤖 Why ZenML?
 
-🤹 Are you an ML engineer or data scientist shipping models to production and juggling a plethora of tools? 
-
-🤷‍♂️ Do you struggle with versioning data, code, and models in your projects? 
-
-👀 Have you had trouble replicating production pipelines and monitoring models in production?
-
-✅ If you answered yes to any of the above, ZenML is here to help with all that and more...
-
-Everyone loves to train ML models, but few talks about shipping them into production, and even fewer can do it well.
-At ZenML, we believe the journey from model development to production doesn't need to be long and painful.
+🤹 Are you an ML engineer or data scientist shipping models to production and juggling a plethora of tools? ZenML is here to help transition your production ML pipelines to production.
 
 ![The long journey from experimentation to production.](docs/book/assets/1-pipeline-hard-reproduce.png)
 
+Everyone loves to train ML models, but few talks about shipping them into production, and even fewer can do it well. At ZenML, we believe the journey from model development to production doesn't need to be long and painful.
 
-With ZenML, you can concentrate on what you do best - developing ML models and not worry about infrastructure or deployment tools.
+If you come from unstructured notebooks or scripts with lots of manual processes, ZenML will make the path to production easier and faster for you and your team. Using ZenML allows you to own the entire pipeline - from experimentation to production.
 
-If you come from unstructured notebooks or scripts with lots of manual processes, ZenML will make the path to production easier and faster for you and your team.
-Using ZenML allows you to own the entire pipeline - from experimentation to production.
-
-This is why we built ZenML. Read more [here](https://blog.zenml.io/why-zenml/).
-
-
+Read more [here](https://blog.zenml.io/why-zenml/).
 
 
 # 💡 What is ZenML?
@@ -156,8 +150,6 @@ ZenML is an extensible, open-source MLOps framework for creating portable, produ
 ZenML offers a simple and flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions catered toward ML workflows. 
 With ZenML you'll have all your favorite tools in one place so you can tailor a workflow that caters to your specific needs.
 
-![ZenML unifies all your tools in one place.](docs/book/assets/sam-side-by-side-full-text.png)
-
 Read more on all tools you can readily use in the [integrations](https://zenml.io/integrations) section. Can't find your tool? You can always [write your own integration](https://docs.zenml.io/developer-guide/advanced-usage/custom-flavors) to use it with ZenML.
 
 # 🤸 Getting Started
@@ -169,6 +161,12 @@ Read more on all tools you can readily use in the [integrations](https://zenml.i
 pip install zenml
 ```
 > **Note** - ZenML supports Python 3.7, 3.8, and 3.9.
+
+In order to get access to the dashboard locally, install the optional dependencies for the ZenML server:
+
+```shell
+pip install "zenml[server]"
+```
 
 **Option 2** - If you’re feeling adventurous, try out the bleeding-edge installation:
 
@@ -185,6 +183,12 @@ pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 docker run -it zenmldocker/zenml /bin/bash
 ```
 
+or just run the ZenML server directly with Docker:
+
+```shell
+docker run -it -d -p 8080:80 zenmldocker/zenml-server
+```
+
 > **Warning** 
 > #### Known installation issues for M1 Mac users
 >
@@ -196,6 +200,8 @@ docker run -it zenmldocker/zenml /bin/bash
 >- [Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
 
 
+Read full installation instructions in the [docs](https://docs.zenml.io/getting-started/installation).
+
 ## 🏇 First run
 
 If you're here for the first time, we recommend running:
@@ -206,102 +212,106 @@ zenml go
 
 This spins up a Jupyter notebook that walks you through various functionalities of ZenML at a high level.
 
-By the end, you'll get a glimpse of how to use ZenML to:
+By the end, you'll get a glimpse of how to use ZenML to register a stack:
 
-+ Train, evaluate, deploy, and embed a model in an inference pipeline.
-+ Automatically track and version data, models, and other artifacts.
-+ Track model hyperparameters and metrics with experiment tracking tools.
-+ Measure and visualize train-test skew, training-serving skew, and data drift.
+```shell
+# Register a MLflow experiment tracker
+zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 
-## 👨‍🍳 Open Source MLOps Stack Recipes
+# Register an Airflow orchestrator
+zenml data-validator register airflow_orchestrator --flavor=airflow
 
-ZenML boasts a ton of [integrations](https://zenml.io/integrations) into popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/developer-guide/stacks-profiles-repositories) concept ensures that these tools work nicely together, therefore bringing structure and standardization into the MLOps workflow.
-
-However, ZenML assumes that the stack infrastructure for these tools is already provisioned. If you do not have deployed infrastructure, and want to quickly spin up combinations of tools on the cloud, the [MLOps stack sister repository](https://github.com/zenml-io/mlops-stacks) contains a series of Terraform-based recipes to provision such stacks. These recipes can be used directly with ZenML:
-
-```bash
-pip install zenml[stacks]
-
-zenml stack recipe deploy <NAME_OF_STACK_RECIPE> --import
+# Create a stack from the components
+zenml stack register my_stack -o airflow_orchestrator -a default -e mlflow_tracker
 ```
 
-The above command not only provisions the given tools, but also automatically creates a ZenML stack with the configuration of the deployed recipe!
+And run a simple pipeline on Airflow (or an orchestrator of your choice) creating steps like this:
+
+```python
+import mlflow
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
+from zenml.client import Client
+
+experiment_tracker = Client().active_stack.experiment_tracker
+
+@step(experiment_tracker=experiment_tracker.name)
+def svc_trainer_mlflow(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier and log to MLflow."""
+    mlflow.sklearn.autolog()  # log all model hparams and metrics to MLflow
+    model = SVC(gamma=0.01)
+    model.fit(X_train.to_numpy(), y_train.to_numpy())
+    train_acc = model.score(X_train.to_numpy(), y_train.to_numpy())
+    print(f"Train accuracy: {train_acc}")
+    return model
+```
+
+You can also run your first pipeline right in [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb)
+
+## 👭 Collaborate with ZenML
+
+ZenML is built to support teams working together. 
+The underlying infrastructure on which your ML workflows run can be shared, as can the data, assets, and artifacts in your workflow. 
+
+To visually see this in action, ZenML ships with a fully-featured dashboard, that can be launched locally with the simple command:
+
+```
+zenml up
+```
+
+![ZenML Dashboard](docs/book/assets/pipelines_dashboard.png)
+
+The dashboard can also be deployed with a server on any cloud service (see Deploy ZenML section).
+
 
 ## 🍰 ZenBytes
+
 New to MLOps? Get up to speed by visiting the [ZenBytes](https://github.com/zenml-io/zenbytes) repo.
 
 >ZenBytes is a series of short practical MLOps lessons taught using ZenML. 
 >It covers many of the [core concepts](https://docs.zenml.io/getting-started/core-concepts) widely used in ZenML and MLOps in general.
 
 ## 📜 ZenFiles
+
 Already comfortable with ZenML and wish to elevate your pipeline into production mode? Check out [ZenFiles](https://github.com/zenml-io/zenfiles).
 
 >ZenFiles is a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
 
-# 👭 Collaborate with your team
 
-ZenML is built to support teams working together. 
-The underlying infrastructure on which your ML workflows run can be shared, as can the data, assets, and artifacts in your workflow. 
+# ☁️ Infrastructure Requirements
 
-In ZenML, a Stack represents a set of configurations for your MLOps tools and infrastructure. You can quickly share your ZenML stack with anyone by exporting the stack:
+## 🔋 Deploy ZenML
 
-```
-zenml stack export <STACK_NAME> <FILENAME.yaml>
-```
+While ZenML works perfectly fine locally, it should be deployed on the cloud to enable collaborative features as the central MLOps interface for teams.
 
-Similarly, you can import a stack by running:
-```
-zenml stack import <STACK_NAME> <FILENAME.yaml>
+The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. Read more about the command [here](https://docs.zenml.io/deployment).
+
+```shell
+zenml deploy
 ```
 
-Learn more on importing/exporting stacks [here](https://docs.zenml.io/collaborate/stack-export-import).
+Naturally, [the docs](https://docs.zenml.io/deployment) contain detailed guides on how to manually set up ZenML on the cloud in case more control is required.
 
+The following architectural diagram illustrates a common ZenML deployment:
 
-The [ZenML Profiles](https://docs.zenml.io/collaborate/zenml-store) offer an easy way to manage and switch between your stacks. All your stacks, components, and other classes of ZenML objects can be stored in a central location and shared across multiple users, teams, and automated systems such as CI/CD processes.
+![ZenML Architecture Diagram.](docs/book/assets/architecture_diagram.png)
 
-With the [ZenServer](https://docs.zenml.io/collaborate/zenml-server) 
-you can deploy ZenML as a centralized service and connect entire teams and organizations to an easy-to-manage collaboration platform that provides a unified view of the MLOps processes, tools, and technologies that support your entire AI/ML project lifecycle.
+## 👨‍🍳 Open Source MLOps Stack Recipes
 
-Read more about using ZenML for collaboration [here](https://docs.zenml.io/collaborate/collaborate-with-zenml).
+Apart from the infrastructure required to run ZenML itself, ZenML also boasts a ton of [integrations](https://zenml.io/integrations) into popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/developer-guide/stacks-profiles-repositories) concept ensures that these tools work nicely together, therefore bringing structure and standardization into the MLOps workflow.
 
-# 📖 Learn More
+However, ZenML assumes that the stack infrastructure for these tools is already provisioned. If you do not have deployed infrastructure, and want to quickly spin up combinations of tools on the cloud, the [MLOps stack sister repository](https://github.com/zenml-io/mlops-stacks) contains a series of Terraform-based recipes to provision such stacks. These recipes can be used directly with ZenML:
 
-| ZenML Resources | Description |
-| ------------- | - |
-| 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
-| ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
-| 🚀 **[Our latest release]** | New features, bug fixes. |
-| 🗳 **[Vote for Features]** | Pick what we work on next! |
-| 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
-| 📒 **[API Reference]** | Detailed reference on ZenML's API. |
-| 🍰 **[ZenBytes]** | A guided and in-depth tutorial on MLOps and ZenML. |
-| 🗂️️ **[ZenFiles]** | End-to-end projects using ZenML. |
-| 👨‍🍳 **[MLOps Stacks]** | Terraform based infrastructure recipes for pre-made ZenML stacks. |
-| ⚽️ **[Examples]** | Learn best through examples where ZenML is used? We've got you covered. |
-| 📬 **[Blog]** | Use cases of ZenML and technical deep dives on how we built it. |
-| 🔈 **[Podcast]** | Conversations with leaders in ML, released every 2 weeks. |
-| 📣 **[Newsletter]** | We build ZenML in public. Subscribe to learn how we work. |
-| 💬 **[Join Slack]** | Need help with your specific use case? Say hi on Slack! |
-| 🗺 **[Roadmap]** | See where ZenML is working to build new features. |
-| 🙋‍♀️ **[Contribute]** | How to contribute to the ZenML project and code base. |
+```bash
+pip install "zenml[stacks]"
 
-[ZenML 101]: https://docs.zenml.io/
-[Core Concepts]: https://docs.zenml.io/getting-started/core-concepts
-[API Guide]: https://docs.zenml.io/v/docs/developer-guide/steps-and-pipelines/functional-vs-class-based-api
-[Our latest release]: https://github.com/zenml-io/zenml/releases
-[Vote for Features]: https://zenml.io/discussion
-[Docs]: https://docs.zenml.io/
-[API Reference]: https://apidocs.zenml.io/
-[ZenBytes]: https://github.com/zenml-io/zenbytes
-[ZenFiles]: https://github.com/zenml-io/zenfiles
-[MLOps Stacks]: https://github.com/zenml-io/mlops-stacks
-[Examples]: https://github.com/zenml-io/zenml/tree/main/examples
-[Blog]: https://blog.zenml.io/
-[Podcast]: https://podcast.zenml.io/
-[Newsletter]: https://zenml.io/newsletter/
-[Join Slack]: https://zenml.io/slack-invite/
-[Roadmap]: https://zenml.io/roadmap
-[Contribute]: https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md
+zenml stack recipe deploy <NAME_OF_STACK_RECIPE> --import
+```
+
+The above command not only provisions the given tools, but also automatically creates a ZenML stack with the configuration of the deployed recipe!
 
 
 # 🗺 Roadmap
@@ -319,8 +329,6 @@ influence the roadmap as follows:
   board](https://zenml.io/discussion).
 - Start a thread in our [Slack channel](https://zenml.io/slack-invite).
 - [Create an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our Github repo.
-
-
 
 # 🙌 Contributing and Community
 
@@ -367,3 +375,43 @@ ZenML is distributed under the terms of the Apache License Version 2.0.
 A complete version of the license is available in the [LICENSE](LICENSE) file in
 this repository. Any contribution made to this project will be licensed under
 the Apache License Version 2.0.
+
+# 📖 Learn More
+
+| ZenML Resources | Description |
+| ------------- | - |
+| 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
+| ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
+| 🚀 **[Our latest release]** | New features, bug fixes. |
+| 🗳 **[Vote for Features]** | Pick what we work on next! |
+| 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
+| 📒 **[API Reference]** | Detailed reference on ZenML's API. |
+| 🍰 **[ZenBytes]** | A guided and in-depth tutorial on MLOps and ZenML. |
+| 🗂️️ **[ZenFiles]** | End-to-end projects using ZenML. |
+| 👨‍🍳 **[MLOps Stacks]** | Terraform based infrastructure recipes for pre-made ZenML stacks. |
+| ⚽️ **[Examples]** | Learn best through examples where ZenML is used? We've got you covered. |
+| 📬 **[Blog]** | Use cases of ZenML and technical deep dives on how we built it. |
+| 🔈 **[Podcast]** | Conversations with leaders in ML, released every 2 weeks. |
+| 📣 **[Newsletter]** | We build ZenML in public. Subscribe to learn how we work. |
+| 💬 **[Join Slack]** | Need help with your specific use case? Say hi on Slack! |
+| 🗺 **[Roadmap]** | See where ZenML is working to build new features. |
+| 🙋‍♀️ **[Contribute]** | How to contribute to the ZenML project and code base. |
+
+[ZenML 101]: https://docs.zenml.io/
+[Core Concepts]: https://docs.zenml.io/getting-started/core-concepts
+[Deployment Guide]: TBD
+[Our latest release]: https://github.com/zenml-io/zenml/releases
+[Vote for Features]: https://zenml.io/discussion
+[Docs]: https://docs.zenml.io/
+[API Reference]: https://apidocs.zenml.io/
+[ZenBytes]: https://github.com/zenml-io/zenbytes
+[ZenFiles]: https://github.com/zenml-io/zenfiles
+[MLOps Stacks]: https://github.com/zenml-io/mlops-stacks
+[Examples]: https://github.com/zenml-io/zenml/tree/main/examples
+[Blog]: https://blog.zenml.io/
+[Podcast]: https://podcast.zenml.io/
+[Newsletter]: https://zenml.io/newsletter/
+[Join Slack]: https://zenml.io/slack-invite/
+[Roadmap]: https://zenml.io/roadmap
+[Contribute]: https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md
+

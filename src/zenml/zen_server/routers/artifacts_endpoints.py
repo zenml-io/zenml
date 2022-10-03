@@ -17,13 +17,13 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import ARTIFACTS, VERSION_1
+from zenml.constants import API, ARTIFACTS, VERSION_1
 from zenml.models.pipeline_models import ArtifactModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1 + ARTIFACTS,
+    prefix=API + VERSION_1 + ARTIFACTS,
     tags=["artifacts"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

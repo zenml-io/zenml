@@ -18,14 +18,9 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.artifact_stores import LocalArtifactStore
-from zenml.artifact_stores.local_artifact_store import (
-    LocalArtifactStore,
-    LocalArtifactStoreConfig,
-)
+from zenml.artifact_stores import LocalArtifactStore, LocalArtifactStoreConfig
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
-from zenml.stack.stack_component import StackComponentType
 
 
 def test_local_artifact_store_attributes():

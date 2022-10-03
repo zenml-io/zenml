@@ -17,10 +17,10 @@ import pandas as pd
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import step
 
-experiment_tracker = Repository().active_stack.experiment_tracker
+experiment_tracker = Client().active_stack.experiment_tracker
 
 
 @step(enable_cache=False, experiment_tracker=experiment_tracker.name)

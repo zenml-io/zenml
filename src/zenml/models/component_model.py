@@ -99,6 +99,7 @@ class ComponentModel(
             configuration=self.configuration,
             project=project,
             user=user,
+            is_shared=self.is_shared,
             created=self.created,
             updated=self.updated,
         )
@@ -109,9 +110,9 @@ class HydratedComponentModel(ComponentModel):
 
     # TODO: before ignoring the typing error, think of a better way to do this
     project: ProjectModel = Field(title="The project that contains this stack.")  # type: ignore[assignment]
-    user: UserModel = Field(
+    user: UserModel = Field(  # type: ignore[assignment]
         title="The user that created this stack.",
-    )  # type: ignore[assignment]
+    )
 
     class Config:
         """Example of a json-serialized instance."""

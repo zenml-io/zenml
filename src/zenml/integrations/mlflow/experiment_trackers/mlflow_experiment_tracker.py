@@ -22,6 +22,7 @@ from mlflow.store.db.db_types import DATABASE_ENGINES
 
 import zenml
 from zenml.artifact_stores import LocalArtifactStore
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
@@ -34,7 +35,6 @@ from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import (
     is_remote_mlflow_tracking_uri,
 )
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
@@ -149,8 +149,8 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         Returns:
             The MLflow tracking URI for the local MLflow backend.
         """
-        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        artifact_store = repo.active_stack.artifact_store
+        client = Client(skip_client_check=True)  # type: ignore[call-arg]
+        artifact_store = client.active_stack.artifact_store
         local_mlflow_backend_uri = os.path.join(artifact_store.path, "mlruns")
         if not os.path.exists(local_mlflow_backend_uri):
             os.makedirs(local_mlflow_backend_uri)

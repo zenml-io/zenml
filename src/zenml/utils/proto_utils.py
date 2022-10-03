@@ -71,14 +71,14 @@ def add_mlmd_contexts(
         deployment: The pipeline deployment to store in the contexts.
         stack: The stack the pipeline will run on.
     """
-    from zenml.repository import Repository
+    from zenml.client import Client
 
-    repo = Repository()
+    client = Client()
 
     model_ids = json.dumps(
         {
-            "user_id": repo.active_user.id,
-            "project_id": repo.active_project.id,
+            "user_id": client.active_user.id,
+            "project_id": client.active_project.id,
             "pipeline_id": deployment.pipeline_id,
             "stack_id": deployment.stack_id,
         },

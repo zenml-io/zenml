@@ -74,6 +74,6 @@ prioritization of which tools to support with integrations that is visible on
 our public [roadmap](https://zenml.io/roadmap).
 
 We also welcome community contributions. Check our 
-[Contribution Guide](../guidelines/contributing.md) and 
-[External Integration Guide](../guidelines/integrating.md) for more details
+[Contribution Guide](../misc/contributing.md) and 
+[External Integration Guide](../misc/integrating.md) for more details
 on how to best contribute new integrations.

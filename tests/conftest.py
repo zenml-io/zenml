@@ -30,24 +30,18 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_DEBUG, TEST_STEP_INPUT_INT
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
 )
-from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
-    GCPArtifactStore,
-)
-from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
-    GCPArtifactStoreConfig,
-)
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.user_management_models import TeamModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
-from zenml.repository import Repository
 from zenml.stack.stack import Stack
 from zenml.stack.stack_component import StackComponentConfig, StackComponentType
 from zenml.steps import StepContext, step
@@ -56,7 +50,7 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore, SqlZenStoreConfiguration
 
 
 @pytest.fixture(scope="module", autouse=True)
-def base_repo(
+def base_client(
     tmp_path_factory: pytest.TempPathFactory,
     session_mocker: MockerFixture,
     request: pytest.FixtureRequest,
@@ -84,14 +78,16 @@ def base_repo(
     os.environ["ZENML_CONFIG_PATH"] = str(tmp_path / "zenml")
 
     session_mocker.patch("analytics.track")
+    session_mocker.patch("analytics.group")
+    session_mocker.patch("analytics.identify")
 
     # initialize global config and repo at the new path
     GlobalConfiguration()
-    repo = Repository()
+    client = Client()
 
     # monkey patch original cwd in for later use and yield
-    repo.original_cwd = orig_cwd
-    yield repo
+    client.original_cwd = orig_cwd
+    yield client
 
     # remove all traces, and change working directory back to base path
     os.chdir(orig_cwd)
@@ -108,22 +104,23 @@ def base_repo(
                 "Skipping deletion of temp dir at teardown, due to "
                 "Windows Permission error"
             )
-            # TODO[HIGH]: Implement fixture cleanup for Windows where shutil.rmtree
-            #  fails on files that are in use on python 3.7 and 3.8
+            # TODO[HIGH]: Implement fixture cleanup for Windows where
+            #  shutil.rmtree fails on files that are in use on python 3.7 and
+            #  3.8
     else:
         shutil.rmtree(tmp_path)
 
     # reset the global configuration and the repository
     GlobalConfiguration._reset_instance()
-    Repository._reset_instance()
+    Client._reset_instance()
 
 
 @pytest.fixture
-def clean_repo(
+def clean_client(
     request: pytest.FixtureRequest,
     tmp_path_factory: pytest.TempPathFactory,
-    base_repo: Repository,
-) -> Repository:
+    base_client,
+) -> Client:
     """Fixture to get a clean global configuration and repository for an
     individual test.
 
@@ -131,8 +128,6 @@ def clean_repo(
         request: Pytest FixtureRequest object
         tmp_path_factory: Pytest TempPathFactory in order to create a new
                           temporary directory
-        mocker: Pytest mocker to patch away the
-                zenml.utils.io_utils.get_global_config_directory
         base_repo: Fixture that returns the base_repo that all tests use
     """
     orig_cwd = os.getcwd()
@@ -150,9 +145,9 @@ def clean_repo(
     # save the current global configuration and repository singleton instances
     # to restore them later, then reset them
     original_config = GlobalConfiguration.get_instance()
-    original_repository = Repository.get_instance()
+    original_repository = Client.get_instance()
     GlobalConfiguration._reset_instance()
-    Repository._reset_instance()
+    Client._reset_instance()
 
     # set the ZENML_CONFIG_PATH environment variable to ensure that the global
     # configuration and the local stacks used in the scope of this function are
@@ -161,12 +156,12 @@ def clean_repo(
 
     # initialize global config and repo at the new path
     GlobalConfiguration()
-    repo = Repository()
+    client = Client()
 
     # monkey patch base repo cwd for later user and yield
-    repo.original_cwd = base_repo.original_cwd
+    client.original_cwd = base_client.original_cwd
 
-    yield repo
+    yield client
 
     # remove all traces, and change working directory back to base path
     os.chdir(orig_cwd)
@@ -183,8 +178,9 @@ def clean_repo(
                 "Skipping deletion of temp dir at teardown, due to "
                 "Windows Permission error"
             )
-            # TODO[HIGH]: Implement fixture cleanup for Windows where shutil.rmtree
-            #  fails on files that are in use on python 3.7 and 3.8
+            # TODO[HIGH]: Implement fixture cleanup for Windows where
+            #  shutil.rmtree fails on files that are in use on python 3.7 and
+            #  3.8
     else:
         shutil.rmtree(tmp_path)
 
@@ -193,7 +189,7 @@ def clean_repo(
 
     # restore the original global configuration and the repository singleton
     GlobalConfiguration._reset_instance(original_config)
-    Repository._reset_instance(original_repository)
+    Client._reset_instance(original_repository)
 
 
 @pytest.fixture
@@ -387,6 +383,13 @@ def local_artifact_store():
 @pytest.fixture
 def remote_artifact_store():
     """Fixture that creates a local artifact store for testing."""
+    from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
+        GCPArtifactStore,
+    )
+    from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
+        GCPArtifactStoreConfig,
+    )
+
     return GCPArtifactStore(
         name="",
         id=uuid4(),

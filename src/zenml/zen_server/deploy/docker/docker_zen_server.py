@@ -23,10 +23,12 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     ZEN_SERVER_ENTRYPOINT,
 )
 from zenml.enums import StoreType
 from zenml.logger import get_logger
+from zenml.models.server_models import ServerDeploymentType
 from zenml.services import (
     ContainerService,
     ContainerServiceConfig,
@@ -80,6 +82,11 @@ class DockerServerDeploymentConfig(ServerDeploymentConfig):
         ipaddress.IPv4Address, ipaddress.IPv6Address
     ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
     store: Optional[StoreConfiguration] = None
+
+    class Config:
+        """Pydantic configuration."""
+
+        extra = "forbid"
 
 
 class DockerZenServerConfig(ContainerServiceConfig):
@@ -168,6 +175,7 @@ class DockerZenServer(ContainerService):
             SERVICE_CONTAINER_PATH,
             SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
         )
+        env[ENV_ZENML_SERVER_DEPLOYMENT_TYPE] = ServerDeploymentType.DOCKER
         return cmd, env
 
     def provision(self) -> None:

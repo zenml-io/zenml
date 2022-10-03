@@ -1,4 +1,4 @@
-# 🚀 KServe Deployment Example - TensorFlow and Pytorch Examples 🚀
+# 🚀 KServe Deployment Example - TensorFlow and Pytorch Examples
 
 [KServe](https://kserve.github.io/website) is a Kubernetes-based model inference platform
 built for highly scalable deployment use cases. It provides a standardized inference protocol 
@@ -114,10 +114,10 @@ The flow to get started for this example can be the following:
 4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually.
 
     ```shell
-    zenml stack import <STACK-NAME> <PATH-TO-THE-CREATED-STACK-CONFIG-YAML>
+    zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
 
     # set the imported stack as the active stack
-    zenml stack set <STACK-NAME>
+    zenml stack set <STACK_NAME>
     ```
 
 5. You should now create a secret for the CloudSQL instance that will allow ZenML to connect to it. Use the following command:

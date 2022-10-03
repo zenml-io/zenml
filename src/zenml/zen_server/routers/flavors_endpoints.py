@@ -18,14 +18,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from zenml.constants import FLAVORS, VERSION_1
+from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import FlavorModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
-    prefix=VERSION_1 + FLAVORS,
+    prefix=API + VERSION_1 + FLAVORS,
     tags=["flavors"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

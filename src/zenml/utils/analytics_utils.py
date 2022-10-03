@@ -15,12 +15,14 @@
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Union
+from types import TracebackType
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, Union
 
 from pydantic import BaseModel
 
 from zenml import __version__
 from zenml.constants import IS_DEBUG_ENV, SEGMENT_KEY_DEV, SEGMENT_KEY_PROD
+from zenml.enums import StoreType
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 
@@ -69,6 +71,7 @@ class AnalyticsEvent(str, Enum):
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
     OPT_OUT_ANALYTICS = "Analytics opt-out"
+    OPT_IN_OUT_EMAIL = "Response for Email prompt"
 
     # Examples
     RUN_ZENML_GO = "ZenML go"
@@ -109,14 +112,23 @@ class AnalyticsEvent(str, Enum):
     # Test event
     EVENT_TEST = "Test event"
 
-    # Login events
-    LOGIN = "Login"
-    LOGOUT = "Logout"
-
     # Stack recipes
     PULL_STACK_RECIPE = "Stack recipes pulled"
     RUN_STACK_RECIPE = "Stack recipe created"
     DESTROY_STACK_RECIPE = "Stack recipe destroyed"
+
+    # ZenML server events
+    ZENML_SERVER_STARTED = "ZenML server started"
+    ZENML_SERVER_STOPPED = "ZenML server stopped"
+    ZENML_SERVER_CONNECTED = "ZenML server connected"
+    ZENML_SERVER_DEPLOYED = "ZenML server deployed"
+    ZENML_SERVER_DESTROYED = "ZenML server destroyed"
+
+
+class AnalyticsGroup(str, Enum):
+    """Enum of event groups to track in segment."""
+
+    ZENML_SERVER_GROUP = "ZenML server group"
 
 
 def get_segment_key() -> str:
@@ -131,27 +143,28 @@ def get_segment_key() -> str:
         return SEGMENT_KEY_PROD
 
 
-def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
-    """Attach metadata to user directly.
+class AnalyticsContext:
+    """Context manager for analytics."""
 
-    Args:
-        user_metadata: Dict of metadata to attach to the user.
+    def __init__(self) -> None:
+        """Context manager for analytics.
 
-    Returns:
-        True if event is sent successfully, False is not.
-    """
-    # TODO [ENG-857]: The identify_user function shares a lot of setup with
-    #  track_event() - this duplicated code could be given its own function
-    try:
+        Use this as a context manager to ensure that analytics are initialized
+        properly, only tracked when configured to do so and that any errors
+        are handled gracefully.
+        """
+        import analytics
+
         from zenml.config.global_config import GlobalConfiguration
 
         gc = GlobalConfiguration()
 
+        self.analytics_opt_in = gc.analytics_opt_in
+        self.user_id = str(gc.user_id)
+
         # That means user opted out of analytics
         if not gc.analytics_opt_in:
-            return False
-
-        import analytics
+            return
 
         if analytics.write_key is None:
             analytics.write_key = get_segment_key()
@@ -163,21 +176,220 @@ def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
         # Set this to 1 to avoid backoff loop
         analytics.max_retries = 1
 
+    def __enter__(self) -> "AnalyticsContext":
+        """Enter context manager.
+
+        Returns:
+            Self.
+        """
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> bool:
+        """Exit context manager.
+
+        Args:
+            exc_type: Exception type.
+            exc_val: Exception value.
+            exc_tb: Exception traceback.
+
+        Returns:
+            True if exception was handled, False otherwise.
+        """
+        if exc_val is not None:
+            logger.debug("Sending telemetry data failed: {exc_val}")
+
+        # We should never fail main thread
+        return True
+
+    def identify(self, traits: Optional[Dict[str, Any]] = None) -> bool:
+        """Identify the user.
+
+        Args:
+            traits: Traits of the user.
+
+        Returns:
+            True if tracking information was sent, False otherwise.
+        """
+        import analytics
+
         logger.debug(
-            f"Attempting to attach metadata to: User: {gc.user_id}, "
-            f"Metadata: {user_metadata}"
+            f"Attempting to attach metadata to: User: {self.user_id}, "
+            f"Metadata: {traits}"
         )
+
+        if not self.analytics_opt_in:
+            return False
+
+        analytics.identify(self.user_id, traits)
+
+        logger.debug(f"User data sent: User: {self.user_id},{traits}")
+
+        return True
+
+    def group(
+        self,
+        group: Union[str, AnalyticsGroup],
+        group_id: str,
+        traits: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """Group the user.
+
+        Args:
+            group: Group to which the user belongs.
+            group_id: Group ID.
+            traits: Traits of the group.
+
+        Returns:
+            True if tracking information was sent, False otherwise.
+        """
+        import analytics
+
+        if isinstance(group, AnalyticsGroup):
+            group = group.value
+
+        if traits is None:
+            traits = {}
+
+        traits.update(
+            {
+                "group_id": group_id,
+            }
+        )
+
+        logger.debug(
+            f"Attempting to attach metadata to: User: {self.user_id}, "
+            f"Group: {group}, Group ID: {group_id}, Metadata: {traits}"
+        )
+
+        if not self.analytics_opt_in:
+            return False
+        analytics.group(self.user_id, group_id, traits=traits)
+
+        logger.debug(
+            f"Group data sent: User: {self.user_id}, Group: {group}, Group ID: "
+            f"{group_id}, Metadata: {traits}"
+        )
+        return True
+
+    def track(
+        self,
+        event: Union[str, AnalyticsEvent],
+        properties: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """Track an event.
+
+        Args:
+            event: Event to track.
+            properties: Event properties.
+
+        Returns:
+            True if tracking information was sent, False otherwise.
+        """
+        import analytics
+
+        from zenml.config.global_config import GlobalConfiguration
+
+        if isinstance(event, AnalyticsEvent):
+            event = event.value
+
+        if properties is None:
+            properties = {}
+
+        logger.debug(
+            f"Attempting analytics: User: {self.user_id}, "
+            f"Event: {event},"
+            f"Metadata: {properties}"
+        )
+
+        if not self.analytics_opt_in and event not in {
+            AnalyticsEvent.OPT_OUT_ANALYTICS,
+            AnalyticsEvent.OPT_IN_ANALYTICS,
+        }:
+            return False
+
+        # add basics
+        properties.update(Environment.get_system_info())
+        properties.update(
+            {
+                "environment": get_environment(),
+                "python_version": Environment.python_version(),
+                "version": __version__,
+            }
+        )
+
+        gc = GlobalConfiguration()
+        # avoid initializing the store in the analytics, to not create an
+        # infinite loop
+        if gc._zen_store is not None:
+            zen_store = gc.zen_store
+            if (
+                zen_store.type == StoreType.REST
+                and "server_id" not in properties
+            ):
+                user = zen_store.active_user
+                server_info = zen_store.get_store_info()
+                properties.update(
+                    {
+                        "user_id": str(user.id),
+                        "server_id": str(server_info.id),
+                        "server_deployment": str(server_info.deployment_type),
+                        "database_type": str(server_info.database_type),
+                    }
+                )
+
+        analytics.track(self.user_id, event, properties)
+
+        logger.debug(
+            f"Analytics sent: User: {self.user_id}, Event: {event}, Metadata: "
+            f"{properties}"
+        )
+
+        return True
+
+
+def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
+    """Attach metadata to user directly.
+
+    Args:
+        user_metadata: Dict of metadata to attach to the user.
+
+    Returns:
+        True if event is sent successfully, False is not.
+    """
+    with AnalyticsContext() as analytics:
 
         if user_metadata is None:
             return False
 
-        analytics.identify(str(gc.user_id), traits=user_metadata)
-        logger.debug(f"User data sent: User: {gc.user_id},{user_metadata}")
-        return True
-    except Exception as e:
-        # We should never fail main thread
-        logger.error(f"User data update failed due to: {e}")
-        return False
+        return analytics.identify(traits=user_metadata)
+
+    return False
+
+
+def identify_group(
+    group: Union[str, AnalyticsGroup],
+    group_id: str,
+    group_metadata: Optional[Dict[str, Any]] = None,
+) -> bool:
+    """Attach metadata to a segment group.
+
+    Args:
+        group: Group to track.
+        group_id: ID of the group.
+        group_metadata: Metadata to attach to the group.
+
+    Returns:
+        True if event is sent successfully, False is not.
+    """
+    with AnalyticsContext() as analytics:
+        return analytics.group(group, group_id, traits=group_metadata)
+
+    return False
 
 
 def track_event(
@@ -193,60 +405,10 @@ def track_event(
     Returns:
         True if event is sent successfully, False is not.
     """
-    try:
-        import analytics
+    with AnalyticsContext() as analytics:
+        return analytics.track(event, metadata)
 
-        from zenml.config.global_config import GlobalConfiguration
-
-        if analytics.write_key is None:
-            analytics.write_key = get_segment_key()
-
-        assert (
-            analytics.write_key is not None
-        ), "Analytics key not set but trying to make telemetry call."
-
-        # Set this to 1 to avoid backoff loop
-        analytics.max_retries = 1
-
-        gc = GlobalConfiguration()
-        if isinstance(event, AnalyticsEvent):
-            event = event.value
-
-        logger.debug(
-            f"Attempting analytics: User: {gc.user_id}, "
-            f"Event: {event},"
-            f"Metadata: {metadata}"
-        )
-
-        if not gc.analytics_opt_in and event not in {
-            AnalyticsEvent.OPT_OUT_ANALYTICS,
-            AnalyticsEvent.OPT_IN_ANALYTICS,
-        }:
-            return False
-
-        if metadata is None:
-            metadata = {}
-
-        # add basics
-        metadata.update(Environment.get_system_info())
-        metadata.update(
-            {
-                "environment": get_environment(),
-                "python_version": Environment.python_version(),
-                "version": __version__,
-            }
-        )
-
-        analytics.track(str(gc.user_id), event, metadata)
-        logger.debug(
-            f"Analytics sent: User: {gc.user_id}, Event: {event}, Metadata: "
-            f"{metadata}"
-        )
-        return True
-    except Exception as e:
-        # We should never fail main thread
-        logger.debug(f"Analytics failed due to: {e}")
-        return False
+    return False
 
 
 def parametrized(
