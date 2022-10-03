@@ -18,11 +18,11 @@ So first, the basics.
 ## Pipelines and Steps
 
 At its core, ZenML follows a pipeline-based workflow for your data projects.
-A **pipeline** consist of a series of **steps**, organized in any order that makes sense for your use case. 
+A **pipeline** consists of a series of **steps**, organized in any order that makes sense for your use case. 
 
 Below, you can see three **steps** running one after another in a **pipeline**. 
 
-![The most basic ZenML pipeline](../assets/core_concepts/concepts-1.png)
+![The most basic ZenML pipeline](../assets/core_concepts/simple_pipeline.png)
 
 The steps might have dependencies between them. 
 For example, a step might use the outputs from a previous step and thus must wait until the previous step completes before starting. This is something you can keep in mind when organizing your steps.
@@ -40,7 +40,7 @@ A **Stack** is the configuration of the underlying infrastructure and choices ar
 
 ZenML comes with a default stack that runs locally, as seen in the following diagram:
 
-![ZenML pipelines run on stacks](../assets/core_concepts/concepts-2.png)
+![ZenML pipelines run on stacks](../assets/core_concepts/pipeline_and_stack.png)
 
 In any Stack, there **must** be at least two basic **Stack Components** - and *orchestrator* and an *artifact store*.
 
@@ -78,6 +78,19 @@ Having these components in your stack supercharges your pipeline for production.
 
 For other stack components check out this [page](../component-gallery/categories.md).
 
+## Switching Stacks to Scale Up
+
+We've seen how to run a pipeline locally. But that is rarely enough in production machine learning which typically involves cloud infrastructure.
+
+What's really cool with using ZenML is you can easily switch your stack from running on a local machine to running on the cloud with a single CLI command.
+
+The rest of the code defining your steps and pipelines stays the same, whether it's running on a local machine or a cloud infrastructure of your choice.
+The only change is in the stack and its components.
+
+Below is an illustration showing how the same pipeline on a local machine can be scaled up to run on a full-fledged cloud infrastructure by switching stacks. You get all the benefits of using cloud infrastructures with minimal changes in your code.
+
+![Running your pipeline in the cloud](../assets/core_concepts/switching_stacks.png)
+
 ## ZenML Server and Dashboard
 
 In order to run *stack components* that are running on infrastructure on the cloud, ZenML itself needs to deployed to the cloud first, so that it can communicate with these stack components.
@@ -92,39 +105,6 @@ The **ZenML Dashboard** also communicates with the ZenML Server to visualize you
 ![ZenML Dashboard](../assets/pipelines_dashboard.png)
 
 When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition.
-
-## Switching Stacks to Scale Up
-
-We've seen how to run a pipeline locally. But that is rarely enough in production machine learning which typically involves cloud infrastructure.
-
-What's really cool with using ZenML is you can easily switch your stack from running on a local machine to running on the cloud with a single CLI command.
-
-The rest of the code defining your steps and pipelines stays the same, whether it's running on a local machine or a cloud infrastructure of your choice.
-The only change is in the stack and its components.
-
-Below is an illustration showing how the same pipeline on a local machine can be scaled up to run on a full-fledged cloud infrastructure by switching stacks. You get all the benefits of using cloud infrastructures with minimal changes in your code.
-
-![Running your pipeline in the cloud](../assets/core_concepts/concepts-3.png)
-
-## Cloud Training, Deployment and Monitoring
-
-Running workflows in the cloud often requires certain custom behaviors, so ZenML
-offers a number of extra Stack Components that handle these common use cases.
-For example, it's common to want to deploy models so we have a Model Deployer
-component. Similarly, you might want to use popular tools like Weights & Biases
-or MLflow to track your experiments, so we have an Experiment Tracker stack
-component. Any additional software needed for these components can be added and
-installed by using ZenML's Integration installer.
-
-It is this modular and configurable nature of the ZenML stack that offers you
-ways to get productive quickly. If we don't support some specific tool you want
-to use, our stack components are extensible and well documented so this 
-shouldn't be a barrier for you.
-
-All the stack components configured as part of the stack carry their
-configuration parameters so whether it's an AWS SageMaker cluster you need to
-run your training on or an Google Cloud container registry you need to connect
-to, ZenML handles the connections between these various parts on your behalf.
 
 ## Other Bits and Pieces
 

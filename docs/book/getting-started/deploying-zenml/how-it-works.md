@@ -11,14 +11,18 @@ metadata store.
 
 ## How Configurations and Pipeline Runs are tracked
 
-ZenML relies on a SQLAlchemy compatible database to store all its data. The 
-location and type of this database can be freely chosen by the user. By default,
-a SQLite database is used (see [Scenario 1](#scenario-1-local-sqlite))
+A ZenML deployment consists of two components:
+- A FastAPI server.
+- A SQL database.
 
 ZenML can also be deployed with an HTTP interface between the users machine 
 and the database. This is also the interface used by the browser dashboard.
 Especially in multi-user settings this is the recommended configuration
 scenario.
+
+ZenML relies on a SQLAlchemy compatible database to store all its data. The 
+location and type of this database can be freely chosen by the user. By default,
+a SQLite database is used (see [Scenario 1](#scenario-1-local-sqlite))
 
 ## Scenario 1: Direct interaction with Local SQLite
 

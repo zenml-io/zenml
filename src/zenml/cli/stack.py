@@ -411,7 +411,6 @@ def update_stack(
         )
 
 
-
 @stack.command(
     "share",
     context_settings=dict(ignore_unknown_options=True),

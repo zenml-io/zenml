@@ -167,6 +167,6 @@ variable "ingress_tls_secret_name" {
 # variables for creating a ZenML stack configuration file
 variable "zenml-version" {
   description = "The version of ZenML being used"
-  default     = "0.13.2"
+  default     = "0.20.0"
   type        = string
 }
