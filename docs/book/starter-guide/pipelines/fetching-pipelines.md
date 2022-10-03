@@ -22,8 +22,7 @@ pipelines -> runs -> steps -> outputs
 
 Let us investigate how to traverse this hierarchy level by level:
 
-
-### Pipelines
+## Pipelines
 
 ZenML keeps a collection of all created pipelines with at least one
 run sorted by the time of their first run from oldest to newest.
@@ -55,7 +54,20 @@ the pipeline class, an instance of the class or even the name of the
 pipeline as a string: `get_pipeline(pipeline=...)`.
 {% endhint %}
 
-### Runs
+<details>
+<summary>Using the CLI</summary>
+
+You can also access your pipelines through the CLI by executing the following command on the terminal:
+
+```shell
+zenml pipeline list
+```
+
+</details>
+
+## Runs
+
+### Getting runs from a fetched pipeline
 
 Each pipeline can be executed many times. You can get a list of all runs using
 the `runs` attribute of a pipeline.
@@ -68,17 +80,13 @@ runs = pipeline_x.runs
 last_run = runs[-1]
 
 # or get a specific run by name
-run = pipeline_x.get_run(run_name=...)
+run = pipeline_x.get_run(run_name="my_run_name")
 ```
 
-{% hint style="warning" %}
-Calling `pipeline.runs` can currently be very slow when using remote metadata
-stores as all run data need to be transferred from the cloud to the local
-machine. 
-{% endhint %}
+### Getting runs from a pipeline instance:
 
 Alternatively, you can also access the runs from the pipeline class/instance
-itself. 
+itself:
 
 ```python
 from zenml.pipelines import pipeline
@@ -105,11 +113,25 @@ last_run = runs[-1]
 run = example_pipeline.get_run(run_name=...)
 ```
 
-Finally, you can also access a run directly with the `get_run(run_name=...)` and `get_unlisted_runs` 
-method:
+### Directly getting a run
 
+Finally, you can also access a run directly with the `get_run(run_name=...)`:
+
+```python
+run = get_run(run_name="my_run_name")
 ```
+
+<details>
+<summary>Using the CLI</summary>
+
+You can also access your runs through the CLI by executing the following command on the terminal:
+
+```shell
+zenml pipeline runs list
+zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
 ```
+
+</details>
 
 ### Runs Configuration
 
@@ -138,8 +160,7 @@ pipeline.
 runtime_config = run.runtime_configuration
 ```
 
-
-### Steps
+## Steps
 
 Within a given pipeline run you can now further zoom in on individual steps
 using the `steps` attribute or by querying a specific step using the
@@ -187,7 +208,7 @@ an instance of the class or even the name of the step as a string:
 `get_step(step=...)` instead.
 {% endhint %}
 
-### Outputs
+## Outputs
 
 Finally, this is how you can inspect the output of a step:
 - If there only is a single output, use the `output` attribute
@@ -248,187 +269,3 @@ pipe.run()
 step_1 = pipe.get_runs()[-1].get_step(step="step_1")
 output = step_1.output.read()
 ```
-
-# Older content (Page 2)
-
----
-description: How to define pipelines and steps with functional and class-based APIs
----
-
-In ZenML there are two different ways how you can define pipelines or steps.
-What you have seen in the previous sections is the **Functional API**,
-where steps and pipelines are defined as Python functions with a
-`@step` or `@pipeline` decorator respectively.
-This is the API that is used primarily throughout the ZenML docs and examples.
-
-Alternatively, you can also define steps and pipelines using the 
-**Class-Based API** by creating Python classes that subclass ZenML's abstract
-base classes `BaseStep` and `BasePipeline` directly.
-Internally, both APIs will result in similar definitions, so it is
-entirely up to you which API to use.
-
-In the following, we will compare the two APIs using the code example from the
-previous section on [Runtime Configuration](./runtime-configuration.md):
-
-## Creating Steps
-
-In order to create a step with the class-based API, you will need to create a
-subclass of `zenml.steps.BaseStep` and implement its `entrypoint()` method to
-perform the logic of the step.
-
-{% tabs %}
-{% tab title="Class-based API" %}
-```python
-import numpy as np
-from sklearn.base import ClassifierMixin
-from sklearn.svm import SVC
-
-from zenml.steps import BaseStep, BaseStepConfig
-
-
-class SVCTrainerStepConfig(BaseStepConfig):
-    """Trainer params"""
-    gamma: float = 0.001
-
-
-class SVCTrainerStep(BaseStep):
-    def entrypoint(
-        self,
-        config: SVCTrainerStepConfig,
-        X_train: np.ndarray,
-        y_train: np.ndarray,
-    ) -> ClassifierMixin:
-        """Train a sklearn SVC classifier."""
-        model = SVC(gamma=config.gamma)
-        model.fit(X_train, y_train)
-        return model
-```
-{% endtab %}
-{% tab title="Functional API" %}
-```python
-import numpy as np
-from sklearn.base import ClassifierMixin
-from sklearn.svm import SVC
-
-from zenml.steps import step, BaseStepConfig
-
-
-class SVCTrainerStepConfig(BaseStepConfig):
-    """Trainer params"""
-    gamma: float = 0.001
-
-
-@step
-def svc_trainer(
-    config: SVCTrainerStepConfig,
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> ClassifierMixin:
-    """Train a sklearn SVC classifier."""
-    model = SVC(gamma=config.gamma)
-    model.fit(X_train, y_train)
-    return model
-```
-{% endtab %}
-{% endtabs %}
-
-## Creating Pipelines
-
-Similarly, you can define a pipeline with the class-based API
-by subclassing `zenml.pipelines.BasePipeline` and implementing its `connect()`
-method:
-
-{% tabs %}
-{% tab title="Class-based API" %}
-```python
-from zenml.pipelines import BasePipeline
-
-
-class FirstPipeline(BasePipeline):
-    def connect(self, step_1, step_2):
-        X_train, X_test, y_train, y_test = step_1()
-        step_2(X_train, y_train)
-
-
-first_pipeline_instance = FirstPipeline(
-    step_1=digits_data_loader(),
-    step_2=SVCTrainerStep(SVCTrainerStepConfig(gamma=0.01)),
-)
-
-first_pipeline_instance.run()
-
-```
-{% endtab %}
-{% tab title="Functional API" %}
-```python
-from zenml.pipelines import pipeline
-
-
-@pipeline
-def first_pipeline(step_1, step_2):
-    X_train, X_test, y_train, y_test = step_1()
-    step_2(X_train, y_train)
-
-
-first_pipeline_instance = first_pipeline(
-    step_1=digits_data_loader(),
-    step_2=SVCTrainerStep(SVCTrainerStepConfig(gamma=0.01)),
-)
-
-first_pipeline_instance.run()
-```
-{% endtab %}
-{% endtabs %}
-
-As you saw in the example above, you can even mix and match the two APIs.
-Choose whichever style feels most natural to you!
-
-## Advanced Usage: Using decorators to give your steps superpowers
-
-As you will learn later, ZenML has many [integrations](../../mlops-stacks/integrations.md)
-that allow you to add functionality like automated experiment tracking to your steps.
-Some of those integrations need to be initialized before they can be used, which
-ZenML wraps using special `@enable_<INTEGRATION>` decorators.
-Similar to the functional API, you can do this in the class-based API by 
-adding a decorator to your `BaseStep` subclass:
-
-{% tabs %}
-{% tab title="Class-based API" %}
-```python
-from zenml.steps import BaseStep
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
-
-
-@enable_mlflow
-class TFTrainer(BaseStep):
-    def entrypoint(
-        self,
-        x_train: np.ndarray,
-        y_train: np.ndarray,
-    ) -> tf.keras.Model:
-        mlflow.tensorflow.autolog()
-        ...
-```
-{% endtab %}
-{% tab title="Functional API" %}
-```python
-from zenml.steps import step
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
-
-
-@enable_mlflow
-@step
-def tf_trainer(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> tf.keras.Model:
-    mlflow.tensorflow.autolog()
-    ...
-```
-{% endtab %}
-{% endtabs %}
-
-Check out our [MLflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_tracking), 
-[Wandb](https://github.com/zenml-io/zenml/tree/main/examples/wandb_tracking) and 
-[whylogs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs_data_profiling) 
-examples for more information on how to use the specific decorators.
