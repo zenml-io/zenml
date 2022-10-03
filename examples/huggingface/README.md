@@ -134,8 +134,9 @@ zenml init
 
 Now we're ready. Execute one of the below lines to run the respective nlp tasks.
 
+For sequence classification:
+
 ```shell
-# sequence-classification
 python run.py --nlp_task=sequence-classification --pretrained_model=distilbert-base-uncased --epochs=1 --batch_size=16 --dataset_name=imdb --text_column=text --label_column=label
 ```
 
@@ -145,8 +146,9 @@ Alternatively, if you want to run based on the config.yaml you can run with:
 zenml pipeline run pipelines/sequence_classifier_pipeline/sequence_classifier_pipeline.py -c sequence_classification_config.yaml
 ```
 
+For the token classification task:
+
 ```shell
-# token-classification
 python run.py --nlp_task=token-classification --pretrained_model=distilbert-base-uncased --epochs=1 --batch_size=16 --dataset_name=conll2003 --text_column=tokens --label_column=ner_tags
 ```
 
