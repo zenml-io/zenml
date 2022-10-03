@@ -5,7 +5,8 @@ description: How to install ZenML
 # Installation (Python Package)
 
 **ZenML** is a Python package that can be installed directly via `pip`:
-```
+
+```shell
 pip install zenml
 ```
 
@@ -22,7 +23,7 @@ pip install "zenml[server]"
 
 If you do not have deployed infrastructure, and want to quickly spin up combinations of tools on the cloud, the [MLOps stack sister repository](https://github.com/zenml-io/mlops-stacks) contains a series of Terraform-based recipes to provision such stacks. These recipes can be used directly with ZenML:
 
-```bash
+```shell
 pip install "zenml[stacks]"
 ```
 
@@ -74,7 +75,7 @@ aren’t fully compatible with the vanilla ARM64 Architecture. The following lin
 [DockerHub](https://hub.docker.com/r/zenmldocker/zenml). 
 Use the following command to get started in a bash environment with `zenml` available:
 
-```
+```shell
 docker run -it zenmldocker/zenml /bin/bash
 ```
 
