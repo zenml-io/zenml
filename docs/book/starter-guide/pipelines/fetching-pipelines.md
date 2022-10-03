@@ -138,7 +138,8 @@ zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
 
 ### Runs Configuration
 
-Each run has a collection of useful metadata which you can access:
+Each run has a collection of useful metadata which you can access to ensure all runs 
+are reproducible:
 
 #### git_sha
 The Git commit SHA that the pipeline run was performed on. This will only be set 
@@ -155,13 +156,11 @@ possible states: failed, completed, running, cached:
 status = run.status
 ```
 
-#### runtime_configuration
-Currently the runtime configuration contains information about the schedule that
-was used for the run, the run_name and the path to the file containing the 
-pipeline. 
-```python
-runtime_config = run.runtime_configuration
-```
+#### pipeline_configuration
+
+The `pipeline_configuration` is a super object that contains all configuration of 
+the pipeline and pipeline run, including `Settings`, which we will learn more about in 
+the [advanced guide](../../advanced-guide/pipelines/runtime-configuration.md).
 
 ## Steps
 
