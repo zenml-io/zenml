@@ -754,6 +754,7 @@ def delete_stack(
 
     if not confirmation:
         cli_utils.declare("Stack deletion canceled.")
+        return
 
     with console.status(f"Deleting stack '{stack_name_or_id}'...\n"):
         cfg = GlobalConfiguration()
