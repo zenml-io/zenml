@@ -120,6 +120,13 @@ key-value pair:
 zenml secrets-manager secret register example_secret --example_secret_key=example_secret_value
 ```
 
+Note that Azure's Key Vault store doesn't permit the use of underscore
+characters in secret names, so you'll need to instead use:
+
+```shell
+zenml secrets-manager secret register examplesecret --example_secret_key=example_secret_value
+```
+
 ### ▶️ Run the Code
 
 Now we're ready. Execute:
