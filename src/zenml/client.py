@@ -703,10 +703,10 @@ class Client(metaclass=ClientMetaClass):
             logger.warn(
                 f"You are configuring a stack that is composed of components "
                 f"that are relying on local resources "
-                f"({','.join(local_components)}) as well as "
+                f"({', '.join(local_components)}) as well as "
                 f"components that are running remotely "
-                f"({','.join(local_components)}). This is not recommended as it "
-                f"can lead to unexpected behavior, especially if the remote "
+                f"({', '.join(remote_components)}). This is not recommended as "
+                f"it can lead to unexpected behavior, especially if the remote "
                 f"components need to access the local resources. Please make "
                 f"sure that your stack is configured correctly, or try to use "
                 f"component flavors or configurations that do not require "
@@ -741,9 +741,6 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             stack: The new stack to use as the updated version.
-
-        Raises:
-            RuntimeError: If the stack configuration is invalid.
         """
         self._validate_stack_configuration(stack=stack)
 

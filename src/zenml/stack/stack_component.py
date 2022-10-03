@@ -121,7 +121,6 @@ class StackComponentConfig(BaseModel, ABC):
         server.
 
         Examples:
-
           * Orchestrators that are running pipelines in the cloud or in a
           location other than the local host
           * Step Operators that are running steps in the cloud or in a location
@@ -145,7 +144,6 @@ class StackComponentConfig(BaseModel, ABC):
         shared with other users or if it is only usable on the local host.
 
         Examples:
-
           * Artifact Stores that store artifacts in the local filesystem
           * Orchestrators that are connected to local orchestration runtime
           services (e.g. local Kubernetes clusters, Docker containers etc).

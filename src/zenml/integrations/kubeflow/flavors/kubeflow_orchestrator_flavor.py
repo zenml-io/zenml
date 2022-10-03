@@ -86,7 +86,10 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        if self.kubernetes_context is not None:
+        if (
+            self.kubernetes_context is not None
+            and not self.kubernetes_context.startswith("k3d-zenml-kubeflow-")
+        ):
             return True
         return False
 
@@ -100,7 +103,10 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
         Returns:
             True if this config is for a local component, False otherwise.
         """
-        if self.kubernetes_context is None:
+        if (
+            self.kubernetes_context is None
+            or self.kubernetes_context.startswith("k3d-zenml-kubeflow-")
+        ):
             return True
         return False
 
