@@ -53,7 +53,7 @@ set up properly.
 ```shell
 zenml integration install aws
 
-zenml secrets-manager register aws_secrets_manager --flavor=aws
+zenml secrets-manager register aws_secrets_manager --flavor=aws --region_name=<YOUR_CHOSEN_AWS_REGION_NAME> # e.g. eu-west-1
 zenml stack register secrets_stack -o default -a default -x aws_secrets_manager --set
 ```
 
