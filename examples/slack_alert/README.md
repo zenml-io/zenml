@@ -60,10 +60,9 @@ zenml init
 zenml alerter register slack_alerter --flavor=slack --slack_token=<SLACK_TOKEN> --default_slack_channel_id=<SLACK_CHANNEL_ID>
 
 # register new stack with slack alerter and set it active
-zenml stack register slack_stack -o default -a default -al slack_alerter 
-zenml stack set slack_stack
+zenml stack register slack_stack -o default -a default -al slack_alerter --set
 
-# (only for run_ask.py) add mlflow
+# add mlflow
 zenml integration install mlflow -y
 zenml model-deployer register mlflow --flavor=mlflow
 zenml experiment-tracker register mlflow --flavor=mlflow
@@ -77,7 +76,7 @@ Now we're ready. Execute on of the following:
 #### `post()` example
 
 ```shell
-python run_post.py
+python run.py
 ```
 
 You should see the following output in your slack channel:
