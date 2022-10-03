@@ -92,11 +92,14 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
             )
     except KeyError as err:
         cli_utils.error(str(err))
-    cli_utils.confirmation(
+    confirmation = cli_utils.confirmation(
         f"Are you sure you want to delete pipeline `{pipeline_name_or_id}`? "
         "This will change all existing runs of this pipeline to become "
         "unlisted."
     )
+    if not confirmation:
+        cli_utils.declare("Pipeline deletion canceled.")
+        return
     assert pipeline.id is not None
     Client().zen_store.delete_pipeline(pipeline_id=pipeline.id)
     cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
