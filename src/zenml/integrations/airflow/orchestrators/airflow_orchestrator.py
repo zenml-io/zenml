@@ -308,7 +308,7 @@ class AirflowOrchestrator(BaseOrchestrator):
                 f"Can't find password file '{self.password_file}'"
             )
         logger.info(
-            "To inspect your DAGs, login to http://0.0.0.0:8080 "
+            "To inspect your DAGs, login to http://localhost:8080 "
             "with username: admin password: %s",
             password,
         )
