@@ -287,13 +287,13 @@ Already comfortable with ZenML and wish to elevate your pipeline into production
 
 While ZenML works perfectly fine locally, it should be deployed on the cloud to enable collaborative features as the central MLOps interface for teams.
 
-The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. Read more about the command [here](https://docs.zenml.io/deployment).
+The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. Read more about the command [here](https://docs.zenml.io/getting-started/deploying-zenml/deploying-zenml).
 
 ```shell
 zenml deploy
 ```
 
-Naturally, [the docs](https://docs.zenml.io/deployment) contain detailed guides on how to manually set up ZenML on the cloud in case more control is required.
+Naturally, [the docs](https://docs.zenml.io/getting-started/deploying-zenml/deploying-zenml) contain detailed guides on how to manually set up ZenML on the cloud in case more control is required.
 
 The following architectural diagram illustrates a common ZenML deployment:
 

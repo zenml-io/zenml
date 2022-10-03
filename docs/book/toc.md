@@ -6,10 +6,10 @@
 * [Core Concepts](./getting-started/core-concepts.md)
 * [Installation](./getting-started/installation.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
-* [Deploying ZenML](./getting-started/deploying-zenml/how-it-works.md)
-  * [Options for Deploying ZenML](./getting-started/deploying-zenml/deployment.md)
-  * [One Click Deployment using CLI](./getting-started/deploying-zenml/using-cli.md)
-  * [Using Docker or Helm](./getting-started/deploying-zenml/docker-helm.md)
+* [Deploying ZenML](./getting-started/deploying-zenml/deploying-zenml.md)
+  * [One Click Deployment using CLI](./getting-started/deploying-zenml/cli.md)
+  * [Deploying with Docker](./getting-started/deploying-zenml/docker.md)
+  * [Deploying with Helm](./getting-started/deploying-zenml/helm.md)
 * [Examples](./getting-started/examples.md)
 
 ## Starter Guide

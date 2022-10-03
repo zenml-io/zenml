@@ -53,7 +53,7 @@ Eager to get started? We recommend the following to start using **ZenML** right 
 
 ### **Need help deploying infrastructure?**
 
-- Read about how to [deploy ZenML](../getting-started/deploying-zenml/deployment.md) on any cloud provider.
+- Read about how to [deploy ZenML](../getting-started/deploying-zenml/deploying-zenml.md) on any cloud provider.
 - Read about how to [deploy popular MLOps stacks](../popular-stack-guides/overview.md).
 - [Standard integrations](../component-gallery/integrations.md) have stack components that come with their own deployment guide.
 
