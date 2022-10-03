@@ -114,7 +114,7 @@ def authenticate_credentials(
 def http_authentication(
     credentials: HTTPBasicCredentials = Depends(HTTPBasic()),
 ) -> AuthContext:
-    """Authenticates any request to the ZenServer with basic HTTP authentication.
+    """Authenticates any request to the ZenML Server with basic HTTP authentication.
 
     Args:
         credentials: HTTP basic auth credentials passed to the request.
