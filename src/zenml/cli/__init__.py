@@ -204,12 +204,16 @@ to register a new artifact store, do so with the ``register`` command:
 ```bash
 zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR [--OPTIONS]
 ```
+
 If you wish to list the artifact stores that have already been
 registered within your ZenML project / repository, type:
 
 ```bash
 zenml artifact-store list
 ```
+
+If you wish to update/share
+
 If you wish to delete a particular artifact store, pass the name of the
 artifact store into the CLI with the following command:
 
@@ -461,6 +465,48 @@ zenml feature-store register FEATURE_STORE_NAME --flavor=feast
 Once you have registered your feature store as a stack component, you can use it
 in your ZenML Stack.
 
+Interacting with Model Deployers
+-----------------------------------------
+
+Model deployers are stack components responsible for online model serving.
+They are responsible for deploying models to a remote server. Model deployers
+also act as a registry for models that are served with ZenML.
+
+If you wish to register a new model deployer, do so with the
+`register` command:
+
+```bash
+zenml model-deployer register MODEL_DEPLOYER_NAME --flavor=MODEL_DEPLOYER_FLAVOR [--OPTIONS]
+```
+
+If you wish to list the model-deployers that have already been registered
+within your ZenML project / repository, type:
+
+```bash
+zenml model-deployer list
+```
+
+If you wish to get more detailed information about a particular model deployer
+within your ZenML project / repository, type:
+
+```bash
+zenml model-deployer describe MODEL_DEPLOYER_NAME
+```
+
+If you wish to delete a particular model deployer, pass the name of the
+model deployers into the CLI with the following command:
+
+```bash
+zenml model-deployer delete MODEL_DEPLOYER_NAME
+```
+
+If you wish to retrieve logs corresponding to a particular model deployer, pass the name
+of the model deployer into the CLI with the following command:
+
+```bash
+zenml model-deployer logs MODEL_DEPLOYER_NAME
+```
+
 Interacting with Deployed Models
 --------------------------------
 
@@ -525,16 +571,30 @@ zenml stack register STACK_NAME \
        -o ORCHESTRATOR_NAME
 ```
 
-Each corresponding argument should be the name you passed in as an
-identifier for the artifact store or orchestrator when
-you originally registered it. (If you want to use your secrets manager, you
-should pass its name in with the `-x` option flag.)
+Each corresponding argument should be the name, id or even the first few letters
+ of the id that uniquely identify the artifact store or orchestrator.
+(If you want to use your secrets manager, you should pass its name in with the
+`-x` option flag.)
 
 If you want to immediately set this newly created stack as your active stack,
 simply pass along the `--set` flag.
 
 ```bash
 zenml stack register STACK_NAME ... --set
+```
+
+If you want to share the stack and all of its components with everyone using
+the same ZenML deployment, simply pass along the `--share` flag.
+
+```bash
+zenml stack register STACK_NAME ... --share
+```
+
+Even if you haven't done so at creation time of the stack, you can always
+decide to do so at a later stage.
+
+```bash
+zenml stack share STACK_NAME
 ```
 
 To list the stacks that you have registered within your current ZenML
@@ -725,48 +785,6 @@ You can see a list of all current role assignments by running:
 
 ```bash
 zenml role assignment list
-```
-
-Interacting with Model Deployers
------------------------------------------
-
-Model deployers are stack components responsible for online model serving.
-They are responsible for deploying models to a remote server. Model deployers
-also act as a registry for models that are served with ZenML. 
-
-If you wish to register a new model deployer, do so with the
-`register` command:
-
-```bash
-zenml model-deployer register MODEL_DEPLOYER_NAME --flavor=MODEL_DEPLOYER_FLAVOR [--OPTIONS]
-```
-
-If you wish to list the model-deployers that have already been registered
-within your ZenML project / repository, type:
-
-```bash
-zenml model-deployer list
-```
-
-If you wish to get more detailed information about a particular model deployer
-within your ZenML project / repository, type:
-
-```bash
-zenml model-deployer describe MODEL_DEPLOYER_NAME
-```
-
-If you wish to delete a particular model deployer, pass the name of the
-model deployers into the CLI with the following command:
-
-```bash
-zenml model-deployer delete MODEL_DEPLOYER_NAME
-```
-
-If you wish to retrieve logs corresponding to a particular model deployer, pass the name
-of the model deployer into the CLI with the following command:
-
-```bash
-zenml model-deployer logs MODEL_DEPLOYER_NAME
 ```
 
 Deploying cloud resources using Stack Recipes
