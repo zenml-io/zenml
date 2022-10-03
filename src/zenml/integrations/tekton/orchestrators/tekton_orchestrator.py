@@ -125,7 +125,7 @@ class TektonOrchestrator(BaseOrchestrator):
                     f"'{stack_component.flavor}'."
                 )
 
-            if container_registry.is_local:
+            if container_registry.config.is_local:
                 return False, (
                     f"The Tekton orchestrator is configured to run "
                     f"pipelines in a remote Kubernetes cluster designated "

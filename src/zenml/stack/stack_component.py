@@ -108,6 +108,53 @@ class StackComponentConfig(BaseModel, ABC):
             if secret_utils.is_secret_reference(v)
         }
 
+    @property
+    def is_remote(self) -> bool:
+        """Checks if this stack component is running remotely.
+
+        Concrete stack component configuration classes should override this
+        method to return True if the stack component is running in a remote
+        location and it needs to access the ZenML database.
+
+        This designation is used to determine if the stack component can be
+        used with a local ZenML database or if it requires a remote ZenML
+        server.
+
+        Examples:
+
+          * Orchestrators that are running pipelines in the cloud or in a
+          location other than the local host
+          * Step Operators that are running steps in the cloud or in a location
+          other than the local host
+
+        Returns:
+            True if this config is for a remote component, False otherwise.
+        """
+        return False
+
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        Concrete stack component configuration classes should override this
+        method to return True if the stack component is relying on local
+        resources or capabilities (e.g. local filesystem, local database or
+        other services).
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Examples:
+
+          * Artifact Stores that store artifacts in the local filesystem
+          * Orchestrators that are connected to local orchestration runtime
+          services (e.g. local Kubernetes clusters, Docker containers etc).
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        return False
+
     def __custom_getattribute__(self, key: str) -> Any:
         """Returns the (potentially resolved) attribute value for the given key.
 

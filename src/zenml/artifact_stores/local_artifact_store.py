@@ -99,6 +99,18 @@ class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
             )
         return path
 
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        return True
+
 
 class LocalArtifactStore(BaseArtifactStore):
     """Artifact Store for local artifacts."""

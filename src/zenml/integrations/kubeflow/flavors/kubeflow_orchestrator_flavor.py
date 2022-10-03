@@ -75,6 +75,35 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
     skip_cluster_provisioning: bool = False
     skip_ui_daemon_provisioning: bool = False
 
+    @property
+    def is_remote(self) -> bool:
+        """Checks if this stack component is running remotely.
+
+        This designation is used to determine if the stack component can be
+        used with a local ZenML database or if it requires a remote ZenML
+        server.
+
+        Returns:
+            True if this config is for a remote component, False otherwise.
+        """
+        if self.kubernetes_context is not None:
+            return True
+        return False
+
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        if self.kubernetes_context is None:
+            return True
+        return False
+
 
 class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
     """Kubeflow orchestrator flavor."""
