@@ -67,6 +67,8 @@ Once ZenML is deployed, one or multiple users can connect to with the
 `zenml connect` command. If no arguments are supplied, ZenML
 will attempt to connect to the last ZenML server deployed from the local host using the `zenml deploy` command:
 
+### ZenML Connect: Various options
+
 ```bash
 zenml connect
 ```
@@ -122,8 +124,9 @@ recommended that you supply the password only as a command line argument:
 zenml connect --username zenml --password=Pa@#$#word --config=/path/to/zenml_server_config.yaml
 ```
 
-To disconnect from the current ZenML server and revert to using the local
-default database, use the following command:
+### ZenML Disconnect: To go back to single-player mode.
+
+To disconnect from the current ZenML server and revert to using the local default database, use the following command:
 
 ```bash
 zenml disconnect
@@ -156,37 +159,6 @@ The status of the local dashboard:
 ┠────────────────┼─────────────────────────────┨
 ┃ CONNECTED      │                             ┃
 ┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-
-The ``zenml connect`` command can also be used to configure your client with
-more advanced options, such as connecting directly to a local or remote SQL
-database. In this case, the `--raw-config` flag must be passed to instruct the
-CLI to not validate or fill in the missing configuration fields. For example,
-to connect to a remote MySQL database, run:
-
-```bash
-zenml connect --raw-config --config=/path/to/mysql_config.yaml
-```
-
-with a YAML configuration file that looks like this:
-
-```yaml
-type: sql
-url: mysql://<username>:<password>@mysql.database.com/<database_name>
-ssl_ca: |
-   -----BEGIN CERTIFICATE-----
-   MIIEBjCCAu6gAwIBAgIJAMc0ZzaSUK51MA0GCSqGSIb3DQEBCwUAMIGPMQswCQYD
-   VQQGEwJVUzEQMA4GA1UEBwwHU2VhdHRsZTETMBEGA1UECAwKV2FzaGluZ3RvbjEi
-   MCAGA1UECgwZQW1hem9uIFdlYiBTZXJ2aWNlcywgSW5jLjETMBEGA1UECwwKQW1h
-   ...
-   KoZIzj0EAwMDaAAwZQIxAIqqZWCSrIkZ7zsv/FygtAusW6yvlL935YAWYPVXU30m
-   jkMFLM+/RJ9GMvnO8jHfCgIwB+whlkcItzE9CRQ6CsMo/d5cEHDUu/QW6jSIh9BR
-   OGh9pTYPVkUbBiKPA7lVVhre
-   -----END CERTIFICATE-----
-
-ssl_cert: null
-ssl_key: null
-ssl_verify_server_cert: false
 ```
 
 Ok that was easy! By running a few commands on the terminal, you have now a shared ZenML Server and Dashboard deployed and ready to go. The next step is to invite your teammates.
