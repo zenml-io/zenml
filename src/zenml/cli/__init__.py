@@ -59,7 +59,7 @@ Beginning a Project
 -------------------
 
 In order to start working on your project, initialize a ZenML repository
-within your current directory with ZenML’s own config and resource management
+within your current directory with ZenML's own config and resource management
 tools:
 
 ```bash
@@ -72,18 +72,11 @@ provides!
 By default, ``zenml init`` will install its own hidden ``.zen`` folder
 inside the current directory from which you are running the command.
 You can also pass in a directory path manually using the
-``--repo_path`` option:
+``--path`` option:
 
 ```bash
-zenml init --repo_path /path/to/dir
-```
-If you wish to specify that you do not want analytics to be transmitted
-back to ZenML about your usage of the tool, pass in ``False`` to the
-``--analytics_opt_in`` option:
+zenml init --path /path/to/dir
 
-```bash
-zenml init --analytics_opt_in false
-```
 If you wish to delete all data relating to your project from the
 directory, use the ``zenml clean`` command. This will:
 
@@ -91,19 +84,16 @@ directory, use the ``zenml clean`` command. This will:
 -  delete all artifacts
 -  delete all metadata
 
-*Note that the* ``clean`` *command is not implemented for the current
-version.*
-
 Loading and using pre-built examples
 ------------------------------------
 
-If you don’t have a project of your own that you’re currently working
+If you don't have a project of your own that you're currently working
 on, or if you just want to play around a bit and see some functional
-code, we’ve got your back! You can use the ZenML CLI tool to download
+code, we've got your back! You can use the ZenML CLI tool to download
 some pre-built examples.
 
 We know that working examples are a great way to get to know a tool, so
-we’ve made some examples for you to use to get started. (This is
+we've made some examples for you to use to get started. (This is
 something that will grow as we add more).
 
 To list all the examples available to you, type:
@@ -121,13 +111,13 @@ zenml example info quickstart
 If you want to pull all the examples into your current working directory
 (wherever you are executing the ``zenml`` command from in your
 terminal), the CLI will create a ``zenml_examples`` folder for you if it
-doesn’t already exist whenever you use the ``pull`` subcommand. The
+doesn't already exist whenever you use the ``pull`` subcommand. The
 default is to copy all the examples, like this:
 
 ```bash
 zenml example pull
 ```
-If you’d only like to pull a single example, add the name of that
+If you'd only like to pull a single example, add the name of that
 example (for example, ``quickstart``) as an argument to the same
 command, as follows:
 
@@ -204,12 +194,16 @@ to register a new artifact store, do so with the ``register`` command:
 ```bash
 zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR [--OPTIONS]
 ```
+
 If you wish to list the artifact stores that have already been
 registered within your ZenML project / repository, type:
 
 ```bash
 zenml artifact-store list
 ```
+
+If you wish to update/share
+
 If you wish to delete a particular artifact store, pass the name of the
 artifact store into the CLI with the following command:
 
@@ -461,6 +455,48 @@ zenml feature-store register FEATURE_STORE_NAME --flavor=feast
 Once you have registered your feature store as a stack component, you can use it
 in your ZenML Stack.
 
+Interacting with Model Deployers
+-----------------------------------------
+
+Model deployers are stack components responsible for online model serving.
+They are responsible for deploying models to a remote server. Model deployers
+also act as a registry for models that are served with ZenML.
+
+If you wish to register a new model deployer, do so with the
+`register` command:
+
+```bash
+zenml model-deployer register MODEL_DEPLOYER_NAME --flavor=MODEL_DEPLOYER_FLAVOR [--OPTIONS]
+```
+
+If you wish to list the model-deployers that have already been registered
+within your ZenML project / repository, type:
+
+```bash
+zenml model-deployer list
+```
+
+If you wish to get more detailed information about a particular model deployer
+within your ZenML project / repository, type:
+
+```bash
+zenml model-deployer describe MODEL_DEPLOYER_NAME
+```
+
+If you wish to delete a particular model deployer, pass the name of the
+model deployers into the CLI with the following command:
+
+```bash
+zenml model-deployer delete MODEL_DEPLOYER_NAME
+```
+
+If you wish to retrieve logs corresponding to a particular model deployer, pass the name
+of the model deployer into the CLI with the following command:
+
+```bash
+zenml model-deployer logs MODEL_DEPLOYER_NAME
+```
+
 Interacting with Deployed Models
 --------------------------------
 
@@ -525,16 +561,30 @@ zenml stack register STACK_NAME \
        -o ORCHESTRATOR_NAME
 ```
 
-Each corresponding argument should be the name you passed in as an
-identifier for the artifact store or orchestrator when
-you originally registered it. (If you want to use your secrets manager, you
-should pass its name in with the `-x` option flag.)
+Each corresponding argument should be the name, id or even the first few letters
+ of the id that uniquely identify the artifact store or orchestrator.
+(If you want to use your secrets manager, you should pass its name in with the
+`-x` option flag.)
 
 If you want to immediately set this newly created stack as your active stack,
 simply pass along the `--set` flag.
 
 ```bash
 zenml stack register STACK_NAME ... --set
+```
+
+If you want to share the stack and all of its components with everyone using
+the same ZenML deployment, simply pass along the `--share` flag.
+
+```bash
+zenml stack register STACK_NAME ... --share
+```
+
+Even if you haven't done so at creation time of the stack, you can always
+decide to do so at a later stage.
+
+```bash
+zenml stack share STACK_NAME
 ```
 
 To list the stacks that you have registered within your current ZenML
@@ -652,6 +702,225 @@ following command:
 zenml stack register-secrets [<STACK_NAME>]
 ```
 
+Managing the local ZenML Dashboard
+----------------------------------
+
+The ZenML dashboard is a web-based UI that allows you to visualize and navigate
+the stack configurations, pipelines and pipeline runs tracked by ZenML among
+other things. You can start the ZenML dashboard locally by running the following
+command:
+
+```bash
+zenml up
+```
+
+This will start the dashboard on your local machine where you can access it at
+the URL printed to the console. If you want to stop the dashboard, simply run:
+
+```bash
+zenml down
+```
+
+The `zenml up` command has a few additional options that you can use to
+customize how the ZenML dashboard is running.
+
+By default, the dashboard is started as a background process. On some operating
+systems, this capability is not available. In this case, you can use the
+`--blocking` flag to start the dashboard in the foreground:
+
+```bash
+zenml up --blocking
+```
+
+This will block the terminal until you stop the dashboard with CTRL-C.
+
+Another option you can use, if you have Docker installed on your machine, is to
+run the dashboard in a Docker container. This is useful if you don't want to
+install all the Zenml server dependencies on your machine. To do so, simply run:
+
+```bash
+zenml up --docker
+```
+
+The TCP port and the host address that the dashboard uses to listen for
+connections can also be customized. Using an IP address that is not the default
+`localhost` or 127.0.0.1 is especially useful if you're running some type of
+local ZenML orchestrator, such as the k3d Kubeflow orchestrator or Docker
+orchestrator, that can't directly access you loopback interface and therefore
+cannot connect to the local ZenML server.
+
+For example, to start the dashboard on port 9000 and have it listen
+on all locally available interfaces on your machine, run:
+
+```bash
+zenml up --port 9000 --ip-address 0.0.0.0
+```
+
+Note that the above 0.0.0.0 IP address also exposes your ZenML dashboard
+externally through your public interface. Alternatively, you can choose an
+explicit IP address that is configured on one of your local interfaces, such as
+the Docker bridge interface, which usually has the IP address `172.17.0.1`:
+
+```bash
+zenml up --port 9000 --ip-address 172.17.0.1
+```
+
+Managing the global configuration
+---------------------------------
+
+The ZenML global configuration CLI commands cover options such as enabling or
+disabling the collection of anonymous usage statistics, changing the logging
+verbosity and configuring your ZenML client to connect to a remote database or
+ZenML server.
+
+In order to help us better understand how the community uses ZenML, the library
+reports anonymized usage statistics. You can always opt-out by using the CLI
+command:
+
+```bash
+zenml analytics opt-out
+```
+
+If you want to opt back in, use the following command:
+
+```bash
+zenml analytics opt-in
+```
+
+The verbosity of the ZenML client output can be configured using the
+``zenml logging`` command. For example, to set the verbosity to DEBUG, run:
+
+```bash
+zenml logging set-verbosity DEBUG
+```
+
+The ZenML client can be configured to connect to a remote database or ZenML
+server with the `zenml connect` command. If no arguments are supplied, ZenML
+will attempt to connect to the last ZenML server deployed from the local host
+using the 'zenml deploy' command:
+
+```bash
+zenml connect
+```
+
+To connect to a ZenML server, you can either pass the configuration as command
+line arguments or as a YAML file:
+
+```bash
+zenml connect --url=https://zenml.example.com:8080 --username=admin --no-verify-ssl
+```
+
+or
+
+```bash
+zenml connect --config=/path/to/zenml_server_config.yaml
+```
+
+The YAML file should have the following structure when connecting to a ZenML
+server:
+
+```yaml
+url: <The URL of the ZenML server>
+username: <The username to use for authentication>
+password: <The password to use for authentication>
+verify_ssl: |
+   <Either a boolean, in which case it controls whether the
+   server's TLS certificate is verified, or a string, in which case it
+   must be a path to a CA certificate bundle to use or the CA bundle
+   value itself>
+```
+
+Example of a ZenML server YAML configuration file:
+
+```yaml
+url: https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com/zenml
+username: admin
+password: Pa$$word123
+verify_ssl: |
+-----BEGIN CERTIFICATE-----
+MIIDETCCAfmgAwIBAgIQYUmQg2LR/pHAMZb/vQwwXjANBgkqhkiG9w0BAQsFADAT
+MREwDwYDVQQDEwh6ZW5tbC1jYTAeFw0yMjA5MjYxMzI3NDhaFw0yMzA5MjYxMzI3
+...
+ULnzA0JkRWRnFqH6uXeJo1KAVqtxn1xf8PYxx3NlNDr9wi8KKwARf2lwm6sH4mvq
+1aZ/0iYnGKCu7rLJzxeguliMf69E
+-----END CERTIFICATE-----
+```
+
+Both options can be combined, in which case the command line arguments will
+override the values in the YAML file. For example, it is possible and
+recommended that you supply the password only as a command line argument:
+
+```bash
+zenml connect --username zenml --password=Pa@#$#word --config=/path/to/zenml_server_config.yaml
+```
+
+To disconnect from the current ZenML server and revert to using the local
+default database, use the following command:
+
+```bash
+zenml disconnect
+```
+
+You can inspect the current ZenML configuration at any given time using the
+following command:
+
+```bash
+zenml status
+```
+
+Example output:
+
+```
+ zenml status
+Running without an active repository root.
+Connected to a ZenML server: 'https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com'
+The current user is: 'default'
+The active project is: 'default' (global)
+The active stack is: 'default' (global)
+The status of the local dashboard:
+              ZenML server 'local'              
+┏━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ URL            │ http://172.17.0.1:9000      ┃
+┠────────────────┼─────────────────────────────┨
+┃ STATUS         │ ✅                          ┃
+┠────────────────┼─────────────────────────────┨
+┃ STATUS_MESSAGE │ Docker container is running ┃
+┠────────────────┼─────────────────────────────┨
+┃ CONNECTED      │                             ┃
+┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+The ``zenml connect`` command can also be used to configure your client with
+more advanced options, such as connecting directly to a local or remote SQL
+database. In this case, the `--raw-config` flag must be passed to instruct the
+CLI to not validate or fill in the missing configuration fields. For example,
+to connect to a remote MySQL database, run:
+
+```bash
+zenml connect --raw-config --config=/path/to/mysql_config.yaml
+```
+
+with a YAML configuration file that looks like this:
+
+```yaml
+type: sql
+url: mysql://<username>:<password>@mysql.database.com/<database_name>
+ssl_ca: |
+   -----BEGIN CERTIFICATE-----
+   MIIEBjCCAu6gAwIBAgIJAMc0ZzaSUK51MA0GCSqGSIb3DQEBCwUAMIGPMQswCQYD
+   VQQGEwJVUzEQMA4GA1UEBwwHU2VhdHRsZTETMBEGA1UECAwKV2FzaGluZ3RvbjEi
+   MCAGA1UECgwZQW1hem9uIFdlYiBTZXJ2aWNlcywgSW5jLjETMBEGA1UECwwKQW1h
+   ...
+   KoZIzj0EAwMDaAAwZQIxAIqqZWCSrIkZ7zsv/FygtAusW6yvlL935YAWYPVXU30m
+   jkMFLM+/RJ9GMvnO8jHfCgIwB+whlkcItzE9CRQ6CsMo/d5cEHDUu/QW6jSIh9BR
+   OGh9pTYPVkUbBiKPA7lVVhre
+   -----END CERTIFICATE-----
+
+ssl_cert: null
+ssl_key: null
+ssl_verify_server_cert: false
+```
+
 Managing users, teams, projects and roles
 -----------------------------------------
 
@@ -727,47 +996,11 @@ You can see a list of all current role assignments by running:
 zenml role assignment list
 ```
 
-Interacting with Model Deployers
------------------------------------------
 
-Model deployers are stack components responsible for online model serving.
-They are responsible for deploying models to a remote server. Model deployers
-also act as a registry for models that are served with ZenML. 
+Deploying ZenML to the cloud
+----------------------------
 
-If you wish to register a new model deployer, do so with the
-`register` command:
-
-```bash
-zenml model-deployer register MODEL_DEPLOYER_NAME --flavor=MODEL_DEPLOYER_FLAVOR [--OPTIONS]
-```
-
-If you wish to list the model-deployers that have already been registered
-within your ZenML project / repository, type:
-
-```bash
-zenml model-deployer list
-```
-
-If you wish to get more detailed information about a particular model deployer
-within your ZenML project / repository, type:
-
-```bash
-zenml model-deployer describe MODEL_DEPLOYER_NAME
-```
-
-If you wish to delete a particular model deployer, pass the name of the
-model deployers into the CLI with the following command:
-
-```bash
-zenml model-deployer delete MODEL_DEPLOYER_NAME
-```
-
-If you wish to retrieve logs corresponding to a particular model deployer, pass the name
-of the model deployer into the CLI with the following command:
-
-```bash
-zenml model-deployer logs MODEL_DEPLOYER_NAME
-```
+The ZenML CLI provides a simple way to deploy ZenML to the cloud.
 
 Deploying cloud resources using Stack Recipes
 -----------------------------------------------
