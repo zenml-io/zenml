@@ -49,6 +49,8 @@ this point, please join our [Slack community](https://zenml.io/slack-invite) and
 community is more than willing to help out.
 {% endhint %}
 
+At the end of the deployment, you will recieve a URL (e.g. `https://acaaf63af2074as394ab675ee71d85a-1399000d0.us-east-1.elb.amazonaws.com`). Visiting this URL on the browser will show you the same ZenML dashboard that you have seen locally, this time over the web. The ZenML Server and the Dashboard are deployed in the same web application and served at this URL.
+
 ### Connecting to a deployed ZenML Server
 
 Once ZenML is deployed, one or multiple users can connect to with the
@@ -57,4 +59,123 @@ will attempt to connect to the last ZenML server deployed from the local host us
 
 ```bash
 zenml connect
+```
+
+
+To connect to a ZenML server, you can either pass the configuration as command
+line arguments or as a YAML file:
+
+```bash
+zenml connect --url=https://zenml.example.com:8080 --username=admin --no-verify-ssl
+```
+
+or
+
+```bash
+zenml connect --config=/path/to/zenml_server_config.yaml
+```
+
+The YAML file should have the following structure when connecting to a ZenML
+server:
+
+```yaml
+url: <The URL of the ZenML server>
+username: <The username to use for authentication>
+password: <The password to use for authentication>
+verify_ssl: |
+   <Either a boolean, in which case it controls whether the
+   server's TLS certificate is verified, or a string, in which case it
+   must be a path to a CA certificate bundle to use or the CA bundle
+   value itself>
+```
+
+Example of a ZenML server YAML configuration file:
+
+```yaml
+url: https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com/zenml
+username: admin
+password: Pa$$word123
+verify_ssl: |
+-----BEGIN CERTIFICATE-----
+MIIDETCCAfmgAwIBAgIQYUmQg2LR/pHAMZb/vQwwXjANBgkqhkiG9w0BAQsFADAT
+MREwDwYDVQQDEwh6ZW5tbC1jYTAeFw0yMjA5MjYxMzI3NDhaFw0yMzA5MjYxMzI3
+...
+ULnzA0JkRWRnFqH6uXeJo1KAVqtxn1xf8PYxx3NlNDr9wi8KKwARf2lwm6sH4mvq
+1aZ/0iYnGKCu7rLJzxeguliMf69E
+-----END CERTIFICATE-----
+```
+
+Both options can be combined, in which case the command line arguments will
+override the values in the YAML file. For example, it is possible and
+recommended that you supply the password only as a command line argument:
+
+```bash
+zenml connect --username zenml --password=Pa@#$#word --config=/path/to/zenml_server_config.yaml
+```
+
+To disconnect from the current ZenML server and revert to using the local
+default database, use the following command:
+
+```bash
+zenml disconnect
+```
+
+You can inspect the current ZenML configuration at any given time using the
+following command:
+
+```bash
+zenml status
+```
+
+Example output:
+
+```
+ zenml status
+Running without an active repository root.
+Connected to a ZenML server: 'https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com'
+The current user is: 'default'
+The active project is: 'default' (global)
+The active stack is: 'default' (global)
+The status of the local dashboard:
+              ZenML server 'local'              
+┏━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ URL            │ http://172.17.0.1:9000      ┃
+┠────────────────┼─────────────────────────────┨
+┃ STATUS         │ ✅                          ┃
+┠────────────────┼─────────────────────────────┨
+┃ STATUS_MESSAGE │ Docker container is running ┃
+┠────────────────┼─────────────────────────────┨
+┃ CONNECTED      │                             ┃
+┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+The ``zenml connect`` command can also be used to configure your client with
+more advanced options, such as connecting directly to a local or remote SQL
+database. In this case, the `--raw-config` flag must be passed to instruct the
+CLI to not validate or fill in the missing configuration fields. For example,
+to connect to a remote MySQL database, run:
+
+```bash
+zenml connect --raw-config --config=/path/to/mysql_config.yaml
+```
+
+with a YAML configuration file that looks like this:
+
+```yaml
+type: sql
+url: mysql://<username>:<password>@mysql.database.com/<database_name>
+ssl_ca: |
+   -----BEGIN CERTIFICATE-----
+   MIIEBjCCAu6gAwIBAgIJAMc0ZzaSUK51MA0GCSqGSIb3DQEBCwUAMIGPMQswCQYD
+   VQQGEwJVUzEQMA4GA1UEBwwHU2VhdHRsZTETMBEGA1UECAwKV2FzaGluZ3RvbjEi
+   MCAGA1UECgwZQW1hem9uIFdlYiBTZXJ2aWNlcywgSW5jLjETMBEGA1UECwwKQW1h
+   ...
+   KoZIzj0EAwMDaAAwZQIxAIqqZWCSrIkZ7zsv/FygtAusW6yvlL935YAWYPVXU30m
+   jkMFLM+/RJ9GMvnO8jHfCgIwB+whlkcItzE9CRQ6CsMo/d5cEHDUu/QW6jSIh9BR
+   OGh9pTYPVkUbBiKPA7lVVhre
+   -----END CERTIFICATE-----
+
+ssl_cert: null
+ssl_key: null
+ssl_verify_server_cert: false
 ```
