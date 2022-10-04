@@ -34,7 +34,7 @@ module "metadata_store" {
 # create the client certificate for CloudSQL
 resource "google_sql_ssl_cert" "client_cert" {
   common_name = "sql-cert"
-  instance    = module.metadata_store.instance_name
+  instance    = module.metadata_store[0].instance_name
 }
 
 # create the certificate files
