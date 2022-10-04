@@ -3,10 +3,10 @@ description: How to write a custom stack component flavor
 ---
 
 When building sophisticated ML workflows, you will often need to come up with
-custom-tailed solutions. Sometimes, this might even require you to use custom 
+custom-tailored solutions. Sometimes, this might even require you to use custom 
 components for your infrastructure or tooling.
 
-That is exactly why the stack component flavors in ZenML were designed to be
+That is exactly why the stack component flavors in ZenML are designed to be
 modular and straightforward to extend. Using ZenML's base abstractions, you can
 create your own stack component flavor and use it in your stack.
 
@@ -14,9 +14,7 @@ create your own stack component flavor and use it in your stack.
 
 Before we get into the topic of creating custom stack component flavors, let us
 briefly discuss some of the important design choices behind the abstraction of a 
-ZenML flavor.
-
-In its implementation, the base abstraction of a ZenML flavor revolves around 
+ZenML flavor. The overall implementation revolves around 
 three base interfaces, namely the `StackComponent`, the `StackComponentConfig`, 
 and the `Flavor`.
 
@@ -93,7 +91,7 @@ layer to each implementation.
 If you take a closer look at the example above, you will see that, 
 through the `BaseArtifacStoreConfig`, each artifact store will require users 
 to define a `path` variable along with a list of `SUPPORTED_SCHEMES`. Using 
-this configuration class, ZenML will check if the given `path` is actually 
+this configuration class, ZenML can check if the given `path` is actually 
 supported.
 
 {% hint style="info" %}
@@ -217,13 +215,13 @@ class MyArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
 ## Managing a Custom Stack Component Flavor
 
-Once you implemented a custom flavor, you can register it through our CLI:
+Once your implementation is complete, you can register it through the CLI:
 
 ```shell
 zenml artifact-store flavor register <path.to.MyArtifacStoreFlavor>
 ```
 
-Afterwards, you should see the new custom artifact store in the list of
+Afterwards, you should see the new custom artifact store flavor in the list of
 available artifact store flavors:
 
 ```shell
@@ -240,7 +238,8 @@ zenml artifact-store register <ARTIFACT_STORE_NAME> \
 
 zenml stack register <STACK_NAME> \
     --artifact-store <ARTIFACT_STORE_NAME> \
-    ...
+    --path='some-path' \
+    --my_param=3 
 ```
 
 {% hint style="info" %}
