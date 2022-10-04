@@ -1,9 +1,7 @@
 ---
-description: How to add users
+description: How to add users to your ZenML deployment
 ---
 
-# Things to change
+# Multi-player mode with ZenML
 
-- Add stuff about users and invites
-- Make them add a user
-- Explain concept of shared stacks again?
+After you have [deployed ZenML](../../getting-started/deploying-zenml/deploying-zenml.md) and [connected your local client with the deployment](./zenml-deployment.md)

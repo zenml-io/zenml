@@ -1,5 +1,5 @@
 ---
-description: Deploy ZenML with one-click
+description: Connect to a simply deployed ZenML on the cloud.
 ---
 
 ## Collaboration with ZenML Overview
@@ -161,4 +161,4 @@ The status of the local dashboard:
 ┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-Ok that was easy! By running a few commands on the terminal, you have now a shared ZenML Server and Dashboard deployed and ready to go. The next step is to invite your teammates.
+Ok that was easy! By running a few commands on the terminal, you have now a shared ZenML Server and Dashboard deployed and ready to go. The next step is to [invite your teammates](./users.md).
