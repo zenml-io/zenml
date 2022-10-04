@@ -193,7 +193,7 @@ class DockerZenServer(ContainerService):
         shutil.rmtree(DOCKER_ZENML_SERVER_CONFIG_PATH)
 
     def run(self) -> None:
-        """Run the ZenServer.
+        """Run the ZenML Server.
 
         Raises:
             ValueError: if started with a global configuration that connects to
@@ -207,7 +207,7 @@ class DockerZenServer(ContainerService):
                 "The ZenML server cannot be started with REST store type."
             )
         logger.info(
-            "Starting ZenServer as blocking "
+            "Starting ZenML Server as blocking "
             "process... press CTRL+C once to stop it."
         )
 
@@ -221,4 +221,4 @@ class DockerZenServer(ContainerService):
                 log_level="info",
             )
         except KeyboardInterrupt:
-            logger.info("ZenServer stopped. Resuming normal execution.")
+            logger.info("ZenML Server stopped. Resuming normal execution.")

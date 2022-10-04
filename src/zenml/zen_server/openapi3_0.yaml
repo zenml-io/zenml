@@ -54,7 +54,7 @@ tags:
     description: >-
       Code Repositories can be defined at Project level and used to define the pipeline
       entrypoint. Additionally, Triggers can be configured to use the code of the repository to 
-      run pipelines fromthe centralized ZenServer and even trigger on commits or other repo events.
+      run pipelines from the centralized ZenML Server and even trigger on commits or other repo events.
   - name: user
     description: >- 
       The user is the user.
@@ -292,7 +292,7 @@ paths:
         - pipeline
       description: |-
         Create a run for a pipeline. This endpoint is not meant to be used explicitly once ZenML follows the 
-        centralized paradigm where runs are authored by the ZenServer and not on the users machine.
+        centralized paradigm where runs are authored by the ZenML Server and not on the users machine.
       operationId: create_pipeline_run_for_pipeline
       parameters:
         - $ref: '#/components/parameters/pipelineId'
