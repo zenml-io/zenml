@@ -51,7 +51,7 @@ community is more than willing to help out.
 
 At the end of the deployment, you will recieve:
 
-- A `URL` (e.g. `https://acaaf63af2074as394ab675ee71d85a-1399000d0.us-east-1.elb.amazonaws.com`). Visiting this URL on the browser will show you the same ZenML dashboard that you have seen locally, this time over the web. The ZenML Server and the Dashboard are deployed in the same web application and served at this URL.
+- A `URL` (e.g. `https://acaaf63af2074as394ab675ee71d85a-1399000d0.us-east-1.elb.amazonaws.com`). Visiting this URL on the browser will show you the same ZenML dashboard that you have seen locally, this time over the web. The ZenML Server and the Dashboard are deployed in the same web application and served at this URL. You can use login with your credentials (`username` and `password`) to view the dashboard.
 {% hint style="info" %} 
 If certificates have not been provisioned properly with the deployment, your browser might ask you to press a button to allow you
 to see the dashboard. It is important that you give permission in such a scenario, otherwise it will render ZenML unusable from the browser.
@@ -60,6 +60,8 @@ to see the dashboard. It is important that you give permission in such a scenari
 - A `username`: This can be configured but is `default` by default.
 - A `password`: This can be configured but is empty by default.
 - (Optionally) A `TLS certificate` that you can use to connect securely to the deployment (see below).
+
+![Login Page](../../assets/starter_guide/collaboration/00_login.png)
 
 ### Connecting to a deployed ZenML Server
 
