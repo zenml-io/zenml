@@ -34,6 +34,7 @@ from tfx.orchestration import metadata
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
+from zenml.constants import ENV_ZENML_SERVER_DEPLOYMENT_TYPE
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
     EntityExistsError,
@@ -427,6 +428,17 @@ class SqlZenStore(BaseZenStore):
         if not self._metadata_store:
             raise ValueError("Store not initialized")
         return self._metadata_store
+
+    @property
+    def runs_inside_server(self) -> bool:
+        """Whether the store is running inside a server.
+
+        Returns:
+            Whether the store is running inside a server.
+        """
+        if ENV_ZENML_SERVER_DEPLOYMENT_TYPE in os.environ:
+            return True
+        return False
 
     # ====================================
     # ZenML Store interface implementation
@@ -2486,7 +2498,8 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
-        self._sync_runs()  # Sync with MLMD
+        if not self.runs_inside_server:
+            self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             run = session.exec(
@@ -2540,7 +2553,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
-        self._sync_runs()  # Sync with MLMD
+        if not self.runs_inside_server:
+            self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
             query = select(PipelineRunSchema)
             if project_name_or_id is not None:
@@ -2583,12 +2597,20 @@ class SqlZenStore(BaseZenStore):
             The status of the pipeline run.
         """
         steps = self.list_run_steps(run_id)
+
+        # If any step is failed or running, return that status respectively
         for step in steps:
             step_status = self.get_run_step_status(step.id)
             if step_status == ExecutionStatus.FAILED:
                 return ExecutionStatus.FAILED
             if step_status == ExecutionStatus.RUNNING:
                 return ExecutionStatus.RUNNING
+
+        # If not all steps have started yet, return running
+        if len(steps) < self.get_run(run_id).num_steps:
+            return ExecutionStatus.RUNNING
+
+        # Otherwise, return succeeded
         return ExecutionStatus.COMPLETED
 
     # ------------------
@@ -2710,6 +2732,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A mapping from step names to step models for all steps in the run.
         """
+        if not self.runs_inside_server:
+            self._sync_run_steps(run_id)
         with Session(self.engine) as session:
             steps = session.exec(
                 select(StepRunSchema).where(
@@ -2730,7 +2754,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all artifacts.
         """
-        self._sync_runs()
+        if not self.runs_inside_server:
+            self._sync_runs()
         with Session(self.engine) as session:
             query = select(ArtifactSchema)
             if artifact_uri is not None:
@@ -2983,9 +3008,13 @@ class SqlZenStore(BaseZenStore):
                     stack_id=mlmd_run.stack_id,
                     pipeline_id=mlmd_run.pipeline_id,
                     pipeline_configuration=mlmd_run.pipeline_configuration,
+                    num_steps=mlmd_run.num_steps,
                 )
                 new_run = self._create_run(new_run)
-                self._sync_run_steps(new_run.id)
+                zenml_runs[run_name] = new_run
+
+        for run_ in zenml_runs.values():
+            self._sync_run_steps(run_.id)
 
     def _sync_run_steps(self, run_id: UUID) -> None:
         """Sync run steps from MLMD into the database.
@@ -3042,16 +3071,13 @@ class SqlZenStore(BaseZenStore):
 
         # Save parent step IDs into the database.
         for step in zenml_steps.values():
-            assert step.id is not None
-            assert step.parent_step_ids is not None
             for parent_step_id in step.parent_step_ids:
                 self._set_parent_step(
                     child_id=step.id, parent_id=parent_step_id
                 )
 
-        # Sync Artifacts
+        # Sync Artifacts.
         for step in zenml_steps.values():
-            assert step.id is not None
             self._sync_run_step_artifacts(step.id)
 
     def _sync_run_step_artifacts(self, run_step_id: UUID) -> None:
@@ -3297,6 +3323,15 @@ class SqlZenStore(BaseZenStore):
                     f"{child_id}: No parent step with ID {parent_id} "
                     "found."
                 )
+
+            # Check if the parent step is already set.
+            assignment = session.exec(
+                select(StepRunOrderSchema)
+                .where(StepRunOrderSchema.child_id == child_id)
+                .where(StepRunOrderSchema.parent_id == parent_id)
+            ).first()
+            if assignment is not None:
+                return
 
             # Save the parent step assignment in the database.
             assignment = StepRunOrderSchema(

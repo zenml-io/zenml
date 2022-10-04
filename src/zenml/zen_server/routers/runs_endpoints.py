@@ -23,9 +23,11 @@ from zenml.constants import (
     GRAPH,
     PIPELINE_CONFIGURATION,
     RUNS,
+    STATUS,
     STEPS,
     VERSION_1,
 )
+from zenml.enums import ExecutionStatus
 from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
 from zenml.zen_server.auth import authorize
@@ -201,3 +203,21 @@ def get_pipeline_configuration(run_id: UUID) -> Dict[str, Any]:
         The pipeline configuration of the pipeline run.
     """
     return zen_store.get_run(run_id=run_id).pipeline_configuration
+
+
+@router.get(
+    "/{run_id}" + STATUS,
+    response_model=ExecutionStatus,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_run_status(run_id: UUID) -> ExecutionStatus:
+    """Get the status of a specific pipeline run.
+
+    Args:
+        run_id: ID of the pipeline run for which to get the status.
+
+    Returns:
+        The status of the pipeline run.
+    """
+    return zen_store.get_run_status(run_id)
