@@ -6,7 +6,7 @@ description: How to add users to your ZenML deployment
 
 After you have [deployed ZenML](../../getting-started/deploying-zenml/deploying-zenml.md) and [connected your local client with the deployment](./zenml-deployment.md), you can go ahead and start adding your teammates as users.
 
-By default, all users have `Admin` permissions throughout the ZenML dashboard, however one user can always choose to [share](../stacks/managing-stacks.md#sharing-stacks-over-a-zenml-server) or not share their stacks.
+By default, all users have `Administrator` permissions throughout the ZenML dashboard, however one user can always choose to [share](../stacks/managing-stacks.md#sharing-stacks-over-a-zenml-server) or not share their stacks.
 
 ## Personal Settings
 
@@ -30,8 +30,7 @@ zenml user create USERNAME
 ```
 
 This creates a new user. If an empty password is configured, an activation token is generated and a link to the dashboard is provided where the user can sign up.
-
-
+d
 ## Sign up
 
 From the invitation URL, a user can sign up as expected:

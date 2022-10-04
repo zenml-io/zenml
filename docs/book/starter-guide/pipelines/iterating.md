@@ -6,14 +6,14 @@ description: Iteration is native to ZenML.
 
 Machine learning pipelines are rerun many times over throughout their development lifecycle. 
 
-## Runtime Configuration
+## Parameterizing steps
 
-In order to iterate quickly, one must be able to tweak pipeline runs and change various 
-parameters.
+In order to iterate quickly, one must be able to quickly tweak pipeline runs by changing various 
+parameters of steps within a pipeline.
 
 You can configure your pipelines at runtime in the following ways:
 
-- `BaseParameters`: Runtime parameters passed down as parameters to step functions.
+- `BaseParameters`: Runtime configuration passed down as a parameter to step functions.
 - `BaseSettings`: Runtime settings passed down to stack components and pipelines.
 
 In this section, we will focus on `BaseParameters`, and in the Advanced Guide we will 
