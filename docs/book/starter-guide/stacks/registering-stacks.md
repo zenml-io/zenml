@@ -41,13 +41,22 @@ zenml artifact-store register <ARTIFACT_STORE_NAME> \
     --flavor=local -i
 ```
 
+Or you could simply describe the flavor to give a list of configuration available:
 
-Afterwards, you should be able to see the new artifact store in the
+```shell
+zenml artifact-store flavor describe local
+```
+
+After registering, you should be able to see the new artifact store in the
 list of registered artifact stores, which you can access using the following command:
 
 ```shell
 zenml artifact-store list
 ```
+
+Or on the UI directly:
+
+![Running your pipeline in the cloud](../../assets/starter_guide/stacks/01_orchestrator_list.png)
 
 {% hint style="info" %}
 Our CLI features a wide variety of commands that let you manage and use your
@@ -57,7 +66,7 @@ stack components and flavors. If you would like to learn more, please run
 
 ### Registering a Stack
 
-After registering each tool as the respective stack component, you can combine
+After registering each tool as the respective stack components, you can combine
 all of them into one stack using the `zenml stack register` command:
 
 ```shell

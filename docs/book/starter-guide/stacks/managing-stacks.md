@@ -39,3 +39,6 @@ environment. Consequently:
 ZenML Server, even though this is not enforced by the system.
 * stacks made up of non-local stack components are only functional if they
 are shared through a remotely deployed ZenML Server.
+
+
+![Running your pipeline in the cloud](../../assets/core_concepts/03_multi_stack.png)

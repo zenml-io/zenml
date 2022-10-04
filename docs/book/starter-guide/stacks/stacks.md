@@ -96,7 +96,7 @@ step operators in your stack). We will discuss this in later chapters.
 ## Stack Component Flavors
 
 The specific tool you are using is called a **Flavor** of the stack component. 
-E.g., *Kubeflow* is a flavor of the *Orchestrator* stack component.
+E.g., *Kubeflow* is a flavor of the *Orchestrator* stack component category.
 
 Out-of-the-box, ZenML already comes with a wide variety of flavors, which are
 either built-in or enabled through the installation of specific
@@ -117,21 +117,21 @@ zenml stack list
 ```
 
 Similarly, you can see all *registered* stack components of a specific type using 
-`zenml <STACK_COMPONENT> list`, e.g.:
+`zenml <STACK_COMPONENT_CATEGORY> list`, e.g.:
 
 ```shell
 zenml orchestrator list
 ```
 
 In order to see all the *available* flavors for a specific stack component use 
-`zenml <STACK_COMPONENT> flavor list`, e.g.:
+`zenml <STACK_COMPONENT_CATEGORY> flavor list`, e.g.:
 
 ```shell
 zenml orchestrator flavor list
 ```
 
 You can also see details of configuration parameters available for a flavor with 
-`zenml <STACK_COMPONENT> flavor describe <FLAVOR>`, e.g.:
+`zenml <STACK_COMPONENT_CATEGORY> flavor describe <FLAVOR>`, e.g.:
 
 ```shell
 zenml orchestrator flavor describe kubeflow
