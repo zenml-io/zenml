@@ -34,6 +34,7 @@ from tfx.orchestration import metadata
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
+from zenml.constants import ENV_ZENML_SERVER_DEPLOYMENT_TYPE
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
     EntityExistsError,
@@ -427,6 +428,17 @@ class SqlZenStore(BaseZenStore):
         if not self._metadata_store:
             raise ValueError("Store not initialized")
         return self._metadata_store
+
+    @property
+    def runs_inside_server(self) -> bool:
+        """Whether the store is running inside a server.
+
+        Returns:
+            Whether the store is running inside a server.
+        """
+        if ENV_ZENML_SERVER_DEPLOYMENT_TYPE in os.environ:
+            return True
+        return False
 
     # ====================================
     # ZenML Store interface implementation
@@ -2486,7 +2498,8 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
-        self._sync_runs()  # Sync with MLMD
+        if not self.runs_inside_server:
+            self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             run = session.exec(
@@ -2540,7 +2553,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
-        self._sync_runs()  # Sync with MLMD
+        if not self.runs_inside_server:
+            self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
             query = select(PipelineRunSchema)
             if project_name_or_id is not None:
@@ -2718,7 +2732,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A mapping from step names to step models for all steps in the run.
         """
-        self._sync_run_steps(run_id)
+        if not self.runs_inside_server:
+            self._sync_run_steps(run_id)
         with Session(self.engine) as session:
             steps = session.exec(
                 select(StepRunSchema).where(
@@ -2739,7 +2754,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all artifacts.
         """
-        self._sync_runs()
+        if not self.runs_inside_server:
+            self._sync_runs()
         with Session(self.engine) as session:
             query = select(ArtifactSchema)
             if artifact_uri is not None:

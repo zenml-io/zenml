@@ -1833,3 +1833,12 @@ class RestZenStore(BaseZenStore):
             route: The resource REST API route to use.
         """
         self.delete(f"{route}/{str(resource_id)}")
+
+    def _sync_runs(self) -> None:
+        """Syncs runs from MLMD.
+
+        Raises:
+            NotImplementedError: This internal method may not be called on a
+                `RestZenStore`.
+        """
+        raise NotImplementedError
