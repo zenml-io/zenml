@@ -23,7 +23,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.pipelines.run_pipeline import run_pipeline
+from zenml.pipelines.run_pipeline import load_pipeline_from_file, run_pipeline
 from zenml.utils.uuid_utils import is_valid_uuid
 
 logger = get_logger(__name__)
@@ -51,6 +51,43 @@ def cli_pipeline_run(python_file: str, config_path: str) -> None:
         config_path: Path to configuration YAML file.
     """
     run_pipeline(python_file=python_file, config_path=config_path)
+
+
+@pipeline.command(
+    "generate-template",
+    help="Generates a template YAML file to configure a chosen pipeline.",
+)
+@click.option(
+    "--python_file",
+    "-p",
+    "python_file",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=False, dir_okay=False),
+    required=False,
+    default="config.yaml",
+)
+@click.option("--stack", "-s", type=str, required=False)
+def generate_config_template(
+    python_file: str, config_path: str, stack: str
+) -> None:
+    """Runs pipeline specified by the given config YAML object.
+
+    Args:
+        python_file: Path to the python file that defines the pipeline.
+        config_path: Path to write the template configuration YAML file.
+        stack: Stack to run the generate template on.
+    """
+    cli_utils.print_active_config()
+    pipeline_class = load_pipeline_from_file(python_file=python_file)
+    pipeline_class.write_run_configuration_template(
+        path=config_path, stack=stack
+    )
 
 
 @pipeline.command("list", help="List all registered pipelines.")

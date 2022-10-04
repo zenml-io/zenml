@@ -25,6 +25,7 @@ from zenml.config.config_keys import (
 )
 from zenml.exceptions import PipelineConfigurationError
 from zenml.logger import get_logger
+from zenml.pipelines.base_pipeline import BasePipeline, BasePipelineMeta
 from zenml.steps import BaseStep
 from zenml.utils import source_utils, yaml_utils
 
@@ -142,6 +143,38 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     )
     logger.debug("Finished setting up pipeline '%s' from CLI", pipeline_name)
     pipeline_instance.run()
+
+
+def load_pipeline_from_file(python_file: str) -> BasePipeline:
+    """Runs pipeline specified by the given config YAML object.
+
+    Args:
+        python_file: Path to the python file that defines the pipeline.
+        config_path: Path to configuration YAML file.
+
+    Raises:
+        PipelineConfigurationError: Error when pipeline configuration is faulty.
+        RuntimeError: Error when zenml repository is not found.
+    """
+    # If the file was run with `python run.py, this would happen automatically.
+    #  In order to allow seamless switching between running directly and through
+    #  zenml, this is done at this point
+    zenml_root = Client().root
+    if not zenml_root:
+        raise RuntimeError(
+            "The `load_pipeline_from_file` function can only be called "
+            "within a zenml repo. Run `zenml init` before "
+            "running a pipeline using `run_pipeline`."
+        )
+
+    module = source_utils.import_python_file(python_file, str(zenml_root))
+
+    import inspect
+
+    for name, obj in inspect.getmembers(module):
+        if isinstance(obj, BasePipeline):
+            print(name)
+            return obj
 
 
 def _load_class_from_module(
