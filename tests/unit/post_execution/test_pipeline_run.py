@@ -61,6 +61,7 @@ def sample_pipeline_run_view(sample_stepview: StepView) -> PipelineRunView:
             user=uuid4(),
             project=uuid4(),
             pipeline_configuration={},
+            num_steps=1,
         )
     )
     setattr(sample_pipeline_run_view, "_steps", {"some_step": sample_stepview})
