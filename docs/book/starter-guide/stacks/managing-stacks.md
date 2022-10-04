@@ -263,13 +263,13 @@ E.g. for a stack `default` with id `179ebd25-4c5b-480f-a47c-d4f04e0b6185` you
 can run:
 
 ```shellshell
- `zenml stack describe default` 
+ zenml stack describe default
  ```
 
  or:
  
  ```shell
- zenml stack describe 179`
+ zenml stack describe 179
  ```
  or:
  
