@@ -297,7 +297,7 @@ Naturally, [the docs](https://docs.zenml.io/getting-started/deploying-zenml/depl
 
 The following architectural diagram illustrates a common ZenML deployment:
 
-![ZenML Architecture Diagram.](docs/book/assets/architecture_diagram.png)
+![ZenML Architecture Diagram.](docs/book/assets/getting_started/Scenario3.2.png)
 
 ## 👨‍🍳 Open Source MLOps Stack Recipes
 
