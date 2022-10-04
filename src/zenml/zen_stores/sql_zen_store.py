@@ -2640,7 +2640,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step doesn't exist.
         """
-        self._sync_run_step_artifacts(step_id)
         with Session(self.engine) as session:
             step = session.exec(
                 select(StepRunSchema).where(StepRunSchema.id == step_id)
@@ -2671,7 +2670,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step doesn't exist.
         """
-        self._sync_run_step_artifacts(step_id)
         with Session(self.engine) as session:
             step = session.exec(
                 select(StepRunSchema).where(StepRunSchema.id == step_id)
@@ -3045,16 +3043,13 @@ class SqlZenStore(BaseZenStore):
 
         # Save parent step IDs into the database.
         for step in zenml_steps.values():
-            assert step.id is not None
-            assert step.parent_step_ids is not None
             for parent_step_id in step.parent_step_ids:
                 self._set_parent_step(
                     child_id=step.id, parent_id=parent_step_id
                 )
 
-        # Sync Artifacts
+        # Sync Artifacts.
         for step in zenml_steps.values():
-            assert step.id is not None
             self._sync_run_step_artifacts(step.id)
 
     def _sync_run_step_artifacts(self, run_step_id: UUID) -> None:
@@ -3300,6 +3295,15 @@ class SqlZenStore(BaseZenStore):
                     f"{child_id}: No parent step with ID {parent_id} "
                     "found."
                 )
+
+            # Check if the parent step is already set.
+            assignment = session.exec(
+                select(StepRunOrderSchema)
+                .where(StepRunOrderSchema.child_id == child_id)
+                .where(StepRunOrderSchema.parent_id == parent_id)
+            ).first()
+            if assignment is not None:
+                return
 
             # Save the parent step assignment in the database.
             assignment = StepRunOrderSchema(
