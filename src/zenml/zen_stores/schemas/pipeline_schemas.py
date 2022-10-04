@@ -139,6 +139,7 @@ class PipelineRunSchema(SQLModel, table=True):
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
     pipeline_configuration: str = Field(max_length=4096)
+    num_steps: int
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
 
@@ -170,6 +171,7 @@ class PipelineRunSchema(SQLModel, table=True):
             user_id=run.user,
             pipeline_id=run.pipeline_id,
             pipeline_configuration=json.dumps(run.pipeline_configuration),
+            num_steps=run.num_steps,
             git_sha=run.git_sha,
             zenml_version=run.zenml_version,
             pipeline=pipeline,
@@ -208,6 +210,7 @@ class PipelineRunSchema(SQLModel, table=True):
             user=self.user_id,
             pipeline_id=self.pipeline_id,
             pipeline_configuration=json.loads(self.pipeline_configuration),
+            num_steps=self.num_steps,
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,
             mlmd_id=self.mlmd_id,
