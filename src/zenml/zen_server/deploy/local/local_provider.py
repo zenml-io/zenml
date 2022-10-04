@@ -69,7 +69,7 @@ class LocalServerProvider(BaseServerProvider):
                 "ZenML server requirements seems to be unavailable on your machine. "
                 "This is probably because ZenML was installed without the optional "
                 "ZenML Server dependencies. To install the missing dependencies "
-                f"run `pip install zenml=={__version__}[server]`."
+                f'run `pip install "zenml[server]=={__version__}`".'
             )
 
     @classmethod
