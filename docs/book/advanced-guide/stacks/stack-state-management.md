@@ -2,12 +2,6 @@
 description: How to start, stop, provision, and deprovision stacks and stack components
 ---
 
-# Things to change
-
-- Just needs a reread and update
-
-# Older content
-
 # Managing Stack Component States
 
 Some stack components come with built-in daemons for connecting to the
@@ -16,8 +10,8 @@ functionality for provisioning, deprovisioning, starting, or stopping the
 corresponding daemons.
 
 {% hint style="info" %}
-See the advanced section on [Services](../advanced-usage/manage-external-services.md)
-for more information on daemons.
+See the advanced section on [Services](manage-external-services.md) for more 
+information on daemons.
 {% endhint %}
 
 For such components, you can manage the daemon state using the 
@@ -45,11 +39,7 @@ following properties and methods of the `StackComponent` base interface to
 configure the component according to your needs:
 
 ```python
-from abc import ABC
-from pydantic import BaseModel
-
-
-class StackComponent(BaseModel, ABC):
+class StackComponent:
     """Abstract class for all components of a ZenML stack."""
     ...
     
