@@ -483,7 +483,7 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 #### Deprecating `pipeline.with_config(...)`
 
-**How to migrate**: Instead use the new [template YAML config](../advanced-guide/pipelines/settings.md).
+**How to migrate**: Replaced with the new `pipeline.config()` method.
 
 #### Deprecating `step.with_return_materializer(...)`
 
