@@ -51,4 +51,10 @@ community is more than willing to help out.
 
 ### Connecting to a deployed ZenML Server
 
-Once ZenML is deployed
+Once ZenML is deployed, one or multiple users can connect to with the
+`zenml connect` command. If no arguments are supplied, ZenML
+will attempt to connect to the last ZenML server deployed from the local host using the 'zenml deploy' command:
+
+```bash
+zenml connect
+```
