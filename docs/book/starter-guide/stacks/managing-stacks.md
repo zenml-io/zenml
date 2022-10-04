@@ -6,7 +6,7 @@ description: You can manage stacks in many different ways.
 
 ## Managing local stacks (Single-player mode)
 
-![Pipeline with local stack](../assets/core_concepts/02_pipeline_local_stack.png)
+![Pipeline with local stack](../../assets/core_concepts/02_pipeline_local_stack.png)
 
 If you are working locally and in a non-collaborative setting, then you should be
 aware of how ZenML by default stores stacks you are creating locally.
