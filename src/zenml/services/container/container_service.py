@@ -30,10 +30,6 @@ from zenml.logger import get_logger
 from zenml.services.container.container_service_endpoint import (
     ContainerServiceEndpoint,
 )
-from zenml.services.container.entrypoint import (
-    SERVICE_CONTAINER_PATH,
-    SERVICE_LOG_FILE_NAME,
-)
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.utils.io_utils import (
@@ -44,6 +40,8 @@ from zenml.utils.io_utils import (
 logger = get_logger(__name__)
 
 
+SERVICE_CONTAINER_PATH = "/service"
+SERVICE_LOG_FILE_NAME = "service.log"
 SERVICE_CONFIG_FILE_NAME = "service.json"
 SERVICE_CONTAINER_GLOBAL_CONFIG_DIR = "zenconfig"
 SERVICE_CONTAINER_GLOBAL_CONFIG_PATH = os.path.join(

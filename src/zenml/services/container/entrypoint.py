@@ -22,8 +22,17 @@ import sys
 
 import click
 
-SERVICE_CONTAINER_PATH = "/service"
-SERVICE_LOG_FILE_NAME = "service.log"
+from zenml.services.container.container_service import (
+    SERVICE_CONTAINER_PATH,
+    SERVICE_LOG_FILE_NAME,
+)
+
+# Try to import the DockerZenServer here because it needs to be registered in the
+# service registry early on in order to be available for use in other modules.
+try:
+    pass
+except ImportError:
+    pass
 
 
 def launch_service(service_config_file: str) -> None:
