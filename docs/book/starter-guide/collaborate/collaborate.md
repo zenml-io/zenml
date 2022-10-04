@@ -43,10 +43,11 @@ This documentation section is dedicated to describing several ways in which you
 can deploy ZenML as a collaboration framework and enable your entire AI/ML team
 to enjoy its advantages.
 
-## Centralized ZenML Management with ZenML Server
-
-
 ## Step 1: Single user working with local stacks
+
+As mentioned before, the most common starting point for most ZenML users would be
+to locally install it and start managing stacks. We have discussed the nitty-gritties
+of such usage [previously](../stacks/managing-stacks.md).
 
 ![Working with local ZenML](../../assets/starter_guide/collaboration/01_local_stack.png)
 
