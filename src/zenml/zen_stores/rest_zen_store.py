@@ -82,6 +82,7 @@ from zenml.zen_server.models.base_models import (
 )
 from zenml.zen_server.models.pipeline_models import (
     CreatePipelineRequest,
+    HydratedPipelineRunModel,
     UpdatePipelineRequest,
 )
 from zenml.zen_server.models.projects_models import (
@@ -1306,12 +1307,9 @@ class RestZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to get the status for.
-
-        Raises:
-            NotImplementedError: since it is not implemented.
         """
-        # TODO
-        raise NotImplementedError
+        body = self.get(f"{RUNS}/{str(run_id)}", params={"hydrated": True})
+        return HydratedPipelineRunModel.parse_obj(body).status
 
     # ------------------
     # Pipeline run steps
