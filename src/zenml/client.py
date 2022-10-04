@@ -787,11 +787,14 @@ class Client(metaclass=ClientMetaClass):
         return self.get_stack_components()
 
     def _validate_stack_component_configuration(
-        self, configuration: StackComponentConfig
+        self,
+        component_type: StackComponentType,
+        configuration: StackComponentConfig,
     ) -> None:
         """Validates the configuration of a stack component.
 
         Args:
+            component_type: The type of the component.
             configuration: The component configuration to validate.
         """
         if configuration.is_remote and self.zen_store.is_local_store():
@@ -814,11 +817,24 @@ class Client(metaclass=ClientMetaClass):
         elif configuration.is_local and not self.zen_store.is_local_store():
             logger.warn(
                 "You are configuring a stack component that is using "
-                "local resources to a remote ZenML server. The stack "
-                "component will not be usable from other hosts or by other "
+                "local resources while connected to a remote ZenML server. The "
+                "stack component may not be usable from other hosts or by other "
                 "users. You should consider using a non-local stack component "
                 "alternative instead."
             )
+            if component_type in [
+                StackComponentType.ORCHESTRATOR,
+                StackComponentType.STEP_OPERATOR,
+            ]:
+                logger.warn(
+                    "You are configuring a stack component that is running "
+                    "pipeline code on your local host while connected to a "
+                    "remote ZenML server. This will significantly affect the "
+                    "performance of your pipelines. You will likely encounter "
+                    "long running times caused by network latency. You should "
+                    "consider using a non-local stack component alternative "
+                    "instead."
+                )
 
     def register_stack_component(
         self,
@@ -845,7 +861,7 @@ class Client(metaclass=ClientMetaClass):
         component.configuration = configuration.dict()
 
         self._validate_stack_component_configuration(
-            configuration=configuration
+            component.type, configuration=configuration
         )
 
         # Register the new model
@@ -882,7 +898,7 @@ class Client(metaclass=ClientMetaClass):
         component.configuration = configuration.dict()
 
         self._validate_stack_component_configuration(
-            configuration=configuration
+            component.type, configuration=configuration
         )
 
         # Send the updated component to the ZenStore

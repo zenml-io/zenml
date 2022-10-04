@@ -184,7 +184,7 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The config class.
         """
-        return BaseOrchestratorConfig
+        return LocalDockerOrchestratorConfig
 
     @property
     def implementation_class(self) -> Type["LocalDockerOrchestrator"]:
