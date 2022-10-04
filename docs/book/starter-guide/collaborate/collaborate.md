@@ -68,17 +68,36 @@ of the pipelines because they are now communicating over the internet to a centr
 
 ## Step 3: Multiple users working with local and cloud stacks
 
-Once the user is ready, they can now go ahead and register so called `cloud` (read: `non-local`) stacks. These are stack components
-that point to tooling infrastructure that is also running on the cloud. A good example of this is a stack that:
+Once the user is ready, they can now go ahead and register so called `cloud` (read: `non-local`) stacks. These stacks consist of
+stack components that point to tooling infrastructure that is also running on the cloud. A good example of this is a stack that
+uses the following components:
 
 - [Kubeflow**Orchestrator**](../../component-gallery/orchestrators/kubeflow.md) which orchestrates your ML workflows on [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/v1/introduction/). 
 - [S3**ArtifactStore**](../../component-gallery/artifact-stores/amazon-s3.md) which can store your artifacts in a [S3 storage](https://aws.amazon.com/s3/).
 - [MLflow**ExperimentTracker**](../../component-gallery/experiment-trackers/mlflow.md) which can track your experiments with [MLFlow](https://mlflow.org/).
 - [Evidently**DataValidator**](../../component-gallery/data-validators/evidently.md) which can help you validate your data with [Evidently](https://www.evidentlyai.com/).
 
+Once a stack such as the above is [registered](../stacks/registering-stacks.md) and [set active](../stacks/managing-stacks.md#setting-the-local-active-stack), then running a ZenML pipeline will result in a much more different behavior then before.
+
+Rather than running the pipeline locally, it would run the pipeline in Kubeflow, track experiments in a non-local MLflow, validate data with
+Evidently, and store artifacts in a cloud S3 store. This is all done with no changes to the pipeline code.
+
+The user can go ahead and share this stack while registering:
+
+```shell
+zenml stack register cloud_stack ... --share
+```
+
+Or afterwards with:
+
+```shell
+zenml stack share mystack
+```
+
+The moment the stack is shared, other users who [connect to the server](zenml-deployment.md) will be able to see the
+stack and use it as well!
+
 ![Multiple users working with local and cloud stacks](../../assets/starter_guide/collaboration/03_multiple_users.png)
 
-## Collaboration with ZenML Overview
-
-![Collaboration with ZenML Overview](../../assets/starter_guide/collaboration/04_cloud_collaboration_overview.png)
-
+So, as you can see it all starts with a [deploying ZenML](../../getting-started/deploying-zenml/deploying-zenml.md)! So how
+do we do that - let's go into the [next section](zenml-deployment.md) to learn how to do it in a beginner-friendly way.

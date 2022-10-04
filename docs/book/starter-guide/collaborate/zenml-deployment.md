@@ -1,12 +1,12 @@
 ---
-description: How to collaboratively use ZenML in larger organizations with the ZenServer
+description: Deploy ZenML with one-click
 ---
 
-# Things to change
+## Collaboration with ZenML Overview
 
-- This needs a revamp
-- Show them `zenml server list` to show that they already deployed one
-- AWS, GCP, Azure should be in tabs. maybe added manual deployment tab too
+![Collaboration with ZenML Overview](../../assets/starter_guide/collaboration/04_cloud_collaboration_overview.png)
+
+As discussed
 
 # Older Content
 
