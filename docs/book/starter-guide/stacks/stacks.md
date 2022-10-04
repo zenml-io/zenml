@@ -31,6 +31,11 @@ and infrastructure. For instance, you might want to:
 - Track your experiments with [Weights & Biases](../../component-gallery/experiment-trackers/wandb.md),
 - Deploy models on Kubernetes with [Seldon](../../component-gallery/model-deployers/seldon.md) or [KServe](../../component-gallery/model-deployers/kserve.md),
 
+In the illustration, you see one user register wto stacks, the `Local Stack` and a `Production Stack`. These stacks can be shared
+with other people easily - something we'll dig into more [later](../collaborate/).
+
+![Running your pipeline in the cloud](../assets/core_concepts/03_multi_stack.png)
+
 Any such combination of tools and infrastructure can be registered as a
 separate stack in ZenML. Since ZenML code is tooling-independent, you can
 switch between stacks with a single command and then automatically execute your
