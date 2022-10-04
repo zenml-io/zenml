@@ -69,8 +69,7 @@ pieces of your ZenML infrastructure is just as easy. Simple CLI commands gives
 you the flexibility to switch between different components, and the underlying
 code doesn't need to change at all!
 
-
 {% hint style="info" %}
-To read a more detailed guide about how Orchestrators and how they function in ZenML,
+To read a more detailed guide about how Orchestrators function in ZenML,
 [click here](../../component-gallery/orchestrators/orchestrators.md).
 {% endhint %}
