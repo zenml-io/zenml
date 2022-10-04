@@ -33,7 +33,7 @@
   * [Access metadata within steps](./advanced-guide/pipelines/step-metadata.md)
   * [Control the step execution order](./advanced-guide/pipelines/step-order.md)
 * [Extending Stacks](./advanced-guide/stacks/stacks.md)
-  * [Write Custom Stack Component Flavors](./advanced-guide/stacks/custom-flavors.md)
+  * [Write Custom Flavors](./advanced-guide/stacks/custom-flavors.md)
   * [Manage Stack Component States](./advanced-guide/stacks/stack-state-management.md)
   * [Manage External Services](./advanced-guide/stacks/manage-external-services.md)
 * [Practical MLOps](./advanced-guide/practical/practical-mlops.md)
