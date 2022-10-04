@@ -49,7 +49,17 @@ this point, please join our [Slack community](https://zenml.io/slack-invite) and
 community is more than willing to help out.
 {% endhint %}
 
-At the end of the deployment, you will recieve a URL (e.g. `https://acaaf63af2074as394ab675ee71d85a-1399000d0.us-east-1.elb.amazonaws.com`). Visiting this URL on the browser will show you the same ZenML dashboard that you have seen locally, this time over the web. The ZenML Server and the Dashboard are deployed in the same web application and served at this URL.
+At the end of the deployment, you will recieve:
+
+- A `URL` (e.g. `https://acaaf63af2074as394ab675ee71d85a-1399000d0.us-east-1.elb.amazonaws.com`). Visiting this URL on the browser will show you the same ZenML dashboard that you have seen locally, this time over the web. The ZenML Server and the Dashboard are deployed in the same web application and served at this URL.
+{% hint style="info" %} 
+If certificates have not been provisioned properly with the deployment, your browser might ask you to press a button to allow you
+to see the dashboard. It is important that you give permission in such a scenario, otherwise it will render ZenML unusable from the browser.
+{% endhint %}
+
+- A `username`: This can be configured but is `default` by default.
+- A `password`: This can be configured but is empty by default.
+- (Optionally) A `TLS certificate` that you can use to connect securely to the deployment (see below).
 
 ### Connecting to a deployed ZenML Server
 
@@ -178,3 +188,5 @@ ssl_cert: null
 ssl_key: null
 ssl_verify_server_cert: false
 ```
+
+Ok that was easy! By running a few commands on the terminal, you have now a shared ZenML Server and Dashboard deployed and ready to go. The next step is to invite your teammates.
