@@ -2,17 +2,11 @@
 description: How to use materializers to pass custom data types through steps
 ---
 
-# Things to change
-
-- Needs a re-read
-
-# Older content
-
 A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
 define how steps are connected and the order in which they are executed. Each
 step should be considered as its very own process that reads and writes its
 inputs and outputs from and to the
-[Artifact Store](../../mlops-stacks/artifact-stores/artifact-stores.md). 
+[Artifact Store](../../component-gallery/artifact-stores/artifact-stores.md). 
 This is where **Materializers** come into play.
 
 A materializer dictates how a given artifact can be written to and retrieved
@@ -134,23 +128,23 @@ materializer definition in your code is enough to enable the respective data
 type to be used in your pipelines.
 
 Alternatively, you can also explicitly define which materializer to use for a
-specific step using the `with_return_materializers()` method of the step. E.g.:
+specific step using the `configure()` method of the step. E.g.:
 
 ```python
 first_pipeline(
-    step_1=my_first_step().with_return_materializers(MyMaterializer),
+    step_1=my_first_step().configure(output_materializers=MyMaterializer),
     ...
 ).run()
 ```
 
 When there are multiple outputs, a dictionary of type
 `{<OUTPUT_NAME>:<MATERIALIZER_CLASS>}` can be supplied to the
- `with_return_materializers()` method.
+ `.configure(output_materializers=...)`.
 
 {% hint style="info" %} 
-Note that `with_return_materializers` only needs to be called for the output of
-the first step that produced an artifact of a given data type, all downstream
-steps will use the same materializer by default. 
+Note that `.configure(output_materializers=...)` only needs to be called for the 
+output of the first step that produced an artifact of a given data type, all 
+downstream steps will use the same materializer by default. 
 {% endhint %}
 
 ### Configuring Materializers at Runtime
@@ -278,15 +272,15 @@ object. Edit the pipeline as follows to see this in action:
 
 ```python
 first_pipeline(
-    step_1=my_first_step().with_return_materializers(MyMaterializer),
+    step_1=my_first_step().configure(output_materializers=MyMaterializer),
     step_2=my_second_step()
 ).run()
 ```
 
 {% hint style="info" %}
-Due to the typing of the inputs and outputs and the
-`ASSOCIATED_TYPES` attribute of the materializer, you won't necessarily have to add
-`.with_return_materializers(MyMaterializer)` to the step. It should
+Due to the typing of the inputs and outputs and the `ASSOCIATED_TYPES` attribute 
+of the materializer, you won't necessarily have to add
+`.configure(output_materializers=MyMaterializer)` to the step. It should
 automatically be detected. It doesn't hurt to be explicit though.
 {% endhint %}
 
@@ -365,7 +359,7 @@ def first_pipeline(step_1, step_2):
 
 
 first_pipeline(
-    step_1=my_first_step().with_return_materializers(MyMaterializer),
+    step_1=my_first_step().configure(output_materializers=MyMaterializer),
     step_2=my_second_step()
 ).run()
 ```
@@ -396,7 +390,7 @@ from zenml.steps import step
 
 
 @step
-def my_step(my_artifact: DataArtifact)  # rather than pd.DataFrame
+def my_step(my_artifact: DataArtifact):  # rather than pd.DataFrame
     pass
 ```
 
