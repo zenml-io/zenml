@@ -42,6 +42,7 @@ from zenml.constants import (
     RUNS,
     STACK_COMPONENTS,
     STACKS,
+    STATUS,
     STEPS,
     TEAMS,
     USERS,
@@ -82,7 +83,6 @@ from zenml.zen_server.models.base_models import (
 )
 from zenml.zen_server.models.pipeline_models import (
     CreatePipelineRequest,
-    HydratedPipelineRunModel,
     UpdatePipelineRequest,
 )
 from zenml.zen_server.models.projects_models import (
@@ -1307,9 +1307,12 @@ class RestZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to get the status for.
+        
+        Returns:
+            The execution status of the pipeline run.
         """
-        body = self.get(f"{RUNS}/{str(run_id)}", params={"hydrated": True})
-        return HydratedPipelineRunModel.parse_obj(body).status
+        body = self.get(f"{RUNS}/{str(run_id)}{STATUS}")
+        return ExecutionStatus(body)
 
     # ------------------
     # Pipeline run steps
@@ -1377,7 +1380,12 @@ class RestZenStore(BaseZenStore):
 
         Args:
             step_id: The ID of the step to get the status for.
+        
+        Returns:
+            The execution status of the step.
         """
+        body = self.get(f"{STEPS}/{str(step_id)}{STATUS}")
+        return ExecutionStatus(body)
 
     def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
         """Gets all steps in a pipeline run.
@@ -1502,12 +1510,16 @@ class RestZenStore(BaseZenStore):
                 f"URL {response.url}: {response.json().get('detail')}"
             )
         elif response.status_code == 404:
-            if "DoesNotExistException" not in response.text:
+            if "KeyError" in response.text:
                 raise KeyError(
                     response.json().get("detail", (response.text,))[1]
                 )
-            message = ": ".join(response.json().get("detail", (response.text,)))
-            raise DoesNotExistException(message)
+            elif "DoesNotExistException" in response.text:
+                message = ": ".join(
+                    response.json().get("detail", (response.text,))
+                )
+                raise DoesNotExistException(message)
+            raise DoesNotExistException("Endpoint does not exist.")
         elif response.status_code == 409:
             if "StackComponentExistsError" in response.text:
                 raise StackComponentExistsError(
