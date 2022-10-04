@@ -118,7 +118,7 @@ class StepSpec(StrictBaseModel):
             other: The other object to compare to.
 
         Returns:
-            True if the other object is referring to the same pipeline.
+            True if the other object is referring to the same step.
         """
         if isinstance(other, StepSpec):
 
