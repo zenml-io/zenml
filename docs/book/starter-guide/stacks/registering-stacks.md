@@ -56,7 +56,7 @@ zenml artifact-store list
 
 Or on the UI directly:
 
-![Running your pipeline in the cloud](../../assets/starter_guide/stacks/01_orchestrator_list.png)
+![Orchestrator list](../../assets/starter_guide/stacks/01_orchestrator_list.png)
 
 {% hint style="info" %}
 Our CLI features a wide variety of commands that let you manage and use your
@@ -81,6 +81,10 @@ You can use `zenml stack register --help` to see a list of all possible
 arguments to the `zenml stack register` command, including a list of which 
 option to use for which stack component.
 {% endhint %}
+
+And see them on the UI:
+
+![Stack list](../../assets/starter_guide/stacks/02_stack_list.png)
 
 ### Activating a Stack
 
