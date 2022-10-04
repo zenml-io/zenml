@@ -55,12 +55,11 @@ At the end of the deployment, you will recieve a URL (e.g. `https://acaaf63af207
 
 Once ZenML is deployed, one or multiple users can connect to with the
 `zenml connect` command. If no arguments are supplied, ZenML
-will attempt to connect to the last ZenML server deployed from the local host using the 'zenml deploy' command:
+will attempt to connect to the last ZenML server deployed from the local host using the `zenml deploy` command:
 
 ```bash
 zenml connect
 ```
-
 
 To connect to a ZenML server, you can either pass the configuration as command
 line arguments or as a YAML file:
