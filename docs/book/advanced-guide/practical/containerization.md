@@ -2,15 +2,15 @@
 description: How ZenML uses Docker images to run your pipeline
 ---
 
-# Things to change
-
 When running locally, ZenML will execute the steps of your pipeline in the
 active Python environment. When using remote [orchestrators](../../mlops-stacks/orchestrators/orchestrators.md)
 or [step operators](../../mlops-stacks/step-operators/step-operators.md) instead,
 ZenML builds [Docker](https://www.docker.com/) images to transport and
 run your pipeline code in an isolated and well-defined environment.
 For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated and used
-to build the image using the local Docker client. This Dockerfile consists of the following steps:
+to build the image using the local Docker client. This Dockerfile consists of
+the following steps:
+
 * Starts from a parent image which needs to have ZenML installed. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](#using-a-custom-parent-image).
 * **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies.
 If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](#how-to-install-additional-pip-dependencies).
@@ -19,7 +19,7 @@ If your pipeline needs any additional requirements, check out our [guide on incl
 * **Sets user-defined environment variables.**
 
 {% hint style="info" %}
-ZenML uses the official Docker python library to build and push your images. This library
+ZenML uses the official Docker Python library to build and push your images. This library
 loads its authentication credentials to push images from the default config location: `$HOME/.docker/config.json`.
 If your Docker configuration is stored in a different directory, you can use the environment
 variable `DOCKER_CONFIG` to override this behavior:
@@ -32,7 +32,7 @@ The directory that you specify here must contain your Docker configuration in a 
 ## Customizing the build process
 
 The process explained above is all done automatically by ZenML and covers most basic use cases.
-This section covers all the different ways in which you can hook into the Docker building
+This section covers all the different ways in which you can hook into the Docker build
 process to customize the resulting image to your needs.
 
 For a full list of configuration options, check out
@@ -56,6 +56,7 @@ By default, ZenML will copy all contents of this root directory into the Docker 
 If you want to exclude files to keep the image smaller, you can do so using a [.dockerignore
 file](https://docs.docker.com/engine/reference/builder/#dockerignore-file) in either of the 
 following two ways:
+
 * Have a file called `.dockerignore` in your source root directory explained above.
 * Explicitly specify a `.dockerignore` file that you want to use:
     ```python
@@ -106,6 +107,7 @@ you're on your own and need to copy a stack configuration to the correct path yo
 By default, ZenML will automatically install all the packages required by your
 active ZenML stack. There are, however, various ways in which you can specify
 additional packages that should be installed:
+
 * Install all the packages in your local python environment (This will use the `pip` or `poetry`
 package manager to get a list of your local packages):
     ```python
@@ -157,6 +159,7 @@ with the ones specified by your required integrations.
 
 Depending on all the options specified in your Docker settings, ZenML will install the requirements
 in the following order (each step optional):
+
 - The packages installed in your local python environment
 - The packages specified via the `requirements` attribute
 - The packages specified via the `required_integrations` and potentially stack requirements
@@ -182,6 +185,7 @@ a starting point, you can take a look at the Dockerfile that ZenML uses
 If you want to use a static parent image (which for example has some internal dependencies installed)
 that doesn't need to be rebuilt on every pipeline run, you can do so by specifying it on the
 Docker settings for your pipeline:
+
 ```python
 docker_settings = DockerSettings(parent_image="my_registry.io/image_name:tag")
 

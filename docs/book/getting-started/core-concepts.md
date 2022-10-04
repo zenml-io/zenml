@@ -24,7 +24,7 @@ A **pipeline** consists of a series of **steps**, organized in any order that ma
 
 Below, you can see three **steps** running one after another in a **pipeline**. 
 
-![The most basic ZenML pipeline](../assets/core_concepts/simple_pipeline.png)
+![The most basic ZenML pipeline](../assets/core_concepts/01_pipeline.png)
 
 The steps might have dependencies between them. 
 For example, a step might use the outputs from a previous step and thus must wait until the previous step completes before starting. This is something you can keep in mind when organizing your steps.
@@ -42,7 +42,7 @@ A **Stack** is the configuration of the underlying infrastructure and choices ar
 
 ZenML comes with a default stack that runs locally, as seen in the following diagram:
 
-![ZenML pipelines run on stacks](../assets/core_concepts/pipeline_and_stack.png)
+![ZenML pipelines run on stacks](../assets/core_concepts/02_pipeline_local_stack.png)
 
 In any Stack, there **must** be at least two basic **Stack Components** - and *orchestrator* and an *artifact store*.
 
@@ -91,7 +91,7 @@ The only change is in the stack and its components.
 
 Below is an illustration showing how the same pipeline on a local machine can be scaled up to run on a full-fledged cloud infrastructure by switching stacks. You get all the benefits of using cloud infrastructures with minimal changes in your code.
 
-![Running your pipeline in the cloud](../assets/core_concepts/switching_stacks.png)
+![Running your pipeline in the cloud](../assets/core_concepts/03_multi_stack.png)
 
 ## ZenML Server and Dashboard
 
@@ -100,7 +100,7 @@ In order to run *stack components* that are running on infrastructure on the clo
 A **ZenML Server** keeps track of all the bits of extraneous data from a pipeline run. It allows you to fetch specific steps from your pipeline run and their output artifacts in a post-execution workflow. With a ZenML server, you are able to access all of your previous experiments with the associated details.
 This is extremely helpful in troubleshooting.
 
-![ZenML Architectural Diagram](../assets/core_concepts/pipelines_stacks_infrastructure.png)
+![ZenML Architectural Diagram](../assets/core_concepts/03_multi_stack.png)
 
 The **ZenML Dashboard** also communicates with the ZenML Server to visualize your *pipelines*, *stacks*, and *stack components*. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite *users*, and share your stacks with them.
 
