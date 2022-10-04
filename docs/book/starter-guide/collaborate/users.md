@@ -10,6 +10,6 @@ After you have [deployed ZenML](../../getting-started/deploying-zenml/deploying-
 
 ![Project Settings](../../assets/starter_guide/collaboration/02_project_settings.png)
 
-![Invite Token](../../assets/starter_guide/collaboration/03_invite_token.png.png)
+![Invite Token](../../assets/starter_guide/collaboration/03_invite_token.png)
 
 ![Sign up](../../assets/starter_guide/collaboration/04_sign_up.png)
