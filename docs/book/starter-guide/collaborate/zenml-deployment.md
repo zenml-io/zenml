@@ -42,3 +42,13 @@ You will be prompted to provide a name for your deployment and details like what
 Reasonable defaults are in place for you already and if you wish to configure more settings, take a look at the next scenario that uses a config file.
 
 If you would like more control over the `zenml deploy` command, then read [option 2 here](../../getting-started/deploying-zenml/cli.md#option-2-using-existing-cloud-resources).
+
+{% hint style="info" %} 
+If you have trouble with the `zenml deploy` command and are stuck at
+this point, please join our [Slack community](https://zenml.io/slack-invite) and send a message to the #general channel. The
+community is more than willing to help out.
+{% endhint %}
+
+### Connecting to a deployed ZenML Server
+
+Once ZenML is deployed
