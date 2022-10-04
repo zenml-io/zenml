@@ -386,7 +386,7 @@ for updated information on how to do this.
 ## Shared ZenML Stacks and Stack Components
 
 With collaboration being the key part of ZenML, the 0.20.0 release puts the
-concepts of Users and Projects front and center and introduces
+concepts of Users in the front and center and introduces
 the possibility to share stacks and stack components with other users by
 means of the ZenML server.
 
@@ -457,31 +457,96 @@ Some of the configuration options were quite hidden, difficult to access and not
 
 With ZenML 0.20.0, we introduce the `BaseSettings` class, a broad class that serves as a central object to represent all runtime configuration of a pipeline run (apart from the `BaseParameters`).
 
-Read on to learn how to use the new `BaseSettings` class.
+Read on to learn how to use the new `BaseSettings` class [here](../advanced-guide/pipelines/settings.md).
 
 #### Configuring through decorators and the new `pipeline.configure()` method
 
-- Pipelines and steps now allow all configurations on their decorators as well as the `.configure(...)` method. This includes configurations for stack components that are not infrastructure-related which was previously done using
-the `@enable_xxx` decorators)
+Pipelines and steps now allow all configurations on their decorators as well as the `.configure(...)` method. This includes configurations for stack components that are not infrastructure-related which was previously done using
+the `@enable_xxx` decorators). The same configurations can also be defined in a YAML file. Read more about this paradigm in the [new docs section about settings](../advanced-guide/pipelines/settings.md).
 
-The same configurations can also be defined in a yaml file. 
+#### Deprecating the `enable_xxx` decorators
 
-Users can think of configuring stacks and pipeline in terms of `Params`
-and `Settings`
-- `BaseStepConfig` is now renamed to `BaseParameters`
-- `DockerConfiguration` is now renamed to `DockerSettings`
+With the above changes, we are deprecating the much-loved `enable_xxx` decorators, like `enable_mlflow` and `enable_wandb`.
+
+**How to migrate**: Simply remove the decorator and pass something like this instead to step directly:
+
+```python
+@step(
+    settings={
+        "experiment_tracker.mlflow": {
+            "experiment_name": "name"
+            "nested": False
+        }
+    }
+)
+```
+
+#### Deprecating `step.with_return_materializer(...)`
+
+**How to migrate**: Simply remove the `with_return_materializer` method and pass something like this instead to step directly:
+
+```python
+@step(
+    settings={
+        # "experiment_tracker.mlflow": {
+        #     "experiment_name": "name"
+        #     "nested": False
+        # }
+    }
+)
+```
+
+#### `DockerConfiguration` is now renamed to `DockerSettings` 
+
+**How to migrate**: Rename `DockerConfiguration` to `DockerSettings` and instead of passing it in the decorator directly with `docker_configuration`, you can use:
+
+```python
+from zenml.config import DockerSettings
+
+@step(settings={"docker": DockerSettings(...)})
+def my_step() -> None:
+  ...
+```
+
+With this change, all stack components (e.g. Orchestrators and Step Operators) that accepted a `docker_parent_image` as part of its Stack Configuration should now pass it through the `DockerSettings` object.
+
+Read more [here](../advanced-guide/practical/containerization.md).
+
+#### `ResourceConfiguration` is now renamed to `ResourceSettings`
+
+**How to migrate**: Rename `ResourceConfiguration` to `ResourceSettings` and instead of passing it in the decorator directly with `resource_configuration`, you can use:
+
+```python
+from zenml.config import ResourceSettings
+
+@step(settings={"resources": ResourceSettings(...)})
+def my_step() -> None:
+  ...
+```
+
+#### Deprecating the `requirements` and `required_integrations` parameters
+
+Users used to be able to pass `requirements` and `required_integrations` directly in the `@pipeline` decorator, but now need to pass them through settings:
+
+**How to migrate**: Simply remove the parameters and use the `DockerSettings` instead
+
+```python
+from zenml.config import DockerSettings
+
+@step(settings={"docker": DockerSettings(requirements=[...], requirements_integrations=[...])})
+def my_step() -> None:
+  ...
+```
+
+Read more [here](../advanced-guide/practical/containerization.md).
+
+#### A new pipeline intermediate representation
 
 All the aforementioned configurations as well as additional information required
-to run a ZenML pipelines are now combined into an intermediate representation.
-Instead of the user-facing `BaseStep` and `BasePipeline` classes, all the ZenML
-orchestrators and step operators now use this intermediate representation to run
+to run a ZenML pipelines are now combined into an intermediate representation called `PipelineDeployment`. Instead of the user-facing `BaseStep` and `BasePipeline` classes, all the ZenML orchestrators and step operators now use this intermediate representation to run
 pipelines and steps.
 
-There are multiple changes to the configuration of various stack components and
-integratinos:
-- enable_whylogs deprecated
-- enable_mlflow deprecated
-- enable_wandb deprecated
+**How to migrate**: If you have written a [custom orchestrator](../component-gallery/orchestrators/custom.md) or [step operator](../component-gallery/step-operators/custom.md), then you should see the new base abstractions (seen in the links). You can adjust your stack component implementations accordingly.
 
 ### `PipelineSpec` now uniquely defines pipelines
 

@@ -23,7 +23,7 @@ Since there are many excellent experiment tracking tools, we should aim to preve
 
 To integrate the MLFlow experiment tracker into our previously defined ZenML
 pipeline, we can use MLflow's `mlflow.sklearn.autolog()` feature to automatically log all relevant attributes and metrics of our model to
-MLflow. By adding an `@enable_mlflow` decorator on top of the function, ZenML then
+MLflow. By adding the [appropriate settings](../../component-gallery/experiment-trackers/mlflow.md) on top of the function, ZenML then
 automatically initializes MLflow and takes care of the rest for us.
 
 To run our MLflow pipelines with ZenML, we first need to add MLflow

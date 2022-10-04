@@ -20,7 +20,7 @@ As discussed in a [previous chapter](../../starter-guide/pipelines/iterating.md)
 
 We have [already discussed `BaseParameters`](../../starter-guide/pipelines/iterating.md) and now is the time to talk about its brother, `BaseSettings`.
 
-
+Users can think of configuring stacks and pipeline in terms of `Params` and `Settings`
 @step/pipeline(…): Configures the class -> will be set for all instances
 
 step_instance/pipeline_instance.configure(…): Configures the instance -> will be set for all runs using the instance
