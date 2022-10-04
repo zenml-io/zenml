@@ -71,7 +71,7 @@ is also supported as an attribute type in the `BaseParameters`.
 Try running the above pipeline, and changing the parameter `gamma` through many runs. 
 In essence, each pipeline can be viewed as an experiment, and each run is a trial of 
 the experiment, defined by the `BaseParameters`. You can always get the parameters again 
-when you [fetch pipeline runs](fetching-pipelines.md), to compare various runs.
+when you [fetch pipeline runs](./fetching-pipelines.md), to compare various runs.
 
 ## Caching in ZenML
 
@@ -144,28 +144,8 @@ def import_data_from_api(...):
 
 {% hint style="info" %}
 You can get a graphical visualization of which steps were cached using
-[ZenML's Pipeline Run Visualization Tool](./pipeline-visualization.md).
+the [ZenML Dashboard](./pipelines.md).
 {% endhint %}
-
-You can disable caching for individual steps via the `config.yaml` file and
-specifying parameters for a specific step (as described [in the section on YAML
-config
-files](https://docs.zenml.io/developer-guide/steps-and-pipelines/runtime-configuration#configuring-with-yaml-config-files).)
-In this case, you would specify `True` or `False` in the place of the
-`<ENABLE_CACHE_VALUE>` below.
-
-```yaml
-steps:
-  <STEP_NAME_IN_PIPELINE>:
-    parameters:
-      enable_cache: <ENABLE_CACHE_VALUE>
-      ...
-    ...
-```
-
-You can see an example of this in action in our [PyTorch
-Example](https://github.com/zenml-io/zenml/blob/develop/examples/pytorch/config.yaml),
-where caching is disabled for the `trainer` step.
 
 #### Dynamically disabling caching for a pipeline run
 
