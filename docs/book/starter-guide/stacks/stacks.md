@@ -15,7 +15,7 @@ Taking this into consideration, ZenML provides additional abstractions that
 help you simplify infrastructure configuration and management:
 
 - [Stacks](./stack.md): A combination of various MLOps *stack components*.
-- [Stack Components](./registering-stacks.md): Configuration of MLOps tools, which come in different *flavors*.
+- [Stack Components](./registering-stacks.md): Configuration of MLOps tools, which come in different *categories* and *flavors*.
 - [Flavors](./registering-stacks.md): Represent a concrete implementation of a stack component.
 
 Let's discuss each in further detail:
@@ -53,7 +53,8 @@ Speaking of stack components...
 ## Stack Components
 
 In ZenML, each MLOps tool is associated to a specific **Stack Component**,
-which is responsible for one specific task of your ML workflow. 
+which is responsible for one specific task of your ML workflow. All stack components are
+grouped into [categories](../../component-gallery/categories.md).
 
 For instance, each ZenML stack (e.g. the default stack above) includes an *Orchestrator*
 which is responsible for the execution of the steps within your pipeline,
@@ -81,6 +82,16 @@ By [default](../../component-gallery/artifact-stores/local.md), this is simply a
 place in your local file system, but we could also configure ZenML to store
 this data in a cloud bucket like [Amazon S3](../../component-gallery/artifact-stores/amazon-s3.md) 
 or any other place instead.
+
+You can see all supported stack component types in a single table view [here](../component-gallery/categories.md)
+
+{% hint style="info" %}
+Every stack can usually contains one stack component category of each type, e.g.,
+one `Orchestrator`, one `Artifact Store`, etc, but in some cases, you can have more
+than one stack component category in one stack (e.g. in the case of having two 
+step operators in your stack). We will discuss this in later chapters.
+{% endhint %}
+
 
 ## Stack Component Flavors
 

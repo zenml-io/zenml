@@ -18,7 +18,7 @@
   * [Fetching pipelines](./starter-guide/pipelines/fetching-pipelines.md)
   * [Quickly iterating over pipelines](./starter-guide/pipelines/iterating.md)
 * [Stacks](./starter-guide/stacks/stacks.md)
-  * [Stack Components and Flavors](./starter-guide/stacks/registering-stacks.md)
+  * [Registering stacks](./starter-guide/stacks/registering-stacks.md)
   * [Managing stacks](./starter-guide/stacks/managing-stacks.md)
 * [Collaboration](./starter-guide/collaborate/collaborate.md)
   * [Collaborate with deployed ZenML](./starter-guide/collaborate/zenml-deployment.md)

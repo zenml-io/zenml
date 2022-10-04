@@ -2,24 +2,20 @@
 description: Registering stacks, components, and flavors.
 ---
 
-# Things to change
-
-- Now they they have listed things, we should ask them register a new orchestrator stack component of flavor airflow and build a stack with it. 
-- Then we should run a pipeline and show them on the UI what happened
-
-# Older content (Page 1)
-
-
-## Registering New Stacks
+## Registering Stacks, Components, and Flavors
 
 You can combine various MLOps tools into a ZenML stack as follows:
 
-1. [Register a stack component](#registering-stack-components) for each tool 
-using `zenml <STACK_COMPONENT> register`,
-2. [Register a stack](#registering-a-stack) to bring all tools together using
-`zenml stack register`,
-3. [Activate the stack](#activating-a-stack) using `zenml stack set`. Now all
-your code is automatically executed using the desired tools / infrastructure.
+1. [Register a stack component](#registering-stack-components) to configure each tool
+using `zenml <STACK_COMPONENT> register`.
+2. [Register a stack](#registering-a-stack) to bring a particular combination of stack components 
+together using `zenml stack register`.
+3. [Register a stack flavor](../../advanced-guide/stacks/custom-flavors.md) to add a
+new tool to the ZenML flavor registry, if the tool you are looking for is not supported out-of-the-box,
+or if you want to modify standard behavior of standard flavors.
+
+In this guide, we will learn about the first two, while the last is a slightly
+[advanced topic covered later](../../advanced-guide/stacks/custom-flavors.md).
 
 ### Registering Stack Components
 
@@ -68,7 +64,6 @@ all of them into one stack using the `zenml stack register` command:
 zenml stack register <STACK_NAME> \
     --orchestrator <ORCHESTRATOR_NAME> \
     --artifact-store <ARTIFACT_STORE_NAME> \
-    --metadata-store <METADATA_STORE_NAME> \
     ...
 ```
 
@@ -90,16 +85,16 @@ Now all your code is automatically executed using this stack.
 {% hint style="info" %}
 Some advanced stack component flavors might require connecting to remote 
 infrastructure components prior to running code on the stack. This can be done
-using `zenml stack up`. See the [Managing Stack States](../advanced-usage/stack-state-management.md)
+using `zenml stack up`. See the [Managing Stack States](../../advanced-guide/stacks/stack-state-management.md)
 section for more details.
 {% endhint %}
 
-## Changing Stacks
+### Changing Stacks
 
 If you have multiple stacks configured, you can switch between them using the
 `zenml stack set` command, similar to how you [activate a stack](#activating-a-stack).
 
-## Unregistering Stacks
+### Unregistering Stacks
 
 To unregister (delete) a stack and all of its components, run
 
