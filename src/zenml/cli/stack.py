@@ -217,6 +217,10 @@ def register_stack(
                     ).id
                 ]
 
+        # click<8.0.0 gives flags a default of None
+        if share is None:
+            share = False
+
         stack_ = StackModel(
             name=stack_name,
             components=stack_components,
