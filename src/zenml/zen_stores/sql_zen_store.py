@@ -2640,6 +2640,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step doesn't exist.
         """
+        self._sync_run_step_artifacts(step_id)
         with Session(self.engine) as session:
             step = session.exec(
                 select(StepRunSchema).where(StepRunSchema.id == step_id)
@@ -2670,6 +2671,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step doesn't exist.
         """
+        self._sync_run_step_artifacts(step_id)
         with Session(self.engine) as session:
             step = session.exec(
                 select(StepRunSchema).where(StepRunSchema.id == step_id)
@@ -2710,6 +2712,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A mapping from step names to step models for all steps in the run.
         """
+        self._sync_run_steps(run_id)
         with Session(self.engine) as session:
             steps = session.exec(
                 select(StepRunSchema).where(
