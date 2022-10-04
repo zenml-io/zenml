@@ -3011,7 +3011,10 @@ class SqlZenStore(BaseZenStore):
                     num_steps=mlmd_run.num_steps,
                 )
                 new_run = self._create_run(new_run)
-                self._sync_run_steps(new_run.id)
+                zenml_runs[run_name] = new_run
+
+        for run_ in zenml_runs.values():
+            self._sync_run_steps(run_.id)
 
     def _sync_run_steps(self, run_id: UUID) -> None:
         """Sync run steps from MLMD into the database.
