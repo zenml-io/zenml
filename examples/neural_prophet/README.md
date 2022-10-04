@@ -44,6 +44,9 @@ cd zenml_examples/neural_prophet
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### ▶️ Run the Code

@@ -44,6 +44,9 @@ cd zenml_examples/airflow_orchestration
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### 🥞 Create a new Airflow Stack

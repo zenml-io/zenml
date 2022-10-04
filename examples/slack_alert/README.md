@@ -56,6 +56,9 @@ cd zenml_examples/slack_alert
 # initialize
 zenml init
 
+# Start the ZenServer to enable dashboard access
+zenml up
+
 # register slack alerter
 zenml alerter register slack_alerter --flavor=slack --slack_token=<SLACK_TOKEN> --default_slack_channel_id=<SLACK_CHANNEL_ID>
 

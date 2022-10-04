@@ -34,6 +34,26 @@ an ECR container registry, and a S3 bucket for artifact storage.
 
 ## :heavy_check_mark: Requirements
 
+To run this example, you need to install and initialize ZenML:
+
+```shell
+# install CLI
+pip install zenml
+
+# install ZenML integrations
+zenml integration install kubernetes
+
+# pull example
+zenml example pull kubernetes_orchestration
+cd zenml_examples/kubernetes_orchestration
+
+# initialize a local ZenML Repository
+zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
+```
+
 If you want to follow this example line by line, you need to spin up each of
 the corresponding AWS resources first.
 You can provision these resources manually by following the

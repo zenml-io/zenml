@@ -59,6 +59,9 @@ cd zenml_examples/facets_visualize_statistics
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### ▶️ Run the Code

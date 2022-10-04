@@ -40,6 +40,9 @@ cd zenml_examples/cloud_secrets_manager
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### 🥞 Set up your stack for AWS
