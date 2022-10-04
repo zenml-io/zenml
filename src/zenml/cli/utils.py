@@ -886,6 +886,18 @@ def get_stack_by_id_or_name_or_prefix(
             )
 
 
+def get_shared_emoji(is_shared: bool) -> str:
+    """Returns the emoji for whether a stack is shared or not.
+
+    Args:
+        is_shared: Whether the stack is shared or not.
+
+    Returns:
+        The emoji for whether the stack is shared or not.
+    """
+    return ":heavy_check_mark:" if is_shared else ":heavy_minus_sign:"
+
+
 def print_stacks_table(
     client: Client, stacks: List[HydratedStackModel]
 ) -> None:
@@ -903,7 +915,7 @@ def print_stacks_table(
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,
             "STACK ID": stack.id,
-            "SHARED": ":white_check_mark:" if stack.is_shared else ":x:",
+            "SHARED": get_shared_emoji(stack.is_shared),
             "OWNER": stack.user.name,
             **{
                 component_type.upper(): components[0].name
@@ -950,7 +962,7 @@ def print_components_table(
             "NAME": component.name,
             "COMPONENT ID": component.id,
             "FLAVOR": component.flavor,
-            "SHARED": ":white_check_mark:" if component.is_shared else ":x:",
+            "SHARED": get_shared_emoji(component.is_shared),
             "OWNER": component.user.name,
             # **{
             #     key.upper(): str(value)
