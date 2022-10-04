@@ -21,7 +21,7 @@
   * [Registering stacks](./starter-guide/stacks/registering-stacks.md)
   * [Managing stacks](./starter-guide/stacks/managing-stacks.md)
 * [Collaboration](./starter-guide/collaborate/collaborate.md)
-  * [Collaborate with deployed ZenML](./starter-guide/collaborate/zenml-deployment.md)
+  * [Connect to a deployed ZenML](./starter-guide/collaborate/zenml-deployment.md)
   * [Invite users](./starter-guide/collaborate/users.md)
 
 ## Advanced Guide
