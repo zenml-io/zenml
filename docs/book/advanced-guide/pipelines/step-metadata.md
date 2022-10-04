@@ -45,7 +45,7 @@ been output by previous steps. However, there are two exceptions:
 * An object which is a subclass of `BaseParameters`: This object is used to
 pass run-time parameters to a pipeline run. It can be used to send parameters
 to a step that are not artifacts. You learned about this one already in the
-section on [Runtime Configuration](../steps-pipelines/runtime-configuration.md).
+section on [Runtime Configuration](../steps-pipelines/settings.md).
 * A [Step Context](#step-contexts) object: This object gives access to the 
 active stack, materializers, and special integration-specific libraries.
 

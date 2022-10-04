@@ -58,7 +58,7 @@ Don't worry - we will show an easy way of getting started with this quickly, wit
 [next section](zenml-deployment.md).
 
 For now, we should understand the consequence of doing such an acion. Once ZenML is deployed and the user connects to it remotely, all
-stacks, pipelines, runs, and other metadata will be [centrally tracked](../../advanced-guide/pipelines/runtime-configuration.md) in
+stacks, pipelines, runs, and other metadata will be [centrally tracked](../../advanced-guide/pipelines/settings.md) in
 the database that backs the server.
 
 The user can still keep using local, [non-shared](../stacks/managing-stacks.md#sharing-stacks-over-a-zenml-server) stacks (e.g. the default stack). However, they will notice a significant dropoff in speed of execution

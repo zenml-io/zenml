@@ -73,7 +73,7 @@ You can get a graphical visualization of which steps were cached using
 You can disable caching for individual steps via the `config.yaml` file and
 specifying parameters for a specific step (as described [in the section on YAML
 config
-files](https://docs.zenml.io/developer-guide/steps-and-pipelines/runtime-configuration#configuring-with-yaml-config-files).)
+files](https://docs.zenml.io/developer-guide/steps-and-pipelines/settings#configuring-with-yaml-config-files).)
 In this case, you would specify `True` or `False` in the place of the
 `<ENABLE_CACHE_VALUE>` below.
 
@@ -102,7 +102,7 @@ first_pipeline(step_1=..., step_2=...).run(enable_cache=False)
 ### Code Example
 
 The following example shows caching in action with the code example from the
-previous section on [Runtime Configuration](./runtime-configuration.md).
+previous section on [Runtime Configuration](./settings.md).
 
 For a more detailed example on how caching is used at ZenML and how it works
 under the hood, checkout 

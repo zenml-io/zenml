@@ -150,7 +150,7 @@ steps will use the same materializer by default.
 ### Configuring Materializers at Runtime
 
 As briefly outlined in the
-[Runtime Configuration](../steps-pipelines/runtime-configuration.md#defining-materializer-source-codes)
+[Runtime Configuration](../steps-pipelines/settings.md#defining-materializer-source-codes)
 section, which materializer to use for the output of what step can also be
 configured within YAML config files.
 

@@ -77,7 +77,7 @@ set up a Kubernetes cluster and deploy Kubeflow Pipelines:
 
 > Since Kubernetes v1.19, AKS has shifted
 >
-to [`containerd`](https://docs.microsoft.com/en-us/azure/aks/cluster-configuration#container-runtime-configuration)
+to [`containerd`](https://docs.microsoft.com/en-us/azure/aks/cluster-configuration#container-settings)
 > . However, the workflow controller installed with the Kubeflow installation
 > has `Docker` set as the default runtime. In order to make your pipelines work,
 > you have to change the value to one of the options

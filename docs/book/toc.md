@@ -27,7 +27,7 @@
 ## Advanced Guide
 
 * [In-depth configuration](./advanced-guide/pipelines/pipelines.md)
-  * [Runtime configuration](./advanced-guide/pipelines/runtime-configuration.md)
+  * [Runtime Settings](./advanced-guide/pipelines/settings.md)
   * [Pass custom data types through steps (Materializers)](./advanced-guide/pipelines/materializers.md)
   * [Specify step resources](./advanced-guide/pipelines/step-resources.md)
   * [Access metadata within steps](./advanced-guide/pipelines/step-metadata.md)

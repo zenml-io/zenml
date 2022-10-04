@@ -160,7 +160,7 @@ status = run.status
 
 The `pipeline_configuration` is a super object that contains all configuration of 
 the pipeline and pipeline run, including `Settings`, which we will learn more about in 
-the [advanced guide](../../advanced-guide/pipelines/runtime-configuration.md).
+the [advanced guide](../../advanced-guide/pipelines/settings.md).
 
 ## Steps
 
