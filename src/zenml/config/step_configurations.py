@@ -105,6 +105,37 @@ class StepSpec(StrictBaseModel):
         _, class_name = self.source.rsplit(".", maxsplit=1)
         return class_name
 
+    def __eq__(self, other: Any) -> bool:
+        """Returns whether the other object is referring to the same step.
+        This is the case if the other objects is a `StepSpec` with the same
+        `upstream_steps` and a `source` that meets one of the following
+        conditions:
+            - it is the same as the `source` of this step
+            - it refers to the same absolute path as the `source` of this step
+
+        Args:
+            other: The other object to compare to.
+        Returns:
+            True if the other object is referring to the same pipeline.
+        """
+        if isinstance(other, StepSpec):
+
+            if self.upstream_steps != other.upstream_steps:
+                return False
+
+            if self.source == other.source:
+                return True
+
+            if self.source.endswith(other.source):
+                return True
+
+            if other.source.endswith(self.source):
+                return True
+
+            return False
+
+        return NotImplemented
+
 
 class Step(StrictBaseModel):
     """Class representing a ZenML step."""
