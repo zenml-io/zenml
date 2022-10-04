@@ -23,7 +23,7 @@ description: How to collaborate with your team in ZenML
 
 ## Collaboration with ZenML Overview
 
-![Collaboration with ZenML Overview](../../assets/starter_guide/collaboration/04_cloud_collaboration.png)
+![Collaboration with ZenML Overview](../../assets/starter_guide/collaboration/04_cloud_collaboration_overview.png)
 
 
 # Old Content (1)
