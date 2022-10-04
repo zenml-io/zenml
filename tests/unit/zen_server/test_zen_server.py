@@ -76,7 +76,7 @@ def running_zen_server(
         zen_server.start(timeout=SERVER_START_STOP_TIMEOUT)
     except RuntimeError:
         print("ZenServer failed to start. Pulling logs...")
-        for line in zen_server.get_logs():
+        for line in zen_server.get_logs(tail=200):
             print(line)
         raise
 
