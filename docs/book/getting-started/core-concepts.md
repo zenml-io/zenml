@@ -100,7 +100,7 @@ In order to run *stack components* that are running on infrastructure on the clo
 A **ZenML Server** keeps track of all the bits of extraneous data from a pipeline run. It allows you to fetch specific steps from your pipeline run and their output artifacts in a post-execution workflow. With a ZenML server, you are able to access all of your previous experiments with the associated details.
 This is extremely helpful in troubleshooting.
 
-![ZenML Architectural Diagram](../assets/architecture_diagram.png)
+![ZenML Architectural Diagram](../assets/core_concepts/pipelines_stacks_infrastructure.png)
 
 The **ZenML Dashboard** also communicates with the ZenML Server to visualize your *pipelines*, *stacks*, and *stack components*. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite *users*, and share your stacks with them.
 

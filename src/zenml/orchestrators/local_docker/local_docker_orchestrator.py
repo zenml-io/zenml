@@ -21,7 +21,10 @@ from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
+from zenml.orchestrators.base_orchestrator import (
+    BaseOrchestratorConfig,
+    BaseOrchestratorFlavor,
+)
 from zenml.stack import Stack
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
@@ -146,6 +149,22 @@ class LocalDockerOrchestrator(BaseOrchestrator):
                 logger.info(line.strip().decode())
 
 
+class LocalDockerOrchestratorConfig(BaseOrchestratorConfig):
+    """Local Docker orchestrator config."""
+
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        return True
+
+
 class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
     """Flavor for the local Docker orchestrator."""
 
@@ -157,6 +176,15 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
             Name of the orchestrator flavor.
         """
         return "local_docker"
+
+    @property
+    def config_class(self) -> Type[BaseOrchestratorConfig]:
+        """Config class for the base orchestrator flavor.
+
+        Returns:
+            The config class.
+        """
+        return LocalDockerOrchestratorConfig
 
     @property
     def implementation_class(self) -> Type["LocalDockerOrchestrator"]:

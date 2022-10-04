@@ -137,7 +137,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             container_registry = stack.container_registry
             assert container_registry is not None
 
-            if container_registry.is_local:
+            if container_registry.config.is_local:
                 return False, (
                     "The GitHub Actions orchestrator requires a remote "
                     f"container registry, but the '{container_registry.name}' "
