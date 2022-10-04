@@ -26,14 +26,6 @@
 
 ## Advanced Guide
 
-* [Practical MLOps](./advanced-guide/practical/practical-mlops.md)
-  * [Stack Recipes](./advanced-guide/practical/stack-recipes.md)
-  * [Switching orchestration](./advanced-guide/practical/switching-orchestration.md)
-  * [Secrets Management](./advanced-guide/practical/secrets-management.md)
-  * [Containerization (Docker)](./advanced-guide/practical/containerization.md)
-  * [Tracking experiments](./advanced-guide/practical/tracking-experiments.md)
-  * [Validating data](./advanced-guide/practical/validating-data.md)
-  * [Deploying models and batch inference](./advanced-guide/practical/deploying-models.md)
 * [Configuring Pipelines](./advanced-guide/pipelines/pipelines.md)
   * [Runtime configuration](./advanced-guide/pipelines/runtime-configuration.md)
   * [Pass custom data types through steps (Materializers)](./advanced-guide/pipelines/materializers.md)
@@ -44,7 +36,14 @@
   * [Write Custom Stack Component Flavors](./advanced-guide/stacks/custom-flavors.md)
   * [Manage Stack Component States](./advanced-guide/stacks/stack-state-management.md)
   * [Manage External Services](./advanced-guide/stacks/manage-external-services.md)
-
+* [Practical MLOps](./advanced-guide/practical/practical-mlops.md)
+  * [Stack Recipes](./advanced-guide/practical/stack-recipes.md)
+  * [Switching orchestration](./advanced-guide/practical/switching-orchestration.md)
+  * [Secrets Management](./advanced-guide/practical/secrets-management.md)
+  * [Containerization (Docker)](./advanced-guide/practical/containerization.md)
+  * [Tracking experiments](./advanced-guide/practical/tracking-experiments.md)
+  * [Validating data](./advanced-guide/practical/validating-data.md)
+  * [Deploying models and batch inference](./advanced-guide/practical/deploying-models.md)
 
 ## Component Gallery
 
