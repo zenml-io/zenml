@@ -90,6 +90,12 @@ either built-in or enabled through the installation of specific
 
 ## Listing Stacks, Stack Components, and Flavors
 
+{% hint style="info" %}
+Our CLI features a wide variety of commands that let you manage and use your stacks.
+If you would like to learn more, please run: "`zenml stack --help`"
+or visit [our CLI docs](https://apidocs.zenml.io/latest/cli/).
+{% endhint %}
+
 You can see a list of all your *registered* stacks with the following command:
 
 ```shell
@@ -116,9 +122,3 @@ You can also see details of configuration parameters available for a flavor with
 ```shell
 zenml orchestrator flavor describe kubeflow
 ```
-
-{% hint style="info" %}
-Our CLI features a wide variety of commands that let you manage and use your stacks.
-If you would like to learn more, please run: "`zenml stack --help`"
-or visit [our CLI docs](https://apidocs.zenml.io/latest/cli/).
-{% endhint %}
