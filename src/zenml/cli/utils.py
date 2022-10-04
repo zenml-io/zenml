@@ -1109,7 +1109,7 @@ def print_pipeline_runs_table(
     runs_dicts = []
     for pipeline_run in pipeline_runs:
         if pipeline_run.pipeline_id is None:
-            pipeline_name = "N/A"
+            pipeline_name = "unlisted"
         else:
             pipeline_name = client.zen_store.get_pipeline(
                 pipeline_run.pipeline_id
