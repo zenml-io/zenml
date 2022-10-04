@@ -20,22 +20,30 @@ As discussed in a [previous chapter](../../starter-guide/pipelines/iterating.md)
 
 We have [already discussed `BaseParameters`](../../starter-guide/pipelines/iterating.md) and now is the time to talk about its brother, `BaseSettings`.
 
+### Types of settings
+
 We can further break down settings into two groups:
 
 - General settings that can be used on all ZenML pipelines: `DockerSettings` and `ResourceSettings`.
-- Stack component specific settings: these can be used to supply runtime configurations to certain stack components (key= <COMPONENT_TYPE>.<COMPONENT_FLAVOR>). Settings for components not in the active stack will be ignored
+- Stack component specific settings: these can be used to supply runtime configurations to certain stack components (key= <COMPONENT_TYPE>.<COMPONENT_FLAVOR>). Settings for components not in the active stack will be ignored.
 
-### Configuring with YAML
+### How to use settings
+
+#### Method 1: Directly on the decorator
+
+@step/pipeline(…): Configures the class -> will be set for all instances
+
+#### Method 2: On the step/pipeline instance
+
+step_instance/pipeline_instance.configure(…): Configures the instance -> will be set for all runs using the instance
+
+#### Method 3: Configuring with YAML
 
 Generate a template for a config file: `pipeline_instance.write_run_configuration_template(path=<PATH>)`
 
 ### Heirarchy and precendence
 
-Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. Merging similar to the example above
-
-step_instance/pipeline_instance.configure(…): Configures the instance -> will be set for all runs using the instance
-
-pipeline.run(…): allows configuration in code or using a yaml file. Configurations in code overwrite settings in the file
+Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. Merging similar to the example below.
 
 ### Merging settings on class/instance/run:
 
