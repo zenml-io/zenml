@@ -14,8 +14,8 @@
 """Implementation of a ZenML service endpoint."""
 
 from typing import Any, Optional, Tuple
-from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 
+from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.logger import get_logger
 from zenml.services.service_monitor import BaseServiceEndpointHealthMonitor
 from zenml.services.service_status import ServiceState, ServiceStatus
