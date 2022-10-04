@@ -17,7 +17,7 @@ ZenML can also be deployed with an HTTP REST interface between the client machin
 
 ## Running ZenML Locally
 
-Running ZenML locally is an easy way to experiment with your pipelines and design proof-of-concepts. Scenarios 1 and 2 below, deal with the local deployment of ZenML. In these scenarios, the ZenML client and its database are both located on the same machine.
+Running ZenML locally is an easy way to experiment with your pipelines and design proof-of-concepts. Scenarios 1 and 2 below deal with the local deployment of ZenML. In these scenarios, the ZenML client and database are both located on the same machine.
 
 ### Scenario 1: Direct interaction with Local SQLite
 
@@ -41,7 +41,7 @@ In this use-case, a local version of the ZenML HTTP server is running on your ma
 
 Switching from Scenario 1 to Scenario 2 and back is as simple as running `zenml up` and `zenml down`.
 
-ZenML natively supports running the HTTP server and dashboard either as a daemon process or as a Docker container. By default, the `zenml up` command starts the HTTP server as local daemon process that uses the same database configuration as your local client. A URL is provided where the ZenML Dashboard can be loaded to show your available stacks, pipeline runs and team settings among other things. You can find out more about Docker deployments [here](./docker.md)
+ZenML natively supports running the HTTP server and dashboard either as a process running in the background or as a Docker container. By default, the `zenml up` command starts the HTTP server as a local daemon process that uses the same database configuration as your local client. A URL is provided where the ZenML Dashboard can be loaded to show your available stacks, pipeline runs and team settings among other things. If you need to use Docker containers instead, you can find out more about Docker deployments [here](./docker.md).
 
 ![ZenML on with Local HTTP Server](../../assets/getting_started/Scenario2.png)
 
@@ -57,8 +57,9 @@ Your ZenML code interacts with the server across different concerns. For example
 As such, it is important that you deploy ZenML in a way that is accessible from your machine as well as from all stack components that need access to the server.
 > If you are looking for a quick deployment without having to worry about configuring the right access, the [`zenml deploy` CLI command ](./cli.md) is the way to go!
  
+### Scenario 3: Server and Database hosted on cloud
 
-This is similar to Scenario 2, with the difference that both the HTTP server and the database are running remotely rather than on your local machine. This is how you can unleash the real collaborative power of ZenML. With this type of deployment, stacks and pipeline runs can be shared with other users across larger teams and organizations. If you are using cloud, or shared on-premise services to run your pipelines, such as Kubeflow, GitHub, Spark, Vertex AI, AWS Sagemaker or AzureML, a centralized shared ZenML Server is also the recommended deployment strategy for ZenML.
+This is similar to Scenario 2, with the difference that both the HTTP server and the database are running remotely rather than on your local machine. This is how you can unleash the real collaborative power of ZenML. With this type of deployment, stacks and pipeline runs can be shared with other users across larger teams and organizations. If you are using cloud, or shared on-premise services to run your pipelines, such as Kubeflow, GitHub, Spark, Vertex AI, AWS Sagemaker or AzureML, a centralized shared ZenML Server is also the recommended deployment strategy for ZenML, because these services will need to communicate with the ZenML server.
 
 The diagram below shows the architecture: both the server and database are remote and can be provisioned and managed independently. The server takes the connection details of the database as one of its inputs and that's how they work together. You can refer to the deployment options pages, to see how it's done in each case.
 
