@@ -209,6 +209,10 @@ def generate_stack_component_register_command(
                 args, expand_args=True
             )
 
+            # click<8.0.0 gives flags a default of None
+            if share is None:
+                share = False
+
             # Create a new stack component model
             component_create_model = ComponentModel(
                 user=client.active_user.id,
