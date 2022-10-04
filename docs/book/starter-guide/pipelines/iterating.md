@@ -2,23 +2,22 @@
 description: Iteration is native to ZenML.
 ---
 
-Machine learning pipelines are rerun many times over throughout their
-development lifecycle. 
+# Quickly iterating in ZenML
+
+Machine learning pipelines are rerun many times over throughout their development lifecycle. 
 
 ## Runtime Configuration
 
-A ZenML pipeline clearly separates business logic from parameter configuration.
-Business logic is what defines a step or a pipeline. 
-Parameter configurations are used to dynamically set parameters of your steps 
-and pipelines at runtime.
+In order to iterate quickly, one must be able to tweak pipeline runs and change various 
+parameters.
 
 You can configure your pipelines at runtime in the following ways:
 
 - `BaseParameters`: Runtime parameters passed down as parameters to step functions.
-- `Settings`: Runtime settings passed down to stack components and pipelines.
+- `BaseSettings`: Runtime settings passed down to stack components and pipelines.
 
 In this section, we will focus on `BaseParameters`, and in the Advanced Guide we will 
-[dive deeper into `Settings`](../../advanced-guide/pipelines/runtime-configuration.md).
+[dive deeper into `BaseSettings`](../../advanced-guide/pipelines/pipelines.md).
 
 You can parameterize a step by creating a subclass of the `BaseParameters`. When such a 
 config object is passed to a step, it is not treated like other artifacts. Instead, it 
@@ -69,7 +68,18 @@ Therefore, any type that
 is also supported as an attribute type in the `BaseParameters`.
 {% endhint %}
 
+Try running the above pipeline, and changing the parameter `gamma` through many runs. 
+In essence, each pipeline can be viewed as an experiment, and each run is a trial of 
+the experiment, defined by the `BaseParameters`. You can always get the parameters again 
+when you [fetch pipeline runs](fetching-pipelines.md), to compare various runs.
+
 ## Caching in ZenML
+
+When you tweaked the `gamma` variable above, you must have noticed that the 
+`digits_data_loader` step does not re-execute for each subsequent run.  This is because ZenML 
+understands that nothing has changed between subsequent runs, so it re-uses the output of the last 
+run (the outputs are persisted in the [artifact store](../../component-gallery/artifact-stores/)). 
+This behavior is known as **caching**.
 
 Prototyping is often a fast and iterative process that
 benefits a lot from caching. This makes caching a very powerful tool.
