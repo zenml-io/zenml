@@ -78,7 +78,7 @@ class DockerServerDeploymentConfig(ServerDeploymentConfig):
 
     port: int = 8238
     image: str = DOCKER_ZENML_SERVER_DEFAULT_IMAGE
-    address: Union[
+    ip_address: Union[
         ipaddress.IPv4Address, ipaddress.IPv6Address
     ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
     store: Optional[StoreConfiguration] = None
@@ -216,7 +216,7 @@ class DockerZenServer(ContainerService):
         try:
             uvicorn.run(
                 ZEN_SERVER_ENTRYPOINT,
-                host="0.0.0.0",  # self.endpoint.config.ip_address,
+                host="0.0.0.0",
                 port=self.endpoint.config.port,
                 log_level="info",
             )

@@ -20,6 +20,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 import requests
+import urllib3
 from google.protobuf.json_format import Parse
 from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 from pydantic import BaseModel, validator
@@ -1453,6 +1454,11 @@ class RestZenStore(BaseZenStore):
             A requests session with the authentication token.
         """
         if self._session is None:
+            if self.config.verify_ssl is False:
+                urllib3.disable_warnings(
+                    urllib3.exceptions.InsecureRequestWarning
+                )
+
             self._session = requests.Session()
             self._session.verify = self.config.verify_ssl
             token = self._get_auth_token()
