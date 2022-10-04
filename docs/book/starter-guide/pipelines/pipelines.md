@@ -211,7 +211,7 @@ zenml up
 
 The dashboard serves as a visual interface to see pipelines and pipeline runs.
 
-TODO: Add image when dashboard is done.
+![ZenML Up](../../assets/starter_guide/pipelines/pipeline_visualization.png)
 
 ### Give each pipeline run a name
 
