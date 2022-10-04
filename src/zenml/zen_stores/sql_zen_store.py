@@ -27,6 +27,7 @@ from pydantic import root_validator
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
+from sqlalchemy.sql.operators import is_
 from sqlmodel import Session, SQLModel, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 from tfx.orchestration import metadata
@@ -2547,6 +2548,9 @@ class SqlZenStore(BaseZenStore):
                     project_name_or_id, session=session
                 )
                 query = query.where(StackSchema.project_id == project.id)
+                query = query.where(
+                    PipelineRunSchema.stack_id == StackSchema.id
+                )
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
             if component_id:
@@ -2561,7 +2565,7 @@ class SqlZenStore(BaseZenStore):
                     PipelineRunSchema.pipeline_id == pipeline_id
                 )
             elif unlisted:
-                query = query.where(PipelineRunSchema.pipeline_id is None)
+                query = query.where(is_(PipelineRunSchema.pipeline_id, None))
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(PipelineRunSchema.user_id == user.id)
