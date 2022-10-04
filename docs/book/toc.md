@@ -26,7 +26,7 @@
 
 ## Advanced Guide
 
-* [Configuring Pipelines](./advanced-guide/pipelines/pipelines.md)
+* [In-depth configuration](./advanced-guide/pipelines/pipelines.md)
   * [Runtime configuration](./advanced-guide/pipelines/runtime-configuration.md)
   * [Pass custom data types through steps (Materializers)](./advanced-guide/pipelines/materializers.md)
   * [Specify step resources](./advanced-guide/pipelines/step-resources.md)
@@ -111,16 +111,6 @@
 * [Annotators](./component-gallery/annotators/annotators.md)
   * [Label Studio](./component-gallery/annotators/label-studio.md)
   * [Develop a Custom Annotator](./component-gallery/annotators/custom.md)
-
-## Popular Stack Guides
-
-* [Overview](./popular-stack-guides/overview.md)
-* [AWS](./popular-stack-guides/aws/aws.md)
-  * [Basic AWS Stack](./popular-stack-guides/aws/basic-stack.md)
-* [GCP](./popular-stack-guides/gcp/gcp.md)
-  * [Basic GCP Stack](./popular-stack-guides/gcp/basic-stack.md)
-* [Azure](./popular-stack-guides/azure/azure.md)
-  * [Basic Azure Stack](./popular-stack-guides/azure/basic-stack.md)
 
 
 ## Guidelines
