@@ -62,11 +62,7 @@ information on how to use these commands, see [the ZenML deployment documentatio
 - `zenml pipeline list / runs / delete` can be used to display information and
 about and manage your pipelines and pipeline runs.
 
-In ZenML 0.13.2 and earlier versions, information about pipelines and pipeline
-runs used to be stored in a separate stack component called the Metadata Store.
-Starting with 0.20.0, the role of the Metadata Store is now taken over by ZenML
-itself. This means that the Metadata Store is no longer a separate component in
-the ZenML architecture, but rather a part of the ZenML core, located wherever
+In ZenML 0.13.2 and earlier versions, information about pipelines and pipeline runs used to be stored in a separate stack component called the Metadata Store. Starting with 0.20.0, the role of the Metadata Store is now taken over by ZenML itself. This means that the Metadata Store is no longer a separate component in the ZenML architecture, but rather a part of the ZenML core, located wherever
 ZenML is deployed: locally on your machine or running remotely as a server.
 
 All metadata is now stored, tracked, and managed by ZenML itself. The Metadata
@@ -149,6 +145,24 @@ operators are running. This will ensure the best possible performance and
 usability.
 {% endhint %}
 
+### 💾 The New Way (CLI Command Cheat Sheet)
+
+**deploy the server**
+
+`zenml deploy --aws` (maybe don’t do this :) since it spins up infrastructure on AWS…)
+
+**spin up a local zenserver**
+
+`zenml up`
+
+**connect to a pre-existing server**
+
+`zenml connect` (pass in URL / etc, or zenml connect --config + yaml file)
+
+**List your deployed server details**
+
+`zenml status`
+
 ## The ZenML Dashboard is now available
 
 The new ZenML Dashboard is now bundled into the ZenML Python package and can be
@@ -174,7 +188,7 @@ default:
 ![ZenML Dashboard Preview](../assets/migration/zenml-dashboard.png)
 
 For more details on other possible deployment options, see the
-[ZenML deployment documentation](../getting-started/deploying-zenml/deploying-zenml.md).
+[ZenML deployment documentation](../getting-started/deploying-zenml/deploying-zenml.md), and/or follow the [starter guide](../starter-guide/pipelines/pipelines.md) to learn more.
 
 ## Removal of Profiles and the local YAML database
 
@@ -400,35 +414,55 @@ environment. Consequently:
 
 * stacks made up of local stack components should not be shared on a central
 ZenML Server, even though this is not enforced by the system.
-* stacks made up of non-local stack components are only functional if they
-are shared through a remotely deployed ZenML Server.
+* stacks made up of non-local stack components are only functional if they are shared through a remotely deployed ZenML Server.
+
+Read more about shared stacks in the new [starter guide](../starter-guide/stacks/managing-stacks.md#sharing-stacks-over-a-zenml-server).
 
 ## Other changes
 
-### The Repository Object
+### The `Repository` class is now called `Client`
 
 The `Repository` object has been renamed to `Client` to better capture its functionality. You can continue to use the `Repository` object for backwards
 compatibility, but it will be removed in a future release.
 
-Action: Rename all references to `Repository` in your code to `Client`.
+**How to migrate**: Rename all references to `Repository` in your code to `Client`.
+
+### The `BaseStepConfig` class is now called `BaseParameters`
+
+The `BaseStepConfig` object has been renamed to `BaseParameters` to better capture its functionality. You can NOT continue to use the `BaseStepConfig`.
+
+This is part of a broader configuration rehaul which is discussed next.
+
+**How to migrate**: Rename all references to `BaseStepConfig` in your code to `BaseParameters`.
 
 ### Configuration Rework
 
-Alongside the architectural shift, Pipeline configuration has been completely rethought. ZenML pipelines and steps could previously be configured in many different ways:
+Alongside the architectural shift, Pipeline configuration has been completely rethought. This video gives an overview of how configuration has changed with ZenML in the post ZenML 0.20.0 world.
 
-- On the `@pipeline` and `@step` decorators (e.g. the `requirements` variable)
-- In the `__init__` method of the pipeline and step class
-- Using `@enable_xxx` decorators, e.g. `@enable_mlflow`.
-- Using specialized methods like `pipeline.with_config(...)` or
+{% embed url="https://www.youtube.com/embed/hI-UNV7uoNI" %}
+
+If you don't want to watch the video, you can read all about the changes here and we have a [dedicated page](../advanced-guide/pipelines/settings.md) in the docs describing the new ways to configure objects in ZenML.
+
+#### What changed?
+
+ZenML pipelines and steps could previously be configured in many different ways:
+
+* On the `@pipeline` and `@step` decorators (e.g. the `requirements` variable)
+* In the `__init__` method of the pipeline and step class
+* Using `@enable_xxx` decorators, e.g. `@enable_mlflow`.
+* Using specialized methods like `pipeline.with_config(...)` or
 `step.with_return_materializer(...)`
 
-Some of the configuration options were quite hidden, difficult to access and not tracked in any way by the ZenML metadata store. The new changes introduced are:
+Some of the configuration options were quite hidden, difficult to access and not tracked in any way by the ZenML metadata store. 
+
+With ZenML 0.20.0, we introduce the `BaseSettings` class, a broad class that serves as a central object to represent all runtime configuration of a pipeline run (apart from the `BaseParameters`).
+
+Read on to learn how to use the new `BaseSettings` class.
 
 #### Configuring through decorators and the new `pipeline.configure()` method
 
 - Pipelines and steps now allow all configurations on their decorators as well as the `.configure(...)` method. This includes configurations for stack components that are not infrastructure-related which was previously done using
 the `@enable_xxx` decorators)
-
 
 The same configurations can also be defined in a yaml file. 
 
@@ -443,30 +477,39 @@ Instead of the user-facing `BaseStep` and `BasePipeline` classes, all the Ze
 orchestrators and step operators now use this intermediate representation to run
 pipelines and steps.
 
-### New post-execution workflow
-
-The Post-execution workflow has changed as follows:
-- The `get_pipeline` and `get_run` methods have been moved out of the `Repository` (i.e. the new `Client` ) class and lie directly in the post_execution module now. To use the user has to do:
-
-```bash
-from zenml.post_execution import get_pipeline, get_run
-```
-    
-Once a pipeline has been executed, it is represented by a `PipelineSpec` that
-uniques identifies it. Therefore, users are no longer able to edit a pipeline
-once it has been run once. There are now three options to get around this:
-
-- Pipeline runs can be created without being associated with a pipeline
-explicitly: We call these `unlisted` runs
-- Pipelines can be deleted and created again
-- Pipelines can be given unique names each time they are run to uniquely
-identify them
-
 There are multiple changes to the configuration of various stack components and
 integratinos:
 - enable_whylogs deprecated
 - enable_mlflow deprecated
 - enable_wandb deprecated
+
+### `PipelineSpec` now uniquely defines pipelines
+
+Once a pipeline has been executed, it is represented by a `PipelineSpec` that
+uniques identifies it. Therefore, users are no longer able to edit a pipeline
+once it has been run once. There are now three options to get around this:
+
+* Pipeline runs can be created without being associated with a pipeline explicitly: We call these `unlisted` runs. Read more about unlisted runs [here](../starter-guide/pipelines/pipelines.md#unlisted-runs).
+* Pipelines can be deleted and created again.
+* Pipelines can be given unique names each time they are run to uniquely identify them.
+
+**How to migrate**: No code changes, but rather keep in mind the behavior (e.g. in a notebook setting) when quickly [iterating over pipelines as experiments](../starter-guide/pipelines/iterating.md).
+
+### New post-execution workflow
+
+The Post-execution workflow has changed as follows:
+
+- The `get_pipelines` and `get_pipeline` methods have been moved out of the `Repository` (i.e. the new `Client` ) class and lie directly in the post_execution module now. To use the user has to do:
+
+```bash
+from zenml.post_execution import get_pipelines, get_pipeline
+```
+
+- New methods to directly get a run have been introduced: `get_run` and `get_unlisted_runs` method has been introduced to get unlisted runs. 
+ 
+Usage remains largely similar. Please read the [new docs for post-execution to inform yourself of what further has changed](../starter-guide/pipelines/fetching-pipelines.md).
+  
+**How to migrate**: Replace all post-execution workflows from the paradigm of `Repository.get_pipelines` or `Repository.get_pipeline_run` to the corresponding post_execution methods.
 
 # 📡Future Changes
 
@@ -483,20 +526,3 @@ For bug reports, please also consider submitting a [GitHub Issue](https://github
 
 Lastly, if the new changes have left you desiring a feature, then consider adding it to our [public feature voting board](https://zenml.io/discussion). Before doing so, do check what is already on there and consider upvoting the features you desire the most.
 
-# 💾 The New Way (CLI Command Cheat Sheet)
-
-**deploy the server**
-
-`zenml deploy --aws` (maybe don’t do this :) since it spins up infrastructure on AWS…)
-
-**spin up a local zenserver**
-
-`zenml up`
-
-**connect to a pre-existing server**
-
-`zenml connect` (pass in URL / etc, or zenml connect --config + yaml file)
-
-**List your deployed server details**
-
-`zenml status`
