@@ -9,6 +9,22 @@ description: How to collaborate with your team in ZenML
 - Show how collaboration is thought off - maybe mention roles
 - Maybe add an architecture diagram
 
+## Step 1: Single user working with local stacks
+
+![Working with local ZenML](../../assets/starter_guide/collaboration/01_local_stack.png)
+
+## Step 2: Single user working with local and cloud stacks
+
+![Single user working with local and cloud stacks](../../assets/starter_guide/collaboration/02_multiple_stacks.png)
+
+## Step 3: Multiple users working with local and cloud stacks
+
+![Multiple users working with local and cloud stacks](../../assets/starter_guide/collaboration/03_multiple_users.png)
+
+## Collaboration with ZenML Overview
+
+![Collaboration with ZenML Overview](../../assets/starter_guide/collaboration/04_cloud_collaboration.png)
+
 
 # Old Content (1)
 
