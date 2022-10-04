@@ -49,6 +49,18 @@ class BaseContainerRegistryConfig(AuthenticationConfigMixin):
         """
         return uri.rstrip("/")
 
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        return bool(re.fullmatch(r"localhost:[0-9]{4,5}", self.uri))
+
 
 class BaseContainerRegistry(AuthenticationMixin):
     """Base class for all ZenML container registries."""
@@ -87,15 +99,6 @@ class BaseContainerRegistry(AuthenticationMixin):
             return secret.username, secret.password
 
         return None
-
-    @property
-    def is_local(self) -> bool:
-        """Returns whether the container registry is local or not.
-
-        Returns:
-            True if the container registry is local, False otherwise.
-        """
-        return bool(re.fullmatch(r"localhost:[0-9]{4,5}", self.config.uri))
 
     def prepare_image_push(self, image_name: str) -> None:
         """Preparation before an image gets pushed.

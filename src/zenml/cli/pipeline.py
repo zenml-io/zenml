@@ -152,16 +152,6 @@ def list_pipeline_runs(
         cli_utils.declare("No pipeline runs registered.")
         return
 
-    cli_utils.print_pydantic_models(
-        pipeline_runs,
-        exclude_columns=[
-            "id",
-            "created",
-            "updated",
-            "user",
-            "project",
-            "mlmd_id",
-            "stack_id",
-            "pipeline_id",
-        ],
+    cli_utils.print_pipeline_runs_table(
+        client=client, pipeline_runs=pipeline_runs
     )

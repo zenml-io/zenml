@@ -55,6 +55,19 @@ class VertexStepOperatorConfig(
     # will be applied to all Vertex AI resources if set
     encryption_spec_key_name: Optional[str] = None
 
+    @property
+    def is_remote(self) -> bool:
+        """Checks if this stack component is running remotely.
+
+        This designation is used to determine if the stack component can be
+        used with a local ZenML database or if it requires a remote ZenML
+        server.
+
+        Returns:
+            True if this config is for a remote component, False otherwise.
+        """
+        return True
+
 
 class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
     """Vertex Step Operator flavor."""
