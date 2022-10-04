@@ -92,11 +92,14 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
             )
     except KeyError as err:
         cli_utils.error(str(err))
-    cli_utils.confirmation(
+    confirmation = cli_utils.confirmation(
         f"Are you sure you want to delete pipeline `{pipeline_name_or_id}`? "
         "This will change all existing runs of this pipeline to become "
         "unlisted."
     )
+    if not confirmation:
+        cli_utils.declare("Pipeline deletion canceled.")
+        return
     assert pipeline.id is not None
     Client().zen_store.delete_pipeline(pipeline_id=pipeline.id)
     cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
@@ -149,16 +152,6 @@ def list_pipeline_runs(
         cli_utils.declare("No pipeline runs registered.")
         return
 
-    cli_utils.print_pydantic_models(
-        pipeline_runs,
-        exclude_columns=[
-            "id",
-            "created",
-            "updated",
-            "user",
-            "project",
-            "mlmd_id",
-            "stack_id",
-            "pipeline_id",
-        ],
+    cli_utils.print_pipeline_runs_table(
+        client=client, pipeline_runs=pipeline_runs
     )

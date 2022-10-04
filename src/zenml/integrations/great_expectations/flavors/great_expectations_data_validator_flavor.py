@@ -78,6 +78,21 @@ class GreatExpectationsDataValidatorConfig(BaseDataValidatorConfig):
                 )
         return context_root_dir
 
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        # If an existing local GE data context is used, it is
+        # interpreted as a local path that needs to be accessible in
+        # all runtime environments.
+        return self.context_root_dir is not None
+
 
 class GreatExpectationsDataValidatorFlavor(BaseDataValidatorFlavor):
     """Great Expectations data validator flavor."""

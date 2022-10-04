@@ -540,7 +540,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         gc = GlobalConfiguration()
 
         if gc.store and gc.store.type == StoreType.REST:
-            # Connected to ZenServer
+            # Connected to ZenML Server
             client = Client()
 
             # Get the runs from the zen_store
