@@ -27,18 +27,20 @@ from zenml.constants import (
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, StoreType
 from zenml.environment import Environment
 from zenml.exceptions import (
     AlreadyExistsException,
     IllegalOperationError,
     InitializationException,
+    ValidationError,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, ProjectModel, StackModel
 from zenml.models.pipeline_models import PipelineModel
 from zenml.stack import Flavor
+from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -656,6 +658,68 @@ class Client(metaclass=ClientMetaClass):
             # a local configuration
             GlobalConfiguration().active_stack_id = stack.id
 
+    def _validate_stack_configuration(self, stack: "StackModel") -> None:
+        """Validates the configuration of a stack.
+
+        Args:
+            stack: The stack to validate.
+
+        Raises:
+            KeyError: If the stack references missing components.
+            ValidationError: If the stack configuration is invalid.
+        """
+        local_components: List[str] = []
+        remote_components: List[str] = []
+        for component_type, component_ids in stack.components.items():
+            for component_id in component_ids:
+                try:
+                    component = self.get_stack_component_by_id(
+                        component_id=component_id
+                    )
+                except KeyError:
+                    raise KeyError(
+                        f"Cannot register stack '{stack.name}' since it has an "
+                        f"unregistered {component_type} with id "
+                        f"'{component_id}'."
+                    )
+            # Get the flavor model
+            flavor_model = self.get_flavor_by_name_and_type(
+                name=component.flavor, component_type=component.type
+            )
+
+            # Create and validate the configuration
+            flavor = Flavor.from_model(flavor_model)
+            configuration = flavor.config_class(**component.configuration)
+            if configuration.is_local:
+                local_components.append(
+                    f"{component.type.value}: {component.name}"
+                )
+            elif configuration.is_remote:
+                remote_components.append(
+                    f"{component.type.value}: {component.name}"
+                )
+
+        if local_components and remote_components:
+            logger.warn(
+                f"You are configuring a stack that is composed of components "
+                f"that are relying on local resources "
+                f"({', '.join(local_components)}) as well as "
+                f"components that are running remotely "
+                f"({', '.join(remote_components)}). This is not recommended as "
+                f"it can lead to unexpected behavior, especially if the remote "
+                f"components need to access the local resources. Please make "
+                f"sure that your stack is configured correctly, or try to use "
+                f"component flavors or configurations that do not require "
+                f"local resources."
+            )
+
+        if not stack.is_valid:
+            raise ValidationError(
+                "Stack configuration is invalid. A valid"
+                "stack must contain an Artifact Store and "
+                "an Orchestrator."
+            )
+
     def register_stack(self, stack: "StackModel") -> "StackModel":
         """Registers a stack and its components.
 
@@ -664,51 +728,23 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The model of the registered stack.
-
-        Raises:
-            KeyError: If one of the components is not registered.
-            RuntimeError: If the stack configuration is invalid.
         """
-        for component_type, component_ids in stack.components.items():
-            for component_id in component_ids:
-                try:
-                    self.get_stack_component_by_id(component_id=component_id)
-                except KeyError:
-                    raise KeyError(
-                        f"Cannot register stack '{stack.name}' since it has an "
-                        f"unregistered {component_type} with id "
-                        f"'{component_id}'."
-                    )
+        self._validate_stack_configuration(stack=stack)
 
-        if stack.is_valid:
-            created_stack = self.zen_store.create_stack(
-                stack=stack,
-            )
-            return created_stack
-        else:
-            raise RuntimeError(
-                "Stack configuration is invalid. A valid"
-                "stack must contain an Artifact Store and "
-                "an Orchestrator."
-            )
+        created_stack = self.zen_store.create_stack(
+            stack=stack,
+        )
+        return created_stack
 
     def update_stack(self, stack: "StackModel") -> None:
         """Updates a stack and its components.
 
         Args:
             stack: The new stack to use as the updated version.
-
-        Raises:
-            RuntimeError: If the stack configuration is invalid.
         """
-        if stack.is_valid:
-            self.zen_store.update_stack(stack=stack)
-        else:
-            raise RuntimeError(
-                "Stack configuration is invalid. A valid"
-                "stack must contain an Artifact Store and "
-                "an Orchestrator."
-            )
+        self._validate_stack_configuration(stack=stack)
+
+        self.zen_store.update_stack(stack=stack)
 
     def deregister_stack(self, stack: "StackModel") -> None:
         """Deregisters a stack.
@@ -750,6 +786,56 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.get_stack_components()
 
+    def _validate_stack_component_configuration(
+        self,
+        component_type: StackComponentType,
+        configuration: StackComponentConfig,
+    ) -> None:
+        """Validates the configuration of a stack component.
+
+        Args:
+            component_type: The type of the component.
+            configuration: The component configuration to validate.
+        """
+        if configuration.is_remote and self.zen_store.is_local_store():
+            if self.zen_store.type == StoreType.REST:
+                logger.warn(
+                    "You are configuring a stack component that is running "
+                    "remotely while using a local database. The component "
+                    "may not be able to reach the local database and will "
+                    "therefore not be functional. Please consider deploying "
+                    "and/or using a remote ZenML server instead."
+                )
+            else:
+                logger.warn(
+                    "You are configuring a stack component that is running "
+                    "remotely while using a local ZenML server. The component "
+                    "may not be able to reach the local ZenML server and will "
+                    "therefore not be functional. Please consider deploying "
+                    "and/or using a remote ZenML server instead."
+                )
+        elif configuration.is_local and not self.zen_store.is_local_store():
+            logger.warn(
+                "You are configuring a stack component that is using "
+                "local resources while connected to a remote ZenML server. The "
+                "stack component may not be usable from other hosts or by other "
+                "users. You should consider using a non-local stack component "
+                "alternative instead."
+            )
+            if component_type in [
+                StackComponentType.ORCHESTRATOR,
+                StackComponentType.STEP_OPERATOR,
+            ]:
+                logger.warn(
+                    "You are configuring a stack component that is running "
+                    "pipeline code on your local host while connected to a "
+                    "remote ZenML server. This will significantly affect the "
+                    "performance of your pipelines. You will likely encounter "
+                    "long running times caused by network latency. You should "
+                    "consider using a non-local stack component alternative "
+                    "instead."
+                )
+
     def register_stack_component(
         self,
         component: "ComponentModel",
@@ -768,13 +854,15 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Create and validate the configuration
-        flavor_class = Flavor.from_model(flavor_model)
-        configuration = flavor_class.config_class(
-            **component.configuration
-        ).dict()
+        flavor = Flavor.from_model(flavor_model)
+        configuration = flavor.config_class(**component.configuration)
 
         # Update the configuration in the model
-        component.configuration = configuration
+        component.configuration = configuration.dict()
+
+        self._validate_stack_component_configuration(
+            component.type, configuration=configuration
+        )
 
         # Register the new model
         return self.zen_store.create_stack_component(component=component)
@@ -804,7 +892,14 @@ class Client(metaclass=ClientMetaClass):
 
         # Use the flavor class to validate the new configuration
         flavor = Flavor.from_model(flavor_model)
-        _ = flavor.config_class(**component.configuration)
+        configuration = flavor.config_class(**component.configuration)
+
+        # Update the configuration in the model
+        component.configuration = configuration.dict()
+
+        self._validate_stack_component_configuration(
+            component.type, configuration=configuration
+        )
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(component=component)

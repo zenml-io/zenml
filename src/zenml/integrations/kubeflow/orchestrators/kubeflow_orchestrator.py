@@ -263,7 +263,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
                 # if the orchestrator is remote, the container registry must
                 # also be remote.
-                if container_registry.is_local:
+                if container_registry.config.is_local:
                     return False, (
                         f"The Kubeflow orchestrator is configured to run "
                         f"pipelines in a remote Kubernetes cluster designated "
@@ -284,7 +284,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
                 # if the orchestrator is local, the container registry must
                 # also be local.
-                if not container_registry.is_local:
+                if not container_registry.config.is_local:
                     return False, (
                         f"The Kubeflow orchestrator is configured to run "
                         f"pipelines in a local k3d Kubernetes cluster "

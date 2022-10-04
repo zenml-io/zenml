@@ -17,7 +17,10 @@ from typing import TYPE_CHECKING, Any, Type
 
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
+from zenml.orchestrators.base_orchestrator import (
+    BaseOrchestratorConfig,
+    BaseOrchestratorFlavor,
+)
 from zenml.stack import Stack
 
 if TYPE_CHECKING:
@@ -66,6 +69,22 @@ class LocalOrchestrator(BaseOrchestrator):
             )
 
 
+class LocalOrchestratorConfig(BaseOrchestratorConfig):
+    """Local orchestrator config."""
+
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        return True
+
+
 class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
     """Class for the `LocalOrchestratorFlavor`."""
 
@@ -77,6 +96,15 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
             The flavor name.
         """
         return "local"
+
+    @property
+    def config_class(self) -> Type[BaseOrchestratorConfig]:
+        """Config class for the base orchestrator flavor.
+
+        Returns:
+            The config class.
+        """
+        return LocalOrchestratorConfig
 
     @property
     def implementation_class(self) -> Type[LocalOrchestrator]:
