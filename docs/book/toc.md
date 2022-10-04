@@ -112,11 +112,11 @@
   * [Label Studio](./component-gallery/annotators/label-studio.md)
   * [Develop a Custom Annotator](./component-gallery/annotators/custom.md)
 
-
 ## Guidelines
 
 * [Best Practices](guidelines/best-practices.md)
 * [Global Configuration](guidelines/global-config.md)
+* [Repository](guidelines/repository.md)
 * [System Environmental Variables](guidelines/system-environmental-variables.md)
 * [Migration guide 0.20.0](guidelines/migration-zero-twenty.md)
 

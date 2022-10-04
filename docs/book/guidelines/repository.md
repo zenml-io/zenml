@@ -5,7 +5,7 @@ description: Explaining Global Config and Repository.
 # Where is information stored in a ZenML installation?
 
 ZenML has two main locations where it stores information on the local machine.
-These are the [Global Configuration](../../resources/global-config.md) and the 
+These are the [Global Configuration](./global-config.md) and the 
 _Repository_. The latter is also referred to as the _.zen folder_.
 
 The ZenML **Repository** related to a pipeline run is the folder that contains 
@@ -15,10 +15,9 @@ The repository plays a double role in ZenML:
 
 * It is used by ZenML to identify which files must be copied into Docker images 
 in order to execute pipeline steps remotely, e.g., when orchestrating pipelines
-with [Kubeflow](../../component-gallery/orchestrators/kubeflow.md).
-* It defines the local active [Stack](#stacks) that will be used when running
-pipelines from the repository root or one of its sub-folders, as shown
-[below](#setting-the-local-active-stack).
+with [Kubeflow](../component-gallery/orchestrators/kubeflow.md).
+* It defines the local active Stack that will be used when running
+pipelines from the repository root or one of its sub-folders.
 
 ## Registering a Repository
 
