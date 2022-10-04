@@ -2,12 +2,6 @@
 description: How to control the order in which steps get executed
 ---
 
-# Things to change
-
-- needs a reread
-
-# Older content
-
 By default, ZenML uses the data flowing between steps of your pipeline to 
 determine the order in which steps get executed. The following example
 shows a pipeline in which `step_3` depends on the outputs of `step_1`
