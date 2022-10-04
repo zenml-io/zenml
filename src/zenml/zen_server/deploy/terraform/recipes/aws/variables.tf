@@ -46,12 +46,12 @@ variable "kubectl_config_path" {
 
 # If you want a new RDS, choose a name and a password. If you already
 # have an instance, provide the name and the password here too.
-variable "rds_db_username" {
+variable "database_username" {
   description = "The username for the AWS RDS metadata store"
   default     = "admin"
   type        = string
 }
-variable "rds_db_password" {
+variable "database_password" {
   description = "The password for the AWS RDS metadata store"
   default     = ""
   type        = string
