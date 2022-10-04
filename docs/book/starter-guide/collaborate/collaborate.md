@@ -2,32 +2,6 @@
 description: How to collaborate with your team in ZenML
 ---
 
-# Things to change
-
-- We should focus here on the ZenML Server
-- Perhaps mention import and export as a limited option to open this page
-- Show how collaboration is thought off - maybe mention roles
-- Maybe add an architecture diagram
-
-## Step 1: Single user working with local stacks
-
-![Working with local ZenML](../../assets/starter_guide/collaboration/01_local_stack.png)
-
-## Step 2: Single user working with local and cloud stacks
-
-![Single user working with local and cloud stacks](../../assets/starter_guide/collaboration/02_multiple_stacks.png)
-
-## Step 3: Multiple users working with local and cloud stacks
-
-![Multiple users working with local and cloud stacks](../../assets/starter_guide/collaboration/03_multiple_users.png)
-
-## Collaboration with ZenML Overview
-
-![Collaboration with ZenML Overview](../../assets/starter_guide/collaboration/04_cloud_collaboration_overview.png)
-
-
-# Old Content (1)
-
 # ZenML for Teams and Organizations
 
 Using ZenML to develop and execute pipelines from the comfortable confines of
@@ -69,19 +43,22 @@ This documentation section is dedicated to describing several ways in which you
 can deploy ZenML as a collaboration framework and enable your entire AI/ML team
 to enjoy its advantages.
 
-## Export and Import ZenML Stacks
-
-If you need to quickly share your Stack configuration with someone else, there
-is nothing easier than [using the ZenML CLI to export a Stack](./stack-export-import.md)
-in the form of a YAML file and import it somewhere else.
-
 ## Centralized ZenML Management with ZenML Server
 
-With the [_ZenML Server_](./zenml-server.md), you can deploy ZenML as a centralized
-service and connect entire teams and organizations to an easy to manage
-collaboration platform that provides a unified view on the MLOps processes,
-tools and technologies that support your entire AI/ML project lifecycle.
 
----
-description: How to export and import stacks to YAML files
----
+## Step 1: Single user working with local stacks
+
+![Working with local ZenML](../../assets/starter_guide/collaboration/01_local_stack.png)
+
+## Step 2: Single user working with local and cloud stacks
+
+![Single user working with local and cloud stacks](../../assets/starter_guide/collaboration/02_multiple_stacks.png)
+
+## Step 3: Multiple users working with local and cloud stacks
+
+![Multiple users working with local and cloud stacks](../../assets/starter_guide/collaboration/03_multiple_users.png)
+
+## Collaboration with ZenML Overview
+
+![Collaboration with ZenML Overview](../../assets/starter_guide/collaboration/04_cloud_collaboration_overview.png)
+
