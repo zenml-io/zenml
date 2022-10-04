@@ -4,7 +4,7 @@ description: Deploying ZenML on cloud using the CLI
 
 The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. You can check the [overview page](./deploying-zenml.md) to learn other options that you have.  
 
-Before we begin, it will help to understand the [architecture](./deploying-zenml.md#architecture) around the ZenML server and the database that it uses. Now, depending on your setup, you may find one of the following scenarios relevant.
+Before we begin, it will help to understand the [architecture](./deploying-zenml.md#scenario-3-server-and-database-hosted-in-the-cloud) around the ZenML server and the database that it uses. Now, depending on your setup, you may find one of the following scenarios relevant.
 
 ## Option 1: Starting from scratch
 
@@ -30,7 +30,7 @@ Reasonable defaults are in place for you already and if you wish to configure mo
 
 If you already have an existing cluster with your local `kubectl` configured with it, you can jump straight to the `deploy` command above to get going with the defaults. 
 
-However, if you also already have a database that you would want to use with the deployment you can choose to configure it with the use of a config file. This file can be found in the [Configuration File Templates](#configuration-file-templates) towards the end of this guide. It offers a host of configuration options that you can leverage for advanced use cases. Here we will demonstrate setting the database.
+However, if you also already have a database that you would want to use with the deployment, you can choose to configure it with the use of a config file. This file can be found in the [Configuration File Templates](#configuration-file-templates) towards the end of this guide. It offers a host of configuration options that you can leverage for advanced use cases. Here we will demonstrate setting the database.
 
 - Fill the fields below from the config file with values from your database.
 
@@ -67,7 +67,7 @@ However, if you also already have a database that you would want to use with the
 This is the general structure of a config file. Use this as a base and then add any cloud-specific parameters from the sections below. 
 
 <details>
-    <summary>AWS</summary>
+    <summary>General</summary>
 
 ```
 name: Name of the server deployment.
@@ -110,7 +110,7 @@ database_ssl_verify_server_cert: Whether to verify the database server
 ### Cloud specific settings
 
 <details>
-    <summary>General</summary>
+    <summary>AWS</summary>
 
 ```
 region: The AWS region to deploy to.
@@ -130,7 +130,7 @@ The `database_username` and `database_password` from the general config is used 
     <summary>Azure</summary>
 
 ```
-
+Coming Soon!
 ```
 
 </details>
@@ -139,7 +139,7 @@ The `database_username` and `database_password` from the general config is used 
     <summary>GCP</summary>
 
 ```
-
+Coming soon!
 ```
 
 </details>
