@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Util functions for the ZenServer."""
+"""Util functions for the ZenML Server."""
 
 import os
 from functools import wraps
@@ -49,7 +49,7 @@ if zen_store.type == StoreType.REST:
     raise ValueError(
         "Server cannot be started with a REST store type. Make sure you "
         "configure ZenML to use a non-networked store backend "
-        "when trying to start the ZenServer."
+        "when trying to start the ZenML Server."
     )
 
 

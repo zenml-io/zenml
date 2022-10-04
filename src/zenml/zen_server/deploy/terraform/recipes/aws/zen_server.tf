@@ -1,4 +1,4 @@
-# create the ZenServer deployment
+# create the ZenML Server deployment
 resource "kubernetes_namespace" "zen-server" {
   metadata {
     name = "${var.name}-${var.namespace}"
