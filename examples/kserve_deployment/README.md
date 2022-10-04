@@ -1,4 +1,4 @@
-# 🚀 KServe Deployment Example - TensorFlow and Pytorch Examples 🚀
+# 🚀 KServe Deployment Example - TensorFlow and Pytorch Examples
 
 [KServe](https://kserve.github.io/website) is a Kubernetes-based model inference platform
 built for highly scalable deployment use cases. It provides a standardized inference protocol 

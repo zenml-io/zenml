@@ -200,7 +200,7 @@ migration in case you decide to switch to another Data Validator.
 
 All you have to do is call the whylogs Data Validator methods when you need
 to interact with whylogs to generate data profiles. You may optionally enable
-whylabs loggingg to automatically upload the returned whylogs
+whylabs logging to automatically upload the returned whylogs
 profile to WhyLabs, e.g.:
 
 ```python

@@ -78,7 +78,7 @@ def main():
         }
     )
 
-    # visualize tje data drift
+    # visualize the data drift
     drift_detection_step = inf_run.get_step(step="drift_detector")
     EvidentlyVisualizer().visualize(drift_detection_step)
 
