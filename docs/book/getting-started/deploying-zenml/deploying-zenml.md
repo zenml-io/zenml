@@ -10,14 +10,9 @@ A ZenML deployment consists of two components:
 - A FastAPI server.
 - A SQL database.
 
-ZenML can also be deployed with an HTTP interface between the users machine 
-and the database. This is also the interface used by the browser dashboard.
-Especially in multi-user settings this is the recommended configuration
-scenario.
+ZenML can also be deployed with an HTTP interface between the users machine and the database. This is also the interface used by the browser dashboard. Especially in multi-user settings this is the recommended configuration scenario.
 
-ZenML relies on a SQLAlchemy compatible database to store all its data. The 
-location and type of this database can be freely chosen by the user. By default,
-a SQLite database is used (see [Scenario 1](#running-zenml-locally))
+ZenML relies on a SQLAlchemy compatible database to store all its data. The location and type of this database can be freely chosen by the user. By default, a SQLite database is used (see [Scenario 1](#running-zenml-locally))
 
 ## Running ZenML Locally
 
@@ -58,10 +53,14 @@ This sets up a local daemon (with options to run it as a Docker container) that 
 
 For a lot of use cases like sharing stacks and pipeline information with your team and for using cloud services to run your pipelines, you have to deploy ZenML on the cloud. 
 
-// TODO 
-* Explain who or what will access this deployment (user machine, dashboard,
-orchestrator, step operator, ..., this is relevant as these advanced users need 
-to make decisions early on) 
+Your ZenML code interacts with the server across different concerns. For example, 
+- your local machine connects to the server to read and write the stack configurations to allow collaboration. 
+- the individual orchestrators and step operators communicate with the server to write and track your pipeline run data. 
+- the dashboard is served from the server to give a UI interface to all of your metadata.
+
+As such, it is important that you deploy ZenML in a way that your machine can talk to it and all stack components have access to the server. 
+> If you are looking for a quick deployment without having to worry about configuring the right access, the [`zenml deploy` CLI command ](./cli.md) is the way to go!
+ 
 ### Scenario 3: Server and Database hosted on cloud
 * Similar to Scenario 2 but the data is now stored in an online SQL database and not locally.
 * Enables collaboration between remote teams.
