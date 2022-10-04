@@ -60,6 +60,19 @@ class AzureMLStepOperatorConfig(BaseStepOperatorConfig):
     service_principal_id: Optional[str] = SecretField()
     service_principal_password: Optional[str] = SecretField()
 
+    @property
+    def is_remote(self) -> bool:
+        """Checks if this stack component is running remotely.
+
+        This designation is used to determine if the stack component can be
+        used with a local ZenML database or if it requires a remote ZenML
+        server.
+
+        Returns:
+            True if this config is for a remote component, False otherwise.
+        """
+        return True
+
 
 class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
     """Flavor for the AzureML step operator."""
