@@ -64,7 +64,7 @@ Using the default local database.
 ```
 {% endhint %}
 
-### Setting the Local Active Stack
+#### Setting the Local Active Stack
 
 One of the most useful features of repositories is that you can configure a
 different active stack for each of your projects. This is great if
@@ -196,7 +196,7 @@ are shared through a remotely deployed ZenML Server.
 
 ![Running your pipeline in the cloud](../../assets/core_concepts/03_multi_stack.png)
 
-## Managing Remote Stacks
+## Managing Remote Stacks (Multi-player mode)
 
 If you are working in a non-local, collaborative setting, then the first
 question you would ask is how to share pipelines and stacks with other 
@@ -234,6 +234,8 @@ the machine where the Stack is exported, such as the local Artifact Store.
 pipeline runs. For that you need to set up a ZenML Server (see section below).
 
 ### Sharing stacks over a ZenML Server
+
+![Multi-user setting](../../assets/core_concepts/04_architecture.png)
 
 With collaboration being the key part of ZenML, the 0.20.0 release puts the
 concepts of Users and Projects front and center and introduces
