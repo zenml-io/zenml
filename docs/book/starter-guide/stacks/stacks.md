@@ -36,6 +36,17 @@ separate stack in ZenML. Since ZenML code is tooling-independent, you can
 switch between stacks with a single command and then automatically execute your
 ML workflows on the desired stack without having to modify your code.
 
+### The Default Stack
+
+By default, every ZenML project that you create already come with an initial active 
+`default` stack, which features:
+- A [local orchestrator](../../component-gallery/orchestrators/local.md),
+- A [local artifact store](../../component-gallery/artifact-stores/local.md),
+
+If you followed the code examples in the 
+[Steps and Pipelines](../pipelines/pipelines.md) section, then you have already
+used this stack implicitly to run all of your pipelines.
+
 ## Stack Components
 
 In ZenML, each MLOps tool is associated to a specific **Stack Component**,
@@ -76,17 +87,6 @@ E.g., *Kubeflow* is a flavor of the *Orchestrator* stack component.
 Out-of-the-box, ZenML already comes with a wide variety of flavors, which are
 either built-in or enabled through the installation of specific
 [Integrations](../../component-gallery/integrations.md).
-
-## The Default Stack
-
-By default, every ZenML project that you create already come with an initial active 
-`default` stack, which features:
-- A [local orchestrator](../../component-gallery/orchestrators/local.md),
-- A [local artifact store](../../component-gallery/artifact-stores/local.md),
-
-If you followed the code examples in the 
-[Steps and Pipelines](../pipelines/pipelines.md) section, then you have already
-used this stack implicitly to run all of your pipelines.
 
 ## Listing Stacks, Stack Components, and Flavors
 
