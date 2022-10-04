@@ -12,7 +12,7 @@ A ZenML deployment consists of two components:
 
 ZenML can also be deployed with an HTTP interface between the users machine and the database. This is also the interface used by the browser dashboard. Especially in multi-user settings this is the recommended configuration scenario.
 
-ZenML relies on a SQLAlchemy compatible database to store all its data. The location and type of this database can be freely chosen by the user. By default, a SQLite database is used (see [Scenario 1](#running-zenml-locally))
+ZenML relies on a SQLAlchemy compatible database to store all its data. The location and type of this database can be freely chosen by the user. By default, a SQLite database is used (see [Scenario 1](#running-zenml-locally)).
 
 ## Running ZenML Locally
 
