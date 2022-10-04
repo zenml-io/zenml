@@ -20,19 +20,30 @@ As discussed in a [previous chapter](../../starter-guide/pipelines/iterating.md)
 
 We have [already discussed `BaseParameters`](../../starter-guide/pipelines/iterating.md) and now is the time to talk about its brother, `BaseSettings`.
 
-Users can think of configuring stacks and pipeline in terms of `Params` and `Settings`
-@step/pipeline(…): Configures the class -> will be set for all instances
+We can further break down settings into two groups:
+
+- General settings that can be used on all ZenML pipelines: `DockerSettings` and `ResourceSettings`.
+- Stack component specific settings: these can be used to supply runtime configurations to certain stack components (key= <COMPONENT_TYPE>.<COMPONENT_FLAVOR>). Settings for components not in the active stack will be ignored
+
+### Configuring with YAML
+
+Generate a template for a config file: `pipeline_instance.write_run_configuration_template(path=<PATH>)`
+
+### Heirarchy and precendence
+
+Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. Merging similar to the example above
 
 step_instance/pipeline_instance.configure(…): Configures the instance -> will be set for all runs using the instance
 
 pipeline.run(…): allows configuration in code or using a yaml file. Configurations in code overwrite settings in the file
 
-Generate a template for a config file: pipeline_instance.write_run_configuration_template(path=<PATH>)
-
+### Merging settings on class/instance/run:
 
 Merging settings on class/instance/run:
-when a settings object is configured, ZenML merges the values with previously configured keys: <Example>
 
+when a settings object is configured, ZenML merges the values with previously configured keys. E.g.:
+
+```python
 from zenml.config import ResourceSettings
 
 @step(settings={"resources": ResourceSettings(cpu_count=2, memory="1GB")})
@@ -41,11 +52,7 @@ def my_step() -> None:
 
 step_instance = my_step()
 step_instance.configure(settings={"resources": ResourceSettings(gpu_count=1, memory="2GB")})
-step_instance.configuration.settings["resources"] # cpu_count: 2, gpu_count=1, memory=2BG
+step_instance.configuration.settings["resources"] # cpu_count: 2, gpu_count=1, memory="2GB"
+```
 
-
-Settings:
-- General settings that can be used on all ZenML pipelines: DockerSettings and ResourceSettings
-- Stack component specific settings: these can be used to supply runtime configurations to certain stack components (key= <COMPONENT_TYPE>.<COMPONENT_FLAVOR>). Settings for components not in the active stack will be ignored
-
-Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. Merging similar to the example above
+In the above example, the two settings were merged into one automatically.
