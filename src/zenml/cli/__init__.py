@@ -712,6 +712,69 @@ following command:
 zenml stack register-secrets [<STACK_NAME>]
 ```
 
+Managing the local ZenML Dashboard
+----------------------------------
+
+The ZenML dashboard is a web-based UI that allows you to visualize and navigate
+the stack configurations, pipelines and pipeline runs tracked by ZenML among
+other things. You can start the ZenML dashboard locally by running the following
+command:
+
+```bash
+zenml up
+```
+
+This will start the dashboard on your local machine where you can access it at
+the URL printed to the console. If you want to stop the dashboard, simply run:
+
+```bash
+zenml down
+```
+
+The `zenml up` command has a few additional options that you can use to
+customize how the ZenML dashboard is running.
+
+By default, the dashboard is started as a background process. On some operating
+systems, this capability is not available. In this case, you can use the
+`--blocking` flag to start the dashboard in the foreground:
+
+```bash
+zenml up --blocking
+```
+
+This will block the terminal until you stop the dashboard with CTRL-C.
+
+Another option you can use, if you have Docker installed on your machine, is to
+run the dashboard in a Docker container. This is useful if you don't want to
+install all the Zenml server dependencies on your machine. To do so, simply run:
+
+```bash
+zenml up --docker
+```
+
+The TCP port and the host address that the dashboard uses to listen for
+connections can also be customized. Using an IP address that is not the default
+`localhost` or 127.0.0.1 is especially useful if you're running some type of
+local ZenML orchestrator, such as the k3d Kubeflow orchestrator or Docker
+orchestrator, that can't directly access you loopback interface and therefore
+cannot connect to the local ZenML server.
+
+For example, to start the dashboard on port 9000 and have it listen
+on all locally available interfaces on your machine, run:
+
+```bash
+zenml up --port 9000 --ip-address 0.0.0.0
+```
+
+Note that the above 0.0.0.0 IP address also exposes your ZenML dashboard
+externally through your public interface. Alternatively, you can choose an
+explicit IP address that is configured on one of your local interfaces, such as
+the Docker bridge interface, which usually has the IP address `172.17.0.1`:
+
+```bash
+zenml up --port 9000 --ip-address 172.17.0.1
+```
+
 Managing users, teams, projects and roles
 -----------------------------------------
 
