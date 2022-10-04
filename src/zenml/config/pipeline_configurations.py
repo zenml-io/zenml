@@ -14,6 +14,8 @@
 """Pipeline configuration classes."""
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from pydantic import validator
+
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate, StepSpec
@@ -23,6 +25,8 @@ if TYPE_CHECKING:
     from zenml.config import DockerSettings
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
+
+DISALLOWED_PIPELINE_NAMES = ["unlisted"]
 
 
 class PipelineConfigurationUpdate(StrictBaseModel):
@@ -38,6 +42,26 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
 
     name: str
     enable_cache: bool
+
+    @validator("name")
+    def ensure_pipeline_name_allowed(cls, name: str) -> str:
+        """Ensures the pipeline name is allowed.
+
+        Args:
+            name: Name of the pipeline.
+
+        Returns:
+            The validated name of the pipeline.
+
+        Raises:
+            ValueError: If the name is not allowed.
+        """
+        if name in DISALLOWED_PIPELINE_NAMES:
+            raise ValueError(
+                f"Pipeline name '{name}' is not allowed since '{name}' is a "
+                "reserved key word. Please choose another name."
+            )
+        return name
 
     @property
     def docker_settings(self) -> "DockerSettings":
