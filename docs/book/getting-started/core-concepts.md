@@ -2,8 +2,6 @@
 description: What are the core concepts in ZenML
 ---
 
-TODO: This needs better visualizations found in Figma
-
 # Core Concepts
 
 ZenML consists of a few components. This guide walks through the various pieces you'll encounter, starting from the basics to things you'll only encounter when deploying to the cloud. 
