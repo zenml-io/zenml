@@ -439,7 +439,6 @@ orchestrators and step operators now use this intermediate representation to run
 pipelines and steps.
 
 The Post-execution workflow has changed as follows:
-- @Alexej Penner or @Baris Can Durak can you help me here?
 - The `get_pipeline` and `get_run` methods have been moved out of the `Repository` (i.e. the new `Client` ) class and lie directly in the post_execution module now. To use the user has to do:
 
 ```bash
