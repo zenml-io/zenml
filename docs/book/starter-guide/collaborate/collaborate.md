@@ -53,9 +53,28 @@ of such usage [previously](../stacks/managing-stacks.md).
 
 ## Step 2: Single user working with local and cloud stacks
 
+The next step in the journey is to go to the cloud, and for that you need to [deploy ZenML](../../getting-started/deploying-zenml/deploying-zenml.md).
+Don't worry - we will show an easy way of getting started with this quickly, with little to no knowledge of cloud technologies in the
+[next section](zenml-deployment.md).
+
+For now, we should understand the consequence of doing such an acion. Once ZenML is deployed and the user connects to it remotely, all
+stacks, pipelines, runs, and other metadata will be [centrally tracked](../../advanced-guide/pipelines/runtime-configuration.md) in
+the database that backs the server.
+
+The user can still keep using local, [non-shared](../stacks/managing-stacks.md#sharing-stacks-over-a-zenml-server) stacks (e.g. the default stack). However, they will notice a significant dropoff in speed of execution
+of the pipelines because they are now communicating over the internet to a central location.
+
 ![Single user working with local and cloud stacks](../../assets/starter_guide/collaboration/02_multiple_stacks.png)
 
 ## Step 3: Multiple users working with local and cloud stacks
+
+Once the user is ready, they can now go ahead and register so called `cloud` (read: `non-local`) stacks. These are stack components
+that point to tooling infrastructure that is also running on the cloud. A good example of this is a stack that:
+
+- [Kubeflow**Orchestrator**](../../component-gallery/orchestrators/kubeflow.md) which orchestrates your ML workflows on [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/v1/introduction/). 
+- [S3**ArtifactStore**](../../component-gallery/artifact-stores/amazon-s3.md) which can store your artifacts in a [S3 storage](https://aws.amazon.com/s3/).
+- [MLflow**ExperimentTracker**](../../component-gallery/experiment-trackers/mlflow.md) which can track your experiments with [MLFlow](https://mlflow.org/).
+- [Evidently**DataValidator**](../../component-gallery/data-validators/evidently.md) which can help you validate your data with [Evidently](https://www.evidentlyai.com/).
 
 ![Multiple users working with local and cloud stacks](../../assets/starter_guide/collaboration/03_multiple_users.png)
 
