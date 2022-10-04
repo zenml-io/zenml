@@ -52,3 +52,82 @@ if the machine you're running on only has permissions to list secrets but not ac
 their values.
 * Setting it to `SECRET_AND_KEY_EXISTS` (the default) validates both the secret existence as
 well as the existence of the exact key-value pair.
+
+
+## How to use it
+
+### In the CLI
+
+A full guide on using the CLI interface to register, access, update and delete
+secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--using-secrets).
+
+{% hint style="info" %}
+
+A ZenML secret is a grouping of key-value pairs which are defined by a schema.
+An AWS SecretSchema, for example, has key-value pairs for `AWS_ACCESS_KEY_ID` 
+and `AWS_SECRET_ACCESS_KEY` as well as an optional `AWS_SESSION_TOKEN`. If you 
+don't specify a schema when registering a secret, ZenML will use the 
+`ArbitrarySecretSchema`, a schema where arbitrary keys are allowed.
+{% endhint %}
+
+Note that there are two ways you can register or update your secrets. If you
+wish to do so interactively, passing the secret name in as an argument
+(as in the following example) will initiate an interactive process:
+
+```shell
+zenml secrets-manager secret register SECRET_NAME -i
+```
+
+If you wish to specify key-value pairs using command line arguments, you can do
+so instead:
+
+```shell
+zenml secrets-manager secret register SECRET_NAME --key1=value1 --key2=value2
+```
+
+For secret values that are too big to pass as a command line argument, or have
+special characters, you can also use the special `@` syntax to indicate to ZenML
+that the value needs to be read from a file:
+
+```bash
+zenml secrets-manager secret register SECRET_NAME --attr_from_literal=value \
+   --attr_from_file=@path/to/file.txt ...
+```
+
+### In a ZenML Step
+
+You can access the secrets manager directly from within your steps through the 
+`StepContext`. This allows you to use your secrets for querying APIs from 
+within your step without hard-coding your access keys. Don't forget to 
+make the appropriate decision regarding caching as it will be disabled by 
+default when the `StepContext` is passed into the step.
+
+```python
+from zenml.steps import step, StepContext
+
+
+@step(enable_cache=True)
+def secret_loader(
+    context: StepContext,
+) -> None:
+    """Load the example secret from the secret manager."""
+    # Load Secret from active secret manager. This will fail if no secret
+    # manager is active or if that secret does not exist.
+    retrieved_secret = context.stack.secrets_manager.get_secret(<SECRET_NAME>)
+
+    # retrieved_secret.content will contain a dictionary with all Key-Value
+    # pairs within your secret.
+    return
+```
+
+{% hint style="info" %}
+This will only work if the environment that your orchestrator uses to execute 
+steps has access to the secrets manager. For example a local secrets manager
+will not work in combination with a remote orchestrator.
+{% endhint %}
+
+
+{% hint style="info" %}
+To read a more detailed guide about how Secret Managers function in ZenML,
+[click here](../../component-gallery/secrets-managers/).
+{% endhint %}

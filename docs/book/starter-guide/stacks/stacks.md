@@ -86,10 +86,10 @@ or any other place instead.
 You can see all supported stack component types in a single table view [here](../component-gallery/categories.md)
 
 {% hint style="info" %}
-Every stack can usually contains one stack component category of each type, e.g.,
+Every stack can usually contain one stack component category of each type, e.g.,
 one `Orchestrator`, one `Artifact Store`, etc, but in some cases, you can have more
 than one stack component category in one stack (e.g. in the case of having two 
-step operators in your stack). We will discuss this in later chapters.
+`Step Operators` in your stack). We will discuss this in later chapters.
 {% endhint %}
 
 

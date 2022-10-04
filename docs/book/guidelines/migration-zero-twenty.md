@@ -413,7 +413,7 @@ Alongside the architectural shift, Pipeline configuration has been completely
 rethought. ZenML pipelines and steps could previously be configured in many
 different ways:
 
-- On the `@pipeline` and `@step` decorators
+- On the `@pipeline` and `@step` decorators (e.g. the `requirements` variable)
 - In the `__init__` method of the pipeline and step class
 - Using `@enable_xxx` decorators
 - Using specialized methods like `pipeline.with_config(...)` or

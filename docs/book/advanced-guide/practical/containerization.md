@@ -2,6 +2,10 @@
 description: How ZenML uses Docker images to run your pipeline
 ---
 
+In the [In-depth Configuration](../../advanced-guide/pipelines/pipelines.md) of the docs, we saw how to
+use the `BaseSettings` concept to configure ZenML in various ways. In this guide, we will dive deeper into
+one particular sub-class of `BaseSettings` which is of particular important: `DockerSettings`. Here is why it is important.
+
 When running locally, ZenML will execute the steps of your pipeline in the
 active Python environment. When using remote [orchestrators](../../mlops-stacks/orchestrators/orchestrators.md)
 or [step operators](../../mlops-stacks/step-operators/step-operators.md) instead,

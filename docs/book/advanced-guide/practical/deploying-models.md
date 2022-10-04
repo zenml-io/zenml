@@ -134,3 +134,8 @@ if services:
 And with the ZenML CLI we can interact with list of served models, start, stop or delete deployments that the active model deployer is responsible for.
 
 ![Example of the output from the ZenML CLI](../../assets/deployment/served-models-cli.png)
+
+{% hint style="info" %}
+To read a more detailed guide about how Model Deployers function in ZenML,
+[click here](../../component-gallery/model-deployers/).
+{% endhint %}

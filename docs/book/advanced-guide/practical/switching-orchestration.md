@@ -2,6 +2,8 @@
 description: Switching orchestrators to run in the cloud
 ---
 
+# Switching orchestration
+
 It is common to need to switch out the ways you run your pipelines as you
 progress through your work. When you start out, a local orchestrator is all you
 need: you run your pipelines on small slices of your data and you build out your
@@ -66,3 +68,9 @@ run.py` and we can rerun on the new orchestrator. Switching out all the other
 pieces of your ZenML infrastructure is just as easy. Simple CLI commands gives
 you the flexibility to switch between different components, and the underlying
 code doesn't need to change at all!
+
+
+{% hint style="info" %}
+To read a more detailed guide about how Orchestrators and how they function in ZenML,
+[click here](../../component-gallery/orchestrators/orchestrators.md).
+{% endhint %}

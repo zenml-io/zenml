@@ -76,3 +76,8 @@ For a more detailed example of how to use Weights & Biases experiment tracking
 in your ZenML pipeline, see [the ZenML wandb_tracking
 example](https://github.com/zenml-io/zenml/tree/main/examples/wandb_tracking).
 
+
+{% hint style="info" %}
+To read a more detailed guide about how Experiment Trackers function in ZenML,
+[click here](../../component-gallery/experiment-trackers).
+{% endhint %}
