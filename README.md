@@ -219,7 +219,7 @@ By the end, you'll get a glimpse of how to use ZenML to register a stack:
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 
 # Register an Airflow orchestrator
-zenml data-validator register airflow_orchestrator --flavor=airflow
+zenml airflow register airflow_orchestrator --flavor=airflow
 
 # Create a stack from the components
 zenml stack register my_stack -o airflow_orchestrator -a default -e mlflow_tracker
