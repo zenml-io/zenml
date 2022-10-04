@@ -44,7 +44,6 @@
   * [Write Custom Stack Component Flavors](./advanced-guide/stacks/custom-flavors.md)
   * [Manage Stack Component States](./advanced-guide/stacks/stack-state-management.md)
   * [Manage External Services](./advanced-guide/stacks/manage-external-services.md)
-  * [Set Stacks with Environment Variables](./advanced-guide/stacks/stack-environment-variables.md)
 
 
 ## Component Gallery
