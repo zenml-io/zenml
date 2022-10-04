@@ -41,8 +41,7 @@ or different db altogether [here]().
 * All calls go through HTTP endpoints
 * Allows running the Dashboard
 * Data still stored in the same location as Scenario 1
-* ZenML natively supports running either in a Daemon Thread or Docker Image 
--> Find out more [here](./docker.md)
+* ZenML natively supports running either in a Daemon Thread or Docker Image. Find out more [here](./docker.md)
 
 You can setup ZenML with scenario 2 through the use of the `up` command.
 
@@ -51,8 +50,6 @@ zenml up
 ```
 
 This sets up a local daemon (with options to run it as a Docker container) that is backed by a SQLite store on your machine. You also get an URL to access the ZenML Dashboard which shows your available stacks, pipeline runs and team settings among other things.
-
-// TODO: ADD SCREENSHOT OF DASHBOARD
 
 
 ![ZenML on with Local HTTP Server](../../assets/getting_started/Scenario2.png)
