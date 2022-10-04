@@ -109,8 +109,7 @@ Using the default local database.
 ZenML repository initialized at /tmp/zenml.
 The local active stack was initialized to 'default'. This local configuration will
 only take effect when you're running ZenML from the initialized repository root,
-or from a subdirectory. For more information on repositories and configurations,
-please visit https://docs.zenml.io/developer-guide/stacks-repositories.
+or from a subdirectory.
 
 
 $ zenml stack list
