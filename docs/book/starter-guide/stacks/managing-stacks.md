@@ -292,4 +292,4 @@ ZenML Server, even though this is not enforced by the system.
 are shared through a remotely deployed ZenML Server.
 
 Collaboration as a topic deserves its own section, and that's exactly  what we'll
-dive into [next](../collaborate/).
+dive into [next](../collaborate/collaborate.md).
