@@ -4,7 +4,7 @@ description: How to control ZenML behavior with environmental variables
 
 # System environmental variables
 
-There are a few pre-defined environmental variables that can be used to control some of 
+There are a few pre-defined environmental variables that can be used to control 
 the behavior of ZenML. See the list below with default values and options:
 
 Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`:
@@ -15,12 +15,6 @@ ZENML_LOGGING_VERBOSITY=INFO
 Explicit path to the ZenML repository:
 ```bash
 ZENML_REPOSITORY_PATH
-```
-
-Name of the active stack, see 
-[Setting Stacks with Environment Variables](../advanced-guide/stacks/stack-environment-variables.md):
-```
-ZENML_ACTIVE_STACK_NAME
 ```
 
 Setting to `false` disables analytics:
