@@ -1307,7 +1307,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to get the status for.
-        
+
         Returns:
             The execution status of the pipeline run.
         """
@@ -1380,7 +1380,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             step_id: The ID of the step to get the status for.
-        
+
         Returns:
             The execution status of the step.
         """

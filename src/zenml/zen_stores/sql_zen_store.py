@@ -2583,12 +2583,20 @@ class SqlZenStore(BaseZenStore):
             The status of the pipeline run.
         """
         steps = self.list_run_steps(run_id)
+
+        # If any step is failed or running, return running
         for step in steps:
             step_status = self.get_run_step_status(step.id)
             if step_status == ExecutionStatus.FAILED:
                 return ExecutionStatus.FAILED
             if step_status == ExecutionStatus.RUNNING:
                 return ExecutionStatus.RUNNING
+
+        # If not all steps have started yet, return running
+        if len(steps) < self.get_run(run_id).num_steps:
+            return ExecutionStatus.RUNNING
+
+        # Otherwise, return succeeded
         return ExecutionStatus.COMPLETED
 
     # ------------------
@@ -2984,6 +2992,7 @@ class SqlZenStore(BaseZenStore):
                     stack_id=mlmd_run.stack_id,
                     pipeline_id=mlmd_run.pipeline_id,
                     pipeline_configuration=mlmd_run.pipeline_configuration,
+                    num_steps=mlmd_run.num_steps,
                 )
                 new_run = self._create_run(new_run)
                 self._sync_run_steps(new_run.id)
