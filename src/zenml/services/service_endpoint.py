@@ -15,6 +15,7 @@
 
 from typing import Any, Optional, Tuple
 
+from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.logger import get_logger
 from zenml.services.service_monitor import BaseServiceEndpointHealthMonitor
 from zenml.services.service_status import ServiceState, ServiceStatus
@@ -79,7 +80,11 @@ class ServiceEndpointStatus(ServiceStatus):
             # port and protocol are known
             return None
 
-        return f"{self.protocol.value}://{self.hostname}:{self.port}"
+        hostname = self.hostname
+        if hostname == "0.0.0.0":
+            hostname = DEFAULT_LOCAL_SERVICE_IP_ADDRESS
+
+        return f"{self.protocol.value}://{hostname}:{self.port}"
 
 
 class BaseServiceEndpoint(BaseTypedModel):

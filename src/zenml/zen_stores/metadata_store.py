@@ -51,6 +51,7 @@ class MLMDPipelineRunModel(BaseModel):
     pipeline_id: Optional[UUID]
     stack_id: UUID
     pipeline_configuration: Dict[str, Any]
+    num_steps: int
 
 
 class MLMDStepRunModel(BaseModel):
@@ -249,6 +250,7 @@ class MetadataStore:
         pipeline_configuration = json.loads(
             context_properties.get("pipeline_configuration").string_value
         )
+        num_steps = int(context_properties.get("num_steps").string_value)
         return MLMDPipelineRunModel(
             mlmd_id=context.id,
             name=context.name,
@@ -257,6 +259,7 @@ class MetadataStore:
             pipeline_id=model_ids["pipeline_id"],
             stack_id=model_ids["stack_id"],
             pipeline_configuration=pipeline_configuration,
+            num_steps=num_steps,
         )
 
     def get_all_runs(self) -> Dict[str, MLMDPipelineRunModel]:

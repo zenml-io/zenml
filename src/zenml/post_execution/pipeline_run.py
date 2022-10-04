@@ -147,18 +147,7 @@ class PipelineRunView:
         Returns:
             The current status of the pipeline run.
         """
-        step_statuses = (step.status for step in self.steps)
-
-        if any(status == ExecutionStatus.FAILED for status in step_statuses):
-            return ExecutionStatus.FAILED
-        elif all(
-            status == ExecutionStatus.COMPLETED
-            or status == ExecutionStatus.CACHED
-            for status in step_statuses
-        ):
-            return ExecutionStatus.COMPLETED
-        else:
-            return ExecutionStatus.RUNNING
+        return Client().zen_store.get_run_status(self.id)
 
     @property
     def steps(self) -> List[StepView]:
