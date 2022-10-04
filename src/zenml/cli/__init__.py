@@ -59,7 +59,7 @@ Beginning a Project
 -------------------
 
 In order to start working on your project, initialize a ZenML repository
-within your current directory with ZenML’s own config and resource management
+within your current directory with ZenML's own config and resource management
 tools:
 
 ```bash
@@ -97,13 +97,13 @@ version.*
 Loading and using pre-built examples
 ------------------------------------
 
-If you don’t have a project of your own that you’re currently working
+If you don't have a project of your own that you're currently working
 on, or if you just want to play around a bit and see some functional
-code, we’ve got your back! You can use the ZenML CLI tool to download
+code, we've got your back! You can use the ZenML CLI tool to download
 some pre-built examples.
 
 We know that working examples are a great way to get to know a tool, so
-we’ve made some examples for you to use to get started. (This is
+we've made some examples for you to use to get started. (This is
 something that will grow as we add more).
 
 To list all the examples available to you, type:
@@ -121,13 +121,13 @@ zenml example info quickstart
 If you want to pull all the examples into your current working directory
 (wherever you are executing the ``zenml`` command from in your
 terminal), the CLI will create a ``zenml_examples`` folder for you if it
-doesn’t already exist whenever you use the ``pull`` subcommand. The
+doesn't already exist whenever you use the ``pull`` subcommand. The
 default is to copy all the examples, like this:
 
 ```bash
 zenml example pull
 ```
-If you’d only like to pull a single example, add the name of that
+If you'd only like to pull a single example, add the name of that
 example (for example, ``quickstart``) as an argument to the same
 command, as follows:
 
