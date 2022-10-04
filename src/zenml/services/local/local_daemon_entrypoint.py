@@ -28,7 +28,9 @@ from zenml.utils.daemon import daemonize
 # If the LocalZenServer dependencies aren't installed, there is no need to register
 # it anywhere so we simply pass.
 try:
-    pass
+    from zenml.zen_server.deploy.local.local_zen_server import (  # noqa
+        LocalZenServer,
+    )
 except ImportError:
     pass
 

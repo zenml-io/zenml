@@ -30,7 +30,9 @@ from zenml.services.container.container_service import (
 # Try to import the DockerZenServer here because it needs to be registered in the
 # service registry early on in order to be available for use in other modules.
 try:
-    pass
+    from zenml.zen_server.deploy.docker.docker_zen_server import (  # noqa
+        DockerZenServer,
+    )
 except ImportError:
     pass
 
