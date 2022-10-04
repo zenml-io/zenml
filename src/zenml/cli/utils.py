@@ -1077,9 +1077,12 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
     Args:
         status: The execution status to get the emoji for.
-    
+
     Returns:
         An emoji representing the given execution status.
+
+    Raises:
+        RuntimeError: If the given execution status is not supported.
     """
     from zenml.enums import ExecutionStatus
 
@@ -1105,16 +1108,16 @@ def print_pipeline_runs_table(
     """
     runs_dicts = []
     for pipeline_run in pipeline_runs:
-        try:
+        if pipeline_run.pipeline_id is None:
+            pipeline_name = "N/A"
+        else:
             pipeline_name = client.zen_store.get_pipeline(
                 pipeline_run.pipeline_id
             ).name
-        except KeyError:
-            pipeline_name = "N/A"
-        try:
-            stack_name = client.zen_store.get_stack(pipeline_run.stack_id).name
-        except KeyError:
+        if pipeline_run.stack_id is None:
             stack_name = "[DELETED]"
+        else:
+            stack_name = client.zen_store.get_stack(pipeline_run.stack_id).name
         status = client.zen_store.get_run_status(pipeline_run.id)
         status_emoji = get_execution_status_emoji(status)
         run_dict = {
