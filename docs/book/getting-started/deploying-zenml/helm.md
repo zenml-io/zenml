@@ -7,16 +7,6 @@ If you wish to deploy ZenML on clouds other than AWS, Azure and GCP or on any ot
 - Using a Docker container.
 - Using the Helm chart.
 
-## Using Docker
-
-The ZenML server image is available at `zenmldocker/zenml-server` and can be used in container services, serverless platforms like [Cloud Run](https://cloud.google.com/run), [Container Apps](https://learn.microsoft.com/en-us/azure/container-apps/overview) and more!
-
-You can also run this image locally using the `up` command and the `--docker` flag.
-
-```
-zenml up --docker
-```
-
 ## Using Helm
 
 The ZenML repository hosts a Helm chart that can be used to deploy to Kubernetes. This chart is not hosted on an online repository yet and so you can follow the steps below:

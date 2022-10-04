@@ -2,12 +2,6 @@
 description: How to create ML pipelines in ZenML
 ---
 
-# Things to change
-
-- Similar to before but also do `zenml up` and show dashboard after running a pipeline
-
-# Older Content
-
 # Steps & Pipelines
 
 ZenML helps you standardize your ML workflows as ML **Pipelines** consisting of
@@ -88,6 +82,41 @@ svc_trainer.entrypoint(X_train=..., y_train=...)
 ```
 {% endhint %}
 
+
+<details>
+<summary>Using the Class-based API</summary>
+
+In ZenML there are two different ways how you can define pipelines or steps. What you have seen in this section so far is the Functional API, where steps and pipelines are defined as Python functions with a @step or @pipeline decorator respectively. This is the API that is used primarily throughout the ZenML docs and examples.
+
+Alternatively, you can also define steps and pipelines using the Class-Based API by creating Python classes that subclass ZenML's abstract base classes BaseStep and BasePipeline directly. Internally, both APIs will result in similar definitions, so it is entirely up to you which API to use.
+
+```python
+import numpy as np
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
+
+from zenml.steps import BaseStep, BaseParameters
+
+
+class SVCTrainerParams(BaseParameters):
+    """Trainer params"""
+    gamma: float = 0.001
+
+
+class SVCTrainerStep(BaseStep):
+    def entrypoint(
+        self,
+        params SVCTrainerParams,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+    ) -> ClassifierMixin:
+        """Train a sklearn SVC classifier."""
+        model = SVC(gamma=config.gamma)
+        model.fit(X_train, y_train)
+        return model
+```
+</details>
+
 ## Pipeline
 
 Let us now define our first ML pipeline. This is agnostic of the implementation and can be
@@ -97,12 +126,36 @@ this as a recipe for how we want data to flow through our steps.
 ```python
 from zenml.pipelines import pipeline
 
-
 @pipeline
 def first_pipeline(step_1, step_2):
     X_train, X_test, y_train, y_test = step_1()
     step_2(X_train, y_train)
 ```
+
+<details>
+<summary>Using the Class-based API</summary>
+
+In ZenML there are two different ways how you can define pipelines or steps. What you have seen in this section so far is the Functional API, where steps and pipelines are defined as Python functions with a @step or @pipeline decorator respectively. This is the API that is used primarily throughout the ZenML docs and examples.
+
+Alternatively, you can also define steps and pipelines using the Class-Based API by creating Python classes that subclass ZenML's abstract base classes BaseStep and BasePipeline directly. Internally, both APIs will result in similar definitions, so it is entirely up to you which API to use.
+
+```python
+from zenml.pipelines import BasePipeline
+
+
+class FirstPipeline(BasePipeline):
+    def connect(self, step_1, step_2):
+        X_train, X_test, y_train, y_test = step_1()
+        step_2(X_train, y_train)
+
+
+first_pipeline_instance = FirstPipeline(
+    step_1=digits_data_loader(),
+    step_2=SVCTrainerStep(SVCTrainerParams(gamma=0.01)),
+)
+```
+</details>
+
 
 ### Instantiate and run your Pipeline
 
@@ -132,18 +185,33 @@ first_pipeline_instance.run()
 You should see the following output in your terminal:
 
 ```shell
-Creating run for pipeline: `first_pipeline`
-Cache disabled for pipeline `first_pipeline`
-Using stack `default` to run pipeline `first_pipeline`
+Registered new pipeline with name `first_pipeline`.
+Creating run `first_pipeline-03_Oct_22-14_08_44_284312` for pipeline `first_pipeline` (Caching enabled)
+Using stack `default` to run pipeline `first_pipeline`...
 Step `digits_data_loader` has started.
-Step `digits_data_loader` has finished in 0.049s.
+Step `digits_data_loader` has finished in 0.121s.
 Step `svc_trainer` has started.
-Step `svc_trainer` has finished in 0.067s.
-Pipeline run `first_pipeline-06_Jul_22-16_10_46_255748` has finished in 0.128s.
+Step `svc_trainer` has finished in 0.099s.
+Pipeline run `first_pipeline-03_Oct_22-14_08_44_284312` has finished in 0.236s.
+Pipeline visualization can be seen in the ZenML Dashboard. Run `zenml up` to see your pipeline!
 ```
 
 We will dive deeper into how to inspect the finished run within the chapter on
 [Accessing Pipeline Runs](./inspecting-pipeline-runs.md).
+
+### Inspect your pipeline in the dashboard
+
+Notice the last log, that indicates running a command to view the dashboard. Let's go ahead and do that:
+
+```
+zenml up
+```
+
+![ZenML Up](../../assets/getting_started/zenml-up.gif)
+
+The dashboard serves as a visual interface to see pipelines and pipeline runs.
+
+TODO: Add image when dashboard is done.
 
 ### Give each pipeline run a name
 
@@ -160,10 +228,22 @@ Pipeline run names must be unique, so make sure to compute it dynamically if you
 plan to run your pipeline multiple times.
 {% endhint %}
 
+### Unlisted runs
+
+Once a pipeline has been executed, it is represented by a [`PipelineSpec`](https://apidocs.zenml.io) that uniques identifies it. 
+Therefore, you cannot edit a pipeline after it has been run once. In order to iterate quickly pipelines, there are three options:
+
+- Pipeline runs can be created without being associated with a pipeline explicitly. These are called `unlisted` runs and can be created by passing 
+the `unlisted` parameter when running a pipeline: `pipeline_instance.run(unlisted=True)`.
+- Pipelines can be deleted and created again using `zenml pipeline delete <PIPELINE_ID_OR_NAME>`.
+- Pipelines can be given [unique names](#give-each-pipeline-run-a-name) each time they are run to uniquely identify them.
+
+We will dive into quickly iterating over pipelines [later in this section](iterating.md).
+
 ## Code Summary
 
 <details>
-    <summary>Code Example for this Section</summary>
+<summary>Code Example for this Section</summary>
 
 ```python
 import numpy as np

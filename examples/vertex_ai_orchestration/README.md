@@ -110,7 +110,6 @@ Once everything is done on the GCP side, we will need to configure a
 stack with all of these components.
 
 * The **artifact store** to store step outputs in a GCP Bucket.
-* The **metadata store** to track metadata inside a MySQL database.
 * The Docker images that are created to run your pipeline are stored in GCP
   **container registry**.
 * The **Vertex orchestrator** is responsible for running your ZenML pipeline

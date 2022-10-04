@@ -144,7 +144,7 @@ same level as your runner script (commonly called `run.py`). The contents of
 the Dockerfile are as follows:
 
 ```shell
-ARG ZENML_VERSION=0.13.2
+ARG ZENML_VERSION=0.20.0
 FROM zenmldocker/zenml:${ZENML_VERSION} AS base
 
 RUN apt-get update

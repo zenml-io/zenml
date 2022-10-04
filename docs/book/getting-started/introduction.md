@@ -2,7 +2,7 @@
 description: Welcome to ZenML!
 ---
 
-# ZenML: Open-source pipeline framework that integrates all your ML tools
+# ZenML: Open-source MLOps framework that integrates all your ML tools
 
 🤹 Are you an ML engineer or data scientist shipping models to production and juggling a plethora of tools? 
 
@@ -25,38 +25,38 @@ Read more [here](https://blog.zenml.io/why-zenml/).
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. 
 It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production.
 **ZenML** has simple, flexible syntax, is **cloud-** and 
-**tool-agnostic**, and has interfaces/abstractions that are catered towards ML workflows. 
-
-ZenML brings together all your favorite tools in one place so you can tailor your workflow to cater your needs.
+**tool-agnostic**, and has interfaces/abstractions that are catered towards ML workflows. ZenML brings together all your favorite tools in one place so you can tailor your workflow to cater your needs.
 
 ![ZenML unifies all your tools in one place.](../assets/sam-side-by-side-full-text.png)
 
+## Directions
+
 Eager to get started? We recommend the following to start using **ZenML** right away:
 
-## **New to ZenML?**
+### **New to ZenML?**
 
 - Get acquainted with the [Core Concepts](./core-concepts.md) first  to understand what makes ZenML so special. 
 - Jump right into [Starter Guide](../starter-guide/pipelines/pipelines.md) to go from zero to hero in no time.
 - Tip your toes into the [Practical MLOps](../advanced-guide/practical/practical-mlops.md) section to see more advanced usage.
 
-## **Looking for production use-cases?**
+### **Looking for production use-cases?**
 
 - Learn more by reading code? See the [Examples](../examples/examples-and-use-cases.md) section for various code snippets to get your hand's dirty.
 - The [Advanced Guide](../advanced-guide/practical/practical-mlops.md) is the perfect starting point to start developing your ZenML and MLOps skills.
 - Read [Best Practices](../guidelines/best-practices.md) to learn how to set up ZenML with recommendations from the core team.
 
-## **Looking for how to integrate your ML tools?**
+### **Looking for how to integrate your ML tools?**
 
 - See the [Integrations](../component-gallery/integrations.md) into popular ML tools.
-- Read about [Categories of MLOPs tools](../component-gallery/categories.md).
+- Read about [Categories of MLOps tools](../component-gallery/categories.md).
 - Read how to [connect popular ML tools](../popular-stack-guides/overview.md) in various ways with ZenML.
 
-## **Need help deploying infrastructure?**
+### **Need help deploying infrastructure?**
 
-- Read about how to [deploy ZenML](../getting-started/deploying-zenml/deployment.md) on any cloud provider.
+- Read about how to [deploy ZenML](../getting-started/deploying-zenml/deploying-zenml.md) on any cloud provider.
 - Read about how to [deploy popular MLOps stacks](../popular-stack-guides/overview.md).
 - [Standard integrations](../component-gallery/integrations.md) have stack components that come with their own deployment guide.
 
-## **Community** - Be Part of the ZenML Family
+### **Community** - Be Part of the ZenML Family
 
 Can't really find what you want and need help? Join our [Slack group](https://zenml.io/slack-invite/). Ask questions about bugs or specific use cases and get a quick response from the ZenML core team.

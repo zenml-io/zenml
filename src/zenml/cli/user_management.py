@@ -416,11 +416,14 @@ def delete_project(project_name_or_id: str) -> None:
     """
     warn_unsupported_non_default_project()
     cli_utils.print_active_config()
-    cli_utils.confirmation(
+    confirmation = cli_utils.confirmation(
         f"Are you sure you want to delete project `{project_name_or_id}`? "
         "This will permanently delete all associated stacks, stack components, "
         "pipelines, runs, artifacts and metadata."
     )
+    if not confirmation:
+        cli_utils.declare("Project deletion canceled.")
+        return
     try:
         Client().delete_project(project_name_or_id)
     except (KeyError, IllegalOperationError) as err:

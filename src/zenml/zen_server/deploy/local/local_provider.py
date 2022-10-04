@@ -59,17 +59,17 @@ class LocalServerProvider(BaseServerProvider):
             RuntimeError: If the dependencies are not installed.
         """
         try:
-            # Make sure the ZenServer dependencies are installed
+            # Make sure the ZenML Server dependencies are installed
             import fastapi  # noqa
             import uvicorn  # type: ignore[import] # noqa
         except ImportError:
-            # Unable to import the ZenServer dependencies.
+            # Unable to import the ZenML Server dependencies.
             raise RuntimeError(
                 "The local ZenML server provider is unavailable because the "
                 "ZenML server requirements seems to be unavailable on your machine. "
                 "This is probably because ZenML was installed without the optional "
-                "ZenServer dependencies. To install the missing dependencies "
-                f"run `pip install zenml=={__version__}[server]`."
+                "ZenML Server dependencies. To install the missing dependencies "
+                f'run `pip install "zenml[server]=={__version__}`".'
             )
 
     @classmethod

@@ -43,6 +43,19 @@ class TektonOrchestratorConfig(BaseOrchestratorConfig):
     tekton_ui_port: int = DEFAULT_TEKTON_UI_PORT
     skip_ui_daemon_provisioning: bool = False
 
+    @property
+    def is_remote(self) -> bool:
+        """Checks if this stack component is running remotely.
+
+        This designation is used to determine if the stack component can be
+        used with a local ZenML database or if it requires a remote ZenML
+        server.
+
+        Returns:
+            True if this config is for a remote component, False otherwise.
+        """
+        return True
+
 
 class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
     """Flavor for the Tekton orchestrator."""
