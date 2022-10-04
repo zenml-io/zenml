@@ -157,7 +157,7 @@ be raised
 ## Secret References
 
 Secret references work with any secrets manager and allow you to securely
-specify sensitive configurations for your [stack components](../../starter-guide/stacks/stacks-components.md).
+specify sensitive configurations for your [stack components](../../starter-guide/stacks/registering-stacks.md).
 
 Check out the corresponding [documentation page](../../advanced-guide/practical/secrets-management.md)
 for more information.

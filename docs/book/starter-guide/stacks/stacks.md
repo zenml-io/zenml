@@ -15,8 +15,8 @@ Taking this into consideration, ZenML provides additional abstractions that
 help you simplify infrastructure configuration and management:
 
 - [Stacks](./stack.md): A combination of various MLOps *stack components*.
-- [Stack Components](./stacks-components.md): Configuration of MLOps tools, which come in different *flavors*.
-- [Flavors](./stacks-components.md): Represent a concrete implementation of a stack component.
+- [Stack Components](./registering-stacks.md): Configuration of MLOps tools, which come in different *flavors*.
+- [Flavors](./registering-stacks.md): Represent a concrete implementation of a stack component.
 
 Let's discuss each in further detail:
 

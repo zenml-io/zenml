@@ -11,7 +11,7 @@ Here's a high-level overview of a typical ZenML workflow:
 1. Writing a *[pipeline](../starter-guide/pipelines/pipelines.md)* to define what happens in your machine learning workflow.
 2. Configuring a ZenML *[stack](../starter-guide/stacks/stacks.md)*.
 3. Switching between *stacks* depending on needs.
-4. Customizing your *stack* with different *[components](../starter-guide/stacks/stacks-components.md)*.
+4. Customizing your *stack* with different *[components](../starter-guide/stacks/registering-stacks.md)*.
 
 So first, the basics.
 
