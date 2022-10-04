@@ -405,29 +405,34 @@ are shared through a remotely deployed ZenML Server.
 
 ## Other changes
 
-The `Repository` object has been renamed to `Client` to better capture its
-functionality. You can continue to use the `Repository` object for backwards
+### The Repository Object
+
+The `Repository` object has been renamed to `Client` to better capture its functionality. You can continue to use the `Repository` object for backwards
 compatibility, but it will be removed in a future release.
 
-Alongside the architectural shift, Pipeline configuration has been completely
-rethought. ZenML pipelines and steps could previously be configured in many
-different ways:
+Action: Rename all references to `Repository` in your code to `Client`.
+
+### Configuration Rework
+
+Alongside the architectural shift, Pipeline configuration has been completely rethought. ZenML pipelines and steps could previously be configured in many different ways:
 
 - On the `@pipeline` and `@step` decorators (e.g. the `requirements` variable)
 - In the `__init__` method of the pipeline and step class
-- Using `@enable_xxx` decorators
+- Using `@enable_xxx` decorators, e.g. `@enable_mlflow`.
 - Using specialized methods like `pipeline.with_config(...)` or
 `step.with_return_materializer(...)`
 
-Some of the configuration options were quite hidden, difficult to access and not
-tracked in any way by the ZenML metadata store. The new changes introduced are:
+Some of the configuration options were quite hidden, difficult to access and not tracked in any way by the ZenML metadata store. The new changes introduced are:
 
-- Pipelines and steps now allow all configurations on their decorators as well
-as the `.configure(...)` method. This includes configurations for stack
-components that are not infrastructure-related which was previously done using
+#### Configuring through decorators and the new `pipeline.configure()` method
+
+- Pipelines and steps now allow all configurations on their decorators as well as the `.configure(...)` method. This includes configurations for stack components that are not infrastructure-related which was previously done using
 the `@enable_xxx` decorators)
-- The same configurations can also be defined in a yaml file
-- The users can think of configuring stacks and pipeline in terms of `Params`
+
+
+The same configurations can also be defined in a yaml file. 
+
+Users can think of configuring stacks and pipeline in terms of `Params`
 and `Settings`
 - `BaseStepConfig` is now renamed to `BaseParameters`
 - `DockerConfiguration` is now renamed to `DockerSettings`
@@ -437,6 +442,8 @@ to run a ZenML pipelines are now combined into an intermediate representation.
 Instead of the user-facing `BaseStep` and `BasePipeline` classes, all the ZenML
 orchestrators and step operators now use this intermediate representation to run
 pipelines and steps.
+
+### New post-execution workflow
 
 The Post-execution workflow has changed as follows:
 - The `get_pipeline` and `get_run` methods have been moved out of the `Repository` (i.e. the new `Client` ) class and lie directly in the post_execution module now. To use the user has to do:
@@ -461,19 +468,20 @@ integratinos:
 - enable_mlflow deprecated
 - enable_wandb deprecated
 
-# 🐞 Reporting Bugs
-
-We should come up with a mechanism to report bugs. Suggestions:
-
-- Open up a Slack Channel
-- Open up a GitHub issue in ZenML and ZenML dashboard repositories
-
 # 📡Future Changes
 
-While this rehaul is big and will break previous releases, we do have some more work left to do. We expect this to be the last big rehaul of ZenML before our 1.0.0 release, but no other release will be so hard breaking as this one. Currently planned future breaking changes are:
+While this rehaul is big and will break previous releases, we do have some more work left to do. Howeverm we also expect this to be the last big rehaul of ZenML before our 1.0.0 release, and no other release will be so hard breaking as this one. Currently planned future breaking changes are:
 
-- Following the metadata store, the secret manager stack component will move out of the stack.
+- Following the metadata store, the secret manager stack component might move out of the stack.
 - ZenML `StepContext` might be deprecated
+
+# 🐞 Reporting Bugs
+
+While we have tried our best to document everything that has changed, we realize that mistakes can be made and smaller changes overlooked. If this is the case, or you encounter a bug at any time, the ZenML core team and community are available around the clock on the growing [Slack community](https://zenml.io/slack-invite).
+
+For bug reports, please also consider submitting a [GitHub Issue](https://github.com/zenml-io/zenml/issues/new/choose).
+
+Lastly, if the new changes have left you desiring a feature, then consider adding it to our [public feature voting board](https://zenml.io/discussion). Before doing so, do check what is already on there and consider upvoting the features you desire the most.
 
 # 💾 The New Way (CLI Command Cheat Sheet)
 

@@ -7,7 +7,7 @@ regarding the configuration of different ZenML resources.
 
 ## List of topics
 
-* [Runtime Settings](./settings.md) showcases how to 
+* [Runtime Settings](./settings.md) showcases how to
 configure different ZenML resource during the runtime of a pipeline.
 * [Passing Custom Data Types through Steps](./materializers.md)
 via **Materializers** is required if one of your steps outputs a custom class
