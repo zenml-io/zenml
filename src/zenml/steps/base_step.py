@@ -356,7 +356,7 @@ class BaseStep(metaclass=BaseStepMeta):
         return self._upstream_steps
 
     def after(self, step: "BaseStep") -> None:
-        """Adds an upstream step to the this step.
+        """Adds an upstream step to this step.
 
         Calling this method makes sure this step only starts running once the
         given step has successfully finished executing.
