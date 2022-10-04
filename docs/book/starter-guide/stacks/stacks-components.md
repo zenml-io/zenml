@@ -1,5 +1,5 @@
 ---
-description: What are stacks and repositories in ZenML
+description: Registering stacks, components, and flavors.
 ---
 
 # Things to change
