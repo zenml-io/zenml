@@ -2598,7 +2598,7 @@ class SqlZenStore(BaseZenStore):
         """
         steps = self.list_run_steps(run_id)
 
-        # If any step is failed or running, return running
+        # If any step is failed or running, return that status respectively
         for step in steps:
             step_status = self.get_run_step_status(step.id)
             if step_status == ExecutionStatus.FAILED:
