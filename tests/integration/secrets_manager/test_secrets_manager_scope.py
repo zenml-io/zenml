@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import time
-import uuid
 from contextlib import ExitStack as does_not_raise
 from typing import Any, Dict
 
@@ -33,20 +32,20 @@ from zenml.secrets_managers.base_secrets_manager import (
 def test_scope_defaults_to_component(request: pytest.FixtureRequest):
     """Tests that secrets managers are component-scoped by default."""
     secrets_manager = get_secrets_manager(request)
-    assert secrets_manager.scope == SecretsManagerScope.COMPONENT
+    assert secrets_manager.config.scope == SecretsManagerScope.COMPONENT
 
 
 def test_scope_backwards_compatibility(request: pytest.FixtureRequest):
     """Tests the default scope of existing secrets managers."""
-    secrets_manager = get_secrets_manager(request, uuid=uuid.uuid4())
-    assert secrets_manager.scope == SecretsManagerScope.NONE
-    assert secrets_manager.namespace is None
+    secrets_manager = get_secrets_manager(request)
+    assert secrets_manager.config.scope == SecretsManagerScope.NONE
+    assert secrets_manager.config.namespace is None
 
     with does_not_raise():
         secrets_manager = get_secrets_manager(
-            request, uuid=uuid.uuid4(), scope=SecretsManagerScope.NONE
+            request, scope=SecretsManagerScope.NONE
         )
-    assert secrets_manager.scope == SecretsManagerScope.NONE
+    assert secrets_manager.config.scope == SecretsManagerScope.NONE
 
 
 @pytest.mark.secret_scoping
@@ -247,12 +246,12 @@ def test_secrets_shared_at_scope_level(
     visible in the second instance.
     """
     copy_kwargs: Dict[str, Any] = dict(
-        scope=secrets_manager.scope,
-        namespace=secrets_manager.namespace,
+        scope=secrets_manager.config.scope,
+        namespace=secrets_manager.config.namespace,
     )
     # two secrets managers using component scope also have to share the UUID
     # value to be in the same scope
-    if secrets_manager.scope == SecretsManagerScope.COMPONENT:
+    if secrets_manager.config.scope == SecretsManagerScope.COMPONENT:
         copy_kwargs["uuid"] = secrets_manager.uuid
 
     another_secrets_manager = get_secrets_manager(request, **copy_kwargs)
@@ -295,7 +294,7 @@ def test_secrets_shared_at_scope_level(
     # could fix it, but given that unscoped secrets are deprecated, it's better
     # to just wait until it is phased out.
     if (
-        secrets_manager.scope == SecretsManagerScope.NONE
+        secrets_manager.config.scope == SecretsManagerScope.NONE
         and secrets_manager.FLAVOR in ["gcp", "azure"]
     ):
         new_secret.arbitrary_kv_pairs = secret.arbitrary_kv_pairs.copy()
@@ -346,13 +345,13 @@ def test_secrets_not_shared_in_different_scopes(
     that the secrets added, updated and deleted in one instance are not
     visible in the second instance.
     """
-    other_namespace = secrets_manager.namespace
+    other_namespace = secrets_manager.config.namespace
     if other_namespace:
         other_namespace = other_namespace[::-1]
 
     another_secrets_manager = get_secrets_manager(
         request,
-        scope=secrets_manager.scope,
+        scope=secrets_manager.config.scope,
         namespace=other_namespace,
     )
 

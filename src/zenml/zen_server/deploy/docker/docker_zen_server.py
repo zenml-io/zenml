@@ -38,8 +38,8 @@ from zenml.services import (
 from zenml.services.container.container_service import (
     SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
     SERVICE_CONTAINER_GLOBAL_CONFIG_PATH,
+    SERVICE_CONTAINER_PATH,
 )
-from zenml.services.container.entrypoint import SERVICE_CONTAINER_PATH
 from zenml.utils.io_utils import get_global_config_directory
 from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 from zenml.zen_stores.sql_zen_store import SqlZenStore

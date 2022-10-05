@@ -23,6 +23,17 @@ import click
 
 from zenml.utils.daemon import daemonize
 
+# Try to import the LocalZenServer here because it needs to be registered in the
+# service registry early on in order to be available for use in other modules.
+# If the LocalZenServer dependencies aren't installed, there is no need to register
+# it anywhere so we simply pass.
+try:
+    from zenml.zen_server.deploy.local.local_zen_server import (  # noqa
+        LocalZenServer,
+    )
+except ImportError:
+    pass
+
 
 @click.command()
 @click.option("--config-file", required=True, type=click.Path(exists=True))

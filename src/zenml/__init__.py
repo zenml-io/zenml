@@ -23,19 +23,3 @@ with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
 from zenml.logger import init_logging  # noqa
 
 init_logging()
-
-# Try to import the LocalZenServer here because it needs to be registered in the
-# service registry early on in order to be available for use in other modules.
-# If the LocalZenServer dependencies aren't installed, there is no need to register
-# it anywhere so we simply pass.
-try:
-    from zenml.zen_server.deploy.local.local_zen_server import LocalZenServer
-except ImportError:
-    pass
-
-# Try to import the DockerZenServer here because it needs to be registered in the
-# service registry early on in order to be available for use in other modules.
-try:
-    from zenml.zen_server.deploy.docker.docker_zen_server import DockerZenServer
-except ImportError:
-    pass

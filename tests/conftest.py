@@ -194,88 +194,88 @@ def clean_client(
 
 @pytest.fixture
 def sql_store() -> BaseZenStore:
-    with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
-        store = SqlZenStore(
-            config=SqlZenStoreConfiguration(
-                url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
-            ),
-            track_analytics=False,
-        )
-        default_project = store.list_projects()[0]
-        default_stack = store.list_stacks()[0]
-        active_user = store.list_users()[0]
-        yield {
-            "store": store,
-            "default_project": default_project,
-            "default_stack": default_stack,
-            "active_user": active_user,
-        }
+    temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
+    store = SqlZenStore(
+        config=SqlZenStoreConfiguration(
+            url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
+        ),
+        track_analytics=False,
+    )
+    default_project = store.list_projects()[0]
+    default_stack = store.list_stacks()[0]
+    active_user = store.list_users()[0]
+    yield {
+        "store": store,
+        "default_project": default_project,
+        "default_stack": default_stack,
+        "active_user": active_user,
+    }
 
 
 @pytest.fixture
 def sql_store_with_run() -> BaseZenStore:
-    with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
+    temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
 
-        GlobalConfiguration().set_store(
-            config=SqlZenStoreConfiguration(
-                url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
-            ),
-        )
-        store = GlobalConfiguration().zen_store
+    GlobalConfiguration().set_store(
+        config=SqlZenStoreConfiguration(
+            url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
+        ),
+    )
+    store = GlobalConfiguration().zen_store
 
-        default_project = store.list_projects()[0]
-        default_stack = store.list_stacks()[0]
-        active_user = store.list_users()[0]
+    default_project = store.list_projects()[0]
+    default_stack = store.list_stacks()[0]
+    active_user = store.list_users()[0]
 
-        @step
-        def step_one() -> int:
-            return TEST_STEP_INPUT_INT
+    @step
+    def step_one() -> int:
+        return TEST_STEP_INPUT_INT
 
-        @step
-        def step_two(input: int) -> int:
-            return input + 1
+    @step
+    def step_two(input: int) -> int:
+        return input + 1
 
-        @pipeline
-        def test_pipeline(step_one, step_two):
-            value = step_one()
-            step_two(value)
+    @pipeline
+    def test_pipeline(step_one, step_two):
+        value = step_one()
+        step_two(value)
 
-        test_pipeline(step_one=step_one(), step_two=step_two()).run()
-        pipeline_run = store.list_runs()[0]
-        pipeline_step = store.list_run_steps(pipeline_run.id)[1]
+    test_pipeline(step_one=step_one(), step_two=step_two()).run()
+    pipeline_run = store.list_runs()[0]
+    pipeline_step = store.list_run_steps(pipeline_run.id)[1]
 
-        yield {
-            "store": store,
-            "default_project": default_project,
-            "default_stack": default_stack,
-            "active_user": active_user,
-            "pipeline_run": pipeline_run,
-            "step": pipeline_step,
-        }
+    yield {
+        "store": store,
+        "default_project": default_project,
+        "default_stack": default_stack,
+        "active_user": active_user,
+        "pipeline_run": pipeline_run,
+        "step": pipeline_step,
+    }
 
 
 @pytest.fixture
 def sql_store_with_team() -> BaseZenStore:
-    with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
-        store = SqlZenStore(
-            config=SqlZenStoreConfiguration(
-                url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
-            ),
-            track_analytics=False,
-        )
-        new_team = TeamModel(name="arias_team")
-        store.create_team(new_team)
-        default_project = store.list_projects()[0]
-        default_stack = store.list_stacks()[0]
-        active_user = store.list_users()[0]
-        default_team = store.list_teams()[0]
-        yield {
-            "store": store,
-            "default_project": default_project,
-            "default_stack": default_stack,
-            "active_user": active_user,
-            "default_team": default_team,
-        }
+    temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
+    store = SqlZenStore(
+        config=SqlZenStoreConfiguration(
+            url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
+        ),
+        track_analytics=False,
+    )
+    new_team = TeamModel(name="arias_team")
+    store.create_team(new_team)
+    default_project = store.list_projects()[0]
+    default_stack = store.list_stacks()[0]
+    active_user = store.list_users()[0]
+    default_team = store.list_teams()[0]
+    yield {
+        "store": store,
+        "default_project": default_project,
+        "default_stack": default_stack,
+        "active_user": active_user,
+        "default_team": default_team,
+    }
 
 
 @pytest.fixture
