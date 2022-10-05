@@ -472,8 +472,9 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 ```python
 @step(
+    experiment_tracker="mlflow_stack_comp_name"
     settings={
-        "experiment_tracker.mlflow": {
+        "experiment_tracker.mlflow": {  # this is `category`.`flavor`, so another example is `step_operator.spark`
             "experiment_name": "name"
             "nested": False
         }
@@ -552,7 +553,7 @@ pipelines and steps.
 ### `PipelineSpec` now uniquely defines pipelines
 
 Once a pipeline has been executed, it is represented by a `PipelineSpec` that
-uniques identifies it. Therefore, users are no longer able to edit a pipeline
+uniquely identifies it. Therefore, users are no longer able to edit a pipeline
 once it has been run once. There are now three options to get around this:
 
 * Pipeline runs can be created without being associated with a pipeline explicitly: We call these `unlisted` runs. Read more about unlisted runs [here](../starter-guide/pipelines/pipelines.md#unlisted-runs).
@@ -579,7 +580,7 @@ Usage remains largely similar. Please read the [new docs for post-execution to i
 
 # 📡Future Changes
 
-While this rehaul is big and will break previous releases, we do have some more work left to do. Howeverm we also expect this to be the last big rehaul of ZenML before our 1.0.0 release, and no other release will be so hard breaking as this one. Currently planned future breaking changes are:
+While this rehaul is big and will break previous releases, we do have some more work left to do. However we also expect this to be the last big rehaul of ZenML before our 1.0.0 release, and no other release will be so hard breaking as this one. Currently planned future breaking changes are:
 
 - Following the metadata store, the secret manager stack component might move out of the stack.
 - ZenML `StepContext` might be deprecated

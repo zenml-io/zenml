@@ -262,7 +262,7 @@ can now be addressed by name, id or the first few letters of the id in the cli.
 E.g. for a stack `default` with id `179ebd25-4c5b-480f-a47c-d4f04e0b6185` you
 can run:
 
-```shellshell
+```shell
  zenml stack describe default
  ```
 

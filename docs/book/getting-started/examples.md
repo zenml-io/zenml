@@ -44,7 +44,7 @@ repository of ZenML.
 ## YouTube Tutorials
 
 If you're a visual learner, then the [official ZenML YouTube channel](https://www.youtube.com/c/ZenML) 
-is the place to go. It features tutorials, community meetups, and various other annoucements regarding the product.
+is the place to go. It features tutorials, community meetups, and various other announcements regarding the product.
 
 ## Blog
 
@@ -54,4 +54,5 @@ relevant tutorials and read at leisure.
 
 ## Slack
 
-If you're missing a starting point, join the [Slack community](https://zenml.io/slack-invite) and let us know!
+If you're missing a starting point, join the [Slack
+community](https://zenml.io/slack-invite) and let us know!
