@@ -36,6 +36,38 @@ lets try to understand that all of this configuration flows through one central 
 
 Settings are categorized into two types:
 
+- **General settings** that can be used on all ZenML pipelines. Examples of these are:
+  - [`DockerSettings`](./containerization.md) to specify docker settings.
+  - [`ResourceSettings`](./step-resources.md) to specify resource settings.
+- **Stack component specific settings**: These can be used to supply runtime configurations to certain stack components (key= <COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>). Settings for components not in the active stack will be ignored. Examples of these are:
+  - [`KubeflowOrchestratorSettings`](../../component-gallery/orchestrators/kubeflow.md) to specify Kubeflow settings.
+  - [`MLflowExperimentTrackerSettings`](../../component-gallery/experiment-trackers/mlflow.md) to specify MLflow settings.
+  - [`WandbExperimentTrackerSettings`](../../component-gallery/experiment-trackers/wandb.md) to specify W&B settings.
+  - [`WhylogsDataValidatorSettings`](../../component-gallery/data-validators/whylogs.md) to specify Whylogs settings.
+
+For stack component specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register name --param1=paramvalue --param2=paramvalue` etc. The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change. 
+
+A good example of this is the [`MLflow Experiment Tracker`](../../component-gallery/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
+
+### Using objects or dicts
+
+Settings can be passed in directly as BaseSettings-subclassed objects, or a dict-representation of the object. For example, a docker configuration can be passed in as follows:
+
+```python
+from zenml.config import DockerSettings
+
+settings={'docker': DockerSettings(requirements=['pandas'])}
+```
+
+Or like this:
+
+```python
+from zenml.config import DockerSettings
+
+settings={'docker': {'requirements': ['pandas'])}
+```
+
+
 #### Method 1: Directly on the decorator
 
 The most basic way to set settings is through the `settings` variable
