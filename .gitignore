@@ -183,6 +183,3 @@ zenml_examples/
 
 # stack recipes
 test_terraform/
-
-# static dashboard files
-src/zenml/zen_server/dashboard/
