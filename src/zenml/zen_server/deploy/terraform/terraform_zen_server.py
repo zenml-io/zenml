@@ -83,7 +83,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
         password: The password for the default ZenML server account.
         helm_chart: The path to the ZenML server helm chart to use for
             deployment.
-        zenmlserver_image_tag: The tag to use for the zenmlserver docker
+        zenmlserver_image_tag: The tag to use for the zenml server docker
             image.
         namespace: The Kubernetes namespace to deploy the ZenML server to.
         kubectl_config_path: The path to the kubectl config file to use for

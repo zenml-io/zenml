@@ -22,7 +22,7 @@ zenml integration install github <s3/gcp/azure>
 # Change the current working directory to a path inside your cloned GitHub repository
 cd <PATH_INSIDE_GITHUB_REPOSITORY>
 
-# initialise zenml inside the repository
+# initialize zenml inside the repository
 zenml init
 
 # Start the ZenServer to enable dashboard access
