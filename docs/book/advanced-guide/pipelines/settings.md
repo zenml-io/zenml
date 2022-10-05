@@ -275,9 +275,7 @@ Some settings can be configured on pipelines and steps, some only on one of the 
 
 ### Merging settings on class/instance/run:
 
-Merging settings on class/instance/run:
-
-when a settings object is configured, ZenML merges the values with previously configured keys. E.g.:
+When a settings object is configured, ZenML merges the values with previously configured keys. E.g.:
 
 ```python
 from zenml.config import ResourceSettings
