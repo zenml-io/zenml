@@ -99,6 +99,7 @@ kubectl_config_path: The path to the kubectl config file to use for
 namespace: The Kubernetes namespace to deploy the ZenML server to.
 helm_chart: The path to the ZenML server helm chart to use for
     deployment.
+zenmlserver_image_tag: The tag to use for the ZenML server Docker image.
 
 create_ingress_controller: Whether to deploy an nginx ingress
     controller as part of the deployment.
@@ -137,6 +138,7 @@ log_level: The log level to set the terraform client to. Choose one of
 
 ```
 region: The AWS region to deploy to.
+
 create_rds: Whether to create an RDS database.
 db_name: Name of RDS database to create.
 db_type: Type of RDS database to create.
@@ -152,7 +154,9 @@ The `database_username` and `database_password` from the general config is used 
 {% tab title="GCP" %}
 
 ```
+project_id: The project in GCP to deploy the server to.
 region: The GCP region to deploy to.
+
 create_cloudsql: Whether to create an CloudSQL database.
 cloudsql_name: The name of the CloudSQL instance to create
 db_name: Name of CloudSQL database to create.
