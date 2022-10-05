@@ -48,6 +48,9 @@ cd zenml_examples/lightgbm
 
 # initialize
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### ▶️ Run the Code

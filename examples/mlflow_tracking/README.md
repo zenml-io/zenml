@@ -127,6 +127,9 @@ cd zenml_examples/mlflow_tracking
 # Initialize ZenML repo
 zenml init
 
+# Start the ZenServer to enable dashboard access
+zenml up
+
 # Create and activate the stack with the mlflow experiment tracker component
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml stack register mlflow_stack \

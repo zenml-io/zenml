@@ -146,10 +146,13 @@ Some of our integrations don't really fit into a specific category.
 ## 🖥 Local Setup
 
 For some of these examples, ZenML provides a handy CLI command to pull them
-directly into your local environment. First install `zenml`:
+directly into your local environment. First install `zenml` and spin up the dashboard:
 
 ```shell
 pip install zenml
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 Then you can view all the examples:

@@ -191,6 +191,9 @@ cd zenml_examples/mlflow_deployment
 
 # initialize
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 ### 🥞 Setting up the ZenML Stack
 

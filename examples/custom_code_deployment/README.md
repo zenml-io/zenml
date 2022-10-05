@@ -84,6 +84,9 @@ cd zenml_examples/custom_code_deployment
 
 # initialize a local ZenML Repository
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 We will split this into 2 main sections, one for KServe and one for Seldon Core.

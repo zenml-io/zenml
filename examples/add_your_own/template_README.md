@@ -61,6 +61,9 @@ cd zenml_examples/<NAME OF THE EXAMPLE>
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### ▶️ Run the Code

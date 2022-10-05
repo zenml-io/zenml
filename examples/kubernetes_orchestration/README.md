@@ -34,6 +34,26 @@ an ECR container registry, and a S3 bucket for artifact storage.
 
 ## :heavy_check_mark: Requirements
 
+To run this example, you need to install and initialize ZenML:
+
+```shell
+# install CLI
+pip install zenml
+
+# install ZenML integrations
+zenml integration install kubernetes
+
+# pull example
+zenml example pull kubernetes_orchestration
+cd zenml_examples/kubernetes_orchestration
+
+# initialize a local ZenML Repository
+zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
+```
+
 If you want to follow this example line by line, you need to spin up each of
 the corresponding AWS resources first.
 You can provision these resources manually by following the
@@ -61,22 +81,27 @@ The flow to get started for this example can be the following:
 1. Pull the `aws_minimal` recipe to your local system. Learn more about what this recipe does from its README.
 
     ```shell
-    zenml stack recipe pull aws_minimal
+    zenml stack recipe pull aws-minimal
     ```
 2. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
 
 3. 🚀 Deploy the recipe with this simple command.
 
     ```shell
-    zenml stack recipe deploy aws_minimal
+    zenml stack recipe deploy aws-minimal
     ```
     > **Note**
     > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
 
     > **Note**
-    > You should also have [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [docker](https://docs.docker.com/engine/install/) installed on your local system with the local [docker client authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker) to push to your cloud registry.
-    
-4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually. You either need to have the `aws`, `mlflow` and `seldon` integrations installed before importing the stack or you can go into the YAML file and delete the sections on the `experiment_tracker` and `model_deployer` to not have them importer at all.
+    > You should also have
+    > [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl),
+    > [docker](https://docs.docker.com/engine/install/) and [helm](https://helm.sh/docs/intro/install/) installed on your local
+    > system with the local [docker client
+    > authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker)
+    > to push to your cloud registry.
+
+4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually. You either need to have the `aws`, `mlflow` and `seldon` integrations installed before importing the stack or you can go into the YAML file and delete the sections on the `experiment_tracker` and `model_deployer` to not have them imported at all.
 
     ```shell
     zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
