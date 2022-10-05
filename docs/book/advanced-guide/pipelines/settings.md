@@ -104,7 +104,22 @@ pipeline_instance = my_pipeline(
 pipeline_instance.run(config_path='/local/path/to/config.yaml')
 ```
 
-The format of a YAML config file 
+The format of a YAML config file is exactly the same as the dict you would pass in python in the above two sections. The step specific settings are nested in a key called `steps`. Here is rough skeleton of a valid YAML config. All keys are optional.
+
+```yaml
+enable_cache: True
+extra:
+  tags: production
+run_name: my_run
+schedule: {}
+settings: {}  # same as pipeline settings
+steps:
+  name_of_step_1:
+    settings: {}  # same as step settings
+  name_of_step_2:
+    settings: {}
+  ...
+```
 
 Here is an example of a YAML config file.
 
@@ -148,8 +163,8 @@ settings:
     memory: "1GB"
 steps:
   # get_first_num:
-    enable_cache: false
-    experiment_tracker: mlflow_tracker
+      enable_cache: false
+      experiment_tracker: mlflow_tracker
     # extra: Mapping[str, Any]
     # outputs:
     #   first_num:
