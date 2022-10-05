@@ -32,7 +32,7 @@ things can be configured at runtime? Here is a list:
 You will learn about all of the above in more detail later, but for now,
 lets try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
 
-### How to use settings
+### Types of settings
 
 Settings are categorized into two types:
 
@@ -49,7 +49,7 @@ For stack component specific settings, you might be wondering what the differenc
 
 A good example of this is the [`MLflow Experiment Tracker`](../../component-gallery/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
 
-### Using objects or dicts
+#### Using objects or dicts
 
 Settings can be passed in directly as BaseSettings-subclassed objects, or a dict-representation of the object. For example, a docker configuration can be passed in as follows:
 
@@ -67,6 +67,7 @@ from zenml.config import DockerSettings
 settings={'docker': {'requirements': ['pandas'])}
 ```
 
+### How to use settings
 
 #### Method 1: Directly on the decorator
 
