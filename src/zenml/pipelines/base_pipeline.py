@@ -603,7 +603,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             config_file: Path to a yaml file which contains configuration
                 options for running this pipeline. See
-                https://docs.zenml.io/developer-guide/steps-and-pipelines/runtime-configuration#configuring-with-yaml-config-files
+                https://docs.zenml.io/advanced-guide/pipelines/settings
                 for details regarding the specification of this file.
             overwrite_step_parameters: If set to `True`, values from the
                 configuration file will overwrite configuration parameters

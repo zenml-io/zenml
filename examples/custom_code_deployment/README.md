@@ -221,7 +221,7 @@ The Training/Deployment pipeline consists of the following steps:
   so that it can first be verified and then packaged with the model checkpoint and all the required artifacts/dependencies
   to be deployed as a custom model.
 
-For more information about custom model deployment, please refer to the [KServe integration custom deployment](https://docs.zenml.io/mlops-stacks/model-deployers/kserve#custom-model-deployment). 
+For more information about custom model deployment, please refer to the [KServe integration custom deployment](https://docs.zenml.io/component-gallery/model-deployers/kserve#custom-model-deployment). 
 Or the [KServe Custom Predictor](https://kserve.github.io/website/0.9/modelserving/v1beta1/custom/custom_model/).
 
 The Inference pipeline consists of the following steps:
@@ -449,7 +449,7 @@ The Training/Deployment pipeline consists of the following steps:
   so that it can first be verified and then packaged with the model checkpoint and all the required artifacts/dependencies
   to be deployed as a custom model.
 
-For more information about custom model deployment, please refer to the [Seldon Core integration custom deployment](https://docs.zenml.io/mlops-stacks/model-deployers/seldon#custom-model-deployment). 
+For more information about custom model deployment, please refer to the [Seldon Core integration custom deployment](https://docs.zenml.io/component-gallery/model-deployers/seldon#custom-model-deployment). 
 Or the [Seldon Custom Python Model](https://docs.seldon.io/projects/seldon-core/en/latest/python/python_component.html).
 
 The Inference pipeline consists of the following steps:
@@ -624,7 +624,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the custom model deployment can be found [here](https://docs.zenml.io/mlops-stacks/model-deployers#custom-pre-processing-and-post-processing).
+Our docs regarding the custom model deployment can be found [here](https://docs.zenml.io/component-gallery/model-deployers/model-deployers#custom-pre-processing-and-post-processing).
 
 If you want to learn more about the deployment in ZenML in general or about how to build your deployer steps in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/model-deployers/custom).
+check out our [docs](https://docs.zenml.io/component-gallery/model-deployers/custom).

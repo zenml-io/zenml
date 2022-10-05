@@ -1,218 +1,168 @@
 ---
-description: How to collaboratively use ZenML in larger organizations with the ZenServer
+description: Connect to a simply deployed ZenML on the cloud.
 ---
 
-# Things to change
+## Collaboration with ZenML Overview
 
-- This needs a revamp
-- Show them `zenml server list` to show that they already deployed one
-- AWS, GCP, Azure should be in tabs. maybe added manual deployment tab too
+![Collaboration with ZenML Overview](../../assets/starter_guide/collaboration/04_cloud_collaboration_overview.png)
 
-# Older Content
+The ZenML Server is a distributed client-server ZenML deployment scenario in which multiple ZenML clients can connect to a remote service that provides persistent storage and acts as a central management hub for all ZenML operations involving Stack configurations, Stack Components and other ZenML objects.
 
-# The ZenML Server
+A typical organization scenario with ZenML is to have Data Scientists or ML Engineers write pipelines, while the DevOps Engineers help them provision and
+register stacks. Typically, one can go through a CI/CD workflow to run pipelines on various different stacks.
 
-Sometimes, you may need to exchange or collaborate on Stack configurations with
-other developers or even just have your Stacks available on multiple machines.
-While you can always zip up your global configuration and database files or
-check them into version control, a more elegant solution is to have some kind of
-service accessible from anywhere in your network that provides a REST API that
-can be used to store and access your Stacks over the network.
+Working with a ZenML Server involves two main aspects: deploying the ZenServer somewhere and connecting to it from your ZenML client. In this section, we will learn about the simplest way to deploy ZenML with the CLI, but [there are other similarly easy options available](../../getting-started/deploying-zenml/deploying-zenml.md).
 
-The ZenServer, short for ZenML Server, is a distributed client-server ZenML
-deployment scenario in which multiple ZenML clients can connect to a remote
-service that provides persistent storage and acts as a central management hub
-for all ZenML operations involving Stack configurations, Stack Components and
-other ZenML objects.
+### Deploying with the CLI
 
-Working with a ZenServer involves two main aspects: deploying the ZenServer
-somewhere and connecting to it from your ZenML client. Keep reading to
-learn more about how to configure your ZenML client to connect to a remote
-ZenServer instance, or jump straight to the available ZenServer deployment
-options by visiting the relevant sections:
+The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to [Kubernetes](https://kubernetes.io/) on managed cloud services. 
 
-* [run a ZenServer locally](#running-the-zenserver-locally)
-* [deploy ZenServer with Docker](#deploy-the-zenserver-with-docker)
-* (more to come ...)
+Before we begin, it will help to understand the [architecture](../../getting-started/deploying-zenml/deploying-zenml.md#scenario-3-server-and-database-hosted-in-the-cloud) around the ZenML server and the database that it uses. Here is an illustration:
 
+![ZenML with remote server and DB](../../assets/getting_started/Scenario3.1.png)
 
-{% hint style="info" %}
-The ZenServer is still undergoing heavy development. Some features are in Alpha
-state and may change in future releases. We are also working on providing more
-deployment and lifecycle management options for the ZenServer that will
-expand the currently supported deployment use-cases with improved scalability,
-security and robustness.
+If you don't have an existing Kubernetes cluster, you have the following two options to set it up:
+
+- Creating it manually using the documentation for your cloud provider. For convenience, here are links for [AWS](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html), [Azure](https://learn.microsoft.com/en-us/azure/aks/learn/quick-kubernetes-deploy-portal?tabs=azure-cli) and [GCP](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-zonal-cluster#before_you_begin).
+- Using [stack recipes](../../advanced-guide/practical/stack-recipes.md) that set up a cluster along with other tools that you might need in your cloud stack like artifact stores, and secret managers. Take a look at all [available stack recipes](https://github.com/zenml-io/mlops-stacks#-list-of-recipes) to see if there's something that works for you.
+
+> **Note**
+> Once you have created your cluster, make sure that you configure your [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) client to talk to it. If you have used stack recipes, this step is already done for you!
+
+You're now ready to deploy ZenML! Run the following command:
+```
+zenml deploy
+```
+
+You will be prompted to provide a name for your deployment and details like what cloud provider you want to deploy to, in addition to the username, password and email you want to set for the default user — and that's it! It creates the database and any VPCs, permissions and more that is needed.
+
+> **Note**
+> To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
+
+Reasonable defaults are in place for you already and if you wish to configure more settings, take a look at the next scenario that uses a config file.
+
+If you would like more control over the `zenml deploy` command, then read [option 2 here](../../getting-started/deploying-zenml/cli.md#option-2-using-existing-cloud-resources).
+
+{% hint style="info" %} 
+If you have trouble with the `zenml deploy` command and are stuck at
+this point, please join our [Slack community](https://zenml.io/slack-invite) and send a message to the #general channel. The
+community is more than willing to help out.
 {% endhint %}
 
-## Interacting with a Remote ZenServer
+At the end of the deployment, you will receive:
 
-To connect your ZenML client to a remote ZenServer instance, you need the URL of
-the ZenServer REST API and [a user that has been configured on the server](#zenserver-user-management).
+- A `URL` (e.g. `https://acaaf63af2074as394ab675ee71d85a-1399000d0.us-east-1.elb.amazonaws.com`). Visiting this URL on the browser will show you the same ZenML dashboard that you have seen locally, this time over the web. The ZenML Server and the Dashboard are deployed in the same web application and served at this URL. You can use login with your credentials (`username` and `password`) to view the dashboard.
+{% hint style="info" %} 
+If certificates have not been provisioned properly with the deployment, your browser might ask you to press a button to allow you
+to see the dashboard. It is important that you give permission in such a scenario, otherwise it will render ZenML unusable from the browser.
+{% endhint %}
 
-Connecting to the ZenServer is just a matter of creating a ZenML Profile backed
-by a ZenStore of type `rest` and pointing it to the ZenServer REST API URL, e.g.:
+- A `username`: This can be configured but is `default` by default.
+- A `password`: This can be configured but is empty by default.
+- (Optionally) A `TLS certificate` that you can use to connect securely to the deployment (see below).
+
+![Login Page](../../assets/starter_guide/collaboration/00_login.png)
+
+### Connecting to a deployed ZenML Server
+
+Once ZenML is deployed, one or multiple users can connect to with the
+`zenml connect` command. If no arguments are supplied, ZenML
+will attempt to connect to the last ZenML server deployed from the local host using the `zenml deploy` command:
+
+### ZenML Connect: Various options
+
+```bash
+zenml connect
+```
+
+To connect to a ZenML server, you can either pass the configuration as command
+line arguments or as a YAML file:
+
+```bash
+zenml connect --url=https://zenml.example.com:8080 --username=admin --no-verify-ssl
+```
+
+or
+
+```bash
+zenml connect --config=/path/to/zenml_server_config.yaml
+```
+
+The YAML file should have the following structure when connecting to a ZenML
+server:
+
+```yaml
+url: <The URL of the ZenML server>
+username: <The username to use for authentication>
+password: <The password to use for authentication>
+verify_ssl: |
+   <Either a boolean, in which case it controls whether the
+   server's TLS certificate is verified, or a string, in which case it
+   must be a path to a CA certificate bundle to use or the CA bundle
+   value itself>
+```
+
+Example of a ZenML server YAML configuration file:
+
+```yaml
+url: https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com/zenml
+username: admin
+password: Pa$$word123
+verify_ssl: |
+-----BEGIN CERTIFICATE-----
+MIIDETCCAfmgAwIBAgIQYUmQg2LR/pHAMZb/vQwwXjANBgkqhkiG9w0BAQsFADAT
+MREwDwYDVQQDEwh6ZW5tbC1jYTAeFw0yMjA5MjYxMzI3NDhaFw0yMzA5MjYxMzI3
+...
+ULnzA0JkRWRnFqH6uXeJo1KAVqtxn1xf8PYxx3NlNDr9wi8KKwARf2lwm6sH4mvq
+1aZ/0iYnGKCu7rLJzxeguliMf69E
+-----END CERTIFICATE-----
+```
+
+Both options can be combined, in which case the command line arguments will
+override the values in the YAML file. For example, it is possible and
+recommended that you supply the password only as a command line argument:
+
+```bash
+zenml connect --username zenml --password=Pa@#$#word --config=/path/to/zenml_server_config.yaml
+```
+
+### ZenML Disconnect: To go back to single-player mode.
+
+To disconnect from the current ZenML server and revert to using the local default database, use the following command:
+
+```bash
+zenml disconnect
+```
+
+You can inspect the current ZenML configuration at any given time using the
+following command:
+
+```bash
+zenml status
+```
+
+Example output:
 
 ```
-$ zenml profile create zenml-remote -t rest --url http://192.168.178.40:8080 --user default
+ zenml status
 Running without an active repository root.
-Running with active profile: 'default' (global)
-Initializing profile zenml-remote...
-Profile 'zenml-remote' successfully created.
-
-$ zenml profile set zenml-remote 
-Running without an active repository root.
-Running with active profile: 'devel' (global)
-Active profile changed to: 'zenml-remote'
+Connected to a ZenML server: 'https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com'
+The current user is: 'default'
+The active project is: 'default' (global)
+The active stack is: 'default' (global)
+The status of the local dashboard:
+              ZenML server 'local'              
+┏━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ URL            │ http://172.17.0.1:9000      ┃
+┠────────────────┼─────────────────────────────┨
+┃ STATUS         │ ✅                          ┃
+┠────────────────┼─────────────────────────────┨
+┃ STATUS_MESSAGE │ Docker container is running ┃
+┠────────────────┼─────────────────────────────┨
+┃ CONNECTED      │                             ┃
+┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-All ZenML pipelines executed while the ZenServer backed Profile is active will
-use the Stack and Stack Component definitions stored on the server.
-
-## Running the ZenServer Locally
-
-The ZenServer can be deployed locally on any machine, as a means of assessing
-its functionality without going through the pains of provisioning a complicated
-infrastructure setup. Before we get started, we need to make sure that all the 
-necessary dependencies for the ZenServer are installed. To do that, we install 
-ZenML with the server extras like this:
-```
-pip install zenml[server]
-```
-
-Starting a local ZenServer instance can be done by typing
-`zenml server up`. This will start the server as a background daemon process
-accessible on your local machine, by default on port 8000:
-
-```
-$ zenml server up
-Running without an active repository root.
-Starting a new ZenServer local instance.
-ZenServer running at 'http://127.0.0.1:8000/'.
-```
-
-The local ZenServer exposes a local REST API through which clients can access
-the same data available in your active Profile. You can also specify a different
-profile by passing the `--profile=$PROFILE_NAME` command-line argument, or change
-the HTTP port and address on which the ZenServer is accepting requests using
-`--port=$PORT` and `--ip-address=$IP_ADDRESS`.The following example creates
-a new SQL profile named `zen-server` and starts a ZenServer with that profile
-that listens to port 8080 on all interfaces. This is a typical use case
-where you might want to expose the ZenServer to other machines in your network:
-
-```
-$ zenml server down
-Shutting down the local ZenService instance.
-
-$ zenml profile create -t sql zen-server
-Running without an active repository root.
-Running with active profile: 'devel' (global)
-Initializing profile zen-server...
-Registering default stack...
-Registered stack with name 'default'.
-Profile 'zen-server' successfully created.
-
-$ zenml server up --port 8080 --ip-address 0.0.0.0 --profile zen-server
-Running without an active repository root.
-Starting a new ZenServer local instance.
-ZenServer running at 'http://0.0.0.0:8080/'.
-```
-
-The status of the local ZenServer instance can be checked at any time using:
-
-```
-$ zenml server status
-The ZenServer status is active and running at http://0.0.0.0:8080/..
-```
-
-and shut down using:
-
-```
-$ zenml server down
-Shutting down the local ZenService instance.
-```
-
-To launch the ZenServer manually, without using the ZenML CLI, you can use the
-`uvicorn` command line launch utility. For example, the equivalent of the
-previous `zenml server up` example would be: 
-
-```
-ZENML_PROFILE_NAME=zen-server uvicorn zenml.zen_server.zen_server_api:app \
-    --port 8080 --host 0.0.0.0
-```
-
-## Deploy the ZenServer with Docker
-
-The ZenServer can be deployed as a Docker container. To persist the ZenStore
-information between container restarts, the Docker container should be
-configured to mount a host volume where its global configuration is kept.
-The following is an example of starting a Docker container with a ZenServer
-instance exposed on the local port 8080 and using a local `zenserver` folder
-to persist the ZenML data between container restarts:
-
-```
-mkdir zenserver
-docker run -it -d -p 8080:8000 \
-    -v $PWD/zenserver:/zenserver \
-    -e ZENML_CONFIG_PATH=/zenserver \
-    zenmldocker/zenml-server \
-    uvicorn zenml.zen_server.zen_server_api:app --host 0.0.0.0
-```
-
-## ZenServer User Management
-
-All clients connecting to a ZenServer instance must use a user account. This is
-currently available only as a rudimentary user management system until the
-ZenServer is fully developed.
-
-A `default` user is automatically created when the ZenServer is started. The
-ZenML CLI can be used to register additional users, either directly into the
-Profile that the ZenServer is running on, or remotely, from any ZenML client:
-
-```
-$ zenml profile describe
-Running without an active repository root.
-Running with active profile: 'zenml-remote' (global)
-'zenml-remote' Profile Configuration (ACTIVE)
-┏━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ PROPERTY     │ VALUE                      ┃
-┠──────────────┼────────────────────────────┨
-┃ NAME         │ zenml-remote               ┃
-┠──────────────┼────────────────────────────┨
-┃ STORE_URL    │ http://192.168.178.40:8080 ┃
-┠──────────────┼────────────────────────────┨
-┃ STORE_TYPE   │ rest                       ┃
-┠──────────────┼────────────────────────────┨
-┃ ACTIVE_STACK │ default                    ┃
-┠──────────────┼────────────────────────────┨
-┃ ACTIVE_USER  │ default                    ┃
-┗━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-$ zenml user list
-Running without an active repository root.
-Running with active profile: 'zenml-remote' (global)
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━┓
-┃                  ID                  │ CREATION_DATE              │ NAME    ┃
-┠──────────────────────────────────────┼────────────────────────────┼─────────┨
-┃ 085cb51e-37cf-4661-a8cb-ec885b218387 │ 2022-05-16 18:12:16.355773 │ default ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━┛
-
-$ zenml user create aria
-Running without an active repository root.
-Running with active profile: 'zenml-remote' (global)
-
-$ zenml user list
-Running without an active repository root.
-Running with active profile: 'zenml-remote' (global)
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━┓
-┃                  ID                  │ CREATION_DATE              │ NAME    ┃
-┠──────────────────────────────────────┼────────────────────────────┼─────────┨
-┃ 085cb51e-37cf-4661-a8cb-ec885b218387 │ 2022-05-16 18:12:16.355773 │ default ┃
-┠──────────────────────────────────────┼────────────────────────────┼─────────┨
-┃ 16dfc5da-9462-4a36-8502-15f0204501cf │ 2022-05-16 18:39:09.461282 │ aria    ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━┛
-```
-
-## ZenServer API Reference
-
-For more details on the ZenServer REST API, spin up the service and visit
-`http://$SERVICE_URL/docs` to see the OpenAPI specification.
+Ok that was easy! By running a few commands on the terminal, you have now a
+shared ZenML Server and Dashboard deployed and ready to go. The next step is to
+[invite your teammates](./users.md).

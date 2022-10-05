@@ -357,7 +357,7 @@ class BaseStep(metaclass=BaseStepMeta):
         return self._upstream_steps
 
     def after(self, step: "BaseStep") -> None:
-        """Adds an upstream step to the this step.
+        """Adds an upstream step to this step.
 
         Calling this method makes sure this step only starts running once the
         given step has successfully finished executing.
@@ -1056,7 +1056,7 @@ class BaseStep(metaclass=BaseStepMeta):
                         f"registering a default materializer for specific "
                         f"types by subclassing `BaseMaterializer` and setting "
                         f"its `ASSOCIATED_TYPES` class variable.",
-                        url="https://docs.zenml.io/developer-guide/advanced-usage/materializer",
+                        url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
                     )
                 outputs[output_name][
                     "materializer_source"

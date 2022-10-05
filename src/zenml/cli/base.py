@@ -73,7 +73,7 @@ def init(path: Optional[Path]) -> None:
         f"will only take effect when you're running ZenML from the initialized "
         f"repository root, or from a subdirectory. For more information on "
         f"repositories and configurations, please visit "
-        f"https://docs.zenml.io/developer-guide/stacks-repositories."
+        f"https://docs.zenml.io/starter-guide/stacks/managing-stacks."
     )
 
 

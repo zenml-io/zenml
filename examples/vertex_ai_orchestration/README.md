@@ -110,7 +110,6 @@ Once everything is done on the GCP side, we will need to configure a
 stack with all of these components.
 
 * The **artifact store** to store step outputs in a GCP Bucket.
-* The **metadata store** to track metadata inside a MySQL database.
 * The Docker images that are created to run your pipeline are stored in GCP
   **container registry**.
 * The **Vertex orchestrator** is responsible for running your ZenML pipeline
@@ -207,8 +206,8 @@ costs for storage of artifacts, containers, metadata or secrets.
 
 # 📜 Learn more
 
-Our docs regarding the VertexAI integration can be found [here](https://docs.zenml.io/mlops-stacks/orchestrators/gcloud-vertexai).
+Our docs regarding the VertexAI integration can be found [here](https://docs.zenml.io/component-gallery/orchestrators/gcloud-vertexai).
 
 If you want to learn more about orchestrators in general or about how to build
 your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/orchestrators/custom).
+check out our [docs](https://docs.zenml.io/component-gallery/orchestrators/custom).

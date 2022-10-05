@@ -151,7 +151,7 @@ class ClientMetaClass(ABCMeta):
                     "adjust your step to disable caching if needed. "
                     "Alternatively, use a `StepContext` inside your step "
                     "instead, as covered here: "
-                    "https://docs.zenml.io/developer-guide/advanced-usage"
+                    "https://docs.zenml.io/advanced-guide/pipelines/step-metadata"
                     "/step-fixtures#step-contexts",
                 )
 
