@@ -54,7 +54,7 @@ in the context of a ZenML repository, e.g.:
 ```shell
 $ zenml stack list
 
-Unable to find ZenML repository in your current working directory (/Users/felix/code/zenml) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
+Unable to find ZenML repository in your current working directory (/private/tmp/zenml) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
 Using the default local database.
 Running with active project: 'default' (global)
@@ -99,66 +99,66 @@ project without impacting the global settings:
 
 ```
 /tmp/zenml$ zenml stack list
-Unable to find ZenML repository in your current working directory (/tmp/zenml)
-or any parent directories. If you want to use an existing repository which is in
-a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If
-you want to create a new repository, run zenml init.
+Unable to find ZenML repository in your current working directory (/private/tmp/zenml) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
 Using the default local database.
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ default    │ default        │ default        │ default      ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃        │ zenml      │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+Running with active project: 'default' (global)
+┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃ ACTIVE │ STACK NAME │ STACK ID                             │ SHARED │ OWNER   │ ORCHESTRATOR │ ARTIFACT_STORE ┃
+┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
+┃   👉   │ default    │ 4fc6795b-fd9e-447d-afe9-233d5c80a199 │ ➖     │ default │ default      │ default        ┃
+┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
+┃        │ zenml      │ 20419515-3738-4783-bdf1-ef97f4e59a55 │ ➖     │ default │ default      │ default        ┃
+┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 
 /tmp/zenml$ zenml init
-ZenML repository initialized at /tmp/zenml.
-The local active stack was initialized to 'default'. This local configuration will
-only take effect when you're running ZenML from the initialized repository root,
-or from a subdirectory.
+⠧ Initializing ZenML repository at /private/tmp/zenml.
+Setting the repo active project to default.
+ZenML repository initialized at /private/tmp/zenml.
+The local active stack was initialized to 'default'. This local configuration will only take effect when you're running ZenML from the initialized repository 
+root, or from a subdirectory. For more information on repositories and configurations, please visit https://docs.zenml.io/starter-guide/stacks/managing-stacks.
 
 
-$ zenml stack list
+/tmp/zenml$ zenml stack list
 Using the default local database.
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ default    │ default        │ default        │ default      ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃        │ zenml      │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+Running with active project: 'default' (repository)
+┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃ ACTIVE │ STACK NAME │ STACK ID                             │ SHARED │ OWNER   │ ORCHESTRATOR │ ARTIFACT_STORE ┃
+┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
+┃   👉   │ default    │ 4fc6795b-fd9e-447d-afe9-233d5c80a199 │ ➖     │ default │ default      │ default        ┃
+┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
+┃        │ zenml      │ 20419515-3738-4783-bdf1-ef97f4e59a55 │ ➖     │ default │ default      │ default        ┃
+┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 
 /tmp/zenml$ zenml stack set zenml
 Using the default local database.
+Running with active project: 'default' (repository)
 Active repository stack set to: 'zenml'
 
 /tmp/zenml$ zenml stack list
 Using the default local database.
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃        │ default    │ default        │ default        │ default      ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ zenml      │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+Running with active project: 'default' (repository)
+┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃ ACTIVE │ STACK NAME │ STACK ID                             │ SHARED │ OWNER   │ ORCHESTRATOR │ ARTIFACT_STORE ┃
+┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
+┃        │ default    │ 4fc6795b-fd9e-447d-afe9-233d5c80a199 │ ➖     │ default │ default      │ default        ┃
+┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
+┃   👉   │ zenml      │ 20419515-3738-4783-bdf1-ef97f4e59a55 │ ➖     │ default │ default      │ default        ┃
+┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 
 /tmp/zenml$ cd ..
 /tmp$ zenml stack list
-Unable to find ZenML repository in your current working directory (/tmp) or any
-parent directories. If you want to use an existing repository which is in a
-different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you
-want to create a new repository, run zenml init.
+Unable to find ZenML repository in your current working directory (/private/tmp) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
 Using the default local database.
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ default    │ default        │ default        │ default      ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃        │ zenml      │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+Running with active project: 'default' (global)
+┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃ ACTIVE │ STACK NAME │ STACK ID                             │ SHARED │ OWNER   │ ORCHESTRATOR │ ARTIFACT_STORE ┃
+┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
+┃        │ zenml      │ 20419515-3738-4783-bdf1-ef97f4e59a55 │ ➖     │ default │ default      │ default        ┃
+┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
+┃   👉   │ default    │ 4fc6795b-fd9e-447d-afe9-233d5c80a199 │ ➖     │ default │ default      │ default        ┃
+┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
 
 </details>
