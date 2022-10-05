@@ -25,7 +25,6 @@ We have [already discussed `BaseParameters`](../../starter-guide/pipelines/itera
 Looked at one way, `BaseParameters` configure steps within a pipeline to behave in a different way during runtime. But what other
 things can be configured at runtime? Here is a list:
 
-- Controlling general step behavior like [enabling or disabling cache](../../starter-guide/pipelines/iterating.md) or how outputs are [materialized](../pipelines/materializers.md).
 - The [resources](./step-resources.md) of a step.
 - Configuring the [containerization](./containerization.md) process of a pipeline (e.g. What requirements get installed in the Docker image).
 - Stack component specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime.
@@ -34,6 +33,8 @@ You will learn about all of the above in more detail later, but for now,
 lets try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
 
 ### How to use settings
+
+Settings are categorized into two types:
 
 #### Method 1: Directly on the decorator
 
@@ -45,23 +46,156 @@ that exists in both `@step` and `@pipeline` decorators:
   ...
 
 @pipeline(settings=...)
+  ...
 ```
 
 {% hint style="info" %}
 Once you set settings on a pipeline, they will be applied to all steps with some exception. See the [later section on precendence for more details](#heirarchy-and-precendence).
 {% endhint %}
 
-In this case, `settings` can be passed as a simple dict, where the `keys` are one of the following:
-
-
-
 #### Method 2: On the step/pipeline instance
 
-step_instance/pipeline_instance.configure(…): Configures the instance -> will be set for all runs using the instance
+This is exactly the same as passing it through the decorator, but if you prefer you can also pass it in the `configure` methods of the pipeline and step instances:
+
+```python
+@step
+def my_step() -> None:
+  print("my step")
+
+@pipeline
+def my_pipeline(step1):
+  step1()
+
+# Same as passing it in the step decorator
+step_instance = my_step().configure(settings=...)
+
+pipeline_instance = my_pipeline(
+  step1 = step_instance
+)
+
+# Same as passing it in the pipeline decorator
+pipeline_instance.configure(settings=...)
+
+# Or you can pass it in the run function
+pipeline_instance.run(settings=...)
+```
 
 #### Method 3: Configuring with YAML
 
-Generate a template for a config file: `pipeline_instance.write_run_configuration_template(path=<PATH>)`
+As all settings can be passed through as a dict, users have the option to
+send all configuration in via a YAML file. This is useful in situations where code changes are not desirable.
+
+To use a YAML file, you must pass it in the `run` method of a pipeline instance:
+
+```python
+@step
+def my_step() -> None:
+  print("my step")
+
+@pipeline
+def my_pipeline(step1):
+  step1()
+
+pipeline_instance = my_pipeline(
+  step1 =  my_step()
+)
+
+# Pass in a config file
+pipeline_instance.run(config_path='/local/path/to/config.yaml')
+```
+
+The format of a YAML config file 
+
+Here is an example of a YAML config file.
+
+<details>
+
+<summary>An example of a YAML config</summary>
+
+Some configuration is commented out as it is not needed.
+
+```yaml
+enable_cache: True
+extra:
+  tags: production
+run_name: my_run
+# schedule:
+#   catchup: bool
+#   cron_expression: Optional[str]
+#   end_time: Optional[datetime]
+#   interval_second: Optional[timedelta]
+#   start_time: Optional[datetime]
+settings:
+  docker:
+    build_context_root: .
+    # build_options: Mapping[str, Any]
+    # copy_files: bool
+    # copy_global_config: bool
+    # dockerfile: Optional[str]
+    # dockerignore: Optional[str]
+    # environment: Mapping[str, Any]
+    # install_stack_requirements: bool
+    # parent_image: Optional[str]
+    # replicate_local_python_environment: Optional
+    # required_integrations: List[str]
+    requirements:
+      - pandas
+    # target_repository: str
+    # user: Optional[str]
+  resources:
+    cpu_count: 1
+    gpu_count: 1
+    memory: "1GB"
+steps:
+  # get_first_num:
+    enable_cache: false
+    experiment_tracker: mlflow_tracker
+    # extra: Mapping[str, Any]
+    # outputs:
+    #   first_num:
+    #     artifact_source: Optional[str]
+    #     materializer_source: Optional[str]
+    # parameters: {}
+    # settings:
+    #   resources:
+    #     cpu_count: Optional[PositiveFloat]
+    #     gpu_count: Optional[PositiveInt]
+    #     memory: Optional[ConstrainedStrValue]
+    # step_operator: Optional[str]
+  # get_random_int:
+  #   enable_cache: Optional[bool]
+  #   experiment_tracker: Optional[str]
+  #   extra: Mapping[str, Any]
+  #   outputs:
+  #     random_num:
+  #       artifact_source: Optional[str]
+  #       materializer_source: Optional[str]
+  #   parameters: {}
+  #   settings:
+  #     resources:
+  #       cpu_count: Optional[PositiveFloat]
+  #       gpu_count: Optional[PositiveInt]
+  #       memory: Optional[ConstrainedStrValue]
+  #   step_operator: Optional[str]
+  # subtract_numbers:
+  #   enable_cache: Optional[bool]
+  #   experiment_tracker: Optional[str]
+  #   extra: Mapping[str, Any]
+  #   outputs:
+  #     result:
+  #       artifact_source: Optional[str]
+  #       materializer_source: Optional[str]
+  #   parameters: {}
+  #   settings:
+  #     resources:
+  #       cpu_count: Optional[PositiveFloat]
+  #       gpu_count: Optional[PositiveInt]
+  #       memory: Optional[ConstrainedStrValue]
+  #   step_operator: Optional[str]
+
+```
+
+</details>
 
 ### The `extra` dict
 
