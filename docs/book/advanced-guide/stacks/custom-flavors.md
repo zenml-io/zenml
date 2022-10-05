@@ -218,7 +218,7 @@ class MyArtifactStoreFlavor(BaseArtifactStoreFlavor):
 Once your implementation is complete, you can register it through the CLI:
 
 ```shell
-zenml artifact-store flavor register <path.to.MyArtifacStoreFlavor>
+zenml artifact-store flavor register <path.to.MyArtifactStoreFlavor>
 ```
 
 Afterwards, you should see the new custom artifact store flavor in the list of

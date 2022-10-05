@@ -45,7 +45,7 @@ The `deploy` command, by default, tries to create an NGINX ingress controller on
     zenml deploy --config=/PATH/TO/FILE
     ```
     > **Note**
-    > To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resoureces like MySQL databases and networks.
+    > To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
 
 ### Existing Hosted SQL Database
 If you also already have a database that you would want to use with the deployment, you can choose to configure it with the use of the config file. Here we will demonstrate setting the database.
@@ -76,7 +76,7 @@ If you also already have a database that you would want to use with the deployme
     zenml deploy --config=/PATH/TO/FILE
     ```
     > **Note**
-    > To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resoureces like MySQL databases and networks.
+    > To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
 
 
 

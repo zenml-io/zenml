@@ -30,7 +30,7 @@ things can be configured at runtime? Here is a list:
 - Stack component specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime.
 
 You will learn about all of the above in more detail later, but for now,
-lets try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analagous in this guide).
+lets try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
 
 ### How to use settings
 
@@ -48,9 +48,9 @@ that exists in both `@step` and `@pipeline` decorators:
 @pipeline(settings=...)
   ...
 ```
-
+heirarchy-and-precedence
 {% hint style="info" %}
-Once you set settings on a pipeline, they will be applied to all steps with some exception. See the [later section on precendence for more details](#heirarchy-and-precendence).
+Once you set settings on a pipeline, they will be applied to all steps with some exception. See the [later section on precedence for more details](#hierarchy-and-precedence).
 {% endhint %}
 
 #### Method 2: On the step/pipeline instance
@@ -236,7 +236,7 @@ print(p.runs[-1].pipeline_configuration['extra'])
 # {'tag': 'production'}
 ```
 
-### Heirarchy and precendence
+### Hierarchy and precedence
 
 Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. Merging similar to the example below.
 

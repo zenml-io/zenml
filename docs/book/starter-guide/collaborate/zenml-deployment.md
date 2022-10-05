@@ -49,7 +49,7 @@ this point, please join our [Slack community](https://zenml.io/slack-invite) and
 community is more than willing to help out.
 {% endhint %}
 
-At the end of the deployment, you will recieve:
+At the end of the deployment, you will receive:
 
 - A `URL` (e.g. `https://acaaf63af2074as394ab675ee71d85a-1399000d0.us-east-1.elb.amazonaws.com`). Visiting this URL on the browser will show you the same ZenML dashboard that you have seen locally, this time over the web. The ZenML Server and the Dashboard are deployed in the same web application and served at this URL. You can use login with your credentials (`username` and `password`) to view the dashboard.
 {% hint style="info" %} 
@@ -163,4 +163,6 @@ The status of the local dashboard:
 ┗━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-Ok that was easy! By running a few commands on the terminal, you have now a shared ZenML Server and Dashboard deployed and ready to go. The next step is to [invite your teammates](./users.md).
+Ok that was easy! By running a few commands on the terminal, you have now a
+shared ZenML Server and Dashboard deployed and ready to go. The next step is to
+[invite your teammates](./users.md).
