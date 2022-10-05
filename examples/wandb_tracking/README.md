@@ -44,6 +44,9 @@ cd zenml_examples/wandb_tracking
 
 # initialize
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### 🥞 Create the stack with the wandb experiment tracker component
@@ -151,7 +154,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the Weights & Biases integration can be found [here](https://docs.zenml.io/mlops-stacks/experiment-trackers/wandb).
+Our docs regarding the Weights & Biases integration can be found [here](https://docs.zenml.io/component-gallery/experiment-trackers/wandb).
 
 If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/experiment-trackers/custom).
+check out our [docs](https://docs.zenml.io/component-gallery/experiment-trackers/custom).

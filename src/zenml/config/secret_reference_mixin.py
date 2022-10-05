@@ -56,9 +56,9 @@ class SecretReferenceMixin(BaseModel):
                         "You specified a plain-text value for the sensitive "
                         f"attribute `{key}`. This is currently only a warning, "
                         "but future versions of ZenML will require you to pass "
-                        "in senstive information as secrets. Check out the "
+                        "in sensitive information as secrets. Check out the "
                         "documentation on how to configure values with secrets "
-                        "here: https://docs.zenml.io/developer-guide/advanced-usage/secret-references"
+                        "here: https://docs.zenml.io/advanced-guide/practical/secrets-management"
                     )
                 continue
 

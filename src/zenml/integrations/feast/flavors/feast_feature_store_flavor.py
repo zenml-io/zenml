@@ -32,6 +32,20 @@ class FeastFeatureStoreConfig(BaseFeatureStoreConfig):
     online_port: int = 6379
     feast_repo: str
 
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        return (
+            self.online_host == "localhost" or self.online_host == "127.0.0.1"
+        )
+
 
 class FeastFeatureStoreFlavor(BaseFeatureStoreFlavor):
     """Feast Feature store flavor."""

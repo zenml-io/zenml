@@ -1,4 +1,4 @@
-# create the ZenServer deployment
+# create the ZenML Server deployment
 resource "kubernetes_namespace" "zen-server" {
   metadata {
     name = "${var.name}-${var.namespace}"
@@ -11,6 +11,11 @@ resource "helm_release" "zen-server" {
   chart            = var.helm_chart
   namespace        = kubernetes_namespace.zen-server.metadata[0].name
 
+
+  set {
+    name = "image.tag"
+    value = var.zenmlserver_image_tag
+  }
   set {
     name  = "zenml.defaultUsername"
     value = var.username

@@ -46,12 +46,12 @@ variable "kubectl_config_path" {
 
 # If you want a new RDS, choose a name and a password. If you already
 # have an instance, provide the name and the password here too.
-variable "rds_db_username" {
+variable "database_username" {
   description = "The username for the AWS RDS metadata store"
   default     = "admin"
   type        = string
 }
-variable "rds_db_password" {
+variable "database_password" {
   description = "The password for the AWS RDS metadata store"
   default     = ""
   type        = string
@@ -59,7 +59,7 @@ variable "rds_db_password" {
 
 # if you enable the create_rds option, the recipe will
 # create a new RDS MySQL instance and then use it for this
-# ZenServer. If disabled, you have to supply connection details
+# ZenML Server. If disabled, you have to supply connection details
 # in the section below.
 variable "create_rds" {
   description = "Should the recipe create an RDS instance?"
@@ -163,6 +163,11 @@ variable "ingress_tls_secret_name" {
   type        = string
 }
 
+variable "zenmlserver_image_tag" {
+  description = "The tag to use for the zenmlserver docker image."
+  default     = "latest"
+  type        = string   
+}
 
 # variables for creating a ZenML stack configuration file
 variable "zenml-version" {

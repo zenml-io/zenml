@@ -14,7 +14,7 @@
 """Implementation of the post-execution pipeline run class."""
 
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.client import Client
@@ -120,6 +120,42 @@ class PipelineRunView:
         return self._model.pipeline_configuration
 
     @property
+    def settings(self) -> Dict[str, Any]:
+        """Returns the pipeline settings.
+
+        These are runtime settings passed down to stack components, which
+        can be set at pipeline level.
+
+        Returns:
+            The pipeline settings.
+        """
+        settings = self.pipeline_configuration["settings"]
+        return cast(Dict[str, Any], settings)
+
+    @property
+    def extra(self) -> Dict[str, Any]:
+        """Returns the pipeline extras.
+
+        This dict is meant to be used to pass any configuration down to the
+        pipeline or stack components that the user has use of.
+
+        Returns:
+            The pipeline extras.
+        """
+        extra = self.pipeline_configuration["extra"]
+        return cast(Dict[str, Any], extra)
+
+    @property
+    def enable_cache(self) -> bool:
+        """Returns whether caching is enabled for this pipeline run.
+
+        Returns:
+            True if caching is enabled for this pipeline run.
+        """
+        enable_cache = self.pipeline_configuration["enable_cache"]
+        return cast(bool, enable_cache)
+
+    @property
     def zenml_version(self) -> Optional[str]:
         """Version of ZenML that this pipeline run was performed with.
 
@@ -147,18 +183,7 @@ class PipelineRunView:
         Returns:
             The current status of the pipeline run.
         """
-        step_statuses = (step.status for step in self.steps)
-
-        if any(status == ExecutionStatus.FAILED for status in step_statuses):
-            return ExecutionStatus.FAILED
-        elif all(
-            status == ExecutionStatus.COMPLETED
-            or status == ExecutionStatus.CACHED
-            for status in step_statuses
-        ):
-            return ExecutionStatus.COMPLETED
-        else:
-            return ExecutionStatus.RUNNING
+        return Client().zen_store.get_run_status(self.id)
 
     @property
     def steps(self) -> List[StepView]:

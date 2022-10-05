@@ -217,6 +217,10 @@ def register_stack(
                     ).id
                 ]
 
+        # click<8.0.0 gives flags a default of None
+        if share is None:
+            share = False
+
         stack_ = StackModel(
             name=stack_name,
             components=stack_components,
@@ -754,6 +758,7 @@ def delete_stack(
 
     if not confirmation:
         cli_utils.declare("Stack deletion canceled.")
+        return
 
     with console.status(f"Deleting stack '{stack_name_or_id}'...\n"):
         cfg = GlobalConfiguration()

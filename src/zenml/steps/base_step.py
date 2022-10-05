@@ -38,7 +38,6 @@ from typing import (
 )
 
 from pydantic import ValidationError
-from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
@@ -77,6 +76,8 @@ from zenml.utils import dict_utils, pydantic_utils, settings_utils, source_utils
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
+    from tfx.dsl.component.experimental.decorators import _SimpleComponent
+
     from zenml.config.base_settings import SettingsOrDict
     from zenml.steps.base_parameters import BaseParameters
 
@@ -280,7 +281,7 @@ class BaseStep(metaclass=BaseStepMeta):
         """
         name = self.__class__.__name__
         self.pipeline_parameter_name: Optional[str] = None
-        self._component: Optional[_SimpleComponent] = None
+        self._component: Optional["_SimpleComponent"] = None
         self._has_been_called = False
         self._upstream_steps: Set[str] = set()
 
@@ -356,7 +357,7 @@ class BaseStep(metaclass=BaseStepMeta):
         return self._upstream_steps
 
     def after(self, step: "BaseStep") -> None:
-        """Adds an upstream step to the this step.
+        """Adds an upstream step to this step.
 
         Calling this method makes sure this step only starts running once the
         given step has successfully finished executing.
@@ -660,7 +661,7 @@ class BaseStep(metaclass=BaseStepMeta):
             return returns
 
     @property
-    def component(self) -> _SimpleComponent:
+    def component(self) -> "_SimpleComponent":
         """Returns a TFX component.
 
         Returns:
@@ -1055,7 +1056,7 @@ class BaseStep(metaclass=BaseStepMeta):
                         f"registering a default materializer for specific "
                         f"types by subclassing `BaseMaterializer` and setting "
                         f"its `ASSOCIATED_TYPES` class variable.",
-                        url="https://docs.zenml.io/developer-guide/advanced-usage/materializer",
+                        url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
                     )
                 outputs[output_name][
                     "materializer_source"

@@ -178,6 +178,7 @@ EMAIL_ANALYTICS = "/email-opt-in"
 ACTIVATE = "/activate"
 INFO = "/info"
 VERSION_1 = "/v1"
+STATUS = "/status"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]

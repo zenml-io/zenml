@@ -22,6 +22,12 @@ zenml integration install github <s3/gcp/azure>
 # Change the current working directory to a path inside your cloned GitHub repository
 cd <PATH_INSIDE_GITHUB_REPOSITORY>
 
+# initialize zenml inside the repository
+zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
+
 # If your git repository already contains a ZenML pipeline, you can skip these next few commands
 zenml example pull github_actions_orchestration --path=.
 git add github_actions_orchestration
@@ -131,4 +137,4 @@ GitHub Actions and you should be able to access it from the GitHub UI. It will l
 # 📜 Learn more
 
 If you want to learn more about orchestrators in general or about how to build your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/orchestrators).
+check out our [docs](https://docs.zenml.io/component-gallery/orchestrators/orchestrators).

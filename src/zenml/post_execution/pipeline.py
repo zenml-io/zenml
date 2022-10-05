@@ -23,6 +23,7 @@ from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 if TYPE_CHECKING:
+    from zenml.config.pipeline_configurations import PipelineSpec
     from zenml.pipelines.base_pipeline import BasePipeline
 
 logger = get_logger(__name__)
@@ -159,6 +160,28 @@ class PipelineView:
             The name of the pipeline.
         """
         return self._model.name
+
+    @property
+    def docstring(self) -> Optional[str]:
+        """Returns the docstring of the pipeline.
+
+        Returns:
+            The docstring of the pipeline.
+        """
+        return self._model.docstring
+
+    @property
+    def spec(self) -> "PipelineSpec":
+        """Returns the spec of the pipeline.
+
+        The pipeline spec contains the source paths of all steps, as well as
+        each of their upstream step names. This is primarily used to compare
+        whether two pipelines are the same.
+
+        Returns:
+            The spec of the pipeline.
+        """
+        return self._model.spec
 
     @property
     def runs(self) -> List["PipelineRunView"]:

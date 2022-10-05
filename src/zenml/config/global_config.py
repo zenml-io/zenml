@@ -682,8 +682,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes
         validate_assignment = True
-        # Ignore extra attributes from configs of previous ZenML versions
-        extra = "ignore"
+        # Allow extra attributes from configs of previous ZenML versions to
+        # permit downgrading
+        extra = "allow"
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True

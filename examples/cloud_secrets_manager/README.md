@@ -40,6 +40,9 @@ cd zenml_examples/cloud_secrets_manager
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### 🥞 Set up your stack for AWS
@@ -53,7 +56,7 @@ set up properly.
 ```shell
 zenml integration install aws
 
-zenml secrets-manager register aws_secrets_manager --flavor=aws
+zenml secrets-manager register aws_secrets_manager --flavor=aws --region_name=<YOUR_CHOSEN_AWS_REGION_NAME> # e.g. eu-west-1
 zenml stack register secrets_stack -o default -a default -x aws_secrets_manager --set
 ```
 
@@ -120,6 +123,13 @@ key-value pair:
 zenml secrets-manager secret register example_secret --example_secret_key=example_secret_value
 ```
 
+Note that Azure's Key Vault store doesn't permit the use of underscore
+characters in secret names, so you'll need to instead use:
+
+```shell
+zenml secrets-manager secret register examplesecret --example_secret_key=example_secret_value
+```
+
 ### ▶️ Run the Code
 
 Now we're ready. Execute:
@@ -151,7 +161,7 @@ rm -rf zenml_examples
 # 📜 Learn more
 
 If you want to learn more about secret managers in general or about how to build your own secret manager in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/secrets-managers).
+check out our [docs](https://docs.zenml.io/component-gallery/secrets-managers/secrets-managers).
 
 We also have extensive CLI docs for the
 [secret manager](https://apidocs.zenml.io/latest/cli/#zenml.cli--setting-up-a-secrets-manager)

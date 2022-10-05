@@ -220,7 +220,10 @@ def down() -> None:
 @click.option(
     "--provider",
     "-p",
-    type=click.Choice([ServerProviderType.AWS.value], case_sensitive=True),
+    type=click.Choice(
+        [ServerProviderType.AWS.value, ServerProviderType.GCP.value],
+        case_sensitive=True,
+    ),
     default=None,
     help="Server deployment provider.",
 )
@@ -263,6 +266,12 @@ def down() -> None:
     "deployed.",
     type=click.BOOL,
 )
+@click.option(
+    "--gcp-project-id",
+    help="The project in GCP to deploy the server to. ",
+    required=False,
+    type=str,
+)
 def deploy(
     provider: Optional[str] = None,
     connect: bool = False,
@@ -271,6 +280,7 @@ def deploy(
     name: Optional[str] = None,
     timeout: Optional[int] = None,
     config: Optional[str] = None,
+    gcp_project_id: Optional[str] = None,
 ) -> None:
     """Deploy the ZenML server in a cloud provider.
 
@@ -282,6 +292,7 @@ def deploy(
         password: The initial password to use for the provisioned admin account.
         timeout: Time in seconds to wait for the server to start.
         config: A YAML or JSON configuration or configuration file to use.
+        gcp_project_id: The project in GCP to deploy the server to.
     """
     config_dict: Dict[str, Any] = {}
 
@@ -313,11 +324,19 @@ def deploy(
         provider = click.prompt(
             "ZenML server provider",
             type=click.Choice(
-                [ServerProviderType.AWS.value], case_sensitive=True
+                [ServerProviderType.AWS.value, ServerProviderType.GCP.value],
+                case_sensitive=True,
             ),
             default=ServerProviderType.AWS.value,
         )
     config_dict["provider"] = provider
+
+    if provider == ServerProviderType.GCP.value:
+        if not gcp_project_id:
+            gcp_project_id = click.prompt(
+                "GCP project ID",
+            )
+        config_dict["project_id"] = gcp_project_id
 
     if not username:
         username = click.prompt(
@@ -459,7 +478,7 @@ def status() -> None:
 
       * to connect to a ZenML deployment using command line arguments:
 
-        zenml connect --url=http://zenml.example.com:8080 --username=admin --project=default
+        zenml connect --url=http://zenml.example.com:8080 --username=admin
 
       * to use a configuration file:
 
@@ -544,6 +563,11 @@ def status() -> None:
     required=False,
     type=str,
 )
+@click.option(
+    "--raw-config",
+    is_flag=True,
+    help="Whether to use the configuration without prompting for missing fields.",
+)
 def connect(
     url: Optional[str] = None,
     username: Optional[str] = None,
@@ -552,6 +576,7 @@ def connect(
     no_verify_ssl: bool = False,
     ssl_ca_cert: Optional[str] = None,
     config: Optional[str] = None,
+    raw_config: bool = False,
 ) -> None:
     """Connect to a remote ZenML server.
 
@@ -567,7 +592,10 @@ def connect(
         ssl_ca_cert: A path to a CA bundle to use to verify the server's TLS
             certificate or the CA bundle value itself.
         config: A YAML or JSON configuration or configuration file to use.
+        raw_config: Whether to use the configuration without prompting for
+            missing fields.
     """
+    from zenml.config.store_config import StoreConfiguration
     from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
 
     store_dict: Dict[str, Any] = {}
@@ -584,6 +612,11 @@ def connect(
                 "The configuration argument must be JSON/YAML content or "
                 "point to a valid configuration file."
             )
+
+        if raw_config:
+            store_config = StoreConfiguration.parse_obj(store_dict)
+            GlobalConfiguration().set_store(store_config)
+            return
 
         url = store_dict.get("url", url)
         username = username or store_dict.get("username")

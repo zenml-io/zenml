@@ -117,8 +117,12 @@ class HydratedPipelineModel(PipelineModel):
 class HydratedPipelineRunModel(PipelineRunModel):
     """Pipeline model with User and Project fully hydrated."""
 
-    pipeline: PipelineModel = Field(title="The pipeline this run belongs to.")
-    stack: StackModel = Field(title="The stack that was used fro this run.")
+    pipeline: Optional[PipelineModel] = Field(
+        title="The pipeline this run belongs to."
+    )
+    stack: Optional[StackModel] = Field(
+        title="The stack that was used for this run."
+    )
     user: UserModel = Field(  # type: ignore[assignment]
         title="The user that ran this pipeline.",
     )

@@ -83,7 +83,7 @@ def test_base_container_registry_local_property():
             project=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
-        ).is_local
+        ).config.is_local
         is True
     )
     assert (
@@ -99,7 +99,7 @@ def test_base_container_registry_local_property():
             project=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
-        ).is_local
+        ).config.is_local
         is False
     )
 

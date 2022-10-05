@@ -220,7 +220,7 @@ for detailed step-by-step instructions.
 [Examples README](examples/README.md) 
 to find out what to do.
 3. All integrations deserve to be documented. Make sure to pay a visit to the
-[Integrations Page](https://docs.zenml.io/mlops-stacks/integrations)
+[Integrations Page](https://docs.zenml.io/component-gallery/integrations)
 in the docs and add the integration. 
 
 ## 🆘 Getting Help

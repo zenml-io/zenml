@@ -235,7 +235,7 @@ class ServerDeployer(metaclass=SingletonMetaClass):
         if not server.status or not server.status.url:
             raise ServerDeploymentError(
                 f"The {provider_name} {server_name} ZenML "
-                f"server is not currently running or is unreachableI."
+                f"server is not currently running or is unreachable."
             )
 
         store_config = RestZenStoreConfiguration(

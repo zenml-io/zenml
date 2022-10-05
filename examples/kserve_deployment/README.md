@@ -1,4 +1,4 @@
-# 🚀 KServe Deployment Example - TensorFlow and Pytorch Examples 🚀
+# 🚀 KServe Deployment Example - TensorFlow and Pytorch Examples
 
 [KServe](https://kserve.github.io/website) is a Kubernetes-based model inference platform
 built for highly scalable deployment use cases. It provides a standardized inference protocol 
@@ -77,6 +77,9 @@ cd zenml_examples/kserve_deployment
 
 # initialize a local ZenML Repository
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 For the ZenML KServe deployer to work, these things are required:
@@ -730,7 +733,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the KServe deployment integration can be found [here](https://docs.zenml.io/mlops-stacks/model-deployers/kserve).
+Our docs regarding the KServe deployment integration can be found [here](https://docs.zenml.io/component-gallery/model-deployers/kserve).
 
 If you want to learn more about deployment in ZenML in general or about how to build your own deployer steps in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/model-deployers/custom).
+check out our [docs](https://docs.zenml.io/component-gallery/model-deployers/custom).

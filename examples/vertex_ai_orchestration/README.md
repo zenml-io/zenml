@@ -110,7 +110,6 @@ Once everything is done on the GCP side, we will need to configure a
 stack with all of these components.
 
 * The **artifact store** to store step outputs in a GCP Bucket.
-* The **metadata store** to track metadata inside a MySQL database.
 * The Docker images that are created to run your pipeline are stored in GCP
   **container registry**.
 * The **Vertex orchestrator** is responsible for running your ZenML pipeline
@@ -134,14 +133,17 @@ cd zenml_examples/vertex_ai_orchestration
 
 # Create a zenml repository
 zenml init
- 
+
+# Start the ZenServer to enable dashboard access
+zenml up
+
 # In order to create the GCP stack components, we'll need to install one 
 # additional ZenML integration:
 zenml integration install gcp
 
 # The CONTAINER_REGISTRY_URI will have a format like this: eu.gcr.io/xxx/xxx
 zenml container-registry register gcp_registry --flavor=gcp --uri=<CONTAINER_REGISTRY_URI>
-  
+
 # The PATH_TO_YOUR_GCP_BUCKET is the path to your GCP bucket: gs://xxx
 zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YOUR_GCP_BUCKET>
 
@@ -204,8 +206,8 @@ costs for storage of artifacts, containers, metadata or secrets.
 
 # 📜 Learn more
 
-Our docs regarding the VertexAI integration can be found [here](https://docs.zenml.io/mlops-stacks/orchestrators/gcloud-vertexai).
+Our docs regarding the VertexAI integration can be found [here](https://docs.zenml.io/component-gallery/orchestrators/gcloud-vertexai).
 
 If you want to learn more about orchestrators in general or about how to build
 your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/orchestrators/custom).
+check out our [docs](https://docs.zenml.io/component-gallery/orchestrators/custom).

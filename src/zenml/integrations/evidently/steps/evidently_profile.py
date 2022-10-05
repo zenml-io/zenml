@@ -36,7 +36,7 @@ from zenml.steps.utils import clone_step
 class EvidentlyColumnMapping(BaseModel):
     """Column mapping configuration for Evidently.
 
-    This class is a 1-to-1 serializable analogue of Evidently's
+    This class is a 1-to-1 serializable analog of Evidently's
     ColumnMapping data type that can be used as a step configuration field
     (see https://docs.evidentlyai.com/features/dashboards/column_mapping).
 

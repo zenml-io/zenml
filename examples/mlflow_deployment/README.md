@@ -191,6 +191,9 @@ cd zenml_examples/mlflow_deployment
 
 # initialize
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 ### 🥞 Setting up the ZenML Stack
 
@@ -316,8 +319,8 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the MLflow deployment integration can be found [here](https://docs.zenml.io/mlops-stacks/model-deployers/mlflow).
+Our docs regarding the MLflow deployment integration can be found [here](https://docs.zenml.io/component-gallery/model-deployers/mlflow).
 
 If you want to learn more about deployment in ZenML in general or about how to 
 build your own deployer steps in ZenML check out our 
-[docs](https://docs.zenml.io/mlops-stacks/model-deployers/custom).
+[docs](https://docs.zenml.io/component-gallery/model-deployers/custom).

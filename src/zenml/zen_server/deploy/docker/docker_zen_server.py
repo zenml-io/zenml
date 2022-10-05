@@ -38,8 +38,8 @@ from zenml.services import (
 from zenml.services.container.container_service import (
     SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
     SERVICE_CONTAINER_GLOBAL_CONFIG_PATH,
+    SERVICE_CONTAINER_PATH,
 )
-from zenml.services.container.entrypoint import SERVICE_CONTAINER_PATH
 from zenml.utils.io_utils import get_global_config_directory
 from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 from zenml.zen_stores.sql_zen_store import SqlZenStore
@@ -78,7 +78,7 @@ class DockerServerDeploymentConfig(ServerDeploymentConfig):
 
     port: int = 8238
     image: str = DOCKER_ZENML_SERVER_DEFAULT_IMAGE
-    address: Union[
+    ip_address: Union[
         ipaddress.IPv4Address, ipaddress.IPv6Address
     ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
     store: Optional[StoreConfiguration] = None
@@ -193,7 +193,7 @@ class DockerZenServer(ContainerService):
         shutil.rmtree(DOCKER_ZENML_SERVER_CONFIG_PATH)
 
     def run(self) -> None:
-        """Run the ZenServer.
+        """Run the ZenML Server.
 
         Raises:
             ValueError: if started with a global configuration that connects to
@@ -207,7 +207,7 @@ class DockerZenServer(ContainerService):
                 "The ZenML server cannot be started with REST store type."
             )
         logger.info(
-            "Starting ZenServer as blocking "
+            "Starting ZenML Server as blocking "
             "process... press CTRL+C once to stop it."
         )
 
@@ -216,9 +216,9 @@ class DockerZenServer(ContainerService):
         try:
             uvicorn.run(
                 ZEN_SERVER_ENTRYPOINT,
-                host="0.0.0.0",  # self.endpoint.config.ip_address,
+                host="0.0.0.0",
                 port=self.endpoint.config.port,
                 log_level="info",
             )
         except KeyboardInterrupt:
-            logger.info("ZenServer stopped. Resuming normal execution.")
+            logger.info("ZenML Server stopped. Resuming normal execution.")

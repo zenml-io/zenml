@@ -5,7 +5,7 @@ description: An overview of cloud infrastructure for your ML workflows
 There are many reasons why you might want to move your ML application setup to a cloud environment, from a need for specialized compute 💪 for training jobs to having requirements for a 24x7 load-balanced deployment of your trained model, serving user requests 🚀. 
 
 With ZenML, there are two kinds of deployments to keep in mind:
-- The ZenML Core infrastructure deployment - this pertains to deploying ZenML itself. Once ZenServer is integrated with the ZenML metadata store, this will hold more relevance so keep an eye out!
+- The ZenML Core infrastructure deployment - this pertains to deploying ZenML itself. Once ZenML Server is integrated with the ZenML metadata store, this will hold more relevance so keep an eye out!
 - The ZenML Stack infrastructure deployment - this comprises the resources that form a part of your ZenML stack like orchestrators, artifact stores, model deployers and more!
 
 This guide focuses on the stack infrastructure deployment and has three sections, each corresponding to a common scenario.

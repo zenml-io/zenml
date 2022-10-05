@@ -44,7 +44,6 @@ from typing import (
 )
 
 import pydantic
-from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
 from tfx.orchestration.portable import outputs_utils
@@ -64,6 +63,8 @@ from zenml.steps.step_output import Output
 from zenml.utils import proto_utils, source_utils
 
 if TYPE_CHECKING:
+    from tfx.dsl.component.experimental.decorators import _SimpleComponent
+
     from zenml.config.step_configurations import ArtifactConfiguration
     from zenml.steps.base_step import BaseStep
 
@@ -141,7 +142,7 @@ def parse_return_type_annotations(
     return output_signature
 
 
-def create_component_class(step: "BaseStep") -> Type[_SimpleComponent]:
+def create_component_class(step: "BaseStep") -> Type["_SimpleComponent"]:
     """Creates a TFX component class.
 
     Args:
@@ -150,6 +151,8 @@ def create_component_class(step: "BaseStep") -> Type[_SimpleComponent]:
     Returns:
         The component class.
     """
+    from tfx.dsl.component.experimental.decorators import _SimpleComponent
+
     executor_class = create_executor_class(step=step)
     component_spec_class = _create_component_spec_class(step=step)
 

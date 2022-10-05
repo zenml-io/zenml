@@ -82,6 +82,7 @@ class PipelineRunModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
     pipeline_id: Optional[UUID]  # Unlisted runs have this as None.
 
     pipeline_configuration: Dict[str, Any]
+    num_steps: int
     zenml_version: Optional[str] = current_zenml_version
     git_sha: Optional[str] = Field(default_factory=get_git_sha)
 

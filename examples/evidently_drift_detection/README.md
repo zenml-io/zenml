@@ -53,7 +53,6 @@ drift_detector = evidently_profile_step(
         verbose_level=1,
     ),
 )
-
 ```
 
 Here you can see that defining the step is extremely simple using our
@@ -89,6 +88,9 @@ cd zenml_examples/evidently_drift_detection
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### 🥞 Set up your stack for Evidently

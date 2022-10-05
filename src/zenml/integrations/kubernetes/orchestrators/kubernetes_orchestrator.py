@@ -185,7 +185,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
             # if the orchestrator is remote, the container registry must
             # also be remote.
-            if container_registry.is_local:
+            if container_registry.config.is_local:
                 return False, (
                     f"The Kubernetes orchestrator requires a remote container "
                     f"registry, but the '{container_registry.name}' container "

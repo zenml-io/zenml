@@ -12,7 +12,7 @@ tags:
       All things related to the login, logout and registration.
   - name: pipeline
     description: >-
-      The pipeline resource is the mostly construct that defines a specific techincal goal 
+      The pipeline resource is the mostly construct that defines a specific technical goal 
       (like "price prediction training pipeline"). And it groups together all users'  
       attempts towards this goal in the form of pipeline runs.
   - name: trigger
@@ -35,7 +35,7 @@ tags:
   - name: stack
     description: >-
       A project can contain many different stacks (for example `dev-stack`,
-      `qa-stack` and `prod-stack`). The stacks themselfes are made up from
+      `qa-stack` and `prod-stack`). The stacks themselves are made up from
       stack components.
   - name: component
     description: >-
@@ -46,7 +46,7 @@ tags:
       `seldon`)
   - name: project
     description: >-
-      The project is the encapsulating entity that contains stacks, compontents
+      The project is the encapsulating entity that contains stacks, components
       and pipelines. Users can gain access through their roles. Each project contains 
       a default stack which is used by default by all the pipeline triggers within
       unless specified otherwise.
@@ -54,7 +54,7 @@ tags:
     description: >-
       Code Repositories can be defined at Project level and used to define the pipeline
       entrypoint. Additionally, Triggers can be configured to use the code of the repository to 
-      run pipelines fromthe centralized ZenServer and even trigger on commits or other repo events.
+      run pipelines from the centralized ZenML Server and even trigger on commits or other repo events.
   - name: user
     description: >- 
       The user is the user.
@@ -292,7 +292,7 @@ paths:
         - pipeline
       description: |-
         Create a run for a pipeline. This endpoint is not meant to be used explicitly once ZenML follows the 
-        centralized paradigm where runs are authored by the ZenServer and not on the users machine.
+        centralized paradigm where runs are authored by the ZenML Server and not on the users machine.
       operationId: create_pipeline_run_for_pipeline
       parameters:
         - $ref: '#/components/parameters/pipelineId'
@@ -403,7 +403,7 @@ paths:
         - trigger
       description: |-
         Deletes a pipeline trigger, runs that are in progress are not
-        cancelled by this.
+        canceled by this.
       operationId: delete_trigger_by_id
       parameters:
         - $ref: '#/components/parameters/triggerId'

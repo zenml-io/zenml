@@ -127,8 +127,11 @@ cd zenml_examples/mlflow_tracking
 # Initialize ZenML repo
 zenml init
 
+# Start the ZenServer to enable dashboard access
+zenml up
+
 # Create and activate the stack with the mlflow experiment tracker component
-zenml experiment-tracker register mlflow_tracker --type=mlflow
+zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml stack register mlflow_stack \
     -a default \
     -o default \
@@ -175,8 +178,8 @@ rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 
 # 📜 Learn more
 
-Our docs regarding the MLflow Expirement tracker integration can be found [here](https://docs.zenml.io/mlops-stacks/experiment-trackers/mlflow).
+Our docs regarding the MLflow experiment tracker integration can be found [here](https://docs.zenml.io/component-gallery/experiment-trackers/mlflow).
 
 
 If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/experiment-trackers/custom).
+check out our [docs](https://docs.zenml.io/component-gallery/experiment-trackers/custom).

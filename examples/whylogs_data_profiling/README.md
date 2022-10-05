@@ -187,6 +187,9 @@ cd zenml_examples/whylogs_data_profiling
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### 🥞 Set up your stack for whylogs/Whylabs
