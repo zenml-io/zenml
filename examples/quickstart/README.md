@@ -143,6 +143,9 @@ zenml integration install dash sklearn mlflow evidently facets
 # Initialize ZenML
 zenml init
 
+# Start the ZenServer to enable dashboard access
+zenml up
+
 # Register required ZenML stack
 zenml data-validator register evidently_data_validator --flavor=evidently
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow

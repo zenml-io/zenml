@@ -44,6 +44,9 @@ cd zenml_examples/label_studio_annotation
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ## 👣 Step-by-Step Infrastructure Setup
