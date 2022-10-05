@@ -109,9 +109,9 @@ pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 
 ### Using develop with Remote Orchestrators
 
-Remote orchestrators like [KubeFlow](../mlops-stacks/orchestrators/kubeflow.md)
+Remote orchestrators like [Kubeflow](../mlops-stacks/orchestrators/kubeflow.md)
 require [Docker Images](../developer-guide/advanced-usage/docker.md) to set up the
-environmens of each step. By default, they use the official ZenML docker image
+environments of each step. By default, they use the official ZenML docker image
 that we provide with each release. However, if you install from develop, this
 image will be outdated, so you need to build a custom image instead, and
 specify it in the configuration of your orchestrator accordingly (see the 

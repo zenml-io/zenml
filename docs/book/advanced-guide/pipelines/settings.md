@@ -31,7 +31,7 @@ things can be configured at runtime? Here is a list:
 - Stack component specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime.
 
 You will learn about all of the above in more detail later, but for now,
-lets try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analagous in this guide).
+lets try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
 
 ### How to use settings
 
