@@ -79,7 +79,7 @@ Now we're ready. Execute on of the following:
 #### `post()` example
 
 ```shell
-python run.py
+python run_post.py
 ```
 
 You should see the following output in your slack channel:
