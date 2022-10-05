@@ -50,7 +50,7 @@ is the place to go. It features tutorials, community meetups, and various other 
 
 The [ZenML Blog](https://blog.zenml.io/) is regularly updated with in-depth tutorials. 
 Filtering with the [zenml tag](https://blog.zenml.io/tag/zenml/) is the best way to find 
-relevant tutorials and read at leisure. 
+relevant tutorials and can be read at your leisure. 
 
 ## Slack
 

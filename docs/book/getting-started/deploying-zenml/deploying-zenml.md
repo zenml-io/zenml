@@ -11,7 +11,7 @@ A ZenML deployment can consist of the following three components:
 - A SQL database.
 - An optional FastAPI HTTP server that exposes a RESTful API as well as a UI.
 
-ZenML relies on a SQLAlchemy compatible database to store all its data: stack configurations, pipeline runs etc. The location and type of this database can be freely chosen by the user. By default, a SQLite database is stored on your local host (see [Scenario 1](#running-zenml-locally)).
+ZenML relies on a SQLAlchemy-compatible database to store all its data: stack configurations, pipeline runs etc. The location and type of this database can be freely chosen by the user. By default, a SQLite database is stored on your local host (see [Scenario 1](#running-zenml-locally)).
 
 ZenML can also be deployed with an HTTP REST interface between the client machine and the database. This is also the interface used by the ZenML dashboard when loaded in your browser. Especially in multi-user settings, this is the recommended configuration scenario.
 
@@ -21,8 +21,8 @@ Running ZenML locally is an easy way to experiment with your pipelines and desig
 
 ### Scenario 1: Direct interaction with Local SQLite
 
-This is likely the first experience that users will run into. Simply pip install 
-zenml and dive right in without having to worry about a thing. Your stacks,
+This is likely the first experience that users will run into. Simply `pip install 
+zenml` and dive right in without having to worry about a thing. Your stacks,
 stack components and pipeline runs all are stored in a SQLite database located
 in your global configuration directory (e.g. at
 `~/.config/zenml/local_stores/default_zen_store/zenml.db` if you're running on

@@ -1,5 +1,5 @@
 ---
-description: How to migrate from 0.13.2 to 0.20.0
+description: How to migrate from ZenML 0.13.2 to 0.20.0
 ---
 
 # ZenML 0.13.2 → 0.20.0
@@ -210,7 +210,7 @@ update to ZenML 0.20.0. If you still want to use these Stacks, you will need to
 [manually migrate](#how-to-migrate-your-profiles) them after the update.
 {% endhint %}
 
-### 👣How to migrate your Profiles
+### 👣 How to migrate your Profiles
 
 If you're already using ZenML, you can migrate your existing Profiles to the new
 ZenML 0.20.0 paradigm by following these steps:
@@ -574,7 +574,7 @@ from zenml.post_execution import get_pipelines, get_pipeline
 
 - New methods to directly get a run have been introduced: `get_run` and `get_unlisted_runs` method has been introduced to get unlisted runs. 
  
-Usage remains largely similar. Please read the [new docs for post-execution to inform yourself of what further has changed](../starter-guide/pipelines/fetching-pipelines.md).
+Usage remains largely similar. Please read the [new docs for post-execution](../starter-guide/pipelines/fetching-pipelines.md) to inform yourself of what further has changed.
   
 **How to migrate**: Replace all post-execution workflows from the paradigm of `Repository.get_pipelines` or `Repository.get_pipeline_run` to the corresponding post_execution methods.
 
@@ -582,8 +582,8 @@ Usage remains largely similar. Please read the [new docs for post-execution to i
 
 While this rehaul is big and will break previous releases, we do have some more work left to do. However we also expect this to be the last big rehaul of ZenML before our 1.0.0 release, and no other release will be so hard breaking as this one. Currently planned future breaking changes are:
 
-- Following the metadata store, the secret manager stack component might move out of the stack.
-- ZenML `StepContext` might be deprecated
+- Following the metadata store, the secrets manager stack component might move out of the stack.
+- ZenML `StepContext` might be deprecated.
 
 # 🐞 Reporting Bugs
 

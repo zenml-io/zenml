@@ -30,7 +30,7 @@ things can be configured at runtime? Here is a list:
 - Stack component specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime.
 
 You will learn about all of the above in more detail later, but for now,
-lets try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
+let's try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
 
 ### Types of settings
 
@@ -51,7 +51,7 @@ A good example of this is the [`MLflow Experiment Tracker`](../../component-gall
 
 #### Using objects or dicts
 
-Settings can be passed in directly as BaseSettings-subclassed objects, or a dict-representation of the object. For example, a docker configuration can be passed in as follows:
+Settings can be passed in directly as BaseSettings-subclassed objects, or a dict-representation of the object. For example, a Docker configuration can be passed in as follows:
 
 ```python
 from zenml.config import DockerSettings
@@ -275,9 +275,7 @@ Some settings can be configured on pipelines and steps, some only on one of the 
 
 ### Merging settings on class/instance/run:
 
-Merging settings on class/instance/run:
-
-when a settings object is configured, ZenML merges the values with previously configured keys. E.g.:
+When a settings object is configured, ZenML merges the values with previously configured keys. E.g.:
 
 ```python
 from zenml.config import ResourceSettings
@@ -291,4 +289,4 @@ step_instance.configure(settings={"resources": ResourceSettings(gpu_count=1, mem
 step_instance.configuration.settings["resources"] # cpu_count: 2, gpu_count=1, memory="2GB"
 ```
 
-In the above example, the two settings were merged into one automatically.
+In the above example, the two settings were automatically merged.

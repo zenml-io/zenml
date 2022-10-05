@@ -59,4 +59,4 @@ Eager to get started? We recommend the following to start using **ZenML** right 
 
 ### **Community** - Be Part of the ZenML Family
 
-Can't really find what you want and need help? Join our [Slack group](https://zenml.io/slack-invite/). Ask questions about bugs or specific use cases and get a quick response from the ZenML core team.
+Can't find what you're looking for and/or need help? Join our [Slack group](https://zenml.io/slack-invite/). Ask questions about bugs or specific use-cases and get a quick response from the ZenML core team.

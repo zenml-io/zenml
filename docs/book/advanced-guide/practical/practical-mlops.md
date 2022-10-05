@@ -14,7 +14,7 @@ contained in this practical MLOps guide.
 ## :teacher: Learn with ZenBytes
 
 These articles are intended to showcase some of the core features, but we
-recommend you work your way through the full ZenBytes course if you want to dive
+recommend you work your way through [the full ZenBytes course](https://github.com/zenml-io/zenbytes) if you want to dive
 into the details of the various components of a production MLOps workflow.
 
 | Practical MLOps Chapter | Corresponding ZenBytes Lesson |

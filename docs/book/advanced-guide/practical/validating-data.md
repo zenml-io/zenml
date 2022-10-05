@@ -77,3 +77,9 @@ Other ways of validating our data include the use of the following integrations:
 
 See the respective examples to get to know how they each work and what they can
 be used for.
+
+{% hint style="info" %}
+To read a more detailed guide about how Data Validators function in ZenML,
+[click here](../../component-gallery/data-validators).
+{% endhint %}
+
