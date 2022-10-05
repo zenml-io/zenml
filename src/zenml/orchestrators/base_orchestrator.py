@@ -44,6 +44,7 @@ from typing import (
 )
 
 from google.protobuf import json_format
+from pydantic import root_validator
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
 from tfx.dsl.io.fileio import NotFoundError
 from tfx.orchestration import metadata
@@ -150,6 +151,28 @@ setattr(
 
 class BaseOrchestratorConfig(StackComponentConfig):
     """Base orchestrator config."""
+
+    @root_validator(pre=True)
+    def _deprecations(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate and/or remove deprecated fields.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+        """
+        if "custom_docker_base_image_name" in values:
+            image_name = values.pop("custom_docker_base_image_name")
+            if image_name:
+                logger.warning(
+                    "The 'custom_docker_base_image_name' field has been "
+                    "deprecated. To use a custom base container image with your "
+                    "orchestrators, please use the DockerSettings in your "
+                    "pipeline (see https://docs.zenml.io/advanced-guide/pipelines/containerization)."
+                )
+
+        return values
 
 
 class BaseOrchestrator(StackComponent, ABC):
