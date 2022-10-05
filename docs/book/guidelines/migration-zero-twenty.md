@@ -147,15 +147,15 @@ usability.
 
 ### 💾 The New Way (CLI Command Cheat Sheet)
 
-**deploy the server**
+**Deploy the server**
 
 `zenml deploy --aws` (maybe don’t do this :) since it spins up infrastructure on AWS…)
 
-**spin up a local zenserver**
+**Spin up a local ZenML Server**
 
 `zenml up`
 
-**connect to a pre-existing server**
+**Connect to a pre-existing server**
 
 `zenml connect` (pass in URL / etc, or zenml connect --config + yaml file)
 
