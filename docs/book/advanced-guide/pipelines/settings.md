@@ -48,9 +48,9 @@ that exists in both `@step` and `@pipeline` decorators:
 @pipeline(settings=...)
   ...
 ```
-
+heirarchy-and-precedence
 {% hint style="info" %}
-Once you set settings on a pipeline, they will be applied to all steps with some exception. See the [later section on precendence for more details](#heirarchy-and-precendence).
+Once you set settings on a pipeline, they will be applied to all steps with some exception. See the [later section on precedence for more details](#hierarchy-and-precedence).
 {% endhint %}
 
 #### Method 2: On the step/pipeline instance
@@ -221,7 +221,7 @@ print(p.runs[-1].pipeline_configuration['extra'])
 # {'tag': 'production'}
 ```
 
-### Heirarchy and precendence
+### Hierarchy and precedence
 
 Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. Merging similar to the example below.
 
