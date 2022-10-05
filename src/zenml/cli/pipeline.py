@@ -23,7 +23,6 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.pipelines.run_pipeline import run_pipeline
 from zenml.utils.uuid_utils import is_valid_uuid
 
 logger = get_logger(__name__)
@@ -50,6 +49,8 @@ def cli_pipeline_run(python_file: str, config_path: str) -> None:
         python_file: Path to the python file that defines the pipeline.
         config_path: Path to configuration YAML file.
     """
+    from zenml.pipelines.run_pipeline import run_pipeline
+
     run_pipeline(python_file=python_file, config_path=config_path)
 
 

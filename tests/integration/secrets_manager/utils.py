@@ -12,15 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import pytest
 
+from zenml.client import Client
+from zenml.enums import StackComponentType
+from zenml.models.component_model import ComponentModel
 from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
-from zenml.secrets_managers.local.local_secrets_manager import (
-    LocalSecretsManager,
-)
+from zenml.stack import StackComponent
 from zenml.utils.string_utils import random_str
 
 
@@ -61,41 +62,43 @@ def get_secrets_manager(
     address and token
     * run with `pytest tests/integration/secrets_manager --secrets-manager-flavor vault`.
     """
-
+    client = Client()
     flavor = request.config.getoption("secrets_manager_flavor")
 
-    secrets_manager: BaseSecretsManager
     name = kwargs.pop("name", f"zenml_pytest_{random_str(16).lower()}")
-    if flavor == "local":
-        secrets_manager = LocalSecretsManager(name=name, **kwargs)
-    elif flavor == "aws":
-        from zenml.integrations.aws.secrets_managers import AWSSecretsManager
+    configuration = kwargs.copy()
 
-        secrets_manager = AWSSecretsManager(
-            name=name, region_name="eu-west-2", **kwargs
+    if flavor == "local":
+        # nothing to do here
+        pass
+    elif flavor == "aws":
+        configuration.update(
+            dict(
+                region_name="eu-west-2",
+            )
         )
     elif flavor == "gcp":
-        from zenml.integrations.gcp.secrets_manager import GCPSecretsManager
-
-        secrets_manager = GCPSecretsManager(
-            name=name, project_id="zenml-secrets-manager", **kwargs
+        configuration.update(
+            dict(
+                project_id="zenml-secrets-manager",
+            )
         )
     elif flavor == "azure":
-        from zenml.integrations.azure.secrets_managers import (
-            AzureSecretsManager,
-        )
-
-        secrets_manager = AzureSecretsManager(
-            name=name, key_vault_name="zenml-pytest", **kwargs
+        configuration.update(
+            dict(
+                key_vault_name="zenml-pytest",
+            )
         )
     elif flavor == "vault":
-        from zenml.integrations.vault.secrets_manager import VaultSecretsManager
-
         url = os.getenv("VAULT_ADDR")
         token = os.getenv("VAULT_TOKEN")
         if url and token:
-            secrets_manager = VaultSecretsManager(
-                name=name, url=url, token=token, mount_point="secret/", **kwargs
+            configuration.update(
+                dict(
+                    url=url,
+                    token=token,
+                    mount_point="secret/",
+                )
             )
         else:
             raise RuntimeError(
@@ -110,7 +113,19 @@ def get_secrets_manager(
         raise RuntimeError(
             f"Secrets manager flavor {flavor} not covered in unit tests"
         )
-    return secrets_manager
+    secrets_manager_model = ComponentModel(
+        name=name,
+        type=StackComponentType.SECRETS_MANAGER,
+        flavor=flavor,
+        configuration=configuration,
+        user=client.active_user.id,
+        project=client.active_project.id,
+    )
+
+    return cast(
+        BaseSecretsManager,
+        StackComponent.from_model(secrets_manager_model),
+    )
 
 
 def get_arbitrary_secret(name: Optional[str] = None) -> ArbitrarySecretSchema:

@@ -24,7 +24,7 @@ from pydantic import Field
 
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.services.container.entrypoint import SERVICE_LOG_FILE_NAME
+from zenml.services.container.container_service import SERVICE_LOG_FILE_NAME
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.utils.io_utils import copy_dir, create_dir_recursive_if_not_exists
