@@ -40,7 +40,7 @@ class GCPServerDeploymentConfig(TerraformServerDeploymentConfig):
         db_disk_size: Allocated storage of CloudSQL database to create.
     """
 
-    project_id: str = ""
+    project_id: str
     region: str = "europe-west3"
     create_cloudsql: bool = True
     cloudsql_name: str = "zenmlserver"
