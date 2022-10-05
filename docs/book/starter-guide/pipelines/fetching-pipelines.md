@@ -159,8 +159,9 @@ status = run.status
 #### pipeline_configuration
 
 The `pipeline_configuration` is a super object that contains all configuration of 
-the pipeline and pipeline run, including [`BaseParameters`](./iterating.md) and
-[`BaseSettings`](../../advanced-guide/pipelines/settings.md).
+the pipeline and pipeline run, including 
+[pipeline-level `BaseSettings`](../../advanced-guide/pipelines/settings.md), which
+we will learn more about later.
 
 ## Steps
 
@@ -209,6 +210,14 @@ different runs, and it is recommended to access steps by the step class,
 an instance of the class or even the name of the step as a string: 
 `get_step(step=...)` instead.
 {% endhint %}
+
+Similar to the run, for reproducibility, you can use the `step` object
+to access:
+
+* [`BaseParameters`](iterating.md) via `step.parameters`: The parameters used to run the step.
+* [Step-level `BaseSettings`](../../advanced-guide/pipelines/settings.md)
+via `step.step_configuration`
+* Input and output artifacts.
 
 ## Outputs
 
@@ -286,10 +295,10 @@ E.g. Here, we fetch from within a step the last pipeline run for the same pipeli
 from zenml.post_execution import get_pipeline
 from zenml.environment import Environment
 
-@pipeline
-def example_pipeline(step_1, step_2):
+@step
+def my_step():
     # Fetch the current pipeline
-    p = get_pipeline(Environment().step_environment.pipeline_name)
+    p = get_pipeline('pipeline_name')
 
     # Fetch an older run
     older_run = p.runs[-2]  # -1 will be the current run
@@ -298,5 +307,6 @@ def example_pipeline(step_1, step_2):
     ...
 ```
 
-You will learn about using the `Environment` in more detail in the
+You can get a lot more metadata within a step as well, something
+we'll learn in more detail in the
 [advanced docs](../../advanced-guide/pipelines/step-metadata.md).
