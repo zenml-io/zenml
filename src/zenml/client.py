@@ -1143,7 +1143,10 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def register_pipeline(
-        self, pipeline_name: str, pipeline_spec: PipelineSpec
+        self,
+        pipeline_name: str,
+        pipeline_spec: PipelineSpec,
+        pipeline_docstring: Optional[str],
     ) -> UUID:
         """Registers a pipeline in the ZenStore within the active project.
 
@@ -1173,6 +1176,7 @@ class Client(metaclass=ClientMetaClass):
                 user=self.active_user.id,
                 name=pipeline_name,
                 spec=pipeline_spec,
+                docstring=pipeline_docstring,
             )
             pipeline = self.zen_store.create_pipeline(pipeline=pipeline)
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
