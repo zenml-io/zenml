@@ -1158,6 +1158,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             pipeline_name: The name of the pipeline to register.
             pipeline_spec: The spec of the pipeline.
+            pipeline_docstring: The docstring of the pipeline.
 
         Returns:
             The id of the existing or newly registered pipeline.
