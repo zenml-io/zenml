@@ -109,8 +109,8 @@ database_ssl_verify_server_cert: Whether to verify the database server
 
 ### Cloud specific settings
 
-<details>
-    <summary>AWS</summary>
+{% tabs %}
+{% tab title="AWS" %}
 
 ```
 region: The AWS region to deploy to.
@@ -124,22 +124,17 @@ db_allocated_storage: Allocated storage of RDS database to create.
 
 The `database_username` and `database_password` from the general config is used to set those variables for the AWS RDS instance as well.
 
-</details>
+{% endtab %}
 
-<details>
-    <summary>Azure</summary>
+{% tab title="Azure" %}
 
-```
 Coming Soon!
-```
 
-</details>
+{% endtab %}
 
-<details>
-    <summary>GCP</summary>
+{% tab title="GCP" %}
 
-```
-Coming soon!
-```
+Coming Soon!
 
-</details>
+{% endtab %}
+{% endtabs %}
