@@ -19,7 +19,7 @@ import sys
 import tempfile
 import time
 from abc import abstractmethod
-from typing import Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
 import docker.errors as docker_errors
 from docker.client import DockerClient
@@ -401,7 +401,7 @@ class ContainerService(BaseService):
         volumes = self._get_container_volumes()
 
         try:
-            uid_args = {}
+            uid_args: Dict[str, Any] = {}
             if sys.platform == "win32":
                 # File permissions are not checked on Windows. This if clause
                 # prevents mypy from complaining about unused 'type: ignore'
