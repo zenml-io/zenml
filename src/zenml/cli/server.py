@@ -266,6 +266,12 @@ def down() -> None:
     "deployed.",
     type=click.BOOL,
 )
+@click.option(
+    "--gcp-project-id",
+    help="The project in GCP to deploy the server to. ",
+    required=False,
+    type=str,
+)
 def deploy(
     provider: Optional[str] = None,
     connect: bool = False,
@@ -274,6 +280,7 @@ def deploy(
     name: Optional[str] = None,
     timeout: Optional[int] = None,
     config: Optional[str] = None,
+    gcp_project_id: Optional[str] = None,
 ) -> None:
     """Deploy the ZenML server in a cloud provider.
 
@@ -285,6 +292,7 @@ def deploy(
         password: The initial password to use for the provisioned admin account.
         timeout: Time in seconds to wait for the server to start.
         config: A YAML or JSON configuration or configuration file to use.
+        gcp_project_id: The project in GCP to deploy the server to. 
     """
     config_dict: Dict[str, Any] = {}
 
@@ -322,6 +330,13 @@ def deploy(
             default=ServerProviderType.AWS.value,
         )
     config_dict["provider"] = provider
+
+    if provider == ServerProviderType.GCP.value:
+        if not gcp_project_id:
+            gcp_project_id = click.prompt(
+                "GCP project ID",
+            )
+        config_dict["project_id"] = gcp_project_id
 
     if not username:
         username = click.prompt(
