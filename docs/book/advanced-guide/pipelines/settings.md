@@ -48,7 +48,7 @@ that exists in both `@step` and `@pipeline` decorators:
 @pipeline(settings=...)
   ...
 ```
-heirarchy-and-precedence
+
 {% hint style="info" %}
 Once you set settings on a pipeline, they will be applied to all steps with some exception. See the [later section on precedence for more details](#hierarchy-and-precedence).
 {% endhint %}
