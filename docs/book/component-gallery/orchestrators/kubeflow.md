@@ -235,7 +235,6 @@ Here is an example of how we could do this:
 
 ```python
 import requests
-from kubernetes import client as k8s_client
 from zenml.integrations.kubefolow.flavors.kubeflow_orchestrator_flavor import KubeflowOrchestratorSettings
 
 NAMESPACE = "namespace_name"  # set this
@@ -259,48 +258,26 @@ token = get_kfp_token()
 session_cookie = 'authservice_session=' + token
 
 kubeflow_settings = KubeflowOrchestratorSettings(
-  client_args={
+client_args={
     "host": f"{HOST}/pipeline",
     "cookies": f"authservice_session={session_cookie}",
-  },
-  user_namespace=NAMESPACE
+    },
+    user_namespace=NAMESPACE
 )
 
 @pipeline(
-  settings={
-      "orchestrator.kubeflow": kubeflow_settings
-  }
-)
+    settings={
+        "orchestrator.kubeflow": kubeflow_settings
+    }
+):
+    ...
 ```
 
-Please note that in the above code, `HOST` should be registered on orchestration 
-registration, with the `kubeflow_hostname` parameter:
+Note that the above is also currently not tested on all Kubeflow 
+versions, so there might be further bugs with older Kubeflow versions. In this case, please reach out to us on [Slack](https://zenml.io/slack-invite).
 
-```
-export HOST=https://qux.com
-zenml orchestrator register multi_tenant_kf --flavor=kubeflow \
-   --kubeflow_hostname=$(HOST)/pipeline  # /pipeline is important!
-   --other_params..
-```
-
-Further note that the above is also currently not tested on all Kubeflow 
-versions, so there might be further bugs with older Kubeflow versions. In this 
-case, please reach out to us on [Slack](https://zenml.io/slack-invite).
-
-In future ZenML versions, multi-tenancy will be natively supported. See this 
-[Slack thread](https://zenml.slack.com/archives/C01FWQ5D0TT/p1662545810395779) 
-for more details on how the above workaround came to effect.
-
-Please note that the above is all to initialize the `kfp.Client()` class 
-in the standard orchestrator logic. This code can be seen 
-[here](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/kubeflow/orchestrators/kubeflow_orchestrator.py#L709).
-
-You can simply override this logic and add your custom authentication 
-scheme if needed. Read [here](custom.md) for more details on how to create a 
-custom orchestrator.
-
-A concrete example of using the Kubeflow orchestrator can be found 
+A concrete example of using the Kubeflow orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).
 
-For more information and a full list of configurable attributes of the Kubeflow 
-orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator).
+For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out the
+[API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator).
