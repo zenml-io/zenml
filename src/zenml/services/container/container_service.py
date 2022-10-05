@@ -15,6 +15,7 @@
 
 import os
 import pathlib
+import sys
 import tempfile
 import time
 from abc import abstractmethod
@@ -400,6 +401,24 @@ class ContainerService(BaseService):
         volumes = self._get_container_volumes()
 
         try:
+            uid_args = {}
+            if sys.platform == "win32":
+                # File permissions are not checked on Windows. This if clause
+                # prevents mypy from complaining about unused 'type: ignore'
+                # statements
+                pass
+            else:
+                # Run the container in the context of the local UID/GID
+                # to ensure that the local database can be shared
+                # with the container.
+                logger.debug(
+                    "Setting UID and GID to local user/group " "in container."
+                )
+                uid_args = dict(
+                    user=os.getuid(),
+                    group_add=[os.getgid()],
+                )
+
             self.docker_client.containers.run(
                 name=self.container_id,
                 image=self.config.image,
@@ -413,9 +432,8 @@ class ContainerService(BaseService):
                 labels={
                     "zenml-service-uuid": str(self.uuid),
                 },
-                user=os.getuid(),
-                group_add=[os.getgid()],
                 working_dir=SERVICE_CONTAINER_PATH,
+                **uid_args,
             )
             logger.debug(
                 "Docker container for service '%s' started with ID: %s",
