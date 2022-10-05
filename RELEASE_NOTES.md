@@ -2,6 +2,51 @@
 
 # 0.20.0
 
+The ZenML 0.20.0 release brings a number of big changes to its architecture and
+a lot of cool new features, some of which are not backwards compatible with
+previous versions.
+
+These changes are only covered briefly in the release notes. For a detailed
+view on what happened and how you can get the most out of the 0.20.0 release,
+please head over to [our "ZenML 0.20.0: Our Biggest Release Yet" blog post](https://blog.zenml.io/zenml-revamped).
+
+## Warning: Breaking Changes
+
+Updating to ZenML 0.20.0 needs to be followed by a migration of your existing
+ZenML Stacks and you may also need to make changes to your current ZenML
+pipeline code. Please read [the migration guide](https://docs.zenml.io/guidelines/migration-zero-twenty) carefully and follow the
+instructions to ensure a smooth transition. The guide walks you through these
+changes and offers instructions on how to migrate your existing ZenML stacks and 
+pipelines to the new version with minimal effort and disruption to your existing
+workloads.
+
+If you have updated to ZenML 0.20.0 by mistake or are experiencing issues with
+the new version, you can always go back to the previous version by using
+`pip install zenml==0.13.2` instead of `pip install zenml` when installing
+ZenML manually or in your scripts.
+
+## Overview of Changes
+
+* [ZenML takes over the Metadata Store](https://docs.zenml.io/guidelines/migration-zero-twenty#zenml-takes-over-the-metadata-store-role)
+role. All information about your ZenML Stacks, pipelines, and artifacts is now
+tracked by ZenML itself directly. If you are currently using remote Metadata
+Stores (e.g. deployed in cloud) in your stacks, you will probably need to
+replace them with [ZenML cloud deployments](https://docs.zenml.io/guidelines/migration-zero-twenty/getting-started/deploying-zenml/deploying-zenml.md).
+* the [new ZenML Dashboard](https://docs.zenml.io/guidelines/migration-zero-twenty#the-zenml-dashboard-is-now-available) is now
+available with all ZenML deployments.
+* [ZenML Profiles have been removed](https://docs.zenml.io/guidelines/migration-zero-twenty#removal-of-profiles-and-the-local-yaml-database)
+in favor of ZenML Projects. You need to
+[manually migrate your existing ZenML Profiles](https://docs.zenml.io/guidelines/migration-zero-twenty#how-to-migrate-your-profiles)
+after the update.
+* the [configuration of Stack Components is now decoupled from their implementation](https://docs.zenml.io/guidelines/migration-zero-twenty#decoupling-stack-component-configuration-from-implementation).
+If you extended ZenML with custom stack component implementations, you may need
+to update the way they are registered in ZenML.
+* the updated ZenML server provides a new and improved collaborative experience.
+When connected to a ZenML server, you can now [share your ZenML Stacks and Stack Components](https://docs.zenml.io/guidelines/migration-zero-twenty#shared-zenml-stacks-and-stack-components) with other users. If you were
+previously using the ZenML Profiles or the ZenML server to share your ZenML
+Stacks, you should switch to the new ZenML server and Dashboard and update your
+existing workflows to reflect the new features.
+
 ## What's Changed
 * Fix error in checking Great Expectations results when exit_on_error=True by @TimovNiedek in https://github.com/zenml-io/zenml/pull/889
 * feat(user-dockerfile): Add user argument to DockerConfiguration by @cjidboon94 in https://github.com/zenml-io/zenml/pull/892
@@ -13,6 +58,28 @@
 * [Bugfix] Fix bug in auto-import of stack after recipe deploy by @wjayesh in https://github.com/zenml-io/zenml/pull/901
 * Update TOC on CONTRIBUTING.md by @strickvl in https://github.com/zenml-io/zenml/pull/907
 * ZenServer by @fa9r in https://github.com/zenml-io/zenml/pull/879
+* Update `kserve` README by @strickvl in https://github.com/zenml-io/zenml/pull/912
+* Confirmation prompts were not working by @htahir1 in https://github.com/zenml-io/zenml/pull/917
+* Stacks can be registered in `Click<8.0.0` now by @AlexejPenner in https://github.com/zenml-io/zenml/pull/920
+* Made Pipeline and Stack optional on the HydratedPipelineRunModel by @AlexejPenner in https://github.com/zenml-io/zenml/pull/919
+* Renamed all references from ZenServer to ZenML Server in logs and comments by @htahir1 in https://github.com/zenml-io/zenml/pull/915
+* Prettify pipeline runs list CLI output. by @fa9r in https://github.com/zenml-io/zenml/pull/921
+* Warn when registering non-local component with local ZenServer by @strickvl in https://github.com/zenml-io/zenml/pull/904
+* Fix duplicate results in pipeline run lists and unlisted flag. by @fa9r in https://github.com/zenml-io/zenml/pull/922
+* Fix error log by @htahir1 in https://github.com/zenml-io/zenml/pull/916
+* Update cli docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/913
+* Fix Pipeline Run Status by @fa9r in https://github.com/zenml-io/zenml/pull/923
+* Change the CLI emoji for whether a stack is shared or not. by @fa9r in https://github.com/zenml-io/zenml/pull/926
+* Fix running pipelines from different locations. by @fa9r in https://github.com/zenml-io/zenml/pull/925
+* Fix zenml stack-component describe CLI command. by @fa9r in https://github.com/zenml-io/zenml/pull/929
+* Update custom deployment to use ArtifactModel  by @safoinme in https://github.com/zenml-io/zenml/pull/928
+* Fix the CI unit test and integration test failures by @stefannica in https://github.com/zenml-io/zenml/pull/924
+* Add gcp zenserver recipe by @wjayesh in https://github.com/zenml-io/zenml/pull/930
+* Extend Post Execution Class Properties by @fa9r in https://github.com/zenml-io/zenml/pull/931
+* Fixes for examples by @strickvl in https://github.com/zenml-io/zenml/pull/918
+* Update cheat sheet by @dnth in https://github.com/zenml-io/zenml/pull/932
+* Fix the docstring attribute of pipeline models. by @fa9r in https://github.com/zenml-io/zenml/pull/933
+* New docs post ZenML Server by @htahir1 in https://github.com/zenml-io/zenml/pull/927
 
 ## New Contributors
 * @TimovNiedek made their first contribution in https://github.com/zenml-io/zenml/pull/889
