@@ -489,8 +489,6 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 **How to migrate**: Simply remove the `with_return_materializer` method and pass something like this instead to step directly:
 
-// TODO: Verify this
-
 ```python
 @step(
     settings={
