@@ -28,6 +28,7 @@
 
 * [In-depth configuration](./advanced-guide/pipelines/pipelines.md)
   * [Runtime Settings](./advanced-guide/pipelines/settings.md)
+  * [Containerization (Docker)](./advanced-guide/pipelines/containerization.md)
   * [Pass custom data types through steps (Materializers)](./advanced-guide/pipelines/materializers.md)
   * [Specify step resources](./advanced-guide/pipelines/step-resources.md)
   * [Access metadata within steps](./advanced-guide/pipelines/step-metadata.md)
@@ -40,7 +41,6 @@
   * [Stack Recipes](./advanced-guide/practical/stack-recipes.md)
   * [Switching orchestration](./advanced-guide/practical/switching-orchestration.md)
   * [Secrets Management](./advanced-guide/practical/secrets-management.md)
-  * [Containerization (Docker)](./advanced-guide/practical/containerization.md)
   * [Tracking experiments](./advanced-guide/practical/tracking-experiments.md)
   * [Validating data](./advanced-guide/practical/validating-data.md)
   * [Deploying models and batch inference](./advanced-guide/practical/deploying-models.md)
