@@ -163,7 +163,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
             The validated values.
         """
         if "custom_docker_base_image_name" in values:
-            image_name = values.pop("custom_docker_base_image_name")
+            image_name = values.pop("custom_docker_base_image_name", None)
             if image_name:
                 logger.warning(
                     "The 'custom_docker_base_image_name' field has been "
