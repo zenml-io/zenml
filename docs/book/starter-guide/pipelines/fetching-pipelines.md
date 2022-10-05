@@ -159,8 +159,8 @@ status = run.status
 #### pipeline_configuration
 
 The `pipeline_configuration` is a super object that contains all configuration of 
-the pipeline and pipeline run, including `Settings`, which we will learn more about in 
-the [advanced guide](../../advanced-guide/pipelines/settings.md).
+the pipeline and pipeline run, including [`BaseParameters`](./iterating.md) and
+[`BaseSettings`](../../advanced-guide/pipelines/settings.md).
 
 ## Steps
 
@@ -270,3 +270,33 @@ pipe.run()
 step_1 = pipe.get_runs()[-1].get_step(step="step_1")
 output = step_1.output.read()
 ```
+
+## Final note: Fetching older pipeline runs within a step
+
+While most of this document has been focusing on the so called
+post-execution workflow (i.e. fetching objects after a pipeline has
+completed), it can also be used within the context of a running pipeline.
+
+This is often desirable in cases where a pipeline is running continously
+over time and decisions have to be made according to older runs.
+
+E.g. Here, we fetch from within a step the last pipeline run for the same pipeline:
+
+```python
+from zenml.post_execution import get_pipeline
+from zenml.environment import Environment
+
+@pipeline
+def example_pipeline(step_1, step_2):
+    # Fetch the current pipeline
+    p = get_pipeline(Environment().step_environment.pipeline_name)
+
+    # Fetch an older run
+    older_run = p.runs[-2]  # -1 will be the current run
+
+    # Use the older run to make a decision
+    ...
+```
+
+You will learn about using the `Environment` in more detail in the
+[advanced docs](../../advanced-guide/pipelines/step-metadata.md).
