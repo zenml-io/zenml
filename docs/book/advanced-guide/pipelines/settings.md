@@ -291,4 +291,4 @@ step_instance.configure(settings={"resources": ResourceSettings(gpu_count=1, mem
 step_instance.configuration.settings["resources"] # cpu_count: 2, gpu_count=1, memory="2GB"
 ```
 
-In the above example, the two settings were merged into one automatically.
+In the above example, the two settings were automatically merged.
