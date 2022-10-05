@@ -31,13 +31,29 @@ things can be configured at runtime? Here is a list:
 - Stack component specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime.
 
 You will learn about all of the above in more detail later, but for now,
-lets try to understand that all of this configuration flows through one central concept.
+lets try to understand that all of this configuration flows through one central concept, called `BaseSettings` (From here on, we use `settings` and `BaseSettings` as analagous in this guide).
 
 ### How to use settings
 
 #### Method 1: Directly on the decorator
 
-@step/pipeline(…): Configures the class -> will be set for all instances
+The most basic way to set settings is through the `settings` variable
+that exists in both `@step` and `@pipeline` decorators:
+
+```python
+@step(settings=...)
+  ...
+
+@pipeline(settings=...)
+```
+
+{% hint style="info" %}
+Once you set settings on a pipeline, they will be applied to all steps with some exception. See the [later section on precendence for more details](#heirarchy-and-precendence).
+{% endhint %}
+
+In this case, `settings` can be passed as a simple dict, where the `keys` are one of the following:
+
+
 
 #### Method 2: On the step/pipeline instance
 
@@ -46,6 +62,30 @@ step_instance/pipeline_instance.configure(…): Configures the instance -> will 
 #### Method 3: Configuring with YAML
 
 Generate a template for a config file: `pipeline_instance.write_run_configuration_template(path=<PATH>)`
+
+### The `extra` dict
+
+You might have noticed another dict that is available to pass through to steps and pipelines called `extra`. This dict is meant to be used to pass
+any configuration down to the pipeline, step, or stack components that the user has use of.
+
+An example of this is if I want to tag a pipeline, I can do the following:
+
+```python
+@pipeline(name='my_pipeline', extra={'tag': 'production'})
+  ...
+```
+
+This tag is now associated and tracked with all pipeline runs, and can be fetched later with the [post-execution workflow](../../starter-guide/pipelines/fetching-pipelines.md):
+
+```python
+from zenml.post_execution import get_pipeline
+
+p = get_pipeline('my_pipeline')
+
+# print out the extra
+print(p.runs[-1].pipeline_configuration['extra'])
+# {'tag': 'production'}
+```
 
 ### Heirarchy and precendence
 

@@ -472,8 +472,9 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 ```python
 @step(
+    experiment_tracker="mlflow_stack_comp_name"
     settings={
-        "experiment_tracker.mlflow": {
+        "experiment_tracker.mlflow": {  # this is `category`.`flavor`, so another example is `step_operator.spark`
             "experiment_name": "name"
             "nested": False
         }
