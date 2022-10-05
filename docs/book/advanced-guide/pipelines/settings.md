@@ -51,7 +51,7 @@ A good example of this is the [`MLflow Experiment Tracker`](../../component-gall
 
 #### Using objects or dicts
 
-Settings can be passed in directly as BaseSettings-subclassed objects, or a dict-representation of the object. For example, a docker configuration can be passed in as follows:
+Settings can be passed in directly as BaseSettings-subclassed objects, or a dict-representation of the object. For example, a Docker configuration can be passed in as follows:
 
 ```python
 from zenml.config import DockerSettings
