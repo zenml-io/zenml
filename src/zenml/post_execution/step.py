@@ -138,6 +138,9 @@ class StepView:
     def settings(self) -> Dict[str, Any]:
         """Returns the step settings.
 
+        These are runtime settings passed down to stack components, which
+        can be set at step level.
+
         Returns:
             The step settings.
         """
@@ -147,6 +150,9 @@ class StepView:
     @property
     def extra(self) -> Dict[str, Any]:
         """Returns the extra dictionary.
+
+        This dict is meant to be used to pass any configuration down to the
+        step that the user has use of.
 
         Returns:
             The extra dictionary.
@@ -166,20 +172,20 @@ class StepView:
 
     @property
     def step_operator(self) -> Optional[str]:
-        """Returns the step operator of the step.
+        """Returns the name of the step operator of the step.
 
         Returns:
-            The step operator of the step.
+            The name of the step operator of the step.
         """
         step_operator = self.step_configuration["config"]["step_operator"]
         return cast(Optional[str], step_operator)
 
     @property
     def experiment_tracker(self) -> Optional[str]:
-        """Returns the experiment tracker of the step.
+        """Returns the name of the experiment tracker of the step.
 
         Returns:
-            The experiment tracker of the step.
+            The name of the experiment tracker of the step.
         """
         experiment_tracker = self.step_configuration["config"][
             "experiment_tracker"
@@ -190,10 +196,12 @@ class StepView:
     def spec(self) -> Dict[str, Any]:
         """Returns the step spec.
 
+        The step spec defines the source path and upstream steps of a step and
+        is used primarily to compare whether two steps are the same.
+
         Returns:
             The step spec.
         """
-
         spec = self.step_configuration["spec"]
         return cast(Dict[str, Any], spec)
 

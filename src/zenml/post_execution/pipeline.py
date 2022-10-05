@@ -174,6 +174,10 @@ class PipelineView:
     def spec(self) -> "PipelineSpec":
         """Returns the spec of the pipeline.
 
+        The pipeline spec contains the source paths of all steps, as well as
+        each of their upstream step names. This is primarily used to compare
+        whether two pipelines are the same.
+
         Returns:
             The spec of the pipeline.
         """

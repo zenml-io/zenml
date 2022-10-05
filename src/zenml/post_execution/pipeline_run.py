@@ -123,6 +123,9 @@ class PipelineRunView:
     def settings(self) -> Dict[str, Any]:
         """Returns the pipeline settings.
 
+        These are runtime settings passed down to stack components, which
+        can be set at pipeline level.
+
         Returns:
             The pipeline settings.
         """
@@ -132,6 +135,9 @@ class PipelineRunView:
     @property
     def extra(self) -> Dict[str, Any]:
         """Returns the pipeline extras.
+
+        This dict is meant to be used to pass any configuration down to the
+        pipeline or stack components that the user has use of.
 
         Returns:
             The pipeline extras.
