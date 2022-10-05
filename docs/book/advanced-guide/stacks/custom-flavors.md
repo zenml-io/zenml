@@ -263,4 +263,6 @@ flavor for a specific stack component, please check the links below:
 | [Model Deployer](../../component-gallery/model-deployers/custom.md)          | Services/platforms responsible for online model serving           |
 | [Feature Store](../../component-gallery/feature-stores/custom.md)            | Management of your data/features                                  |
 | [Experiment Tracker](../../component-gallery/experiment-trackers/custom.md)  | Tracking your ML experiments                                      |
-| [Alerter](../../component-gallery/alerters/custom.md)                        | Sending alerts through specified channels                         |
+| [Alerter](../../component-gallery/alerters/custom.md)                        | Sending alerts through specified channels   |
+| [Annotator](../../component-gallery/annotators/custom.md)                        | Annotating and labeling data   |
+| [Data Validator](../../component-gallery/data-validators/custom.md)                        | Validating and monitoring your data          |

@@ -23,7 +23,7 @@ to control the order in which steps of a pipeline get executed.
 
 {% hint style="info" %}
 We will keep adding more use-cases to the advanced guide of ZenML.
-If there is a particular topic you can not find here or any use-case that
+If there is a particular topic you cannot find here or any use-case that
 you would like learn more about, you can reach us in our
 [Slack Channel](https://zenml.io/slack-invite).
 {% endhint %}

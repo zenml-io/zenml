@@ -95,7 +95,7 @@ Below is an illustration showing how the same pipeline on a local machine can be
 
 In order to run *stack components* that are running on infrastructure on the cloud, ZenML itself needs to deployed to the cloud first, so that it can communicate with these stack components.
 
-A **ZenML Server** keeps track of all the bits of extraneous data from a pipeline run. It allows you to fetch specific steps from your pipeline run and their output artifacts in a post-execution workflow. With a ZenML server, you are able to access all of your previous experiments with the associated details.
+A **ZenML Server** keeps track of all the bits of metadata around a pipeline run. It allows you to fetch specific steps from your pipeline run and their output artifacts in a post-execution workflow. With a ZenML server, you are able to access all of your previous experiments with the associated details.
 This is extremely helpful in troubleshooting.
 
 ![ZenML Architectural Diagram](../assets/core_concepts/04_architecture.png)
