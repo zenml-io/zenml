@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: testpod
+  namespace: hihigcp-test
+spec:
+  containers:
+  - env:
+    - name: ZENML_DEBUG
+      value: "true"
+    - name: ANALYTICS_OPT_IN
+      value: "False"
+    - name: ZENML_AUTH_TYPE
+      value: OAUTH2_PASSWORD_BEARER
+    - name: ZENML_SERVER_ROOT_URL_PATH
+      value: /jayesh-hihi-gcp
+    - name: ZENML_DEFAULT_PROJECT_NAME
+      value: default
+    - name: ZENML_DEFAULT_USER_NAME
+      value: default
+    - name: ZENML_STORE_TYPE
+      value: sql
+    - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
+      value: "false"
+    - name: ZENML_USER_ID
+      value: f6ce594f-6602-4e66-83ef-4aec5437f71b
+    - name: ZENML_SERVER_DEPLOYMENT_TYPE
+      value: gcp
+    envFrom:
+    - secretRef:
+        name: hihigcp-zenmlserver
+    image: zenmldocker/zenml-server:server-test-three
+    imagePullPolicy: Always
+    livenessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /health
+        port: http
+        scheme: HTTP
+    name: zenml
+    ports:
+    - containerPort: 80
+      name: http
+      protocol: TCP
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+  serviceAccount: zenml
+  serviceAccountName: zenml

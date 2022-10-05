@@ -12,6 +12,10 @@ resource "helm_release" "zen-server" {
   namespace        = kubernetes_namespace.zen-server.metadata[0].name
 
   set {
+    name = "image.tag"
+    value = "latest"
+  }
+  set {
     name  = "zenml.defaultUsername"
     value = var.username
   }
@@ -61,7 +65,7 @@ resource "helm_release" "zen-server" {
   # set parameters for the mysql database
   set {
     name  = "zenml.database.url"
-    value = var.create_cloudsql? "mysql://${var.database_username}:${module.metadata_store[0].generated_user_password}@${module.metadata_store[0].instance_first_ip_address}:3306/${var.db_name}" : var.database_url
+    value = var.create_cloudsql? "mysql://admin:${module.metadata_store[0].generated_user_password}@${module.metadata_store[0].instance_first_ip_address}:3306/${var.db_name}" : var.database_url
   }
   set {
     name  = "zenml.database.sslCa"
