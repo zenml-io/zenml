@@ -511,7 +511,7 @@ def my_step() -> None:
 
 With this change, all stack components (e.g. Orchestrators and Step Operators) that accepted a `docker_parent_image` as part of its Stack Configuration should now pass it through the `DockerSettings` object.
 
-Read more [here](../advanced-guide/practical/containerization.md).
+Read more [here](../advanced-guide/pipelines/containerization.md).
 
 #### `ResourceConfiguration` is now renamed to `ResourceSettings`
 
@@ -539,7 +539,7 @@ def my_step() -> None:
   ...
 ```
 
-Read more [here](../advanced-guide/practical/containerization.md).
+Read more [here](../advanced-guide/pipelines/containerization.md).
 
 #### A new pipeline intermediate representation
 

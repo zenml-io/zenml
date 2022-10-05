@@ -49,7 +49,7 @@ zenml stack update -o <NAME>
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your pipeline steps in GitHub. 
-Check out [this page](../../advanced-guide/practical/containerization.md)
+Check out [this page](../../advanced-guide/pipelines/containerization.md)
 if you want to learn more about how ZenML builds these images and how you can 
 customize them.
 {% endhint %}
