@@ -59,7 +59,7 @@ variable "rds_db_password" {
 
 # if you enable the create_rds option, the recipe will
 # create a new RDS MySQL instance and then use it for this
-# ZenServer. If disabled, you have to supply connection details
+# ZenML Server. If disabled, you have to supply connection details
 # in the section below.
 variable "create_rds" {
   description = "Should the recipe create an RDS instance?"

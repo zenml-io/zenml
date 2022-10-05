@@ -1159,3 +1159,7 @@ class ZenStoreInterface(ABC):
         Returns:
             A list of all artifacts.
         """
+
+    @abstractmethod
+    def _sync_runs(self) -> None:
+        """Syncs runs from MLMD."""

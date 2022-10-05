@@ -92,7 +92,7 @@ class LocalZenServerConfig(LocalDaemonServiceConfig):
 
 
 class LocalZenServer(LocalDaemonService):
-    """Service daemon that can be used to start a local ZenServer.
+    """Service daemon that can be used to start a local ZenML Server.
 
     Attributes:
         config: service configuration
@@ -205,7 +205,7 @@ class LocalZenServer(LocalDaemonService):
                 Client()._reset_instance()
 
     def run(self) -> None:
-        """Run the ZenServer.
+        """Run the ZenML Server.
 
         Raises:
             ValueError: if started with a global configuration that connects to
@@ -219,7 +219,7 @@ class LocalZenServer(LocalDaemonService):
                 "The ZenML server cannot be started with REST store type."
             )
         logger.info(
-            "Starting ZenServer as blocking "
+            "Starting ZenML Server as blocking "
             "process... press CTRL+C once to stop it."
         )
 
@@ -234,4 +234,4 @@ class LocalZenServer(LocalDaemonService):
                 reload=True,
             )
         except KeyboardInterrupt:
-            logger.info("ZenServer stopped. Resuming normal execution.")
+            logger.info("ZenML Server stopped. Resuming normal execution.")

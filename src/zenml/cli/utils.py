@@ -54,12 +54,14 @@ from zenml.models.stack_models import HydratedStackModel
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
+    from zenml.enums import ExecutionStatus
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
     from zenml.models import (
         ComponentModel,
         FlavorModel,
         HydratedComponentModel,
+        PipelineRunModel,
         StackModel,
     )
     from zenml.secret import BaseSecretSchema
@@ -884,6 +886,18 @@ def get_stack_by_id_or_name_or_prefix(
             )
 
 
+def get_shared_emoji(is_shared: bool) -> str:
+    """Returns the emoji for whether a stack is shared or not.
+
+    Args:
+        is_shared: Whether the stack is shared or not.
+
+    Returns:
+        The emoji for whether the stack is shared or not.
+    """
+    return ":heavy_check_mark:" if is_shared else ":heavy_minus_sign:"
+
+
 def print_stacks_table(
     client: Client, stacks: List[HydratedStackModel]
 ) -> None:
@@ -901,7 +915,7 @@ def print_stacks_table(
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,
             "STACK ID": stack.id,
-            "SHARED": ":white_check_mark:" if stack.is_shared else ":x:",
+            "SHARED": get_shared_emoji(stack.is_shared),
             "OWNER": stack.user.name,
             **{
                 component_type.upper(): components[0].name
@@ -948,7 +962,7 @@ def print_components_table(
             "NAME": component.name,
             "COMPONENT ID": component.id,
             "FLAVOR": component.flavor,
-            "SHARED": ":white_check_mark:" if component.is_shared else ":x:",
+            "SHARED": get_shared_emoji(component.is_shared),
             "OWNER": component.user.name,
             # **{
             #     key.upper(): str(value)
@@ -1068,3 +1082,63 @@ def get_component_by_id_or_name_or_prefix(
                 f"No component of type `{component_type}` with name or id "
                 f"prefix '{id_or_name_or_prefix}' exists."
             )
+
+
+def get_execution_status_emoji(status: "ExecutionStatus") -> str:
+    """Returns an emoji representing the given execution status.
+
+    Args:
+        status: The execution status to get the emoji for.
+
+    Returns:
+        An emoji representing the given execution status.
+
+    Raises:
+        RuntimeError: If the given execution status is not supported.
+    """
+    from zenml.enums import ExecutionStatus
+
+    if status == ExecutionStatus.FAILED:
+        return ":x:"
+    if status == ExecutionStatus.RUNNING:
+        return ":gear:"
+    if status == ExecutionStatus.COMPLETED:
+        return ":white_check_mark:"
+    if status == ExecutionStatus.CACHED:
+        return ":package:"
+    raise RuntimeError(f"Unknown status: {status}")
+
+
+def print_pipeline_runs_table(
+    client: Client, pipeline_runs: List["PipelineRunModel"]
+) -> None:
+    """Print a prettified list of all pipeline runs supplied to this method.
+
+    Args:
+        client: Repository instance
+        pipeline_runs: List of pipeline runs
+    """
+    runs_dicts = []
+    for pipeline_run in pipeline_runs:
+        if pipeline_run.pipeline_id is None:
+            pipeline_name = "unlisted"
+        else:
+            pipeline_name = client.zen_store.get_pipeline(
+                pipeline_run.pipeline_id
+            ).name
+        if pipeline_run.stack_id is None:
+            stack_name = "[DELETED]"
+        else:
+            stack_name = client.zen_store.get_stack(pipeline_run.stack_id).name
+        status = client.zen_store.get_run_status(pipeline_run.id)
+        status_emoji = get_execution_status_emoji(status)
+        run_dict = {
+            "PIPELINE NAME": pipeline_name,
+            "RUN NAME": pipeline_run.name,
+            "RUN ID": pipeline_run.id,
+            "STATUS": status_emoji,
+            "STACK": stack_name,
+            "OWNER": client.zen_store.get_user(pipeline_run.user).name,
+        }
+        runs_dicts.append(run_dict)
+    print_table(runs_dicts)

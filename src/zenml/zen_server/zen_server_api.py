@@ -19,6 +19,7 @@ from typing import Any, List
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi_utils.tasks import repeat_every
 from genericpath import isfile
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
@@ -41,7 +42,7 @@ from zenml.zen_server.routers import (
     teams_endpoints,
     users_endpoints,
 )
-from zenml.zen_server.utils import ROOT_URL_PATH
+from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
 
 DASHBOARD_DIRECTORY = "dashboard"
 
@@ -137,6 +138,14 @@ app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(users_endpoints.activation_router)
+
+
+@app.on_event("startup")
+@repeat_every(seconds=10)
+def sync_pipeline_runs() -> None:
+    """Sync pipeline runs."""
+    logger.info("Syncing pipeline runs...")
+    zen_store._sync_runs()
 
 
 def get_root_static_files() -> List[str]:
