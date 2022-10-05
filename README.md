@@ -148,9 +148,9 @@ Read more [here](https://blog.zenml.io/why-zenml/).
 ZenML is an extensible, open-source MLOps framework for creating portable, production-ready MLOps pipelines. It's built for Data Scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. 
 
 ZenML offers a simple and flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions catered toward ML workflows. 
-With ZenML you'll have all your favorite tools in one place so you can tailor a workflow that caters to your specific needs.
+With ZenML you'll have all your favorite tools in one place, so you can tailor a workflow that caters to your specific needs.
 
-Read more on all tools you can readily use in the [integrations](https://zenml.io/integrations) section. Can't find your tool? You can always [write your own integration](https://docs.zenml.io/developer-guide/advanced-usage/custom-flavors) to use it with ZenML.
+Read more on all tools you can readily use in the [integrations](https://zenml.io/integrations) section. Can't find your tool? You can always [write your own integration](https://docs.zenml.io/advanced-guide/stacks/custom-flavors) to use it with ZenML.
 
 # 🤸 Getting Started
 
@@ -301,7 +301,7 @@ The following architectural diagram illustrates a common ZenML deployment:
 
 ## 👨‍🍳 Open Source MLOps Stack Recipes
 
-Apart from the infrastructure required to run ZenML itself, ZenML also boasts a ton of [integrations](https://zenml.io/integrations) into popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/developer-guide/stacks-profiles-repositories) concept ensures that these tools work nicely together, therefore bringing structure and standardization into the MLOps workflow.
+Apart from the infrastructure required to run ZenML itself, ZenML also boasts a ton of [integrations](https://zenml.io/integrations) into popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/starter-guide/stacks/stacks) concept ensures that these tools work nicely together, therefore bringing structure and standardization into the MLOps workflow.
 
 However, ZenML assumes that the stack infrastructure for these tools is already provisioned. If you do not have deployed infrastructure, and want to quickly spin up combinations of tools on the cloud, the [MLOps stack sister repository](https://github.com/zenml-io/mlops-stacks) contains a series of Terraform-based recipes to provision such stacks. These recipes can be used directly with ZenML:
 

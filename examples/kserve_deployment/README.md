@@ -730,7 +730,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the KServe deployment integration can be found [here](https://docs.zenml.io/mlops-stacks/model-deployers/kserve).
+Our docs regarding the KServe deployment integration can be found [here](https://docs.zenml.io/component-gallery/model-deployers/kserve).
 
 If you want to learn more about deployment in ZenML in general or about how to build your own deployer steps in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/model-deployers/custom).
+check out our [docs](https://docs.zenml.io/component-gallery/model-deployers/custom).

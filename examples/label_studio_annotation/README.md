@@ -62,8 +62,8 @@ zenml integration install label_studio pytorch azure
 
 Some setup for your stack is required. This assumes you have a cloud secrets
 manager setup and installed. (See
-[here](https://docs.zenml.io/mlops-stacks/secrets-managers) for more on how to
-do that.)
+[here](https://docs.zenml.io/component-gallery/secrets-managers/secrets-managers) 
+for more on how to do that.)
 
 ```shell
 zenml stack copy default <ANNOTATION_STACK_NAME>
@@ -356,8 +356,8 @@ rm -rf zenml_examples
 
 If you want to learn more about annotation in general or about how to use your
 own annotation tool in ZenML check out our
-[docs](https://docs.zenml.io/mlops-stacks/annotators).
+[docs](https://docs.zenml.io/component-gallery/annotators/annotators).
 
 To explore other available CLI commands related to the annotator stack
 components, check out the [CLI docs annotator
-section](https://apidocs.zenml.io/latest/api_docs/repository/#zenml.repository.Repository).
+section](https://apidocs.zenml.io/latest/cli/#zenml.cli).

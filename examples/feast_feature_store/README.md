@@ -147,4 +147,4 @@ and you can `kill` the process from the terminal.
 # 📜 Learn more
 
 Our docs regarding the Feast feature store integration can be
-found [here](https://docs.zenml.io/mlops-stacks/feature-stores/feast).
+found [here](https://docs.zenml.io/component-gallery/feature-stores/feast).

@@ -17,7 +17,7 @@ it, and embed it in an inference pipeline,
 
 ## :star: Introduction to ZenML
 
-Before we dive into the code, let us briefly introduce you to some of the 
+Before we dive into the code, let us briefly introduce you to some 
 fundamental concepts of ZenML that we will use in this quickstart. If you are 
 already familiar with these concepts, feel free to skip to the next section.
 
@@ -191,7 +191,7 @@ If you are new to MLOps, you might want to take a look at our
 where we cover each MLOps concept in much more detail.
 
 Already have an MLOps stack in mind? ZenML most likely has
-[**:link: Integrations**](https://docs.zenml.io/mlops-stacks/integrations) 
+[**:link: Integrations**](https://docs.zenml.io/component-gallery/integrations) 
 for whatever tools you plan to use. Check out the
 [**:pray: ZenML Examples**](https://github.com/zenml-io/zenml/tree/main/examples)
 to see how to use a specific tool with ZenML.

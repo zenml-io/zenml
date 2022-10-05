@@ -1055,7 +1055,7 @@ class BaseStep(metaclass=BaseStepMeta):
                         f"registering a default materializer for specific "
                         f"types by subclassing `BaseMaterializer` and setting "
                         f"its `ASSOCIATED_TYPES` class variable.",
-                        url="https://docs.zenml.io/developer-guide/advanced-usage/materializer",
+                        url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
                     )
                 outputs[output_name][
                     "materializer_source"

@@ -327,7 +327,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the Kubeflow orchestrator integration can be found [here](https://docs.zenml.io/mlops-stacks/orchestrators/kubeflow).
+Our docs regarding the Kubeflow orchestrator integration can be found [here](https://docs.zenml.io/component-gallery/orchestrators/kubeflow).
 
 If you want to learn more about orchestrators in general or about how to build your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/orchestrators/custom).
+check out our [docs](https://docs.zenml.io/component-gallery/orchestrators/custom).

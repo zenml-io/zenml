@@ -167,7 +167,8 @@ Examples of situations in which Secrets Manager scoping can be useful:
 
 * you want to control whether a secret configured in a Secrets Manager stack
 component is visible in another Secrets Manager stack component. This is useful
-when you want to share secrets without necessarily [sharing stack components](https://docs.zenml.io/collaborate/collaborate-with-zenml).
+when you want to share secrets without necessarily 
+[sharing stack components](../../starter-guide/collaborate/collaborate.md).
 * you want to be able to configure two or more secrets with the same name but
 with different values in different Secrets Manager stack components.
 * you want to emulate multiple virtual Secrets Manager instances on top of a

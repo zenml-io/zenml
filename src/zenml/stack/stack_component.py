@@ -81,7 +81,7 @@ class StackComponentConfig(BaseModel, ABC):
                         "in sensitive information as secrets. Check out the "
                         "documentation on how to configure your stack "
                         "components with secrets here: "
-                        "https://docs.zenml.io/developer-guide/advanced-usage/secret-references"
+                        "https://docs.zenml.io/advanced-guide/practical/secrets-management"
                     )
                 continue
 

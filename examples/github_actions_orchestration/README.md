@@ -131,4 +131,4 @@ GitHub Actions and you should be able to access it from the GitHub UI. It will l
 # 📜 Learn more
 
 If you want to learn more about orchestrators in general or about how to build your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/orchestrators).
+check out our [docs](https://docs.zenml.io/component-gallery/orchestrators/orchestrators).
