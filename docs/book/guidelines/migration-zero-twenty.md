@@ -439,7 +439,7 @@ This is part of a broader configuration rehaul which is discussed next.
 
 Alongside the architectural shift, Pipeline configuration has been completely rethought. This video gives an overview of how configuration has changed with ZenML in the post ZenML 0.20.0 world.
 
-{% embed url="https://www.youtube.com/embed/hI-UNV7uoNI" %}
+{% embed url="https://www.youtube.com/embed/hI-UNV7uoNI" %} Configuring pipelines, steps, and stack components in ZenML {% endembed %}
 
 If you don't want to watch the video, you can read all about the changes here and we have a [dedicated page](../advanced-guide/pipelines/settings.md) in the docs describing the new ways to configure objects in ZenML.
 
@@ -489,8 +489,6 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 **How to migrate**: Simply remove the `with_return_materializer` method and pass something like this instead to step directly:
 
-// TODO: Verify this
-
 ```python
 @step(
     settings={
@@ -513,7 +511,7 @@ def my_step() -> None:
 
 With this change, all stack components (e.g. Orchestrators and Step Operators) that accepted a `docker_parent_image` as part of its Stack Configuration should now pass it through the `DockerSettings` object.
 
-Read more [here](../advanced-guide/practical/containerization.md).
+Read more [here](../advanced-guide/pipelines/containerization.md).
 
 #### `ResourceConfiguration` is now renamed to `ResourceSettings`
 
@@ -541,7 +539,7 @@ def my_step() -> None:
   ...
 ```
 
-Read more [here](../advanced-guide/practical/containerization.md).
+Read more [here](../advanced-guide/pipelines/containerization.md).
 
 #### A new pipeline intermediate representation
 

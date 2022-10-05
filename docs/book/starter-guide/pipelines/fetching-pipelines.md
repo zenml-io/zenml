@@ -159,8 +159,9 @@ status = run.status
 #### pipeline_configuration
 
 The `pipeline_configuration` is a super object that contains all configuration of 
-the pipeline and pipeline run, including `Settings`, which we will learn more about in 
-the [advanced guide](../../advanced-guide/pipelines/settings.md).
+the pipeline and pipeline run, including 
+[pipeline-level `BaseSettings`](../../advanced-guide/pipelines/settings.md), which
+we will learn more about later.
 
 ## Steps
 
@@ -209,6 +210,14 @@ different runs, and it is recommended to access steps by the step class,
 an instance of the class or even the name of the step as a string: 
 `get_step(step=...)` instead.
 {% endhint %}
+
+Similar to the run, for reproducibility, you can use the `step` object
+to access:
+
+* [`BaseParameters`](iterating.md) via `step.parameters`: The parameters used to run the step.
+* [Step-level `BaseSettings`](../../advanced-guide/pipelines/settings.md)
+via `step.step_configuration`
+* Input and output artifacts.
 
 ## Outputs
 
@@ -270,3 +279,34 @@ pipe.run()
 step_1 = pipe.get_runs()[-1].get_step(step="step_1")
 output = step_1.output.read()
 ```
+
+## Final note: Fetching older pipeline runs within a step
+
+While most of this document has been focusing on the so called
+post-execution workflow (i.e. fetching objects after a pipeline has
+completed), it can also be used within the context of a running pipeline.
+
+This is often desirable in cases where a pipeline is running continously
+over time and decisions have to be made according to older runs.
+
+E.g. Here, we fetch from within a step the last pipeline run for the same pipeline:
+
+```python
+from zenml.post_execution import get_pipeline
+from zenml.environment import Environment
+
+@step
+def my_step():
+    # Fetch the current pipeline
+    p = get_pipeline('pipeline_name')
+
+    # Fetch an older run
+    older_run = p.runs[-2]  # -1 will be the current run
+
+    # Use the older run to make a decision
+    ...
+```
+
+You can get a lot more metadata within a step as well, something
+we'll learn in more detail in the
+[advanced docs](../../advanced-guide/pipelines/step-metadata.md).

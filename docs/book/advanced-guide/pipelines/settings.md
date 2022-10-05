@@ -6,7 +6,7 @@ description: Configuring pipelines, steps, and stack components in ZenML.
 
 ## Video Tutorial
 
-{% embed url="https://www.youtube.com/embed/hI-UNV7uoNI" %}
+{% embed url="https://www.youtube.com/embed/hI-UNV7uoNI" %} Configuring pipelines, steps, and stack components in ZenML {% endembed %}
 
 This video gives an overview of everything discussed in this chapter,
 especially with a focus on the [post ZenML 0.20.0](../../guidelines/migration-zero-twenty.md) world!
@@ -20,12 +20,18 @@ As discussed in a [previous chapter](../../starter-guide/pipelines/iterating.md)
 
 We have [already discussed `BaseParameters`](../../starter-guide/pipelines/iterating.md) and now is the time to talk about its brother, `BaseSettings`.
 
-### Types of settings
+### What can be configured?
 
-We can further break down settings into two groups:
+Looked at one way, `BaseParameters` configure steps within a pipeline to behave in a different way during runtime. But what other
+things can be configured at runtime? Here is a list:
 
-- General settings that can be used on all ZenML pipelines: `DockerSettings` and `ResourceSettings`.
-- Stack component specific settings: these can be used to supply runtime configurations to certain stack components (key= <COMPONENT_TYPE>.<COMPONENT_FLAVOR>). Settings for components not in the active stack will be ignored.
+- Controlling general step behavior like [enabling or disabling cache](../../starter-guide/pipelines/iterating.md) or how outputs are [materialized](../pipelines/materializers.md).
+- The [resources](./step-resources.md) of a step.
+- Configuring the [containerization](./containerization.md) process of a pipeline (e.g. What requirements get installed in the Docker image).
+- Stack component specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime.
+
+You will learn about all of the above in more detail later, but for now,
+lets try to understand that all of this configuration flows through one central concept.
 
 ### How to use settings
 
