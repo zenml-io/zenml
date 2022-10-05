@@ -197,7 +197,7 @@ def sql_store() -> BaseZenStore:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
     store = SqlZenStore(
         config=SqlZenStoreConfiguration(
-            url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
+            url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
         ),
         track_analytics=False,
     )
@@ -218,7 +218,7 @@ def sql_store_with_run() -> BaseZenStore:
 
     GlobalConfiguration().set_store(
         config=SqlZenStoreConfiguration(
-            url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
+            url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
         ),
     )
     store = GlobalConfiguration().zen_store
@@ -259,7 +259,7 @@ def sql_store_with_team() -> BaseZenStore:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
     store = SqlZenStore(
         config=SqlZenStoreConfiguration(
-            url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
+            url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
         ),
         track_analytics=False,
     )
