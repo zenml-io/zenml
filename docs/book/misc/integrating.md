@@ -79,7 +79,7 @@ the name of your integration.
 /src/zenml/integrations/                        <- ZenML integration directory
     <example-integration>                       <- Root integration directory
         |
-        ├── artifact-stores                     <- Seperated directory for  
+        ├── artifact-stores                     <- Separated directory for  
         |      ├── __init_.py                      every type
         |      └── <example-artifact-store>     <- Implementation class for the  
         ├── secrets-managers                       artifact store flavor
