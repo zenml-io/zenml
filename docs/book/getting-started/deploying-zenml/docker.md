@@ -19,37 +19,48 @@ You can set the following as environment variables wherever you want to run your
 
 ```
 - ZENML_DEBUG
-    Set this variable to true to see debug logs from ZenML
+    Set this variable to true to see debug logs from ZenML. This takes in a True
+    or False (default) value.
 - ANALYTICS_OPT_IN
     Whether you'd like to opt-in to help improve ZenML with
-    anonymous data.
+    anonymous data. This takes in a True (default) or False value.
 - ZENML_AUTH_TYPE
-    The auth type to configure ZenML server with. 
-    Example value: OAUTH2_PASSWORD_BEARER
-- ZENML_SERVER_ROOT_URL_PATH
-    The path on your host where you are deploying ZenML to.
-
+    The authentication scheme that the ZenML server should use. You can use one
+    of the following options:
+    
+    NO_AUTH - No authentication is done. The default user and project are used
+        for all requests.
+    HTTP_BASIC - HTTP Basic authentication
+    OAUTH2_PASSWORD_BEARER (default) - OAuth2 password bearer with JWT tokens.
+    
 - ZENML_DEFAULT_PROJECT_NAME
-    The name of the default project in ZenML.
+    The name of the default project created by the server on first deployment.
 - ZENML_DEFAULT_USER_NAME
-    The name of the default user name in ZenML.
+    The name of the default user account created by the server on first
+    deployment.
 - ZENML_DEFAULT_USER_PASSWORD
-    The password to use for the default ZenML user.    
+    The password to use for the default user account.    
 
 - ZENML_STORE_TYPE
     The type of backend store that you want to configure 
-    ZenML with. Example value: sql
+    ZenML with. This should always be set to "sql".
 - ZENML_STORE_URL
-    The URL for the backend store that you want to configure 
-    ZenML with.
+    This URL should point to a MysSQL compatible database. It takes the form:
+
+        mysql://username:password@host:port/database
+
 - ZENML_STORE_SSL_CA
-    The server certificate.
+    The server certificate in use by the MySQL database can be passed using this
+    variable, if you are using SSL to connect to the database.
 - ZENML_STORE_SSL_CERT
-    The client certificate.
+    The client certificate required to connect to the MySQL database, if you
+    are using SSL client certificates to connect to the database.
 - ZENML_STORE_SSL_KEY
-    The client key.
+    The client certificate private key required to connect to the MySQL
+    database, if you are using SSL client certificates to connect to the
+    database.
 - ZENML_STORE_SSL_VERIFY_SERVER_CERT
-    Whether to verify SSL certificates for the server.    
+    Whether to verify SSL certificate for the MySQL server.    
 ```
 You can set all of these variables in a file and then pass it to the `docker` CLI using the `--env-file` flag. More details in the [Docker documentation here](https://docs.docker.com/engine/reference/commandline/run/#set-environment-variables--e---env---env-file).
 
@@ -58,7 +69,7 @@ You can set all of these variables in a file and then pass it to the `docker` CL
 Once all the environment variables are set, you can run the image locally using the following command:
 
 ```
-docker run -it -d -p 8080:80 zenmldocker/zenml-server
+docker run -it -d -p 8080:80 zenmldocker/zenml-server --env-file /path/to/env/file
 ```
     
 You can check the logs of the container to verify if the server is up and depending on where you have deployed it, you can also access the dashboard at a `localhost` port (if running locally) or through some other service that exposes your container to the internet. 
