@@ -192,11 +192,28 @@ You can now run any ZenML pipeline using the Kubeflow orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
-A concrete example of using the Kubeflow orchestrator can be found 
-[here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).
 
-For more information and a full list of configurable attributes of the Kubeflow 
-orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator).
+For additional configuration of the Kubeflow orchestrator, you can pass
+`KubeflowOrchestratorSettings` which allows you to configure the following attributes:
+
+* `client_args`: Arguments to pass when initializing the KFP client.
+* `user_namespace`: The user namespace to use when creating experiments and runs.
+
+```python
+from zenml.integrations.kubefolow.flavors.kubeflow_orchestrator_flavor import KubeflowOrchestratorSettings
+
+kubeflow_settings = KubeflowOrchestratorSettings(
+  client_args={},
+  user_namespace="my_namespace"
+)
+
+@pipeline(
+    settings={
+        "orchestrator.kubeflow": kubeflow_settings
+    }
+)
+  ...
+```
 
 ## Important Note for Multi-Tenancy Deployments
 
@@ -205,30 +222,26 @@ built into its deployment. Kubeflow’s multi-user isolation simplifies user
 operations because each user only views and edited\s the Kubeflow components 
 and model artifacts defined in their configuration.
 
-Currently, the default ZenML Kubeflow orchestrator yields the following error 
-when running a pipeline:
+Using the ZenML Kubeflow orchestrator on a multi-tenant deployment without any settings will result in the following error:
 
 ```shell
 HTTP response body: {"error":"Invalid input error: Invalid resource references for experiment. ListExperiment requires filtering by namespace.","code":3,"message":"Invalid input error: Invalid resource references for experiment. ListExperiment requires filtering by 
 namespace.","details":[{"@type":"type.googleapis.com/api.Error","error_message":"Invalid resource references for experiment. ListExperiment requires filtering by namespace.","error_details":"Invalid input error: Invalid resource references for experiment. ListExperiment requires filtering by namespace."}]}
 ```
 
-The current workaround is as follows. Please place the following code at the 
-top of your runner script (commonly called `run.py`):
+In order to get it to work, we need to leverage the `KubeflowOrchestratorSettings` referenced above. By setting the namespace option, and passing in the right authentication credentials to the kfp Client we can make it work.
+
+Here is an example of how we could do this:
 
 ```python
-import json
-import os
-import kfp
+import requests
 from kubernetes import client as k8s_client
-
-from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
+from zenml.integrations.kubefolow.flavors.kubeflow_orchestrator_flavor import KubeflowOrchestratorSettings
 
 NAMESPACE = "namespace_name"  # set this
 USERNAME = "foo"  # set this
 PASSWORD = "bar"  # set this
-HOST = "https://qux.com" # set this
-KFP_CONFIG = '~/.config/kfp/context.json'  # set this manually if  you'd like
+HOST = "https://qux.com" # This is the host of the Kubeflow
 
 def get_kfp_token(username: str, password: str) -> str:
     """Get token for kubeflow authentication."""
@@ -243,36 +256,21 @@ def get_kfp_token(username: str, password: str) -> str:
     return session_cookie
 
 token = get_kfp_token()
-cookies = 'authservice_session=' + token
+session_cookie = 'authservice_session=' + token
 
-# 1: Set user namespace globally
-kfp.Client(host=HOST, cookies=cookies).set_user_namespace(NAMESPACE)
+kubeflow_settings = KubeflowOrchestratorSettings(
+  client_args={
+    "host": f"{HOST}/pipeline",
+    "cookies": f"authservice_session={session_cookie}",
+  },
+  user_namespace=NAMESPACE
+)
 
-# 2: Set cookie globally in the kfp config file
-with open(KFP_CONFIG, 'r') as f:
-    data = json.load(f)
-    data['client_authentication_cookie'] = cookies
-
-os.remove(KFP_CONFIG)
-with open(KFP_CONFIG, 'w') as f:
-    json.dump(data, f)
-
-original = KubeflowOrchestrator._configure_container_op
-
-def patch_container_op(container_op):
-    original(container_op)
-    container_op.container.add_env_variable(
-        k8s_client.V1EnvVar(name="ZENML_RUN_NAME", value="{{workflow.annotations.pipelines.kubeflow.org/run_name}}")
-    )
-
-KubeflowOrchestrator._configure_container_op = staticmethod(patch_container_op)
-
-def patch_get_run_name(self, pipeline_name):
-    return os.getenv("ZENML_RUN_NAME")
-
-KubeflowEntrypointConfiguration.get_run_name = patch_get_run_name
-
-# Continue with your normal pipeline runner code..
+@pipeline(
+  settings={
+      "orchestrator.kubeflow": kubeflow_settings
+  }
+)
 ```
 
 Please note that in the above code, `HOST` should be registered on orchestration 
@@ -300,3 +298,9 @@ in the standard orchestrator logic. This code can be seen
 You can simply override this logic and add your custom authentication 
 scheme if needed. Read [here](custom.md) for more details on how to create a 
 custom orchestrator.
+
+A concrete example of using the Kubeflow orchestrator can be found 
+[here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).
+
+For more information and a full list of configurable attributes of the Kubeflow 
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator).
