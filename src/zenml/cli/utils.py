@@ -320,7 +320,18 @@ def print_stack_component_configuration(
         component: The stack component to print.
         active_status: Whether the stack component is active.
     """
-    title = f"{component.type.value.upper()} Component Configuration"
+    declare(
+        f"{component.type.value.title()} '{component.name}' of flavor "
+        f"'{component.flavor}' with id '{component.id}' is owned by "
+        f"user '{component.user.name}' and is "
+        f"'{'shared' if component.is_shared else 'private'}'."
+    )
+
+    if len(component.configuration) == 0:
+        declare("No configuration options are set for this component.")
+        return
+
+    title = f"'{component.name}' {component.type.value.upper()} Component Configuration"
     if active_status:
         title += " (ACTIVE)"
     rich_table = table.Table(
@@ -346,12 +357,6 @@ def print_stack_component_configuration(
         rich_table.add_row(*elements)
 
     console.print(rich_table)
-    declare(
-        f"{component.type.value.title()} '{component.name}' of flavor "
-        f"'{component.flavor}' with id '{component.id}' is owned by "
-        f"user '{component.user.name}' and is "
-        f"'{'shared' if component.is_shared else 'private'}'."
-    )
 
 
 def print_active_config() -> None:

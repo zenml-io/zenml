@@ -83,6 +83,9 @@ cd zenml_examples/seldon_deployment
 
 # initialize a local ZenML Repository
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 For the ZenML Seldon Core deployer to work, three basic things are required:

@@ -41,6 +41,9 @@ cd zenml_examples/step_operator_remote_training
 
 # initialize
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 Each type of step operator has their own prerequisites.

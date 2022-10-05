@@ -97,18 +97,28 @@ def generate_stack_component_describe_command(
 
         client = Client()
 
-        try:
-            component = cli_utils.get_component_by_id_or_name_or_prefix(
-                client=client,
-                component_type=component_type,
-                id_or_name_or_prefix=name_or_id,
-            )
-        except KeyError as e:
-            cli_utils.error(str(e))  # noqa
-
         active_component = client.active_stack_model.components.get(
             component_type, []
         )
+
+        if name_or_id:
+            try:
+                component = cli_utils.get_component_by_id_or_name_or_prefix(
+                    client=client,
+                    component_type=component_type,
+                    id_or_name_or_prefix=name_or_id,
+                )
+            except KeyError as e:
+                cli_utils.error(str(e))  # noqa
+        else:
+            if len(active_component) == 0:
+                cli_utils.error(
+                    f"Cannot describe any {component_type} since the active "
+                    f"stack has no {component_type} and no name or id was "
+                    f"provided."
+                )
+            component = active_component[0]
+
         is_active = (
             len(active_component) > 0 and component.id == active_component[0].id
         )

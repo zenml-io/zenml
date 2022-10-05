@@ -15,10 +15,11 @@
 
 import os
 import pathlib
+import sys
 import tempfile
 import time
 from abc import abstractmethod
-from typing import Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
 import docker.errors as docker_errors
 from docker.client import DockerClient
@@ -30,10 +31,6 @@ from zenml.logger import get_logger
 from zenml.services.container.container_service_endpoint import (
     ContainerServiceEndpoint,
 )
-from zenml.services.container.entrypoint import (
-    SERVICE_CONTAINER_PATH,
-    SERVICE_LOG_FILE_NAME,
-)
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.utils.io_utils import (
@@ -44,6 +41,8 @@ from zenml.utils.io_utils import (
 logger = get_logger(__name__)
 
 
+SERVICE_CONTAINER_PATH = "/service"
+SERVICE_LOG_FILE_NAME = "service.log"
 SERVICE_CONFIG_FILE_NAME = "service.json"
 SERVICE_CONTAINER_GLOBAL_CONFIG_DIR = "zenconfig"
 SERVICE_CONTAINER_GLOBAL_CONFIG_PATH = os.path.join(
@@ -402,6 +401,24 @@ class ContainerService(BaseService):
         volumes = self._get_container_volumes()
 
         try:
+            uid_args: Dict[str, Any] = {}
+            if sys.platform == "win32":
+                # File permissions are not checked on Windows. This if clause
+                # prevents mypy from complaining about unused 'type: ignore'
+                # statements
+                pass
+            else:
+                # Run the container in the context of the local UID/GID
+                # to ensure that the local database can be shared
+                # with the container.
+                logger.debug(
+                    "Setting UID and GID to local user/group " "in container."
+                )
+                uid_args = dict(
+                    user=os.getuid(),
+                    group_add=[os.getgid()],
+                )
+
             self.docker_client.containers.run(
                 name=self.container_id,
                 image=self.config.image,
@@ -415,9 +432,8 @@ class ContainerService(BaseService):
                 labels={
                     "zenml-service-uuid": str(self.uuid),
                 },
-                user=os.getuid(),
-                group_add=[os.getgid()],
                 working_dir=SERVICE_CONTAINER_PATH,
+                **uid_args,
             )
             logger.debug(
                 "Docker container for service '%s' started with ID: %s",

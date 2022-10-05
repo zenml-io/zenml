@@ -83,6 +83,8 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
         password: The password for the default ZenML server account.
         helm_chart: The path to the ZenML server helm chart to use for
             deployment.
+        zenmlserver_image_tag: The tag to use for the zenmlserver docker
+            image.
         namespace: The Kubernetes namespace to deploy the ZenML server to.
         kubectl_config_path: The path to the kubectl config file to use for
             deployment.
@@ -97,6 +99,8 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
         ingress_controller_hostname: The ingress controller hostname to use for
             the ingress self-signed certificate and to compute the ZenML server
             URL.
+        database_username: The username for the database.
+        database_password: The password for the database.
         database_url: The URL of the RDS instance to use for the ZenML server.
         database_ssl_ca: The path to the SSL CA certificate to use for the
             database connection.
@@ -114,6 +118,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     username: str
     password: str
     helm_chart: str = get_helm_chart_path()
+    zenmlserver_image_tag: str = "latest"
     namespace: str = "zenmlserver"
     kubectl_config_path: str = os.path.join(str(Path.home()), ".kube", "config")
     ingress_tls: bool = True
@@ -122,6 +127,8 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     ingress_path: str = ""
     create_ingress_controller: bool = True
     ingress_controller_hostname: str = ""
+    database_username: str = "admin"
+    database_password: str = ""
     database_url: str = ""
     database_ssl_ca: str = ""
     database_ssl_cert: str = ""
@@ -211,8 +218,8 @@ class TerraformZenServer(TerraformService):
         """Provision the service."""
         super().provision()
         logger.info(
-            f"Your ZenML server is now deployed on AWS with URL:\n"
-            f"${self.get_server_url()}"
+            f"Your ZenML server is now deployed with URL:\n"
+            f"{self.get_server_url()}"
         )
 
     def get_server_url(self) -> str:
