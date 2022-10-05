@@ -472,8 +472,8 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 ```python
 @step(
-    experiment_tracker="mlflow_stack_comp_name"
-    settings={
+    experiment_tracker="mlflow_stack_comp_name"  # name of registered component
+    settings={  # settings of registered component
         "experiment_tracker.mlflow": {  # this is `category`.`flavor`, so another example is `step_operator.spark`
             "experiment_name": "name"
             "nested": False
@@ -484,7 +484,7 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 #### Deprecating `pipeline.with_config(...)`
 
-**How to migrate**: Replaced with the new `pipeline.config()` method.
+**How to migrate**: Replaced with the new `pipeline.run(config_path=...)`. Check out the new YAML config file structure [here](../advanced-guide/pipelines/settings.md).
 
 #### Deprecating `step.with_return_materializer(...)`
 
