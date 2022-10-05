@@ -46,7 +46,7 @@ jobs:
       - name: Install Dependencies
         run: |
           source $VENV
-          zenml integration install -y --ignore-integration feast --ignore-integration label_studio
+          zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration tekton
           pip install click~=8.0.3
 
       - name: Setup git user
