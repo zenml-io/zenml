@@ -292,7 +292,7 @@ def deploy(
         password: The initial password to use for the provisioned admin account.
         timeout: Time in seconds to wait for the server to start.
         config: A YAML or JSON configuration or configuration file to use.
-        gcp_project_id: The project in GCP to deploy the server to. 
+        gcp_project_id: The project in GCP to deploy the server to.
     """
     config_dict: Dict[str, Any] = {}
 

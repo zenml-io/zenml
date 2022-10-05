@@ -506,6 +506,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline_id = Client().register_pipeline(
                 pipeline_name=pipeline_deployment.pipeline.name,
                 pipeline_spec=pipeline_spec,
+                pipeline_docstring=self.__doc__,
             )
             pipeline_deployment = pipeline_deployment.copy(
                 update={"pipeline_id": pipeline_id}
