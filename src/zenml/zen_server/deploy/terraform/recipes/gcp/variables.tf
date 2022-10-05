@@ -160,6 +160,11 @@ variable "ingress_tls_secret_name" {
   type        = string
 }
 
+variable "zenmlserver_image_tag" {
+  description = "The tag to use for the zenmlserver docker image."
+  default     = "latest"
+  type        = string   
+}
 
 # variables for creating a ZenML stack configuration file
 variable "zenml-version" {

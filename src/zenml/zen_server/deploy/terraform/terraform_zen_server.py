@@ -83,6 +83,8 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
         password: The password for the default ZenML server account.
         helm_chart: The path to the ZenML server helm chart to use for
             deployment.
+        zenmlserver_image_tag: The tag to use for the zenmlserver docker
+            image.
         namespace: The Kubernetes namespace to deploy the ZenML server to.
         kubectl_config_path: The path to the kubectl config file to use for
             deployment.
@@ -116,6 +118,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     username: str
     password: str
     helm_chart: str = get_helm_chart_path()
+    zenmlserver_image_tag: str = "latest"
     namespace: str = "zenmlserver"
     kubectl_config_path: str = os.path.join(str(Path.home()), ".kube", "config")
     ingress_tls: bool = True
@@ -215,8 +218,8 @@ class TerraformZenServer(TerraformService):
         """Provision the service."""
         super().provision()
         logger.info(
-            f"Your ZenML server is now deployed on AWS with URL:\n"
-            f"${self.get_server_url()}"
+            f"Your ZenML server is now deployed with URL:\n"
+            f"{self.get_server_url()}"
         )
 
     def get_server_url(self) -> str:
