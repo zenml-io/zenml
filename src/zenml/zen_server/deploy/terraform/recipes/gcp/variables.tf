@@ -20,9 +20,15 @@ variable "name" {
   type        = string
 }
 
+variable "project_id" {
+  description = "The project ID in GCP that you want to deploy ZenML to"
+  default     = ""
+  type        = string
+}
+
 variable "region" {
-  description = "The region for your AWS resources"
-  default     = "eu-west-1"
+  description = "The region for your GCP resources"
+  default     = "europe-west3"
   type        = string
 }
 
@@ -44,57 +50,48 @@ variable "kubectl_config_path" {
   type        = string
 }
 
-# If you want a new RDS, choose a name and a password. If you already
+# If you want a new CloudSQL, choose a name and a password. If you already
 # have an instance, provide the name and the password here too.
 variable "database_username" {
-  description = "The username for the AWS RDS metadata store"
+  description = "The username for the CloudSQL store"
   default     = "admin"
   type        = string
 }
 variable "database_password" {
-  description = "The password for the AWS RDS metadata store"
+  description = "The password for the CloudSQL store"
   default     = ""
   type        = string
 }
 
-# if you enable the create_rds option, the recipe will
-# create a new RDS MySQL instance and then use it for this
-# ZenML Server. If disabled, you have to supply connection details
+# if you enable the create_cloudsql option, the recipe will
+# create a new CloudSQL MySQL instance and then use it for this
+# ZenServer. If disabled, you have to supply connection details
 # in the section below.
-variable "create_rds" {
-  description = "Should the recipe create an RDS instance?"
+variable "create_cloudsql" {
+  description = "Should the recipe create an CloudSQL instance?"
   default     = true
   type        = bool
 }
-variable "rds_name" {
-  description = "The name for the AWS RDS metadata store"
+variable "cloudsql_name" {
+  description = "The name for the CloudSQL store"
   default     = "zenmlserver"
   type        = string
 }
 variable "db_name" {
-  description = "The name for the AWS RDS database"
+  description = "The name for the database"
   default     = "zenmlserver"
   type        = string
 }
-variable "db_type" {
-  description = "The type for the AWS RDS database"
-  default     = "mysql"
-  type        = string
-}
-variable "db_version" {
-  description = "The version for the AWS RDS database"
-  default     = "5.7.38"
-  type        = string
-}
-variable "db_instance_class" {
+
+variable "db_instance_tier" {
   description = "The instance class to use for the database"
-  default     = "db.t3.micro"
+  default     = "db-n1-standard-1"
   type        = string
 }
 
-variable "db_allocated_storage" {
+variable "db_disk_size" {
   description = "The allocated storage in gigabytes"
-  default     = 5
+  default     = 10
   type        = number
 }
 
@@ -129,7 +126,7 @@ variable "database_ssl_verify_server_cert" {
 
 variable "ingress_path" {
   description = "The path on the Ingress URL to expose ZenML at"
-  default     = "zenmlhihi"
+  default     = "zenml"
   type        = string
 }
 
@@ -137,13 +134,13 @@ variable "ingress_path" {
 # controller in your cluster
 variable "create_ingress_controller" {
   description = "set to true  if you want the recipe to create an ingress controller in your cluster"  
-  default     = true
+  default     = false
   type        = bool
 }
 
 # if you already have an ingress controller, supply it's URL
 variable "ingress_controller_hostname" {
-  description = "The URL for the ingress controller on your cluster"
+  description = "The hostname for the ingress controller on your cluster"
   default     = ""
   type        = string
 }

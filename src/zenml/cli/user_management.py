@@ -66,7 +66,9 @@ def list_users() -> None:
     "--password",
     help=(
         "The user password. If omitted, a prompt will be shown to enter the "
-        "password."
+        "password. If an empty password is entered, an activation token is "
+        "generated and a link to the dashboard is provided where the user can "
+        "activate the account."
     ),
     required=False,
     type=str,

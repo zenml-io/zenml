@@ -77,6 +77,9 @@ cd zenml_examples/kserve_deployment
 
 # initialize a local ZenML Repository
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 For the ZenML KServe deployer to work, these things are required:

@@ -142,8 +142,11 @@ zenml integration install sklearn mlflow evidently -y
 # Initialize ZenML
 zenml init
 
-# Register the required ZenML stack components
-zenml data-validator register evidently_validator --flavor=evidently
+# Start the ZenServer to enable dashboard access
+zenml up
+
+# Register required ZenML stack
+zenml data-validator register evidently_data_validator --flavor=evidently
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml model-deployer register mlflow_deployer --flavor=mlflow
 
@@ -152,7 +155,7 @@ zenml stack register quickstart_stack -a default\
                                       -o default\
                                       -d mlflow_deployer\
                                       -e mlflow_tracker\
-                                      -dv evidently_validator\
+                                      -dv evidently_data_validator\
                                       --set
 
 # Run the quickstart script

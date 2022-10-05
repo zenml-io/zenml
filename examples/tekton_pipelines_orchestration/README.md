@@ -39,6 +39,9 @@ cd zenml_examples/tekton_pipelines_orchestration
 
 # Initialize a ZenML repository
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ## 🏃 Run the pipeline **without** tekton pipelines

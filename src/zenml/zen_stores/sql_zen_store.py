@@ -16,7 +16,18 @@
 import os
 import re
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from ml_metadata.proto.metadata_store_pb2 import (
@@ -63,7 +74,6 @@ from zenml.utils import io_utils, uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
-from zenml.zen_stores.metadata_store import MetadataStore
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     FlavorSchema,
@@ -83,6 +93,9 @@ from zenml.zen_stores.schemas import (
     UserSchema,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.metadata_store import MetadataStore
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -399,7 +412,7 @@ class SqlZenStore(BaseZenStore):
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
     _engine: Optional[Engine] = None
-    _metadata_store: Optional[MetadataStore] = None
+    _metadata_store: Optional["MetadataStore"] = None
 
     @property
     def engine(self) -> Engine:
@@ -416,7 +429,7 @@ class SqlZenStore(BaseZenStore):
         return self._engine
 
     @property
-    def metadata_store(self) -> MetadataStore:
+    def metadata_store(self) -> "MetadataStore":
         """The metadata store.
 
         Returns:
@@ -450,6 +463,8 @@ class SqlZenStore(BaseZenStore):
 
     def _initialize(self) -> None:
         """Initialize the SQL store."""
+        from zenml.zen_stores.metadata_store import MetadataStore
+
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
 
         metadata_config = self.config.get_metadata_config()

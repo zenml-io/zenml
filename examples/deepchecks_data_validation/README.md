@@ -85,6 +85,9 @@ cd zenml_examples/deepchecks_data_validation
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### 🥞 Set up your stack for Deepchecks

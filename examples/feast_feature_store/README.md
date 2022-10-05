@@ -95,6 +95,9 @@ cd zenml_examples/feast_feature_store
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 You then should setup the Feast feature store stack component and activate it as

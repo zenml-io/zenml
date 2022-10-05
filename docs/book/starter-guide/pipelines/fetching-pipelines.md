@@ -160,8 +160,11 @@ status = run.status
 
 The `pipeline_configuration` is a super object that contains all configuration of 
 the pipeline and pipeline run, including 
-[pipeline-level `BaseSettings`](../../advanced-guide/pipelines/settings.md), which
-we will learn more about later.
+[pipeline-level `BaseSettings`](../../advanced-guide/pipelines/settings.md), which we will learn more about later. You can also access the settings directly via the `settings` variable.
+
+#### docstring
+
+The docstring of the step.
 
 ## Steps
 

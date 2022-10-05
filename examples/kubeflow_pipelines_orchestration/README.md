@@ -54,6 +54,9 @@ cd zenml_examples/kubeflow_pipelines_orchestration
 
 # Initialize a ZenML repository
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ## 📓 Use the notebook 

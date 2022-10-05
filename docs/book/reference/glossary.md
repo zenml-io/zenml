@@ -136,8 +136,7 @@ that you run during your experimentation.
 When we think about steps as functions, we know they receive input in the form
 of artifacts. We also know that they produce output (also in the form of
 artifacts, stored in the artifact store). But steps also take parameters. The
-parameters that you pass into the steps are also (helpfully!) stored in the
-metadata store. This helps freeze the iterations of your experimentation
+parameters that you pass into the steps are also (helpfully!) stored by ZenML. This helps freeze the iterations of your experimentation
 workflow in time, so you can return to them exactly as you ran them.
 
 ## Pipeline
@@ -150,7 +149,7 @@ run in the orchestrator environment.
 Within your repository, you will have one or more pipelines as part of your
 experimentation workflow. A ZenML pipeline is a sequence of tasks that execute
 in a specific order and yield artifacts. The artifacts are stored within the
-artifact store and indexed via the metadata store. Each individual task within a
+artifact store and indexed via the ZenML Server. Each individual task within a
 pipeline is known as a step.
 
 ## Repository

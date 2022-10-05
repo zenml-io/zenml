@@ -22,6 +22,26 @@ implementations for our users to use:
 
 # Requirements
 
+To run this example, you need to install and initialize ZenML:
+
+```shell
+# install CLI
+pip install zenml
+
+# install ZenML integrations
+zenml integration install spark
+
+# pull example
+zenml example pull spark_distributed_programming
+cd zenml_examples/spark_distributed_programming
+
+# initialize a local ZenML Repository
+zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
+```
+
 In order to follow this example, you need an AWS account which you can use to
 spin up a few resources. Additionally, you have to install Spark following the 
 instructions [here](https://spark.apache.org/downloads.html).

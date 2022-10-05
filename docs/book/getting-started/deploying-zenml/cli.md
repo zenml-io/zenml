@@ -91,6 +91,9 @@ If you also already have a database that you would want to use with the deployme
 ### Base Config File
 This is the general structure of a config file. Use this as a base and then add any cloud-specific parameters from the sections below. 
 
+> **Note**
+> Feel free to include only those variables that you want to customize, in your file. For all other variables, the defaults (specified in square brackets) would be used.
+
 <details>
     <summary>General</summary>
 
@@ -102,24 +105,24 @@ password: The password for the default ZenML server account.
 
 kubectl_config_path: The path to the kubectl config file to use for
     deployment.
-namespace: The Kubernetes namespace to deploy the ZenML server to.
+namespace [zenmlserver]: The Kubernetes namespace to deploy the ZenML server to.
 helm_chart: The path to the ZenML server helm chart to use for
     deployment.
-zenmlserver_image_tag: The tag to use for the ZenML server Docker image.
+zenmlserver_image_tag [latest]: The tag to use for the ZenML server Docker image.
 
-create_ingress_controller: Whether to deploy an nginx ingress
+create_ingress_controller [true]: Whether to deploy an nginx ingress
     controller as part of the deployment.
-ingress_tls: Whether to use TLS for the ingress.
-ingress_tls_generate_certs: Whether to generate self-signed TLS
+ingress_tls [true]: Whether to use TLS for the ingress.
+ingress_tls_generate_certs [true]: Whether to generate self-signed TLS
     certificates for the ingress.
-ingress_tls_secret_name: The name of the Kubernetes secret to use for
+ingress_tls_secret_name [zenml-tls-certs]: The name of the Kubernetes secret to use for
     the ingress.
-ingress_path: The path to use for the ingress.
+ingress_path [""]: The path to use for the ingress.
 ingress_controller_hostname: The ingress controller hostname to use for
     the ingress self-signed certificate and to compute the ZenML server
     URL.
 
-database_username: The username for the database.
+database_username [admin]: The username for the database.
 database_password: The password for the database.
 database_url: The URL of the database to use for the ZenML server.
 database_ssl_ca: The path to the SSL CA certificate to use for the
@@ -131,7 +134,7 @@ database_ssl_key: The path to the client SSL key to use for the
 database_ssl_verify_server_cert: Whether to verify the database server
     SSL certificate.
 
-log_level: The log level to set the terraform client to. Choose one of
+log_level [ERROR]: The log level to set the terraform client to. Choose one of
     TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
 ```
 
@@ -143,14 +146,15 @@ log_level: The log level to set the terraform client to. Choose one of
 {% tab title="AWS" %}
 
 ```
-region: The AWS region to deploy to.
+region [eu-west-1]: The AWS region to deploy to.
 
-create_rds: Whether to create an RDS database.
-db_name: Name of RDS database to create.
-db_type: Type of RDS database to create.
-db_version: Version of RDS database to create.
-db_instance_class: Instance class of RDS database to create.
-db_allocated_storage: Allocated storage of RDS database to create.
+create_rds [true]: Whether to create an RDS database.
+rds_name [zenmlserver]: The name of the RDS instance to create
+db_name [zenmlserver]: Name of RDS database to create.
+db_type [mysql]: Type of RDS database to create.
+db_version [5.7.38]: Version of RDS database to create.
+db_instance_class [db.t3.micro]: Instance class of RDS database to create.
+db_allocated_storage [5]: Allocated storage of RDS database to create.
 ```
 
 The `database_username` and `database_password` from the general config is used to set those variables for the AWS RDS instance as well.
@@ -161,15 +165,16 @@ The `database_username` and `database_password` from the general config is used 
 
 ```
 project_id: The project in GCP to deploy the server to.
-region: The GCP region to deploy to.
+region [europe-west3]: The GCP region to deploy to.
 
-create_cloudsql: Whether to create an CloudSQL database.
-cloudsql_name: The name of the CloudSQL instance to create
-db_name: Name of CloudSQL database to create.
-db_instance_tier: Instance class of CloudSQL database to create.
-db_disk_size: Allocated storage of CloudSQL database to create.
+create_cloudsql [true]: Whether to create an CloudSQL database.
+cloudsql_name [zenmlserver]: The name of the CloudSQL instance to create
+db_name [zenmlserver]: Name of CloudSQL database to create.
+db_instance_tier [db-n1-standard-1]: Instance class of CloudSQL database to create.
+db_disk_size [10]: Allocated storage of CloudSQL database, in GB, to create.
 ```
 
+- The `project_id` is required to be set.
 - The username for the database is `admin` irrespective of the value passed to the `database_username` variable.
 - SSL is disabled by default on the database and option to enable it is coming soon!
 

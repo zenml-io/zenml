@@ -96,7 +96,7 @@ file contents immediately after initialization:
    ```
 
 2. The `local_stores` directory is where some "local" flavors of Stack Components,
-such as the `local` Artifact Store, the `sqlite` Metadata Store or the `local`
+such as the `local` Artifact Store, or the `local`
 Secrets Manager persist data locally. Every local Stack Component will have its
 own subdirectory here named after the Stack Component's unique UUID. One notable
 example is the `local` Artifact Store flavor that, when part of the active Stack,

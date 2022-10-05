@@ -196,6 +196,15 @@ are shared through a remotely deployed ZenML Server.
 
 ![Running your pipeline in the cloud](../../assets/core_concepts/03_multi_stack.png)
 
+
+### Viewing the dashboard
+
+While in single-player mode, you can still use the dashboard. ZenML natively supports running the HTTP server and dashboard either as a process running in the background. By default, the `zenml up` command starts the HTTP server as a local daemon process that uses the same database configuration as your local client. A URL is provided where the ZenML Dashboard can be loaded to show your available stacks, pipeline runs and team settings among other things.
+
+`zenml down` does the opposite and spins the process down. You can read more about this [here](../../getting-started/deploying-zenml/deploying-zenml.md).
+
+![ZenML Up](../../assets/getting_started/zenml-up.gif)
+
 ## Managing Remote Stacks (Multi-player mode)
 
 If you are working in a non-local, collaborative setting, then the first

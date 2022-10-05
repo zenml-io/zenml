@@ -15,6 +15,7 @@ from rich import print
 from zenml.steps import StepContext, step
 
 SECRET_NAME = "example_secret"
+AZURE_SECRET_NAME = "examplesecret"
 SECRET_KEY = "example_secret_key"
 
 
@@ -25,7 +26,12 @@ def secret_loader(
     """Load the example secret from the secret manager."""
     # Load Secret from active secret manager. This will fail if no secret
     #  manager is active or if that secret does not exist
-    retrieved_secret = context.stack.secrets_manager.get_secret(SECRET_NAME)
+    if context.stack.secrets_manager.flavor == "azure":
+        retrieved_secret = context.stack.secrets_manager.get_secret(
+            AZURE_SECRET_NAME
+        )
+    else:
+        retrieved_secret = context.stack.secrets_manager.get_secret(SECRET_NAME)
 
     # Load specific secret value from the secret using the secret key
     print(

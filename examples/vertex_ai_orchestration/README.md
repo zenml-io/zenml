@@ -133,14 +133,17 @@ cd zenml_examples/vertex_ai_orchestration
 
 # Create a zenml repository
 zenml init
- 
+
+# Start the ZenServer to enable dashboard access
+zenml up
+
 # In order to create the GCP stack components, we'll need to install one 
 # additional ZenML integration:
 zenml integration install gcp
 
 # The CONTAINER_REGISTRY_URI will have a format like this: eu.gcr.io/xxx/xxx
 zenml container-registry register gcp_registry --flavor=gcp --uri=<CONTAINER_REGISTRY_URI>
-  
+
 # The PATH_TO_YOUR_GCP_BUCKET is the path to your GCP bucket: gs://xxx
 zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YOUR_GCP_BUCKET>
 

@@ -61,7 +61,7 @@ Data in the artifact store are called *artifacts*.
 
 These artifacts may have been produced by the pipeline steps, or they may be the
 data ingested into a pipeline via an importer step.
-The artifact store houses all intermediary pipeline step results, which in turn will be tracked in the metadata store.
+The artifact store houses all intermediary pipeline step results.
 
 The fact that all your data inputs and outputs are tracked
 and versioned in the artifact store allows for extremely useful features

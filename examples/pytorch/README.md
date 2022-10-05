@@ -37,6 +37,9 @@ cd zenml_examples/pytorch
 
 # initialize
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### ▶️ Run the Code

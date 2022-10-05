@@ -44,6 +44,9 @@ cd zenml_examples/airflow_orchestration
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### 🥞 Create a new Airflow Stack
@@ -68,16 +71,15 @@ This will bootstrap Airflow, start up all the necessary components and run them
 in the background. When the setup is finished, it will print username and
 password for the Airflow webserver to the console.
 
-{% hint style="warning" %} If you can't find the password on the console, you
+WARNING: If you can't find the password on the console, you
 can navigate to the
 `<APP_DIR>/zenml/airflow_root/<ORCHESTRATOR_UUID>/standalone_admin_password.txt`
 file. The username will always be `admin`.
 
-- APP_DIR will depend on your OS. See which path corresponds to your OS
+- `APP_DIR` will depend on your OS. See which path corresponds to your OS
   [here](https://click.palletsprojects.com/en/8.0.x/api/#click.get_app_dir).
-- ORCHESTRATOR_UUID will be the unique id of the airflow orchestrator. There will be only one
+- `ORCHESTRATOR_UUID` will be the unique id of the Airflow orchestrator. There will be only one
   folder here, so you can just navigate to the one that is present.
-  {% endhint %}
 
 ### 📆 Run or schedule the airflow DAG
 

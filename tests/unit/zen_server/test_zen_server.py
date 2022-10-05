@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 import platform
 
 import pytest
@@ -72,10 +73,28 @@ def running_zen_server(
         ),
     )
 
-    zen_server.start(timeout=SERVER_START_STOP_TIMEOUT)
+    try:
+        # on MAC OS, we need to set this environment variable
+        # to fix problems with the fork() calls (see this thread
+        # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
+        os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
+        zen_server.start(timeout=SERVER_START_STOP_TIMEOUT)
+    except RuntimeError:
+        print("ZenServer failed to start. Pulling logs...")
+        for line in zen_server.get_logs(tail=200):
+            print(line)
+        raise
+    finally:
+        del os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"]
 
     yield zen_server
-    zen_server.stop(timeout=SERVER_START_STOP_TIMEOUT)
+    try:
+        zen_server.stop(timeout=SERVER_START_STOP_TIMEOUT)
+    except RuntimeError:
+        print("ZenServer failed to stop. Pulling logs...")
+        for line in zen_server.get_logs(tail=200):
+            print(line)
+        raise
 
     assert zen_server.check_status()[0] == ServiceState.INACTIVE
 
@@ -158,14 +177,30 @@ def test_server_up_down():
     deployer = ServerDeployer()
 
     try:
+        # on MAC OS, we need to set this environment variable
+        # to fix problems with the fork() calls (see this thread
+        # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
+        os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
         server = deployer.deploy_server(
             deployment_config, timeout=SERVER_START_STOP_TIMEOUT
         )
         assert server.status is not None
         assert server.status.url == endpoint
         assert requests.head(endpoint + "/health").status_code == 200
+    except RuntimeError:
+        print("ZenServer failed to start. Pulling logs...")
+        for line in deployer.get_server_logs(server.config.name, tail=200):
+            print(line)
+        raise
     finally:
-        deployer.remove_server(
-            server_name="test_server", timeout=SERVER_START_STOP_TIMEOUT
-        )
+        del os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"]
+        try:
+            deployer.remove_server(
+                server_name="test_server", timeout=SERVER_START_STOP_TIMEOUT
+            )
+        except RuntimeError:
+            print("ZenServer failed to start. Pulling logs...")
+            for line in deployer.get_server_logs(server.config.name, tail=200):
+                print(line)
+            raise
     assert deployer.list_servers() == []

@@ -44,6 +44,9 @@ cd zenml_examples/wandb_tracking
 
 # initialize
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### 🥞 Create the stack with the wandb experiment tracker component

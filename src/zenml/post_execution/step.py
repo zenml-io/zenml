@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of a post-execution step class."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.client import Client
@@ -133,6 +133,77 @@ class StepView:
             The step configuration.
         """
         return self._model.step_configuration
+
+    @property
+    def settings(self) -> Dict[str, Any]:
+        """Returns the step settings.
+
+        These are runtime settings passed down to stack components, which
+        can be set at step level.
+
+        Returns:
+            The step settings.
+        """
+        settings = self.step_configuration["config"]["settings"]
+        return cast(Dict[str, Any], settings)
+
+    @property
+    def extra(self) -> Dict[str, Any]:
+        """Returns the extra dictionary.
+
+        This dict is meant to be used to pass any configuration down to the
+        step that the user has use of.
+
+        Returns:
+            The extra dictionary.
+        """
+        extra = self.step_configuration["config"]["extra"]
+        return cast(Dict[str, Any], extra)
+
+    @property
+    def enable_cache(self) -> bool:
+        """Returns whether caching is enabled for this step.
+
+        Returns:
+            Whether caching is enabled for this step.
+        """
+        enable_cache = self.step_configuration["config"]["enable_cache"]
+        return cast(bool, enable_cache)
+
+    @property
+    def step_operator(self) -> Optional[str]:
+        """Returns the name of the step operator of the step.
+
+        Returns:
+            The name of the step operator of the step.
+        """
+        step_operator = self.step_configuration["config"]["step_operator"]
+        return cast(Optional[str], step_operator)
+
+    @property
+    def experiment_tracker(self) -> Optional[str]:
+        """Returns the name of the experiment tracker of the step.
+
+        Returns:
+            The name of the experiment tracker of the step.
+        """
+        experiment_tracker = self.step_configuration["config"][
+            "experiment_tracker"
+        ]
+        return cast(Optional[str], experiment_tracker)
+
+    @property
+    def spec(self) -> Dict[str, Any]:
+        """Returns the step spec.
+
+        The step spec defines the source path and upstream steps of a step and
+        is used primarily to compare whether two steps are the same.
+
+        Returns:
+            The step spec.
+        """
+        spec = self.step_configuration["spec"]
+        return cast(Dict[str, Any], spec)
 
     @property
     def status(self) -> ExecutionStatus:
