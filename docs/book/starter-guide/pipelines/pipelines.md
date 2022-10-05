@@ -230,7 +230,7 @@ plan to run your pipeline multiple times.
 
 ### Unlisted runs
 
-Once a pipeline has been executed, it is represented by a [`PipelineSpec`](https://apidocs.zenml.io) that uniques identifies it. 
+Once a pipeline has been executed, it is represented by a [`PipelineSpec`](https://apidocs.zenml.io) that uniquely identifies it. 
 Therefore, you cannot edit a pipeline after it has been run once. In order to iterate quickly pipelines, there are three options:
 
 - Pipeline runs can be created without being associated with a pipeline explicitly. These are called `unlisted` runs and can be created by passing 

@@ -28,15 +28,42 @@ Reasonable defaults are in place for you already and if you wish to configure mo
 
 ## Option 2: Using existing cloud resources
 
-If you already have an existing cluster with your local `kubectl` configured with it, you can jump straight to the `deploy` command above to get going with the defaults. 
+### Existing Kubernetes Cluster
 
-However, if you also already have a database that you would want to use with the deployment, you can choose to configure it with the use of a config file. This file can be found in the [Configuration File Templates](#configuration-file-templates) towards the end of this guide. It offers a host of configuration options that you can leverage for advanced use cases. Here we will demonstrate setting the database.
+If you already have an existing cluster without an ingress controller, you can jump straight to the `deploy` command above to get going with the defaults. Please make sure you have your local `kubectl` configured to talk to your cluster.
+
+#### Having an existing NGINX Ingress Controller
+The `deploy` command, by default, tries to create an NGINX ingress controller on your cluster. If you already have an existing controller, you can tell ZenML to not re-deploy it through the use of a config file. This file can be found in the [Configuration File Templates](#configuration-file-templates) towards the end of this guide. It offers a host of configuration options that you can leverage for advanced use cases.
+
+- Check if an ingress controller is running on your cluster by running the following command. You should see an entry in the output with the hostname populated.
+    ```
+    # change the namespace to any other where 
+    # you might have the controller installed
+    kubectl get svc -n ingress-nginx
+    ```
+- Set `create_ingress_controller` to `false`.
+- Supply your controller's hostname to the `ingress_controller_hostname` variable.
+    > **Note**
+    > If you're on GCP, the ingress host could be an IP address of the form `https://xx.xx.xx.xx`. Append `.nip.io` to this address before supplying the value to the `ingress_controller_hostname` variable. Learn more [here](https://nip.io/).
+- You can now run the `deploy` command and pass the config file above, to it.
+
+    ```
+    zenml deploy --config=/PATH/TO/FILE
+    ```
+    > **Note**
+    > To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
+
+### Existing Hosted SQL Database
+If you also already have a database that you would want to use with the deployment, you can choose to configure it with the use of the config file. Here we will demonstrate setting the database.
+
+> **Note**
+> Only MySQL version 5.7.x are supported by ZenML, currently.
 
 - Fill the fields below from the config file with values from your database.
 
     ```
-    database_username: The username for the RDS database.
-    database_password: The password for the RDS database.
+    database_username: The username for the database.
+    database_password: The password for the database.
     
     database_url: The URL of the database to use for the ZenML server.
     database_ssl_ca: The path to the SSL CA certificate to use for the
@@ -55,11 +82,9 @@ However, if you also already have a database that you would want to use with the
     zenml deploy --config=/PATH/TO/FILE
     ```
     > **Note**
-    > To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resoureces like MySQL databases and networks.
+    > To be able to run the deploy command, you should have your cloud provider's CLI configured locally with permissions to create resources like MySQL databases and networks.
 
 
-> **Note**
-> Only MySQL version 5.7.x are supported by ZenML, currently.
 
 ## Configuration File Templates
 
@@ -74,24 +99,26 @@ name: Name of the server deployment.
 provider: The server provider type. # one of aws, gcp or azure
 username: The username for the default ZenML server account.
 password: The password for the default ZenML server account.
-log_level: The log level to set the terraform client to. Choose one of
-    TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
-helm_chart: The path to the ZenML server helm chart to use for
-    deployment.
-namespace: The Kubernetes namespace to deploy the ZenML server to.
+
 kubectl_config_path: The path to the kubectl config file to use for
     deployment.
+namespace: The Kubernetes namespace to deploy the ZenML server to.
+helm_chart: The path to the ZenML server helm chart to use for
+    deployment.
+zenmlserver_image_tag: The tag to use for the ZenML server Docker image.
+
+create_ingress_controller: Whether to deploy an nginx ingress
+    controller as part of the deployment.
 ingress_tls: Whether to use TLS for the ingress.
 ingress_tls_generate_certs: Whether to generate self-signed TLS
     certificates for the ingress.
 ingress_tls_secret_name: The name of the Kubernetes secret to use for
     the ingress.
 ingress_path: The path to use for the ingress.
-create_ingress_controller: Whether to deploy an nginx ingress
-    controller as part of the deployment.
 ingress_controller_hostname: The ingress controller hostname to use for
     the ingress self-signed certificate and to compute the ZenML server
     URL.
+
 database_username: The username for the database.
 database_password: The password for the database.
 database_url: The URL of the database to use for the ZenML server.
@@ -103,6 +130,9 @@ database_ssl_key: The path to the client SSL key to use for the
     database connection.
 database_ssl_verify_server_cert: Whether to verify the database server
     SSL certificate.
+
+log_level: The log level to set the terraform client to. Choose one of
+    TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
 ```
 
 </details>
@@ -114,6 +144,7 @@ database_ssl_verify_server_cert: Whether to verify the database server
 
 ```
 region: The AWS region to deploy to.
+
 create_rds: Whether to create an RDS database.
 db_name: Name of RDS database to create.
 db_type: Type of RDS database to create.
@@ -126,13 +157,25 @@ The `database_username` and `database_password` from the general config is used 
 
 {% endtab %}
 
-{% tab title="Azure" %}
+{% tab title="GCP" %}
 
-Coming Soon!
+```
+project_id: The project in GCP to deploy the server to.
+region: The GCP region to deploy to.
+
+create_cloudsql: Whether to create an CloudSQL database.
+cloudsql_name: The name of the CloudSQL instance to create
+db_name: Name of CloudSQL database to create.
+db_instance_tier: Instance class of CloudSQL database to create.
+db_disk_size: Allocated storage of CloudSQL database to create.
+```
+
+- The username for the database is `admin` irrespective of the value passed to the `database_username` variable.
+- SSL is disabled by default on the database and option to enable it is coming soon!
 
 {% endtab %}
 
-{% tab title="GCP" %}
+{% tab title="Azure" %}
 
 Coming Soon!
 

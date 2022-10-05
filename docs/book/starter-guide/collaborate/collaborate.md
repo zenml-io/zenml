@@ -46,8 +46,8 @@ to enjoy its advantages.
 ## Step 1: Single user working with local stacks
 
 As mentioned before, the most common starting point for most ZenML users would be
-to locally install it and start managing stacks. We have discussed the nitty-gritties
-of such usage [previously](../stacks/managing-stacks.md).
+to locally install it and start managing stacks. We have discussed the
+nitty-gritty details of such usage [previously](../stacks/managing-stacks.md).
 
 ![Working with local ZenML](../../assets/starter_guide/collaboration/01_local_stack.png)
 
@@ -57,7 +57,7 @@ The next step in the journey is to go to the cloud, and for that you need to [de
 Don't worry - we will show an easy way of getting started with this quickly, with little to no knowledge of cloud technologies in the
 [next section](zenml-deployment.md).
 
-For now, we should understand the consequence of doing such an acion. Once ZenML is deployed and the user connects to it remotely, all
+For now, we should understand the consequence of doing such an action. Once ZenML is deployed and the user connects to it remotely, all
 stacks, pipelines, runs, and other metadata will be [centrally tracked](../../advanced-guide/pipelines/settings.md) in
 the database that backs the server.
 

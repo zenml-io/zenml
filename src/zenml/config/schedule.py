@@ -73,7 +73,7 @@ class Schedule(BaseModel):
             logger.warning(
                 "This schedule was created with a cron expression as well as "
                 "values for `start_time` and `interval_seconds`. The resulting "
-                "behaviour depends on the concrete orchestrator implementation "
+                "behavior depends on the concrete orchestrator implementation "
                 "but will usually ignore the interval and use the cron "
                 "expression."
             )

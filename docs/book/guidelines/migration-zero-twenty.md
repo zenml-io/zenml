@@ -439,7 +439,7 @@ This is part of a broader configuration rehaul which is discussed next.
 
 Alongside the architectural shift, Pipeline configuration has been completely rethought. This video gives an overview of how configuration has changed with ZenML in the post ZenML 0.20.0 world.
 
-{% embed url="https://www.youtube.com/embed/hI-UNV7uoNI" %}
+{% embed url="https://www.youtube.com/embed/hI-UNV7uoNI" %} Configuring pipelines, steps, and stack components in ZenML {% endembed %}
 
 If you don't want to watch the video, you can read all about the changes here and we have a [dedicated page](../advanced-guide/pipelines/settings.md) in the docs describing the new ways to configure objects in ZenML.
 
@@ -472,8 +472,9 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 ```python
 @step(
-    settings={
-        "experiment_tracker.mlflow": {
+    experiment_tracker="mlflow_stack_comp_name"  # name of registered component
+    settings={  # settings of registered component
+        "experiment_tracker.mlflow": {  # this is `category`.`flavor`, so another example is `step_operator.spark`
             "experiment_name": "name"
             "nested": False
         }
@@ -483,7 +484,7 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 #### Deprecating `pipeline.with_config(...)`
 
-**How to migrate**: Replaced with the new `pipeline.config()` method.
+**How to migrate**: Replaced with the new `pipeline.run(config_path=...)`. Check out the new YAML config file structure [here](../advanced-guide/pipelines/settings.md).
 
 #### Deprecating `step.with_return_materializer(...)`
 
@@ -552,7 +553,7 @@ pipelines and steps.
 ### `PipelineSpec` now uniquely defines pipelines
 
 Once a pipeline has been executed, it is represented by a `PipelineSpec` that
-uniques identifies it. Therefore, users are no longer able to edit a pipeline
+uniquely identifies it. Therefore, users are no longer able to edit a pipeline
 once it has been run once. There are now three options to get around this:
 
 * Pipeline runs can be created without being associated with a pipeline explicitly: We call these `unlisted` runs. Read more about unlisted runs [here](../starter-guide/pipelines/pipelines.md#unlisted-runs).
@@ -579,7 +580,7 @@ Usage remains largely similar. Please read the [new docs for post-execution to i
 
 # 📡Future Changes
 
-While this rehaul is big and will break previous releases, we do have some more work left to do. Howeverm we also expect this to be the last big rehaul of ZenML before our 1.0.0 release, and no other release will be so hard breaking as this one. Currently planned future breaking changes are:
+While this rehaul is big and will break previous releases, we do have some more work left to do. However we also expect this to be the last big rehaul of ZenML before our 1.0.0 release, and no other release will be so hard breaking as this one. Currently planned future breaking changes are:
 
 - Following the metadata store, the secret manager stack component might move out of the stack.
 - ZenML `StepContext` might be deprecated
