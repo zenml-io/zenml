@@ -22,7 +22,7 @@ variable "name" {
 
 variable "project_id" {
   description = "The project ID in GCP that you want to deploy ZenML to"
-  default     = "default"
+  default     = ""
   type        = string
 }
 
@@ -78,7 +78,7 @@ variable "cloudsql_name" {
   type        = string
 }
 variable "db_name" {
-  description = "The name for the AWS RDS database"
+  description = "The name for the database"
   default     = "zenmlserver"
   type        = string
 }
@@ -91,7 +91,7 @@ variable "db_instance_tier" {
 
 variable "db_disk_size" {
   description = "The allocated storage in gigabytes"
-  default     = 5
+  default     = 10
   type        = number
 }
 
@@ -134,13 +134,13 @@ variable "ingress_path" {
 # controller in your cluster
 variable "create_ingress_controller" {
   description = "set to true  if you want the recipe to create an ingress controller in your cluster"  
-  default     = true
+  default     = false
   type        = bool
 }
 
 # if you already have an ingress controller, supply it's URL
 variable "ingress_controller_hostname" {
-  description = "The URL for the ingress controller on your cluster"
+  description = "The hostname for the ingress controller on your cluster"
   default     = ""
   type        = string
 }

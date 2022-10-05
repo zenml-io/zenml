@@ -26,7 +26,7 @@ module "metadata_store" {
     ]
     ipv4_enabled        = true
     private_network     = null
-    require_ssl         = true
+    require_ssl         = false
     allocated_ip_range  = null
   }
 }

@@ -43,7 +43,7 @@ resource "helm_release" "zen-server" {
   }
   set {
     name = "ingress.host"
-    value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.ip}" : var.ingress_controller_hostname
+    value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.ip}.nip.io" : var.ingress_controller_hostname
   }
   set {
     name = "ingress.tls.enabled"
@@ -65,19 +65,19 @@ resource "helm_release" "zen-server" {
   }
   set {
     name  = "zenml.database.sslCa"
-    value = var.create_cloudsql? "./server-ca.pem" : var.database_ssl_ca
+    value = var.create_cloudsql? "" : var.database_ssl_ca
   }
   set {
     name  = "zenml.database.sslCert"
-    value = var.create_cloudsql? "./client-cert.pem" : var.database_ssl_cert
+    value = var.create_cloudsql? "" : var.database_ssl_cert
   }
   set {
     name  = "zenml.database.sslKey"
-    value = var.create_cloudsql? "./client-key.pem" : var.database_ssl_key
+    value = var.create_cloudsql? "" : var.database_ssl_key
   }
   set {
     name  = "zenml.database.sslVerifyServerCert"
-    value = var.create_cloudsql? true : var.database_ssl_verify_server_cert
+    value = var.create_cloudsql? false : var.database_ssl_verify_server_cert
   }
   depends_on = [
     resource.kubernetes_namespace.zen-server
