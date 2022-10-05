@@ -52,15 +52,17 @@ ZenML CLI commands and ZenML code will display a warning if they are not running
 in the context of a ZenML repository, e.g.:
 
 ```shell
-stefan@aspyre2:/tmp$ zenml stack list
-Unable to find ZenML repository in your current working directory (/tmp) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
+$ zenml stack list
+
+Unable to find ZenML repository in your current working directory (/Users/felix/code/zenml) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
 Using the default local database.
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ default    │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+Running with active project: 'default' (global)
+┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃ ACTIVE │ STACK NAME │ STACK ID                             │ SHARED │ OWNER   │ ORCHESTRATOR │ ARTIFACT_STORE ┃
+┠────────┼────────────┼──────────────────────────────────────┼────────┼─────────┼──────────────┼────────────────┨
+┃   👉   │ default    │ 4fc6795b-fd9e-447d-afe9-233d5c80a199 │ ➖     │ default │ default      │ default        ┃
+┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
 {% endhint %}
 
