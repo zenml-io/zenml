@@ -118,14 +118,11 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             # Validate that the container registry is not local.
             container_registry = stack.container_registry
             if container_registry and container_registry.config.is_local:
-                return (
-                    False,
-                    (
-                        "The Vertex orchestrator does not support local"
-                        " container registries. You should replace the"
-                        f" component '{container_registry.name}'"
-                        f" {container_registry.type.value} to a remote one."
-                    ),
+                return False, (
+                    f"The Vertex orchestrator does not support local "
+                    f"container registries. You should replace the component '"
+                    f"{container_registry.name}' "
+                    f"{container_registry.type.value} to a remote one."
                 )
 
             # Validate that the rest of the components are not local.
@@ -137,18 +134,15 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 local_path = stack_comp.local_path
                 if not local_path:
                     continue
-                return (
-                    False,
-                    (
-                        f"The '{stack_comp.name}' {stack_comp.type.value} is a"
-                        " local stack component. The Vertex AI Pipelines"
-                        " orchestrator requires that all the components in the"
-                        " stack used to execute the pipeline have to be not"
-                        " local, because there is no way for Vertex to connect"
-                        " to your local machine. You should use a flavor of"
-                        f" {stack_comp.type.value} other than"
-                        f" '{stack_comp.flavor}'."
-                    ),
+                return False, (
+                    f"The '{stack_comp.name}' {stack_comp.type.value} is a "
+                    f"local stack component. The Vertex AI Pipelines "
+                    f"orchestrator requires that all the components in the "
+                    f"stack used to execute the pipeline have to be not local, "
+                    f"because there is no way for Vertex to connect to your "
+                    f"local machine. You should use a flavor of "
+                    f"{stack_comp.type.value} other than '"
+                    f"{stack_comp.flavor}'."
                 )
 
             # If the `pipeline_root` has not been defined in the orchestrator
@@ -158,19 +152,15 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 not self.config.pipeline_root
                 and stack.artifact_store.flavor != GCP_ARTIFACT_STORE_FLAVOR
             ):
-                return (
-                    False,
-                    (
-                        "The attribute `pipeline_root` has not been set and it"
-                        " cannot be generated using the path of the artifact"
-                        " store because it is not a"
-                        " `zenml.integrations.gcp.artifact_store.GCPArtifactStore`."
-                        " To solve this issue, set the `pipeline_root`"
-                        " attribute manually executing the following command:"
-                        " `zenml orchestrator update"
-                        f' {stack.orchestrator.name} --pipeline_root="<Cloud'
-                        ' Storage URI>"`.'
-                    ),
+                return False, (
+                    f"The attribute `pipeline_root` has not been set and it "
+                    f"cannot be generated using the path of the artifact store "
+                    f"because it is not a "
+                    f"`zenml.integrations.gcp.artifact_store.GCPArtifactStore`."
+                    f" To solve this issue, set the `pipeline_root` attribute "
+                    f"manually executing the following command: "
+                    f"`zenml orchestrator update {stack.orchestrator.name} "
+                    f'--pipeline_root="<Cloud Storage URI>"`.'
                 )
 
             return True, ""

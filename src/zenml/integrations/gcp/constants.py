@@ -32,4 +32,6 @@ VERTEX_JOB_STATES_FAILED = (
     _VERTEX_JOB_STATE_CANCELLED,
 )
 
-GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL = "cloud.google.com/gke-accelerator"
+GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL = (
+    "cloud.google.com/gke-accelerator"
+)
