@@ -16,7 +16,7 @@
 from enum import Enum
 from typing import Optional, Union
 
-from pydantic import Extra, Field, PositiveFloat, PositiveInt
+from pydantic import Extra, Field, NonNegativeInt, PositiveFloat
 
 from zenml.config.base_settings import BaseSettings
 
@@ -69,7 +69,7 @@ class ResourceSettings(BaseSettings):
     """
 
     cpu_count: Optional[PositiveFloat] = None
-    gpu_count: Optional[PositiveInt] = None
+    gpu_count: Optional[NonNegativeInt] = None
     memory: Optional[str] = Field(regex=MEMORY_REGEX)
 
     @property

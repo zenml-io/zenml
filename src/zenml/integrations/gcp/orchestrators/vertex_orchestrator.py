@@ -256,14 +256,19 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 (
                     constraint_label
                     == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                    and gpu_limit is None
+                )
+                or (
+                    constraint_label
+                    == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
                     and gpu_limit is not None
                     and gpu_limit > 0
                 )
                 or constraint_label
                 != GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
             ):
-                container_op = container_op.add_node_selector_constraint(
-                    label_name=constraint_label, value=value
+                container_op.add_node_selector_constraint(
+                    constraint_label, value
                 )
 
     def prepare_or_run_pipeline(
