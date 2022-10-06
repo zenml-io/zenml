@@ -15,35 +15,35 @@
 ## Starter Guide
 
 * [Pipelines](./starter-guide/pipelines/pipelines.md)
-  * [Fetching pipelines](./starter-guide/pipelines/fetching-pipelines.md)
-  * [Quickly iterating over pipelines](./starter-guide/pipelines/iterating.md)
+  * [Fetching Pipelines](./starter-guide/pipelines/fetching-pipelines.md)
+  * [Step Parameterization and Caching](./starter-guide/pipelines/iterating.md)
 * [Stacks](./starter-guide/stacks/stacks.md)
-  * [Registering stacks](./starter-guide/stacks/registering-stacks.md)
-  * [Managing stacks](./starter-guide/stacks/managing-stacks.md)
+  * [Registering Stacks](./starter-guide/stacks/registering-stacks.md)
+  * [Managing Stacks](./starter-guide/stacks/managing-stacks.md)
 * [Collaboration](./starter-guide/collaborate/collaborate.md)
-  * [Connect to a deployed ZenML](./starter-guide/collaborate/zenml-deployment.md)
-  * [Invite users](./starter-guide/collaborate/users.md)
+  * [Connecting to a Deployed ZenML](./starter-guide/collaborate/zenml-deployment.md)
+  * [Inviting Users](./starter-guide/collaborate/users.md)
 
 ## Advanced Guide
 
-* [In-depth configuration](./advanced-guide/pipelines/pipelines.md)
+* [In-Depth Configuration](./advanced-guide/pipelines/pipelines.md)
   * [Runtime Settings](./advanced-guide/pipelines/settings.md)
   * [Containerization (Docker)](./advanced-guide/pipelines/containerization.md)
-  * [Pass custom data types through steps (Materializers)](./advanced-guide/pipelines/materializers.md)
-  * [Specify step resources](./advanced-guide/pipelines/step-resources.md)
-  * [Access metadata within steps](./advanced-guide/pipelines/step-metadata.md)
-  * [Control the step execution order](./advanced-guide/pipelines/step-order.md)
+  * [Passing Custom Data Types through Steps (Materializers)](./advanced-guide/pipelines/materializers.md)
+  * [Specifying Step Resources](./advanced-guide/pipelines/step-resources.md)
+  * [Accessing Metadata within Steps](./advanced-guide/pipelines/step-metadata.md)
+  * [Controlling the Step Execution Order](./advanced-guide/pipelines/step-order.md)
 * [Extending Stacks](./advanced-guide/stacks/stacks.md)
-  * [Write Custom Flavors](./advanced-guide/stacks/custom-flavors.md)
-  * [Manage Stack Component States](./advanced-guide/stacks/stack-state-management.md)
-  * [Manage External Services](./advanced-guide/stacks/manage-external-services.md)
+  * [Writing Custom Flavors](./advanced-guide/stacks/custom-flavors.md)
+  * [Managing Stack Component States](./advanced-guide/stacks/stack-state-management.md)
+  * [Managing External Services](./advanced-guide/stacks/manage-external-services.md)
 * [Practical MLOps](./advanced-guide/practical/practical-mlops.md)
   * [Stack Recipes](./advanced-guide/practical/stack-recipes.md)
-  * [Switching orchestration](./advanced-guide/practical/switching-orchestration.md)
+  * [Switching Orchestration](./advanced-guide/practical/switching-orchestration.md)
   * [Secrets Management](./advanced-guide/practical/secrets-management.md)
-  * [Tracking experiments](./advanced-guide/practical/tracking-experiments.md)
-  * [Validating data](./advanced-guide/practical/validating-data.md)
-  * [Deploying models and batch inference](./advanced-guide/practical/deploying-models.md)
+  * [Tracking Experiments](./advanced-guide/practical/tracking-experiments.md)
+  * [Validating Data](./advanced-guide/practical/validating-data.md)
+  * [Deploying Models and Batch Inference](./advanced-guide/practical/deploying-models.md)
 
 ## Component Gallery
 
@@ -117,7 +117,7 @@
 * [Best Practices](guidelines/best-practices.md)
 * [Global Configuration](guidelines/global-config.md)
 * [System Environmental Variables](guidelines/system-environmental-variables.md)
-* [Migration guide 0.20.0](guidelines/migration-zero-twenty.md)
+* [Migration Guide 0.20.0](guidelines/migration-zero-twenty.md)
 
 ## Misc
 
