@@ -26,7 +26,7 @@
 
 ## Advanced Guide
 
-* [In-Depth Configuration](./advanced-guide/pipelines/pipelines.md)
+* [In-depth Configuration](./advanced-guide/pipelines/pipelines.md)
   * [Runtime Settings](./advanced-guide/pipelines/settings.md)
   * [Containerization (Docker)](./advanced-guide/pipelines/containerization.md)
   * [Passing Custom Data Types through Steps (Materializers)](./advanced-guide/pipelines/materializers.md)
