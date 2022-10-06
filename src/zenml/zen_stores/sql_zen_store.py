@@ -3068,6 +3068,7 @@ class SqlZenStore(BaseZenStore):
         # For each step in MLMD, sync it into ZenML if it doesn't exist yet.
         for step_name, mlmd_step in mlmd_steps.items():
             if step_name not in zenml_steps:
+                docstring = mlmd_step.step_configuration["config"]["docstring"]
                 new_step = StepRunModel(
                     name=step_name,
                     mlmd_id=mlmd_step.mlmd_id,
@@ -3075,6 +3076,7 @@ class SqlZenStore(BaseZenStore):
                     entrypoint_name=mlmd_step.entrypoint_name,
                     parameters=mlmd_step.parameters,
                     step_configuration=mlmd_step.step_configuration,
+                    docstring=docstring,
                     pipeline_run_id=run_id,
                     parent_step_ids=[
                         self._resolve_mlmd_step_id(parent_step_id)

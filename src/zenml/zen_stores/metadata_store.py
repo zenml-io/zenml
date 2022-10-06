@@ -35,6 +35,12 @@ from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_PIPELINE_PARAMETER_NAME,
 )
+from zenml.utils.proto_utils import (
+    MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME,
+    MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME,
+    MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME,
+    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME,
+)
 
 logger = get_logger(__name__)
 
@@ -188,7 +194,9 @@ class MetadataStore:
             execution=execution,
         )
         step_configuration = json.loads(
-            step_context_properties.get("step_configuration").string_value
+            step_context_properties.get(
+                MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME
+            ).string_value
         )
 
         # TODO [ENG-222]: This is a lot of querying to the metadata store. We
@@ -246,11 +254,21 @@ class MetadataStore:
         context_properties = self._get_zenml_execution_context_properties(
             self.store.get_executions_by_context(context_id=context.id)[-1]
         )
-        model_ids = json.loads(context_properties.get("model_ids").string_value)
-        pipeline_configuration = json.loads(
-            context_properties.get("pipeline_configuration").string_value
+        model_ids = json.loads(
+            context_properties.get(
+                MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME
+            ).string_value
         )
-        num_steps = int(context_properties.get("num_steps").string_value)
+        pipeline_configuration = json.loads(
+            context_properties.get(
+                MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME
+            ).string_value
+        )
+        num_steps = int(
+            context_properties.get(
+                MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME
+            ).string_value
+        )
         return MLMDPipelineRunModel(
             mlmd_id=context.id,
             name=context.name,
