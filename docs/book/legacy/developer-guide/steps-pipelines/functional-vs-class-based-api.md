@@ -15,7 +15,7 @@ Internally, both APIs will result in similar definitions, so it is
 entirely up to you which API to use.
 
 In the following, we will compare the two APIs using the code example from the
-previous section on [Runtime Configuration](./runtime-configuration.md):
+previous section on [Runtime Configuration](./settings.md):
 
 ## Creating Steps
 

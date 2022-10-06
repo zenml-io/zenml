@@ -21,13 +21,13 @@ class BaseAlerter(StackComponent, ABC):
     """Base class for all ZenML alerters."""
 
     def post(
-        self, message: str, config: Optional[BaseAlerterStepConfig]
+        self, message: str, params: Optional[BaseAlerterStepParameters]
     ) -> bool:
         """Post a message to a chat service."""
         return True
 
     def ask(
-        self, question: str, config: Optional[BaseAlerterStepConfig]
+        self, question: str, params: Optional[BaseAlerterStepParameters]
     ) -> bool:
         """Post a message to a chat service and wait for approval."""
         return True

@@ -2,15 +2,6 @@
 description: How to collaborate with your team in ZenML
 ---
 
-# Things to change
-
-- We should focus here on the ZenServer
-- Perhaps mention import and export as a limited option to open this page
-- Show how collaboration is thought off - maybe mention roles
-- Maybe add an architecture diagram
-
-# Old Content (1)
-
 # ZenML for Teams and Organizations
 
 Using ZenML to develop and execute pipelines from the comfortable confines of
@@ -52,51 +43,61 @@ This documentation section is dedicated to describing several ways in which you
 can deploy ZenML as a collaboration framework and enable your entire AI/ML team
 to enjoy its advantages.
 
-## Export and Import ZenML Stacks
+## Step 1: Single user working with local stacks
 
-If you need to quickly share your Stack configuration with someone else, there
-is nothing easier than [using the ZenML CLI to export a Stack](./stack-export-import.md)
-in the form of a YAML file and import it somewhere else.
+As mentioned before, the most common starting point for most ZenML users would be
+to locally install it and start managing stacks. We have discussed the
+nitty-gritty details of such usage [previously](../stacks/managing-stacks.md).
 
-## Centralized ZenML Management with ZenServer
+![Working with local ZenML](../../assets/starter_guide/collaboration/01_local_stack.png)
 
-With the [_ZenServer_](./zenml-server.md), you can deploy ZenML as a centralized
-service and connect entire teams and organizations to an easy to manage
-collaboration platform that provides a unified view on the MLOps processes,
-tools and technologies that support your entire AI/ML project lifecycle.
+## Step 2: Single user working with local and cloud stacks
 
----
-description: How to export and import stacks to YAML files
----
+The next step in the journey is to go to the cloud, and for that you need to [deploy ZenML](../../getting-started/deploying-zenml/deploying-zenml.md).
+Don't worry - we will show an easy way of getting started with this quickly, with little to no knowledge of cloud technologies in the
+[next section](zenml-deployment.md).
 
-# Old Content (2)
+For now, we should understand the consequence of doing such an action. Once ZenML is deployed and the user connects to it remotely, all
+stacks, pipelines, runs, and other metadata will be [centrally tracked](../../advanced-guide/pipelines/settings.md) in
+the database that backs the server.
 
-# Export and Import ZenML Stacks
+The user can still keep using local, [non-shared](../stacks/managing-stacks.md#sharing-stacks-over-a-zenml-server) stacks (e.g. the default stack). However, they will notice a significant dropoff in speed of execution
+of the pipelines because they are now communicating over the internet to a central location.
 
-If you wish to transfer one of your stacks to another user or even another
-machine, you can do so by exporting the stack configuration and then importing
-it again.
+![Single user working with local and cloud stacks](../../assets/starter_guide/collaboration/02_multiple_stacks.png)
 
-To export a stack to YAML, run the following command:
+## Step 3: Multiple users working with local and cloud stacks
 
-```bash
-zenml stack export STACK_NAME FILENAME.yaml
+Once the user is ready, they can now go ahead and register so called `cloud` (read: `non-local`) stacks. These stacks consist of
+stack components that point to tooling infrastructure that is also running on the cloud. A good example of this is a stack that
+uses the following components:
+
+- [Kubeflow**Orchestrator**](../../component-gallery/orchestrators/kubeflow.md) which orchestrates your ML workflows on [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/v1/introduction/). 
+- [S3**ArtifactStore**](../../component-gallery/artifact-stores/amazon-s3.md) which can store your artifacts in a [S3 storage](https://aws.amazon.com/s3/).
+- [MLflow**ExperimentTracker**](../../component-gallery/experiment-trackers/mlflow.md) which can track your experiments with [MLFlow](https://mlflow.org/).
+- [Evidently**DataValidator**](../../component-gallery/data-validators/evidently.md) which can help you validate your data with [Evidently](https://www.evidentlyai.com/).
+
+Once a stack such as the above is [registered](../stacks/registering-stacks.md) and [set active](../stacks/managing-stacks.md#setting-the-local-active-stack), then running a ZenML pipeline will result in a much more different behavior then before.
+
+Rather than running the pipeline locally, it would run the pipeline in Kubeflow, track experiments in a non-local MLflow, validate data with
+Evidently, and store artifacts in a cloud S3 store. This is all done with no changes to the pipeline code.
+
+The user can go ahead and share this stack while registering:
+
+```shell
+zenml stack register cloud_stack ... --share
 ```
 
-This will create a FILENAME.yaml containing the config of your stack and all
-of its components, which you can then import again like this:
+Or afterwards with:
 
-```bash
-zenml stack import STACK_NAME -f FILENAME.yaml
+```shell
+zenml stack share mystack
 ```
 
-## Known Limitations
+The moment the stack is shared, other users who [connect to the server](zenml-deployment.md) will be able to see the
+stack and use it as well!
 
-The exported Stack is only a configuration. It may have local dependencies
-that are not exported and thus will not be available when importing the Stack
-on another machine:
+![Multiple users working with local and cloud stacks](../../assets/starter_guide/collaboration/03_multiple_users.png)
 
-* the secrets stored in the local Secrets Managers
-* any references to local files and local services not accessible from outside
-the machine where the Stack is exported, such as the local Artifact Store and
-Metadata Store
+So, as you can see it all starts with a [deploying ZenML](../../getting-started/deploying-zenml/deploying-zenml.md)! So how
+do we do that - let's go into the [next section](zenml-deployment.md) to learn how to do it in a beginner-friendly way.

@@ -13,9 +13,9 @@ for all relevant details.
 
 ## 🆘 Where to get help
 
-The first point of call should
-be [our Slack group](https://zenml.io/slack-invite/). Ask your questions about
-bugs or specific use cases and someone from the core team will respond.
+The first point of call should be [our Slack group](https://zenml.io/slack-invite/). 
+Ask your questions about bugs or specific use cases and someone from the core 
+team will respond.
 
 ## 📜 License
 

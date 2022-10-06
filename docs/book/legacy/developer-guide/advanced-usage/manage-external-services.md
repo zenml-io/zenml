@@ -31,7 +31,7 @@ service represented by a local daemon process which extends the base `Service`
 class with functionality concerning the life-cycle management and tracking
 of local daemon processes. The `LocalDaemonService` is used by various
 integrations to connect your local machines to remote components such as a
-[Metadata Store in KubeFlow](../../mlops-stacks/metadata-stores/kubeflow.md).
+[Metadata Store in Kubeflow](../../mlops-stacks/metadata-stores/kubeflow.md).
 
 Another example is the `TensorboardService`.
 It enables visualizing [TensorBoard](https://www.tensorflow.org/tensorboard)

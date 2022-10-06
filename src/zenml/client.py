@@ -151,7 +151,7 @@ class ClientMetaClass(ABCMeta):
                     "adjust your step to disable caching if needed. "
                     "Alternatively, use a `StepContext` inside your step "
                     "instead, as covered here: "
-                    "https://docs.zenml.io/developer-guide/advanced-usage"
+                    "https://docs.zenml.io/advanced-guide/pipelines/step-metadata"
                     "/step-fixtures#step-contexts",
                 )
 
@@ -1158,6 +1158,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             pipeline_name: The name of the pipeline to register.
             pipeline_spec: The spec of the pipeline.
+            pipeline_docstring: The docstring of the pipeline.
 
         Returns:
             The id of the existing or newly registered pipeline.

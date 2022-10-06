@@ -395,7 +395,7 @@ supported by ZenML: S3, GCS and Azure.
 For this AWS S3 example, we'll use the standard `seldon_s3` secret schema, but
 you can also use `seldon_gs` for GCS and `seldon_az` for Azure. To read more about
 secrets, secret schemas and how they are used in ZenML, please refer to the
-[ZenML documentation](https://docs.zenml.io/mlops-stacks/secrets-managers).
+[ZenML documentation](https://docs.zenml.io/component-gallery/secrets-managers/secrets-managers).
 
 The next sections cover two cases involving AWS authentication: with and without
 IAM role access.  Please look up the variables relevant to your use-case in the
@@ -665,7 +665,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the seldon deployment integration can be found [here](https://docs.zenml.io/mlops-stacks/model-deployers/seldon).
+Our docs regarding the seldon deployment integration can be found [here](https://docs.zenml.io/component-gallery/model-deployers/seldon).
 
 If you want to learn more about deployment in ZenML in general or about how to build your own deployer steps in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/model-deployers/custom).
+check out our [docs](https://docs.zenml.io/component-gallery/model-deployers/custom).

@@ -178,8 +178,8 @@ rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 
 # 📜 Learn more
 
-Our docs regarding the MLflow Expirement tracker integration can be found [here](https://docs.zenml.io/mlops-stacks/experiment-trackers/mlflow).
+Our docs regarding the MLflow experiment tracker integration can be found [here](https://docs.zenml.io/component-gallery/experiment-trackers/mlflow).
 
 
 If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/experiment-trackers/custom).
+check out our [docs](https://docs.zenml.io/component-gallery/experiment-trackers/custom).

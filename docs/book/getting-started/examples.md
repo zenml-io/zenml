@@ -1,17 +1,8 @@
 ---
-description: Get started with code examples.
+description: Resources to learn how to use ZenML practically.
 ---
 
-# Things to change
-
-- [ ]  This should be a page that consists of different examples:
-  - [ ]  Singular examples: Examples
-  - [ ]  Stacks: ZenFiles
-  - [ ]  Have tables to point to other things
-
-
-
-# Relevant text
+# ZenML In Code
 
 ## ZenML Examples: See how all the integrations work
 
@@ -36,6 +27,9 @@ and notebooks.
 
 [Click here to go to ZenBytes](https://github.com/zenml-io/zenbytes)
 
+ZenBytes shares a close link to the [Practical MLOps](../advanced-guide/practical/practical-mlops.md) 
+section of the docs.
+
 ## ZenFiles: See ZenML in practice
 
 ZenFiles are production-grade ML use-cases powered by ZenML. They are fully
@@ -46,3 +40,19 @@ The ZenFiles project is fully maintained and can be viewed as a sister
 repository of ZenML. 
 
 [Click here to go to ZenFiles](https://github.com/zenml-io/zenfiles)
+
+## YouTube Tutorials
+
+If you're a visual learner, then the [official ZenML YouTube channel](https://www.youtube.com/c/ZenML) 
+is the place to go. It features tutorials, community meetups, and various other announcements regarding the product.
+
+## Blog
+
+The [ZenML Blog](https://blog.zenml.io/) is regularly updated with in-depth tutorials. 
+Filtering with the [zenml tag](https://blog.zenml.io/tag/zenml/) is the best way to find 
+relevant tutorials and can be read at your leisure. 
+
+## Slack
+
+If you're missing a starting point, join the [Slack
+community](https://zenml.io/slack-invite) and let us know!

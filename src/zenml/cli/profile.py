@@ -431,7 +431,7 @@ def list_profiles(
         "ZenML profiles have been deprecated and removed in this version of "
         "ZenML. All stacks, stack components, flavors etc. are now stored "
         "and managed globally, either in a local database or on a remote ZenML "
-        "server (see the `zenml up` and `zenml connect` commands). As an"
+        "server (see the `zenml up` and `zenml connect` commands). As an "
         "alternative to profiles, you can use projects as a scoping mechanism "
         "for stacks, stack components and other ZenML objects.\n\n"
         "The information stored in legacy profiles is not automatically "

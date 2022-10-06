@@ -148,9 +148,9 @@ Read more [here](https://blog.zenml.io/why-zenml/).
 ZenML is an extensible, open-source MLOps framework for creating portable, production-ready MLOps pipelines. It's built for Data Scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. 
 
 ZenML offers a simple and flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions catered toward ML workflows. 
-With ZenML you'll have all your favorite tools in one place so you can tailor a workflow that caters to your specific needs.
+With ZenML you'll have all your favorite tools in one place, so you can tailor a workflow that caters to your specific needs.
 
-Read more on all tools you can readily use in the [integrations](https://zenml.io/integrations) section. Can't find your tool? You can always [write your own integration](https://docs.zenml.io/developer-guide/advanced-usage/custom-flavors) to use it with ZenML.
+Read more on all tools you can readily use in the [integrations](https://zenml.io/integrations) section. Can't find your tool? You can always [write your own integration](https://docs.zenml.io/advanced-guide/stacks/custom-flavors) to use it with ZenML.
 
 # 🤸 Getting Started
 
@@ -183,6 +183,12 @@ pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 docker run -it zenmldocker/zenml /bin/bash
 ```
 
+or just run the ZenML server directly with Docker:
+
+```shell
+docker run -it -d -p 8080:80 zenmldocker/zenml-server
+```
+
 > **Warning** 
 > #### Known installation issues for M1 Mac users
 >
@@ -193,6 +199,8 @@ docker run -it zenmldocker/zenml /bin/bash
 >- [Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
 >- [Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
 
+
+Read full installation instructions in the [docs](https://docs.zenml.io/getting-started/installation).
 
 ## 🏇 First run
 
@@ -211,7 +219,7 @@ By the end, you'll get a glimpse of how to use ZenML to register a stack:
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 
 # Register an Airflow orchestrator
-zenml data-validator register airflow_orchestrator --flavor=airflow
+zenml airflow register airflow_orchestrator --flavor=airflow
 
 # Create a stack from the components
 zenml stack register my_stack -o airflow_orchestrator -a default -e mlflow_tracker
@@ -254,7 +262,7 @@ To visually see this in action, ZenML ships with a fully-featured dashboard, tha
 zenml up
 ```
 
-![ZenML Dashboard](docs/book/assets/pipelines_dashboard.png)
+![ZenML Dashboard](docs/book/assets/getting_started/zenml-up.gif)
 
 The dashboard can also be deployed with a server on any cloud service (see Deploy ZenML section).
 
@@ -279,21 +287,21 @@ Already comfortable with ZenML and wish to elevate your pipeline into production
 
 While ZenML works perfectly fine locally, it should be deployed on the cloud to enable collaborative features as the central MLOps interface for teams.
 
-The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. Read more about the command [here](https://docs.zenml.io/deployment).
+The easiest and fastest way to get running on the cloud is by using the `deploy` CLI command. It currently only supports deploying to Kubernetes on managed cloud services. Read more about the command [here](https://docs.zenml.io/getting-started/deploying-zenml/deploying-zenml).
 
 ```shell
 zenml deploy
 ```
 
-Naturally, [the docs](https://docs.zenml.io/deployment) contain detailed guides on how to manually set up ZenML on the cloud in case more control is required.
+Naturally, [the docs](https://docs.zenml.io/getting-started/deploying-zenml/deploying-zenml) contain detailed guides on how to manually set up ZenML on the cloud in case more control is required.
 
 The following architectural diagram illustrates a common ZenML deployment:
 
-![ZenML Architecture Diagram.](docs/book/assets/architecture_diagram.png)
+![ZenML Architecture Diagram.](docs/book/assets/getting_started/Scenario3.2.png)
 
 ## 👨‍🍳 Open Source MLOps Stack Recipes
 
-Apart from the infrastructure required to run ZenML itself, ZenML also boasts a ton of [integrations](https://zenml.io/integrations) into popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/developer-guide/stacks-profiles-repositories) concept ensures that these tools work nicely together, therefore bringing structure and standardization into the MLOps workflow.
+Apart from the infrastructure required to run ZenML itself, ZenML also boasts a ton of [integrations](https://zenml.io/integrations) into popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/starter-guide/stacks/stacks) concept ensures that these tools work nicely together, therefore bringing structure and standardization into the MLOps workflow.
 
 However, ZenML assumes that the stack infrastructure for these tools is already provisioned. If you do not have deployed infrastructure, and want to quickly spin up combinations of tools on the cloud, the [MLOps stack sister repository](https://github.com/zenml-io/mlops-stacks) contains a series of Terraform-based recipes to provision such stacks. These recipes can be used directly with ZenML:
 
