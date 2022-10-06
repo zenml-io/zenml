@@ -242,20 +242,10 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         if self.config.node_selector_constraint is not None:
             constraint_label = self.config.node_selector_constraint[0]
             value = self.config.node_selector_constraint[1]
-            if (
-                (
-                    constraint_label
-                    == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
-                    and gpu_limit is None
-                )
-                or (
-                    constraint_label
-                    == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
-                    and gpu_limit is not None
-                    and gpu_limit > 0
-                )
-                or constraint_label
-                != GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+            if not (
+                constraint_label
+                == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                and gpu_limit == 0
             ):
                 container_op.add_node_selector_constraint(
                     constraint_label, value
