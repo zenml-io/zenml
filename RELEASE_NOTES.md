@@ -5,39 +5,6 @@
 After a successful release of the new ZenML server and dashboard paradigm, we set to ironing out some bugs that slipped through.
 
 ## What's Changed
-* Fix error in checking Great Expectations results when exit_on_error=True by @TimovNiedek in https://github.com/zenml-io/zenml/pull/889
-* feat(user-dockerfile): Add user argument to DockerConfiguration by @cjidboon94 in https://github.com/zenml-io/zenml/pull/892
-* Minor doc updates for backporting by @htahir1 in https://github.com/zenml-io/zenml/pull/894
-* Removed feature request and replaced with hellonext board by @htahir1 in https://github.com/zenml-io/zenml/pull/897
-* Unit tests for (some) integrations by @strickvl in https://github.com/zenml-io/zenml/pull/880
-* Fixed integration installation command by @edshee in https://github.com/zenml-io/zenml/pull/900
-* Pipeline configuration and intermediate representation by @schustmi in https://github.com/zenml-io/zenml/pull/898
-* [Bugfix] Fix bug in auto-import of stack after recipe deploy by @wjayesh in https://github.com/zenml-io/zenml/pull/901
-* Update TOC on CONTRIBUTING.md by @strickvl in https://github.com/zenml-io/zenml/pull/907
-* ZenServer by @fa9r in https://github.com/zenml-io/zenml/pull/879
-* Update `kserve` README by @strickvl in https://github.com/zenml-io/zenml/pull/912
-* Confirmation prompts were not working by @htahir1 in https://github.com/zenml-io/zenml/pull/917
-* Stacks can be registered in `Click<8.0.0` now by @AlexejPenner in https://github.com/zenml-io/zenml/pull/920
-* Made Pipeline and Stack optional on the HydratedPipelineRunModel by @AlexejPenner in https://github.com/zenml-io/zenml/pull/919
-* Renamed all references from ZenServer to ZenML Server in logs and comments by @htahir1 in https://github.com/zenml-io/zenml/pull/915
-* Prettify pipeline runs list CLI output. by @fa9r in https://github.com/zenml-io/zenml/pull/921
-* Warn when registering non-local component with local ZenServer by @strickvl in https://github.com/zenml-io/zenml/pull/904
-* Fix duplicate results in pipeline run lists and unlisted flag. by @fa9r in https://github.com/zenml-io/zenml/pull/922
-* Fix error log by @htahir1 in https://github.com/zenml-io/zenml/pull/916
-* Update cli docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/913
-* Fix Pipeline Run Status by @fa9r in https://github.com/zenml-io/zenml/pull/923
-* Change the CLI emoji for whether a stack is shared or not. by @fa9r in https://github.com/zenml-io/zenml/pull/926
-* Fix running pipelines from different locations. by @fa9r in https://github.com/zenml-io/zenml/pull/925
-* Fix zenml stack-component describe CLI command. by @fa9r in https://github.com/zenml-io/zenml/pull/929
-* Update custom deployment to use ArtifactModel  by @safoinme in https://github.com/zenml-io/zenml/pull/928
-* Fix the CI unit test and integration test failures by @stefannica in https://github.com/zenml-io/zenml/pull/924
-* Add gcp zenserver recipe by @wjayesh in https://github.com/zenml-io/zenml/pull/930
-* Extend Post Execution Class Properties by @fa9r in https://github.com/zenml-io/zenml/pull/931
-* Fixes for examples by @strickvl in https://github.com/zenml-io/zenml/pull/918
-* Update cheat sheet by @dnth in https://github.com/zenml-io/zenml/pull/932
-* Fix the docstring attribute of pipeline models. by @fa9r in https://github.com/zenml-io/zenml/pull/933
-* New docs post ZenML Server by @htahir1 in https://github.com/zenml-io/zenml/pull/927
-* Update remaining example of managing stacks. by @fa9r in https://github.com/zenml-io/zenml/pull/934
 * Capitalize all docs page titles. by @fa9r in https://github.com/zenml-io/zenml/pull/937
 * Increase field sizes for docstrings and step parameters. by @fa9r in https://github.com/zenml-io/zenml/pull/940
 * Fixing the bug in the registration of custom flavors by @bcdurak in https://github.com/zenml-io/zenml/pull/938
@@ -51,12 +18,7 @@ After a successful release of the new ZenML server and dashboard paradigm, we se
 * Fix Kubeflow run name by @safoinme in https://github.com/zenml-io/zenml/pull/946
 * `VertexOrchestrator` apply node selector constraint if `gpu_limit > 0` by @gabrielmbmb in https://github.com/zenml-io/zenml/pull/935
 
-## New Contributors
-* @TimovNiedek made their first contribution in https://github.com/zenml-io/zenml/pull/889
-* @cjidboon94 made their first contribution in https://github.com/zenml-io/zenml/pull/892
-* @edshee made their first contribution in https://github.com/zenml-io/zenml/pull/900
-
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.13.2...0.20.2
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.20.1...0.20.2
 
 # 0.20.0 / 0.20.1
 
