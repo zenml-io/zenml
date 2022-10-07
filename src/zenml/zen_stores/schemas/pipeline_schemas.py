@@ -47,7 +47,7 @@ class PipelineSchema(SQLModel, table=True):
     )
     user: "UserSchema" = Relationship(back_populates="pipelines")
 
-    docstring: Optional[str] = Field(nullable=True)
+    docstring: Optional[str] = Field(max_length=4096, nullable=True)
     spec: str = Field(max_length=4096)
 
     created: datetime = Field(default_factory=datetime.now)
@@ -228,9 +228,9 @@ class StepRunSchema(SQLModel, table=True):
     pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
 
     entrypoint_name: str
-    parameters: str
+    parameters: str = Field(max_length=4096)
     step_configuration: str = Field(max_length=4096)
-    docstring: Optional[str]
+    docstring: Optional[str] = Field(max_length=4096, nullable=True)
 
     mlmd_id: int = Field(default=None, nullable=True)
 
