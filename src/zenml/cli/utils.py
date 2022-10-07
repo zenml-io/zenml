@@ -900,7 +900,7 @@ def get_shared_emoji(is_shared: bool) -> str:
     Returns:
         The emoji for whether the stack is shared or not.
     """
-    return ":heavy_check_mark:" if is_shared else ":heavy_minus_sign:"
+    return ":white_heavy_check_mark:" if is_shared else ":heavy_minus_sign:"
 
 
 def print_stacks_table(
