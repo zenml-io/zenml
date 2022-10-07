@@ -1020,11 +1020,23 @@ def get_component_by_id_or_name_or_prefix(
     except ValueError:
         pass
 
-    components = client.zen_store.list_stack_components(
+    user_only_components = client.zen_store.list_stack_components(
         project_name_or_id=client.active_project.name,
         name=id_or_name_or_prefix,
         type=component_type,
+        user_name_or_id=client.active_user.id,
+        is_shared=False,
     )
+
+    shared_components = client.zen_store.list_stack_components(
+        project_name_or_id=client.active_project.name,
+        name=id_or_name_or_prefix,
+        type=component_type,
+        is_shared=True,
+    )
+
+    components = user_only_components + shared_components
+
     if len(components) > 1:
         hydrated_components = [c.to_hydrated_model() for c in components]
         print_components_table(
