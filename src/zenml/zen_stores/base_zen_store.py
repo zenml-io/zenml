@@ -306,10 +306,14 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                         config_name,
                     )
                     active_stack = default_stack
-                elif active_stack.user != self.active_user.id:
+                elif (
+                    not active_stack.is_shared
+                    and active_stack.user != self.active_user.id
+                ):
                     logger.warning(
-                        "The current %s active stack is not owned by the "
-                        "active user. Resetting the active stack to default.",
+                        "The current %s active stack is not shared and not "
+                        "owned by the active user. "
+                        "Resetting the active stack to default.",
                         config_name,
                     )
                     active_stack = default_stack
