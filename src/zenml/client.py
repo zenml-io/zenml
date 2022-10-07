@@ -1008,6 +1008,8 @@ class Client(metaclass=ClientMetaClass):
 
         flavor_model.project = self.active_project.id
         flavor_model.user = self.active_user.id
+        flavor_model.name = flavor_class().name
+        flavor_model.config_schema = flavor_class().config_schema
 
         return self.zen_store.create_flavor(flavor=flavor_model)
 
