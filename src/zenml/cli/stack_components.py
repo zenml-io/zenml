@@ -926,11 +926,15 @@ def generate_stack_component_flavor_register_command(
             client = Client()
 
             # Create a new model
+            # TODO: Investigate how we can create this model without empty
+            #   strings as values for name and config_schema
             flavor_create_model = FlavorModel(
                 source=source,
                 type=component_type,
                 user=client.active_user.id,
                 project=client.active_project.id,
+                name="",
+                config_schema="",
             )
 
             # Register the new model
