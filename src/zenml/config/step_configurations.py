@@ -61,6 +61,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 class StepConfiguration(PartialStepConfiguration):
     """Step configuration class."""
 
+    docstring: Optional[str]
     inputs: Mapping[str, ArtifactConfiguration] = {}
     outputs: Mapping[str, ArtifactConfiguration] = {}
 
