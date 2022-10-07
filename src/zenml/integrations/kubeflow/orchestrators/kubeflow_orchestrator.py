@@ -87,9 +87,7 @@ KFP_POD_LABELS = {
     "pipelines.kubeflow.org/pipeline-sdk-type": "zenml",
 }
 
-SINGLE_RUN_RUN_NAME_PLACEHOLDER = (
-    "{{workflow.annotations.pipelines.kubeflow.org/run_name}}"
-)
+SINGLE_RUN_RUN_NAME_PLACEHOLDER = "{{workflow.name}}"
 SCHEDULED_RUN_NAME_PLACEHOLDER = "{{workflow.name}}"
 
 
