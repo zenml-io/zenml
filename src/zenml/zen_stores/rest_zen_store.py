@@ -1223,21 +1223,6 @@ class RestZenStore(BaseZenStore):
         )
 
     # --------------
-    # Pipeline steps
-    # --------------
-
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    # TODO: Discuss whether we even need this, given that the endpoint is on
-    # pipeline runs
-    # TODO: [ALEX] add filtering param(s)
-    def list_steps(self, pipeline_id: UUID) -> List[StepRunModel]:
-        """List all steps.
-
-        Args:
-            pipeline_id: The ID of the pipeline to list steps for.
-        """
-
-    # --------------
     # Pipeline runs
     # --------------
 
@@ -1388,18 +1373,23 @@ class RestZenStore(BaseZenStore):
         body = self.get(f"{STEPS}/{str(step_id)}{STATUS}")
         return ExecutionStatus(body)
 
-    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
-        """Gets all steps in a pipeline run.
+    def list_run_steps(
+        self, run_id: Optional[UUID] = None
+    ) -> List[StepRunModel]:
+        """Get all run steps.
 
         Args:
-            run_id: The ID of the pipeline run for which to list runs.
+            run_id: If provided, only return steps for this pipeline run.
 
         Returns:
-            A mapping from step names to step models for all steps in the run.
+            A list of all run steps.
         """
+        filters = locals()
+        filters.pop("self")
         return self._list_resources(
-            route=f"{RUNS}/{str(run_id)}{STEPS}",
+            route=STEPS,
             resource_model=StepRunModel,
+            **filters,
         )
 
     def list_artifacts(

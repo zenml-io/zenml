@@ -2486,18 +2486,6 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     # --------------
-    # Pipeline steps
-    # --------------
-
-    def list_steps(self, pipeline_id: UUID) -> List[StepRunModel]:
-        """List all steps.
-
-        Args:
-            pipeline_id: The ID of the pipeline to list steps for.
-        """
-        pass  # TODO
-
-    # --------------
     # Pipeline runs
     # --------------
 
@@ -2760,23 +2748,28 @@ class SqlZenStore(BaseZenStore):
                 self._update_run_step(step)
         return step.status
 
-    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
-        """Gets all steps in a pipeline run.
+    def list_run_steps(
+        self, run_id: Optional[UUID] = None
+    ) -> List[StepRunModel]:
+        """Get all run steps.
 
         Args:
-            run_id: The ID of the pipeline run for which to list runs.
+            run_id: If provided, only return steps for this pipeline run.
 
         Returns:
-            A mapping from step names to step models for all steps in the run.
+            A list of all run steps.
         """
-        if not self.runs_inside_server:
-            self._sync_run_steps(run_id)
+        query = select(StepRunSchema)
+        if run_id is not None:
+            query = query.where(StepRunSchema.pipeline_run_id == run_id)
+            if not self.runs_inside_server:
+                self._sync_run_steps(run_id)
+        elif not self.runs_inside_server:
+            runs = self.list_runs()
+            for run in runs:
+                self._sync_run_steps(run.id)
         with Session(self.engine) as session:
-            steps = session.exec(
-                select(StepRunSchema).where(
-                    StepRunSchema.pipeline_run_id == run_id
-                )
-            ).all()
+            steps = session.exec(query).all()
             return [self.get_run_step(step.id) for step in steps]
 
     def list_artifacts(

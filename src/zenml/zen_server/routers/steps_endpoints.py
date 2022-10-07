@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -38,6 +38,26 @@ router = APIRouter(
     dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
+
+
+@router.get(
+    "",
+    response_model=List[StepRunModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_run_steps(
+    run_id: Optional[UUID] = None,
+) -> List[StepRunModel]:
+    """Get run steps according to query filters.
+
+    Args:
+        run_id: The URI of the pipeline run by which to filter.
+
+    Returns:
+        The run steps according to query filters.
+    """
+    return zen_store.list_run_steps(run_id=run_id)
 
 
 @router.get(
