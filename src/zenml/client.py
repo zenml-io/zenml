@@ -784,7 +784,17 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The list of registered stack components.
         """
-        return self.get_stack_components()
+        owned_stack_components = self.zen_store.list_stack_components(
+            project_name_or_id=self.active_project_name,
+            user_name_or_id=self.active_user.id,
+            is_shared=False,
+        )
+        shared_stack_components = self.zen_store.list_stack_components(
+            project_name_or_id=self.active_project_name,
+            is_shared=True,
+        )
+
+        return owned_stack_components + shared_stack_components
 
     def _validate_stack_component_configuration(
         self,
@@ -931,10 +941,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The list of registered stack components.
         """
-        return self.zen_store.list_stack_components(
-            project_name_or_id=self.active_project.id,
-            user_name_or_id=self.active_user.id,
-        )
+        return self.stack_components
 
     def get_stack_component_by_id(self, component_id: UUID) -> ComponentModel:
         """Fetches a registered stack component.
@@ -963,18 +970,18 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The registered stack components.
         """
-        if is_shared:
-            return self.zen_store.list_stack_components(
-                project_name_or_id=self.active_project.id,
-                type=type,
-                is_shared=True,
-            )
-        else:
-            return self.zen_store.list_stack_components(
-                project_name_or_id=self.active_project.id,
-                user_name_or_id=self.active_user.id,
-                type=type,
-            )
+        owned_stack_components = self.zen_store.list_stack_components(
+            project_name_or_id=self.active_project_name,
+            user_name_or_id=self.active_user.id,
+            type=type,
+            is_shared=False,
+        )
+        shared_stack_components = self.zen_store.list_stack_components(
+            project_name_or_id=self.active_project_name,
+            is_shared=True,
+            type=type,
+        )
+        return owned_stack_components + shared_stack_components
 
     # .---------.
     # | FLAVORS |
