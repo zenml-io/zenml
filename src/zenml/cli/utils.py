@@ -833,10 +833,21 @@ def get_stack_by_id_or_name_or_prefix(
     except ValueError:
         pass
 
-    stacks = client.zen_store.list_stacks(
+    user_only_stacks = client.zen_store.list_stacks(
         project_name_or_id=client.active_project.name,
         name=id_or_name_or_prefix,
+        user_name_or_id=client.active_user.name,
+        is_shared=False,
     )
+
+    shared_stacks = client.zen_store.list_stacks(
+        project_name_or_id=client.active_project.name,
+        name=id_or_name_or_prefix,
+        is_shared=True,
+    )
+
+    stacks = user_only_stacks + shared_stacks
+
     if len(stacks) > 1:
         hydrated_stacks = [s.to_hydrated_model() for s in stacks]
         print_stacks_table(client=client, stacks=hydrated_stacks)
