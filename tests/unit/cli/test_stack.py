@@ -278,17 +278,20 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
         project_name_or_id="default", user_name_or_id=other_user.id
     )
     # TODO: Clean this up, we need to make sure this get exactly one stack
-    other_user_default_stack = clean_client.zen_store.list_stack_components(
-        project_name_or_id=clean_client.active_project.id,
-        user_name_or_id=other_user.id,
-        name="default",
-        type=StackComponentType.ORCHESTRATOR,
-    )[0]
-    other_user_default_stack.is_shared = True
+    other_user_default_orchestrator = (
+        clean_client.zen_store.list_stack_components(
+            project_name_or_id=clean_client.active_project.id,
+            user_name_or_id=other_user.id,
+            name="default",
+            type=StackComponentType.ORCHESTRATOR,
+        )[0]
+    )
+    other_user_default_orchestrator.is_shared = True
 
     # TODO: Clean this up once, once authorization is implemented the current
     #  user might not be authorized to update other_users stack
-    runner.invoke(share_stack, [str(other_user_default_stack.id)])
+    clean_client.update_stack_component(other_user_default_orchestrator)
+
     result = runner.invoke(share_stack, ["default"])
     assert result.exit_code == 1
 
