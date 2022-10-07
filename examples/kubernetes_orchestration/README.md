@@ -206,19 +206,6 @@ this example:
 zenml stack set k8s_stack
 ```
 
-Next, provision and start the metadata store with the following command:
-
-```bash
-zenml stack up
-```
-
-This will also create a connection from your local machine to the metadata
-store so that you can access it locally.
-If everything went well, you should see log messages similar to the following
-in your terminal:
-
-![zenml stack up output](assets/zenml_stack_up_output.png)
-
 ## :computer: Run Pipeline
 Now that our stack is set up, all of our ML code will automatically be executed
 on the Kubernetes cluster in the cloud. Let's run the example pipeline:
@@ -265,17 +252,6 @@ following command:
 
 ```bash
 kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
-```
-
-### Deprovision Stack
-
-**WARNING**: This will permanently delete your metadata store, so all metadata
-will be lost. Never do this for production settings!
-
-If you also want to delete the MySQL metadata store, run:
-
-```bash
-zenml stack down --force
 ```
 
 ### Delete Infrastructure Resources
