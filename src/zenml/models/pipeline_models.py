@@ -20,7 +20,7 @@ from pydantic import Field
 
 from zenml import __version__ as current_zenml_version
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
@@ -81,6 +81,7 @@ class PipelineRunModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
     stack_id: Optional[UUID]  # Might become None if the stack is deleted.
     pipeline_id: Optional[UUID]  # Unlisted runs have this as None.
 
+    status: ExecutionStatus
     pipeline_configuration: Dict[str, Any]
     num_steps: int
     zenml_version: Optional[str] = current_zenml_version
@@ -101,6 +102,7 @@ class StepRunModel(DomainModel):
     pipeline_run_id: UUID
     parent_step_ids: List[UUID]
 
+    status: ExecutionStatus
     entrypoint_name: str
     parameters: Dict[str, str]
     step_configuration: Dict[str, Any]

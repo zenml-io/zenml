@@ -2611,6 +2611,23 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The status of the pipeline run.
         """
+        run = self.get_run(run_id)
+        if run.status == ExecutionStatus.RUNNING:
+            status = self._get_current_run_status(run_id)
+            if run.status != status:
+                run.status = status
+                self._update_run(run)
+        return run.status
+
+    def _get_current_run_status(self, run_id: UUID) -> ExecutionStatus:
+        """Gets the current execution status of a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get the status for.
+
+        Returns:
+            The status of the pipeline run.
+        """
         steps = self.list_run_steps(run_id)
 
         # If any step is failed or running, return that status respectively
@@ -2736,7 +2753,12 @@ class SqlZenStore(BaseZenStore):
             ExecutionStatus: The status of the step.
         """
         step = self.get_run_step(step_id)
-        return self.metadata_store.get_step_status(step.mlmd_id)
+        if step.status == ExecutionStatus.RUNNING:
+            status = self.metadata_store.get_step_status(step.mlmd_id)
+            if step.status != status:
+                step.status = status
+                self._update_run_step(step)
+        return step.status
 
     def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
         """Gets all steps in a pipeline run.
@@ -3024,6 +3046,7 @@ class SqlZenStore(BaseZenStore):
                     pipeline_id=mlmd_run.pipeline_id,
                     pipeline_configuration=mlmd_run.pipeline_configuration,
                     num_steps=mlmd_run.num_steps,
+                    status=ExecutionStatus.RUNNING,
                 )
                 new_run = self._create_run(new_run)
                 zenml_runs[run_name] = new_run
@@ -3082,6 +3105,7 @@ class SqlZenStore(BaseZenStore):
                         self._resolve_mlmd_step_id(parent_step_id)
                         for parent_step_id in mlmd_step.mlmd_parent_step_ids
                     ],
+                    status=ExecutionStatus.RUNNING,
                 )
                 new_step = self._create_run_step(new_step)
                 zenml_steps[step_name] = new_step
@@ -3304,6 +3328,40 @@ class SqlZenStore(BaseZenStore):
 
             assert step.parent_step_ids is not None
             return step_schema.to_model(
+                parent_step_ids=step.parent_step_ids,
+                mlmd_parent_step_ids=step.mlmd_parent_step_ids,
+            )
+
+    def _update_run_step(self, step: StepRunModel) -> StepRunModel:
+        """Updates a step.
+
+        Args:
+            step: The step to update.
+
+        Returns:
+            The updated step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if the step exists
+            existing_step = session.exec(
+                select(StepRunSchema).where(StepRunSchema.id == step.id)
+            ).first()
+            if existing_step is None:
+                raise KeyError(
+                    f"Unable to update step with ID {step.id}: "
+                    f"No step with this ID found."
+                )
+
+            # Update the step
+            existing_step.from_update_model(step)
+            session.add(existing_step)
+            session.commit()
+
+            session.refresh(existing_step)
+            return existing_step.to_model(
                 parent_step_ids=step.parent_step_ids,
                 mlmd_parent_step_ids=step.mlmd_parent_step_ids,
             )

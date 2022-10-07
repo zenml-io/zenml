@@ -22,7 +22,7 @@ from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 
@@ -138,6 +138,7 @@ class PipelineRunSchema(SQLModel, table=True):
     )
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
+    status: ExecutionStatus
     pipeline_configuration: str = Field(max_length=4096)
     num_steps: int
     zenml_version: str
@@ -170,6 +171,7 @@ class PipelineRunSchema(SQLModel, table=True):
             project_id=run.project,
             user_id=run.user,
             pipeline_id=run.pipeline_id,
+            status=run.status,
             pipeline_configuration=json.dumps(run.pipeline_configuration),
             num_steps=run.num_steps,
             git_sha=run.git_sha,
@@ -187,12 +189,7 @@ class PipelineRunSchema(SQLModel, table=True):
         Returns:
             The updated `PipelineRunSchema`.
         """
-        self.name = model.name
-        self.git_sha = model.git_sha
-        if model.zenml_version is not None:
-            self.zenml_version = model.zenml_version
-        if model.mlmd_id is not None:
-            self.mlmd_id = model.mlmd_id
+        self.status = model.status
         self.updated = datetime.now()
         return self
 
@@ -209,6 +206,7 @@ class PipelineRunSchema(SQLModel, table=True):
             project=self.project_id,
             user=self.user_id,
             pipeline_id=self.pipeline_id,
+            status=self.status,
             pipeline_configuration=json.loads(self.pipeline_configuration),
             num_steps=self.num_steps,
             git_sha=self.git_sha,
@@ -227,6 +225,7 @@ class StepRunSchema(SQLModel, table=True):
 
     pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
 
+    status: ExecutionStatus
     entrypoint_name: str
     parameters: str = Field(max_length=4096)
     step_configuration: str = Field(max_length=4096)
@@ -252,12 +251,26 @@ class StepRunSchema(SQLModel, table=True):
             id=model.id,
             name=model.name,
             pipeline_run_id=model.pipeline_run_id,
+            status=model.status,
             entrypoint_name=model.entrypoint_name,
             parameters=json.dumps(model.parameters),
             step_configuration=json.dumps(model.step_configuration),
             docstring=model.docstring,
             mlmd_id=model.mlmd_id,
         )
+
+    def from_update_model(self, model: StepRunModel) -> "StepRunSchema":
+        """Update a `StepRunSchema` from a `StepRunModel`.
+
+        Args:
+            model: The `StepRunModel` to update the schema from.
+
+        Returns:
+            The updated `StepRunSchema`.
+        """
+        self.status = model.status
+        self.updated = datetime.now()
+        return self
 
     def to_model(
         self, parent_step_ids: List[UUID], mlmd_parent_step_ids: List[int]
@@ -276,6 +289,7 @@ class StepRunSchema(SQLModel, table=True):
             name=self.name,
             pipeline_run_id=self.pipeline_run_id,
             parent_step_ids=parent_step_ids,
+            status=self.status,
             entrypoint_name=self.entrypoint_name,
             parameters=json.loads(self.parameters),
             step_configuration=json.loads(self.step_configuration),
