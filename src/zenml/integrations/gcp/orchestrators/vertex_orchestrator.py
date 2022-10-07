@@ -42,6 +42,9 @@ from kfp.v2.compiler import Compiler as KFPV2Compiler
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
+from zenml.integrations.gcp.constants import (
+    GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+)
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
     VertexOrchestratorConfig,
 )
@@ -232,15 +235,21 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         if memory_limit is not None:
             container_op = container_op.set_memory_limit(memory_limit)
 
-        if self.config.node_selector_constraint is not None:
-            container_op = container_op.add_node_selector_constraint(
-                label_name=self.config.node_selector_constraint[0],
-                value=self.config.node_selector_constraint[1],
-            )
-
         gpu_limit = resource_settings.gpu_count or self.config.gpu_limit
         if gpu_limit is not None:
             container_op = container_op.set_gpu_limit(gpu_limit)
+
+        if self.config.node_selector_constraint is not None:
+            constraint_label = self.config.node_selector_constraint[0]
+            value = self.config.node_selector_constraint[1]
+            if not (
+                constraint_label
+                == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                and gpu_limit == 0
+            ):
+                container_op.add_node_selector_constraint(
+                    constraint_label, value
+                )
 
     def prepare_or_run_pipeline(
         self,
