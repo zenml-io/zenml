@@ -172,8 +172,7 @@ steps:
     ...
     materializers:
       <OUTPUT_NAME>:
-        name: <MaterializerName>
-        file: <relative/filepath>
+        materializer_source: __main__.MyMaterializer # or full source path to materializer class
 ```
 
 The name of the output can be found in the function declaration, e.g. 
