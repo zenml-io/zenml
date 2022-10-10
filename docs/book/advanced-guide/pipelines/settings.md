@@ -154,7 +154,16 @@ steps:
   ...
 ```
 
-Here is an example of a YAML config file.
+ZenML provides a convenient method that takes a pipeline instance and generates a config template based on its settings automatically:
+
+```python
+pipeline_instance.write_run_configuration_template(path='/local/path/to/config.yaml')
+```
+
+This will write a template file at `/local/path/to/config.yaml` with a commented out YAML file
+with all possible options that the pipeline instance can take.
+
+Here is an example of a YAML config file generated from the above method:
 
 <details>
 
