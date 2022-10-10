@@ -553,9 +553,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
             if runs:
                 # For now, take the first index to get the latest run
                 run = runs[0]
-                url = (
-                    f"{gc.store.url}/pipelines/{pipeline_id}/runs/{run.id}/dag"
-                )
+                url = gc.store.url
+                if register_pipeline:
+                    url += f"/pipelines/{pipeline_id}"
+                url += f"/runs/{run.id}/dag"
                 logger.info(f"Dashboard URL: {url}")
         elif gc.store and gc.store.type == StoreType.SQL:
             # Connected to SQL Store Type, we're local
