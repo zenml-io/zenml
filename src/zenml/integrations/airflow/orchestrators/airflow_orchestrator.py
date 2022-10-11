@@ -30,31 +30,34 @@
 # inspired by the airflow dag runner implementation of tfx
 """Implementation of Airflow orchestrator integration."""
 
-import datetime
-import functools
 import os
 import time
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional
+from typing import TYPE_CHECKING, Any, Iterator, Optional, Type
 
-from zenml.constants import ENV_ZENML_SKIP_PIPELINE_REGISTRATION
-from zenml.environment import Environment
+from zenml.constants import (
+    ENV_ZENML_SKIP_PIPELINE_REGISTRATION,
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
+)
+from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
+    REQUIRES_LOCAL_STORES,
+    AirflowOrchestratorSettings,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.pipelines import Schedule
 from zenml.utils import daemon, io_utils
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 from zenml.utils.source_utils import get_source_root_path
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
-    from zenml.config.step_configurations import Step
     from zenml.stack import Stack
 
 AIRFLOW_ROOT_DIR = "airflow"
-DAG_FILEPATH_OPTION_KEY = "dag_filepath"
 
 
 @contextmanager
@@ -99,131 +102,14 @@ class AirflowOrchestrator(BaseOrchestrator):
         )
         self._set_env()
 
-    @staticmethod
-    def _translate_schedule(
-        schedule: Optional[Schedule] = None,
-    ) -> Dict[str, Any]:
-        """Convert ZenML schedule into Airflow schedule.
-
-        The Airflow schedule uses slightly different naming and needs some
-        default entries for execution without a schedule.
-
-        Args:
-            schedule: Containing the interval, start and end date and
-                a boolean flag that defines if past runs should be caught up
-                on
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Kubeflow orchestrator.
 
         Returns:
-            Airflow configuration dict.
+            The settings class.
         """
-        if schedule:
-            if schedule.cron_expression:
-                start_time = schedule.start_time or (
-                    datetime.datetime.now() - datetime.timedelta(1)
-                )
-                return {
-                    "schedule_interval": schedule.cron_expression,
-                    "start_date": start_time,
-                    "end_date": schedule.end_time,
-                    "catchup": schedule.catchup,
-                }
-            else:
-                return {
-                    "schedule_interval": schedule.interval_second,
-                    "start_date": schedule.start_time,
-                    "end_date": schedule.end_time,
-                    "catchup": schedule.catchup,
-                }
-
-        return {
-            "schedule_interval": "@once",
-            # set the a start time in the past and disable catchup so airflow runs the dag immediately
-            "start_date": datetime.datetime.now() - datetime.timedelta(7),
-            "catchup": False,
-        }
-
-    def prepare_or_run_pipeline(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> Any:
-        """Creates an Airflow DAG as the intermediate representation for the pipeline.
-
-        This DAG will be loaded by airflow in the target environment
-        and used for orchestration of the pipeline.
-
-        How it works:
-        -------------
-        A new airflow_dag is instantiated with the pipeline name and among
-        others things the run schedule.
-
-        For each step of the pipeline a callable is created. This callable
-        uses the run_step() method to execute the step. The parameters of
-        this callable are pre-filled and an airflow step_operator is created
-        within the dag. The dependencies to upstream steps are then
-        configured.
-
-        Finally, the dag is fully complete and can be returned.
-
-        Args:
-            deployment: The pipeline deployment to prepare or run.
-            stack: The stack the pipeline will run on.
-
-        Returns:
-            The Airflow DAG.
-        """
-        import airflow
-        from airflow.operators import python as airflow_python
-
-        # Instantiate and configure airflow Dag with name and schedule
-        airflow_dag = airflow.DAG(
-            dag_id=deployment.pipeline.name,
-            is_paused_upon_creation=False,
-            **self._translate_schedule(deployment.schedule),
-        )
-
-        # Dictionary mapping step names to airflow_operators. This will be needed
-        # to configure airflow operator dependencies
-        step_name_to_airflow_operator = {}
-
-        for step in deployment.steps.values():
-            # Create callable that will be used by airflow to execute the step
-            # within the orchestrated environment
-            def _step_callable(step_instance: "Step", **kwargs):
-                if self.requires_resources_in_orchestration_environment(step):
-                    logger.warning(
-                        "Specifying step resources is not yet supported for "
-                        "the Airflow orchestrator, ignoring resource "
-                        "configuration for step %s.",
-                        step.name,
-                    )
-                # Extract run name for the kwargs that will be passed to the
-                # callable
-                run_name = kwargs["ti"].get_dagrun().run_id
-                self._prepare_run(deployment=deployment)
-                self.run_step(step=step_instance, run_name=run_name)
-                self._cleanup_run()
-
-            # Create airflow python operator that contains the step callable
-            airflow_operator = airflow_python.PythonOperator(
-                dag=airflow_dag,
-                task_id=step.config.name,
-                provide_context=True,
-                python_callable=functools.partial(
-                    _step_callable, step_instance=step
-                ),
-            )
-
-            # Configure the current airflow operator to run after all upstream
-            # operators finished executing
-            step_name_to_airflow_operator[step.config.name] = airflow_operator
-            for upstream_step_name in step.spec.upstream_steps:
-                airflow_operator.set_upstream(
-                    step_name_to_airflow_operator[upstream_step_name]
-                )
-
-        # Return the finished airflow dag
-        return airflow_dag
+        return AirflowOrchestratorSettings
 
     @property
     def dags_directory(self) -> str:
@@ -270,29 +156,29 @@ class AirflowOrchestrator(BaseOrchestrator):
         # check the DAG folder every 10 seconds for new files
         os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
 
-    def _copy_to_dag_directory_if_necessary(self, dag_filepath: str) -> None:
-        """Copies DAG module to the Airflow DAGs directory if not already present.
+    # def _copy_to_dag_directory_if_necessary(self, dag_filepath: str) -> None:
+    #     """Copies DAG module to the Airflow DAGs directory if not already present.
 
-        Args:
-            dag_filepath: Path to the file in which the DAG is defined.
-        """
-        dags_directory = io_utils.resolve_relative_path(self.dags_directory)
+    #     Args:
+    #         dag_filepath: Path to the file in which the DAG is defined.
+    #     """
+    #     dags_directory = io_utils.resolve_relative_path(self.dags_directory)
 
-        if dags_directory == os.path.dirname(dag_filepath):
-            logger.debug("File is already in airflow DAGs directory.")
-        else:
-            logger.debug(
-                "Copying dag file '%s' to DAGs directory.", dag_filepath
-            )
-            destination_path = os.path.join(
-                dags_directory, os.path.basename(dag_filepath)
-            )
-            if fileio.exists(destination_path):
-                logger.info(
-                    "File '%s' already exists, overwriting with new DAG file",
-                    destination_path,
-                )
-            fileio.copy(dag_filepath, destination_path, overwrite=True)
+    #     if dags_directory == os.path.dirname(dag_filepath):
+    #         logger.debug("File is already in airflow DAGs directory.")
+    #     else:
+    #         logger.debug(
+    #             "Copying dag file '%s' to DAGs directory.", dag_filepath
+    #         )
+    #         destination_path = os.path.join(
+    #             dags_directory, os.path.basename(dag_filepath)
+    #         )
+    #         if fileio.exists(destination_path):
+    #             logger.info(
+    #                 "File '%s' already exists, overwriting with new DAG file",
+    #                 destination_path,
+    #             )
+    #         fileio.copy(dag_filepath, destination_path, overwrite=True)
 
     def _log_webserver_credentials(self) -> None:
         """Logs URL and credentials to log in to the airflow webserver.
@@ -334,25 +220,53 @@ class AirflowOrchestrator(BaseOrchestrator):
                 "stack up` to provision resources for the active stack."
             )
 
-        if Environment.in_notebook():
-            raise RuntimeError(
-                "Unable to run the Airflow orchestrator from within a "
-                "notebook. Airflow requires a python file which contains a "
-                "global Airflow DAG object and therefore does not work with "
-                "notebooks. Please copy your ZenML pipeline code in a python "
-                "file and try again."
+        if self.is_local:
+            stack.check_local_paths()
+            deployment.add_extra(REQUIRES_LOCAL_STORES, True)
+
+        docker_image_builder = PipelineDockerImageBuilder()
+        if stack.container_registry:
+            repo_digest = docker_image_builder.build_and_push_docker_image(
+                deployment=deployment, stack=stack
+            )
+            deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
+        else:
+            # If there is no container registry, we only build the image
+            target_image_name = docker_image_builder.get_target_image_name(
+                deployment=deployment
+            )
+            docker_image_builder.build_docker_image(
+                target_image_name=target_image_name,
+                deployment=deployment,
+                stack=stack,
+            )
+            deployment.add_extra(
+                ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name
             )
 
-        try:
-            dag_filepath = deployment.pipeline.extra[DAG_FILEPATH_OPTION_KEY]
-        except KeyError:
-            raise RuntimeError(
-                f"No DAG filepath found in runtime configuration. Make sure "
-                f"to add the filepath to your airflow DAG file as a runtime "
-                f"option (key: '{DAG_FILEPATH_OPTION_KEY}')."
-            )
+    @property
+    def is_local(self) -> bool:
+        return True
 
-        self._copy_to_dag_directory_if_necessary(dag_filepath=dag_filepath)
+    def prepare_or_run_pipeline(
+        self,
+        deployment: "PipelineDeployment",
+        stack: "Stack",
+    ) -> Any:
+        zenml_dags_dir = os.path.join(self.dags_directory, "zenml")
+        yaml_path = os.path.join(
+            zenml_dags_dir, f"{deployment.pipeline.name}.yaml"
+        )
+        io_utils.create_dir_recursive_if_not_exists(zenml_dags_dir)
+        with fileio.open(yaml_path, "w") as f:
+            f.write(deployment.yaml())
+
+        from zenml.integrations.airflow.orchestrators import dag_generator
+
+        dag_generator_path = os.path.join(
+            self.dags_directory, "zenml_dag_generator.py"
+        )
+        fileio.copy(dag_generator.__file__, dag_generator_path)
 
     @property
     def is_running(self) -> bool:

@@ -349,7 +349,9 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 # docker container when the step is called.
                 arguments = VertexEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
-                    **{VERTEX_JOB_ID_OPTION: dslv2.PIPELINE_JOB_ID_PLACEHOLDER},
+                    **{
+                        VERTEX_JOB_ID_OPTION: dslv2.PIPELINE_JOB_NAME_PLACEHOLDER
+                    },
                 )
 
                 # Create the `ContainerOp` for the step. Using the

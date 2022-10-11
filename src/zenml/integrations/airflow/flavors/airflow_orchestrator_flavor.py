@@ -13,13 +13,31 @@
 #  permissions and limitations under the License.
 """Airflow orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Type
+import os
+from typing import TYPE_CHECKING, List, Optional, Type
 
+from zenml.config.base_settings import BaseSettings
+from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
     from zenml.integrations.airflow.orchestrators import AirflowOrchestrator
+
+
+ENV_AIRFLOW_RUN_NAME = "AIRFLOW_RUN_NAME"
+REQUIRES_LOCAL_STORES = "requires_local_stores"
+
+
+class AirflowOrchestratorSettings(BaseSettings):
+    operator: Optional[str] = None
+    tags: List[str] = []
+
+    # def get_operator_class(self) -> Type["BaseOperator"]:
+    #     if self.operator:
+    #         return source_utils.load_and_validate_class(self.operator, expected_class=)
+    #     else:
+    #         ...
 
 
 class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
@@ -44,3 +62,8 @@ class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
         from zenml.integrations.airflow.orchestrators import AirflowOrchestrator
 
         return AirflowOrchestrator
+
+
+class AirflowEntrypointConfiguration(StepEntrypointConfiguration):
+    def get_run_name(self, pipeline_name: str) -> Optional[str]:
+        return os.environ[ENV_AIRFLOW_RUN_NAME]
