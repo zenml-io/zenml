@@ -485,18 +485,19 @@ def parse_unknown_options(
     Returns:
         Dict of parsed args.
     """
-    # TODO: Should we add the cli_utils.error here?
-    warning_message = (
+    message = (
         "Please provide args with a proper "
         "identifier as the key and the following structure: "
         '--custom_argument="value"'
     )
-
-    assert all(a.startswith("--") for a in args), warning_message
-    assert all("=" in a for a in args), warning_message
-
-    args_dict = dict(a[2:].split("=", maxsplit=1) for a in args)
-    assert all(k.isidentifier() for k in args_dict), warning_message
+    args_dict: Dict[str, str] = {}
+    for a in args:
+        if not a.startswith("--") or "=" not in a:
+            error(f"Invalid argument: '{a}'. {message}")
+        key, value = a[2:].split("=", maxsplit=1)
+        if not key.isidentifier():
+            error(f"Invalid argument: '{a}'. {message}")
+        args_dict[key] = value
 
     if expand_args:
         args_dict = {

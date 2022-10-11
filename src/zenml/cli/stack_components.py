@@ -209,6 +209,21 @@ def generate_stack_component_register_command(
             share: Share the stack with other users.
             args: Additional arguments to pass to the component.
         """
+        args = list(args)
+        if name.startswith("--"):
+            # The name was not supplied as the first argument, we have to
+            # search the other arguments for the name.
+            for i, arg in enumerate(args):
+                if arg.startswith("--"):
+                    continue
+                # swap them
+                name, args[i] = args[i], name
+                break
+            else:
+                cli_utils.error(
+                    f"A name must be supplied for the {display_name}"
+                )
+
         with console.status(f"Registering {display_name} '{name}'...\n"):
             cli_utils.print_active_config()
             cli_utils.print_active_stack()
@@ -273,6 +288,21 @@ def generate_stack_component_update_command(
             name_or_id: The name or id of the stack component to update.
             args: Additional arguments to pass to the update command.
         """
+        args = list(args)
+        if name_or_id.startswith("--"):
+            # The name was not supplied as the first argument, we have to
+            # search the other arguments for the name.
+            for i, arg in enumerate(args):
+                if arg.startswith("--"):
+                    continue
+                # swap them
+                name_or_id, args[i] = args[i], name_or_id
+                break
+            else:
+                cli_utils.error(
+                    f"A name must be supplied for the {display_name}"
+                )
+
         with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
             cli_utils.print_active_config()
             cli_utils.print_active_stack()
