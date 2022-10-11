@@ -62,8 +62,6 @@ settings={'docker': DockerSettings(requirements=['pandas'])}
 Or like this:
 
 ```python
-from zenml.config import DockerSettings
-
 settings={'docker': {'requirements': ['pandas'])}
 ```
 
@@ -154,7 +152,16 @@ steps:
   ...
 ```
 
-Here is an example of a YAML config file.
+ZenML provides a convenient method that takes a pipeline instance and generates a config template based on its settings automatically:
+
+```python
+pipeline_instance.write_run_configuration_template(path='/local/path/to/config.yaml')
+```
+
+This will write a template file at `/local/path/to/config.yaml` with a commented out YAML file
+with all possible options that the pipeline instance can take.
+
+Here is an example of a YAML config file generated from the above method:
 
 <details>
 
@@ -271,7 +278,8 @@ print(p.runs[-1].pipeline_configuration['extra'])
 
 ### Hierarchy and precedence
 
-Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. Merging similar to the example below.
+Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. The next section explains in more detail how the step level settings
+will be merged with pipeline settings.
 
 ### Merging settings on class/instance/run:
 
