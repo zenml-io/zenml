@@ -285,8 +285,8 @@ def _prompt_email() -> bool:
             console.print(zenml_go_thank_you_message, width=80)
 
             # For now, hard-code to ZENML GO as the source
-            GlobalConfiguration().set_email_address(
-                email, source=AnalyticsEventSource.ZENML_GO
+            GlobalConfiguration().record_email_opt_in_out(
+                opted_in=True, email=email, source=AnalyticsEventSource.ZENML_GO
             )
 
             # Add consent and email to user model
@@ -298,6 +298,10 @@ def _prompt_email() -> bool:
             )
             return True
     else:
+        GlobalConfiguration().record_email_opt_in_out(
+            opted_in=False, email=None, source=AnalyticsEventSource.ZENML_GO
+        )
+
         # This is the case where user opts out
         client.zen_store.user_email_opt_in(
             client.active_user.id, user_opt_in_response=False
