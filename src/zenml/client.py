@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from zenml.models import (
         ComponentModel,
         FlavorModel,
+        HydratedComponentModel,
         HydratedStackModel,
         PipelineModel,
         ProjectModel,
@@ -786,7 +787,7 @@ class Client(metaclass=ClientMetaClass):
     # | COMPONENTS |
     # '------------'
     @property
-    def stack_components(self) -> List["ComponentModel"]:
+    def stack_components(self) -> List["HydratedComponentModel"]:
         """The list of registered stack components.
 
         Returns:
@@ -802,7 +803,10 @@ class Client(metaclass=ClientMetaClass):
             is_shared=True,
         )
 
-        return owned_stack_components + shared_stack_components
+        return [
+            c.to_hydrated_model()
+            for c in owned_stack_components + shared_stack_components
+        ]
 
     def _validate_stack_component_configuration(
         self,
@@ -948,14 +952,6 @@ class Client(metaclass=ClientMetaClass):
                 component.type,
                 component.name,
             )
-
-    def get_stack_components(self) -> List["ComponentModel"]:
-        """Gets all registered stack components.
-
-        Returns:
-            The list of registered stack components.
-        """
-        return self.stack_components
 
     def get_stack_component_by_id(self, component_id: UUID) -> "ComponentModel":
         """Fetches a registered stack component.

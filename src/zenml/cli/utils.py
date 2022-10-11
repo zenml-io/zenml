@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
 
-import datetime
 import json
 import os
 import subprocess
@@ -35,25 +34,24 @@ from typing import (
 from uuid import UUID
 
 import click
-from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
 from rich.markup import escape
 from rich.prompt import Confirm
 from rich.style import Style
-from rich.text import Text
 
-from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
-from zenml.models.stack_models import HydratedStackModel
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
+    from rich.text import Text
+
+    from zenml.client import Client
     from zenml.enums import ExecutionStatus
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
@@ -61,12 +59,15 @@ if TYPE_CHECKING:
         ComponentModel,
         FlavorModel,
         HydratedComponentModel,
+        HydratedStackModel,
         PipelineRunModel,
         StackModel,
     )
     from zenml.secret import BaseSecretSchema
     from zenml.services import BaseService, ServiceState
     from zenml.zen_server.deploy.deployment import ServerDeployment
+
+MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
 def title(text: str) -> None:
@@ -93,7 +94,7 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
 
 
 def declare(
-    text: Union[str, Text],
+    text: Union[str, "Text"],
     bold: Optional[bool] = None,
     italic: Optional[bool] = None,
     **kwargs: Any,
@@ -258,7 +259,9 @@ def format_integration_list(
     return list_of_dicts
 
 
-def print_stack_configuration(stack: HydratedStackModel, active: bool) -> None:
+def print_stack_configuration(
+    stack: "HydratedStackModel", active: bool
+) -> None:
     """Prints the configuration options of a stack.
 
     Args:
@@ -331,12 +334,16 @@ def print_stack_component_configuration(
         declare("No configuration options are set for this component.")
         return
 
-    title = f"'{component.name}' {component.type.value.upper()} Component Configuration"
+    title_ = (
+        f"'{component.name}' {component.type.value.upper()} "
+        f"Component Configuration"
+    )
+
     if active_status:
-        title += " (ACTIVE)"
+        title_ += " (ACTIVE)"
     rich_table = table.Table(
         box=box.HEAVY_EDGE,
-        title=title,
+        title=title_,
         show_lines=True,
     )
     rich_table.add_column("COMPONENT_PROPERTY")
@@ -390,38 +397,9 @@ def print_active_stack() -> None:
     client = Client()
     scope = "repository" if client.uses_local_configuration else "global"
     declare(
-        f"Running with active stack: '{client.active_stack_model.name}' ({scope})"
+        f"Running with active stack: '{client.active_stack_model.name}' "
+        f"({scope})"
     )
-
-
-def format_date(
-    dt: datetime.datetime, format: str = "%Y-%m-%d %H:%M:%S"
-) -> str:
-    """Format a date into a string.
-
-    Args:
-        dt: Datetime object to be formatted.
-        format: The format in string you want the datetime formatted to.
-
-    Returns:
-        Formatted string according to specification.
-    """
-    if dt is None:
-        return ""
-    # make sure this is UTC
-    dt = dt.replace(tzinfo=tz.tzutc())
-
-    if sys.platform != "win32":
-        # On non-windows get local time zone.
-        local_zone = tz.tzlocal()
-        dt = dt.astimezone(local_zone)
-    else:
-        logger.warning("On Windows, all times are displayed in UTC timezone.")
-
-    return dt.strftime(format)
-
-
-MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
 def expand_argument_value_from_file(name: str, value: str) -> str:
@@ -634,7 +612,7 @@ def get_service_state_emoji(state: "ServiceState") -> str:
 def pretty_print_model_deployer(
     model_services: List["BaseService"], model_deployer: "BaseModelDeployer"
 ) -> None:
-    """Given a list of served_models, print all key-value pairs associated with the secret.
+    """Given a list of served_models, print all associated key-value pairs.
 
     Args:
         model_services: list of model deployment services
@@ -670,11 +648,11 @@ def print_served_model_configuration(
         model_service: Specific service instance to
         model_deployer: Active model deployer
     """
-    title = f"Properties of Served Model {model_service.uuid}"
+    title_ = f"Properties of Served Model {model_service.uuid}"
 
     rich_table = table.Table(
         box=box.HEAVY_EDGE,
-        title=title,
+        title=title_,
         show_lines=True,
     )
     rich_table.add_column("MODEL SERVICE PROPERTY", overflow="fold")
@@ -743,11 +721,11 @@ def print_server_deployment(server: "ServerDeployment") -> None:
         server: Server deployment to print
     """
     server_name = server.config.name
-    title = f"ZenML server '{server_name}'"
+    title_ = f"ZenML server '{server_name}'"
 
     rich_table = table.Table(
         box=box.HEAVY_EDGE,
-        title=title,
+        title=title_,
         show_header=False,
         show_lines=True,
     )
@@ -810,7 +788,7 @@ def describe_pydantic_object(schema_json: str) -> None:
 
 
 def get_stack_by_id_or_name_or_prefix(
-    client: Client,
+    client: "Client",
     id_or_name_or_prefix: str,
 ) -> "StackModel":
     """Fetches a stack within active project using the name, id or partial id.
@@ -833,50 +811,24 @@ def get_stack_by_id_or_name_or_prefix(
     except ValueError:
         pass
 
-    user_only_stacks = client.zen_store.list_stacks(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        user_name_or_id=client.active_user.name,
-        is_shared=False,
-    )
+    stacks = client.stacks
 
-    shared_stacks = client.zen_store.list_stacks(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        is_shared=True,
-    )
+    named_stacks = [s for s in stacks if s.name == id_or_name_or_prefix]
 
-    stacks = user_only_stacks + shared_stacks
-
-    if len(stacks) > 1:
-        hydrated_stacks = [s.to_hydrated_model() for s in stacks]
-        print_stacks_table(client=client, stacks=hydrated_stacks)
+    if len(named_stacks) > 1:
+        print_stacks_table(client=client, stacks=named_stacks)
         error(
             f"Multiple stacks have been found for name "
             f"'{id_or_name_or_prefix}'. The stacks listed above all share "
             f"this name. Please specify the stack by full or partial id."
         )
 
-    elif len(stacks) == 1:
-        return stacks[0]
+    elif len(named_stacks) == 1:
+        return named_stacks[0]
     else:
         logger.debug(
             f"No stack with name '{id_or_name_or_prefix}' "
             f"exists. Trying to resolve as partial_id"
-        )
-
-        # TODO: This is ugly, an _or filter should be set on the sql_zen_store
-        stacks = list(
-            set(
-                client.zen_store.list_stacks(
-                    project_name_or_id=client.active_project.name,
-                    user_name_or_id=client.active_user.name,
-                )
-                + client.zen_store.list_stacks(
-                    project_name_or_id=client.active_project.name,
-                    is_shared=True,
-                )
-            )
         )
 
         filtered_stacks = [
@@ -885,8 +837,7 @@ def get_stack_by_id_or_name_or_prefix(
             if str(stack.id).startswith(id_or_name_or_prefix)
         ]
         if len(filtered_stacks) > 1:
-            hydrated_stacks = [s.to_hydrated_model() for s in filtered_stacks]
-            print_stacks_table(client=client, stacks=hydrated_stacks)
+            print_stacks_table(client=client, stacks=filtered_stacks)
             error(
                 f"The stacks listed above all share the provided prefix "
                 f"'{id_or_name_or_prefix}' on their ids. Please provide more "
@@ -915,7 +866,7 @@ def get_shared_emoji(is_shared: bool) -> str:
 
 
 def print_stacks_table(
-    client: Client, stacks: List[HydratedStackModel]
+    client: "Client", stacks: List["HydratedStackModel"]
 ) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
@@ -944,7 +895,7 @@ def print_stacks_table(
 
 
 def print_components_table(
-    client: Client,
+    client: "Client",
     component_type: StackComponentType,
     components: List["HydratedComponentModel"],
 ) -> None:
@@ -1006,7 +957,7 @@ def _component_display_name(
 
 
 def get_component_by_id_or_name_or_prefix(
-    client: Client,
+    client: "Client",
     id_or_name_or_prefix: str,
     component_type: StackComponentType,
 ) -> "ComponentModel":
@@ -1031,29 +982,14 @@ def get_component_by_id_or_name_or_prefix(
     except ValueError:
         pass
 
-    user_only_components = client.zen_store.list_stack_components(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        type=component_type,
-        user_name_or_id=client.active_user.id,
-        is_shared=False,
-    )
+    components = client.stack_components
 
-    shared_components = client.zen_store.list_stack_components(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        type=component_type,
-        is_shared=True,
-    )
-
-    components = user_only_components + shared_components
-
-    if len(components) > 1:
-        hydrated_components = [c.to_hydrated_model() for c in components]
+    named_components = [c for c in components if c.name == id_or_name_or_prefix]
+    if len(named_components) > 1:
         print_components_table(
             client=client,
             component_type=component_type,
-            components=hydrated_components,
+            components=named_components,
         )
         error(
             f"Multiple components have been found for name "
@@ -1061,28 +997,12 @@ def get_component_by_id_or_name_or_prefix(
             f"this name. Please specify the component by full or partial id."
         )
 
-    elif len(components) == 1:
-        return components[0]
+    elif len(named_components) == 1:
+        return named_components[0]
     else:
         logger.debug(
             f"No component with name '{id_or_name_or_prefix}' "
             f"exists. Trying to resolve as partial_id"
-        )
-
-        # TODO: This is ugly, an _or filter should be set on the sql_zen_store
-        components = list(
-            set(
-                client.zen_store.list_stack_components(
-                    project_name_or_id=client.active_project.name,
-                    user_name_or_id=client.active_user.name,
-                    type=component_type,
-                )
-                + client.zen_store.list_stack_components(
-                    project_name_or_id=client.active_project.name,
-                    is_shared=True,
-                    type=component_type,
-                )
-            )
         )
 
         filtered_comps = [
@@ -1091,11 +1011,10 @@ def get_component_by_id_or_name_or_prefix(
             if str(component.id).startswith(id_or_name_or_prefix)
         ]
         if len(filtered_comps) > 1:
-            hydrated_comps = [s.to_hydrated_model() for s in filtered_comps]
             print_components_table(
                 client=client,
                 component_type=component_type,
-                components=hydrated_comps,
+                components=filtered_comps,
             )
             error(
                 f"The components listed above all share the provided prefix "
@@ -1138,7 +1057,7 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
 
 def print_pipeline_runs_table(
-    client: Client, pipeline_runs: List["PipelineRunModel"]
+    client: "Client", pipeline_runs: List["PipelineRunModel"]
 ) -> None:
     """Print a prettified list of all pipeline runs supplied to this method.
 
