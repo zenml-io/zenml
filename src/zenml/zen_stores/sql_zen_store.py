@@ -73,7 +73,7 @@ from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import io_utils, uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
+from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     FlavorSchema,
@@ -1428,7 +1428,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The active username.
         """
-        return DEFAULT_USERNAME
+        return self._default_user_name
 
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserModel) -> UserModel:
@@ -1523,7 +1523,6 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
 
-    @track(AnalyticsEvent.OPT_IN_OUT_EMAIL)
     def user_email_opt_in(
         self,
         user_name_or_id: Union[str, UUID],

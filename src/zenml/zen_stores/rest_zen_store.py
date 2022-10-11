@@ -117,6 +117,9 @@ AnyProjectScopedModel = TypeVar(
 )
 
 
+DEFAULT_HTTP_TIMEOUT = 5
+
+
 class RestZenStoreConfiguration(StoreConfiguration):
     """REST ZenML store configuration.
 
@@ -126,12 +129,14 @@ class RestZenStoreConfiguration(StoreConfiguration):
         verify_ssl: Either a boolean, in which case it controls whether we
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
+        timeout: The timeout to use for all requests.
     """
 
     type: StoreType = StoreType.REST
     username: str
     password: str = ""
     verify_ssl: Union[bool, str] = True
+    http_timeout: int = DEFAULT_HTTP_TIMEOUT
 
     @validator("url")
     def validate_url(cls, url: str) -> str:
@@ -747,7 +752,6 @@ class RestZenStore(BaseZenStore):
             route=USERS,
         )
 
-    @track(AnalyticsEvent.OPT_IN_OUT_EMAIL)
     def user_email_opt_in(
         self,
         user_name_or_id: Union[str, UUID],
@@ -1444,6 +1448,7 @@ class RestZenStore(BaseZenStore):
                         "password": self.config.password,
                     },
                     verify=self.config.verify_ssl,
+                    timeout=self.config.http_timeout,
                 )
             )
             if not isinstance(response, dict) or "access_token" not in response:
@@ -1587,6 +1592,7 @@ class RestZenStore(BaseZenStore):
                     url,
                     params=params,
                     verify=self.config.verify_ssl,
+                    timeout=self.config.http_timeout,
                     **kwargs,
                 )
             )
@@ -1595,7 +1601,14 @@ class RestZenStore(BaseZenStore):
             # again
             self._session = None
             return self._handle_response(
-                self.session.request(method, url, **kwargs)
+                self.session.request(
+                    method,
+                    url,
+                    params=params,
+                    verify=self.config.verify_ssl,
+                    timeout=self.config.http_timeout,
+                    **kwargs,
+                )
             )
 
     def get(

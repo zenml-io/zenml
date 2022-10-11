@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Zen Server local provider implementation."""
 
+import shutil
 from typing import ClassVar, List, Optional, Tuple, Type, cast
 
 from zenml import __version__
@@ -260,7 +261,7 @@ class LocalServerProvider(BaseServerProvider):
             timeout = LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT
 
         service.stop(timeout)
-        # TODO: Remove all service files from the disk.
+        shutil.rmtree(LOCAL_ZENML_SERVER_CONFIG_PATH)
 
     def _get_service(self, server_name: str) -> BaseService:
         """Get the local ZenML server deployment service.

@@ -140,4 +140,4 @@ class AnalyticsEventSource(StrEnum):
 
     ZENML_GO = "zenml go"
     ZENML_CONNECT = "zenml connect"
-    ZENML_SERVER_OPT_IN = "zenml server opt-in"
+    ZENML_SERVER_OPT_IN = "zenml server"

@@ -15,7 +15,6 @@
 
 import ipaddress
 import os
-import shutil
 from typing import Dict, List, Optional, Tuple, Union, cast
 
 from zenml.config.global_config import GlobalConfiguration
@@ -182,15 +181,6 @@ class DockerZenServer(ContainerService):
         """Provision the service."""
         self._copy_global_configuration()
         super().provision()
-
-    def deprovision(self, force: bool = False) -> None:
-        """Deprovision the service.
-
-        Args:
-            force: if True, the service daemon will be forcefully stopped
-        """
-        super().deprovision(force=force)
-        shutil.rmtree(DOCKER_ZENML_SERVER_CONFIG_PATH)
 
     def run(self) -> None:
         """Run the ZenML Server.

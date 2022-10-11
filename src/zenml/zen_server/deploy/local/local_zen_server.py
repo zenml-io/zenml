@@ -15,7 +15,6 @@
 
 import ipaddress
 import os
-import shutil
 from typing import Dict, List, Optional, Tuple, Union, cast
 
 from zenml.client import Client
@@ -167,15 +166,6 @@ class LocalZenServer(LocalDaemonService):
         self._copy_global_configuration()
         super().provision()
 
-    def deprovision(self, force: bool = False) -> None:
-        """Deprovision the service.
-
-        Args:
-            force: if True, the service daemon will be forcefully stopped
-        """
-        super().deprovision(force=force)
-        shutil.rmtree(LOCAL_ZENML_SERVER_CONFIG_PATH)
-
     def start(self, timeout: int = 0) -> None:
         """Start the service and optionally wait for it to become active.
 
@@ -188,21 +178,21 @@ class LocalZenServer(LocalDaemonService):
             super().start(timeout)
         else:
             self._copy_global_configuration()
+            GlobalConfiguration._reset_instance()
+            Client._reset_instance()
+            config_path = os.environ.get(ENV_ZENML_CONFIG_PATH)
+            os.environ[
+                ENV_ZENML_CONFIG_PATH
+            ] = LOCAL_ZENML_SERVER_GLOBAL_CONFIG_PATH
             try:
-                GlobalConfiguration()._reset_instance()
-                Client()._reset_instance()
-                config_path = os.environ.get(ENV_ZENML_CONFIG_PATH)
-                os.environ[
-                    ENV_ZENML_CONFIG_PATH
-                ] = LOCAL_ZENML_SERVER_GLOBAL_CONFIG_PATH
                 self.run()
             finally:
                 if config_path:
                     os.environ[ENV_ZENML_CONFIG_PATH] = config_path
                 else:
                     del os.environ[ENV_ZENML_CONFIG_PATH]
-                GlobalConfiguration()._reset_instance()
-                Client()._reset_instance()
+                GlobalConfiguration._reset_instance()
+                Client._reset_instance()
 
     def run(self) -> None:
         """Run the ZenML Server.
