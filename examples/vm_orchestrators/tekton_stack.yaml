@@ -1,0 +1,34 @@
+components:
+  artifact_store:
+    flavor: s3
+    name: s3_store
+    path: s3://zenml-demos
+  container_registry:
+    flavor: aws
+    name: ecr_registry
+    uri: 715803424590.dkr.ecr.us-east-1.amazonaws.com
+  metadata_store:
+    database: zenml
+    flavor: mysql
+    host: zenml.c4db8gwgpugq.us-east-1.rds.amazonaws.com
+    name: rds_metadata_store
+    port: 3306
+    secret: aws_rds_secret
+    upgrade_migration_enabled: true
+  orchestrator:
+    custom_docker_base_image_name: 715803424590.dkr.ecr.us-east-1.amazonaws.com/aws-vm-orchestrator
+    flavor: tekton
+    kubernetes_context: arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster
+    kubernetes_namespace: zenml
+    name: tekton_orchestrator
+    skip_local_validations: false
+    skip_ui_daemon_provisioning: false
+    synchronous: true
+    tekton_ui_port: 8080
+  secrets_manager:
+    flavor: aws
+    name: aws_secrets_manager
+    region_name: us-east-1
+    scope: component
+stack_name: tekton_stack
+zenml_version: 0.12.0

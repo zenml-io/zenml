@@ -231,16 +231,25 @@ namespace.","details":[{"@type":"type.googleapis.com/api.Error","error_message":
 
 In order to get it to work, we need to leverage the `KubeflowOrchestratorSettings` referenced above. By setting the namespace option, and by passing in the right authentication credentials to the Kubeflow Pipelines Client, we can make it work.
 
-Here is an example of how we could do this:
+First, when registering your kubeflow orchestrator, please make sure to include the `kubeflow_hostname` parameter.
+The `kubeflow_hostname` **must end with the `/pipeline` post-fix**.
+
+```shell
+zenml orchestrator register <NAME> \
+    --flavor=kubeflow \
+    --kubernetes_context=<KUBERNETES_CONTEXT> \  
+    --kubeflow_hostname=<KUBEFLOW_HOSTNAME> # e.g. https://mykubeflow.example.com/pipeline
+```
+
+Then, ensure that you use the pass the right settings before triggerling a pipeline run. The following snipper will prove useful:
 
 ```python
 import requests
-from zenml.integrations.kubefolow.flavors.kubeflow_orchestrator_flavor import KubeflowOrchestratorSettings
+from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import KubeflowOrchestratorSettings
 
-NAMESPACE = "namespace_name"  # set this
-USERNAME = "foo"  # set this
-PASSWORD = "bar"  # set this
-HOST = "https://qux.com" # This is the host of the Kubeflow
+NAMESPACE = "namespace_name"  # This is the user namespace for the profile you want to use
+USERNAME = "foo"  # This is the username for the profile you want to use
+PASSWORD = "bar"  # This is the password for the profile you want to use
 
 def get_kfp_token(username: str, password: str) -> str:
     """Get token for kubeflow authentication."""
@@ -258,12 +267,9 @@ token = get_kfp_token()
 session_cookie = 'authservice_session=' + token
 
 kubeflow_settings = KubeflowOrchestratorSettings(
-client_args={
-    "host": f"{HOST}/pipeline",
-    "cookies": f"authservice_session={session_cookie}",
-    },
-    user_namespace=NAMESPACE
-)
+  client_args={"cookies": session_cookie},
+  user_namespace=NAMESPACE
+) 
 
 @pipeline(
     settings={
@@ -271,6 +277,9 @@ client_args={
     }
 ):
     ...
+
+if "__name__" == "__main__":
+  # Run the pipeline
 ```
 
 Note that the above is also currently not tested on all Kubeflow 
