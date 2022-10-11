@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML specific exception definitions."""
 
-import textwrap
 from typing import TYPE_CHECKING, List, Optional, Type
 
 if TYPE_CHECKING:
@@ -173,6 +172,8 @@ class MissingStepParameterError(ZenMLBaseException):
             parameters_class: Class of the parameters object for which
                 the parameters are missing.
         """
+        import textwrap
+
         message = textwrap.fill(
             textwrap.dedent(
                 f"""
