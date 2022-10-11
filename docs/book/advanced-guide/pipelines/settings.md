@@ -62,8 +62,6 @@ settings={'docker': DockerSettings(requirements=['pandas'])}
 Or like this:
 
 ```python
-from zenml.config import DockerSettings
-
 settings={'docker': {'requirements': ['pandas'])}
 ```
 
@@ -280,7 +278,8 @@ print(p.runs[-1].pipeline_configuration['extra'])
 
 ### Hierarchy and precedence
 
-Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. Merging similar to the example below.
+Some settings can be configured on pipelines and steps, some only on one of the two. Pipeline level settings will be automatically applied to all steps, but if the same setting is configured on a step as well that takes precedence. The next section explains in more detail how the step level settings
+will be merged with pipeline settings.
 
 ### Merging settings on class/instance/run:
 
