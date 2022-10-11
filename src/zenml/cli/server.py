@@ -15,11 +15,10 @@
 
 import ipaddress
 import os
-from typing import Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import click
 import yaml
-from click_params import IP_ADDRESS  # type: ignore[import]
 from rich.errors import MarkupError
 
 from zenml.cli import utils as cli_utils
@@ -31,23 +30,16 @@ from zenml.enums import ServerProviderType, StoreType
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.zen_server.deploy.deployer import ServerDeployer
-from zenml.zen_server.deploy.deployment import (
-    ServerDeployment,
-    ServerDeploymentConfig,
-)
-from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
-from zenml.zen_server.deploy.terraform.terraform_zen_server import (
-    TerraformServerDeploymentConfig,
-)
-from zenml.zen_stores.base_zen_store import DEFAULT_PASSWORD, DEFAULT_USERNAME
 
 logger = get_logger(__name__)
 
 LOCAL_ZENML_SERVER_NAME = "local"
 
+if TYPE_CHECKING:
+    from zenml.zen_server.deploy.deployment import ServerDeployment
 
-def get_active_deployment(local: bool = False) -> Optional[ServerDeployment]:
+
+def get_active_deployment(local: bool = False) -> Optional["ServerDeployment"]:
     """Get the active local or remote server deployment.
 
     Call this function to retrieve the local or remote server deployment that
@@ -60,6 +52,8 @@ def get_active_deployment(local: bool = False) -> Optional[ServerDeployment]:
         The local or remote active server deployment or None, if no deployment
         was found.
     """
+    from zenml.zen_server.deploy.deployer import ServerDeployer
+
     deployer = ServerDeployer()
     if local:
         servers = deployer.list_servers(provider_type=ServerProviderType.LOCAL)
@@ -102,7 +96,7 @@ def get_active_deployment(local: bool = False) -> Optional[ServerDeployment]:
 )
 @click.option(
     "--ip-address",
-    type=IP_ADDRESS,
+    type=ipaddress.ip_address,
     default=None,
     help="Have the ZenML dashboard listen on an IP address different than the "
     "localhost.",
@@ -135,6 +129,8 @@ def up(
     else:
         provider = ServerProviderType.LOCAL
 
+    from zenml.zen_server.deploy.deployer import ServerDeployer
+
     deployer = ServerDeployer()
 
     server = get_active_deployment(local=True)
@@ -152,6 +148,8 @@ def up(
     if ip_address is not None:
         config_attrs["ip_address"] = ip_address
 
+    from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
+
     server_config = ServerDeploymentConfig(**config_attrs)
 
     server = deployer.deploy_server(server_config)
@@ -168,6 +166,11 @@ def up(
     )
 
     if not blocking:
+        from zenml.zen_stores.base_zen_store import (
+            DEFAULT_PASSWORD,
+            DEFAULT_USERNAME,
+        )
+
         gc = GlobalConfiguration()
         # Don't connect to the local server if the client is already connected
         # to a remote server.
@@ -198,6 +201,8 @@ def down() -> None:
     if not server:
         cli_utils.declare("The local ZenML dashboard is not running.")
         return
+
+    from zenml.zen_server.deploy.deployer import ServerDeployer
 
     deployer = ServerDeployer()
     deployer.remove_server(server.config.name)
@@ -251,7 +256,7 @@ def down() -> None:
     "-t",
     type=click.INT,
     default=None,
-    help=("Time in seconds to wait for the server to be deployed."),
+    help="Time in seconds to wait for the server to be deployed.",
 )
 @click.option(
     "--config",
@@ -349,7 +354,11 @@ def deploy(
         password = click.prompt("ZenML admin account password", hide_input=True)
     config_dict["password"] = password
 
+    from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
+
     server_config = ServerDeploymentConfig.parse_obj(config_dict)
+
+    from zenml.zen_server.deploy.deployer import ServerDeployer
 
     deployer = ServerDeployer()
 
@@ -376,6 +385,10 @@ def deploy(
     metadata = {
         "server_deployment": str(server.config.provider),
     }
+    from zenml.zen_server.deploy.terraform.terraform_zen_server import (
+        TerraformServerDeploymentConfig,
+    )
+
     if isinstance(server.config, TerraformServerDeploymentConfig):
         # TODO: maybe move the server ID into the ServerDeploymentConfig class
         metadata["server_id"] = str(server.config.server_id)
@@ -411,12 +424,18 @@ def destroy() -> None:
         cli_utils.declare("No cloud ZenML server has been deployed.")
         return
 
+    from zenml.zen_server.deploy.deployer import ServerDeployer
+
     deployer = ServerDeployer()
     deployer.remove_server(server.config.name)
 
     metadata = {
         "server_deployment": str(server.config.provider),
     }
+
+    from zenml.zen_server.deploy.terraform.terraform_zen_server import (
+        TerraformServerDeploymentConfig,
+    )
 
     if isinstance(server.config, TerraformServerDeploymentConfig):
         metadata["server_id"] = str(server.config.server_id)
@@ -566,7 +585,8 @@ def status() -> None:
 @click.option(
     "--raw-config",
     is_flag=True,
-    help="Whether to use the configuration without prompting for missing fields.",
+    help="Whether to use the configuration without prompting for missing "
+    "fields.",
 )
 def connect(
     url: Optional[str] = None,
@@ -673,6 +693,8 @@ def connect(
 @cli.command("disconnect", help="Disconnect from a ZenML server.")
 def disconnect_server() -> None:
     """Disconnect from a ZenML server."""
+    from zenml.zen_server.deploy.deployer import ServerDeployer
+
     deployer = ServerDeployer()
     deployer.disconnect_from_server()
 
@@ -729,9 +751,15 @@ def logs(
         )
 
     server_name = server.config.name
+
+    from zenml.zen_server.deploy.deployer import ServerDeployer
+
     deployer = ServerDeployer()
 
     cli_utils.declare(f"Showing logs for server: {server_name}")
+
+    from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
+
     try:
         logs = deployer.get_server_logs(server_name, follow=follow, tail=tail)
     except ServerDeploymentNotFoundError as e:
