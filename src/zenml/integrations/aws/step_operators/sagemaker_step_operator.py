@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, List, Optional, Tuple, cast
 
 import sagemaker
 
@@ -54,13 +54,42 @@ class SagemakerStepOperator(BaseStepOperator):
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Validates that the stack contains a container registry.
+        """Validates the stack.
 
         Returns:
-            A validator that checks that the stack contains a container registry.
+            A validator that checks that the stack contains a remote container
+            registry and a remote artifact store.
         """
+
+        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+            if stack.artifact_store.config.is_local:
+                return False, (
+                    "The SageMaker step operator runs code remotely and "
+                    "needs to write files into the artifact store, but the "
+                    f"artifact store `{stack.artifact_store.name}` of the "
+                    "active stack is local. Please ensure that your stack "
+                    "contains a remote artifact store when using the SageMaker "
+                    "step operator."
+                )
+
+            container_registry = stack.container_registry
+            assert container_registry is not None
+
+            if container_registry.config.is_local:
+                return False, (
+                    "The SageMaker step operator runs code remotely and "
+                    "needs to push/pull Docker images, but the "
+                    f"container registry `{container_registry.name}` of the "
+                    "active stack is local. Please ensure that your stack "
+                    "contains a remote container registry when using the "
+                    "SageMaker step operator."
+                )
+
+            return True, ""
+
         return StackValidator(
             required_components={StackComponentType.CONTAINER_REGISTRY},
+            custom_validation_function=_validate_remote_components,
         )
 
     def prepare_pipeline_deployment(
