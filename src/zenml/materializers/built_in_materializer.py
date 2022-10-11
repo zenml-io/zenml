@@ -169,12 +169,46 @@ def find_type_by_str(type_str: str) -> Type[Any]:
     Returns:
         The type whose string representation is `type_str`.
     """
-    # TODO: how to handle subclasses of registered types?
     registered_types = default_materializer_registry.materializer_types.keys()
     type_str_mapping = {str(type_): type_ for type_ in registered_types}
     if type_str in type_str_mapping:
         return type_str_mapping[type_str]
     raise RuntimeError(f"Cannot resolve type '{type_str}'.")
+
+
+def find_materializer_registry_type(type_: Type[Any]) -> Type[Any]:
+    """For a given type, find the type registered in the registry.
+
+    This can be either the type itself, or a superclass of the type.
+
+    Args:
+        type_: The type to find.
+
+    Returns:
+        The type registered in the registry.
+
+    Raises:
+        RuntimeError: If the type could not be resolved.
+    """
+    # Check that a unique materializer is registered for this type
+    default_materializer_registry[type_]
+
+    # Check if the type itself is registered
+    registered_types = default_materializer_registry.materializer_types.keys()
+    if type_ in registered_types:
+        return type_
+
+    # Check if a superclass of the type is registered
+    for registered_type in registered_types:
+        if issubclass(type_, registered_type):
+            return registered_type
+
+    # Raise an error otherwise - this should never happen since
+    # `default_materializer_registry[type_]` should have raised an error already
+    raise RuntimeError(
+        f"Cannot find a materializer for type '{type_}' in the "
+        f"materializer registry."
+    )
 
 
 class BuiltInContainerMaterializer(BaseMaterializer):
@@ -293,7 +327,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         for i, element in enumerate(data):
             element_path = os.path.join(self.artifact.uri, str(i))
             fileio.mkdir(element_path)
-            type_ = type(element)
+            type_ = find_materializer_registry_type(type(element))
             paths.append(element_path)
             types.append(str(type_))
             materializer_class = default_materializer_registry[type_]
