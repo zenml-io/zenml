@@ -16,13 +16,21 @@
 import os
 import re
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 import requests
 import urllib3
-from google.protobuf.json_format import Parse
-from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 from pydantic import BaseModel, validator
 
 from zenml.config.global_config import GlobalConfiguration
@@ -107,6 +115,10 @@ from zenml.zen_server.models.user_management_models import (
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
+
+if TYPE_CHECKING:
+    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
@@ -297,7 +309,7 @@ class RestZenStore(BaseZenStore):
 
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> ConnectionConfig:
+    ) -> "ConnectionConfig":
         """Get the TFX metadata config of this ZenStore.
 
         Args:
@@ -310,6 +322,9 @@ class RestZenStore(BaseZenStore):
         Returns:
             The TFX metadata config of this ZenStore.
         """
+        from google.protobuf.json_format import Parse
+        from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+
         body = self.get(f"{METADATA_CONFIG}")
         if not isinstance(body, str):
             raise ValueError(
