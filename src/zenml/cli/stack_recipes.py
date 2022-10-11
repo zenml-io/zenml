@@ -66,9 +66,9 @@ try:
 
     terraform_installed = True
 except ImportError:
-    # Unable to import the python_terraform dependencies. Include a help message in
-    # the `zenml stack recipe` CLI group and don't add any subcommands that would
-    # just fail.
+    # Unable to import the python_terraform dependencies. Include a help message
+    # in the `zenml stack recipe` CLI group and don't add any subcommands that
+    # would just fail.
     terraform_installed = False
 
 
@@ -107,8 +107,8 @@ class StackRecipeService(TerraformService):
         if not self._is_helm_installed():
             raise RuntimeError(
                 "Helm is not installed on your machine or not available on  "
-                "your $PATH. It is required for stack recipes to create releases "
-                "on Kubernetes. Please visit "
+                "your $PATH. It is required for stack recipes to create "
+                "releases on Kubernetes. Please visit "
                 "https://helm.sh/docs/intro/install/ "
                 "to install it."
             )
@@ -362,7 +362,7 @@ class StackRecipeRepo:
                 branch_name.startswith("release/")
                 and branch.commit == self.repo.head.commit
             ):
-                return branch_name[len("release/") :]
+                return branch_name[len("release/"):]
 
         return None
 
@@ -475,13 +475,14 @@ class GitStackRecipesHandler(object):
         ]
 
     def is_stack_recipe(self, stack_recipe_name: Optional[str] = None) -> bool:
-        """Checks if the supplied stack_recipe_name corresponds to a stack_recipe.
+        """Checks if the given stack_recipe_name corresponds to a stack_recipe.
 
         Args:
             stack_recipe_name: The name of the stack_recipe to check.
 
         Returns:
-            Whether the supplied stack_recipe_name corresponds to an stack_recipe.
+            Whether the supplied stack_recipe_name corresponds to a
+            stack_recipe.
         """
         stack_recipe_dict = {
             recipe.name: recipe for recipe in self.stack_recipes
@@ -558,10 +559,11 @@ class GitStackRecipesHandler(object):
             branch=self.stack_recipe_repo.latest_release_branch, force=True
         )
 
+    @staticmethod
     def copy_stack_recipe(
-        self, stack_recipe: StackRecipe, destination_dir: str
+        stack_recipe: StackRecipe, destination_dir: str
     ) -> None:
-        """Copies an stack recipe to the destination_dir.
+        """Copies a stack recipe to the destination_dir.
 
         Args:
             stack_recipe: The stack recipe to copy.
@@ -572,8 +574,9 @@ class GitStackRecipesHandler(object):
             str(stack_recipe.path_in_repo), destination_dir, overwrite=True
         )
 
-    def clean_current_stack_recipes(self) -> None:
-        """Deletes the ZenML stack recipes directory from your current working directory."""
+    @staticmethod
+    def clean_current_stack_recipes() -> None:
+        """Deletes the stack recipes directory from your working directory."""
         stack_recipes_directory = os.path.join(
             os.getcwd(), "zenml_stack_recipes"
         )
@@ -670,7 +673,7 @@ if terraform_installed:  # noqa: C901
     def clean(
         git_stack_recipes_handler: GitStackRecipesHandler, path: str
     ) -> None:
-        """Deletes the ZenML stack recipes directory from your current working directory.
+        """Deletes the stack recipes directory from your working directory.
 
         Args:
             git_stack_recipes_handler: The GitStackRecipesHandler instance.
@@ -728,9 +731,10 @@ if terraform_installed:  # noqa: C901
         git_stack_recipes_handler: GitStackRecipesHandler,
         stack_recipe_name: str,
     ) -> None:
-        """Describe the stack components and their tools that are created as part of this recipe.
+        """Describe the stack components and their tools that are created as
+        part of this recipe.
 
-        Outputs a the "Description" section of the recipe metadata.
+        Outputs the "Description" section of the recipe metadata.
 
         Args:
             git_stack_recipes_handler: The GitStackRecipesHandler instance.
@@ -779,8 +783,8 @@ if terraform_installed:  # noqa: C901
         "-y",
         "force",
         is_flag=True,
-        help="Force the redownload of the stack_recipes folder to the ZenML config "
-        "folder.",
+        help="Force the redownload of the stack_recipes folder to the ZenML "
+        "config folder.",
     )
     @click.option(
         "--path",
@@ -804,8 +808,8 @@ if terraform_installed:  # noqa: C901
         Args:
             git_stack_recipes_handler: The GitStackRecipesHandler instance.
             stack_recipe_name: The name of the stack_recipe.
-            force: Force the redownload of the stack_recipes folder to the ZenML config
-                folder.
+            force: Force the redownload of the stack_recipes folder to the ZenML
+                config folder.
             path: The path at which you want to install the stack_recipe(s).
         """
         cli_utils.warning(ALPHA_MESSAGE)
@@ -829,12 +833,11 @@ if terraform_installed:  # noqa: C901
                     name=stack_recipe.name, path=Path(destination_dir)
                 ).is_present():
                     if force or cli_utils.confirmation(
-                        f"Stack recipe {stack_recipe.name} is already pulled at "
-                        f"{destination_dir}."
-                        "\nOverwriting this directory will delete all terraform "
-                        "state files and the local configuration. We recommend "
-                        "that you do this only once the remote resources have "
-                        "been destroyed."
+                        f"Stack recipe {stack_recipe.name} is already pulled "
+                        f"at {destination_dir}.\nOverwriting this directory "
+                        f"will delete all terraform state files and the local "
+                        f"configuration. We recommend that you do this only "
+                        f"once the remote resources have been destroyed."
                         "Do you wish to proceed with overwriting?"
                     ):
                         fileio.rmtree(destination_dir)
@@ -857,7 +860,7 @@ if terraform_installed:  # noqa: C901
                 )
                 cli_utils.declare(
                     "\n Please edit the configuration values as you see fit, "
-                    f"in the file: {os.path.join(destination_dir, 'locals.tf')} "
+                    f"in the file: {os.path.join(destination_dir, 'locals.tf')}"
                     "before you run the deploy command."
                 )
                 track_event(
@@ -891,9 +894,9 @@ if terraform_installed:  # noqa: C901
         "-n",
         type=click.STRING,
         required=False,
-        help="Set a name for the ZenML stack that will be imported from the YAML "
-        "configuration file which gets generated after deploying the stack recipe. "
-        "Defaults to the name of the stack recipe being deployed.",
+        help="Set a name for the ZenML stack that will be imported from the "
+        "YAML configuration file which gets generated after deploying the stack"
+        "recipe. Defaults to the name of the stack recipe being deployed.",
     )
     @click.option(
         "--import",
@@ -906,8 +909,8 @@ if terraform_installed:  # noqa: C901
         type=click.Choice(
             ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"], case_sensitive=False
         ),
-        help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive) as "
-        "log level for the deploy operation.",
+        help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case "
+        "insensitive) as log level for the deploy operation.",
         default="ERROR",
     )
     @click.option(
@@ -931,8 +934,8 @@ if terraform_installed:  # noqa: C901
     ) -> None:
         """Run the stack_recipe at the specified relative path.
 
-        `zenml stack_recipe pull <STACK_RECIPE_NAME>` has to be called with the same relative
-        path before the deploy command.
+        `zenml stack_recipe pull <STACK_RECIPE_NAME>` has to be called with the
+        same relative path before the `deploy` command.
 
         Args:
             ctx: The click context.
@@ -940,24 +943,26 @@ if terraform_installed:  # noqa: C901
             stack_recipe_name: The name of the stack_recipe.
             path: The path at which you want to install the stack_recipe(s).
             force: Force pull the stack recipe, overwriting any existing files.
-            stack_name: A name for the ZenML stack that gets imported as a result
-                of the recipe deployment.
-            import_stack_flag: Import the stack automatically after the recipe is
-                deployed. The stack configuration file is always generated and
-                can be imported manually otherwise.
-            log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
-                as log level for the deploy operation.
-            skip_check: Skip the checking of locals.tf file before executing the recipe.
+            stack_name: A name for the ZenML stack that gets imported as a
+                result of the recipe deployment.
+            import_stack_flag: Import the stack automatically after the recipe
+                is deployed. The stack configuration file is always generated
+                and can be imported manually otherwise.
+            log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case
+                insensitive) as log level for the deploy operation.
+            skip_check: Skip the checking of locals.tf file before executing
+                the recipe.
         """
         cli_utils.warning(ALPHA_MESSAGE)
         stack_recipes_dir = Path(os.getcwd()) / path
 
         if sys.platform == "win32":
             logger.info(
-                "If you are running stack_recipes on Windows, make sure that you have "
-                "an associated application with executing .sh files. If you don't "
-                "have any and you see a pop-up during 'zenml stack_recipe run', we "
-                "suggest to use the Git BASH: https://gitforwindows.org/"
+                "If you are running stack_recipes on Windows, make sure that "
+                "you have an associated application with executing .sh files. "
+                "If you don't have any and you see a pop-up during 'zenml "
+                "stack_recipe run', we suggest to use the Git "
+                "BASH: https://gitforwindows.org/"
             )
 
         try:
@@ -993,17 +998,17 @@ if terraform_installed:  # noqa: C901
                     "\n\n Are all of these conditions met?"
                 ):
                     cli_utils.warning(
-                        "Prerequisites are not installed. Please make sure they "
+                        "Prerequisites are not installed. Please make sure they"
                         "are met and run deploy again."
                     )
                     return
 
                 if not skip_check:
                     logger.info(
-                        "The following values are selected for the configuration "
-                        "of your cloud resources. You can change it by modifying "
-                        "the contents of the locals.tf file here: "
-                        f"{os.path.join(local_stack_recipe.path, 'locals.tf')}\n"
+                        "The following values are selected for the "
+                        "configuration of your cloud resources. You can change "
+                        "it by modifying the contents of the locals.tf file "
+                        f"here: {os.path.join(local_stack_recipe.path, 'locals.tf')}\n"
                     )
 
                     print(local_stack_recipe.locals_content)
@@ -1054,21 +1059,23 @@ if terraform_installed:  # noqa: C901
                     )
 
                     logger.info(
-                        "\nA stack configuration YAML file has been generated as "
-                        f"part of the deployment of the {stack_recipe_name} recipe. "
-                        f"Find it at {stack_yaml_file}."
+                        "\nA stack configuration YAML file has been generated "
+                        f"as part of the deployment of the {stack_recipe_name} "
+                        f"recipe. Find it at {stack_yaml_file}."
                     )
 
                     if import_stack_flag:
                         logger.info(
                             "\nThe flag `--import` is set. Proceeding "
-                            "to import a new ZenML stack from the created resources."
+                            "to import a new ZenML stack from the created "
+                            "resources."
                         )
                         import_stack_name = (
                             stack_name if stack_name else stack_recipe_name
                         )
                         cli_utils.declare(
-                            f"Importing a new stack with the name {import_stack_name}."
+                            f"Importing a new stack with the name "
+                            f"{import_stack_name}."
                         )
 
                         # import deployed resources as ZenML stack
@@ -1080,16 +1087,18 @@ if terraform_installed:  # noqa: C901
                         )
 
                         cli_utils.declare(
-                            "Please consider creating any secrets that your stack "
-                            "components like the metadata store might need. "
-                            "You can inspect the fields of a stack component by "
-                            "running a describe command on them."
+                            "Please consider creating any secrets that your "
+                            "stack components like the metadata store might "
+                            "need. You can inspect the fields of a stack "
+                            "component by running a describe command on them."
                         )
                         cli_utils.declare(
-                            "\n Run 'terraform output' in the recipe's directory at "
-                            f"{local_stack_recipe.path} to get a list of outputs. To now "
-                            "retrieve sensitive outputs, for example, the metadata-db-password "
-                            "use the command 'terraform output metadata-db-password' to get the "
+                            "\n Run 'terraform output' in the recipe's "
+                            f"directory at {local_stack_recipe.path} to get a "
+                            f"list of outputs. To now retrieve sensitive "
+                            f"outputs, for example, the metadata-db-password "
+                            "use the command 'terraform output "
+                            "metadata-db-password' to get the "
                             "value in the command-line."
                         )
 
@@ -1097,21 +1106,23 @@ if terraform_installed:  # noqa: C901
                 cli_utils.error(
                     f"Error running recipe {stack_recipe_name}: {str(e)} "
                     "\nPlease look at the error message to figure out why the "
-                    "command failed. If the error is due some wrong configuration, "
-                    "please consider checking the locals.tf file to verify if the "
-                    "inputs are correct. Most commonly, the command can fail due "
-                    "to a timeout error. In that case, please"
-                    f"run zenml stack recipe deploy {stack_recipe_name} again"
+                    "command failed. If the error is due some wrong "
+                    "configuration, please consider checking the locals.tf "
+                    "file to verify if the inputs are correct. Most commonly, "
+                    "the command can fail due to a timeout error. In that "
+                    "case, please run zenml stack recipe deploy "
+                    f"{stack_recipe_name} again"
                 )
             except python_terraform.TerraformCommandError as e:
                 cli_utils.error(
                     f"Error running recipe {stack_recipe_name}: {str(e.err)} "
                     "\nPlease look at the error message to figure out why the "
-                    "command failed. If the error is due some wrong configuration, "
-                    "please consider checking the locals.tf file to verify if the "
-                    "inputs are correct. Most commonly, the command can fail due "
-                    "to a timeout error. In that case, please"
-                    f"run zenml stack recipe deploy {stack_recipe_name} again"
+                    "command failed. If the error is due some wrong "
+                    "configuration, please consider checking the locals.tf "
+                    "file to verify if the inputs are correct. Most commonly, "
+                    "the command can fail due to a timeout error. In that "
+                    "case, please run zenml stack recipe deploy "
+                    f"{stack_recipe_name} again"
                 )
 
     @stack_recipe.command(
@@ -1134,10 +1145,10 @@ if terraform_installed:  # noqa: C901
         stack_recipe_name: str,
         path: str,
     ) -> None:
-        """Destroy all resources from the stack_recipe at the specified relative path.
+        """Destroy all resources from the recipe at the given relative path.
 
-        `zenml stack_recipe deploy stack_recipe_name` has to be called with the same relative
-        path before the destroy command.
+        `zenml stack_recipe deploy stack_recipe_name` has to be called with the
+        same relative path before the destroy command.
 
         Args:
             ctx: The click context.
@@ -1154,10 +1165,11 @@ if terraform_installed:  # noqa: C901
 
         if sys.platform == "win32":
             logger.info(
-                "If you are running stack_recipes on Windows, make sure that you have "
-                "an associated application with executing .sh files. If you don't "
-                "have any and you see a pop-up during 'zenml stack_recipe run', we "
-                "suggest to use the Git BASH: https://gitforwindows.org/"
+                "If you are running stack_recipes on Windows, make sure that "
+                "you have an associated application with executing .sh files. "
+                "If you don't have any and you see a pop-up during 'zenml "
+                "stack_recipe run', we suggest to use the Git BASH: "
+                "https://gitforwindows.org/"
             )
 
         try:
@@ -1177,7 +1189,8 @@ if terraform_installed:  # noqa: C901
                     f"The recipe {stack_recipe_name} "
                     "has not been pulled at the specified path. "
                     f"Run `zenml stack recipe pull {stack_recipe_name}` "
-                    f"followed by `zenml stack recipe deploy {stack_recipe_name}` first."
+                    f"followed by `zenml stack recipe deploy "
+                    f"{stack_recipe_name}` first."
                 )
 
             try:
@@ -1186,7 +1199,7 @@ if terraform_installed:  # noqa: C901
                     AnalyticsEvent.DESTROY_STACK_RECIPE,
                     {"stack_recipe_name": stack_recipe_name},
                 )
-                # use the stack recipe directory path to find the service instance
+                # use the recipe directory path to find the service instance
                 stack_recipe_service = StackRecipeService.get_service(
                     str(local_stack_recipe.path)
                 )
@@ -1214,23 +1227,26 @@ if terraform_installed:  # noqa: C901
                 if stack_recipe_name == "aws_minimal":
                     force_message = (
                         "If there are Kubernetes resources that aren't"
-                        "getting deleted, run 'kubectl delete node -all' to delete the "
-                        "nodes and consequently all Kubernetes resources. Run the destroy "
-                        "again after that, to remove any other remaining resources."
+                        "getting deleted, run 'kubectl delete node -all' to "
+                        "delete the nodes and consequently all Kubernetes "
+                        "resources. Run the destroy again after that, to "
+                        "remove any other remaining resources."
                     )
                 cli_utils.error(
                     f"Error destroying recipe {stack_recipe_name}: {str(e.err)}"
-                    "\nMost commonly, the error occurs if there's some resource "
-                    "that can't be deleted instantly, for example, MySQL stores "
-                    "with backups. In such cases, please try again after "
-                    "around 30 minutes. If the issue persists, kindly raise an "
-                    f"issue at {STACK_RECIPES_GITHUB_REPO}. \n{force_message}"
+                    "\nMost commonly, the error occurs if there's some "
+                    "resource that can't be deleted instantly, for example, "
+                    "MySQL stores with backups. In such cases, please try "
+                    "again after around 30 minutes. If the issue persists, "
+                    "kindly raise an issue at "
+                    f"{STACK_RECIPES_GITHUB_REPO}. \n{force_message}"
                 )
             except subprocess.CalledProcessError as e:
                 cli_utils.warning(
                     f"Error destroying recipe {stack_recipe_name}: {str(e)}"
-                    "\nThe kubernetes cluster couldn't be removed due to the error "
-                    "above. Please verify if the cluster has already been deleted by "
-                    "running kubectl get nodes to check if there's any active nodes."
-                    "Ignore this warning if there are no active nodes."
+                    "\nThe kubernetes cluster couldn't be removed due to the "
+                    "error above. Please verify if the cluster has already "
+                    "been deleted by running kubectl get nodes to check if "
+                    "there's any active nodes.Ignore this warning if there "
+                    "are no active nodes."
                 )
