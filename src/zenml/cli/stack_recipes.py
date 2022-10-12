@@ -18,16 +18,19 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, ClassVar, List, Optional, cast
+from typing import Any, ClassVar, Dict, List, Optional, cast
 
 import click
 from packaging.version import Version, parse
 from rich.text import Text
 
+import yaml
 import zenml
-from zenml.cli import utils as cli_utils
+from zenml.cli import utils as cli_utils, server
 from zenml.cli.cli import TagGroup
 from zenml.cli.stack import import_stack, stack
+from zenml.config.global_config import GlobalConfiguration
+from zenml.enums import StoreType
 from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -46,7 +49,14 @@ EXCLUDED_RECIPE_DIRS = [""]
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 VARIABLES_FILE = "values.tfvars.json"
-STACK_FILE_NAME = "stack-yaml-path"
+STACK_FILE_NAME_OUTPUT = "stack-yaml-path"
+DATABASE_HOST_OUTPUT = "metadata-db-host"
+DATABASE_USERNAME_OUTPUT = "metadata-db-username"
+DATABASE_PASSWORD_OUTPUT = "metadata-db-password"
+INGRESS_CONTROLLER_HOST_OUTPUT = "ingress-controller-host"
+PROJECT_ID_OUTPUT = "project-id"
+ZENML_VERSION_VARIABLE = "zenml-version"
+ZEN_SERVER_VARIABLE = "deploy_zenserver"
 ALPHA_MESSAGE = (
     "The stack recipes CLI is in alpha and actively being developed. "
     "Please avoid running mission-critical workloads on resources deployed "
@@ -86,6 +96,8 @@ class StackRecipeService(TerraformService):
         io_utils.get_global_config_directory(),
         "stack_recipes",
     )
+
+    create_zen_server: bool = False
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.
@@ -169,7 +181,7 @@ class StackRecipeService(TerraformService):
         """
         # return the path of the stack yaml file
         stack_file_path = self.terraform_client.output(
-            STACK_FILE_NAME, full_value=True
+            STACK_FILE_NAME_OUTPUT, full_value=True
         )
         return str(stack_file_path)
 
@@ -212,7 +224,68 @@ class StackRecipeService(TerraformService):
             return None
         except FileNotFoundError:
             return None
+    
+    def get_vars(self) -> Dict[str, Any]:
+        """Get variables as a dictionary.
 
+        Returns:
+            A dictionary of variables to use for the stack recipes
+            derived from the tfvars.json file.
+
+        Raises:
+            FileNotFoundError: if the values.tfvars.json file is not
+                found in the stack recipe.
+            TypeError: if the file doesn't contain a dictionary of variables.
+        """
+        vars = super().get_vars()
+        # update zenml version to current version
+        vars[ZENML_VERSION_VARIABLE] = zenml.__version__
+        # set the variable that deploys server conditionally
+        vars[ZEN_SERVER_VARIABLE] = self.create_zen_server
+        return vars
+
+    def get_deployment_info(self) -> str:
+        """Return deployment details as a YAML document.
+        
+        Returns:
+            A YAML document that can be passed as config to
+            the server deploy function.
+        """
+        provider = yaml_utils.read_yaml(
+            file_path=os.path.join(
+                self.terraform_client.working_dir, "metadata.yaml"
+            )
+        )["Cloud"]
+        database_url = self.terraform_client.output(
+            DATABASE_HOST_OUTPUT, full_value=True
+        )
+        database_username = self.terraform_client.output(
+            DATABASE_USERNAME_OUTPUT, full_value=True
+        )
+        database_password = self.terraform_client.output(
+            DATABASE_PASSWORD_OUTPUT, full_value=True
+        )
+        ingress_controller_hostname = self.terraform_client.output(
+            INGRESS_CONTROLLER_HOST_OUTPUT, full_value=True
+        )
+        config = {
+            'name': f'{provider}-server',
+            'provider': f'{provider}',
+            'username': 'default',
+            'password': 'zenml',
+            'create_sql': False,
+            'database_url': database_url,
+            'database_username': database_username,
+            'database_password': database_password,
+            'database_ssl_verify_server_cert': False,
+            'create_ingress_controller': False,
+            'ingress_controller_hostname': ingress_controller_hostname,
+        }
+        if provider is 'gcp':
+            config['project_id'] = self.terraform_client.output(
+                PROJECT_ID_OUTPUT, full_value=True
+            )
+        return yaml.dump(config)
 
 class LocalStackRecipe:
     """Class to encapsulate the local recipe that can be run from the CLI."""
@@ -916,6 +989,11 @@ if terraform_installed:  # noqa: C901
         is_flag=True,
         help="Skip the checking of locals.tf file before executing the recipe.",
     )
+    @click.option(
+        "--no-server",
+        is_flag=True,
+        help="Don't deploy ZenML even if there's no active cloud deployment.",        
+    )
     @pass_git_stack_recipes_handler
     @click.pass_context
     def deploy(
@@ -927,6 +1005,7 @@ if terraform_installed:  # noqa: C901
         import_stack_flag: bool,
         log_level: str,
         skip_check: bool,
+        no_server: bool,
         stack_name: Optional[str],
     ) -> None:
         """Run the stack_recipe at the specified relative path.
@@ -948,6 +1027,7 @@ if terraform_installed:  # noqa: C901
             log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
                 as log level for the deploy operation.
             skip_check: Skip the checking of locals.tf file before executing the recipe.
+            no_server: Don't deploy ZenML even if there's no active cloud deployment.
         """
         cli_utils.warning(ALPHA_MESSAGE)
         stack_recipes_dir = Path(os.getcwd()) / path
@@ -1044,8 +1124,21 @@ if terraform_installed:  # noqa: C901
                         stack_recipe_service = StackRecipeService(
                             config=terraform_config
                         )
+
+                    stack_recipe_service.create_zen_server = not (
+                        no_server or
+                        zen_server_exists()
+                    )
                     # start the service (the init and apply operation)
                     stack_recipe_service.start()
+
+                    # invoke server deploy
+                    if stack_recipe_service.create_zen_server:
+                        ctx.invoke(
+                            server.deploy,
+                            config=stack_recipe_service.get_deployment_info(),
+                            connect=True,
+                        )
 
                     # get the stack yaml path
                     stack_yaml_file = os.path.join(
@@ -1113,6 +1206,16 @@ if terraform_installed:  # noqa: C901
                     "to a timeout error. In that case, please"
                     f"run zenml stack recipe deploy {stack_recipe_name} again"
                 )
+
+    def zen_server_exists() -> bool:
+        """Check if a remote ZenServer is active.
+        
+        Returns:
+            True if active, false otherwise.    
+        """
+        gc = GlobalConfiguration()
+
+        return gc.store and gc.store.type == StoreType.REST
 
     @stack_recipe.command(
         help="Destroy the stack components created previously with "
