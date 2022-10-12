@@ -32,7 +32,6 @@ from zenml.services import (
 from zenml.zen_server.deploy.base_provider import BaseServerProvider
 from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 from zenml.zen_server.deploy.docker.docker_zen_server import (
-    DOCKER_ZENML_SERVER_CONFIG_PATH,
     DOCKER_ZENML_SERVER_DEFAULT_TIMEOUT,
     ZEN_SERVER_HEALTHCHECK_URL_PATH,
     DockerServerDeploymentConfig,
@@ -72,7 +71,7 @@ class DockerServerProvider(BaseServerProvider):
 
         return (
             DockerZenServerConfig(
-                root_runtime_path=DOCKER_ZENML_SERVER_CONFIG_PATH,
+                root_runtime_path=DockerZenServer.config_path(),
                 singleton=True,
                 image=server_config.image,
                 name=server_config.name,
@@ -241,7 +240,7 @@ class DockerServerProvider(BaseServerProvider):
             timeout = DOCKER_ZENML_SERVER_DEFAULT_TIMEOUT
 
         service.stop(timeout)
-        shutil.rmtree(DOCKER_ZENML_SERVER_CONFIG_PATH)
+        shutil.rmtree(DockerZenServer.config_path())
 
     def _get_service(self, server_name: str) -> BaseService:
         """Get the docker ZenML server deployment service.

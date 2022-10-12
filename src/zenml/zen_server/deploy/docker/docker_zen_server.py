@@ -21,8 +21,10 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+    DEFAULT_STORE_DIRECTORY_NAME,
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+    LOCAL_STORES_DIRECTORY_NAME,
     ZEN_SERVER_ENTRYPOINT,
 )
 from zenml.enums import StoreType
@@ -46,24 +48,7 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 logger = get_logger(__name__)
 
 ZEN_SERVER_HEALTHCHECK_URL_PATH = "health"
-
-DOCKER_ZENML_SERVER_CONFIG_SUBPATH = os.path.join(
-    "zen_server",
-    "docker",
-)
-
-DOCKER_ZENML_SERVER_CONFIG_PATH = os.path.join(
-    get_global_config_directory(),
-    DOCKER_ZENML_SERVER_CONFIG_SUBPATH,
-)
-DOCKER_ZENML_SERVER_CONFIG_FILENAME = os.path.join(
-    DOCKER_ZENML_SERVER_CONFIG_PATH, "service.json"
-)
-DOCKER_ZENML_SERVER_GLOBAL_CONFIG_PATH = os.path.join(
-    DOCKER_ZENML_SERVER_CONFIG_PATH, SERVICE_CONTAINER_GLOBAL_CONFIG_DIR
-)
 DOCKER_ZENML_SERVER_DEFAULT_IMAGE = "zenmldocker/zenml-server"
-
 DOCKER_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
 
@@ -116,6 +101,30 @@ class DockerZenServer(ContainerService):
     config: DockerZenServerConfig
     endpoint: ContainerServiceEndpoint
 
+    @classmethod
+    def config_path(cls) -> str:
+        """Path to the directory where the docker ZenML server files are located.
+
+        Returns:
+            Path to the docker ZenML server runtime directory.
+        """
+        return os.path.join(
+            get_global_config_directory(),
+            "zen_server",
+            "docker",
+        )
+
+    @property
+    def _global_config_path(self) -> str:
+        """Path to the global configuration directory used by this server.
+
+        Returns:
+            Path to the global configuration directory used by this server.
+        """
+        return os.path.join(
+            self.config_path(), SERVICE_CONTAINER_GLOBAL_CONFIG_DIR
+        )
+
     def _copy_global_configuration(self) -> None:
         """Copy the global configuration to the docker ZenML server location.
 
@@ -132,10 +141,14 @@ class DockerZenServer(ContainerService):
         # configuration is explicitly supplied with the server configuration.
         store_config = gc.get_default_store()
         store_config.url = SqlZenStore.get_local_url(
-            SERVICE_CONTAINER_GLOBAL_CONFIG_PATH
+            os.path.join(
+                SERVICE_CONTAINER_GLOBAL_CONFIG_PATH,
+                LOCAL_STORES_DIRECTORY_NAME,
+                DEFAULT_STORE_DIRECTORY_NAME,
+            )
         )
         gc.copy_configuration(
-            config_path=DOCKER_ZENML_SERVER_GLOBAL_CONFIG_PATH,
+            config_path=self._global_config_path,
             store_config=self.config.server.store or store_config,
         )
 
@@ -149,8 +162,9 @@ class DockerZenServer(ContainerService):
         """
         from zenml.services import ServiceRegistry
 
+        config_filename = os.path.join(cls.config_path(), "service.json")
         try:
-            with open(DOCKER_ZENML_SERVER_CONFIG_FILENAME, "r") as f:
+            with open(config_filename, "r") as f:
                 return cast(
                     DockerZenServer,
                     ServiceRegistry().load_service_from_json(f.read()),
