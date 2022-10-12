@@ -53,7 +53,7 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
         kubeflow_namespace: The Kubernetes namespace in which Kubeflow
             Pipelines is deployed. Defaults to `kubeflow`.
         kubernetes_context: Optional name of a kubernetes context to run
-            pipelines in. If not set, will try to spin up a K3d cluster.
+            pipelines in. If not set, will try to spin up a local K3d cluster.
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on KFP.
         skip_local_validations: If `True`, the local validations will be
