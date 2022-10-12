@@ -200,7 +200,7 @@ For additional configuration of the Kubeflow orchestrator, you can pass
 * `user_namespace`: The user namespace to use when creating experiments and runs.
 
 ```python
-from zenml.integrations.kubefolow.flavors.kubeflow_orchestrator_flavor import KubeflowOrchestratorSettings
+from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import KubeflowOrchestratorSettings
 
 kubeflow_settings = KubeflowOrchestratorSettings(
   client_args={},
