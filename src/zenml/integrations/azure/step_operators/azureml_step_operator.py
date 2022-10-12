@@ -33,12 +33,14 @@ from azureml.core.conda_dependencies import CondaDependencies
 
 import zenml
 from zenml.client import Client
+from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.environment import Environment as ZenMLEnvironment
 from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
     AzureMLStepOperatorConfig,
 )
 from zenml.logger import get_logger
+from zenml.stack import Stack
 from zenml.step_operators import BaseStepOperator
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
@@ -252,3 +254,14 @@ class AzureMLStepOperator(BaseStepOperator):
 
         run.display_name = info.run_name
         run.wait_for_completion(show_output=True)
+
+    def prepare_pipeline_deployment(
+        self, deployment: "PipelineDeployment", stack: "Stack"
+    ) -> None:
+        from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
+
+        path = os.path.join(
+            get_source_root_path(), DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
+        )
+        with open(path, "w") as f:
+            f.write(deployment.yaml())
