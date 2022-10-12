@@ -57,6 +57,7 @@ from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
 from zenml.steps.utils import clone_step
 from zenml.utils import (
+    dashboard_utils,
     dict_utils,
     io_utils,
     pydantic_utils,
@@ -541,23 +542,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
         gc = GlobalConfiguration()
 
         if gc.store and gc.store.type == StoreType.REST:
-            # Connected to ZenML Server
-            client = Client()
-
-            # Get the runs from the zen_store
-            runs = client.zen_store.list_runs(
-                run_name=pipeline_deployment.run_name
+            url = dashboard_utils.get_run_url(
+                pipeline_deployment.run_name,
+                pipeline_id if pipeline_id else None
             )
-
-            # We should only do the log if runs exist
-            if runs:
-                # For now, take the first index to get the latest run
-                run = runs[0]
-                url = gc.store.url
-                if register_pipeline:
-                    url += f"/pipelines/{pipeline_id}"
-                url += f"/runs/{run.id}/dag"
-                logger.info(f"Dashboard URL: {url}")
+            logger.info(f"Dashboard URL: {url}")
         elif gc.store and gc.store.type == StoreType.SQL:
             # Connected to SQL Store Type, we're local
             logger.info(
