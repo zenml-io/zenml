@@ -472,19 +472,54 @@ def expand_argument_value_from_file(name: str, value: str) -> str:
         )
 
 
-def parse_unknown_options(
-    args: List[str], expand_args: bool = False
-) -> Dict[str, Any]:
-    """Parse unknown options from the CLI.
+def parse_name_and_extra_arguments(
+    args: List[str],
+    expand_args: bool = False,
+    name_mandatory: bool = True,
+) -> Tuple[Optional[str], Dict[str, str]]:
+    """Parse a name and extra arguments from the CLI.
+
+    This is a utility function used to parse a variable list of optional CLI
+    arguments of the form `--key=value` that must also include one mandatory
+    free-form name argument. There is no restriction as to the order of the
+    arguments.
+
+    Examples:
+        >>> parse_name_and_extra_arguments(['foo']])
+        ('foo', {})
+        >>> parse_name_and_extra_arguments(['foo', '--bar=1'])
+        ('foo', {'bar': '1'})
+        >>> parse_name_and_extra_arguments('--bar=1', 'foo', '--baz=2'])
+        ('foo', {'bar': '1', 'baz': '2'})
+        >>> parse_name_and_extra_arguments(['--bar=1'])
+        Traceback (most recent call last):
+            ...
+            ValueError: Missing required argument: name
 
     Args:
-        args: A list of strings from the CLI.
+        args: A list of command line arguments from the CLI.
         expand_args: Whether to expand argument values into the contents of the
             files they may be pointing at using the special `@` character.
+        name_mandatory: Whether the name argument is mandatory.
 
     Returns:
-        Dict of parsed args.
+        The name and a dict of parsed args.
     """
+    name: Optional[str] = None
+    # The name was not supplied as the first argument, we have to
+    # search the other arguments for the name.
+    for i, arg in enumerate(args):
+        if arg.startswith("--"):
+            continue
+        name = args.pop(i)
+        break
+    else:
+        if name_mandatory:
+            error(
+                "A name must be supplied. Please see the command help for more "
+                "information."
+            )
+
     message = (
         "Please provide args with a proper "
         "identifier as the key and the following structure: "
@@ -505,7 +540,7 @@ def parse_unknown_options(
             for k, v in args_dict.items()
         }
 
-    return args_dict
+    return name, args_dict
 
 
 def parse_unknown_component_attributes(args: List[str]) -> List[str]:
