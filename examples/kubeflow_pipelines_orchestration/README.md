@@ -332,7 +332,7 @@ rm -rf zenml_examples
 
 Kubeflow has a notion of [multi-tenancy](https://www.kubeflow.org/docs/components/multi-tenancy/overview/) 
 built into its deployment. Kubeflow’s multi-user isolation simplifies user 
-operations because each user only views and edited\s the Kubeflow components 
+operations because each user only views and edits the Kubeflow components 
 and model artifacts defined in their configuration.
 
 Using a multi-tenant deployment of Kubeflow involves a bit more configuration than is shown in this example.
