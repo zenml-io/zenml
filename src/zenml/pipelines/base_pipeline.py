@@ -48,7 +48,6 @@ from zenml.config.pipeline_configurations import (
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import StoreType
 from zenml.environment import Environment
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
@@ -498,6 +497,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             else "disabled"
         )
         register_pipeline = not (skip_pipeline_registration or unlisted)
+
+        pipeline_id = None
         if register_pipeline:
             step_specs = [
                 step.spec for step in pipeline_deployment.steps.values()
@@ -539,20 +540,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
         finally:
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-        gc = GlobalConfiguration()
-
-        if gc.store and gc.store.type == StoreType.REST:
-            url = dashboard_utils.get_run_url(
-                pipeline_deployment.run_name,
-                pipeline_id if pipeline_id else None,
-            )
-            logger.info(f"Dashboard URL: {url}")
-        elif gc.store and gc.store.type == StoreType.SQL:
-            # Connected to SQL Store Type, we're local
-            logger.info(
-                "Pipeline visualization can be seen in the ZenML Dashboard. "
-                "Run `zenml up` to see your pipeline!"
-            )
+        # Log the dashboard URL
+        dashboard_utils.print_run_url(
+            run_name=pipeline_deployment.run_name, pipeline_id=pipeline_id
+        )
 
         return return_value
 

@@ -17,12 +17,15 @@ from typing import Optional
 
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
+from zenml.enums import StoreType
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-def get_run_url(run_name: str, pipeline_id: Optional[str] = None) -> str:
+def get_run_url(
+    run_name: str, pipeline_id: Optional[str] = None
+) -> Optional[str]:
     """Computes a dashboard url to directly view the run.
 
     Args:
@@ -30,7 +33,8 @@ def get_run_url(run_name: str, pipeline_id: Optional[str] = None) -> str:
         pipeline_id: Optional pipeline_id, to be sent when available.
 
     Returns:
-        A direct url link to the pipeline run details page.
+        A direct url link to the pipeline run details page. If run does not exist,
+        returns None.
     """
     gc = GlobalConfiguration()
 
@@ -50,6 +54,28 @@ def get_run_url(run_name: str, pipeline_id: Optional[str] = None) -> str:
         if pipeline_id:
             url += f"/pipelines/{pipeline_id}"
         url += f"/runs/{run.id}/dag"
-    else:
-        logger.warning(f"Run name {run_name} could not be found!")
     return url
+
+
+def print_run_url(run_name: str, pipeline_id: Optional[str] = None) -> None:
+    """Logs a dashboard url to directly view the run.
+
+    Args:
+        run_name: Name of the pipeline run.
+        pipeline_id: Optional pipeline_id, to be sent when available.
+    """
+    gc = GlobalConfiguration()
+
+    if gc.store and gc.store.type == StoreType.REST:
+        url = get_run_url(
+            run_name,
+            pipeline_id if pipeline_id else None,
+        )
+        if url:
+            logger.info(f"Dashboard URL: {url}")
+    elif gc.store and gc.store.type == StoreType.SQL:
+        # Connected to SQL Store Type, we're local
+        logger.info(
+            "Pipeline visualization can be seen in the ZenML Dashboard. "
+            "Run `zenml up` to see your pipeline!"
+        )
