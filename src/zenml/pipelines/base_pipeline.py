@@ -38,7 +38,6 @@ from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
-from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
