@@ -33,7 +33,7 @@ class TektonEntrypointConfiguration(StepEntrypointConfiguration):
         return super().get_entrypoint_options() | {RUN_NAME_OPTION}
 
     @classmethod
-    def get_custom_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
+    def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:

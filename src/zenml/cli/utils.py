@@ -963,16 +963,16 @@ def print_components_table(
         warning(f"No {display_name} registered.")
         return
     active_stack = client.active_stack_model
-    active_component_name = None
+    active_component_id = None
     if component_type in active_stack.components.keys():
         active_components = active_stack.components[component_type]
-        active_component_name = (
-            active_components[0].name if active_components else None
+        active_component_id = (
+            active_components[0].id if active_components else None
         )
 
     configurations = []
     for component in components:
-        is_active = component.name == active_component_name
+        is_active = component.id == active_component_id
         component_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": component.name,

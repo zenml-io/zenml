@@ -492,9 +492,7 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 ```python
 @step(
-    settings={
-        "output_materializers": materializer_or_dict_of_materializers_mapped_to_outputs
-    }
+  output_materializers=materializer_or_dict_of_materializers_mapped_to_outputs
 )
 ```
 

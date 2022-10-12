@@ -120,31 +120,6 @@ class StackRecipeService(TerraformService):
                 "https://docs.docker.com/engine/install/ "
                 "to install it."
             )
-        if not self._is_kubectl_installed():
-            raise RuntimeError(
-                "kubectl is not installed on your machine or not available on  "
-                "your $PATH. It is used by stack recipes to create some "
-                "resources on Kubernetes and to configure access to your "
-                "cluster. Please visit "
-                "https://kubernetes.io/docs/tasks/tools/#kubectl "
-                "to install it."
-            )
-        if not self._is_helm_installed():
-            raise RuntimeError(
-                "Helm is not installed on your machine or not available on  "
-                "your $PATH. It is required for stack recipes to create releases "
-                "on Kubernetes. Please visit "
-                "https://helm.sh/docs/intro/install/ "
-                "to install it."
-            )
-        if not self._is_docker_installed():
-            raise RuntimeError(
-                "Docker is not installed on your machine or not available on  "
-                "your $PATH. It is required for stack recipes to configure "
-                "access to the container registry. Please visit "
-                "https://docs.docker.com/engine/install/ "
-                "to install it."
-            )
 
     def _is_kubectl_installed(self) -> bool:
         """Checks if kubectl is installed on the host system.
@@ -1073,7 +1048,10 @@ if terraform_installed:  # noqa: C901
                     stack_recipe_service.start()
 
                     # get the stack yaml path
-                    stack_yaml_file = stack_recipe_service.stack_file_path
+                    stack_yaml_file = os.path.join(
+                        local_stack_recipe.path,
+                        stack_recipe_service.stack_file_path[2:],
+                    )
 
                     logger.info(
                         "\nA stack configuration YAML file has been generated as "
@@ -1083,7 +1061,7 @@ if terraform_installed:  # noqa: C901
 
                     if import_stack_flag:
                         logger.info(
-                            "\nThe flag `--no-import` is not set. Proceeding "
+                            "\nThe flag `--import` is set. Proceeding "
                             "to import a new ZenML stack from the created resources."
                         )
                         import_stack_name = (
@@ -1096,7 +1074,7 @@ if terraform_installed:  # noqa: C901
                         # import deployed resources as ZenML stack
                         ctx.invoke(
                             import_stack,
-                            stack_name=stack_name,
+                            stack_name=import_stack_name,
                             filename=stack_yaml_file,
                             ignore_version_mismatch=True,
                         )
@@ -1236,10 +1214,10 @@ if terraform_installed:  # noqa: C901
                 if stack_recipe_name == "aws_minimal":
                     force_message = (
                         "If there are Kubernetes resources that aren't"
+                        "getting deleted, run 'kubectl delete node -all' to delete the "
+                        "nodes and consequently all Kubernetes resources. Run the destroy "
+                        "again after that, to remove any other remaining resources."
                     )
-                    "getting deleted, run 'kubectl delete node -all' to delete the "
-                    "nodes and consequently all Kubernetes resources. Run the destroy "
-                    "again after that, to remove any other remaining resources."
                 cli_utils.error(
                     f"Error destroying recipe {stack_recipe_name}: {str(e.err)}"
                     "\nMost commonly, the error occurs if there's some resource "
