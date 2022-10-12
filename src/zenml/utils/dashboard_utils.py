@@ -17,6 +17,9 @@ from typing import Optional
 
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def get_run_url(run_name: str, pipeline_id: Optional[str] = None) -> str:
@@ -37,6 +40,7 @@ def get_run_url(run_name: str, pipeline_id: Optional[str] = None) -> str:
     # Get the runs from the zen_store
     runs = client.zen_store.list_runs(run_name=run_name)
 
+    url = ""
     # We should only do the log if runs exist
     if runs:
         # For now, take the first index to get the latest run
@@ -46,3 +50,6 @@ def get_run_url(run_name: str, pipeline_id: Optional[str] = None) -> str:
         if pipeline_id:
             url += f"/pipelines/{pipeline_id}"
         url += f"/runs/{run.id}/dag"
+    else:
+        logger.warning(f"Run name {run_name} could not be found!")
+    return url
