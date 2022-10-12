@@ -786,27 +786,6 @@ class Client(metaclass=ClientMetaClass):
     # .------------.
     # | COMPONENTS |
     # '------------'
-    @property
-    def stack_components(self) -> List["HydratedComponentModel"]:
-        """The list of registered stack components.
-
-        Returns:
-            The list of registered stack components.
-        """
-        owned_stack_components = self.zen_store.list_stack_components(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
-            is_shared=False,
-        )
-        shared_stack_components = self.zen_store.list_stack_components(
-            project_name_or_id=self.active_project_name,
-            is_shared=True,
-        )
-
-        return [
-            c.to_hydrated_model()
-            for c in owned_stack_components + shared_stack_components
-        ]
 
     def _validate_stack_component_configuration(
         self,

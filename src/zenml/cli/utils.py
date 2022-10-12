@@ -847,12 +847,24 @@ def get_stack_by_id_or_name_or_prefix(
     except ValueError:
         pass
 
-    stacks = client.stacks
+    user_only_stacks = client.zen_store.list_stacks(
+        project_name_or_id=client.active_project.name,
+        name=id_or_name_or_prefix,
+        user_name_or_id=client.active_user.name,
+        is_shared=False,
+    )
 
-    named_stacks = [s for s in stacks if s.name == id_or_name_or_prefix]
+    shared_stacks = client.zen_store.list_stacks(
+        project_name_or_id=client.active_project.name,
+        name=id_or_name_or_prefix,
+        is_shared=True,
+    )
+
+    named_stacks = user_only_stacks + shared_stacks
 
     if len(named_stacks) > 1:
-        print_stacks_table(client=client, stacks=named_stacks)
+        hydrated_name_stacks = [s.to_hydrated_model() for s in named_stacks]
+        print_stacks_table(client=client, stacks=hydrated_name_stacks)
         error(
             f"Multiple stacks have been found for name "
             f"'{id_or_name_or_prefix}'. The stacks listed above all share "
@@ -867,13 +879,27 @@ def get_stack_by_id_or_name_or_prefix(
             f"exists. Trying to resolve as partial_id"
         )
 
+        user_only_stacks = client.zen_store.list_stacks(
+            project_name_or_id=client.active_project.name,
+            user_name_or_id=client.active_user.name,
+            is_shared=False,
+        )
+
+        shared_stacks = client.zen_store.list_stacks(
+            project_name_or_id=client.active_project.name,
+            is_shared=True,
+        )
+
+        all_stacks = user_only_stacks + shared_stacks
+
         filtered_stacks = [
             stack
-            for stack in stacks
+            for stack in all_stacks
             if str(stack.id).startswith(id_or_name_or_prefix)
         ]
         if len(filtered_stacks) > 1:
-            print_stacks_table(client=client, stacks=filtered_stacks)
+            hydrated_all_stacks = [s.to_hydrated_model() for s in all_stacks]
+            print_stacks_table(client=client, stacks=hydrated_all_stacks)
             error(
                 f"The stacks listed above all share the provided prefix "
                 f"'{id_or_name_or_prefix}' on their ids. Please provide more "
@@ -1018,14 +1044,29 @@ def get_component_by_id_or_name_or_prefix(
     except ValueError:
         pass
 
-    components = client.stack_components
+    user_only_components = client.zen_store.list_stack_components(
+        project_name_or_id=client.active_project.name,
+        name=id_or_name_or_prefix,
+        type=component_type,
+        user_name_or_id=client.active_user.id,
+        is_shared=False,
+    )
 
-    named_components = [c for c in components if c.name == id_or_name_or_prefix]
+    shared_components = client.zen_store.list_stack_components(
+        project_name_or_id=client.active_project.name,
+        name=id_or_name_or_prefix,
+        type=component_type,
+        is_shared=True,
+    )
+
+    named_components = user_only_components + shared_components
+
     if len(named_components) > 1:
+        hydrated_components = [c.to_hydrated_model() for c in named_components]
         print_components_table(
             client=client,
             component_type=component_type,
-            components=named_components,
+            components=hydrated_components,
         )
         error(
             f"Multiple components have been found for name "
@@ -1041,16 +1082,33 @@ def get_component_by_id_or_name_or_prefix(
             f"exists. Trying to resolve as partial_id"
         )
 
+        user_only_components = client.zen_store.list_stack_components(
+            project_name_or_id=client.active_project.name,
+            user_name_or_id=client.active_user.id,
+            type=component_type,
+            is_shared=False,
+        )
+
+        shared_components = client.zen_store.list_stack_components(
+            project_name_or_id=client.active_project.name,
+            type=component_type,
+            is_shared=True,
+        )
+
+        all_components = user_only_components + shared_components
+
         filtered_comps = [
             component
-            for component in components
+            for component in all_components
             if str(component.id).startswith(id_or_name_or_prefix)
         ]
         if len(filtered_comps) > 1:
+            hydrated_components = [c.to_hydrated_model() for c in all_components]
+
             print_components_table(
                 client=client,
                 component_type=component_type,
-                components=filtered_comps,
+                components=hydrated_components,
             )
             error(
                 f"The components listed above all share the provided prefix "
