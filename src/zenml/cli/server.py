@@ -41,6 +41,7 @@ from zenml.zen_server.deploy.terraform.terraform_zen_server import (
     TerraformServerDeploymentConfig,
 )
 from zenml.zen_stores.base_zen_store import DEFAULT_PASSWORD, DEFAULT_USERNAME
+from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
 
 logger = get_logger(__name__)
 
@@ -92,6 +93,7 @@ def get_active_deployment(local: bool = False) -> Optional[ServerDeployment]:
     is_flag=True,
     help="Start the ZenML dashboard as a Docker container instead of a local "
     "process.",
+    default=False,
     type=click.BOOL,
 )
 @click.option(
@@ -112,7 +114,23 @@ def get_active_deployment(local: bool = False) -> Optional[ServerDeployment]:
     is_flag=True,
     help="Run the ZenML dashboard in blocking mode. The CLI will not return "
     "until the dashboard is stopped.",
+    default=False,
     type=click.BOOL,
+)
+@click.option(
+    "--connect",
+    is_flag=True,
+    help="Connect the client to the local server even when already connected "
+    "to a remote ZenML server.",
+    default=False,
+    type=click.BOOL,
+)
+@click.option(
+    "--image",
+    type=str,
+    default=None,
+    help="Use a custom Docker image for the ZenML server. Only used when "
+    "`--docker` is set.",
 )
 def up(
     docker: bool = False,
@@ -121,6 +139,8 @@ def up(
     ] = None,
     port: Optional[int] = None,
     blocking: bool = False,
+    connect: bool = False,
+    image: Optional[str] = None,
 ) -> None:
     """Start the ZenML dashboard locally and connect the client to it.
 
@@ -129,6 +149,10 @@ def up(
         ip_address: The IP address to bind the server to.
         port: The port to bind the server to.
         blocking: Block the CLI while the server is running.
+        connect: Connect the client to the local server even when already
+            connected to a remote ZenML server.
+        image: A custom Docker image to use for the server, when the
+            `--docker` flag is set.
     """
     if docker:
         provider = ServerProviderType.DOCKER
@@ -147,6 +171,8 @@ def up(
     )
     if not docker:
         config_attrs["blocking"] = blocking
+    elif image:
+        config_attrs["image"] = image
     if port is not None:
         config_attrs["port"] = port
     if ip_address is not None:
@@ -163,7 +189,7 @@ def up(
         metadata={
             "server_id": str(gc.user_id),
             "server_deployment": str(provider),
-            "database_type": str(gc.store.type),
+            "database_type": SQLDatabaseDriver.SQLITE.value,
         },
     )
 
@@ -171,12 +197,34 @@ def up(
         gc = GlobalConfiguration()
         # Don't connect to the local server if the client is already connected
         # to a remote server.
-        if gc.zen_store.type == StoreType.REST:
-            cli_utils.declare(
-                "Skipped connecting to the local server. The client is "
-                "already connected to a remote ZenML server."
-            )
+        if (
+            gc.store is not None
+            and gc.store.type == StoreType.REST
+            and not connect
+        ):
+
+            try:
+                if gc.zen_store.is_local_store():
+                    connect = True
+                else:
+                    cli_utils.declare(
+                        "Skipped connecting to the local server. The client is "
+                        "already connected to a remote ZenML server. Pass the "
+                        "`--connect` flag to connect to the local server anyway."
+                    )
+            except Exception as e:
+                logger.debug(
+                    f"The current ZenML server configuration is no longer "
+                    f"valid. Connecting to the local server: {e}"
+                )
+                # even when connected to a remote ZenML server, if the
+                # connection is not working, we default to connecting to the
+                # local server
+                connect = True
         else:
+            connect = True
+
+        if connect:
             deployer.connect_to_server(
                 LOCAL_ZENML_SERVER_NAME,
                 DEFAULT_USERNAME,
@@ -264,6 +312,7 @@ def down() -> None:
     is_flag=True,
     help="Connect your client to the ZenML server after it is successfully "
     "deployed.",
+    default=False,
     type=click.BOOL,
 )
 @click.option(
@@ -502,6 +551,10 @@ def status() -> None:
             must be a path to a CA certificate bundle to use or the CA bundle
             value itself.
 
+        http_timeout: The number of seconds to wait for HTTP requests to the
+            ZenML server to be successful before issuing a timeout error
+            (default: 5).
+
     Example configuration:
 
         url: https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com/zenml\n
@@ -515,6 +568,7 @@ def status() -> None:
         ULnzA0JkRWRnFqH6uXeJo1KAVqtxn1xf8PYxx3NlNDr9wi8KKwARf2lwm6sH4mvq
         1aZ/0iYnGKCu7rLJzxeguliMf69E\n
         -----END CERTIFICATE-----
+        http_timeout: 10
 
     """
     ),
@@ -549,6 +603,7 @@ def status() -> None:
     "--no-verify-ssl",
     is_flag=True,
     help="Whether to verify the server's TLS certificate",
+    default=False,
 )
 @click.option(
     "--ssl-ca-cert",
@@ -567,6 +622,7 @@ def status() -> None:
     "--raw-config",
     is_flag=True,
     help="Whether to use the configuration without prompting for missing fields.",
+    default=False,
 )
 def connect(
     url: Optional[str] = None,

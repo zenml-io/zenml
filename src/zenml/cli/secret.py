@@ -24,7 +24,7 @@ from zenml.cli.utils import (
     confirmation,
     error,
     expand_argument_value_from_file,
-    parse_unknown_options,
+    parse_name_and_extra_arguments,
     pretty_print_secret,
     print_list_items,
     warning,
@@ -157,21 +157,17 @@ def register_secrets_manager_subcommands() -> None:
         #  broken.
         # TODO [ENG-725]: Allow passing in json/dict when registering a secret as an
         #   additional option for the user on top of the interactive
-        try:
-            parsed_args = parse_unknown_options(args, expand_args=True)
-        except AssertionError as e:
-            error(str(e))
+
+        # Parse the given args
+        # name is guaranteed to be set by parse_name_and_extra_arguments
+        name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
+            list(args) + [name], expand_args=True
+        )
 
         if "name" in parsed_args:
             error("You can't use 'name' as the key for one of your secrets.")
         elif name == "name":
             error("Secret names cannot be named 'name'.")
-
-        if name.startswith("--"):
-            error(
-                "Secret names cannot start with '--' The first argument must be."
-                "the secret name."
-            )
 
         if secret_schema_type != ARBITRARY_SECRET_SCHEMA_TYPE:
             warning(
@@ -368,6 +364,12 @@ def register_secrets_manager_subcommands() -> None:
         """
         # TODO [ENG-726]: allow users to pass in dict or json
 
+        # Parse the given args
+        # name is guaranteed to be set by parse_name_and_extra_arguments
+        name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
+            list(args) + [name], expand_args=True
+        )
+
         with console.status(f"Getting secret `{name}`..."):
             try:
                 secret = secrets_manager.get_secret(secret_name=name)
@@ -376,12 +378,6 @@ def register_secrets_manager_subcommands() -> None:
                     f"Secret with name `{name}` does not exist or could not be "
                     f"loaded: {str(e)}."
                 )
-
-        try:
-            parsed_args = parse_unknown_options(args, expand_args=True)
-        except AssertionError as e:
-            error(str(e))
-            return
 
         if "name" in parsed_args:
             error("Secret names cannot be passed as arguments.")

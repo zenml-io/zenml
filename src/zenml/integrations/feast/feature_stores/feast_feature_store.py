@@ -20,7 +20,7 @@ import redis
 from feast import FeatureStore  # type: ignore[import]
 
 # from feast.registry import Registry  # type: ignore[import]
-from feast.infra.registry.registry import Registry
+from feast.infra.registry.registry import Registry  # type: ignore[import]
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
 from zenml.integrations.feast.flavors.feast_feature_store_flavor import (

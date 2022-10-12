@@ -472,31 +472,67 @@ def expand_argument_value_from_file(name: str, value: str) -> str:
         )
 
 
-def parse_unknown_options(
-    args: List[str], expand_args: bool = False
-) -> Dict[str, Any]:
-    """Parse unknown options from the CLI.
+def parse_name_and_extra_arguments(
+    args: List[str],
+    expand_args: bool = False,
+    name_mandatory: bool = True,
+) -> Tuple[Optional[str], Dict[str, str]]:
+    """Parse a name and extra arguments from the CLI.
+
+    This is a utility function used to parse a variable list of optional CLI
+    arguments of the form `--key=value` that must also include one mandatory
+    free-form name argument. There is no restriction as to the order of the
+    arguments.
+
+    Examples:
+        >>> parse_name_and_extra_arguments(['foo']])
+        ('foo', {})
+        >>> parse_name_and_extra_arguments(['foo', '--bar=1'])
+        ('foo', {'bar': '1'})
+        >>> parse_name_and_extra_arguments('--bar=1', 'foo', '--baz=2'])
+        ('foo', {'bar': '1', 'baz': '2'})
+        >>> parse_name_and_extra_arguments(['--bar=1'])
+        Traceback (most recent call last):
+            ...
+            ValueError: Missing required argument: name
 
     Args:
-        args: A list of strings from the CLI.
+        args: A list of command line arguments from the CLI.
         expand_args: Whether to expand argument values into the contents of the
             files they may be pointing at using the special `@` character.
+        name_mandatory: Whether the name argument is mandatory.
 
     Returns:
-        Dict of parsed args.
+        The name and a dict of parsed args.
     """
-    # TODO: Should we add the cli_utils.error here?
-    warning_message = (
+    name: Optional[str] = None
+    # The name was not supplied as the first argument, we have to
+    # search the other arguments for the name.
+    for i, arg in enumerate(args):
+        if arg.startswith("--"):
+            continue
+        name = args.pop(i)
+        break
+    else:
+        if name_mandatory:
+            error(
+                "A name must be supplied. Please see the command help for more "
+                "information."
+            )
+
+    message = (
         "Please provide args with a proper "
         "identifier as the key and the following structure: "
         '--custom_argument="value"'
     )
-
-    assert all(a.startswith("--") for a in args), warning_message
-    assert all("=" in a for a in args), warning_message
-
-    args_dict = dict(a[2:].split("=", maxsplit=1) for a in args)
-    assert all(k.isidentifier() for k in args_dict), warning_message
+    args_dict: Dict[str, str] = {}
+    for a in args:
+        if not a.startswith("--") or "=" not in a:
+            error(f"Invalid argument: '{a}'. {message}")
+        key, value = a[2:].split("=", maxsplit=1)
+        if not key.isidentifier():
+            error(f"Invalid argument: '{a}'. {message}")
+        args_dict[key] = value
 
     if expand_args:
         args_dict = {
@@ -504,7 +540,7 @@ def parse_unknown_options(
             for k, v in args_dict.items()
         }
 
-    return args_dict
+    return name, args_dict
 
 
 def parse_unknown_component_attributes(args: List[str]) -> List[str]:
@@ -963,16 +999,16 @@ def print_components_table(
         warning(f"No {display_name} registered.")
         return
     active_stack = client.active_stack_model
-    active_component_name = None
+    active_component_id = None
     if component_type in active_stack.components.keys():
         active_components = active_stack.components[component_type]
-        active_component_name = (
-            active_components[0].name if active_components else None
+        active_component_id = (
+            active_components[0].id if active_components else None
         )
 
     configurations = []
     for component in components:
-        is_active = component.name == active_component_name
+        is_active = component.id == active_component_id
         component_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": component.name,

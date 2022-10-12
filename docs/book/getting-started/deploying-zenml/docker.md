@@ -28,10 +28,14 @@ You can set the following as environment variables wherever you want to run your
     The authentication scheme that the ZenML server should use. You can use one
     of the following options:
     
-    NO_AUTH - No authentication is done. The default user and project are used
-        for all requests.
+    NO_AUTH - No authentication is done. The default user is assumed to be
+        used for all requests made to the server.
     HTTP_BASIC - HTTP Basic authentication
     OAUTH2_PASSWORD_BEARER (default) - OAuth2 password bearer with JWT tokens.
+
+    NOTE: currently, only the OAUTH2_PASSWORD_BEARER authentication scheme is
+    known to work with the CLI and ZenML Dashboard. You should use the other
+    schemes only if you intent to access the REST API directly.
     
 - ZENML_DEFAULT_PROJECT_NAME
     The name of the default project created by the server on first deployment.
