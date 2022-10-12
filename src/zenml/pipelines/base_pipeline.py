@@ -544,7 +544,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         if gc.store and gc.store.type == StoreType.REST:
             url = dashboard_utils.get_run_url(
                 pipeline_deployment.run_name,
-                pipeline_id if pipeline_id else None
+                pipeline_id if pipeline_id else None,
             )
             logger.info(f"Dashboard URL: {url}")
         elif gc.store and gc.store.type == StoreType.SQL:
