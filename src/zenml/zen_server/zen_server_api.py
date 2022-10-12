@@ -141,7 +141,7 @@ app.include_router(users_endpoints.activation_router)
 
 
 @app.on_event("startup")
-@repeat_every(seconds=10)
+@repeat_every(seconds=3)
 def sync_pipeline_runs() -> None:
     """Sync pipeline runs."""
     logger.info("Syncing pipeline runs...")
