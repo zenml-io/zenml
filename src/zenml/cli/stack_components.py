@@ -15,7 +15,7 @@
 
 import time
 from importlib import import_module
-from typing import TYPE_CHECKING, Callable, List
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 import click
 from rich.markdown import Markdown
@@ -177,7 +177,6 @@ def generate_stack_component_register_command(
     @click.argument(
         "name",
         type=str,
-        required=True,
     )
     @click.option(
         "--flavor",
@@ -209,15 +208,16 @@ def generate_stack_component_register_command(
             share: Share the stack with other users.
             args: Additional arguments to pass to the component.
         """
+        # Parse the given args
+        # name is guaranteed to be set by parse_name_and_extra_arguments
+        name, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
+            list(args) + [name], expand_args=True
+        )
+
         with console.status(f"Registering {display_name} '{name}'...\n"):
             cli_utils.print_active_config()
             cli_utils.print_active_stack()
             client = Client()
-
-            # Parse the given args
-            parsed_args = cli_utils.parse_unknown_options(
-                args, expand_args=True
-            )
 
             # click<8.0.0 gives flags a default of None
             if share is None:
@@ -265,7 +265,7 @@ def generate_stack_component_update_command(
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def update_stack_component_command(
-        name_or_id: str, args: List[str]
+        name_or_id: Optional[str], args: List[str]
     ) -> None:
         """Updates a stack component.
 
@@ -273,17 +273,36 @@ def generate_stack_component_update_command(
             name_or_id: The name or id of the stack component to update.
             args: Additional arguments to pass to the update command.
         """
-        with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
-            cli_utils.print_active_config()
-            cli_utils.print_active_stack()
+        args = list(args)
+        if name_or_id:
+            args.append(name_or_id)
+        # Parse the given args
+        name_or_id, parsed_args = cli_utils.parse_name_and_extra_arguments(
+            args,
+            expand_args=True,
+            name_mandatory=False,
+        )
 
-            # Parse the given args
-            parsed_args = cli_utils.parse_unknown_options(
-                args=args, expand_args=True
+        cli_utils.print_active_config()
+        cli_utils.print_active_stack()
+
+        client = Client()
+        if not name_or_id:
+            cli_utils.declare(
+                f"No name or id was provided. Trying to update the active "
+                f"{display_name}."
             )
+            active_stack = client.active_stack_model
+            if component_type not in active_stack.components:
+                cli_utils.error(
+                    f"The active stack has no {display_name} and no name or id "
+                    f"was provided."
+                )
+            name_or_id = str(active_stack.components[component_type][0].id)
+
+        with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
 
             # Get the existing component
-            client = Client()
             existing_component = (
                 cli_utils.get_component_by_id_or_name_or_prefix(
                     client=client,
