@@ -13,11 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the Kubernetes Spark Step Operator."""
 import os
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Optional, Tuple, cast
 
 from pyspark.conf import SparkConf
 
 from zenml.entrypoints import entrypoint
+from zenml.enums import StackComponentType
 from zenml.integrations.spark.flavors.spark_on_kubernetes_step_operator_flavor import (
     KubernetesSparkStepOperatorConfig,
 )
@@ -26,6 +27,7 @@ from zenml.integrations.spark.step_operators.spark_step_operator import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.stack import Stack, StackValidator
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_WORKDIR,
     PipelineDockerImageBuilder,
@@ -35,7 +37,6 @@ from zenml.utils.source_utils import get_source_root_path
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import StepConfiguration
-    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -56,6 +57,46 @@ class KubernetesSparkStepOperator(SparkStepOperator):
             The configuration.
         """
         return cast(KubernetesSparkStepOperatorConfig, self._config)
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Validates the stack.
+
+        Returns:
+            A validator that checks that the stack contains a remote container
+            registry and a remote artifact store.
+        """
+
+        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+            if stack.artifact_store.config.is_local:
+                return False, (
+                    "The Spark step operator runs code remotely and "
+                    "needs to write files into the artifact store, but the "
+                    f"artifact store `{stack.artifact_store.name}` of the "
+                    "active stack is local. Please ensure that your stack "
+                    "contains a remote artifact store when using the Spark "
+                    "step operator."
+                )
+
+            container_registry = stack.container_registry
+            assert container_registry is not None
+
+            if container_registry.config.is_local:
+                return False, (
+                    "The Spark step operator runs code remotely and "
+                    "needs to push/pull Docker images, but the "
+                    f"container registry `{container_registry.name}` of the "
+                    "active stack is local. Please ensure that your stack "
+                    "contains a remote container registry when using the "
+                    "Spark step operator."
+                )
+
+            return True, ""
+
+        return StackValidator(
+            required_components={StackComponentType.CONTAINER_REGISTRY},
+            custom_validation_function=_validate_remote_components,
+        )
 
     @property
     def application_path(self) -> Any:
