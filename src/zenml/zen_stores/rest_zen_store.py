@@ -141,7 +141,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
         verify_ssl: Either a boolean, in which case it controls whether we
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
-        timeout: The timeout to use for all requests.
+        http_timeout: The timeout to use for all requests.
     """
 
     type: StoreType = StoreType.REST
