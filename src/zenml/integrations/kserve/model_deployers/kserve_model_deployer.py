@@ -110,7 +110,7 @@ class KServeModelDeployer(BaseModelDeployer):
                 f"  'zenml model-deployer register kserve --flavor={KSERVE_MODEL_DEPLOYER_FLAVOR} "
                 f"--kubernetes_context=context-name --kubernetes_namespace="
                 f"namespace-name --base_url=https://ingress.cluster.kubernetes'\n"
-                f"  'zenml stack create stack-name -d kserve ...'\n"
+                f"  'zenml stack register stack-name -d kserve ...'\n"
             )
         return model_deployer
 

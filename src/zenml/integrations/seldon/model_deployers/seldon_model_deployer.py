@@ -106,7 +106,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 f"  'zenml model-deployer register seldon --flavor={SELDON_MODEL_DEPLOYER_FLAVOR} "
                 f"--kubernetes_context=context-name --kubernetes_namespace="
                 f"namespace-name --base_url=https://ingress.cluster.kubernetes'\n"
-                f"  'zenml stack create stack-name -d seldon ...'\n"
+                f"  'zenml stack register stack-name -d seldon ...'\n"
             )
         return model_deployer
 
