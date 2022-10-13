@@ -45,5 +45,5 @@ __all__ = [
     "VertexStepOperatorFlavor",
     "VertexStepOperatorConfig",
     "GcpVMOrchestratorConfig",
-    "GcpVMOrchestratorFlavor"
+    "GcpVMOrchestratorFlavor",
 ]

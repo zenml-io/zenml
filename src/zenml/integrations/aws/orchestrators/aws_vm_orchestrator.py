@@ -161,19 +161,16 @@ def get_startup_script(
         f"#!/bin/bash -xe\n"
         f"exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1\n"
         f"aws ecr get-login-password --region {region} | docker login --username AWS --password-stdin {registry_name}\n"
-
         f"mkdir -p /tmp/aws_config\n"
         f"touch /tmp/aws_config/config\n"
         f'echo "[default]">>/tmp/aws_config/config\n'
         f'echo "region = {region}">>/tmp/aws_config/config\n'
-
         f"docker run --log-driver=awslogs --net=host "
         f"--log-opt awslogs-region={region} --log-opt awslogs-group={AWS_LOGS_GROUP_NAME} "
         f"--log-opt awslogs-create-group=true "
         f"--log-opt awslogs-stream={log_stream_name} "
         f"--env AWS_REGION={region} -v /tmp/aws_config:/root/.aws "
         f"{image_name} {c_params} || true\n"
-        
         f"instanceId=$(curl http://169.254.169.254/latest/meta-data/instance-id/)\n"
         f"aws ec2 terminate-instances --instance-ids $instanceId --region {region}"
     )

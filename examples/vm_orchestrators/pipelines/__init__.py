@@ -18,6 +18,7 @@ from steps.evaluator import evaluator
 from steps.importer import importer
 from steps.sklearn_trainer import svc_trainer
 
+
 @pipeline
 def digits_pipeline(importer, trainer, evaluator):
     """Links all the steps together in a pipeline"""
