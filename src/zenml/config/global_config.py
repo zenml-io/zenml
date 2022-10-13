@@ -126,6 +126,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     Attributes:
         user_id: Unique user id.
         user_email: Email address associated with this client.
+        user_email_opt_in: Whether the user has opted in to email communication.
         analytics_opt_in: If a user agreed to sending analytics or not.
         version: Version of ZenML that was last used to create or update the
             global config.
@@ -138,6 +139,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4, allow_mutation=False)
     user_email: Optional[str] = None
+    user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
     version: Optional[str]
     store: Optional[StoreConfiguration]
@@ -388,18 +390,15 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             logger.debug(f"Configuring the global store to {store.config}")
             self.store = store.config
 
-            # We want to check if an email address has been set for
-            # the active user and if so, record it in the analytics. The
-            # call to `set_email_address` will only record the email address
-            # if it has not already been recorded in the past, so we don't
-            # flood the analytics with the same email address over and over.
+            # We want to check if the active user has opted in or out for using
+            # an email address for marketing purposes and if so, record it in
+            # the analytics.
             active_user = store.active_user
-            if active_user.email_opted_in and active_user.email:
-                self.set_email_address(
-                    active_user.email,
-                    AnalyticsEventSource.ZENML_CONNECT
-                    if self._zen_store
-                    else AnalyticsEventSource.ZENML_SERVER_OPT_IN,
+            if active_user.email_opted_in is not None:
+                self.record_email_opt_in_out(
+                    opted_in=active_user.email_opted_in,
+                    email=active_user.email,
+                    source=AnalyticsEventSource.ZENML_SERVER,
                 )
 
             self._zen_store = store
@@ -475,6 +474,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
+        # TODO: shouldn't this be done at the end?
         self._write_config(config_path)
 
         config_copy = GlobalConfiguration(config_path=config_path)
@@ -653,28 +653,44 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self.active_project_name = project.name
         self._active_project = project
 
-    def set_email_address(
-        self, email: str, source: AnalyticsEventSource
+    def record_email_opt_in_out(
+        self, opted_in: bool, email: Optional[str], source: AnalyticsEventSource
     ) -> None:
         """Set the email address associated with this client.
 
         Args:
-            email: The email address to use for this client.
+            opted_in: Whether the user has opted in to email communication.
+            email: The email address to use for this client, if given.
             source: The analytics event source.
         """
-        # The first time an email address is associated with the client, we want
-        # to identify the client by an email address. If the email address has
+        # Whenever a new email address is associated with the client, we want
+        # to identify the client by that email address. If the email address has
         # been changed, we also want to update the information.
-        if email:
-            if self.user_email != email:
-                identify_user(
-                    {
-                        "email": email,
-                        "source": source,
-                    }
-                )
-
+        if opted_in and email and self.user_email != email:
+            identify_user(
+                {
+                    "email": email,
+                    "source": source,
+                }
+            )
             self.user_email = email
+
+        if (
+            self.user_email_opt_in is None
+            or opted_in
+            and not self.user_email_opt_in
+        ):
+
+            # When the user opts out giving the email for the first time, or
+            # when the user opts in after opting out (e.g. when connecting to
+            # a new server where the account has opt-in enabled), we want to
+            # record the information as an analytics event.
+            track_event(
+                AnalyticsEvent.OPT_IN_OUT_EMAIL,
+                {"opted_in": opted_in, "source": source},
+            )
+
+            self.user_email_opt_in = opted_in
 
     class Config:
         """Pydantic configuration class."""

@@ -1,5 +1,27 @@
 <!-- markdown-link-check-disable -->
 
+# 0.20.3
+
+This release fixes another series of minor bugs that were introduced in 0.20.0.
+
+## What's Changed
+* Fixed GitHub/Colab JSON formatting error on quickstart. by @fa9r in https://github.com/zenml-io/zenml/pull/947
+* Update YAML config template by @htahir1 in https://github.com/zenml-io/zenml/pull/952
+* correct code from merge and fix import by @wjayesh in https://github.com/zenml-io/zenml/pull/950
+* Check for active component using id instead of name by @schustmi in https://github.com/zenml-io/zenml/pull/956
+* Tekton fix by @htahir1 in https://github.com/zenml-io/zenml/pull/955
+* Improve zenml up/down UX and other fixes by @stefannica in https://github.com/zenml-io/zenml/pull/957
+* Update kubeflow docs for multi-tenant deployments by @htahir1 in https://github.com/zenml-io/zenml/pull/958
+* Update kubeflow.md by @abohmeed in https://github.com/zenml-io/zenml/pull/959
+* Add additional stack validation for step operators by @schustmi in https://github.com/zenml-io/zenml/pull/954
+* Fix pipeline run dashboard URL for unlisted runs by @fa9r in https://github.com/zenml-io/zenml/pull/951
+* Support subclasses of registered types in recursive materialization by @fa9r in https://github.com/zenml-io/zenml/pull/953
+
+## New Contributors
+* @abohmeed made their first contribution in https://github.com/zenml-io/zenml/pull/959
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.20.2...0.20.3
+
 # 0.20.2
 
 After a successful release of the new ZenML server and dashboard paradigm, we set to ironing out some bugs that slipped through.

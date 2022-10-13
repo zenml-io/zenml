@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Zen Server local provider implementation."""
 
+import shutil
 from typing import ClassVar, List, Optional, Tuple, Type, cast
 
 from zenml import __version__
@@ -32,7 +33,6 @@ from zenml.services import (
 from zenml.zen_server.deploy.base_provider import BaseServerProvider
 from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 from zenml.zen_server.deploy.local.local_zen_server import (
-    LOCAL_ZENML_SERVER_CONFIG_PATH,
     LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT,
     ZEN_SERVER_HEALTHCHECK_URL_PATH,
     LocalServerDeploymentConfig,
@@ -93,7 +93,7 @@ class LocalServerProvider(BaseServerProvider):
 
         return (
             LocalZenServerConfig(
-                root_runtime_path=LOCAL_ZENML_SERVER_CONFIG_PATH,
+                root_runtime_path=LocalZenServer.config_path(),
                 singleton=True,
                 name=server_config.name,
                 blocking=server_config.blocking,
@@ -260,7 +260,7 @@ class LocalServerProvider(BaseServerProvider):
             timeout = LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT
 
         service.stop(timeout)
-        # TODO: Remove all service files from the disk.
+        shutil.rmtree(LocalZenServer.config_path())
 
     def _get_service(self, server_name: str) -> BaseService:
         """Get the local ZenML server deployment service.

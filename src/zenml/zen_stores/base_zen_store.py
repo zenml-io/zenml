@@ -485,6 +485,15 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         return self.list_users()
 
     @property
+    def _default_user_name(self) -> str:
+        """Get the default user name.
+
+        Returns:
+            The default user name.
+        """
+        return os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
+
+    @property
     def _default_user(self) -> UserModel:
         """Get the default user.
 
@@ -494,7 +503,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Raises:
             KeyError: If the default user doesn't exist.
         """
-        user_name = os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
+        user_name = self._default_user_name
         try:
             return self.get_user(user_name)
         except KeyError:

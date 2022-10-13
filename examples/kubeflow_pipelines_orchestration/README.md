@@ -328,6 +328,16 @@ zenml stack down --force
 rm -rf zenml_examples
 ```
 
+# ⚠️ Important note for multi-tenant Kubeflow deployments
+
+Kubeflow has a notion of [multi-tenancy](https://www.kubeflow.org/docs/components/multi-tenancy/overview/) 
+built into its deployment. Kubeflow’s multi-user isolation simplifies user 
+operations because each user only views and edits the Kubeflow components 
+and model artifacts defined in their configuration.
+
+Using a multi-tenant deployment of Kubeflow involves a bit more configuration than is shown in this example.
+For details, refer to the [Kubeflow stack component docs](https://docs.zenml.io/component-gallery/orchestrators/kubeflow).
+
 # 📜 Learn more
 
 Our docs regarding the Kubeflow orchestrator integration can be found [here](https://docs.zenml.io/component-gallery/orchestrators/kubeflow).

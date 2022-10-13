@@ -43,7 +43,7 @@ from zenml.zen_server.deploy.local.local_zen_server import (
 )
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
-SERVER_START_STOP_TIMEOUT = 15
+SERVER_START_STOP_TIMEOUT = 30
 
 
 @pytest.fixture
@@ -189,7 +189,9 @@ def test_server_up_down():
         assert requests.head(endpoint + "/health").status_code == 200
     except RuntimeError:
         print("ZenServer failed to start. Pulling logs...")
-        for line in deployer.get_server_logs(server.config.name, tail=200):
+        for line in deployer.get_server_logs(
+            server_name="test_server", tail=200
+        ):
             print(line)
         raise
     finally:
@@ -200,7 +202,9 @@ def test_server_up_down():
             )
         except RuntimeError:
             print("ZenServer failed to start. Pulling logs...")
-            for line in deployer.get_server_logs(server.config.name, tail=200):
+            for line in deployer.get_server_logs(
+                server_name="test_server", tail=200
+            ):
                 print(line)
             raise
     assert deployer.list_servers() == []
