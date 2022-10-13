@@ -474,6 +474,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
+        # TODO: shouldn't this be done at the end?
         self._write_config(config_path)
 
         config_copy = GlobalConfiguration(config_path=config_path)

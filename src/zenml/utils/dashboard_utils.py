@@ -14,6 +14,7 @@
 """Utility class to help with interacting with the dashboard."""
 
 from typing import Optional
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
@@ -24,7 +25,7 @@ logger = get_logger(__name__)
 
 
 def get_run_url(
-    run_name: str, pipeline_id: Optional[str] = None
+    run_name: str, pipeline_id: Optional[UUID] = None
 ) -> Optional[str]:
     """Computes a dashboard url to directly view the run.
 
@@ -46,18 +47,18 @@ def get_run_url(
 
     url = ""
     # We should only do the log if runs exist
-    if runs:
+    if runs and gc.store and gc.store.type == StoreType.REST:
         # For now, take the first index to get the latest run
         run = runs[0]
         url = gc.store.url
         # Add this for unlisted runs
         if pipeline_id:
-            url += f"/pipelines/{pipeline_id}"
+            url += f"/pipelines/{str(pipeline_id)}"
         url += f"/runs/{run.id}/dag"
     return url
 
 
-def print_run_url(run_name: str, pipeline_id: Optional[str] = None) -> None:
+def print_run_url(run_name: str, pipeline_id: Optional[UUID] = None) -> None:
     """Logs a dashboard url to directly view the run.
 
     Args:
@@ -69,7 +70,7 @@ def print_run_url(run_name: str, pipeline_id: Optional[str] = None) -> None:
     if gc.store and gc.store.type == StoreType.REST:
         url = get_run_url(
             run_name,
-            pipeline_id if pipeline_id else None,
+            pipeline_id,
         )
         if url:
             logger.info(f"Dashboard URL: {url}")
