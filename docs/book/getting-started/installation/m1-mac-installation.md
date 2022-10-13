@@ -5,7 +5,7 @@ description: How to install ZenML on M1 Macs
 In order to run ZenML on Macs with M1 chips, you need to install Python under 
 Rosetta 2. 
 This issue arises because some of ZenML's dependencies aren’t fully compatible 
-with the ARM64 Architecture.
+with the ARM64 architecture.
 The following step-by-step instructions will show you how you can install Python
 and ZenML under Rosetta using the
 [Homebrew (`brew`)](https://github.com/pyenv/pyenv) package manager and 
@@ -26,10 +26,9 @@ softwareupdate --install-rosetta
 
 Next, you need a way to run your terminal under rosetta so you can install the
 other dependencies later.
-
 There are two ways how you can do this.
 
-### Option 1: Start a Rosetta Terminal from Terminal
+### Option 1: Starting a Rosetta Terminal from Terminal
 
 One option to start a Terminal under Rosetta is to execute the following command:
 
@@ -37,7 +36,7 @@ One option to start a Terminal under Rosetta is to execute the following command
 arch -x86_64 zsh -l
 ```
 
-### Option 2: Add Rosetta Terminal to your Applications
+### Option 2: Adding Rosetta Terminal to your Applications
 
 Alternatively, you can add a Rosetta Terminal to your Applications folder by 
 copying your existing Terminal application from `Applications/Utilities/Terminal`, renaming the copy, and setting the
@@ -109,15 +108,15 @@ To install Homebrew under Rosetta, use the following command:
 arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 ```
 
-Then, run the following to create the `brew86` alias:
+Then, reate the `brew86` alias like so:
 
 ```
 alias brew86="arch -x86_64 /usr/local/bin/brew"
 ```
 
-## 4. Installing pyenv and pyenv-virtualenv under Rosetta with Brew
+## 4. Installing pyenv and pyenv-virtualenv under Rosetta
 
-### Install Dependencies
+### Installing Dependencies
 
 To install pyenv, you first need to install its dependencies:
 
@@ -125,7 +124,7 @@ To install pyenv, you first need to install its dependencies:
 brew86 install openssl readline sqlite3 xz zlib tcl-tk
 ```
 
-### Install pyenv
+### Installing pyenv
 
 Then you can install pyenv under Rosetta via:
 
@@ -133,7 +132,7 @@ Then you can install pyenv under Rosetta via:
 brew86 install pyenv
 ```
 
-### Install pyenv-virtualenv
+### Installing pyenv-virtualenv
 
 Similarly, you can install `pyenv-virtualenv` via:
 
@@ -141,7 +140,7 @@ Similarly, you can install `pyenv-virtualenv` via:
 brew86 install pyenv-virtualenv
 ```
 
-### Create a pyenv86 Alias
+### Creating a pyenv86 Alias
 
 Then we will again create an alias for running pyenv under Rosetta:
 
@@ -152,15 +151,14 @@ alias pyenv86="arch -x86_64 pyenv"
 ### Setting Environment Variables
 
 Lastly, run the following lines to set the environment variables required by
-pyenv in your `.zshrc`:
+pyenv and pyenv-virtualenv in your `.zshrc`:
 
 ```
 echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zshrc
 echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zshrc
 echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.zshrc
 ```
-
-Now you're all set and can run `pyenv86`
 
 ## 5. Installing Python under Rosetta with Pyenv
 
@@ -177,11 +175,11 @@ run:
 pyenv86 install 3.9.14
 ```
 
-## 6. Installing ZenML in a new virtual environment
+## 6. Installing ZenML in a Virtual Environment
 
 Lastly, let's install ZenML in a new virtual environment.
 
-### Create a Virtual Environment with pyenv-virtualenv
+### Creating a Virtual Environment with pyenv-virtualenv
 
 To create a new virtual environment called `zenml` based on Python 3.9.14, run:
 
@@ -189,7 +187,7 @@ To create a new virtual environment called `zenml` based on Python 3.9.14, run:
 pyenv virtualenv 3.9.14 zenml
 ```
 
-### Activate a Virtual Environment with pyenv-virtualenv
+### Activating a Virtual Environment with pyenv-virtualenv
 
 You can then activate the virtual environment using
 
@@ -197,7 +195,7 @@ You can then activate the virtual environment using
 pyenv activate zenml
 ```
 
-### Install ZenML
+### Installing ZenML
 
 Finally, you can install ZenML in the virtual environment with pip:
 
@@ -211,6 +209,7 @@ And that's it, you have successfully installed ZenML in Python 3.9 under Rosetta
 - [Installing Rosetta](https://osxdaily.com/2020/12/04/how-install-rosetta-2-apple-silicon-mac/)
 - [Installing Python under Rosetta with Brew and Pyenv](http://sixty-north.com/blog/pyenv-apple-silicon.html)
 - [Installing Python under Rosetta with Brew and Pipenv](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
-- [Pyenv Installation with Homebrew](https://github.com/pyenv/pyenv#homebrew-in-macos)
-- [Pyenv Shell Environment Setup](https://github.com/pyenv/pyenv#set-up-your-shell-environment-for-pyenv)
+- [pyenv Installation with Homebrew](https://github.com/pyenv/pyenv#homebrew-in-macos)
+- [pyenv-virtualenv Installation with Homebrew](https://github.com/pyenv/pyenv-virtualenv#installing-with-homebrew-for-macos-users)
+- [pyenv Shell Environment Setup](https://github.com/pyenv/pyenv#set-up-your-shell-environment-for-pyenv)
 - [Rosetta Terminal in VSCode](https://blog.hao.dev/setting-up-zsh-with-vs-code-on-apple-silicon-mac-m1-chip)
