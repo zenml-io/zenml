@@ -280,14 +280,3 @@ class AzureMLStepOperator(BaseStepOperator):
 
         run.display_name = info.run_name
         run.wait_for_completion(show_output=True)
-
-    def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeployment", stack: "Stack"
-    ) -> None:
-        from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
-
-        path = os.path.join(
-            get_source_root_path(), DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
-        )
-        with open(path, "w") as f:
-            f.write(deployment.yaml())
