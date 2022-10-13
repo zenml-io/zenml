@@ -94,6 +94,16 @@ zenml:
     # sslKey: /path/to/client-key.pem
     # sslVerifyServerCert: True
 
+  grpcMetadata:
+    enabled: true
+    image:
+      repository: gcr.io/tfx-oss-public/ml_metadata_store_server
+      pullPolicy: Always
+      tag: "1.8.0"
+    service:
+      type: ClusterIP
+      port: 80
+      
 serviceAccount:
   # Specifies whether a service account should be created
   create: true

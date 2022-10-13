@@ -1,0 +1,17 @@
+{{- if and .Values.zenml.grpcMetadata.enabled .Values.zenml.database.url }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "zenml.fullname" . }}-grpc-metadata
+  labels:
+    {{- include "zenml.metadataLabels" . | nindent 4 }}
+spec:
+  type: {{ .Values.zenml.grpcMetadata.service.type }}
+  ports:
+    - port: {{ .Values.zenml.grpcMetadata.service.port }}
+      targetPort: 80
+      protocol: TCP
+      name: grpc-api
+  selector:
+    {{- include "zenml.metadataSelectorLabels" . | nindent 4 }}
+{{- end }}
