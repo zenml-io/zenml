@@ -1,9 +1,9 @@
 # This is an example feature definition file
 
+import os
 from datetime import timedelta
 
 import pandas as pd
-
 from feast import (
     Entity,
     FeatureService,
@@ -25,7 +25,7 @@ driver = Entity(name="driver", join_keys=["driver_id"])
 # for more info.
 driver_stats_source = FileSource(
     name="driver_hourly_stats_source",
-    path="./data/driver_stats.parquet",
+    path=f"{os.getcwd()}/data/driver_stats.parquet",
     timestamp_field="event_timestamp",
     created_timestamp_column="created",
 )
