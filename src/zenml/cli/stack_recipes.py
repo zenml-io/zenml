@@ -262,7 +262,7 @@ class StackRecipeService(TerraformService):
             'provider': f'{provider}',
             'username': 'default',
             'password': 'zenml',
-            'create_sql': False,
+            'create_sql': True,
             'create_ingress_controller': False,
         }
 
@@ -276,24 +276,10 @@ class StackRecipeService(TerraformService):
         if Path(self.terraform_client.working_dir).name in filter and \
             ("enable_mlflow" not in vars or vars["enable_mlflow"] is False):
             config["create_ingress_controller"] = True
-            config["create_sql"] = True
         else:
-            database_url = self.terraform_client.output(
-                DATABASE_HOST_OUTPUT, full_value=True
-            )
-            database_username = self.terraform_client.output(
-                DATABASE_USERNAME_OUTPUT, full_value=True
-            )
-            database_password = self.terraform_client.output(
-                DATABASE_PASSWORD_OUTPUT, full_value=True
-            )
             ingress_controller_hostname = self.terraform_client.output(
                 INGRESS_CONTROLLER_HOST_OUTPUT, full_value=True
             )
-            config["database_url"] = database_url
-            config["database_username"] = database_username
-            config["database_password"] = database_password
-            config["database_ssl_verify_server_cert"] = False
             config["ingress_controller_hostname"] = ingress_controller_hostname
         return yaml.dump(config)
 
