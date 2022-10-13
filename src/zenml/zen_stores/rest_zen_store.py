@@ -318,7 +318,22 @@ class RestZenStore(BaseZenStore):
             The TFX metadata config of this ZenStore.
         """
         from google.protobuf.json_format import Parse
-        from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+        from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig, MetadataStoreClientConfig
+        from urllib.parse import urlparse
+
+        parsed_url = urlparse(self.config.url)
+
+        connection_config = MetadataStoreClientConfig()
+        connection_config.host = f"grpc-metadata.{parsed_url.hostname}"
+        connection_config.port = 443
+        # connection_config.ssl_config.client_key = ""
+        # connection_config.ssl_config.server_cert = ""
+        if isinstance(self.config.verify_ssl, str):
+            with open(self.config.verify_ssl, "r") as f:
+                connection_config.ssl_config.custom_ca = f.read()
+        print(connection_config)
+        return connection_config
+
 
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 

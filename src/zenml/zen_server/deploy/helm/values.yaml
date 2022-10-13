@@ -101,9 +101,9 @@ zenml:
       pullPolicy: Always
       tag: "1.8.0"
     service:
-      type: ClusterIP
-      port: 80
-      
+      type: LoadBalancer
+      port: 8080
+
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
@@ -144,6 +144,14 @@ ingress:
     enabled: false
     generateCerts: false
     secretName: zenml-tls-certs
+  grpcMetadata:
+    enabled: true
+    annotations:
+      # kubernetes.io/ingress.class: nginx
+    host:
+    tls:
+      enabled: false
+
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
