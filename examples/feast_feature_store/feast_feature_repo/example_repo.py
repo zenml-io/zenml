@@ -21,7 +21,7 @@ from feast.types import Float32, Float64, Int64
 driver = Entity(name="driver", join_keys=["driver_id"])
 
 # Read data from parquet files. Parquet is convenient for local development mode. For
-# production, you can use your favorite DWH, such as BigQuery. See Feast documentation
+# production, you can use your favorite data warehouse, such as BigQuery. See Feast documentation
 # for more info.
 driver_stats_source = FileSource(
     name="driver_hourly_stats_source",
