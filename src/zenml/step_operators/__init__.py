@@ -18,6 +18,14 @@ operator defines how and where an individual step runs. This can be useful in a
 variety of scenarios. An example could be if one step within a pipeline should
 run on a separate environment equipped with a GPU (like a trainer step).
 """
-from zenml.step_operators.base_step_operator import BaseStepOperator
+from zenml.step_operators.base_step_operator import (
+    BaseStepOperator,
+    BaseStepOperatorConfig,
+    BaseStepOperatorFlavor,
+)
 
-__all__ = ["BaseStepOperator"]
+__all__ = [
+    "BaseStepOperator",
+    "BaseStepOperatorFlavor",
+    "BaseStepOperatorConfig",
+]

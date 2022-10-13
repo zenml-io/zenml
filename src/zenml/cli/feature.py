@@ -19,8 +19,9 @@ import click
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error
+from zenml.client import Client
 from zenml.enums import StackComponentType
-from zenml.repository import Repository
+from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
     from zenml.feature_stores.base_feature_store import BaseFeatureStore
@@ -43,18 +44,17 @@ def register_feature_store_subcommands() -> None:
         Args:
             ctx: The click context.
         """
-        repo = Repository()
-        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-        feature_store_wrapper = active_stack.get_component_wrapper(
+        client = Client()
+        feature_store_models = client.active_stack_model.components[
             StackComponentType.FEATURE_STORE
-        )
-        if feature_store_wrapper is None:
+        ]
+        if feature_store_models is None:
             error(
                 "No active feature store found. Please create a feature store "
                 "first and add it to your stack."
             )
             return
-        ctx.obj = feature_store_wrapper.to_component()
+        ctx.obj = StackComponent.from_model(feature_store_models[0])
 
     @feature.command("get-data-sources")
     @click.pass_obj

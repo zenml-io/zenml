@@ -17,7 +17,7 @@
 Three very simple steps
 """
 from .evaluator.evaluator_step import evaluator
-from .importer.importer_step import importer
+from .importer.importer_step import digits_data_loader
 from .remote_trainer.remote_trainer_step import remote_trainer
 
-__all__ = ["importer", "remote_trainer", "evaluator"]
+__all__ = ["digits_data_loader", "remote_trainer", "evaluator"]

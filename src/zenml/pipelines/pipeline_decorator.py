@@ -14,10 +14,11 @@
 """Decorator function for ZenML pipelines."""
 
 from typing import (
+    TYPE_CHECKING,
+    Any,
     Callable,
-    List,
+    Dict,
     Optional,
-    Sequence,
     Type,
     TypeVar,
     Union,
@@ -26,15 +27,15 @@ from typing import (
 
 from zenml.pipelines.base_pipeline import (
     INSTANCE_CONFIGURATION,
-    PARAM_DOCKERIGNORE_FILE,
     PARAM_ENABLE_CACHE,
-    PARAM_REQUIRED_INTEGRATIONS,
-    PARAM_REQUIREMENTS,
-    PARAM_REQUIREMENTS_FILE,
-    PARAM_SECRETS,
+    PARAM_EXTRA_OPTIONS,
+    PARAM_SETTINGS,
     PIPELINE_INNER_FUNC_NAME,
     BasePipeline,
 )
+
+if TYPE_CHECKING:
+    from zenml.config.base_settings import SettingsOrDict
 
 F = TypeVar("F", bound=Callable[..., None])
 
@@ -49,11 +50,8 @@ def pipeline(
     *,
     name: Optional[str] = None,
     enable_cache: bool = True,
-    required_integrations: Sequence[str] = (),
-    requirements_file: Optional[str] = None,
-    requirements: Optional[Union[str, List[str]]] = None,
-    dockerignore_file: Optional[str] = None,
-    secrets: Optional[List[str]] = [],
+    settings: Optional[Dict[str, "SettingsOrDict"]] = None,
+    extra: Optional[Dict[str, Any]] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
     ...
 
@@ -63,11 +61,8 @@ def pipeline(
     *,
     name: Optional[str] = None,
     enable_cache: bool = True,
-    required_integrations: Sequence[str] = (),
-    requirements_file: Optional[str] = None,
-    requirements: Optional[Union[str, List[str]]] = None,
-    dockerignore_file: Optional[str] = None,
-    secrets: Optional[List[str]] = [],
+    settings: Optional[Dict[str, "SettingsOrDict"]] = None,
+    extra: Optional[Dict[str, Any]] = None,
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline.
 
@@ -79,18 +74,8 @@ def pipeline(
         name: The name of the pipeline. If left empty, the name of the
             decorated function will be used as a fallback.
         enable_cache: Whether to use caching or not.
-        required_integrations: Optional list of ZenML integrations that are
-            required to run this pipeline. Run `zenml integration list` for
-            a full list of available integrations.
-        requirements_file: DEPRECATED: Optional path to a pip requirements file
-            that contains requirements to run the pipeline. Please use
-            'requirements' instead.
-        requirements: Optional path to a requirements file or a list of requirements.
-        dockerignore_file: Optional path to a dockerignore file to use when
-            building docker images for running this pipeline.
-            **Note**: If you pass a file, make sure it does not include the
-            `.zen` directory as it is needed to run ZenML inside the container.
-        secrets: Optional list of secrets that are required to run this pipeline.
+        settings: Settings for this pipeline.
+        extra: Extra configurations for this pipeline.
 
     Returns:
         the inner decorator which creates the pipeline class based on the
@@ -114,11 +99,8 @@ def pipeline(
                 PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type] # noqa
                 INSTANCE_CONFIGURATION: {
                     PARAM_ENABLE_CACHE: enable_cache,
-                    PARAM_REQUIRED_INTEGRATIONS: required_integrations,
-                    PARAM_REQUIREMENTS_FILE: requirements_file,
-                    PARAM_REQUIREMENTS: requirements,
-                    PARAM_DOCKERIGNORE_FILE: dockerignore_file,
-                    PARAM_SECRETS: secrets,
+                    PARAM_SETTINGS: settings,
+                    PARAM_EXTRA_OPTIONS: extra,
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,

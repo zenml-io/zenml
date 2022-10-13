@@ -64,24 +64,9 @@ The inference pipeline simulates loading data from a dynamic external source,
 then uses that data to perform online predictions using the running Seldon
 Core prediction server.
 
-# 🖥 Run it locally
+# 🖥 Run it on Kubernetes
 
 ### 📄 Prerequisites 
-
-For the ZenML Seldon Core deployer to work, three basic things are required:
-
-1. access to a Kubernetes cluster. The example accepts a `--kubernetes-context`
-command line argument. This Kubernetes context needs to point to the Kubernetes
-cluster where Seldon Core model servers will be deployed. If the context is not
-explicitly supplied to the example, it defaults to using the locally active
-context.
-
-2. Seldon Core needs to be preinstalled and running in the target Kubernetes
-cluster (read below for a brief explanation of how to do that).
-
-3. models deployed with Seldon Core need to be stored in some form of
-persistent shared storage that is accessible from the Kubernetes cluster where
-Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
 
 In order to run this example, you need to install and initialize ZenML:
 
@@ -98,7 +83,78 @@ cd zenml_examples/seldon_deployment
 
 # initialize a local ZenML Repository
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
+
+For the ZenML Seldon Core deployer to work, three basic things are required:
+
+1. access to a Kubernetes cluster. The example accepts a `--kubernetes-context`
+command line argument. This Kubernetes context needs to point to the Kubernetes
+cluster where Seldon Core model servers will be deployed. If the context is not
+explicitly supplied to the example, it defaults to using the locally active
+context.
+
+2. Seldon Core needs to be preinstalled and running in the target Kubernetes
+cluster (read below for a brief explanation of how to do that).
+
+3. models deployed with Seldon Core need to be stored in some form of
+persistent shared storage that is accessible from the Kubernetes cluster where
+Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
+
+### 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
+
+Yes! With [ZenML Stack Recipes](../../docs/book/stack-deployment-guide/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
+
+The flow to get started for this example can be the following:
+
+1. Pull the `aws_minimal` recipe to your local system. Learn more about what this recipe does from its README.
+
+    ```shell
+    zenml stack recipe pull aws_minimal
+    ```
+2. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
+
+3. 🚀 Deploy the recipe with this simple command.
+
+    ```shell
+    zenml stack recipe deploy aws_minimal
+    ```
+    > **Note**
+    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
+
+    > **Note**
+    > You should also have [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [docker](https://docs.docker.com/engine/install/) installed on your local system with the local [docker client authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker) to push to your cloud registry.
+    
+4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually. You either need to have the `aws`, `mlflow` and `seldon` integrations installed before importing the stack or you can go into the YAML file and delete the sections on the `experiment_tracker` and `model_deployer` to not have them importer at all.
+
+    ```shell
+    zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
+
+    # set the imported stack as the active stack
+    zenml stack set <STACK_NAME>
+    ```
+
+5. You should now create a secret for the RDS MySQL instance that will allow ZenML to connect to it. Use the following command:
+
+    ```bash
+    zenml secret register aws_rds_secret \
+        --schema=mysql \
+        --user=<user> \
+        --password=<password>
+    ```
+
+    The values for the username and password can be obtained by running the following commands inside your recipe directory.
+
+    ```bash
+    terraform output metadata-db-username
+
+    terraform output metadata-db-password
+    ```
+
+You can now skip directly to the [part of this guide where you define ZenML secrets](#aws-authentication-with-implicit-iam-access) for Seldon! 
+
 
 #### Installing Seldon Core (e.g. in an EKS cluster)
 
@@ -238,7 +294,7 @@ zenml model-deployer register seldon_eks --flavor=seldon \
   --secret=s3-store
 zenml artifact-store register aws --flavor=s3 --path s3://mybucket
 zenml secrets-manager register local --flavor=local
-zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks -x local --set
+zenml stack register local_with_aws_storage -a aws -o default -d seldon_eks -x local --set
 ```
 
 As the last step in setting up the stack, we need to configure a ZenML secret
@@ -300,10 +356,9 @@ zenml model-deployer register seldon_aws --flavor=seldon \
   --base_url=http://$INGRESS_HOST \
   --secret=s3-store
 zenml container-registry register aws --flavor=default --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
-zenml metadata-store register aws --flavor=kubeflow
 zenml orchestrator register aws --flavor=kubeflow --kubernetes_context=zenml-eks --synchronous=True
 zenml secrets-manager register aws --flavor=aws
-zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws -x aws --set
+zenml stack register aws -a aws -o aws -c aws -d seldon_aws -x aws --set
 ```
 
 ZenML will manage the Seldon Core deployments inside the same `kubeflow`
@@ -340,7 +395,7 @@ supported by ZenML: S3, GCS and Azure.
 For this AWS S3 example, we'll use the standard `seldon_s3` secret schema, but
 you can also use `seldon_gs` for GCS and `seldon_az` for Azure. To read more about
 secrets, secret schemas and how they are used in ZenML, please refer to the
-[ZenML documentation](https://docs.zenml.io/mlops-stacks/secrets-managers).
+[ZenML documentation](https://docs.zenml.io/component-gallery/secrets-managers/secrets-managers).
 
 The next sections cover two cases involving AWS authentication: with and without
 IAM role access.  Please look up the variables relevant to your use-case in the
@@ -357,7 +412,7 @@ save any explicit AWS credentials in the ZenML secret. You just have to set the
 as is:
 
 ```bash
-$ zenml secrets-manager secret register -s seldon_s3 s3-store --rclone_config_s3_env_auth=True
+$ zenml secrets-manager secret register -s aws_seldon_secret s3-store --rclone_config_s3_env_auth=True
 The following secret will be registered.
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃        SECRET_KEY         │ SECRET_VALUE ┃
@@ -610,7 +665,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the seldon deployment integration can be found [here](https://docs.zenml.io/mlops-stacks/model-deployers/seldon).
+Our docs regarding the seldon deployment integration can be found [here](https://docs.zenml.io/component-gallery/model-deployers/seldon).
 
 If you want to learn more about deployment in ZenML in general or about how to build your own deployer steps in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/model-deployers/custom).
+check out our [docs](https://docs.zenml.io/component-gallery/model-deployers/custom).

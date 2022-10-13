@@ -17,6 +17,7 @@ import uuid
 from typing import TYPE_CHECKING, Optional, cast
 
 import click
+from rich.errors import MarkupError
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
@@ -26,9 +27,10 @@ from zenml.cli.utils import (
     print_served_model_configuration,
     warning,
 )
+from zenml.client import Client
 from zenml.console import console
 from zenml.enums import StackComponentType
-from zenml.repository import Repository
+from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
@@ -51,18 +53,17 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         Args:
             ctx: The click context.
         """
-        repo = Repository()
-        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-        model_deployer_wrapper = active_stack.get_component_wrapper(
+        client = Client()
+        model_deployer_models = client.active_stack_model.components[
             StackComponentType.MODEL_DEPLOYER
-        )
-        if model_deployer_wrapper is None:
+        ]
+        if model_deployer_models is None:
             error(
                 "No active model deployer found. Please add a model_deployer to "
                 "your stack."
             )
             return
-        ctx.obj = model_deployer_wrapper.to_component()
+        ctx.obj = StackComponent.from_model(model_deployer_models[0])
 
     @models.command(
         "list",
@@ -420,6 +421,9 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         ):
             # don't pretty-print log lines that are already pretty-printed
             if raw or line.startswith("\x1b["):
-                print(line)
+                console.print(line, markup=False)
             else:
-                console.print(line)
+                try:
+                    console.print(line)
+                except MarkupError:
+                    console.print(line, markup=False)

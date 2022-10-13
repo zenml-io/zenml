@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 import numpy as np
 from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
 
-from zenml.integrations.sklearn.helpers.digits import get_digits_model
-from zenml.repository import Repository
+from zenml.client import Client
 from zenml.steps import step
 
-step_operator = Repository().active_stack.step_operator
+step_operator = Client().active_stack.step_operator
 if not step_operator:
     raise RuntimeError(
         "Your active stack needs to contain a step operator for this "
@@ -27,15 +27,15 @@ if not step_operator:
     )
 
 
-# setting the custom_step_operator param will tell ZenML
+# setting the step_operator param will tell ZenML
 # to run this step on a custom backend defined by the name
 # of the operator you provide.
-@step(custom_step_operator=step_operator.name)
+@step(step_operator=step_operator.name)
 def remote_trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
     """Train a simple sklearn classifier for the digits dataset."""
-    model = get_digits_model()
+    model = SVC(gamma=0.001)
     model.fit(X_train, y_train)
     return model

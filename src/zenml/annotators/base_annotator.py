@@ -14,14 +14,15 @@
 """Base class for ZenML annotator stack components."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, List, Optional, Tuple
+from typing import Any, ClassVar, List, Optional, Tuple, Type, cast
 
 from zenml.enums import StackComponentType
-from zenml.stack import StackComponent
+from zenml.stack import Flavor, StackComponent
+from zenml.stack.stack_component import StackComponentConfig
 
 
-class BaseAnnotator(StackComponent, ABC):
-    """Base class for all ZenML annotators.
+class BaseAnnotatorConfig(StackComponentConfig):
+    """Base config for annotators.
 
     Attributes:
         notebook_only: if the annotator can only be used in a notebook.
@@ -29,9 +30,18 @@ class BaseAnnotator(StackComponent, ABC):
 
     notebook_only: ClassVar[bool] = False
 
-    # Class configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.ANNOTATOR
-    FLAVOR: ClassVar[str]
+
+class BaseAnnotator(StackComponent, ABC):
+    """Base class for all ZenML annotators."""
+
+    @property
+    def config(self) -> BaseAnnotatorConfig:
+        """Returns the `BaseAnnotatorConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(BaseAnnotatorConfig, self._config)
 
     @abstractmethod
     def get_url(self) -> str:
@@ -139,3 +149,35 @@ class BaseAnnotator(StackComponent, ABC):
         Returns:
             The unlabeled data for the given dataset.
         """
+
+
+class BaseAnnotatorFlavor(Flavor):
+    """Base class for annotator flavors."""
+
+    @property
+    def type(self) -> StackComponentType:
+        """Returns the flavor type.
+
+        Returns:
+            The flavor type.
+        """
+        return StackComponentType.ANNOTATOR
+
+    @property
+    def config_class(self) -> Type[BaseAnnotatorConfig]:
+        """Config class for this flavor.
+
+        Returns:
+            The config class.
+        """
+        return BaseAnnotatorConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type[BaseAnnotator]:
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """
+        return BaseAnnotator

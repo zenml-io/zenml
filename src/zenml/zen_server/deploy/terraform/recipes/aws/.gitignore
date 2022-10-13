@@ -1,0 +1,8 @@
+*.exe
+*.hcl
+*.info
+*.backup
+*.tfstate
+*.pem
+kubeconfig_*
+.terraform

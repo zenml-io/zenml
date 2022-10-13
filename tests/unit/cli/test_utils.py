@@ -17,12 +17,12 @@ from datetime import datetime
 from hypothesis import given
 from hypothesis.strategies import datetimes
 
-from zenml.cli.utils import format_date, parse_unknown_options
-from zenml.repository import Repository
+from zenml.cli.utils import format_date, parse_name_and_extra_arguments
 
 SAMPLE_CUSTOM_ARGUMENTS = [
     '--custom_argument="value"',
     '--food="chicken biryani"',
+    "axl",
     '--best_cat="aria"',
 ]
 
@@ -36,23 +36,13 @@ def test_format_date_formats_a_string_properly(
     assert format_date(datetime(2020, 1, 1), "%Y") == "2020"
 
 
-def test_parse_unknown_options_returns_a_dict_of_known_options() -> None:
-    """Check that parse_unknown_options returns a dict of known options"""
-    parsed_sample_args = parse_unknown_options(SAMPLE_CUSTOM_ARGUMENTS)
+def test_parse_name_and_extra_arguments_returns_a_dict_of_known_options() -> None:
+    """Check that parse_name_and_extra_arguments returns a dict of known options"""
+    name, parsed_sample_args = parse_name_and_extra_arguments(
+        SAMPLE_CUSTOM_ARGUMENTS
+    )
     assert isinstance(parsed_sample_args, dict)
     assert len(parsed_sample_args.values()) == 3
     assert parsed_sample_args["best_cat"] == '"aria"'
-
-
-def test_stack_config_has_right_contents_for_printing() -> None:
-    """Check that the stack config has the right components for printing"""
-    repo = Repository()
-    active_stack_name = repo.active_stack_name
-    stack_config = repo.stack_configurations[active_stack_name]
-    items = [[typ.value, name] for typ, name in stack_config.items()]
-    assert len(items) != 0
-    assert items is not None
-    for item in items:
-        assert isinstance(item, list)
-        for kv_pair in item:
-            assert isinstance(kv_pair, str)
+    assert isinstance(name, str)
+    assert name == "axl"

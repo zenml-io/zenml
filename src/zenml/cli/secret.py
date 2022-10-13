@@ -24,16 +24,17 @@ from zenml.cli.utils import (
     confirmation,
     error,
     expand_argument_value_from_file,
-    parse_unknown_options,
+    parse_name_and_extra_arguments,
     pretty_print_secret,
     print_list_items,
     warning,
 )
+from zenml.client import Client
 from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.exceptions import SecretExistsError
-from zenml.repository import Repository
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
+from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
     from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
@@ -56,19 +57,17 @@ def register_secrets_manager_subcommands() -> None:
         Args:
             ctx: Click context.
         """
-        repo = Repository()
-        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-        secrets_manager_wrapper = active_stack.get_component_wrapper(
+        client = Client()
+        secrets_manager_models = client.active_stack_model.components[
             StackComponentType.SECRETS_MANAGER
-        )
-        if secrets_manager_wrapper is None:
+        ]
+        if secrets_manager_models is None:
             error(
-                "No active secrets manager found. Please create a secrets manager "
-                "first and add it to your stack."
+                "No active secrets manager found. Please create a secrets "
+                "manager first and add it to your stack."
             )
-            return
 
-        ctx.obj = secrets_manager_wrapper.to_component()
+        ctx.obj = StackComponent.from_model(secrets_manager_models[0])
 
     @secret.command(
         "register",
@@ -81,7 +80,8 @@ def register_secrets_manager_subcommands() -> None:
         "-s",
         "secret_schema_type",
         default=ARBITRARY_SECRET_SCHEMA_TYPE,
-        help="Register a secret with an optional schema.",
+        help="DEPRECATED: Register a secret with an optional schema. Secret "
+        "schemas will be removed in an upcoming release of ZenML.",
         type=str,
     )
     @click.option(
@@ -157,24 +157,25 @@ def register_secrets_manager_subcommands() -> None:
         #  broken.
         # TODO [ENG-725]: Allow passing in json/dict when registering a secret as an
         #   additional option for the user on top of the interactive
-        try:
-            parsed_args = parse_unknown_options(args, expand_args=True)
-        except AssertionError as e:
-            error(str(e))
+
+        # Parse the given args
+        # name is guaranteed to be set by parse_name_and_extra_arguments
+        name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
+            list(args) + [name], expand_args=True
+        )
 
         if "name" in parsed_args:
             error("You can't use 'name' as the key for one of your secrets.")
         elif name == "name":
             error("Secret names cannot be named 'name'.")
 
-        if name.startswith("--"):
-            error(
-                "Secret names cannot start with '--' The first argument must be."
-                "the secret name."
+        if secret_schema_type != ARBITRARY_SECRET_SCHEMA_TYPE:
+            warning(
+                "Secret schemas will be deprecated soon. You can still "
+                "register secrets as a group of key-value pairs using the "
+                "`ArbitrarySecretSchema` by not specifying a secret schema "
+                "with the `--schema/-s` option."
             )
-
-        if "name" in parsed_args:
-            error("Secret names cannot be passed as arguments.")
 
         try:
             from zenml.secret.secret_schema_class_registry import (
@@ -363,6 +364,12 @@ def register_secrets_manager_subcommands() -> None:
         """
         # TODO [ENG-726]: allow users to pass in dict or json
 
+        # Parse the given args
+        # name is guaranteed to be set by parse_name_and_extra_arguments
+        name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
+            list(args) + [name], expand_args=True
+        )
+
         with console.status(f"Getting secret `{name}`..."):
             try:
                 secret = secrets_manager.get_secret(secret_name=name)
@@ -371,12 +378,6 @@ def register_secrets_manager_subcommands() -> None:
                     f"Secret with name `{name}` does not exist or could not be "
                     f"loaded: {str(e)}."
                 )
-
-        try:
-            parsed_args = parse_unknown_options(args, expand_args=True)
-        except AssertionError as e:
-            error(str(e))
-            return
 
         if "name" in parsed_args:
             error("Secret names cannot be passed as arguments.")

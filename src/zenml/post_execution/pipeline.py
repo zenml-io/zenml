@@ -13,43 +13,144 @@
 #  permissions and limitations under the License.
 """Implementation of the post-execution pipeline."""
 
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Type, Union
+from uuid import UUID
 
-from zenml.enums import StackComponentType
-from zenml.logger import get_logger
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.client import Client
+from zenml.logger import get_apidocs_link, get_logger
+from zenml.models import PipelineModel
+from zenml.post_execution.pipeline_run import PipelineRunView
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 if TYPE_CHECKING:
-    from zenml.metadata_stores import BaseMetadataStore
-    from zenml.post_execution.pipeline_run import PipelineRunView
+    from zenml.config.pipeline_configurations import PipelineSpec
+    from zenml.pipelines.base_pipeline import BasePipeline
 
 logger = get_logger(__name__)
 
 
-class PipelineView:
-    """Post-execution pipeline class.
+@track(event=AnalyticsEvent.GET_PIPELINES)
+def get_pipelines() -> List["PipelineView"]:
+    """Fetches all post-execution pipeline views in the active project.
 
-    This can be used to query pipeline-related information from the metadata store.
+    Returns:
+        A list of post-execution pipeline views.
     """
+    # TODO: [server] handle the active stack correctly
+    client = Client()
+    pipelines = client.zen_store.list_pipelines(
+        project_name_or_id=client.active_project.id
+    )
+    return [PipelineView(model) for model in pipelines]
 
-    def __init__(
-        self, id_: int, name: str, metadata_store: "BaseMetadataStore"
+
+@track(event=AnalyticsEvent.GET_PIPELINE)
+def get_pipeline(
+    pipeline: Optional[Union["BasePipeline", Type["BasePipeline"], str]] = None,
+    **kwargs: Any,
+) -> Optional["PipelineView"]:
+    """Fetches a post-execution pipeline view.
+
+    Use it in one of these ways:
+    ```python
+    from zenml.post_execution import get_pipeline
+
+    # Get the pipeline by name
+    get_pipeline("first_pipeline")
+
+    # Get the pipeline by supplying the original pipeline class
+    get_pipeline(first_pipeline)
+
+    # Get the pipeline by supplying an instance of the original pipeline class
+    get_pipeline(first_pipeline())
+    ```
+
+    If the specified pipeline does not (yet) exist within the repository,
+    `None` will be returned.
+
+    Args:
+        pipeline: Class or class instance of the pipeline
+        **kwargs: The deprecated `pipeline_name` is caught as a kwarg to
+            specify the pipeline instead of using the `pipeline` argument.
+
+    Returns:
+        A post-execution pipeline view for the given pipeline or `None` if
+        it doesn't exist.
+
+    Raises:
+        RuntimeError: If the pipeline was not specified correctly.
+    """
+    from zenml.pipelines.base_pipeline import BasePipeline
+
+    if isinstance(pipeline, str):
+        pipeline_name = pipeline
+    elif isinstance(pipeline, BasePipeline):
+        pipeline_name = pipeline.name
+    elif isinstance(pipeline, type) and issubclass(pipeline, BasePipeline):
+        pipeline_name = pipeline.__name__
+    elif "pipeline_name" in kwargs and isinstance(
+        kwargs.get("pipeline_name"), str
     ):
+        logger.warning(
+            "Using 'pipeline_name' to get a pipeline from "
+            "'get_pipeline()' is deprecated and "
+            "will be removed in the future. Instead please "
+            "use 'pipeline' to access a pipeline in your Repository based "
+            "on the name of the pipeline or even the class or instance "
+            "of the pipeline. Learn more in our API docs: %s",
+            get_apidocs_link(
+                "repository", "zenml.post_execution.pipeline.get_pipeline"
+            ),
+        )
+
+        pipeline_name = kwargs.pop("pipeline_name")
+    else:
+        raise RuntimeError(
+            "No pipeline specified. Please set a `pipeline` "
+            "within the `get_pipeline()` method. Learn more "
+            "in our API docs: %s",
+            get_apidocs_link(
+                "repository", "zenml.post_execution.pipeline.get_pipeline"
+            ),
+        )
+
+    client = Client()
+    active_project_id = client.active_project.id
+    assert active_project_id is not None
+    try:
+        pipeline_model = client.zen_store.get_pipeline_in_project(
+            pipeline_name=pipeline_name,
+            project_name_or_id=active_project_id,
+        )
+        return PipelineView(pipeline_model)
+    except KeyError:
+        return None
+
+
+class PipelineView:
+    """Post-execution pipeline class."""
+
+    def __init__(self, model: PipelineModel):
         """Initializes a post-execution pipeline object.
 
         In most cases `PipelineView` objects should not be created manually
-        but retrieved using the `get_pipelines()` method of a
-        `zenml.repository.Repository` instead.
+        but retrieved using the `get_pipelines()` utility from
+        `zenml.post_execution` instead.
 
         Args:
-            id_: The context id of this pipeline.
-            name: The name of this pipeline.
-            metadata_store: The metadata store which should be used to fetch
-                additional information related to this pipeline.
+            model: The model to initialize this pipeline view from.
         """
-        self._id = id_
-        self._name = name
-        self._metadata_store = metadata_store
+        self._model = model
+
+    @property
+    def id(self) -> UUID:
+        """Returns the ID of this pipeline.
+
+        Returns:
+            The ID of this pipeline.
+        """
+        assert self._model.id is not None
+        return self._model.id
 
     @property
     def name(self) -> str:
@@ -58,7 +159,29 @@ class PipelineView:
         Returns:
             The name of the pipeline.
         """
-        return self._name
+        return self._model.name
+
+    @property
+    def docstring(self) -> Optional[str]:
+        """Returns the docstring of the pipeline.
+
+        Returns:
+            The docstring of the pipeline.
+        """
+        return self._model.docstring
+
+    @property
+    def spec(self) -> "PipelineSpec":
+        """Returns the spec of the pipeline.
+
+        The pipeline spec contains the source paths of all steps, as well as
+        each of their upstream step names. This is primarily used to compare
+        whether two pipelines are the same.
+
+        Returns:
+            The spec of the pipeline.
+        """
+        return self._model.spec
 
     @property
     def runs(self) -> List["PipelineRunView"]:
@@ -72,47 +195,11 @@ class PipelineView:
         """
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
-        runs = list(self._metadata_store.get_pipeline_runs(self).values())
-
-        for run in runs:
-            run._run_wrapper = self._get_zenstore_run(run_name=run.name)
-
-        return runs
-
-    def get_run_names(self) -> List[str]:
-        """Returns a list of all run names.
-
-        Returns:
-            A list of all run names.
-        """
-        # Do not cache runs as new runs might appear during this objects
-        # lifecycle
-        runs = self._metadata_store.get_pipeline_runs(self)
-        return list(runs.keys())
-
-    def get_run(self, name: str) -> "PipelineRunView":
-        """Returns a run for the given name.
-
-        Args:
-            name: The name of the run to return.
-
-        Returns:
-            The run with the given name.
-
-        Raises:
-            KeyError: If there is no run with the given name.
-        """
-        run = self._metadata_store.get_pipeline_run(self, name)
-
-        if not run:
-            raise KeyError(
-                f"No run found for name `{name}`. This pipeline "
-                f"only has runs with the following "
-                f"names: `{self.get_run_names()}`"
-            )
-
-        run._run_wrapper = self._get_zenstore_run(run_name=name)
-        return run
+        runs = Client().zen_store.list_runs(
+            project_name_or_id=self._model.project,
+            pipeline_id=self._model.id,
+        )
+        return [PipelineRunView(run) for run in runs]
 
     def get_run_for_completed_step(self, step_name: str) -> "PipelineRunView":
         """Ascertains which pipeline run produced the cached artifact of a given step.
@@ -145,38 +232,6 @@ class PipelineView:
 
         return orig_pipeline_run
 
-    def _get_zenstore_run(self, run_name: str) -> Optional[PipelineRunWrapper]:
-        """Gets a ZenStore run for the given run name.
-
-        This will filter all ZenStore runs by the pipeline name of this
-        pipeline view, the run name passed in as an argument and the metadata
-        store that this pipeline run is associated with.
-
-        Args:
-            run_name: The name of the run to get.
-
-        Returns:
-            The ZenStore run with the given name, if found.
-        """
-        from zenml.repository import Repository
-
-        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        try:
-            run_wrapper = repo.zen_store.get_pipeline_run(
-                pipeline_name=self.name, run_name=run_name
-            )
-            metadata_store_wrapper = run_wrapper.stack.get_component_wrapper(
-                StackComponentType.METADATA_STORE
-            )
-            if metadata_store_wrapper and (
-                metadata_store_wrapper.uuid == self._metadata_store.uuid
-            ):
-                return run_wrapper
-        except KeyError:
-            pass
-
-        return None
-
     def __repr__(self) -> str:
         """Returns a string representation of this pipeline.
 
@@ -184,8 +239,8 @@ class PipelineView:
             A string representation of this pipeline.
         """
         return (
-            f"{self.__class__.__qualname__}(id={self._id}, "
-            f"name='{self._name}')"
+            f"{self.__class__.__qualname__}(id={self.id}, "
+            f"name='{self.name}')"
         )
 
     def __eq__(self, other: Any) -> bool:
@@ -199,8 +254,5 @@ class PipelineView:
             False otherwise.
         """
         if isinstance(other, PipelineView):
-            return (
-                self._id == other._id
-                and self._metadata_store.uuid == other._metadata_store.uuid
-            )
+            return self.id == other.id
         return NotImplemented

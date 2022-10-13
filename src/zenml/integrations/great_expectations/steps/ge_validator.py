@@ -23,12 +23,12 @@ from great_expectations.checkpoint.types.checkpoint_result import (  # type: ign
 from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
     GreatExpectationsDataValidator,
 )
-from zenml.steps import BaseStep, BaseStepConfig
+from zenml.steps import BaseParameters, BaseStep
 from zenml.steps.utils import clone_step
 
 
-class GreatExpectationsValidatorConfig(BaseStepConfig):
-    """Config class for a Great Expectations checkpoint step.
+class GreatExpectationsValidatorParameters(BaseParameters):
+    """Parameters class for a Great Expectations checkpoint step.
 
     Attributes:
         expectation_suite_name: The name of the expectation suite to use to
@@ -58,7 +58,7 @@ class GreatExpectationsValidatorStep(BaseStep):
         self,
         dataset: pd.DataFrame,
         condition: bool,
-        config: GreatExpectationsValidatorConfig,
+        params: GreatExpectationsValidatorParameters,
     ) -> CheckpointResult:
         """Standard Great Expectations data validation step entrypoint.
 
@@ -69,7 +69,7 @@ class GreatExpectationsValidatorStep(BaseStep):
                 is useful for example if the Expectation Suite used to validate
                 the data is computed in a `GreatExpectationsProfilerStep` that
                 is part of the same pipeline.
-            config: The configuration for the step.
+            params: The parameters for the step.
 
         Returns:
             The Great Expectations validation (checkpoint) result.
@@ -84,12 +84,12 @@ class GreatExpectationsValidatorStep(BaseStep):
 
         results = data_validator.data_validation(
             dataset,
-            expectation_suite_name=config.expectation_suite_name,
-            data_asset_name=config.data_asset_name,
-            action_list=config.action_list,
+            expectation_suite_name=params.expectation_suite_name,
+            data_asset_name=params.data_asset_name,
+            action_list=params.action_list,
         )
 
-        if config.exit_on_error and not results.success():
+        if params.exit_on_error and not results.success:
             raise RuntimeError(
                 "The Great Expectations validation failed. Check "
                 "the logs or the Great Expectations data docs for more "
@@ -101,7 +101,7 @@ class GreatExpectationsValidatorStep(BaseStep):
 
 def great_expectations_validator_step(
     step_name: str,
-    config: GreatExpectationsValidatorConfig,
+    params: GreatExpectationsValidatorParameters,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the GreatExpectationsValidatorStep step.
 
@@ -112,9 +112,9 @@ def great_expectations_validator_step(
 
     Args:
         step_name: The name of the step
-        config: The configuration for the step
+        params: The parameters for the step
 
     Returns:
         a GreatExpectationsProfilerStep step instance
     """
-    return clone_step(GreatExpectationsValidatorStep, step_name)(config=config)
+    return clone_step(GreatExpectationsValidatorStep, step_name)(params=params)

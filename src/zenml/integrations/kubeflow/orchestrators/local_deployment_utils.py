@@ -19,9 +19,10 @@ import subprocess
 import sys
 import time
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import io_utils, networking_utils, yaml_utils
+from zenml.utils import networking_utils, yaml_utils
 
 KFP_VERSION = "1.8.1"
 # Name of the K3S image to use for the local K3D cluster.
@@ -123,7 +124,7 @@ def create_k3d_cluster(
         registry_config_path: Path to the registry config file.
     """
     logger.info("Creating local K3D cluster '%s'.", cluster_name)
-    global_config_dir_path = io_utils.get_global_config_directory()
+    local_stores_path = GlobalConfiguration().local_stores_path
     subprocess.check_call(
         [
             "k3d",
@@ -137,7 +138,7 @@ def create_k3d_cluster(
             "--registry-config",
             registry_config_path,
             "--volume",
-            f"{global_config_dir_path}:{global_config_dir_path}",
+            f"{local_stores_path}:{local_stores_path}",
         ]
     )
     logger.info("Finished K3D cluster creation.")

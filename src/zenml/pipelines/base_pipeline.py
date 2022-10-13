@@ -21,53 +21,63 @@ from typing import (
     ClassVar,
     Dict,
     List,
-    NoReturn,
+    Mapping,
     Optional,
-    Set,
-    Text,
     Tuple,
     Type,
     TypeVar,
+    Union,
     cast,
 )
 
+import yaml
+
 from zenml import constants
+from zenml.client import Client
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
-from zenml.environment import Environment
-from zenml.exceptions import (
-    DuplicatedConfigurationError,
-    PipelineConfigurationError,
-    PipelineInterfaceError,
-    StackValidationError,
+from zenml.config.pipeline_configurations import (
+    PipelineConfiguration,
+    PipelineConfigurationUpdate,
+    PipelineRunConfiguration,
+    PipelineSpec,
 )
-from zenml.integrations.registry import integration_registry
-from zenml.io import fileio
+from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.schedule import Schedule
+from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.environment import Environment
+from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
-from zenml.pipelines.schedule import Schedule
-from zenml.post_execution import PipelineRunView
-from zenml.repository import Repository
-from zenml.runtime_configuration import RuntimeConfiguration
+from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
 from zenml.steps.utils import clone_step
-from zenml.utils import io_utils, yaml_utils
+from zenml.utils import (
+    dashboard_utils,
+    dict_utils,
+    io_utils,
+    pydantic_utils,
+    settings_utils,
+    yaml_utils,
+)
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
-    from zenml.stack import Stack
+    from zenml.config.base_settings import SettingsOrDict
+    from zenml.post_execution import PipelineRunView
+
+    StepConfigurationUpdateOrDict = Union[
+        Dict[str, Any], StepConfigurationUpdate
+    ]
 
 logger = get_logger(__name__)
-PIPELINE_INNER_FUNC_NAME: str = "connect"
-PARAM_ENABLE_CACHE: str = "enable_cache"
-PARAM_REQUIRED_INTEGRATIONS: str = "required_integrations"
-PARAM_REQUIREMENTS_FILE: str = "requirements_file"
-PARAM_REQUIREMENTS: str = "requirements"
-PARAM_DOCKERIGNORE_FILE: str = "dockerignore_file"
+PIPELINE_INNER_FUNC_NAME = "connect"
+PARAM_ENABLE_CACHE = "enable_cache"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
-PARAM_SECRETS: str = "secrets"
+PARAM_SETTINGS = "settings"
+PARAM_EXTRA_OPTIONS = "extra"
 
 
 class BasePipelineMeta(type):
@@ -86,6 +96,7 @@ class BasePipelineMeta(type):
         Returns:
             The class.
         """
+        dct.setdefault(INSTANCE_CONFIGURATION, {})
         cls = cast(Type["BasePipeline"], super().__new__(mcs, name, bases, dct))
 
         cls.STEP_SPEC = {}
@@ -114,18 +125,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
         name: The name of this pipeline.
         enable_cache: A boolean indicating if caching is enabled for this
             pipeline.
-        requirements_file: DEPRECATED: Optional path to a pip requirements file
-            that contains all requirements to run the pipeline. (Use
-            `requirements` instead.)
-        requirements: Optional list of (string) pip requirements to run the
-        pipeline, or a string path to a requirements file.
-        required_integrations: Optional set of integrations that need to be
-            installed for this pipeline to run.
     """
 
     STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
 
-    INSTANCE_CONFIGURATION: Dict[Text, Any] = {}
+    INSTANCE_CONFIGURATION: Dict[str, Any] = {}
 
     def __init__(self, *args: BaseStep, **kwargs: Any) -> None:
         """Initialize the BasePipeline.
@@ -134,26 +138,103 @@ class BasePipeline(metaclass=BasePipelineMeta):
             *args: The steps to be executed by this pipeline.
             **kwargs: The configuration for this pipeline.
         """
-        kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
-        self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
-        self.required_integrations = kwargs.pop(PARAM_REQUIRED_INTEGRATIONS, ())
-        self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
-        if self.requirements_file:
-            logger.warning(
-                "The `requirements_file` argument has been deprecated. Please "
-                "use `requirements` instead to pass in either a string path "
-                "to a file listing your 'requirements' or a list of the "
-                "individual requirements."
-            )
-        self._requirements = kwargs.pop(PARAM_REQUIREMENTS, None)
-        self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
-        self.secrets = kwargs.pop(PARAM_SECRETS, [])
+        kwargs.update(self.INSTANCE_CONFIGURATION)
 
-        self.name = self.__class__.__name__
+        self._configuration = PipelineConfiguration(
+            name=self.__class__.__name__,
+            enable_cache=kwargs.pop(PARAM_ENABLE_CACHE, True),
+        )
+        self._apply_class_configuration(kwargs)
+
         self.__steps: Dict[str, BaseStep] = {}
-        self._verify_arguments(*args, **kwargs)
+        self._verify_steps(*args, **kwargs)
 
-    def _verify_arguments(self, *steps: BaseStep, **kw_steps: BaseStep) -> None:
+    @property
+    def name(self) -> str:
+        """The name of the pipeline.
+
+        Returns:
+            The name of the pipeline.
+        """
+        return self.configuration.name
+
+    @property
+    def enable_cache(self) -> bool:
+        """If caching is enabled for the pipeline.
+
+        Returns:
+            If caching is enabled for the pipeline.
+        """
+        return self.configuration.enable_cache
+
+    @property
+    def configuration(self) -> PipelineConfiguration:
+        """The configuration of the pipeline.
+
+        Returns:
+            The configuration of the pipeline.
+        """
+        return self._configuration
+
+    @property
+    def steps(self) -> Dict[str, BaseStep]:
+        """Returns a dictionary of pipeline steps.
+
+        Returns:
+            A dictionary of pipeline steps.
+        """
+        return self.__steps
+
+    def configure(
+        self,
+        enable_cache: Optional[bool] = None,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        extra: Optional[Dict[str, Any]] = None,
+        merge: bool = True,
+    ) -> None:
+        """Configures the pipeline.
+
+        Configuration merging example:
+        * `merge==True`:
+            pipeline.configure(extra={"key1": 1})
+            pipeline.configure(extra={"key2": 2}, merge=True)
+            pipeline.configuration.extra # {"key1": 1, "key2": 2}
+        * `merge==False`:
+            pipeline.configure(extra={"key1": 1})
+            pipeline.configure(extra={"key2": 2}, merge=False)
+            pipeline.configuration.extra # {"key2": 2}
+
+        Args:
+            enable_cache: If caching should be enabled for this pipeline.
+            settings: settings for this pipeline.
+            extra: Extra configurations for this pipeline.
+            merge: If `True`, will merge the given dictionary configurations
+                like `extra` and `settings` with existing
+                configurations. If `False` the given configurations will
+                overwrite all existing ones. See the general description of this
+                method for an example.
+        """
+        values = dict_utils.remove_none_values(
+            {
+                "enable_cache": enable_cache,
+                "settings": settings,
+                "extra": extra,
+            }
+        )
+        config = PipelineConfigurationUpdate(**values)
+        self._apply_configuration(config, merge=merge)
+
+    def _apply_class_configuration(self, options: Dict[str, Any]) -> None:
+        """Applies the configurations specified on the pipeline class.
+
+        Args:
+            options: Class configurations.
+        """
+        settings = options.pop(PARAM_SETTINGS, None)
+        extra = options.pop(PARAM_EXTRA_OPTIONS, None)
+        self.configure(settings=settings, extra=extra)
+
+    def _verify_steps(self, *steps: BaseStep, **kw_steps: Any) -> None:
         """Verifies the initialization args and kwargs of this pipeline.
 
         This method makes sure that no missing/unexpected arguments or
@@ -280,161 +361,72 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise NotImplementedError
 
-    @property
-    def requirements(self) -> Set[str]:
-        """Set of Python requirements of this pipeline.
-
-        This property is a combination of the requirements of
-        - required integrations for this pipeline
-        - the `requirements` specified for this pipeline
-
-        Returns:
-            Set of Python requirements of this pipeline.
-
-        Raises:
-            KeyError: If the requirements file could not be found.
-        """
-        requirements = set()
-
-        for integration_name in self.required_integrations:
-            try:
-                integration_requirements = (
-                    integration_registry.select_integration_requirements(
-                        integration_name
-                    )
-                )
-                requirements.update(integration_requirements)
-            except KeyError as e:
-                raise KeyError(
-                    f"Unable to find requirements for integration "
-                    f"'{integration_name}'."
-                ) from e
-
-        if isinstance(self._requirements, str) and fileio.exists(
-            self._requirements
-        ):
-            with fileio.open(self._requirements, "r") as f:
-                requirements.update(
-                    {
-                        requirement.strip()
-                        for requirement in f.read().split("\n")
-                        if requirement
-                    }
-                )
-            if self.requirements_file:
-                logger.warning(
-                    f"Using the file path passed in as `requirements` and "
-                    f"ignoring the file '{self.requirements_file}'."
-                )
-        # Add this logic back in (described in #ENG-882)
-        #
-        # elif isinstance(self._requirements, str) and self._requirements:
-        #     root = str(Repository().root)
-        #     if root:
-        #         assumed_requirements_file = os.path.join(
-        #             root, "requirements.txt"
-        #         )
-        #         if fileio.exists(assumed_requirements_file):
-        #             with fileio.open(assumed_requirements_file, "r") as f:
-        #                 requirements.update(
-        #                     {
-        #                         requirement.strip()
-        #                         for requirement in f.read().split("\n")
-        #                     }
-        #                 )
-        #                 logger.info(
-        #                     "Using requirements file: `%s`",
-        #                     assumed_requirements_file,
-        #                 )
-        elif isinstance(self._requirements, List):
-            requirements.update(self._requirements)
-            if self.requirements_file:
-                logger.warning(
-                    f"Using the values passed in as `requirements` and "
-                    f"ignoring the file '{self.requirements_file}'."
-                )
-        elif self.requirements_file and fileio.exists(self.requirements_file):
-            # TODO [ENG-883]: Deprecate the `requirements_file` option
-            with fileio.open(self.requirements_file, "r") as f:
-                requirements.update(
-                    {
-                        requirement.strip()
-                        for requirement in f.read().split("\n")
-                        if requirement
-                    }
-                )
-
-        return requirements
-
-    @property
-    def steps(self) -> Dict[str, BaseStep]:
-        """Returns a dictionary of pipeline steps.
-
-        Returns:
-            A dictionary of pipeline steps.
-        """
-        return self.__steps
-
-    @steps.setter
-    def steps(self, steps: Dict[str, BaseStep]) -> NoReturn:
-        """Setting the steps property is not allowed.
+    def _track_pipeline_deployment(
+        self,
+        deployment: "PipelineDeployment",
+        stack: "Stack",
+    ) -> None:
+        """Tracks the pipeline deployment as an analytics event.
 
         Args:
-            steps: The steps to set.
-
-        Raises:
-            PipelineInterfaceError: Always.
+            deployment: The pipeline deployment to track.
+            stack: The stack on which the pipeline will be deployed.
         """
-        raise PipelineInterfaceError("Cannot set steps manually!")
+        custom_materializer = False
+        custom_artifact = False
+        for step in deployment.steps.values():
+            for output in step.config.outputs.values():
+                if not output.materializer_source.startswith("zenml."):
+                    custom_materializer = True
+                if not output.artifact_source.startswith("zenml."):
+                    custom_artifact = True
 
-    def validate_stack(self, stack: "Stack") -> None:
-        """Validates if a stack is able to run this pipeline.
-
-        Args:
-            stack: The stack to validate.
-
-        Raises:
-            StackValidationError: If the step operator is not configured in the
-                active stack.
-        """
-        available_step_operators = (
-            {stack.step_operator.name} if stack.step_operator else set()
+        stack_metadata = {
+            component_type.value: component.flavor
+            for component_type, component in stack.components.items()
+        }
+        track_event(
+            event=AnalyticsEvent.RUN_PIPELINE,
+            metadata={
+                "store_type": Client().zen_store.type.value,
+                **stack_metadata,
+                "total_steps": len(self.steps),
+                "schedule": bool(deployment.schedule),
+                "custom_materializer": custom_materializer,
+                "custom_artifact": custom_artifact,
+            },
         )
-
-        for step in self.steps.values():
-            if (
-                step.custom_step_operator
-                and step.custom_step_operator not in available_step_operators
-            ):
-                raise StackValidationError(
-                    f"Step '{step.name}' requires custom step operator "
-                    f"'{step.custom_step_operator}' which is not configured in "
-                    f"the active stack. Available step operators: "
-                    f"{available_step_operators}."
-                )
-
-    def _reset_step_flags(self) -> None:
-        """Reset the `_has_been_called` flag at the beginning of a pipeline run.
-
-        This ensures a pipeline instance can be called more than once.
-        """
-        for step in self.steps.values():
-            step._has_been_called = False
 
     def run(
         self,
         *,
         run_name: Optional[str] = None,
+        enable_cache: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
-        **additional_parameters: Any,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        step_configurations: Optional[
+            Mapping[str, "StepConfigurationUpdateOrDict"]
+        ] = None,
+        extra: Optional[Dict[str, Any]] = None,
+        config_path: Optional[str] = None,
+        unlisted: bool = False,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
         Args:
             run_name: Name of the pipeline run.
+            enable_cache: If caching should be enabled for this pipeline run.
             schedule: Optional schedule of the pipeline.
-            additional_parameters: Additional parameters to pass to the
-                pipeline.
+            settings: settings for this pipeline run.
+            step_configurations: Configurations for steps of the pipeline.
+            extra: Extra configurations for this pipeline run.
+            config_path: Path to a yaml configuration file. This file will
+                be parsed as a `zenml.config.pipeline_configurations.PipelineRunConfiguration`
+                object. Options provided in this file will be overwritten by
+                options provided in code using the other arguments of this
+                method.
+            unlisted: Whether the pipeline run should be unlisted (not assigned
+                to any pipeline).
 
         Returns:
             The result of the pipeline.
@@ -453,11 +445,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             return
 
-        logger.info("Creating run for pipeline: `%s`", self.name)
-        logger.info(
-            f'Cache {"enabled" if self.enable_cache else "disabled"} for '
-            f"pipeline `{self.name}`"
-        )
+        stack = Client().active_stack
 
         # Activating the built-in integrations through lazy loading
         from zenml.integrations.registry import integration_registry
@@ -471,45 +459,131 @@ class BasePipeline(metaclass=BasePipelineMeta):
             dag_filepath = io_utils.resolve_relative_path(
                 inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr]
             )
-            additional_parameters.setdefault("dag_filepath", dag_filepath)
+            extra = extra or {}
+            extra.setdefault("dag_filepath", dag_filepath)
 
-        runtime_configuration = RuntimeConfiguration(
-            run_name=run_name,
-            schedule=schedule,
-            **additional_parameters,
-        )
-        stack = Repository().active_stack
+        if config_path:
+            config_dict = yaml_utils.read_yaml(config_path)
+            run_config = PipelineRunConfiguration.parse_obj(config_dict)
+        else:
+            run_config = PipelineRunConfiguration()
 
-        stack_metadata = {
-            component_type.value: component.FLAVOR
-            for component_type, component in stack.components.items()
-        }
-        track_event(
-            event=AnalyticsEvent.RUN_PIPELINE,
-            metadata={
-                "store_type": Repository().active_profile.store_type.value,
-                **stack_metadata,
-                "total_steps": len(self.steps),
-                "schedule": bool(schedule),
-            },
+        new_values = dict_utils.remove_none_values(
+            {
+                "run_name": run_name,
+                "enable_cache": enable_cache,
+                "steps": step_configurations,
+                "settings": settings,
+                "schedule": schedule,
+                "extra": extra,
+            }
         )
 
-        self._reset_step_flags()
-        self.validate_stack(stack)
+        # Update with the values in code so they take precedence
+        run_config = pydantic_utils.update_model(run_config, update=new_values)
+        from zenml.config.compiler import Compiler
 
-        return stack.deploy_pipeline(
-            self, runtime_configuration=runtime_configuration
+        pipeline_deployment = Compiler().compile(
+            pipeline=self, stack=stack, run_configuration=run_config
         )
+
+        skip_pipeline_registration = constants.handle_bool_env_var(
+            constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
+        )
+        caching_status = (
+            "enabled"
+            if pipeline_deployment.pipeline.enable_cache
+            else "disabled"
+        )
+        register_pipeline = not (skip_pipeline_registration or unlisted)
+
+        pipeline_id = None
+        if register_pipeline:
+            step_specs = [
+                step.spec for step in pipeline_deployment.steps.values()
+            ]
+            pipeline_spec = PipelineSpec(steps=step_specs)
+
+            pipeline_id = Client().register_pipeline(
+                pipeline_name=pipeline_deployment.pipeline.name,
+                pipeline_spec=pipeline_spec,
+                pipeline_docstring=self.__doc__,
+            )
+            pipeline_deployment = pipeline_deployment.copy(
+                update={"pipeline_id": pipeline_id}
+            )
+            logger.info(
+                "Creating run `%s` for pipeline `%s` (Caching %s)",
+                pipeline_deployment.run_name,
+                self.name,
+                caching_status,
+            )
+        else:
+            logger.info(
+                "Creating unlisted run `%s` (Caching %s)",
+                pipeline_deployment.run_name,
+                caching_status,
+            )
+
+        self._track_pipeline_deployment(
+            deployment=pipeline_deployment, stack=stack
+        )
+
+        stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
+
+        # Prevent execution of nested pipelines which might lead to unexpected
+        # behavior
+        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+        try:
+            return_value = stack.deploy_pipeline(pipeline_deployment)
+        finally:
+            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+
+        # Log the dashboard URL
+        dashboard_utils.print_run_url(
+            run_name=pipeline_deployment.run_name, pipeline_id=pipeline_id
+        )
+
+        return return_value
+
+    def _apply_configuration(
+        self,
+        config: PipelineConfigurationUpdate,
+        merge: bool = True,
+    ) -> None:
+        """Applies an update to the pipeline configuration.
+
+        Args:
+            config: The configuration update.
+            merge: Whether to merge the updates with the existing configuration
+                or not. See the `BasePipeline.configure(...)` method for a
+                detailed explanation.
+        """
+        self._validate_configuration(config)
+        self._configuration = pydantic_utils.update_model(
+            self._configuration, update=config, recursive=merge
+        )
+        logger.debug("Updated pipeline configuration:")
+        logger.debug(self._configuration)
+
+    @staticmethod
+    def _validate_configuration(config: PipelineConfigurationUpdate) -> None:
+        """Validates a configuration update.
+
+        Args:
+            config: The configuration update to validate.
+        """
+        settings_utils.validate_setting_keys(list(config.settings))
 
     def with_config(
         self: T, config_file: str, overwrite_step_parameters: bool = False
     ) -> T:
-        """Configures this pipeline using a yaml file.
+        """DEPRECATED: Configures this pipeline using a yaml file.
 
         Args:
             config_file: Path to a yaml file which contains configuration
                 options for running this pipeline. See
-                https://docs.zenml.io/developer-guide/steps-and-pipelines/runtime-configuration#configuring-with-yaml-config-files
+                https://docs.zenml.io/advanced-guide/pipelines/settings
                 for details regarding the specification of this file.
             overwrite_step_parameters: If set to `True`, values from the
                 configuration file will overwrite configuration parameters
@@ -518,6 +592,12 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Returns:
             The pipeline object that this method was called on.
         """
+        logger.warning(
+            "The `with_config(...)` method is deprecated. Use "
+            "`pipeline.configure(...)` or `pipeline.run(config_path=...)` "
+            "instead."
+        )
+
         config_yaml = yaml_utils.read_yaml(config_file)
 
         if PipelineConfigurationKeys.STEPS in config_yaml:
@@ -540,8 +620,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Raises:
             PipelineConfigurationError: If the configuration file contains
                 invalid data.
-            DuplicatedConfigurationError: If the configuration file contains
-                duplicate step names.
         """
         for step_name, step_dict in steps.items():
             StepConfigurationKeys.key_check(step_dict)
@@ -554,55 +632,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 )
 
             step = self.__steps[step_name]
-            step_parameters = (
-                step.CONFIG_CLASS.__fields__.keys() if step.CONFIG_CLASS else {}
-            )
             parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
-            # pop the enable_cache
-            if PARAM_ENABLE_CACHE in parameters:
-                enable_cache = parameters.pop(PARAM_ENABLE_CACHE)
-                self.steps[step_name].enable_cache = enable_cache
+            enable_cache = parameters.pop(PARAM_ENABLE_CACHE, None)
 
-            for parameter, value in parameters.items():
-                if parameter not in step_parameters:
-                    raise PipelineConfigurationError(
-                        f"Found parameter '{parameter}' for '{step_name}' step "
-                        f"in configuration yaml but it doesn't exist in the "
-                        f"configuration class `{step.CONFIG_CLASS}`. Available "
-                        f"parameters for this step: "
-                        f"{list(step_parameters)}."
-                    )
+            if not overwrite:
+                parameters.update(step.configuration.parameters)
 
-                previous_value = step.PARAM_SPEC.get(parameter, None)
-
-                if overwrite:
-                    step.PARAM_SPEC[parameter] = value
-                else:
-                    step.PARAM_SPEC.setdefault(parameter, value)
-
-                if overwrite or not previous_value:
-                    logger.debug(
-                        "Setting parameter %s=%s for step '%s'.",
-                        parameter,
-                        value,
-                        step_name,
-                    )
-                if previous_value and not overwrite:
-                    raise DuplicatedConfigurationError(
-                        "The value for parameter '{}' is set twice for step "
-                        "'{}' ({} vs. {}). This can happen when you "
-                        "instantiate your step with a step configuration that "
-                        "sets the parameter, while also setting the same "
-                        "parameter within a config file that is added to the "
-                        "pipeline instance using the `.with_config()` method. "
-                        "Make sure each parameter is only defined **once**. \n"
-                        "While it is not recommended, you can overwrite the "
-                        "step configuration using the configuration file: \n"
-                        "`.with_config('config.yaml', "
-                        "overwrite_step_parameters=True)".format(
-                            parameter, step_name, previous_value, value
-                        )
-                    )
+            step.configure(
+                enable_cache=enable_cache,
+                parameters=parameters,
+            )
 
     @classmethod
     def get_runs(cls) -> Optional[List["PipelineRunView"]]:
@@ -615,7 +654,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             RuntimeError: In case the repository does not contain the view
                 of the current pipeline.
         """
-        pipeline_view = Repository().get_pipeline(cls)
+        from zenml.post_execution import get_pipeline
+
+        pipeline_view = get_pipeline(cls)
         if pipeline_view:
             return pipeline_view.runs  # type: ignore[no-any-return]
         else:
@@ -625,26 +666,59 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 f"been run already?"
             )
 
-    @classmethod
-    def get_run(cls, run_name: str) -> Optional["PipelineRunView"]:
-        """Get a specific past run from the associated PipelineView.
+    def write_run_configuration_template(
+        self, path: str, stack: Optional["Stack"] = None
+    ) -> None:
+        """Writes a run configuration yaml template.
 
         Args:
-            run_name: Name of the run
-
-        Returns:
-            The PipelineRunView of the specific pipeline run.
-
-        Raises:
-            RuntimeError: In case the repository does not contain the view
-                of the current pipeline.
+            path: The path where the template will be written.
+            stack: The stack for which the template should be generated. If
+                not given, the active stack will be used.
         """
-        pipeline_view = Repository().get_pipeline(cls)
-        if pipeline_view:
-            return pipeline_view.get_run(run_name)  # type: ignore[no-any-return]
-        else:
-            raise RuntimeError(
-                f"The PipelineView for `{cls.__name__}` could "
-                f"not be found. Are you sure this pipeline has "
-                f"been run already?"
+        from zenml.config.base_settings import ConfigurationLevel
+        from zenml.config.step_configurations import (
+            PartialArtifactConfiguration,
+        )
+
+        stack = stack or Client().active_stack
+
+        setting_classes = stack.setting_classes
+        setting_classes.update(settings_utils.get_general_settings())
+
+        pipeline_settings = {}
+        step_settings = {}
+        for key, setting_class in setting_classes.items():
+            fields = pydantic_utils.TemplateGenerator(setting_class).run()
+            if ConfigurationLevel.PIPELINE in setting_class.LEVEL:
+                pipeline_settings[key] = fields
+            if ConfigurationLevel.STEP in setting_class.LEVEL:
+                step_settings[key] = fields
+
+        steps = {}
+        for step_name, step in self.steps.items():
+            parameters = (
+                pydantic_utils.TemplateGenerator(step.PARAMETERS_CLASS).run()
+                if step.PARAMETERS_CLASS
+                else {}
             )
+            outputs = {
+                name: PartialArtifactConfiguration()
+                for name in step.OUTPUT_SIGNATURE
+            }
+            step_template = StepConfigurationUpdate(
+                parameters=parameters,
+                settings=step_settings,
+                outputs=outputs,
+            )
+            steps[step_name] = step_template
+
+        run_config = PipelineRunConfiguration(
+            settings=pipeline_settings, steps=steps
+        )
+        template = pydantic_utils.TemplateGenerator(run_config).run()
+        yaml_string = yaml.dump(template)
+        yaml_string = yaml_utils.comment_out_yaml(yaml_string)
+
+        with open(path, "w") as f:
+            f.write(yaml_string)

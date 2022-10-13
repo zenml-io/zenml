@@ -67,14 +67,14 @@ This example contains two very important aspects that should be highlighted.
 ### 🛠️ Service deployment from code
 
 ```python
-from zenml.steps import BaseStepConfig
+from zenml.steps import BaseParameters
 from zenml.integrations.mlflow.steps import mlflow_deployer_step
-from zenml.integrations.mlflow.steps import MLFlowDeployerConfig
+from zenml.integrations.mlflow.steps import MLFlowDeployerParameters
 
 ...
 
-class MLFlowDeploymentLoaderStepConfig(BaseStepConfig):
-    """MLflow deployment getter configuration
+class MLFlowDeploymentLoaderStepParameters(BaseParameters):
+    """MLflow deployment getter parameters
 
     Attributes:
         pipeline_name: name of the pipeline that deployed the MLflow prediction
@@ -96,7 +96,7 @@ model_deployer = mlflow_deployer_step(name="model_deployer")
 deployment = continuous_deployment_pipeline(
     ...,
     # as a last step to our pipeline the model deployer step is run with it config in place
-    model_deployer=model_deployer(config=MLFlowDeployerConfig(workers=3)),
+    model_deployer=model_deployer(params=MLFlowDeployerParameters(workers=3)),
 )
 ```
 
@@ -104,32 +104,32 @@ deployment = continuous_deployment_pipeline(
 
 ```python
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
-from zenml.steps import BaseStepConfig, Output, StepContext, step
+from zenml.steps import BaseParameters, Output, StepContext, step
 from zenml.services import load_last_service_from_step
 
 ...
 
-class MLFlowDeploymentLoaderStepConfig(BaseStepConfig):
+class MLFlowDeploymentLoaderStepParameters(BaseParameters):
     # see implementation above
     ...
 
 # Step to retrieve the service associated with the last pipeline run
 @step(enable_cache=False)
 def prediction_service_loader(
-    config: MLFlowDeploymentLoaderStepConfig, context: StepContext
+    params: MLFlowDeploymentLoaderStepParameters, context: StepContext
 ) -> MLFlowDeploymentService:
     """Get the prediction service started by the deployment pipeline"""
 
     service = load_last_service_from_step(
-        pipeline_name=config.pipeline_name,
-        step_name=config.step_name,
+        pipeline_name=params.pipeline_name,
+        step_name=params.step_name,
         step_context=context,
-        running=config.running,
+        running=params.running,
     )
     if not service:
         raise RuntimeError(
             f"No MLflow prediction service deployed by the "
-            f"{config.step_name} step in the {config.pipeline_name} pipeline "
+            f"{params.step_name} step in the {params.pipeline_name} pipeline "
             f"is currently running."
         )
 
@@ -153,7 +153,7 @@ def predictor(
 inference = inference_pipeline(
     ...,
     prediction_service_loader=prediction_service_loader(
-        MLFlowDeploymentLoaderStepConfig(
+        MLFlowDeploymentLoaderStepParameters(
             pipeline_name="continuous_deployment_pipeline",
             step_name="model_deployer",
         )
@@ -191,6 +191,9 @@ cd zenml_examples/mlflow_deployment
 
 # initialize
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 ### 🥞 Setting up the ZenML Stack
 
@@ -203,7 +206,6 @@ zenml integration install mlflow
 zenml model-deployer register mlflow_deployer --flavor=mlflow
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml stack register local_mlflow_stack \
-  -m default \
   -a default \
   -o default \
   -d mlflow_deployer \
@@ -317,8 +319,8 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the MLflow deployment integration can be found [here](https://docs.zenml.io/mlops-stacks/model-deployers/mlflow).
+Our docs regarding the MLflow deployment integration can be found [here](https://docs.zenml.io/component-gallery/model-deployers/mlflow).
 
 If you want to learn more about deployment in ZenML in general or about how to 
 build your own deployer steps in ZenML check out our 
-[docs](https://docs.zenml.io/mlops-stacks/model-deployers/custom).
+[docs](https://docs.zenml.io/component-gallery/model-deployers/custom).

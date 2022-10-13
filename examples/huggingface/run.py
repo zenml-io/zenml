@@ -26,7 +26,7 @@ from steps import (
     token_evaluator,
     token_trainer,
 )
-from steps.configuration import HuggingfaceConfig
+from steps.configuration import HuggingfaceParameters
 
 
 @click.command()
@@ -104,7 +104,7 @@ def main(
 ):
     if nlp_task == "token-classification":
         # Run Pipeline
-        token_classification_config = HuggingfaceConfig(
+        token_classification_config = HuggingfaceParameters(
             label_all_tokens=True,
             pretrained_model=pretrained_model,
             epochs=epochs,
@@ -125,7 +125,7 @@ def main(
 
     elif nlp_task == "sequence-classification":
         # Run Pipeline
-        sequence_classification_config = HuggingfaceConfig(
+        sequence_classification_config = HuggingfaceParameters(
             pretrained_model=pretrained_model,
             epochs=epochs,
             batch_size=batch_size,

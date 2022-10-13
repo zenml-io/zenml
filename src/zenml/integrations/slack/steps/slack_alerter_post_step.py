@@ -16,19 +16,19 @@
 from zenml.alerter.alerter_utils import get_active_alerter
 from zenml.integrations.slack.alerters.slack_alerter import (
     SlackAlerter,
-    SlackAlerterConfig,
+    SlackAlerterParameters,
 )
 from zenml.steps import StepContext, step
 
 
 @step
 def slack_alerter_post_step(
-    config: SlackAlerterConfig, context: StepContext, message: str
+    params: SlackAlerterParameters, context: StepContext, message: str
 ) -> bool:
     """Post a message to the Slack alerter component of the active stack.
 
     Args:
-        config: Runtime configuration for the Slack alerter.
+        params: Parameters for the Slack alerter.
         context: StepContext of the ZenML repository.
         message: Message to be posted.
 
@@ -45,4 +45,4 @@ def slack_alerter_post_step(
             "flavor `slack`, but the currently active alerter is of type "
             f"{type(alerter)}, which is not a subclass of `SlackAlerter`."
         )
-    return alerter.post(message, config)
+    return alerter.post(message, params)

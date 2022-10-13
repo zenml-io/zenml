@@ -130,11 +130,13 @@ else:
         children = parent.children(recursive=False)
 
         for p in children:
+            sys.stderr.write(f"Terminating child process with PID {p.pid}...\n")
             p.terminate()
         _, alive = psutil.wait_procs(
             children, timeout=CHILD_PROCESS_WAIT_TIMEOUT
         )
         for p in alive:
+            sys.stderr.write(f"Killing child process with PID {p.pid}...\n")
             p.kill()
         _, alive = psutil.wait_procs(
             children, timeout=CHILD_PROCESS_WAIT_TIMEOUT
@@ -243,9 +245,12 @@ else:
         # register actions in case this process exits/gets killed
         def cleanup() -> None:
             """Daemon cleanup."""
+            sys.stderr.write("Cleanup: terminating children processes...\n")
             terminate_children()
             if pid_file and os.path.exists(pid_file):
+                sys.stderr.write(f"Cleanup: removing PID file {pid_file}...\n")
                 os.remove(pid_file)
+            sys.stderr.flush()
 
         def sighndl(signum: int, frame: Optional[types.FrameType]) -> None:
             """Daemon signal handler.
@@ -254,6 +259,7 @@ else:
                 signum: Signal number.
                 frame: Frame object.
             """
+            sys.stderr.write(f"Handling signal {signum}...\n")
             cleanup()
 
         signal.signal(signal.SIGTERM, sighndl)
@@ -300,11 +306,16 @@ else:
             with open(pid_file, "r") as f:
                 pid = int(f.read().strip())
         except (IOError, FileNotFoundError):
+            logger.debug(
+                f"Daemon PID file '{pid_file}' does not exist or cannot be read."
+            )
             return None
 
         if not pid or not psutil.pid_exists(pid):
+            logger.debug(f"Daemon with PID '{pid}' is no longer running.")
             return None
 
+        logger.debug(f"Daemon with PID '{pid}' is running.")
         return pid
 
     def check_if_daemon_is_running(pid_file: str) -> bool:

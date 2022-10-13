@@ -34,13 +34,13 @@ to illustrate how it works.
 ```python
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
-    EvidentlyProfileConfig,
+    EvidentlyProfileParameters,
     evidently_profile_step,
 )
 
 drift_detector = evidently_profile_step(
     step_name="drift_detector",
-    config=EvidentlyProfileConfig(
+    params=EvidentlyProfileParameters(
         column_mapping=EvidentlyColumnMapping(
             target="class", prediction="class"
         ),
@@ -53,7 +53,6 @@ drift_detector = evidently_profile_step(
         verbose_level=1,
     ),
 )
-
 ```
 
 Here you can see that defining the step is extremely simple using our
@@ -89,6 +88,9 @@ cd zenml_examples/evidently_drift_detection
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 ### 🥞 Set up your stack for Evidently
@@ -99,7 +101,7 @@ easily accomplished:
 
 ```shell
 zenml data-validator register evidently -f evidently
-zenml stack register evidently_stack -o default -a default -m default -dv evidently --set
+zenml stack register evidently_stack -o default -a default -dv evidently --set
 ```
 
 ### ▶️ Run the Code

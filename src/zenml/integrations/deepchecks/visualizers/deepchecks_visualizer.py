@@ -25,12 +25,12 @@ from zenml.artifacts import DataAnalysisArtifact
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
-from zenml.visualizers import BaseStepVisualizer
+from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
 
 
-class DeepchecksVisualizer(BaseStepVisualizer):
+class DeepchecksVisualizer(BaseVisualizer):
     """The implementation of a Deepchecks Visualizer."""
 
     @abstractmethod

@@ -1,0 +1,111 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Class for defining a pipeline schedule."""
+
+import datetime
+from typing import Any, Dict, Optional
+
+from pydantic import BaseModel, root_validator
+
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class Schedule(BaseModel):
+    """Class for defining a pipeline schedule.
+
+    Attributes:
+        cron_expression: Cron expression for the pipeline schedule. If a value
+            for this is set it takes precedence over the start time + interval.
+        start_time: datetime object to indicate when to start the schedule.
+        end_time: datetime object to indicate when to end the schedule.
+        interval_second: datetime timedelta indicating the seconds between two
+            recurring runs for a periodic schedule.
+        catchup: Whether the recurring run should catch up if behind schedule.
+            For example, if the recurring run is paused for a while and
+            re-enabled afterwards. If catchup=True, the scheduler will catch
+            up on (backfill) each missed interval. Otherwise, it only
+            schedules the latest interval if more than one interval is ready to
+            be scheduled. Usually, if your pipeline handles backfill
+            internally, you should turn catchup off to avoid duplicate backfill.
+    """
+
+    cron_expression: Optional[str] = None
+    start_time: Optional[datetime.datetime] = None
+    end_time: Optional[datetime.datetime] = None
+    interval_second: Optional[datetime.timedelta] = None
+    catchup: bool = False
+
+    @root_validator
+    def _ensure_cron_or_periodic_schedule_configured(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Ensures that the cron expression or start time + interval are set.
+
+        Args:
+            values: All attributes of the schedule.
+
+        Returns:
+            All schedule attributes.
+
+        Raises:
+            ValueError: If no cron expression or start time + interval were
+                provided.
+        """
+        cron_expression = values.get("cron_expression")
+        periodic_schedule = values.get("start_time") and values.get(
+            "interval_second"
+        )
+
+        if cron_expression and periodic_schedule:
+            logger.warning(
+                "This schedule was created with a cron expression as well as "
+                "values for `start_time` and `interval_seconds`. The resulting "
+                "behavior depends on the concrete orchestrator implementation "
+                "but will usually ignore the interval and use the cron "
+                "expression."
+            )
+            return values
+        elif cron_expression or periodic_schedule:
+            return values
+        else:
+            raise ValueError(
+                "Either a cron expression or start time and interval seconds "
+                "need to be set for a valid schedule."
+            )
+
+    @property
+    def utc_start_time(self) -> Optional[str]:
+        """Optional ISO-formatted string of the UTC start time.
+
+        Returns:
+            Optional ISO-formatted string of the UTC start time.
+        """
+        if not self.start_time:
+            return None
+
+        return self.start_time.astimezone(datetime.timezone.utc).isoformat()
+
+    @property
+    def utc_end_time(self) -> Optional[str]:
+        """Optional ISO-formatted string of the UTC end time.
+
+        Returns:
+            Optional ISO-formatted string of the UTC end time.
+        """
+        if not self.end_time:
+            return None
+
+        return self.end_time.astimezone(datetime.timezone.utc).isoformat()

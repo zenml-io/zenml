@@ -10,8 +10,8 @@ In order to run your ZenML pipelines using GitHub Actions, we need to set up a f
 
 * First you'll need a [GitHub](https://github.com) account and a cloned repository.
 * You'll also need to create a GitHub personal access token that allows you read/write GitHub secrets and push Docker images to your GitHub container registry. To do so, please follow [this guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) and make sure to assign your token the **repo** and **write:packages** scopes.
-* A MySQL database that ZenML will use to store metadata. See [here](https://docs.zenml.io/cloud-guide/overview) for more information on how to set one up on AWS/GCP/Azure.
-* An artifact store to save the outputs of your pipeline steps. See [here](https://docs.zenml.io/cloud-guide/overview) for more information on how to set one up on AWS/GCP/Azure.
+* A MySQL database that ZenML will use to store metadata. See [here](../../docs/book/stack-deployment-guide/overview.md) for more information on how to set one up on AWS/GCP/Azure.
+* An artifact store to save the outputs of your pipeline steps. See [here](../../docs/book/stack-deployment-guide/overview.md) for more information on how to set one up on AWS/GCP/Azure.
 
 ```bash
 pip install zenml
@@ -21,6 +21,12 @@ zenml integration install github <s3/gcp/azure>
 
 # Change the current working directory to a path inside your cloned GitHub repository
 cd <PATH_INSIDE_GITHUB_REPOSITORY>
+
+# initialize zenml inside the repository
+zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 
 # If your git repository already contains a ZenML pipeline, you can skip these next few commands
 zenml example pull github_actions_orchestration --path=.
@@ -59,15 +65,6 @@ zenml container-registry register github_container_registry \
     --automatic_token_authentication=true \
     --uri=<GITHUB_CONTAINER_REGISTRY_URI>
 
-# Register a metadata store (we will create the authentication secret later)
-# - HOST is the public IP address of your MySQL database
-# - DATABASE_NAME is the name of the database in which ZenML should store metadata
-zenml metadata-store register cloud_metadata_store \
-    --flavor=mysql \
-    --secret=mysql_secret \
-    --host=<HOST> \
-    --database=<DATABASE_NAME> \
-
 # Register one of the three following artifact stores (we will create the authentication secrets later)
 # AWS:
 zenml artifact-store register cloud_artifact_store \
@@ -90,18 +87,8 @@ zenml stack register github_stack \
     -o github_orchestrator \
     -s github_secrets_manager \
     -c github_container_registry \
-    -m cloud_metadata_store \
     -a cloud_artifact_store \
     --set
-
-# Now that the stack is active, we can register the secrets needed to connect to our metadata and artifact store:
-zenml secrets-manager secret register mysql_secret \
-    --schema=mysql \
-    --user=<USERNAME> \
-    --password=<PASSWORD> \
-    --ssl_ca=@<PATH_TO_SSL_SERVER_CERTIFICATE> \
-    --ssl_cert=@<PATH_TO_SSL_CLIENT_CERTIFICATE> \
-    --ssl_key=@<PATH_TO_SSL_CLIENT_KEY>
 
 # Register one of the following secrets depending on the flavor of artifact store that you've registered:
 # AWS: See https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html for how to
@@ -150,4 +137,4 @@ GitHub Actions and you should be able to access it from the GitHub UI. It will l
 # 📜 Learn more
 
 If you want to learn more about orchestrators in general or about how to build your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/orchestrators).
+check out our [docs](https://docs.zenml.io/component-gallery/orchestrators/orchestrators).

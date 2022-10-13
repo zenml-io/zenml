@@ -23,14 +23,14 @@ from zenml.integrations.great_expectations.data_validators.ge_data_validator imp
     GreatExpectationsDataValidator,
 )
 from zenml.logger import get_logger
-from zenml.steps import BaseStep, BaseStepConfig
+from zenml.steps import BaseParameters, BaseStep
 from zenml.steps.utils import clone_step
 
 logger = get_logger(__name__)
 
 
-class GreatExpectationsProfilerConfig(BaseStepConfig):
-    """Config class for a Great Expectations profiler step.
+class GreatExpectationsProfilerParameters(BaseParameters):
+    """Parameters class for a Great Expectations profiler step.
 
     Attributes:
         expectation_suite_name: The name of the expectation suite to create
@@ -57,13 +57,13 @@ class GreatExpectationsProfilerStep(BaseStep):
     def entrypoint(  # type: ignore[override]
         self,
         dataset: pd.DataFrame,
-        config: GreatExpectationsProfilerConfig,
+        params: GreatExpectationsProfilerParameters,
     ) -> ExpectationSuite:
         """Standard Great Expectations data profiling step entrypoint.
 
         Args:
             dataset: The dataset from which the expectation suite will be inferred.
-            config: The configuration for the step.
+            params: The parameters for the step.
 
         Returns:
             The generated Great Expectations suite.
@@ -74,16 +74,16 @@ class GreatExpectationsProfilerStep(BaseStep):
 
         return data_validator.data_profiling(
             dataset,
-            expectation_suite_name=config.expectation_suite_name,
-            data_asset_name=config.data_asset_name,
-            profiler_kwargs=config.profiler_kwargs,
-            overwrite_existing_suite=config.overwrite_existing_suite,
+            expectation_suite_name=params.expectation_suite_name,
+            data_asset_name=params.data_asset_name,
+            profiler_kwargs=params.profiler_kwargs,
+            overwrite_existing_suite=params.overwrite_existing_suite,
         )
 
 
 def great_expectations_profiler_step(
     step_name: str,
-    config: GreatExpectationsProfilerConfig,
+    params: GreatExpectationsProfilerParameters,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the GreatExpectationsProfilerStep step.
 
@@ -94,9 +94,9 @@ def great_expectations_profiler_step(
 
     Args:
         step_name: The name of the step
-        config: The configuration for the step
+        params: The parameters for the step
 
     Returns:
         a GreatExpectationsProfilerStep step instance
     """
-    return clone_step(GreatExpectationsProfilerStep, step_name)(config=config)
+    return clone_step(GreatExpectationsProfilerStep, step_name)(params=params)

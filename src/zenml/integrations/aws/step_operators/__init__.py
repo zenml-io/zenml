@@ -16,3 +16,5 @@
 from zenml.integrations.aws.step_operators.sagemaker_step_operator import (  # noqa
     SagemakerStepOperator,
 )
+
+__all__ = ["SagemakerStepOperator"]

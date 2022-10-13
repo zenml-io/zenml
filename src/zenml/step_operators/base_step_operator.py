@@ -14,45 +14,102 @@
 """Base class for ZenML step operators."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, List
+from typing import TYPE_CHECKING, Any, Dict, List, Type, cast
+
+from pydantic import root_validator
 
 from zenml.enums import StackComponentType
-from zenml.stack import StackComponent
+from zenml.logger import get_logger
+from zenml.stack import Flavor, StackComponent
+from zenml.stack.stack_component import StackComponentConfig
 
 if TYPE_CHECKING:
-    from zenml.steps import ResourceConfiguration
+    from zenml.config.step_run_info import StepRunInfo
+
+logger = get_logger(__name__)
+
+
+class BaseStepOperatorConfig(StackComponentConfig):
+    """Base config for step operators."""
+
+    @root_validator(pre=True)
+    def _deprecations(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate and/or remove deprecated fields.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+        """
+        if "base_image" in values:
+            image_name = values.pop("base_image", None)
+            if image_name:
+                logger.warning(
+                    "The 'base_image' field has been deprecated. To use a "
+                    "custom base container image with your "
+                    "step operators, please use the DockerSettings in your "
+                    "pipeline (see https://docs.zenml.io/advanced-guide/pipelines/containerization)."
+                )
+
+        return values
 
 
 class BaseStepOperator(StackComponent, ABC):
     """Base class for all ZenML step operators."""
 
-    # Class Configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.STEP_OPERATOR
+    @property
+    def config(self) -> BaseStepOperatorConfig:
+        """Returns the config of the step operator.
+
+        Returns:
+            The config of the step operator.
+        """
+        return cast(BaseStepOperatorConfig, self._config)
 
     @abstractmethod
     def launch(
         self,
-        pipeline_name: str,
-        run_name: str,
-        requirements: List[str],
+        info: "StepRunInfo",
         entrypoint_command: List[str],
-        resource_configuration: "ResourceConfiguration",
     ) -> None:
         """Abstract method to execute a step.
 
-        Concrete step operator subclasses must implement the following
-        functionality in this method:
-        - Prepare the execution environment and install all the necessary
-          `requirements`
-        - Launch a **synchronous** job that executes the `entrypoint_command`
+        Subclasses must implement this method and launch a **synchronous**
+        job that executes the `entrypoint_command`.
 
         Args:
-            pipeline_name: Name of the pipeline which the step to be executed
-                is part of.
-            run_name: Name of the pipeline run which the step to be executed
-                is part of.
+            info: Information about the step run.
             entrypoint_command: Command that executes the step.
-            requirements: List of pip requirements that must be installed
-                inside the step operator environment.
-            resource_configuration: The resource configuration for this step.
+        """
+
+
+class BaseStepOperatorFlavor(Flavor):
+    """Base class for all ZenML step operator flavors."""
+
+    @property
+    def type(self) -> StackComponentType:
+        """Returns the flavor type.
+
+        Returns:
+            The type of the flavor.
+        """
+        return StackComponentType.STEP_OPERATOR
+
+    @property
+    def config_class(self) -> Type[BaseStepOperatorConfig]:
+        """Returns the config class for this flavor.
+
+        Returns:
+            The config class for this flavor.
+        """
+        return BaseStepOperatorConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type[BaseStepOperator]:
+        """Returns the implementation class for this flavor.
+
+        Returns:
+            The implementation class for this flavor.
         """

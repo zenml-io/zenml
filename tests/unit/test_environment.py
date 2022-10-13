@@ -16,6 +16,9 @@ import platform
 
 import pytest
 
+from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.step_configurations import StepConfiguration
+from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import VALID_OPERATING_SYSTEMS
 from zenml.environment import BaseEnvironmentComponent, Environment
 from zenml.steps import StepEnvironment
@@ -43,13 +46,17 @@ def test_step_is_running():
     """Tests that the environment correctly reports when a step is running."""
 
     assert Environment().step_is_running is False
-
+    step_run_info = StepRunInfo(
+        config=StepConfiguration(enable_cache=True, name="step"),
+        pipeline=PipelineConfiguration(enable_cache=True, name="pipeline"),
+        run_name="run_name",
+    )
     with StepEnvironment(
         pipeline_name="pipeline",
         pipeline_run_id="run_id",
         step_name="step",
         cache_enabled=True,
-        pipeline_requirements=[""],
+        step_run_info=step_run_info,
     ):
         assert Environment().step_is_running is True
 

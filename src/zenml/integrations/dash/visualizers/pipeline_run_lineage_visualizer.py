@@ -26,7 +26,10 @@ from zenml.enums import ExecutionStatus
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineRunView
-from zenml.visualizers import BasePipelineRunVisualizer
+from zenml.post_execution.lineage.lineage_graph import LineageGraph
+from zenml.post_execution.lineage.node.artifact_node import ArtifactNode
+from zenml.post_execution.lineage.node.step_node import StepNode
+from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
 
@@ -97,7 +100,7 @@ STYLESHEET = [
 ]
 
 
-class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
+class PipelineRunLineageVisualizer(BaseVisualizer):
     """Implementation of a lineage diagram via the dash and dash-cytoscape libraries."""
 
     ARTIFACT_PREFIX = "artifact_"
@@ -129,6 +132,7 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
         Returns:
             The Dash application.
         """
+        # flake8: noqa: C901
         external_stylesheets = [
             dbc.themes.BOOTSTRAP,
             dbc.icons.BOOTSTRAP,
@@ -155,87 +159,55 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                 external_stylesheets=external_stylesheets,
             )
             mode = None
-        nodes, edges, first_step_id = [], [], None
-        first_step_id = None
-        for step in object.steps:
-            step_output_artifacts = list(step.outputs.values())
-            execution_id = (
-                step_output_artifacts[0].producer_step.id
-                if step_output_artifacts
-                else step.id
-            )
-            step_id = self.STEP_PREFIX + str(step.id)
-            if first_step_id is None:
-                first_step_id = step_id
-            nodes.append(
+
+        graph = LineageGraph()
+        graph.generate_run_nodes_and_edges(object)
+        first_step_id = graph.root_step_id
+
+        # Parse lineage graph nodes
+        nodes = []
+        for node in graph.nodes:
+            node_dict = node.dict()
+            node_data = node_dict.pop("data")
+            node_dict = {**node_dict, **node_data}
+            node_dict["label"] = node_dict["name"]
+            classes = self.STATUS_CLASS_MAPPING[node.data.status]
+            if isinstance(node, ArtifactNode):
+                classes = "rectangle " + classes
+                node_dict["label"] += f" ({node_dict['artifact_data_type']})"
+            dash_node = {"data": node_dict, "classes": classes}
+            nodes.append(dash_node)
+
+        # Parse lineage graph edges
+        node_mapping = {node.id: node for node in graph.nodes}
+        edges = []
+        for edge in graph.edges:
+            source_node = node_mapping[edge.source]
+            if isinstance(source_node, StepNode):
+                is_input_artifact = False
+                step_node = node_mapping[edge.source]
+                artifact_node = node_mapping[edge.target]
+            else:
+                is_input_artifact = True
+                step_node = node_mapping[edge.target]
+                artifact_node = node_mapping[edge.source]
+            assert isinstance(artifact_node, ArtifactNode)
+            artifact_is_cached = artifact_node.data.is_cached
+            if is_input_artifact and artifact_is_cached:
+                edge_status = self.STATUS_CLASS_MAPPING[ExecutionStatus.CACHED]
+            else:
+                edge_status = self.STATUS_CLASS_MAPPING[step_node.data.status]
+            edge_style = "dashed" if artifact_node.data.is_cached else "solid"
+            edges.append(
                 {
-                    "data": {
-                        "id": step_id,
-                        "execution_id": execution_id,
-                        "label": f"{execution_id} / {step.entrypoint_name}",
-                        "entrypoint_name": step.entrypoint_name,  # redundant for consistency
-                        "name": step.name,  # redundant for consistency
-                        "type": "step",
-                        "parameters": step.parameters,
-                        "inputs": {k: v.uri for k, v in step.inputs.items()},
-                        "outputs": {k: v.uri for k, v in step.outputs.items()},
-                    },
-                    "classes": self.STATUS_CLASS_MAPPING[step.status],
+                    "data": edge.dict(),
+                    "classes": f"edge-arrow {edge_status} {edge_style}",
                 }
             )
 
-            for artifact_name, artifact in step.outputs.items():
-                nodes.append(
-                    {
-                        "data": {
-                            "id": self.ARTIFACT_PREFIX + str(artifact.id),
-                            "execution_id": artifact.id,
-                            "label": f"{artifact.id} / {artifact_name} ("
-                            f"{artifact.data_type})",
-                            "type": "artifact",
-                            "name": artifact_name,
-                            "is_cached": artifact.is_cached,
-                            "artifact_type": artifact.type,
-                            "artifact_data_type": artifact.data_type,
-                            "parent_step_id": artifact.parent_step_id,
-                            "producer_step_id": artifact.producer_step.id,
-                            "uri": artifact.uri,
-                        },
-                        "classes": f"rectangle "
-                        f"{self.STATUS_CLASS_MAPPING[step.status]}",
-                    }
-                )
-                edges.append(
-                    {
-                        "data": {
-                            "source": self.STEP_PREFIX + str(step.id),
-                            "target": self.ARTIFACT_PREFIX + str(artifact.id),
-                        },
-                        "classes": f"edge-arrow "
-                        f"{self.STATUS_CLASS_MAPPING[step.status]}"
-                        + (" dashed" if artifact.is_cached else " solid"),
-                    }
-                )
-
-            for artifact_name, artifact in step.inputs.items():
-                edges.append(
-                    {
-                        "data": {
-                            "source": self.ARTIFACT_PREFIX + str(artifact.id),
-                            "target": self.STEP_PREFIX + str(step.id),
-                        },
-                        "classes": "edge-arrow "
-                        + (
-                            f"{self.STATUS_CLASS_MAPPING[ExecutionStatus.CACHED]} dashed"
-                            if artifact.is_cached
-                            else f"{self.STATUS_CLASS_MAPPING[step.status]} solid"
-                        ),
-                    }
-                )
-
         app.layout = dbc.Row(
             [
-                dbc.Container(f"Run: {object.name}", class_name="h1"),
+                dbc.Container(f"Run: {object.name}", class_name="h2"),
                 dbc.Row(
                     [
                         dbc.Col(
@@ -345,26 +317,42 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
 
             text = ""
             for data in data_list:
-                text += f'## {data["execution_id"]} / {data["name"]}' + "\n\n"
                 if data["type"] == "artifact":
+                    text += f"### Artifact '{data['name']}'" + "\n\n"
+                    text += "#### Attributes:" + "\n\n"
                     for item in [
+                        "execution_id",
+                        "status",
                         "artifact_data_type",
-                        "is_cached",
                         "producer_step_id",
                         "parent_step_id",
                         "uri",
                     ]:
                         text += f"**{item}**: {data[item]}" + "\n\n"
                 elif data["type"] == "step":
-                    text += "### Inputs:" + "\n\n"
-                    for k, v in data["inputs"].items():
-                        text += f"**{k}**: {v}" + "\n\n"
-                    text += "### Outputs:" + "\n\n"
-                    for k, v in data["outputs"].items():
-                        text += f"**{k}**: {v}" + "\n\n"
-                    text += "### Params:"
-                    for k, v in data["parameters"].items():
-                        text += f"**{k}**: {v}" + "\n\n"
+                    text += f"### Step '{data['name']}'" + "\n\n"
+                    text += "#### Attributes:" + "\n\n"
+                    for item in [
+                        "execution_id",
+                        "status",
+                    ]:
+                        text += f"**{item}**: {data[item]}" + "\n\n"
+                    if data["inputs"]:
+                        text += "#### Inputs:" + "\n\n"
+                        for k, v in data["inputs"].items():
+                            text += f"**{k}**: {v}" + "\n\n"
+                    if data["outputs"]:
+                        text += "#### Outputs:" + "\n\n"
+                        for k, v in data["outputs"].items():
+                            text += f"**{k}**: {v}" + "\n\n"
+                    if data["parameters"]:
+                        text += "#### Parameters:" + "\n\n"
+                        for k, v in data["parameters"].items():
+                            text += f"**{k}**: {v}" + "\n\n"
+                    if data["configuration"]:
+                        text += "#### Configuration:" + "\n\n"
+                        for k, v in data["configuration"].items():
+                            text += f"**{k}**: {v}" + "\n\n"
             return text
 
         @app.callback(  # type: ignore[misc]

@@ -19,13 +19,12 @@ import numpy as np
 import requests
 from PIL import Image
 
-from zenml.steps import step
-from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps import BaseParameters, step
 
 
-class TensorflowInferenceProcessorStepConfig(BaseStepConfig):
+class TensorflowInferenceProcessorStepParameters(BaseParameters):
     """
-    Configuration for the PyTorch inference preprocessor step.
+    Parameters for the PyTorch inference preprocessor step.
     """
 
     img_url: Optional[
@@ -35,7 +34,7 @@ class TensorflowInferenceProcessorStepConfig(BaseStepConfig):
 
 @step(enable_cache=False)
 def tf_predict_preprocessor(
-    config: TensorflowInferenceProcessorStepConfig,
+    params: TensorflowInferenceProcessorStepParameters,
 ) -> str:
     """Load an image from a URL and encode it as a base64 string.
 
@@ -45,8 +44,9 @@ def tf_predict_preprocessor(
     Returns:
         The request body includes a base64 coded image for the inference request.
     """
-    res = requests.get(config.img_url)
+    res = requests.get(params.img_url)
     img_arr = np.array(Image.open(BytesIO(res.content)))
     img_array = img_arr.reshape((-1, 28, 28))
-    request = img_array.tolist()
-    return json.dumps([request])
+    instances = img_array.tolist()
+    request = [instances]
+    return json.dumps(request)

@@ -11,8 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for the GCP orchestrator."""
+"""Initialization for the GCP orchestrators."""
+
+from zenml.integrations.gcp.orchestrators.vertex_orchestrator import (  # noqa
+    VertexOrchestrator,
+)
 
 from zenml.integrations.gcp.orchestrators.gcp_vm_orchestrator import (  # noqa
     GCPVMOrchestrator,
 )
+
+__all__ = ["VertexOrchestrator", "GCPVMOrchestrator"]

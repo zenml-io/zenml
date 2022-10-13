@@ -15,12 +15,13 @@ import mlflow
 import numpy as np
 import tensorflow as tf
 
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+from zenml.client import Client
 from zenml.steps import step
 
+experiment_tracker = Client().active_stack.experiment_tracker
 
-@enable_mlflow
-@step
+
+@step(experiment_tracker=experiment_tracker.name)
 def tf_evaluator(
     x_test: np.ndarray,
     y_test: np.ndarray,

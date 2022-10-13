@@ -16,8 +16,6 @@
 import os
 from typing import Optional
 
-from zenml import __version__
-
 
 def handle_bool_env_var(var: str, default: bool = False) -> bool:
     """Converts normal env var to boolean.
@@ -67,13 +65,20 @@ ENV_ABSL_LOGGING_VERBOSITY = "ZENML_ABSL_LOGGING_VERBOSITY"
 ENV_ZENML_REPOSITORY_PATH = "ZENML_REPOSITORY_PATH"
 ENV_ZENML_PREVENT_PIPELINE_EXECUTION = "ZENML_PREVENT_PIPELINE_EXECUTION"
 ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
-ENV_ZENML_DEFAULT_STORE_TYPE = "ZENML_DEFAULT_STORE_TYPE"
-ENV_ZENML_ACTIVATED_STACK = "ZENML_ACTIVATED_STACK"
-ENV_ZENML_PROFILE_NAME = "ZENML_PROFILE_NAME"
+ENV_ZENML_ACTIVE_STACK_NAME = "ZENML_ACTIVE_STACK_NAME"
 ENV_ZENML_SUPPRESS_LOGS = "ZENML_SUPPRESS_LOGS"
 ENV_ZENML_ENABLE_REPO_INIT_WARNINGS = "ZENML_ENABLE_REPO_INIT_WARNINGS"
 ENV_ZENML_IGNORE_STORE_COUPLINGS = "ZENML_IGNORE_STORE_COUPLINGS"
-
+ENV_ZENML_SECRET_VALIDATION_LEVEL = "ZENML_SECRET_VALIDATION_LEVEL"
+ENV_ZENML_JWT_SECRET_KEY = "ZENML_JWT_SECRET_KEY"
+ENV_ZENML_AUTH_TYPE = "ZENML_AUTH_TYPE"
+ENV_ZENML_DEFAULT_USER_NAME = "ZENML_DEFAULT_USER_NAME"
+ENV_ZENML_DEFAULT_USER_PASSWORD = "ZENML_DEFAULT_USER_PASSWORD"
+ENV_ZENML_DEFAULT_PROJECT_NAME = "ZENML_DEFAULT_PROJECT_NAME"
+ENV_ZENML_STORE_PREFIX = "ZENML_STORE_"
+ENV_ZENML_SKIP_PIPELINE_REGISTRATION = "ZENML_SKIP_PIPELINE_REGISTRATION"
+ENV_ZENML_SERVER_ROOT_URL_PATH = "ZENML_SERVER_ROOT_URL_PATH"
+ENV_ZENML_SERVER_DEPLOYMENT_TYPE = "ZENML_SERVER_DEPLOYMENT_TYPE"
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
 
@@ -92,28 +97,6 @@ ABSL_LOGGING_VERBOSITY: int = handle_int_env_var(
     ENV_ABSL_LOGGING_VERBOSITY, -100
 )
 
-# Base images for zenml
-ZENML_REGISTRY: str = "eu.gcr.io/maiot-zenml"
-ZENML_BASE_IMAGE_NAME: str = f"{ZENML_REGISTRY}/zenml:base-{__version__}"
-ZENML_TRAINER_IMAGE_NAME: str = f"{ZENML_REGISTRY}/zenml:cuda-{__version__}"
-ZENML_DATAFLOW_IMAGE_NAME: str = (
-    f"{ZENML_REGISTRY}/zenml:dataflow-{__version__}"
-)
-
-# Evaluation utils constants
-COMPARISON_NOTEBOOK: str = "comparison_notebook.ipynb"
-EVALUATION_NOTEBOOK: str = "evaluation_notebook.ipynb"
-
-# Pipeline related constants
-PREPROCESSING_FN: str = (
-    "zenml.components.transform.transform_module" ".preprocessing_fn"
-)
-TRAINER_FN: str = "zenml.components.trainer.trainer_module.run_fn"
-
-# GCP Orchestration
-GCP_ENTRYPOINT: str = "zenml.backends.orchestrator.entrypoint"
-AWS_ENTRYPOINT: str = "zenml.backends.orchestrator.entrypoint"
-K8S_ENTRYPOINT: str = "zenml.backends.orchestrator.entrypoint"
 
 # Analytics constants
 VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]
@@ -130,11 +113,6 @@ SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
     ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 )
 
-# Store couplings
-ZENML_IGNORE_STORE_COUPLINGS = handle_bool_env_var(
-    ENV_ZENML_IGNORE_STORE_COUPLINGS, default=False
-)
-
 # Repository and local store directory paths:
 REPOSITORY_DIRECTORY_NAME = ".zen"
 LOCAL_STORES_DIRECTORY_NAME = "local_stores"
@@ -143,6 +121,9 @@ USER_MAIN_MODULE: Optional[str] = None
 
 # Config file name
 CONFIG_FILE_NAME = "config.yaml"
+
+# Default store directory subpath:
+DEFAULT_STORE_DIRECTORY_NAME = "default_zen_store"
 
 # Secrets Manager
 ZENML_SCHEMA_NAME = "zenml_schema_name"
@@ -160,10 +141,13 @@ ZEN_SERVER_ENTRYPOINT = "zenml.zen_server.zen_server_api:app"
 
 
 # API Endpoint paths:
+API = "/api"
+HEALTH = "/health"
+VERSION = "/version"
 STACKS_EMPTY = "/stacks-empty"
 STACKS = "/stacks"
 STACK_COMPONENTS = "/components"
-STACK_CONFIGURATIONS = "/stack-configurations"
+STATISTICS = "/statistics"
 USERS = "/users"
 TEAMS = "/teams"
 PROJECTS = "/projects"
@@ -171,14 +155,39 @@ ROLES = "/roles"
 FLAVORS = "/flavors"
 ROLE_ASSIGNMENTS = "/role_assignments"
 PIPELINE_RUNS = "/pipeline_runs"
-STORE_ASSOCIATIONS = "/store_associations"
+LOGIN = "/login"
+LOGOUT = "/logout"
+PIPELINES = "/pipelines"
+TRIGGERS = "/triggers"
+RUNS = "/runs"
+DEFAULT_STACK = "/default-stack"
+PIPELINE_SPEC = "/pipeline-spec"
+PIPELINE_CONFIGURATION = "/pipeline-configuration"
+STEP_CONFIGURATION = "/step-configuration"
+GRAPH = "/graph"
+STEPS = "/steps"
+ARTIFACTS = "/artifacts"
+INPUTS = "/inputs"
+OUTPUTS = "/outputs"
+COMPONENT_TYPES = "/component-types"
+COMPONENT_SIDE_EFFECTS = "/component-side-effects"
+METADATA_CONFIG = "/metadata-config"
+REPOSITORIES = "/repositories"
+DEACTIVATE = "/deactivate"
+EMAIL_ANALYTICS = "/email-opt-in"
+ACTIVATE = "/activate"
+INFO = "/info"
+VERSION_1 = "/v1"
+STATUS = "/status"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
 
-# MLMD context constants
-ZENML_MLMD_CONTEXT_TYPE = "zenml"
-MLMD_CONTEXT_STACK_PROPERTY_NAME = "stack"
-MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME = "pipeline_requirements"
-MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME = "runtime_configuration"
-MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME = "step_resources"
+
+# model metadata yaml file name
+MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
+
+# testing constants
+TEST_STEP_INPUT_INT = 7
+ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator_docker_image"
+DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE = ".zenml_deployment_config.yaml"

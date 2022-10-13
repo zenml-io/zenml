@@ -15,15 +15,13 @@
 
 from typing import Optional
 
-from zenml.repository import Repository
+from zenml.post_execution import get_pipeline
 from zenml.services.service import BaseService
-from zenml.steps.step_context import StepContext
 
 
 def load_last_service_from_step(
     pipeline_name: str,
     step_name: str,
-    step_context: Optional[StepContext] = None,
     running: bool = False,
 ) -> Optional[BaseService]:
     """Get the last service created by the pipeline and step with the given names.
@@ -35,7 +33,6 @@ def load_last_service_from_step(
     Args:
         pipeline_name: the name of the pipeline
         step_name: pipeline step name
-        step_context: step context required only when called from within a step
         running: when this flag is set, the search only returns a running
             service
 
@@ -47,13 +44,7 @@ def load_last_service_from_step(
         KeyError: if the pipeline or step name is not found in the execution.
         RuntimeError: if the artifact is not a service.
     """
-    if step_context is None:
-        repo = Repository()
-        pipeline = repo.get_pipeline(pipeline_name)
-    else:
-        pipeline = step_context.metadata_store.get_pipeline(
-            pipeline_name=pipeline_name
-        )
+    pipeline = get_pipeline(pipeline_name)
     if pipeline is None:
         raise KeyError(f"No pipeline with name `{pipeline_name}` was found")
 

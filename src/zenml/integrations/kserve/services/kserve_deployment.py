@@ -42,7 +42,6 @@ from zenml.services import (
 )
 
 if TYPE_CHECKING:
-    pass
 
     from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
         KServeModelDeployer,
@@ -58,9 +57,11 @@ class KServeDeploymentConfig(ServiceConfig):
         model_uri: URI of the model (or models) to serve.
         model_name: the name of the model. Multiple versions of the same model
             should use the same model name.
+        secret_name: the name of the secret containing the model.
         predictor: the KServe predictor used to serve the model.
         replicas: number of replicas to use for the prediction service.
         resources: the Kubernetes resources to allocate for the prediction service.
+        container: the container to use for the custom prediction services.
     """
 
     model_uri: str = ""
@@ -68,6 +69,7 @@ class KServeDeploymentConfig(ServiceConfig):
     secret_name: Optional[str]
     predictor: str
     replicas: int = 1
+    container: Optional[Dict[str, Any]]
     resources: Optional[Dict[str, Any]]
 
     @staticmethod
@@ -227,7 +229,7 @@ class KServeDeploymentService(BaseService):
             The Kubernetes namespace, or None, if the default namespace is
             used.
         """
-        return self._get_model_deployer().kubernetes_namespace
+        return self._get_model_deployer().config.kubernetes_namespace
 
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the state of the KServe inference service.
@@ -341,12 +343,30 @@ class KServeDeploymentService(BaseService):
 
         # All supported model specs seem to have the same fields
         # so we can use any one of them (see https://kserve.github.io/website/0.8/reference/api/#serving.kserve.io/v1beta1.PredictorExtensionSpec)
-        predictor_kwargs = {
-            self.config.predictor: V1beta1PredictorExtensionSpec(
-                storage_uri=self.config.model_uri,
-                resources=self.config.resources,
-            )
-        }
+        if self.config.container is not None:
+            predictor_kwargs = {
+                "containers": [
+                    k8s_client.V1Container(
+                        name=self.config.container.get("name"),
+                        image=self.config.container.get("image"),
+                        command=self.config.container.get("command"),
+                        args=self.config.container.get("args"),
+                        env=[
+                            k8s_client.V1EnvVar(
+                                name="STORAGE_URI",
+                                value=self.config.container.get("storage_uri"),
+                            )
+                        ],
+                    )
+                ]
+            }
+        else:
+            predictor_kwargs = {
+                self.config.predictor: V1beta1PredictorExtensionSpec(
+                    storage_uri=self.config.model_uri,
+                    resources=self.config.resources,
+                )
+            }
 
         isvc = V1beta1InferenceService(
             api_version=api_version,
@@ -514,7 +534,7 @@ class KServeDeploymentService(BaseService):
 
         model_deployer = self._get_model_deployer()
         return os.path.join(
-            model_deployer.base_url,
+            model_deployer.config.base_url,
             "v1/models",
             f"{self.crd_name}:predict",
         )
@@ -533,7 +553,7 @@ class KServeDeploymentService(BaseService):
         namespace = self._get_namespace()
 
         model_deployer = self._get_model_deployer()
-        custom_domain = model_deployer.custom_domain or "example.com"
+        custom_domain = model_deployer.config.custom_domain or "example.com"
         return f"{self.crd_name}.{namespace}.{custom_domain}"
 
     def predict(self, request: str) -> Any:
@@ -572,4 +592,4 @@ class KServeDeploymentService(BaseService):
             json={"instances": request},
         )
         response.raise_for_status()
-        return response.json()["predictions"]
+        return response.json()

@@ -15,7 +15,6 @@
 
 import os
 import time
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -26,35 +25,36 @@ from typing import (
     Set,
     Type,
 )
+from uuid import UUID
 
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ZENML_IGNORE_STORE_COUPLINGS
-from zenml.enums import StackComponentType
+from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
+from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
-from zenml.runtime_configuration import (
-    RUN_NAME_OPTION_KEY,
-    RuntimeConfiguration,
-)
-from zenml.utils import io_utils, string_utils
+from zenml.models.stack_models import HydratedStackModel, StackModel
+from zenml.utils import settings_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
     from zenml.annotators import BaseAnnotator
     from zenml.artifact_stores import BaseArtifactStore
+    from zenml.config.base_settings import BaseSettings
+    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.config.step_configurations import StepConfiguration
+    from zenml.config.step_run_info import StepRunInfo
     from zenml.container_registries import BaseContainerRegistry
     from zenml.data_validators import BaseDataValidator
     from zenml.experiment_trackers.base_experiment_tracker import (
         BaseExperimentTracker,
     )
     from zenml.feature_stores import BaseFeatureStore
-    from zenml.metadata_stores import BaseMetadataStore
     from zenml.model_deployers import BaseModelDeployer
     from zenml.orchestrators import BaseOrchestrator
-    from zenml.pipelines import BasePipeline
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
+    from zenml.utils import secret_utils
+
 
 logger = get_logger(__name__)
 
@@ -64,17 +64,17 @@ class Stack:
 
     A ZenML stack is a collection of multiple stack components that are
     required to run ZenML pipelines. Some of these components (orchestrator,
-    metadata store and artifact store) are required to run any kind of
+    and artifact store) are required to run any kind of
     pipeline, other components like the container registry are only required
     if other stack components depend on them.
     """
 
     def __init__(
         self,
+        id: UUID,
         name: str,
         *,
         orchestrator: "BaseOrchestrator",
-        metadata_store: "BaseMetadataStore",
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
         secrets_manager: Optional["BaseSecretsManager"] = None,
@@ -91,9 +91,9 @@ class Stack:
         # noqa: DAR402
 
         Args:
+            id: Unique ID of the stack.
             name: Name of the stack.
             orchestrator: Orchestrator component of the stack.
-            metadata_store: Metadata store component of the stack.
             artifact_store: Artifact store component of the stack.
             container_registry: Container registry component of the stack.
             secrets_manager: Secrets manager component of the stack.
@@ -108,9 +108,9 @@ class Stack:
         Raises:
             StackValidationError: If the stack configuration is not valid.
         """
+        self._id = id
         self._name = name
         self._orchestrator = orchestrator
-        self._metadata_store = metadata_store
         self._artifact_store = artifact_store
         self._container_registry = container_registry
         self._step_operator = step_operator
@@ -122,15 +122,62 @@ class Stack:
         self._annotator = annotator
         self._data_validator = data_validator
 
+    def to_model(self, user: UUID, project: UUID) -> "StackModel":
+        """Creates a StackModel from an actual Stack instance.
+
+        Args:
+            user: The user ID of the user who created the stack.
+            project: The project ID of the project the stack belongs to.
+
+        Returns:
+            A StackModel
+        """
+        return StackModel(
+            id=self.id,
+            name=self.name,
+            user=user,
+            project=project,
+            components={
+                type_: [component.to_model().id]
+                for type_, component in self.components.items()
+            },
+        )
+
+    @classmethod
+    def from_model(cls, stack_model: HydratedStackModel) -> "Stack":
+        """Creates a Stack instance from a StackModel.
+
+        Args:
+            stack_model: The StackModel to create the Stack from.
+
+        Returns:
+            The created Stack instance.
+        """
+        from zenml.stack import StackComponent
+
+        stack_components = {
+            type_: StackComponent.from_model(model[0])
+            for type_, model in stack_model.components.items()
+        }
+        return Stack.from_components(
+            id=stack_model.id,
+            name=stack_model.name,
+            components=stack_components,
+        )
+
     @classmethod
     def from_components(
-        cls, name: str, components: Dict[StackComponentType, "StackComponent"]
+        cls,
+        id: UUID,
+        name: str,
+        components: Dict[StackComponentType, "StackComponent"],
     ) -> "Stack":
         """Creates a stack instance from a dict of stack components.
 
         # noqa: DAR402
 
         Args:
+            id: Unique ID of the stack.
             name: The name of the stack.
             components: The components of the stack.
 
@@ -148,7 +195,6 @@ class Stack:
         from zenml.data_validators import BaseDataValidator
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
-        from zenml.metadata_stores import BaseMetadataStore
         from zenml.model_deployers import BaseModelDeployer
         from zenml.orchestrators import BaseOrchestrator
         from zenml.secrets_managers import BaseSecretsManager
@@ -175,10 +221,6 @@ class Stack:
         orchestrator = components.get(StackComponentType.ORCHESTRATOR)
         if not isinstance(orchestrator, BaseOrchestrator):
             _raise_type_error(orchestrator, BaseOrchestrator)
-
-        metadata_store = components.get(StackComponentType.METADATA_STORE)
-        if not isinstance(metadata_store, BaseMetadataStore):
-            _raise_type_error(metadata_store, BaseMetadataStore)
 
         artifact_store = components.get(StackComponentType.ARTIFACT_STORE)
         if not isinstance(artifact_store, BaseArtifactStore):
@@ -239,9 +281,9 @@ class Stack:
             _raise_type_error(data_validator, BaseDataValidator)
 
         return Stack(
+            id=id,
             name=name,
             orchestrator=orchestrator,
-            metadata_store=metadata_store,
             artifact_store=artifact_store,
             container_registry=container_registry,
             secrets_manager=secrets_manager,
@@ -254,45 +296,6 @@ class Stack:
             data_validator=data_validator,
         )
 
-    @classmethod
-    def default_local_stack(cls) -> "Stack":
-        """Creates a stack instance which is configured to run locally.
-
-        Returns:
-            A stack instance configured to run locally.
-        """
-        from zenml.artifact_stores import LocalArtifactStore
-        from zenml.metadata_stores import SQLiteMetadataStore
-        from zenml.orchestrators import LocalOrchestrator
-        from zenml.stack.stack_component import uuid_factory
-
-        orchestrator = LocalOrchestrator(name="default")
-
-        artifact_store_uuid = uuid_factory()
-        artifact_store_path = os.path.join(
-            GlobalConfiguration().config_directory,
-            "local_stores",
-            str(artifact_store_uuid),
-        )
-        io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
-        artifact_store = LocalArtifactStore(
-            name="default",
-            uuid=artifact_store_uuid,
-            path=artifact_store_path,
-        )
-
-        metadata_store_path = os.path.join(artifact_store_path, "metadata.db")
-        metadata_store = SQLiteMetadataStore(
-            name="default", uri=metadata_store_path
-        )
-
-        return cls(
-            name="default",
-            orchestrator=orchestrator,
-            metadata_store=metadata_store,
-            artifact_store=artifact_store,
-        )
-
     @property
     def components(self) -> Dict[StackComponentType, "StackComponent"]:
         """All components of the stack.
@@ -301,10 +304,9 @@ class Stack:
             A dictionary of all components of the stack.
         """
         return {
-            component.TYPE: component
+            component.type: component
             for component in [
                 self.orchestrator,
-                self.metadata_store,
                 self.artifact_store,
                 self.container_registry,
                 self.secrets_manager,
@@ -318,6 +320,15 @@ class Stack:
             ]
             if component is not None
         }
+
+    @property
+    def id(self) -> UUID:
+        """The ID of the stack.
+
+        Returns:
+            The ID of the stack.
+        """
+        return self._id
 
     @property
     def name(self) -> str:
@@ -336,15 +347,6 @@ class Stack:
             The orchestrator of the stack.
         """
         return self._orchestrator
-
-    @property
-    def metadata_store(self) -> "BaseMetadataStore":
-        """The metadata store of the stack.
-
-        Returns:
-            The metadata store of the stack.
-        """
-        return self._metadata_store
 
     @property
     def artifact_store(self) -> "BaseArtifactStore":
@@ -437,32 +439,6 @@ class Stack:
         """
         return self._data_validator
 
-    @property
-    def runtime_options(self) -> Dict[str, Any]:
-        """Runtime options that are available to configure this stack.
-
-        This method combines the available runtime options for all components
-        of this stack. See `StackComponent.runtime_options()` for
-        more information.
-
-        Returns:
-            A dictionary of runtime options.
-        """
-        runtime_options: Dict[str, Any] = {}
-        for component in self.components.values():
-            duplicate_runtime_options = (
-                runtime_options.keys() & component.runtime_options.keys()
-            )
-            if duplicate_runtime_options:
-                logger.warning(
-                    "Found duplicate runtime options %s.",
-                    duplicate_runtime_options,
-                )
-
-            runtime_options.update(component.runtime_options)
-
-        return runtime_options
-
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.
 
@@ -470,7 +446,7 @@ class Stack:
             A dictionary containing the stack components.
         """
         component_dict = {
-            component_type.value: component.json(sort_keys=True)
+            component_type.value: component.config.json(sort_keys=True)
             for component_type, component in self.components.items()
         }
         component_dict.update({"name": self.name})
@@ -496,187 +472,162 @@ class Stack:
         requirements = [
             component.requirements
             for component in self.components.values()
-            if component.TYPE not in exclude_components
+            if component.type not in exclude_components
         ]
         return set.union(*requirements) if requirements else set()
 
-    def validate(self, decouple_stores: bool = False) -> None:
+    @property
+    def required_secrets(self) -> Set["secret_utils.SecretReference"]:
+        """All required secrets for this stack.
+
+        Returns:
+            The required secrets of this stack.
+        """
+        secrets = [
+            component.config.required_secrets
+            for component in self.components.values()
+        ]
+        return set.union(*secrets) if secrets else set()
+
+    @property
+    def setting_classes(self) -> Dict[str, Type["BaseSettings"]]:
+        """Setting classes of all components of this stack.
+
+        Returns:
+            All setting classes and their respective keys.
+        """
+        setting_classes = {}
+        for component in self.components.values():
+            if component.settings_class:
+                key = settings_utils.get_stack_component_setting_key(component)
+                setting_classes[key] = component.settings_class
+        return setting_classes
+
+    def _validate_secrets(self, raise_exception: bool) -> None:
+        """Validates that all secrets of the stack exists.
+
+        Args:
+            raise_exception: If `True`, raises an exception if the stack has
+                no secrets manager or a secret is missing. Otherwise a
+                warning is logged.
+
+        # noqa: DAR402
+        Raises:
+            StackValidationError: If the stack has no secrets manager or a
+                secret is missing.
+        """
+        env_value = os.getenv(
+            ENV_ZENML_SECRET_VALIDATION_LEVEL,
+            default=SecretValidationLevel.SECRET_AND_KEY_EXISTS.value,
+        )
+        secret_validation_level = SecretValidationLevel(env_value)
+
+        required_secrets = self.required_secrets
+        if (
+            secret_validation_level != SecretValidationLevel.NONE
+            and required_secrets
+        ):
+
+            def _handle_error(message: str) -> None:
+                """Handles the error by raising an exception or logging.
+
+                Args:
+                    message: The error message.
+
+                Raises:
+                    StackValidationError: If called and `raise_exception` of
+                        the outer method is `True`.
+                """
+                if raise_exception:
+                    raise StackValidationError(message)
+                else:
+                    message += (
+                        "\nYou need to solve this issue before running "
+                        "a pipeline on this stack."
+                    )
+                    logger.warning(message)
+
+            if not self.secrets_manager:
+                _handle_error(
+                    f"Some component in stack `{self.name}` reference secret "
+                    "values, but there is no secrets manager in this stack."
+                )
+                return
+
+            missing = []
+            existing_secrets = set(self.secrets_manager.get_all_secret_keys())
+            for secret_ref in required_secrets:
+                if (
+                    secret_validation_level
+                    == SecretValidationLevel.SECRET_AND_KEY_EXISTS
+                ):
+                    try:
+                        _ = self.secrets_manager.get_secret(
+                            secret_ref.name
+                        ).content[secret_ref.key]
+                    except KeyError:
+                        missing.append(secret_ref)
+                elif (
+                    secret_validation_level
+                    == SecretValidationLevel.SECRET_EXISTS
+                ):
+                    if secret_ref.name not in existing_secrets:
+                        missing.append(secret_ref)
+
+            if missing:
+                _handle_error(
+                    f"Missing secrets for stack: {missing}.\nTo register the "
+                    "missing secrets for this stack, run `zenml stack "
+                    f"register-secrets {self.name}`\nIf you want to "
+                    "adjust the degree to which ZenML validates the existence "
+                    "of secrets in your stack, you can do so by setting the "
+                    f"environment variable {ENV_ZENML_SECRET_VALIDATION_LEVEL} "
+                    "to one of the following values: "
+                    f"{SecretValidationLevel.values()}."
+                )
+
+    def validate(
+        self,
+        fail_if_secrets_missing: bool = False,
+    ) -> None:
         """Checks whether the stack configuration is valid.
 
         To check if a stack configuration is valid, the following criteria must
         be met:
-        - all components must support the execution mode (either local or
-            remote execution) specified by the orchestrator of the stack
         - the `StackValidator` of each stack component has to validate the
             stack to make sure all the components are compatible with each other
-        - the stack must either have a properly associated artifact/metadata
-            store pair or reset the association.
+        - the required secrets of all components need to exist
 
         Args:
-            decouple_stores: Flag to reset the previous associations between
-                an artifact store and a metadata store
-
-        Raises:
-            StackValidationError: If the artifact store and the metadata store
-                are not properly associated.
+            fail_if_secrets_missing: If this is `True`, an error will be raised
+                if a secret for a component is missing. Otherwise, only a
+                warning will be logged.
         """
         for component in self.components.values():
             if component.validator:
                 component.validator.validate(stack=self)
 
-        if not ZENML_IGNORE_STORE_COUPLINGS:
-            from zenml.cli.utils import warning
-            from zenml.repository import Repository
+        self._validate_secrets(raise_exception=fail_if_secrets_missing)
 
-            repo = Repository()
-            artifact_store_associations = (
-                repo.zen_store.get_store_associations_for_artifact_store(
-                    self.artifact_store.uuid
-                )
-            )
-            if artifact_store_associations:
-                for association in artifact_store_associations:
-                    if (
-                        association.metadata_store_uuid
-                        != self.metadata_store.uuid
-                    ):
-                        if decouple_stores:
-                            warning(
-                                f"Removing the association between given "
-                                f"artifact store {self.artifact_store.name} "
-                                f"(uuid: {self.artifact_store.uuid}) and the "
-                                f"metadata store (uuid: "
-                                f"{association.metadata_store_uuid})."
-                            )
-                            repo.zen_store.delete_store_association_for_artifact_and_metadata_store(
-                                artifact_store_uuid=self.artifact_store.uuid,
-                                metadata_store_uuid=association.metadata_store_uuid,
-                            )
-                        else:
-                            raise StackValidationError(
-                                f"The artifact store instance in your stack "
-                                f"'{self.artifact_store.name}' (uuid: "
-                                f"{self.artifact_store.uuid}) has been "
-                                f"previously associated with a different "
-                                f"metadata store (uuid: "
-                                f"{association.metadata_store_uuid} in a "
-                                f"different stack. If either one of these "
-                                f"stores are previously populated, this might "
-                                f"lead to various problems. In order to solve "
-                                f"this issue, you can either create and use "
-                                f"another artifact store instance or use the "
-                                f"'--decouple_stores' flag when you register/update a stack "
-                                f"to reset the associations of these "
-                                f"components."
-                            )
-
-            m_associations = (
-                repo.zen_store.get_store_associations_for_metadata_store(
-                    self.metadata_store.uuid
-                )
-            )
-            if m_associations:
-                for association in m_associations:
-                    if (
-                        association.artifact_store_uuid
-                        != self.artifact_store.uuid
-                    ):
-                        if decouple_stores:
-                            warning(
-                                f"Removing the association between given "
-                                f"metadata store {self.metadata_store.name} "
-                                f"(uuid: {self.metadata_store.uuid}) and the "
-                                f"artifact store (uuid: "
-                                f"{association.artifact_store_uuid})."
-                            )
-                            repo.zen_store.delete_store_association_for_artifact_and_metadata_store(
-                                artifact_store_uuid=association.artifact_store_uuid,
-                                metadata_store_uuid=self.metadata_store.uuid,
-                            )
-                        else:
-                            raise StackValidationError(
-                                f"The metadata store instance in your stack "
-                                f"'{self.metadata_store.name}' (uuid: "
-                                f"{self.metadata_store.uuid}) has been "
-                                f"previously associated with a different "
-                                f"artifact store (uuid: "
-                                f"{association.artifact_store_uuid} in a "
-                                f"different stack. If either one of these "
-                                f"stores are previously populated, this might "
-                                f"lead to various problems. In order to solve "
-                                f"this issue, you can either create and use "
-                                f"another artifact store instance or use the "
-                                f"'--decouple_stores' flag when you register/update a stack "
-                                f"to reset the associations of these "
-                                f"components."
-                            )
-
-            # Check if the associations already exists, if not create it
-            existing_associations = repo.zen_store.get_store_associations_for_artifact_and_metadata_store(
-                artifact_store_uuid=self.artifact_store.uuid,
-                metadata_store_uuid=self.metadata_store.uuid,
-            )
-            if len(existing_associations) == 0:
-                repo.zen_store.create_store_association(
-                    artifact_store_uuid=self.artifact_store.uuid,
-                    metadata_store_uuid=self.metadata_store.uuid,
-                )
-
-    def _register_pipeline_run(
-        self,
-        pipeline: "BasePipeline",
-        runtime_configuration: "RuntimeConfiguration",
+    def prepare_pipeline_deployment(
+        self, deployment: "PipelineDeployment"
     ) -> None:
-        """Registers a pipeline run in the ZenStore.
+        """Prepares the stack for a pipeline deployment.
+
+        This method is called before a pipeline is deployed.
 
         Args:
-            pipeline: The pipeline that is being run.
-            runtime_configuration: The runtime configuration of the pipeline.
-        """
-        from zenml.repository import Repository
-        from zenml.zen_stores.models import StackWrapper
-        from zenml.zen_stores.models.pipeline_models import (
-            PipelineRunWrapper,
-            PipelineWrapper,
-        )
-
-        repo = Repository()
-        active_project = repo.active_project
-        pipeline_run_wrapper = PipelineRunWrapper(
-            name=runtime_configuration.run_name,
-            pipeline=PipelineWrapper.from_pipeline(pipeline),
-            stack=StackWrapper.from_stack(self),
-            runtime_configuration=runtime_configuration,
-            user_id=repo.active_user.id,
-            project_name=active_project.name if active_project else None,
-        )
-
-        Repository().zen_store.register_pipeline_run(pipeline_run_wrapper)
-
-    def deploy_pipeline(
-        self,
-        pipeline: "BasePipeline",
-        runtime_configuration: RuntimeConfiguration,
-    ) -> Any:
-        """Deploys a pipeline on this stack.
-
-        Args:
-            pipeline: The pipeline to deploy.
-            runtime_configuration: Contains all the runtime configuration
-                options specified for the pipeline run.
-
-        Returns:
-            The return value of the call to `orchestrator.run_pipeline(...)`.
+            deployment: The pipeline deployment
 
         Raises:
-            StackValidationError: If the stack configuration is not valid.
+            StackValidationError: If the stack component is not running.
         """
-        self.validate()
+        self.validate(fail_if_secrets_missing=True)
 
         for component in self.components.values():
             if not component.is_running:
                 raise StackValidationError(
-                    f"The '{component.name}' {component.TYPE} stack component "
+                    f"The '{component.name}' {component.type} stack component "
                     f"is not currently running. Please run the following "
                     f"command to provision and start the component:\n\n"
                     f"    `zenml stack up`\n"
@@ -684,72 +635,92 @@ class Stack:
 
         for component in self.components.values():
             component.prepare_pipeline_deployment(
-                pipeline=pipeline,
-                stack=self,
-                runtime_configuration=runtime_configuration,
+                deployment=deployment, stack=self
             )
 
-        for component in self.components.values():
-            component.prepare_pipeline_run()
+    def deploy_pipeline(self, deployment: "PipelineDeployment") -> Any:
+        """Deploys a pipeline on this stack.
 
-        runtime_configuration[
-            RUN_NAME_OPTION_KEY
-        ] = runtime_configuration.run_name or (
-            f"{pipeline.name}-"
-            f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
-        )
+        Args:
+            deployment: The pipeline deployment.
 
+        Returns:
+            The return value of the call to `orchestrator.run_pipeline(...)`.
+        """
         logger.info(
             "Using stack `%s` to run pipeline `%s`...",
             self.name,
-            pipeline.name,
+            deployment.pipeline.name,
         )
         start_time = time.time()
-
-        original_cache_boolean = pipeline.enable_cache
-        if "enable_cache" in runtime_configuration:
-            logger.info(
-                "Runtime configuration overwriting the pipeline cache settings"
-                " to enable_cache=`%s` for this pipeline run. The default "
-                "caching strategy is retained for future pipeline runs.",
-                runtime_configuration["enable_cache"],
-            )
-            pipeline.enable_cache = runtime_configuration.get("enable_cache")
-
-        self._register_pipeline_run(
-            pipeline=pipeline, runtime_configuration=runtime_configuration
-        )
-
-        return_value = self.orchestrator.run(
-            pipeline, stack=self, runtime_configuration=runtime_configuration
-        )
-
-        # Put pipeline level cache policy back to make sure the next runs
-        #  default to that policy again in case the runtime configuration
-        #  is not set explicitly
-        pipeline.enable_cache = original_cache_boolean
+        return_value = self.orchestrator.run(deployment=deployment, stack=self)
 
         run_duration = time.time() - start_time
         logger.info(
             "Pipeline run `%s` has finished in %s.",
-            runtime_configuration.run_name,
+            deployment.run_name,
             string_utils.get_human_readable_time(run_duration),
         )
 
-        for component in self.components.values():
-            component.cleanup_pipeline_run()
-
         return return_value
 
-    def prepare_step_run(self) -> None:
-        """Prepares running a step."""
-        for component in self.components.values():
-            component.prepare_step_run()
+    def _get_active_components_for_step(
+        self, step_config: "StepConfiguration"
+    ) -> Dict[StackComponentType, "StackComponent"]:
+        """Gets all the active stack components for a stack.
 
-    def cleanup_step_run(self) -> None:
-        """Cleans up resources after the step run is finished."""
-        for component in self.components.values():
-            component.cleanup_step_run()
+        Args:
+            step_config: Configuration of the step for which to get the active
+                components.
+
+        Returns:
+            Dictionary of active stack components.
+        """
+
+        def _is_active(component: "StackComponent") -> bool:
+            """Checks whether a stack component is actively used in the step.
+
+            Args:
+                component: The component to check.
+
+            Returns:
+                If the component is used in this step.
+            """
+            if component.type == StackComponentType.STEP_OPERATOR:
+                return component.name == step_config.step_operator
+
+            if component.type == StackComponentType.EXPERIMENT_TRACKER:
+                return component.name == step_config.experiment_tracker
+
+            return True
+
+        return {
+            component_type: component
+            for component_type, component in self.components.items()
+            if _is_active(component)
+        }
+
+    def prepare_step_run(self, info: "StepRunInfo") -> None:
+        """Prepares running a step.
+
+        Args:
+            info: Info about the step that will be executed.
+        """
+        for component in self._get_active_components_for_step(
+            info.config
+        ).values():
+            component.prepare_step_run(info=info)
+
+    def cleanup_step_run(self, info: "StepRunInfo") -> None:
+        """Cleans up resources after the step run is finished.
+
+        Args:
+            info: Info about the step that was executed.
+        """
+        for component in self._get_active_components_for_step(
+            info.config
+        ).values():
+            component.cleanup_step_run(info=info)
 
     @property
     def is_provisioned(self) -> bool:

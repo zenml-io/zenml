@@ -8,7 +8,6 @@ setup_stack () {
   zenml orchestrator register local_kubeflow_orchestrator --flavor=kubeflow || \
     msg "${WARNING}Reusing preexisting orchestrator ${NOFORMAT}local_kubeflow_orchestrator"
   zenml stack register local_kubeflow_stack \
-      -m default \
       -a default \
       -o local_kubeflow_orchestrator \
       -c local_registry || \
@@ -20,11 +19,11 @@ setup_stack () {
 }
 
 pre_run () {
-  zenml integration install kubeflow tensorflow
+  zenml integration install kubeflow tensorflow tensorboard
 }
 
 pre_run_forced () {
-  zenml integration install kubeflow tensorflow -y
+  zenml integration install kubeflow tensorflow tensorboard -y
 }
 
 post_run () {

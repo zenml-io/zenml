@@ -12,6 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from datetime import datetime
+from uuid import uuid4
+
 import pytest
 
 from zenml.enums import StackComponentType
@@ -19,6 +22,7 @@ from zenml.io.fileio import exists
 from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
+    LocalSecretsManagerConfig,
 )
 from zenml.secrets_managers.utils import decode_secret_dict
 from zenml.utils import yaml_utils
@@ -27,7 +31,17 @@ from zenml.utils import yaml_utils
 @pytest.fixture()
 def local_secrets_manager():
     """Fixture to yield a local secrets manager."""
-    local_secrets_manager = LocalSecretsManager(name="")
+    local_secrets_manager = LocalSecretsManager(
+        name="",
+        id=uuid4(),
+        config=LocalSecretsManagerConfig(),
+        flavor="default",
+        type=StackComponentType.SECRETS_MANAGER,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
     yield local_secrets_manager
     local_secrets_manager.delete_all_secrets()
 
@@ -35,8 +49,8 @@ def local_secrets_manager():
 def test_local_secrets_manager_attributes(local_secrets_manager):
     """Tests that the basic attributes of the local secrets manager are set
     correctly."""
-    assert local_secrets_manager.TYPE == StackComponentType.SECRETS_MANAGER
-    assert local_secrets_manager.FLAVOR == "local"
+    assert local_secrets_manager.type == StackComponentType.SECRETS_MANAGER
+    assert local_secrets_manager.flavor == "default"
 
 
 def test_local_secrets_manager_creates_file(local_secrets_manager):

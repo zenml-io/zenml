@@ -13,12 +13,9 @@
 #  permissions and limitations under the License.
 """Implementation of the VertexAI entrypoint configuration."""
 
-from typing import TYPE_CHECKING, Any, List, Set
+from typing import Any, List, Optional, Set
 
 from zenml.entrypoints import StepEntrypointConfiguration
-
-if TYPE_CHECKING:
-    from zenml.steps import BaseStep
 
 VERTEX_JOB_ID_OPTION = "vertex_job_id"
 
@@ -27,35 +24,33 @@ class VertexEntrypointConfiguration(StepEntrypointConfiguration):
     """Entrypoint configuration for running steps on Vertex AI Pipelines."""
 
     @classmethod
-    def get_custom_entrypoint_options(cls) -> Set[str]:
-        """Vertex AI Pipelines specific entrypoint options.
-
-        The argument `VERTEX_JOB_ID_OPTION` allows to specify the job id of the
-        Vertex AI Pipeline and get it in the execution of the step, via the `get_run_name`
-        method.
+    def get_entrypoint_options(cls) -> Set[str]:
+        """Gets all options required for running with this configuration.
 
         Returns:
-            The set of custom entrypoint options.
+            The superclass options as well as an option for the Vertex job id.
         """
-        return {VERTEX_JOB_ID_OPTION}
+        return super().get_entrypoint_options() | {VERTEX_JOB_ID_OPTION}
 
     @classmethod
-    def get_custom_entrypoint_arguments(
-        cls, step: "BaseStep", *args: Any, **kwargs: Any
+    def get_entrypoint_arguments(
+        cls,
+        **kwargs: Any,
     ) -> List[str]:
-        """Sets the value for the `VERTEX_JOB_ID_OPTION` argument.
+        """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            step: The step to be executed.
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
+            **kwargs: Kwargs, must include the Vertex job id.
 
         Returns:
-            A list of arguments for the entrypoint.
+            The superclass arguments as well as arguments for the Vertex job id.
         """
-        return [f"--{VERTEX_JOB_ID_OPTION}", kwargs[VERTEX_JOB_ID_OPTION]]
+        return super().get_entrypoint_arguments(**kwargs) + [
+            f"--{VERTEX_JOB_ID_OPTION}",
+            kwargs[VERTEX_JOB_ID_OPTION],
+        ]
 
-    def get_run_name(self, pipeline_name: str) -> str:
+    def get_run_name(self, pipeline_name: str) -> Optional[str]:
         """Returns the Vertex AI Pipeline job id.
 
         Args:

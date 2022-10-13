@@ -14,20 +14,24 @@
 """Entrypoint of the Kubernetes master/orchestrator pod."""
 
 import argparse
-import json
 import socket
-from typing import List
 
 from kubernetes import client as k8s_client
 
+from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.dag_runner import (
     ThreadedDagRunner,
+)
+from zenml.integrations.kubernetes.orchestrators.kubernetes_step_entrypoint_configuration import (
+    KubernetesStepEntrypointConfiguration,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
 from zenml.logger import get_logger
+from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)
 
@@ -40,16 +44,12 @@ def parse_args() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
-    parser.add_argument("--pipeline_name", type=str, required=True)
     parser.add_argument("--image_name", type=str, required=True)
     parser.add_argument("--kubernetes_namespace", type=str, required=True)
-    parser.add_argument("--pipeline_config", type=json.loads, required=True)
     return parser.parse_args()
 
 
-def patch_run_name_for_cron_scheduling(
-    run_name: str, fixed_step_args: List[str]
-) -> str:
+def patch_run_name_for_cron_scheduling(run_name: str) -> str:
     """Adjust run name according to the Kubernetes orchestrator pod name.
 
     This is required for scheduling via CRON jobs, since each job would
@@ -57,8 +57,6 @@ def patch_run_name_for_cron_scheduling(
 
     Args:
         run_name: Initial run name.
-        fixed_step_args: Fixed entrypoint args for the step pods.
-            We also need to patch the run name in there.
 
     Returns:
         New unique run name.
@@ -74,11 +72,6 @@ def patch_run_name_for_cron_scheduling(
     job_id = host_name.split("-")[-1]
     run_name = f"{run_name}-{job_id}"
 
-    # Then also adjust run_name in fixed_step_args.
-    for i, arg in enumerate(fixed_step_args):
-        if arg == "--run_name":
-            fixed_step_args[i + 1] = run_name
-
     return run_name
 
 
@@ -89,19 +82,25 @@ def main() -> None:
 
     # Parse / extract args.
     args = parse_args()
-    pipeline_config = args.pipeline_config
-    step_command = pipeline_config["step_command"]
-    fixed_step_args = pipeline_config["fixed_step_args"]
-    step_specific_args = pipeline_config["step_specific_args"]
-    pipeline_dag = pipeline_config["pipeline_dag"]
 
     # Get Kubernetes Core API for running kubectl commands later.
     kube_utils.load_kube_config()
     core_api = k8s_client.CoreV1Api()
 
     # Patch run name (only needed for CRON scheduling)
-    run_name = patch_run_name_for_cron_scheduling(
-        args.run_name, fixed_step_args
+    run_name = patch_run_name_for_cron_scheduling(args.run_name)
+
+    config_dict = yaml_utils.read_yaml(DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE)
+    deployment_config = PipelineDeployment.parse_obj(config_dict)
+
+    pipeline_dag = {}
+    step_name_to_pipeline_step_name = {}
+    for name_in_pipeline, step in deployment_config.steps.items():
+        step_name_to_pipeline_step_name[step.config.name] = name_in_pipeline
+        pipeline_dag[step.config.name] = step.spec.upstream_steps
+
+    step_command = (
+        KubernetesStepEntrypointConfiguration.get_entrypoint_command()
     )
 
     def run_step_on_kubernetes(step_name: str) -> None:
@@ -114,14 +113,18 @@ def main() -> None:
         pod_name = f"{run_name}-{step_name}"
         pod_name = kube_utils.sanitize_pod_name(pod_name)
 
-        # Build list of args for this step.
-        step_args = [*fixed_step_args, *step_specific_args[step_name]]
+        pipeline_step_name = step_name_to_pipeline_step_name[step_name]
+        step_args = (
+            KubernetesStepEntrypointConfiguration.get_entrypoint_arguments(
+                step_name=pipeline_step_name, run_name=run_name
+            )
+        )
 
         # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
             run_name=run_name,
-            pipeline_name=args.pipeline_name,
+            pipeline_name=deployment_config.pipeline.name,
             image_name=args.image_name,
             command=step_command,
             args=step_args,

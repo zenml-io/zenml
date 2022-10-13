@@ -12,1365 +12,664 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
-
-import base64
-from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+import os
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
-import yaml
+from pydantic import BaseModel
 
-from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError
-from zenml.logger import get_logger
-from zenml.stack import Stack
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.zen_stores.models import (
-    ComponentWrapper,
-    FlavorWrapper,
-    Project,
-    Role,
-    RoleAssignment,
-    StackWrapper,
-    StoreAssociation,
-    Team,
-    User,
+import zenml
+from zenml.config.global_config import GlobalConfiguration
+from zenml.config.store_config import StoreConfiguration
+from zenml.constants import (
+    ENV_ZENML_DEFAULT_PROJECT_NAME,
+    ENV_ZENML_DEFAULT_USER_NAME,
+    ENV_ZENML_DEFAULT_USER_PASSWORD,
+    ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.enums import StackComponentType, StoreType
+from zenml.exceptions import StackExistsError
+from zenml.logger import get_logger
+from zenml.models import (
+    ComponentModel,
+    ProjectModel,
+    RoleAssignmentModel,
+    RoleModel,
+    StackModel,
+    TeamModel,
+    UserModel,
+)
+from zenml.models.pipeline_models import PipelineModel
+from zenml.models.server_models import (
+    ServerDatabaseType,
+    ServerDeploymentType,
+    ServerModel,
+)
+from zenml.utils.analytics_utils import (
+    AnalyticsEvent,
+    AnalyticsTrackerMixin,
+    track,
+    track_event,
+)
+from zenml.zen_stores.zen_store_interface import ZenStoreInterface
 
 logger = get_logger(__name__)
 
 DEFAULT_USERNAME = "default"
+DEFAULT_PASSWORD = ""
+DEFAULT_PROJECT_NAME = "default"
+DEFAULT_STACK_NAME = "default"
 
 
-class BaseZenStore(ABC):
-    """Base class for accessing data in ZenML Repository and new Service."""
+class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
+    """Base class for accessing and persisting ZenML core objects.
 
-    def initialize(
+    Attributes:
+        config: The configuration of the store.
+        track_analytics: Only send analytics if set to `True`.
+    """
+
+    config: StoreConfiguration
+    track_analytics: bool = True
+    _active_user: Optional[UserModel] = None
+
+    TYPE: ClassVar[StoreType]
+    CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
+
+    # ---------------------------------
+    # Initialization and configuration
+    # ---------------------------------
+
+    def __init__(
         self,
-        url: str,
         skip_default_registrations: bool = False,
-        track_analytics: bool = True,
-        skip_migration: bool = False,
-        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Create and initialize a store.
+
+        Args:
+            skip_default_registrations: If `True`, the creation of the default
+                stack and user in the store will be skipped.
+            **kwargs: Additional keyword arguments to pass to the Pydantic
+                constructor.
+
+        Raises:
+            RuntimeError: If the store cannot be initialized.
+        """
+        super().__init__(**kwargs)
+
+        try:
+            self._initialize()
+        except Exception as e:
+            raise RuntimeError(
+                f"Error initializing {self.type.value} store with URL "
+                f"'{self.url}': {str(e)}"
+            ) from e
+
+        if not skip_default_registrations:
+            logger.debug("Initializing database")
+            self._initialize_database()
+        else:
+            logger.debug("Skipping database initialization")
+
+    @staticmethod
+    def get_store_class(store_type: StoreType) -> Type["BaseZenStore"]:
+        """Returns the class of the given store type.
+
+        Args:
+            store_type: The type of the store to get the class for.
+
+        Returns:
+            The class of the given store type or None if the type is unknown.
+
+        Raises:
+            TypeError: If the store type is unsupported.
+        """
+        if store_type == StoreType.SQL:
+            from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+            return SqlZenStore
+        elif store_type == StoreType.REST:
+            from zenml.zen_stores.rest_zen_store import RestZenStore
+
+            return RestZenStore
+        else:
+            raise TypeError(
+                f"No store implementation found for store type "
+                f"`{store_type.value}`."
+            )
+
+    @staticmethod
+    def create_store(
+        config: StoreConfiguration,
+        skip_default_registrations: bool = False,
         **kwargs: Any,
     ) -> "BaseZenStore":
-        """Initialize the store.
+        """Create and initialize a store from a store configuration.
 
         Args:
-            url: The URL of the store.
+            config: The store configuration to use.
             skip_default_registrations: If `True`, the creation of the default
-                stack and user will be skipped.
-            track_analytics: Only send analytics if set to `True`.
-            skip_migration: If `True`, no migration will be performed.
-            *args: Additional arguments to pass to the concrete store
-                implementation.
-            **kwargs: Additional keyword arguments to pass to the concrete
-                store implementation.
+                stack and user in the store will be skipped.
+            **kwargs: Additional keyword arguments to pass to the store class
 
         Returns:
-            The initialized concrete store instance.
+            The initialized store.
         """
-        self._track_analytics = track_analytics
-        if not skip_default_registrations:
-            if self.stacks_empty:
-                logger.info("Registering default stack...")
-                self.register_default_stack()
-            self.create_default_user()
-
-        if not skip_migration:
-            self._migrate_store()
-
-        return self
-
-    def _migrate_store(self) -> None:
-        """Migrates the store to the latest version."""
-        # Older versions of ZenML didn't have users in the zen store, so we
-        # create the default user if it doesn't exists
-        self.create_default_user()
-
-    # Static methods:
+        logger.debug(f"Creating store with config '{config}'...")
+        store_class = BaseZenStore.get_store_class(config.type)
+        store = store_class(
+            config=config,
+            skip_default_registrations=skip_default_registrations,
+        )
+        return store
 
     @staticmethod
-    @abstractmethod
-    def get_path_from_url(url: str) -> Optional[Path]:
-        """Get the path from a URL, if it points or is backed by a local file.
+    def get_default_store_config(path: str) -> StoreConfiguration:
+        """Get the default store configuration.
+
+        The default store is a SQLite store that saves the DB contents on the
+        local filesystem.
 
         Args:
-            url: The URL to get the path from.
+            path: The local path where the store DB will be stored.
 
         Returns:
-            The local path backed by the URL, or None if the URL is not backed
-            by a local file or directory
+            The default store configuration.
         """
-
-    @staticmethod
-    @abstractmethod
-    def get_local_url(path: str) -> str:
-        """Get a local URL for a given local path.
-
-        Args:
-            path: the path string to build a URL out of.
-
-        Returns:
-            Url pointing to the path for the store type.
-        """
-
-    @staticmethod
-    @abstractmethod
-    def is_valid_url(url: str) -> bool:
-        """Check if the given url is valid.
-
-        Args:
-            url: The url to check.
-
-        Returns:
-            True if the url is valid, False otherwise.
-        """
-
-    # Public Interface:
-
-    @property
-    @abstractmethod
-    def type(self) -> StoreType:
-        """The type of zen store.
-
-        Returns:
-            The type of zen store.
-        """
-
-    @property
-    @abstractmethod
-    def url(self) -> str:
-        """Get the repository URL.
-
-        Returns:
-            The repository URL.
-        """
-
-    @property
-    @abstractmethod
-    def stacks_empty(self) -> bool:
-        """Check if the store is empty (no stacks are configured).
-
-        The implementation of this method should check if the store is empty
-        without having to load all the stacks from the persistent storage.
-
-        Returns:
-            True if the store is empty, False otherwise.
-        """
-
-    @abstractmethod
-    def get_stack_configuration(
-        self, name: str
-    ) -> Dict[StackComponentType, str]:
-        """Fetches a stack configuration by name.
-
-        Args:
-            name: The name of the stack to fetch.
-
-        Returns:
-            Dict[StackComponentType, str] for the requested stack name.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
-        """
-
-    @property
-    @abstractmethod
-    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-        """Configurations for all stacks registered in this zen store.
-
-        Returns:
-            Dictionary mapping stack names to Dict[StackComponentType, str]'s
-        """
-
-    # Private interface (must be implemented, not to be called by user):
-
-    @abstractmethod
-    def _register_stack_component(
-        self,
-        component: ComponentWrapper,
-    ) -> None:
-        """Register a stack component.
-
-        Args:
-            component: The component to register.
-
-        Raises:
-            StackComponentExistsError: If a stack component with the same type
-                and name already exists.
-        """
-
-    @abstractmethod
-    def _update_stack_component(
-        self,
-        name: str,
-        component_type: StackComponentType,
-        component: ComponentWrapper,
-    ) -> Dict[str, str]:
-        """Update a stack component.
-
-        Args:
-            name: The original name of the stack component.
-            component_type: The type of the stack component to update.
-            component: The new component to update with.
-
-        Raises:
-            KeyError: If no stack component exists with the given name.
-        """
-
-    @abstractmethod
-    def _deregister_stack(self, name: str) -> None:
-        """Delete a stack from storage.
-
-        Args:
-            name: The name of the stack to be deleted.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
-        """
-
-    @abstractmethod
-    def _save_stack(
-        self,
-        name: str,
-        stack_configuration: Dict[StackComponentType, str],
-    ) -> None:
-        """Add a stack to storage.
-
-        Args:
-            name: The name to save the stack as.
-            stack_configuration: Dict[StackComponentType, str] to persist.
-        """
-
-    @abstractmethod
-    def _get_component_flavor_and_config(
-        self, component_type: StackComponentType, name: str
-    ) -> Tuple[str, bytes]:
-        """Fetch the flavor and configuration for a stack component.
-
-        Args:
-            component_type: The type of the component to fetch.
-            name: The name of the component to fetch.
-
-        Returns:
-            Pair of (flavor, configuration) for stack component, as string and
-            base64-encoded yaml document, respectively
-
-        Raises:
-            KeyError: If no stack component exists for the given type and name.
-        """
-
-    @abstractmethod
-    def _get_stack_component_names(
-        self, component_type: StackComponentType
-    ) -> List[str]:
-        """Get names of all registered stack components of a given type.
-
-        Args:
-            component_type: The type of the component to list names for.
-
-        Returns:
-            A list of names as strings.
-        """
-
-    @abstractmethod
-    def _delete_stack_component(
-        self, component_type: StackComponentType, name: str
-    ) -> None:
-        """Remove a StackComponent from storage.
-
-        Args:
-            component_type: The type of component to delete.
-            name: Then name of the component to delete.
-
-        Raises:
-            KeyError: If no component exists for given type and name.
-        """
-
-    # User, project and role management
-
-    @property
-    @abstractmethod
-    def users(self) -> List[User]:
-        """All registered users.
-
-        Returns:
-            A list of all registered users.
-        """
-
-    @abstractmethod
-    def _get_user(self, user_name: str) -> User:
-        """Get a specific user by name.
-
-        Args:
-            user_name: Name of the user to get.
-
-        Returns:
-            The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-
-    @abstractmethod
-    def _create_user(self, user_name: str) -> User:
-        """Creates a new user.
-
-        Args:
-            user_name: Unique username.
-
-        Returns:
-             The newly created user.
-
-        Raises:
-            EntityExistsError: If a user with the given name already exists.
-        """
-
-    @abstractmethod
-    def _delete_user(self, user_name: str) -> None:
-        """Deletes a user.
-
-        Args:
-            user_name: Name of the user to delete.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-
-    @property
-    @abstractmethod
-    def teams(self) -> List[Team]:
-        """All registered teams.
-
-        Returns:
-            A list of all registered teams.
-        """
-
-    @abstractmethod
-    def _create_team(self, team_name: str) -> Team:
-        """Creates a new team.
-
-        Args:
-            team_name: Unique team name.
-
-        Returns:
-            The newly created team.
-
-        Raises:
-            EntityExistsError: If a team with the given name already exists.
-        """
-
-    @abstractmethod
-    def _get_team(self, team_name: str) -> Team:
-        """Gets a specific team.
-
-        Args:
-            team_name: Name of the team to get.
-
-        Returns:
-            The requested team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
-        """
-
-    @abstractmethod
-    def _delete_team(self, team_name: str) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name: Name of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given name exists.
-        """
-
-    @abstractmethod
-    def add_user_to_team(self, team_name: str, user_name: str) -> None:
-        """Adds a user to a team.
-
-        Args:
-            team_name: Name of the team.
-            user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
-        """
-
-    @abstractmethod
-    def remove_user_from_team(self, team_name: str, user_name: str) -> None:
-        """Removes a user from a team.
-
-        Args:
-            team_name: Name of the team.
-            user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
-        """
-
-    @property
-    @abstractmethod
-    def projects(self) -> List[Project]:
-        """All registered projects.
-
-        Returns:
-            A list of all registered projects.
-        """
-
-    @abstractmethod
-    def _get_project(self, project_name: str) -> Project:
-        """Get an existing project by name.
-
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            The requested project if one was found.
-
-        Raises:
-            KeyError: If there is no such project.
-        """
-
-    @abstractmethod
-    def _create_project(
-        self, project_name: str, description: Optional[str] = None
-    ) -> Project:
-        """Creates a new project.
-
-        Args:
-            project_name: Unique project name.
-            description: Optional project description.
-
-        Returns:
-            The newly created project.
-
-        Raises:
-            EntityExistsError: If a project with the given name already exists.
-        """
-
-    @abstractmethod
-    def _delete_project(self, project_name: str) -> None:
-        """Deletes a project.
-
-        Args:
-            project_name: Name of the project to delete.
-
-        Raises:
-            KeyError: If no project with the given name exists.
-        """
-
-    @property
-    @abstractmethod
-    def roles(self) -> List[Role]:
-        """All registered roles.
-
-        Returns:
-            A list of all registered roles.
-        """
-
-    @property
-    @abstractmethod
-    def role_assignments(self) -> List[RoleAssignment]:
-        """All registered role assignments.
-
-        Returns:
-            A list of all registered role assignments.
-        """
-
-    @abstractmethod
-    def _get_role(self, role_name: str) -> Role:
-        """Gets a specific role.
-
-        Args:
-            role_name: Name of the role to get.
-
-        Returns:
-            The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
-        """
-
-    @abstractmethod
-    def _create_role(self, role_name: str) -> Role:
-        """Creates a new role.
-
-        Args:
-            role_name: Unique role name.
-
-        Returns:
-            The newly created role.
-
-        Raises:
-            EntityExistsError: If a role with the given name already exists.
-        """
-
-    @abstractmethod
-    def _delete_role(self, role_name: str) -> None:
-        """Deletes a role.
-
-        Args:
-            role_name: Name of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given name exists.
-        """
-
-    @abstractmethod
-    def assign_role(
-        self,
-        role_name: str,
-        entity_name: str,
-        project_name: Optional[str] = None,
-        is_user: bool = True,
-    ) -> None:
-        """Assigns a role to a user or team.
-
-        Args:
-            role_name: Name of the role to assign.
-            entity_name: User or team name.
-            project_name: Optional project name.
-            is_user: Boolean indicating whether the given `entity_name` refers
-                to a user.
-
-        Raises:
-            KeyError: If no role, entity or project with the given names exists.
-        """
-
-    @abstractmethod
-    def revoke_role(
-        self,
-        role_name: str,
-        entity_name: str,
-        project_name: Optional[str] = None,
-        is_user: bool = True,
-    ) -> None:
-        """Revokes a role from a user or team.
-
-        Args:
-            role_name: Name of the role to revoke.
-            entity_name: User or team name.
-            project_name: Optional project name.
-            is_user: Boolean indicating whether the given `entity_name` refers
-                to a user.
-
-        Raises:
-            KeyError: If no role, entity or project with the given names exists.
-        """
-
-    @abstractmethod
-    def get_users_for_team(self, team_name: str) -> List[User]:
-        """Fetches all users of a team.
-
-        Args:
-            team_name: Name of the team.
-
-        Returns:
-            List of users that are part of the team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
-        """
-
-    @abstractmethod
-    def get_teams_for_user(self, user_name: str) -> List[Team]:
-        """Fetches all teams for a user.
-
-        Args:
-            user_name: Name of the user.
-
-        Returns:
-            List of teams that the user is part of.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-
-    @abstractmethod
-    def get_role_assignments_for_user(
-        self,
-        user_name: str,
-        project_name: Optional[str] = None,
-        include_team_roles: bool = True,
-    ) -> List[RoleAssignment]:
-        """Fetches all role assignments for a user.
-
-        Args:
-            user_name: Name of the user.
-            project_name: Optional filter to only return roles assigned for
-                this project.
-            include_team_roles: If `True`, includes roles for all teams that
-                the user is part of.
-
-        Returns:
-            List of role assignments for this user.
-
-        Raises:
-            KeyError: If no user or project with the given names exists.
-        """
-
-    @abstractmethod
-    def get_role_assignments_for_team(
-        self,
-        team_name: str,
-        project_name: Optional[str] = None,
-    ) -> List[RoleAssignment]:
-        """Fetches all role assignments for a team.
-
-        Args:
-            team_name: Name of the user.
-            project_name: Optional filter to only return roles assigned for
-                this project.
-
-        Returns:
-            List of role assignments for this team.
-
-        Raises:
-            KeyError: If no team or project with the given names exists.
-        """
-
-    @property
-    @abstractmethod
-    def store_associations(self) -> List[StoreAssociation]:
-        """Fetches all artifact/metadata store associations.
-
-        Returns:
-            A list of all artifact/metadata store associations.
-        """
-
-    @abstractmethod
-    def create_store_association(
-        self,
-        artifact_store_uuid: UUID,
-        metadata_store_uuid: UUID,
-    ) -> StoreAssociation:
-        """Creates an association between an artifact- and a metadata store.
-
-        Args:
-            artifact_store_uuid: The UUID of the artifact store.
-            metadata_store_uuid: The UUID of the metadata store.
-
-        Returns:
-            The newly created store association.
-        """
-
-    @abstractmethod
-    def get_store_associations_for_artifact_store(
-        self,
-        artifact_store_uuid: UUID,
-    ) -> List[StoreAssociation]:
-        """Fetches all associations for a given artifact store.
-
-        Args:
-            artifact_store_uuid: The UUID of the selected artifact store.
-
-        Returns:
-            A list of store associations for the given artifact store.
-        """
-
-    @abstractmethod
-    def get_store_associations_for_metadata_store(
-        self,
-        metadata_store_uuid: UUID,
-    ) -> List[StoreAssociation]:
-        """Fetches all associations for a given metadata store.
-
-        Args:
-            metadata_store_uuid: The UUID of the selected metadata store.
-
-        Returns:
-            A list of store associations for the given metadata store.
-        """
-
-    @abstractmethod
-    def get_store_associations_for_artifact_and_metadata_store(
-        self,
-        artifact_store_uuid: UUID,
-        metadata_store_uuid: UUID,
-    ) -> List[StoreAssociation]:
-        """Fetches all associations for a given artifact/metadata store pair.
-
-        Args:
-            artifact_store_uuid: The UUID of the selected artifact store.
-            metadata_store_uuid: The UUID of the selected metadata store.
-
-        Returns:
-            A list of store associations for the given combination.
-        """
-
-    @abstractmethod
-    def delete_store_association_for_artifact_and_metadata_store(
-        self,
-        artifact_store_uuid: UUID,
-        metadata_store_uuid: UUID,
-    ) -> None:
-        """Deletes associations between a given artifact/metadata store pair.
-
-        Args:
-            artifact_store_uuid: The UUID of the selected artifact store.
-            metadata_store_uuid: The UUID of the selected metadata store.
-        """
-
-    # Pipelines and pipeline runs
-
-    @abstractmethod
-    def get_pipeline_run(
-        self,
-        pipeline_name: str,
-        run_name: str,
-        project_name: Optional[str] = None,
-    ) -> PipelineRunWrapper:
-        """Gets a pipeline run.
-
-        Args:
-            pipeline_name: Name of the pipeline for which to get the run.
-            run_name: Name of the pipeline run to get.
-            project_name: Optional name of the project from which to get the
-                pipeline run.
-
-        Raises:
-            KeyError: If no pipeline run (or project) with the given name
-                exists.
-        """
-
-    @abstractmethod
-    def get_pipeline_runs(
-        self, pipeline_name: str, project_name: Optional[str] = None
-    ) -> List[PipelineRunWrapper]:
-        """Gets pipeline runs.
-
-        Args:
-            pipeline_name: Name of the pipeline for which to get runs.
-            project_name: Optional name of the project from which to get the
-                pipeline runs.
-        """
-
-    @abstractmethod
-    def register_pipeline_run(
-        self,
-        pipeline_run: PipelineRunWrapper,
-    ) -> None:
-        """Registers a pipeline run.
-
-        Args:
-            pipeline_run: The pipeline run to register.
-
-        Raises:
-            EntityExistsError: If a pipeline run with the same name already
-                exists.
-        """
-
-    # Stack component flavors
-
-    @property
-    @abstractmethod
-    def flavors(self) -> List[FlavorWrapper]:
-        """All registered flavors.
-
-        Returns:
-            A list of all registered flavors.
-        """
-
-    @abstractmethod
-    def _create_flavor(
-        self,
-        source: str,
-        name: str,
-        stack_component_type: StackComponentType,
-    ) -> FlavorWrapper:
-        """Creates a new flavor.
-
-        Args:
-            source: the source path to the implemented flavor.
-            name: the name of the flavor.
-            stack_component_type: the corresponding StackComponentType.
-
-        Returns:
-            The newly created flavor.
-
-        Raises:
-            EntityExistsError: If a flavor with the given name and type
-                already exists.
-        """
-
-    @abstractmethod
-    def get_flavors_by_type(
-        self, component_type: StackComponentType
-    ) -> List[FlavorWrapper]:
-        """Fetch all flavor defined for a specific stack component type.
-
-        Args:
-            component_type: The type of the stack component.
-
-        Returns:
-            List of all the flavors for the given stack component type.
-        """
-
-    @abstractmethod
-    def get_flavor_by_name_and_type(
-        self,
-        flavor_name: str,
-        component_type: StackComponentType,
-    ) -> FlavorWrapper:
-        """Fetch a flavor by a given name and type.
-
-        Args:
-            flavor_name: The name of the flavor.
-            component_type: Optional, the type of the component.
-
-        Returns:
-            Flavor instance if it exists
-
-        Raises:
-            KeyError: If no flavor exists with the given name and type
-                or there are more than one instances
-        """
-
-    # Common code (user facing):
-
-    @property
-    def stacks(self) -> List[StackWrapper]:
-        """All stacks registered in this zen store.
-
-        Returns:
-            A list of all stacks registered in this zen store.
-        """
-        return [
-            self._stack_from_dict(name, conf)
-            for name, conf in self.stack_configurations.items()
-        ]
-
-    def get_stack(self, name: str) -> StackWrapper:
-        """Fetch a stack by name.
-
-        Args:
-            name: The name of the stack to retrieve.
-
-        Returns:
-            StackWrapper instance if the stack exists.
-        """
-        return self._stack_from_dict(name, self.get_stack_configuration(name))
-
-    def _register_stack(self, stack: StackWrapper) -> None:
-        """Register a stack and its components.
-
-        If any of the stack's components aren't registered in the zen store
-        yet, this method will try to register them as well.
-
-        Args:
-            stack: The stack to register.
-
-        Raises:
-            StackExistsError: If a stack with the same name already exists.
-        """
+        from zenml.zen_stores.sql_zen_store import (
+            SqlZenStore,
+            SqlZenStoreConfiguration,
+        )
+
+        config = SqlZenStoreConfiguration(
+            type=StoreType.SQL, url=SqlZenStore.get_local_url(path)
+        )
+        return config
+
+    def _initialize_database(self) -> None:
+        """Initialize the database on first use."""
         try:
-            self.get_stack(stack.name)
+            default_project = self._default_project
+        except KeyError:
+            default_project = self._create_default_project()
+        try:
+            default_user = self._default_user
+        except KeyError:
+            default_user = self._create_default_user()
+        try:
+            self._get_default_stack(
+                project_name_or_id=default_project.id,
+                user_name_or_id=default_user.id,
+            )
+        except KeyError:
+            self._create_default_stack(
+                project_name_or_id=default_project.id,
+                user_name_or_id=default_user.id,
+            )
+
+    @property
+    def url(self) -> str:
+        """The URL of the store.
+
+        Returns:
+            The URL of the store.
+        """
+        return self.config.url
+
+    @property
+    def type(self) -> StoreType:
+        """The type of the store.
+
+        Returns:
+            The type of the store.
+        """
+        return self.TYPE
+
+    def validate_active_config(
+        self,
+        active_project_name_or_id: Optional[Union[str, UUID]] = None,
+        active_stack_id: Optional[UUID] = None,
+        config_name: str = "",
+    ) -> Tuple[ProjectModel, StackModel]:
+        """Validate the active configuration.
+
+        Call this method to validate the supplied active project and active
+        stack values.
+
+        This method is guaranteed to return valid project ID and stack ID
+        values. If the supplied project and stack are not set or are not valid
+        (e.g. they do not exist or are not accessible), the default project and
+        default project stack will be returned in their stead.
+
+        Args:
+            active_project_name_or_id: The name or ID of the active project.
+            active_stack_id: The ID of the active stack.
+            config_name: The name of the configuration to validate (used in the
+                displayed logs/messages).
+
+        Returns:
+            A tuple containing the active project and active stack.
+        """
+        active_project: ProjectModel
+
+        # Ensure that the current active project is still valid
+        if active_project_name_or_id:
+            try:
+                active_project = self.get_project(active_project_name_or_id)
+            except KeyError:
+                logger.warning(
+                    "The current %s active project is no longer available. "
+                    "Resetting the active project to default.",
+                    config_name,
+                )
+                active_project = self._default_project
+        else:
+            logger.info(
+                "Setting the %s active project to default.",
+                config_name,
+            )
+            active_project = self._default_project
+
+        active_stack: StackModel
+
+        # Create a default stack in the active project for the active user if
+        # one is not yet created.
+        try:
+            default_stack = self._get_default_stack(
+                project_name_or_id=active_project.id,
+                user_name_or_id=self.active_user.id,
+            )
+        except KeyError:
+            default_stack = self._create_default_stack(
+                project_name_or_id=active_project.id,
+                user_name_or_id=self.active_user.id,
+            )
+
+        # Sanitize the active stack
+        if active_stack_id:
+            # Ensure that the active stack is still valid
+            try:
+                active_stack = self.get_stack(stack_id=active_stack_id)
+            except KeyError:
+                logger.warning(
+                    "The current %s active stack is no longer available. "
+                    "Resetting the active stack to default.",
+                    config_name,
+                )
+                active_stack = default_stack
+            else:
+                if active_stack.project != active_project.id:
+                    logger.warning(
+                        "The current %s active stack is not part of the active "
+                        "project. Resetting the active stack to default.",
+                        config_name,
+                    )
+                    active_stack = default_stack
+                elif (
+                    not active_stack.is_shared
+                    and active_stack.user != self.active_user.id
+                ):
+                    logger.warning(
+                        "The current %s active stack is not shared and not "
+                        "owned by the active user. "
+                        "Resetting the active stack to default.",
+                        config_name,
+                    )
+                    active_stack = default_stack
+        else:
+            logger.warning(
+                "Setting the %s active stack to default.",
+                config_name,
+            )
+            active_stack = default_stack
+
+        return active_project, active_stack
+
+    def get_store_info(self) -> ServerModel:
+        """Get information about the store.
+
+        Returns:
+            Information about the store.
+        """
+        return ServerModel(
+            id=GlobalConfiguration().user_id,
+            version=zenml.__version__,
+            deployment_type=os.environ.get(
+                ENV_ZENML_SERVER_DEPLOYMENT_TYPE, ServerDeploymentType.OTHER
+            ),
+            database_type=ServerDatabaseType.OTHER,
+        )
+
+    def is_local_store(self) -> bool:
+        """Check if the store is a local store or connected to a locally deployed ZenML server.
+
+        Returns:
+            True if the store is local, False otherwise.
+        """
+        return self.get_store_info().is_local()
+
+    # ------
+    # Stacks
+    # ------
+
+    @track(AnalyticsEvent.REGISTERED_DEFAULT_STACK)
+    def _create_default_stack(
+        self,
+        project_name_or_id: Union[str, UUID],
+        user_name_or_id: Union[str, UUID],
+    ) -> StackModel:
+        """Create the default stack components and stack.
+
+        The default stack contains a local orchestrator and a local artifact
+        store.
+
+        Args:
+            project_name_or_id: Name or ID of the project to which the stack
+                belongs.
+            user_name_or_id: The name or ID of the user that owns the stack.
+
+        Returns:
+            The model of the created default stack.
+
+        Raises:
+            StackExistsError: If a default stack already exists for the
+                user in the supplied project.
+        """
+        project = self.get_project(project_name_or_id=project_name_or_id)
+        user = self.get_user(user_name_or_id=user_name_or_id)
+        try:
+            self._get_default_stack(
+                project_name_or_id=project_name_or_id,
+                user_name_or_id=user_name_or_id,
+            )
         except KeyError:
             pass
         else:
             raise StackExistsError(
-                f"Unable to register stack with name '{stack.name}': Found "
-                f"existing stack with this name."
+                f"Default stack already exists for user "
+                f"{user.name} in project {project.name}"
             )
 
-        def __check_component(
-            component: ComponentWrapper,
-        ) -> Tuple[StackComponentType, str]:
-            """Try to register a stack component, if it doesn't exist.
+        logger.info(
+            f"Creating default stack for user {user.name} in project "
+            f"{project.name}..."
+        )
 
-            Args:
-                component: StackComponentWrapper to register.
+        # Register the default orchestrator
+        orchestrator = self.create_stack_component(
+            component=ComponentModel(
+                user=user.id,
+                project=project.id,
+                name="default",
+                type=StackComponentType.ORCHESTRATOR,
+                flavor="local",
+                configuration={},
+            ),
+        )
 
-            Returns:
-                The type and name of the component.
+        # Register the default artifact store
+        artifact_store = self.create_stack_component(
+            component=ComponentModel(
+                user=user.id,
+                project=project.id,
+                name="default",
+                type=StackComponentType.ARTIFACT_STORE,
+                flavor="local",
+                configuration={},
+            ),
+        )
 
-            Raises:
-                StackComponentExistsError: If a component with same name exists.
-            """
-            try:
-                existing_component = self.get_stack_component(
-                    component_type=component.type, name=component.name
-                )
-                if existing_component.uuid != component.uuid:
-                    raise StackComponentExistsError(
-                        f"Unable to register one of the stacks components: "
-                        f"A component of type '{component.type}' and name "
-                        f"'{component.name}' already exists."
-                    )
-            except KeyError:
-                self._register_stack_component(component)
-            return component.type, component.name
+        components = {c.type: [c.id] for c in [orchestrator, artifact_store]}
+        # Register the default stack
+        stack = StackModel(
+            name="default",
+            components=components,
+            is_shared=False,
+            project=project.id,
+            user=user.id,
+        )
+        return self.create_stack(stack=stack)
 
-        stack_configuration = {
-            typ: name for typ, name in map(__check_component, stack.components)
-        }
-        self._save_stack(stack.name, stack_configuration)
-        logger.info("Registered stack with name '%s'.", stack.name)
-
-    def _update_stack(self, name: str, stack: StackWrapper) -> None:
-        """Update a stack and its components.
-
-        If any of the stack's components aren't registered in the stack store
-        yet, this method will try to register them as well.
+    def _get_default_stack(
+        self,
+        project_name_or_id: Union[str, UUID],
+        user_name_or_id: Union[str, UUID],
+    ) -> StackModel:
+        """Get the default stack for a user in a project.
 
         Args:
-            name: The original name of the stack.
-            stack: The new stack to use in the update.
+            project_name_or_id: Name or ID of the project.
+            user_name_or_id: Name or ID of the user.
+
+        Returns:
+            The default stack in the project owned by the supplied user.
 
         Raises:
-            KeyError: If no stack exists with the given name.
-            StackExistsError: If a stack with the same name already exists.
+            KeyError: if the project or default stack doesn't exist.
         """
+        default_stacks = self.list_stacks(
+            project_name_or_id=project_name_or_id,
+            user_name_or_id=user_name_or_id,
+            name=DEFAULT_STACK_NAME,
+        )
+        if len(default_stacks) == 0:
+            raise KeyError(
+                f"No default stack found for user {str(user_name_or_id)} in "
+                f"project {str(project_name_or_id)}"
+            )
+        return default_stacks[0]
+
+    # -----
+    # Users
+    # -----
+
+    @property
+    def active_user(self) -> UserModel:
+        """The active user.
+
+        Returns:
+            The active user.
+        """
+        if self._active_user is None:
+            self._active_user = self.get_user(self.active_user_name)
+        return self._active_user
+
+    @property
+    def users(self) -> List[UserModel]:
+        """All existing users.
+
+        Returns:
+            A list of all existing users.
+        """
+        return self.list_users()
+
+    @property
+    def _default_user_name(self) -> str:
+        """Get the default user name.
+
+        Returns:
+            The default user name.
+        """
+        return os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
+
+    @property
+    def _default_user(self) -> UserModel:
+        """Get the default user.
+
+        Returns:
+            The default user.
+
+        Raises:
+            KeyError: If the default user doesn't exist.
+        """
+        user_name = self._default_user_name
         try:
-            self.get_stack(name)
+            return self.get_user(user_name)
+        except KeyError:
+            raise KeyError(f"The default user '{user_name}' is not configured")
+
+    @track(AnalyticsEvent.CREATED_DEFAULT_USER)
+    def _create_default_user(self) -> UserModel:
+        """Creates a default user.
+
+        Returns:
+            The default user.
+        """
+        user_name = os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
+        user_password = os.getenv(
+            ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
+        )
+
+        logger.info(f"Creating default user '{user_name}' ...")
+        return self.create_user(
+            UserModel(
+                name=user_name,
+                active=True,
+                password=user_password,
+            )
+        )
+
+    # -----
+    # Teams
+    # -----
+
+    @property
+    def teams(self) -> List[TeamModel]:
+        """List all teams.
+
+        Returns:
+            A list of all teams.
+        """
+        return self.list_teams()
+
+    # -----
+    # Roles
+    # -----
+
+    @property
+    def roles(self) -> List[RoleModel]:
+        """All existing roles.
+
+        Returns:
+            A list of all existing roles.
+        """
+        return self.list_roles()
+
+    @property
+    def role_assignments(self) -> List[RoleAssignmentModel]:
+        """All role assignments.
+
+        Returns:
+            A list of all role assignments.
+        """
+        return self.list_role_assignments(user_name_or_id=self.active_user_name)
+
+    # --------
+    # Projects
+    # --------
+
+    @property
+    def _default_project(self) -> ProjectModel:
+        """Get the default project.
+
+        Returns:
+            The default project.
+
+        Raises:
+            KeyError: if the default project doesn't exist.
+        """
+        project_name = os.getenv(
+            ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME
+        )
+        try:
+            return self.get_project(project_name)
         except KeyError:
             raise KeyError(
-                f"Unable to update stack with name '{stack.name}': No existing "
-                f"stack found with this name."
+                f"The default project '{project_name}' is not configured"
             )
 
-        try:
-            renamed_stack = self.get_stack(stack.name)
-            if (name != stack.name) and renamed_stack:
-                raise StackExistsError(
-                    f"Unable to update stack with name '{stack.name}': Found "
-                    f"existing stack with this name."
-                )
-        except KeyError:
-            pass
-
-        def __check_component(
-            component: ComponentWrapper,
-        ) -> Tuple[StackComponentType, str]:
-            """Try to register a stack component, if it doesn't exist.
-
-            Args:
-                component: StackComponentWrapper to register.
-
-            Returns:
-                The type and name of the component.
-            """
-            try:
-                _ = self.get_stack_component(
-                    component_type=component.type, name=component.name
-                )
-            except KeyError:
-                self._register_stack_component(component)
-            return component.type, component.name
-
-        stack_configuration = {
-            typ: name for typ, name in map(__check_component, stack.components)
-        }
-        self._save_stack(stack.name, stack_configuration)
-
-        logger.info("Updated stack with name '%s'.", name)
-        if name != stack.name:
-            self.deregister_stack(name)
-
-    def get_stack_component(
-        self, component_type: StackComponentType, name: str
-    ) -> ComponentWrapper:
-        """Get a registered stack component.
-
-        Args:
-            component_type: The type of the component.
-            name: The name of the component.
+    @track(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
+    def _create_default_project(self) -> ProjectModel:
+        """Creates a default project.
 
         Returns:
-            The component.
+            The default project.
         """
-        flavor, config = self._get_component_flavor_and_config(
-            component_type, name=name
+        project_name = os.getenv(
+            ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME
         )
-        uuid = yaml.safe_load(base64.b64decode(config).decode())["uuid"]
-        return ComponentWrapper(
-            type=component_type,
-            flavor=flavor,
-            name=name,
-            uuid=uuid,
-            config=config,
-        )
+        logger.info(f"Creating default project '{project_name}' ...")
+        return self.create_project(ProjectModel(name=project_name))
 
-    def get_stack_components(
-        self, component_type: StackComponentType
-    ) -> List[ComponentWrapper]:
-        """Fetches all registered stack components of the given type.
+    # ------------
+    # Repositories
+    # ------------
+
+    # ---------
+    # Pipelines
+    # ---------
+
+    def get_pipeline_in_project(
+        self, pipeline_name: str, project_name_or_id: Union[str, UUID]
+    ) -> PipelineModel:
+        """Get a pipeline with a given name in a project.
 
         Args:
-            component_type: StackComponentType to list members of
+            pipeline_name: Name of the pipeline.
+            project_name_or_id: ID of the project.
 
         Returns:
-            A list of StackComponentConfiguration instances.
-        """
-        return [
-            self.get_stack_component(component_type=component_type, name=name)
-            for name in self._get_stack_component_names(component_type)
-        ]
-
-    def deregister_stack_component(
-        self, component_type: StackComponentType, name: str
-    ) -> None:
-        """Deregisters a stack component.
-
-        Args:
-            component_type: The type of the component to deregister.
-            name: The name of the component to deregister.
+            The pipeline.
 
         Raises:
-            ValueError: if trying to deregister a component that's part
-                of a stack.
+            KeyError: if the pipeline does not exist.
         """
-        for stack_name, stack_config in self.stack_configurations.items():
-            if stack_config.get(component_type) == name:
-                raise ValueError(
-                    f"Unable to deregister stack component (type: "
-                    f"{component_type}, name: {name}) that is part of a "
-                    f"registered stack (stack name: '{stack_name}')."
-                )
-        self._delete_stack_component(component_type, name=name)
-
-    def register_default_stack(self) -> None:
-        """Populates the store with the default Stack.
-
-        The default stack contains a local orchestrator,
-        a local artifact store and a local SQLite metadata store.
-        """
-        stack = Stack.default_local_stack()
-        sw = StackWrapper.from_stack(stack)
-        self._register_stack(sw)
-        # For the default stack, we have to set up the association manually.
-        # As we can not use the repo/store yet to check the previously defined
-        # associations.
-        self.create_store_association(
-            artifact_store_uuid=stack.artifact_store.uuid,
-            metadata_store_uuid=stack.metadata_store.uuid,
+        pipelines = self.list_pipelines(
+            project_name_or_id=project_name_or_id, name=pipeline_name
         )
-        metadata = {c.type.value: c.flavor for c in sw.components}
-        metadata["store_type"] = self.type.value
-        self._track_event(
-            AnalyticsEvent.REGISTERED_DEFAULT_STACK, metadata=metadata
-        )
+        if len(pipelines) == 0:
+            raise KeyError(
+                f"No pipeline found with name {pipeline_name} in project "
+                f"{project_name_or_id}"
+            )
+        return pipelines[0]
 
-    def create_default_user(self) -> None:
-        """Creates a default user."""
-        try:
-            self.get_user(user_name=DEFAULT_USERNAME)
-        except KeyError:
-            # Use private interface and send custom tracking event
-            self._track_event(AnalyticsEvent.CREATED_DEFAULT_USER)
-            self._create_user(user_name=DEFAULT_USERNAME)
+    # -------------
+    # Pipeline runs
+    # -------------
 
-    # Common code (internal implementations, private):
+    # ------------------
+    # Pipeline run steps
+    # ------------------
 
-    def _track_event(
+    # ---------
+    # Analytics
+    # ---------
+
+    def track_event(
         self,
         event: Union[str, AnalyticsEvent],
         metadata: Optional[Dict[str, Any]] = None,
-    ) -> bool:
+    ) -> None:
         """Track an analytics event.
 
         Args:
             event: The event to track.
             metadata: Additional metadata to track with the event.
-
-        Returns:
-            True if the event was successfully tracked, False otherwise.
         """
-        if self._track_analytics:
-            return track_event(event, metadata)
-        return False
+        if self.track_analytics:
+            # Server information is always tracked, if available.
+            track_event(event, metadata)
 
-    def _stack_from_dict(
-        self, name: str, stack_configuration: Dict[StackComponentType, str]
-    ) -> StackWrapper:
-        """Build a StackWrapper from stored configurations.
+    class Config:
+        """Pydantic configuration class."""
 
-        Args:
-            name: The name of the stack.
-            stack_configuration: The configuration of the stack.
-
-        Returns:
-            A StackWrapper instance.
-        """
-        stack_components = [
-            self.get_stack_component(
-                component_type=component_type, name=component_name
-            )
-            for component_type, component_name in stack_configuration.items()
-        ]
-        return StackWrapper(name=name, components=stack_components)
-
-    # Public facing APIs
-    # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in
-    #  the [review comment](https://github.com/zenml-io/zenml/pull/589#discussion_r875003334)
-
-    def register_stack_component(
-        self,
-        component: ComponentWrapper,
-    ) -> None:
-        """Register a stack component.
-
-        Args:
-            component: The component to register.
-
-        Returns:
-            None
-        """
-        analytics_metadata = {
-            "type": component.type.value,
-            "flavor": component.flavor,
-        }
-        self._track_event(
-            AnalyticsEvent.REGISTERED_STACK_COMPONENT,
-            metadata=analytics_metadata,
-        )
-        return self._register_stack_component(component)
-
-    def update_stack_component(
-        self,
-        name: str,
-        component_type: StackComponentType,
-        component: ComponentWrapper,
-    ) -> Dict[str, str]:
-        """Update a stack component.
-
-        Args:
-            name: The original name of the stack component.
-            component_type: The type of the stack component to update.
-            component: The new component to update with.
-
-        Returns:
-            The updated stack configuration.
-        """
-        analytics_metadata = {
-            "type": component.type.value,
-            "flavor": component.flavor,
-        }
-        self._track_event(
-            AnalyticsEvent.UPDATED_STACK_COMPONENT,
-            metadata=analytics_metadata,
-        )
-        return self._update_stack_component(name, component_type, component)
-
-    def create_user(self, user_name: str) -> User:
-        """Creates a new user.
-
-        Args:
-            user_name: Unique username.
-
-        Returns:
-            The newly created user.
-        """
-        self._track_event(AnalyticsEvent.CREATED_USER)
-        return self._create_user(user_name)
-
-    def delete_user(self, user_name: str) -> None:
-        """Deletes a user.
-
-        Args:
-            user_name: Name of the user to delete.
-
-        Returns:
-            None.
-        """
-        self._track_event(AnalyticsEvent.DELETED_USER)
-        return self._delete_user(user_name)
-
-    def get_user(self, user_name: str) -> User:
-        """Gets a specific user.
-
-        Args:
-            user_name: Name of the user to get.
-
-        Returns:
-            The requested user.
-        """
-        # No tracking events, here for consistency
-        return self._get_user(user_name)
-
-    def create_team(self, team_name: str) -> Team:
-        """Creates a new team.
-
-        Args:
-            team_name: Unique team name.
-
-        Returns:
-            The newly created team.
-        """
-        self._track_event(AnalyticsEvent.CREATED_TEAM)
-        return self._create_team(team_name)
-
-    def get_team(self, team_name: str) -> Team:
-        """Gets a specific team.
-
-        Args:
-            team_name: Name of the team to get.
-
-        Returns:
-            The requested team.
-        """
-        # No tracking events, here for consistency
-        return self._get_team(team_name)
-
-    def delete_team(self, team_name: str) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name: Name of the team to delete.
-
-        Returns:
-            None
-        """
-        self._track_event(AnalyticsEvent.DELETED_TEAM)
-        return self._delete_team(team_name)
-
-    def get_project(self, project_name: str) -> Project:
-        """Gets a specific project.
-
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            The requested project.
-        """
-        # No tracking events, here for consistency
-        return self._get_project(project_name)
-
-    def create_project(
-        self, project_name: str, description: Optional[str] = None
-    ) -> Project:
-        """Creates a new project.
-
-        Args:
-            project_name: Unique project name.
-            description: Optional project description.
-
-        Returns:
-            The newly created project.
-        """
-        self._track_event(AnalyticsEvent.CREATED_PROJECT)
-        return self._create_project(project_name, description)
-
-    def delete_project(self, project_name: str) -> None:
-        """Deletes a project.
-
-        Args:
-            project_name: Name of the project to delete.
-
-        Returns:
-            None.
-        """
-        self._track_event(AnalyticsEvent.DELETED_PROJECT)
-        return self._delete_project(project_name)
-
-    def get_role(self, role_name: str) -> Role:
-        """Gets a specific role.
-
-        Args:
-            role_name: Name of the role to get.
-
-        Returns:
-            The requested role.
-        """
-        # No tracking events, here for consistency
-        return self._get_role(role_name)
-
-    def create_role(self, role_name: str) -> Role:
-        """Creates a new role.
-
-        Args:
-            role_name: Unique role name.
-
-        Returns:
-            The newly created role.
-        """
-        self._track_event(AnalyticsEvent.CREATED_ROLE)
-        return self._create_role(role_name)
-
-    def delete_role(self, role_name: str) -> None:
-        """Deletes a role.
-
-        Args:
-            role_name: Name of the role to delete
-
-        Returns:
-            None.
-        """
-        self._track_event(AnalyticsEvent.DELETED_ROLE)
-        return self._delete_role(role_name)
-
-    def create_flavor(
-        self,
-        source: str,
-        name: str,
-        stack_component_type: StackComponentType,
-    ) -> FlavorWrapper:
-        """Creates a new flavor.
-
-        Args:
-            source: the source path to the implemented flavor.
-            name: the name of the flavor.
-            stack_component_type: the corresponding StackComponentType.
-
-        Returns:
-            The newly created flavor.
-        """
-        analytics_metadata = {
-            "type": stack_component_type.value,
-        }
-        track_event(
-            AnalyticsEvent.CREATED_FLAVOR,
-            metadata=analytics_metadata,
-        )
-        return self._create_flavor(source, name, stack_component_type)
-
-    def register_stack(self, stack: StackWrapper) -> None:
-        """Register a stack and its components.
-
-        If any of the stack's components aren't registered in the zen store
-        yet, this method will try to register them as well.
-
-        Args:
-            stack: The stack to register.
-
-        Returns:
-            None
-        """
-        metadata = {c.type.value: c.flavor for c in stack.components}
-        metadata["store_type"] = self.type.value
-        track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
-        return self._register_stack(stack)
-
-    def update_stack(self, name: str, stack: StackWrapper) -> None:
-        """Update a stack and its components.
-
-        If any of the stack's components aren't registered in the stack store
-        yet, this method will try to register them as well.
-
-        Args:
-            name: The original name of the stack.
-            stack: The new stack to use in the update.
-
-        Returns:
-            None.
-        """
-        metadata = {c.type.value: c.flavor for c in stack.components}
-        metadata["store_type"] = self.type.value
-        track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
-        return self._update_stack(name, stack)
-
-    def deregister_stack(self, name: str) -> None:
-        """Delete a stack from storage.
-
-        Args:
-            name: The name of the stack to be deleted.
-
-        Returns:
-            None.
-        """
-        # No tracking events, here for consistency
-        return self._deregister_stack(name)
+        # Validate attributes when assigning them. We need to set this in order
+        # to have a mix of mutable and immutable attributes
+        validate_assignment = True
+        # Ignore extra attributes from configs of previous ZenML versions
+        extra = "ignore"
+        # all attributes with leading underscore are private and therefore
+        # are mutable and not included in serialization
+        underscore_attrs_are_private = True

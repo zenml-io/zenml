@@ -15,15 +15,17 @@
 
 import base64
 import json
-import re
-from typing import Any, ClassVar, List, Optional
+from typing import Any, ClassVar, List, Optional, cast
 
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 
 from zenml.exceptions import SecretExistsError
-from zenml.integrations.azure import AZURE_SECRETS_MANAGER_FLAVOR
+from zenml.integrations.azure.flavors.azure_secrets_manager_flavor import (
+    AzureSecretsManagerConfig,
+    validate_azure_secret_name_or_namespace,
+)
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
@@ -43,19 +45,18 @@ ZENML_AZURE_SECRET_SCOPE_PATH_SEPARATOR = "-"
 
 
 class AzureSecretsManager(BaseSecretsManager):
-    """Class to interact with the Azure secrets manager.
+    """Class to interact with the Azure secrets manager."""
 
-    Attributes:
-        key_vault_name: Name of an Azure Key Vault that this secrets manager
-            will use to store secrets.
-    """
-
-    key_vault_name: str
-
-    # Class configuration
-    FLAVOR: ClassVar[str] = AZURE_SECRETS_MANAGER_FLAVOR
-    SUPPORTS_SCOPING: ClassVar[bool] = True
     CLIENT: ClassVar[Any] = None
+
+    @property
+    def config(self) -> AzureSecretsManagerConfig:
+        """Returns the `AzureSecretsManagerConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(AzureSecretsManagerConfig, self._config)
 
     @classmethod
     def _ensure_client_connected(cls, vault_name: str) -> None:
@@ -65,68 +66,13 @@ class AzureSecretsManager(BaseSecretsManager):
             credential = DefaultAzureCredential()
             cls.CLIENT = SecretClient(vault_url=KVUri, credential=credential)
 
-    @classmethod
-    def _validate_scope(
-        cls,
-        scope: SecretsManagerScope,
-        namespace: Optional[str],
-    ) -> None:
-        """Validate the scope and namespace value.
-
-        Args:
-            scope: Scope value.
-            namespace: Optional namespace value.
-        """
-        if namespace:
-            cls.validate_secret_name_or_namespace(namespace, scope)
-
-    @classmethod
-    def validate_secret_name_or_namespace(
-        cls,
-        name: str,
-        scope: SecretsManagerScope,
-    ) -> None:
-        """Validate a secret name or namespace.
-
-        Azure secret names must contain only alphanumeric characters and the
-        character `-`.
-
-        Given that we also save secret names and namespaces as labels, we are
-        also limited by the 256 maximum size limitation that Azure imposes on
-        label values. An arbitrary length of 100 characters is used here for
-        the maximum size for the secret name and namespace.
-
-        Args:
-            name: the secret name or namespace
-            scope: the current scope
-
-        Raises:
-            ValueError: if the secret name or namespace is invalid
-        """
-        if scope == SecretsManagerScope.NONE:
-            # to preserve backwards compatibility, we don't validate the
-            # secret name for unscoped secrets.
-            return
-
-        if not re.fullmatch(r"[0-9a-zA-Z-]+", name):
-            raise ValueError(
-                f"Invalid secret name or namespace '{name}'. Must contain "
-                f"only alphanumeric characters and the character -."
-            )
-
-        if len(name) > 100:
-            raise ValueError(
-                f"Invalid secret name or namespace '{name}'. The length is "
-                f"limited to maximum 100 characters."
-            )
-
     def validate_secret_name(self, name: str) -> None:
         """Validate a secret name.
 
         Args:
             name: the secret name
         """
-        self.validate_secret_name_or_namespace(name, self.scope)
+        validate_azure_secret_name_or_namespace(name, self.config.scope)
 
     def _create_or_update_secret(self, secret: BaseSecretSchema) -> None:
         """Creates a new secret or updated an existing one.
@@ -134,7 +80,7 @@ class AzureSecretsManager(BaseSecretsManager):
         Args:
             secret: the secret to register or update
         """
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             # legacy, non-scoped secrets
 
             for key, value in secret.content.items():
@@ -181,7 +127,7 @@ class AzureSecretsManager(BaseSecretsManager):
             SecretExistsError: if the secret already exists
         """
         self.validate_secret_name(secret.name)
-        self._ensure_client_connected(self.key_vault_name)
+        self._ensure_client_connected(self.config.key_vault_name)
 
         if secret.name in self.get_all_secret_keys():
             raise SecretExistsError(
@@ -204,10 +150,10 @@ class AzureSecretsManager(BaseSecretsManager):
             ValueError: if the secret is named 'name'
         """
         self.validate_secret_name(secret_name)
-        self._ensure_client_connected(self.key_vault_name)
+        self._ensure_client_connected(self.config.key_vault_name)
         zenml_secret: Optional[BaseSecretSchema] = None
 
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             # Legacy secrets are mapped to multiple Azure secrets, one for
             # each secret key
 
@@ -271,7 +217,7 @@ class AzureSecretsManager(BaseSecretsManager):
         Returns:
             A list of all secret keys
         """
-        self._ensure_client_connected(self.key_vault_name)
+        self._ensure_client_connected(self.config.key_vault_name)
 
         set_of_secrets = set()
 
@@ -280,7 +226,7 @@ class AzureSecretsManager(BaseSecretsManager):
             if not tags:
                 continue
 
-            if self.scope == SecretsManagerScope.NONE:
+            if self.config.scope == SecretsManagerScope.NONE:
                 # legacy, non-scoped secrets
                 if ZENML_GROUP_KEY in tags:
                     set_of_secrets.add(tags.get(ZENML_GROUP_KEY))
@@ -304,7 +250,7 @@ class AzureSecretsManager(BaseSecretsManager):
             KeyError: if the secret does not exist
         """
         self.validate_secret_name(secret.name)
-        self._ensure_client_connected(self.key_vault_name)
+        self._ensure_client_connected(self.config.key_vault_name)
 
         if secret.name not in self.get_all_secret_keys():
             raise KeyError(f"Can't find the specified secret '{secret.name}'")
@@ -321,9 +267,9 @@ class AzureSecretsManager(BaseSecretsManager):
             KeyError: if the secret no longer exists
         """
         self.validate_secret_name(secret_name)
-        self._ensure_client_connected(self.key_vault_name)
+        self._ensure_client_connected(self.config.key_vault_name)
 
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             # legacy, non-scoped secrets
 
             # Go through all Azure secrets and delete the ones with the
@@ -349,7 +295,7 @@ class AzureSecretsManager(BaseSecretsManager):
 
     def delete_all_secrets(self) -> None:
         """Delete all existing secrets."""
-        self._ensure_client_connected(self.key_vault_name)
+        self._ensure_client_connected(self.config.key_vault_name)
 
         # List all secrets.
         for secret_property in self.CLIENT.list_properties_of_secrets():
@@ -358,7 +304,7 @@ class AzureSecretsManager(BaseSecretsManager):
             if not tags:
                 continue
 
-            if self.scope == SecretsManagerScope.NONE:
+            if self.config.scope == SecretsManagerScope.NONE:
                 # legacy, non-scoped secrets
                 if ZENML_GROUP_KEY in tags:
                     logger.info(

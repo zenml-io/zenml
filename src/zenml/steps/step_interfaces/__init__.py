@@ -15,52 +15,28 @@
 
 from zenml.steps.step_interfaces.base_alerter_step import (
     BaseAlerterStep,
-    BaseAlerterStepConfig,
+    BaseAlerterStepParameters,
 )
 from zenml.steps.step_interfaces.base_analyzer_step import (
-    BaseAnalyzerConfig,
+    BaseAnalyzerParameters,
     BaseAnalyzerStep,
 )
 from zenml.steps.step_interfaces.base_datasource_step import (
-    BaseDatasourceConfig,
+    BaseDatasourceParameters,
     BaseDatasourceStep,
 )
 from zenml.steps.step_interfaces.base_drift_detection_step import (
-    BaseDriftDetectionConfig,
+    BaseDriftDetectionParameters,
     BaseDriftDetectionStep,
-)
-from zenml.steps.step_interfaces.base_evaluator_step import (
-    BaseEvaluatorConfig,
-    BaseEvaluatorStep,
-)
-from zenml.steps.step_interfaces.base_preprocessor_step import (
-    BasePreprocessorConfig,
-    BasePreprocessorStep,
-)
-from zenml.steps.step_interfaces.base_split_step import (
-    BaseSplitStep,
-    BaseSplitStepConfig,
-)
-from zenml.steps.step_interfaces.base_trainer_step import (
-    BaseTrainerConfig,
-    BaseTrainerStep,
 )
 
 __all__ = [
-    "BaseAnalyzerConfig",
+    "BaseAnalyzerParameters",
     "BaseAnalyzerStep",
-    "BaseDatasourceConfig",
+    "BaseDatasourceParameters",
     "BaseDatasourceStep",
-    "BaseDriftDetectionConfig",
+    "BaseDriftDetectionParameters",
     "BaseDriftDetectionStep",
-    "BaseEvaluatorConfig",
-    "BaseEvaluatorStep",
-    "BasePreprocessorConfig",
-    "BasePreprocessorStep",
-    "BaseSplitStep",
-    "BaseSplitStepConfig",
-    "BaseTrainerStep",
-    "BaseTrainerConfig",
     "BaseAlerterStep",
-    "BaseAlerterStepConfig",
+    "BaseAlerterStepParameters",
 ]

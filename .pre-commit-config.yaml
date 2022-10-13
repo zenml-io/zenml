@@ -13,6 +13,16 @@ repos:
 
   - repo: local
     hooks:
+      - id: docstringcheck
+        name: docstringcheck
+        entry: poetry run bash scripts/docstring.sh
+        language: system
+        files: ^src/zenml/
+        types: [file, python]
+        pass_filenames: false
+
+  - repo: local
+    hooks:
       - id: pytest
         name: pytest
         entry: poetry run bash scripts/test-coverage-xml.sh unit

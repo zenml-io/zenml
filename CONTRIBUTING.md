@@ -13,11 +13,15 @@ you finalize your pull requests.
 
 ## ⚡️ Quicklinks
 
-* [Code of Conduct](#code-of-conduct)
-* [Getting Started](#getting-started)
-    * [Issues](#issues)
-    * [Pull Requests](#pull-requests)
-* [Getting Help](#getting-help)
+* [Code of Conduct](#%EF%B8%8F-code-of-conduct)
+* [Getting Started](#-getting-started)
+    * [Issues](#%EF%B8%8F-issues)
+    * [Pull Requests](#-pull-requests-when-to-make-one)
+    * [Linting, formatting, and tests](#-linting-formatting-and-tests)
+    * [Reporting a vulnerability](#-reporting-a-vulnerability)
+* [Coding conventions](#coding-conventions)
+* [Creating a new integration](#-creating-a-new-integration)
+* [Getting Help](#-getting-help)
 
 ## 🧑‍⚖️ Code of Conduct
 
@@ -135,13 +139,13 @@ Warning: This might take a while for both (~ 15 mins each, depending on your mac
 time, please run it as it will make the
 next commands error-free.
 
-It is easy to run the following scripts via Poetry to ensure code formatting and
-linting is in order:
+You can now run the following scripts via Poetry to automatically format your
+code and to check whether the code formatting, linting, docstrings, and
+spelling is in order:
 
 ```
 poetry run bash scripts/format.sh
-poetry run bash scripts/lint.sh
-poetry run bash scripts/check-spelling.sh
+poetry run bash scripts/run-ci-checks.sh
 ```
 
 If the spell checker catches errors, you will have to add the words to `.pyspelling-ignore-words`. (Note that if you wish to run the spellchecks manually on your local machine, first install `aspell` (using `brew` or `apt-get` or whatever package manager Windows uses).)
@@ -216,7 +220,7 @@ for detailed step-by-step instructions.
 [Examples README](examples/README.md) 
 to find out what to do.
 3. All integrations deserve to be documented. Make sure to pay a visit to the
-[Integrations Page](https://docs.zenml.io/mlops-stacks/integrations)
+[Integrations Page](https://docs.zenml.io/component-gallery/integrations)
 in the docs and add the integration. 
 
 ## 🆘 Getting Help

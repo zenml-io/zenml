@@ -3,7 +3,7 @@ steps:
   data_loader:
     source:
       file: steps/data_loader
-      name: data_loader
+      name: digits_data_loader
   trainer:
     source:
       file: steps/trainer

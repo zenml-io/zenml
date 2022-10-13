@@ -11,26 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for ZenServer.
+"""ZenML Server Implementation.
 
-The ZenServer is a simple webserver to let you collaborate on stacks via
-the network. It can be spun up in a background daemon from the command line
-using `zenml server up` and managed from the same command line group.
+The ZenML Server is a centralized service meant for use in a collaborative
+setting in which stacks, stack components, flavors, pipeline and pipeline runs
+can be shared over the network with other users.
 
-Using the ZenServer's stacks in your project just requires setting up a
-profile with `rest` store-type pointed to the url of the server.
+You can use the `zenml server up` command to spin up ZenML server instances
+that are either running locally as daemon processes or docker containers, or
+to deploy a ZenML server remotely on a managed cloud platform. The other CLI
+commands in the same `zenml server` group can be used to manage the server
+instances deployed from your local machine.
+
+To connect the local ZenML client to one of the managed ZenML servers, call
+`zenml server connect` with the name of the server you want to connect to.
 """
-
-from zenml.zen_server.zen_server import (
-    ZenServer,
-    ZenServerConfig,
-    ZenServerEndpoint,
-    ZenServerEndpointConfig,
-)
-
-__all__ = [
-    "ZenServer",
-    "ZenServerConfig",
-    "ZenServerEndpoint",
-    "ZenServerEndpointConfig",
-]

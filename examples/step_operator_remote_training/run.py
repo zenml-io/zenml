@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 
 from pipelines import step_operator_pipeline
-from steps import evaluator, importer, remote_trainer
+from steps import digits_data_loader, evaluator, remote_trainer
 
 if __name__ == "__main__":
     pipeline = step_operator_pipeline(
-        importer=importer(),
+        importer=digits_data_loader(),
         trainer=remote_trainer(),  # The step that will be run with the step operator
         evaluator=evaluator(),
     )

@@ -41,13 +41,16 @@ cd zenml_examples/step_operator_remote_training
 
 # initialize
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 Each type of step operator has their own prerequisites.
 
 Before running this example, you must set up the individual cloud providers in a
 certain way. The complete guide can be found in
-the [docs](https://docs.zenml.io/mlops-stacks/step-operators).
+the [docs](https://docs.zenml.io/component-gallery/step-operators/step-operators).
 
 Please jump to the section applicable to
 the step operator you would like to use:
@@ -70,7 +73,7 @@ The stack will consist of:
   step on Sagemaker.
 
 To configure resources for the step operators, please
-follow [this guide](https://docs.zenml.io/mlops-stacks/step-operators/amazon-sagemaker)
+follow [this guide](https://docs.zenml.io/component-gallery/step-operators/amazon-sagemaker)
 and then proceed with the following steps:
 
 ```bash
@@ -95,7 +98,6 @@ zenml container-registry register ecr_registry --flavor=aws --uri=<ACCOUNT_ID>.d
 
 # register and activate the sagemaker stack
 zenml stack register sagemaker_stack \
-    -m default \
     -o default \
     -c ecr_registry \
     -a s3_store \
@@ -122,7 +124,7 @@ The stack will consist of:
   on Azure.
 
 To configure resources for the step operators, please
-follow [this guide](https://docs.zenml.io/mlops-stacks/step-operators/azureml)
+follow [this guide](https://docs.zenml.io/component-gallery/step-operators/azureml)
 and then proceed with the following steps:
 
 ```bash
@@ -142,7 +144,6 @@ zenml step-operator register azureml \
     --environment_name=<AZURE_ENVIRONMENT_NAME>
 
 zenml stack register azureml_stack \
-    -m default \
     -o default \
     -a azure_store \
     -s azureml \
@@ -170,7 +171,7 @@ The stack will consist of:
   on GCP.
 
 To configure resources for the step operators, please
-follow [this guide](https://docs.zenml.io/mlops-stacks/step-operators/gcloud-vertexai)
+follow [this guide](https://docs.zenml.io/component-gallery/step-operators/gcloud-vertexai)
 and then proceed with the following steps:
 
 ```bash
@@ -194,7 +195,6 @@ zenml container-registry register gcr_registry --flavor=gcp --uri=gcr.io/<PROJEC
 
 # register and activate the vertex ai stack
 zenml stack register vertex_training_stack \
-    -m default \
     -o default \
     -c gcr_registry \
     -a gcp_store \
@@ -221,8 +221,8 @@ rm -rf zenml_examples
 # 📜 Learn more
 
 Our docs for the step operator integrations can be
-found [here](https://docs.zenml.io/mlops-stacks/step-operators).
+found [here](https://docs.zenml.io/component-gallery/step-operators/step-operators).
 
 If you want to learn more about step operators in general or about how to build
 your own step operator in ZenML
-check out our [docs](https://docs.zenml.io/mlops-stacks/step-operators/custom).
+check out our [docs](https://docs.zenml.io/component-gallery/step-operators/custom).

@@ -14,9 +14,10 @@
 """Schema artifact class."""
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.enums import ArtifactType
 
 
 class SchemaArtifact(BaseArtifact):
     """Class for all ZenML schema artifacts."""
 
-    TYPE_NAME = "SchemaArtifact"
+    TYPE_NAME = ArtifactType.SCHEMA

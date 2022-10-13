@@ -2,10 +2,11 @@
 description: How to install ZenML
 ---
 
-# Installation
+# Installation (Python Package)
 
 **ZenML** is a Python package that can be installed directly via `pip`:
-```
+
+```shell
 pip install zenml
 ```
 
@@ -13,6 +14,18 @@ pip install zenml
 Please note that ZenML currently only supports Python 3.7, 3.8, and 3.9.
 Please adjust your Python environment accordingly.
 {% endhint %}
+
+ZenML comes bundled with a React-based dashboard that lives inside a [sister repository](https://github.com/zenml-io/zenml-dashboard). In order to get access to the dashboard locally, you need to launch the [ZenML Server and Dashboard locally](deploying-zenml/deploying-zenml.md). For this, you need to install the optional dependencies for the ZenML Server:
+
+```shell
+pip install "zenml[server]"
+```
+
+If you do not have deployed infrastructure, and want to quickly spin up combinations of tools on the cloud, the [MLOps stack sister repository](https://github.com/zenml-io/mlops-stacks) contains a series of Terraform-based recipes to provision such stacks. These recipes can be used directly with ZenML:
+
+```shell
+pip install "zenml[stacks]"
+```
 
 ## Virtual Environments
 
@@ -56,12 +69,22 @@ aren’t fully compatible with the vanilla ARM64 Architecture. The following lin
 
 ## Running with Docker
 
+### Python package
+
 `zenml` is also available as a Docker image hosted publicly on 
 [DockerHub](https://hub.docker.com/r/zenmldocker/zenml). 
 Use the following command to get started in a bash environment with `zenml` available:
 
-```
+```shell
 docker run -it zenmldocker/zenml /bin/bash
+```
+
+### ZenML Server
+
+If you would like to run the ZenML server with Docker:
+
+```shell
+docker run -it -d -p 8080:80 zenmldocker/zenml-server
 ```
 
 ## Installing Develop
@@ -86,9 +109,9 @@ pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 
 ### Using develop with Remote Orchestrators
 
-Remote orchestrators like [KubeFlow](../mlops-stacks/orchestrators/kubeflow.md)
+Remote orchestrators like [Kubeflow](../mlops-stacks/orchestrators/kubeflow.md)
 require [Docker Images](../developer-guide/advanced-usage/docker.md) to set up the
-environmens of each step. By default, they use the official ZenML docker image
+environments of each step. By default, they use the official ZenML docker image
 that we provide with each release. However, if you install from develop, this
 image will be outdated, so you need to build a custom image instead, and
 specify it in the configuration of your orchestrator accordingly (see the 

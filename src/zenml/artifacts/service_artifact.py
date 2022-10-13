@@ -15,9 +15,10 @@
 
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.enums import ArtifactType
 
 
 class ServiceArtifact(BaseArtifact):
     """Class for all ZenML service artifacts."""
 
-    TYPE_NAME = "ServiceArtifact"
+    TYPE_NAME = ArtifactType.SERVICE

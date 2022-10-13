@@ -15,22 +15,22 @@ import numpy as np
 import tensorflow as tf
 from wandb.integration.keras import WandbCallback
 
-from zenml.integrations.wandb.wandb_step_decorator import enable_wandb
-from zenml.steps import BaseStepConfig, step
+from zenml.client import Client
+from zenml.steps import BaseParameters, step
+
+experiment_tracker = Client().active_stack.experiment_tracker
 
 
-class TrainerConfig(BaseStepConfig):
+class TrainerParameters(BaseParameters):
     """Trainer params"""
 
     epochs: int = 1
     lr: float = 0.001
 
 
-# Define the step and enable wandb - order of decorators is important here
-@enable_wandb
-@step
+@step(experiment_tracker=experiment_tracker.name)
 def tf_trainer(
-    config: TrainerConfig,
+    params: TrainerParameters,
     x_train: np.ndarray,
     y_train: np.ndarray,
     x_val: np.ndarray,
@@ -46,7 +46,7 @@ def tf_trainer(
     )
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(config.lr),
+        optimizer=tf.keras.optimizers.Adam(params.lr),
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=["accuracy"],
     )
@@ -54,7 +54,7 @@ def tf_trainer(
     model.fit(
         x_train,
         y_train,
-        epochs=config.epochs,
+        epochs=params.epochs,
         validation_data=(x_val, y_val),
         callbacks=[
             WandbCallback(

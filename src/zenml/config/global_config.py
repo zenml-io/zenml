@@ -14,32 +14,53 @@
 """Functionality to support ZenML GlobalConfiguration."""
 
 import json
-import logging
 import os
 import uuid
 from pathlib import PurePath
-from typing import Any, Dict, Optional, cast
+from secrets import token_hex
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 from packaging import version
 from pydantic import BaseModel, Field, ValidationError, validator
 from pydantic.main import ModelMetaclass
 
 from zenml import __version__
-from zenml.config.base_config import BaseConfiguration
-from zenml.config.profile_config import (
-    DEFAULT_PROFILE_NAME,
-    ProfileConfiguration,
+from zenml.config.store_config import StoreConfiguration
+from zenml.constants import (
+    DEFAULT_STORE_DIRECTORY_NAME,
+    ENV_ZENML_STORE_PREFIX,
+    LOCAL_STORES_DIRECTORY_NAME,
 )
+from zenml.enums import AnalyticsEventSource, StoreType
 from zenml.io import fileio
-from zenml.logger import disable_logging, get_logger
+from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import (
+    AnalyticsEvent,
+    AnalyticsGroup,
+    identify_group,
+    identify_user,
+    track_event,
+)
+
+if TYPE_CHECKING:
+    from zenml.models.project_models import ProjectModel
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
-
-LEGACY_CONFIG_FILE_NAME = ".zenglobal.json"
 CONFIG_ENV_VAR_PREFIX = "ZENML_"
+
+
+def generate_jwt_secret_key() -> str:
+    """Generate a random JWT secret key.
+
+    This key is used to sign and verify generated JWT tokens.
+
+    Returns:
+        A random JWT secret key.
+    """
+    return token_hex(32)
 
 
 class GlobalConfigMetaClass(ModelMetaclass):
@@ -50,10 +71,9 @@ class GlobalConfigMetaClass(ModelMetaclass):
 
     * the GlobalConfiguration is initialized automatically on import with the
     default configuration, if no config file exists yet.
-    * an empty default profile is added to the global config on initialization
-    if no other profiles are configured yet.
     * the GlobalConfiguration undergoes a schema migration if the version of the
     config file is older than the current version of the ZenML package.
+    * a default store is set if no store is configured yet.
     """
 
     def __init__(cls, *args: Any, **kwargs: Any) -> None:
@@ -91,14 +111,12 @@ class GlobalConfigMetaClass(ModelMetaclass):
                 "GlobalConfiguration", super().__call__(*args, **kwargs)
             )
             cls._global_config._migrate_config()
-            cls._global_config._add_and_activate_default_profile()
-
+            if not cls._global_config.store:
+                cls._global_config.set_default_store()
         return cls._global_config
 
 
-class GlobalConfiguration(
-    BaseModel, BaseConfiguration, metaclass=GlobalConfigMetaClass
-):
+class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     """Stores global configuration options.
 
     Configuration options are read from a config file, but can be overwritten
@@ -107,21 +125,31 @@ class GlobalConfiguration(
 
     Attributes:
         user_id: Unique user id.
+        user_email: Email address associated with this client.
+        user_email_opt_in: Whether the user has opted in to email communication.
         analytics_opt_in: If a user agreed to sending analytics or not.
         version: Version of ZenML that was last used to create or update the
             global config.
-        activated_profile: The name of the active configuration profile.
-        profiles: Map of configuration profiles, indexed by name.
+        store: Store configuration.
+        active_stack_id: The ID of the active stack.
+        active_project_name: The name of the active project.
+        jwt_secret_key: The secret key used to sign and verify JWT tokens.
         _config_path: Directory where the global config file is stored.
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4, allow_mutation=False)
-    user_metadata: Optional[Dict[str, str]]
+    user_email: Optional[str] = None
+    user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
     version: Optional[str]
-    activated_profile: Optional[str]
-    profiles: Dict[str, ProfileConfiguration] = Field(default_factory=dict)
+    store: Optional[StoreConfiguration]
+    active_stack_id: Optional[uuid.UUID]
+    active_project_name: Optional[str]
+    jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
+
     _config_path: str
+    _zen_store: Optional["BaseZenStore"] = None
+    _active_project: Optional["ProjectModel"] = None
 
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
@@ -219,7 +247,7 @@ class GlobalConfiguration(
             return
         self._write_config()
 
-    def __getattribute__(self, key: str) -> Any:
+    def __custom_getattribute__(self, key: str) -> Any:
         """Gets an attribute value for a specific key.
 
         If a value for this attribute was specified using an environment
@@ -250,6 +278,12 @@ class GlobalConfiguration(
             return return_value
         except (ValidationError, KeyError, TypeError):
             return value
+
+    if not TYPE_CHECKING:
+        # When defining __getattribute__, mypy allows accessing non-existent
+        # attributes without failing
+        # (see https://github.com/python/mypy/issues/13319).
+        __getattribute__ = __custom_getattribute__
 
     def _migrate_config(self) -> None:
         """Migrates the global config to the latest version."""
@@ -296,25 +330,17 @@ class GlobalConfiguration(
     def _read_config(self) -> Dict[str, Any]:
         """Reads configuration options from disk.
 
-        If the config file doesn't exist yet, this method falls back to reading
-        options from a legacy config file or returns an empty dictionary.
+        If the config file doesn't exist yet, this method returns an empty
+        dictionary.
 
         Returns:
             A dictionary containing the configuration options.
         """
-        legacy_config_file = os.path.join(
-            self.config_directory, LEGACY_CONFIG_FILE_NAME
-        )
-
         config_values = {}
         if fileio.exists(self._config_file()):
             config_values = cast(
                 Dict[str, Any],
                 yaml_utils.read_yaml(self._config_file()),
-            )
-        elif fileio.exists(legacy_config_file):
-            config_values = cast(
-                Dict[str, Any], yaml_utils.read_json(legacy_config_file)
             )
 
         return config_values
@@ -337,6 +363,64 @@ class GlobalConfiguration(
 
         yaml_utils.write_yaml(config_file, yaml_dict)
 
+    def _configure_store(
+        self,
+        config: StoreConfiguration,
+        skip_default_registrations: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        """Configure the global zen store.
+
+        This method creates and initializes the global store according to the
+        the supplied configuration.
+
+        Args:
+            config: The new store configuration to use.
+            skip_default_registrations: If `True`, the creation of the default
+                stack and user in the store will be skipped.
+            **kwargs: Additional keyword arguments to pass to the store
+                constructor.
+        """
+        from zenml.zen_stores.base_zen_store import BaseZenStore
+
+        store = BaseZenStore.create_store(
+            config, skip_default_registrations, **kwargs
+        )
+        if self.store != store.config or not self._zen_store:
+            logger.debug(f"Configuring the global store to {store.config}")
+            self.store = store.config
+
+            # We want to check if the active user has opted in or out for using
+            # an email address for marketing purposes and if so, record it in
+            # the analytics.
+            active_user = store.active_user
+            if active_user.email_opted_in is not None:
+                self.record_email_opt_in_out(
+                    opted_in=active_user.email_opted_in,
+                    email=active_user.email,
+                    source=AnalyticsEventSource.ZENML_SERVER,
+                )
+
+            self._zen_store = store
+
+            # Sanitize the global configuration to reflect the new store
+            self._sanitize_config()
+            self._write_config()
+
+    def _sanitize_config(self) -> None:
+        """Sanitize and save the global configuration.
+
+        This method is called to ensure that the active stack and project
+        are set to their default values, if possible.
+        """
+        active_project, active_stack = self.zen_store.validate_active_config(
+            self.active_project_name,
+            self.active_stack_id,
+            config_name="global",
+        )
+        self.set_active_project(active_project)
+        self.active_stack_id = active_stack.id
+
     @staticmethod
     def default_config_directory() -> str:
         """Path to the default global configuration directory.
@@ -358,18 +442,20 @@ class GlobalConfiguration(
         """
         return os.path.join(config_path or self._config_path, "config.yaml")
 
-    def copy_active_configuration(
+    def copy_configuration(
         self,
         config_path: str,
         load_config_path: Optional[PurePath] = None,
+        store_config: Optional[StoreConfiguration] = None,
     ) -> "GlobalConfiguration":
-        """Create a copy of the global config, the active repository profile and the active stack using a different configuration path.
+        """Create a copy of the global config using a different configuration path.
 
-        This method is used to extract the active slice of the current state
-        (consisting only of the global configuration, the active profile and the
-        active stack) and store it in a different configuration path, where it
-        can be loaded in the context of a new environment, such as a container
-        image.
+        This method is used to copy the global configuration and store it in a
+        different configuration path, where it can be loaded in the context of a
+        new environment, such as a container image.
+
+        If the global store configuration uses a local database, the database is
+        also copied to the new location.
 
         Args:
             config_path: path where the active configuration copy should be saved
@@ -378,76 +464,30 @@ class GlobalConfiguration(
                 if the configuration copy will be loaded from a different
                 path, e.g. when the global config copy is copied to a
                 container image. This will be reflected in the paths and URLs
-                encoded in the profile copy.
+                encoded in the copied store configuration.
+            store_config: custom store configuration to use for the copied
+                global configuration. If not specified, the current global store
+                configuration is used.
 
         Returns:
-            A new global configuration object with the active configuration
-            copied to the specified path.
+            A new global configuration object copied to the specified path.
         """
-        from zenml.repository import Repository
+        from zenml.zen_stores.base_zen_store import BaseZenStore
 
+        # TODO: shouldn't this be done at the end?
         self._write_config(config_path)
 
         config_copy = GlobalConfiguration(config_path=config_path)
-        config_copy.profiles = {}
+        if store_config:
+            config_copy.store = store_config
+        elif self.store:
+            store_class = BaseZenStore.get_store_class(self.store.type)
 
-        repo = Repository()
-        profile = ProfileConfiguration(
-            name=repo.active_profile_name,
-            active_stack=repo.active_stack_name,
-        )
+            store_config_copy = store_class.copy_local_store(
+                self.store, config_path, load_config_path
+            )
+            config_copy.store = store_config_copy
 
-        profile._config = config_copy
-        # circumvent the profile initialization done in the
-        # ProfileConfiguration and the Repository classes to avoid triggering
-        # the analytics and interact directly with the store creation
-        config_copy.profiles[profile.name] = profile
-        # We don't need to track analytics here
-        store = Repository.create_store(
-            profile,
-            skip_default_registrations=True,
-            track_analytics=False,
-            skip_migration=True,
-        )
-        # transfer the active stack and all necessary flavors to the new store.
-        # we disable logs for this call so there is no confusion about newly registered
-        # stacks/components/flavors
-        with disable_logging(logging.INFO):
-            active_stack = repo.zen_store.get_stack(repo.active_stack_name)
-            store.register_stack(active_stack)
-
-            for component in active_stack.components:
-                try:
-                    flavor = repo.zen_store.get_flavor_by_name_and_type(
-                        flavor_name=component.flavor,
-                        component_type=component.type,
-                    )
-                    store.create_flavor(
-                        source=flavor.source,
-                        name=flavor.name,
-                        stack_component_type=flavor.type,
-                    )
-                except KeyError:
-                    # not a custom flavor, no need to register anything
-                    pass
-
-        # if a custom load config path is specified, use it to replace the
-        # current store local path in the profile URL
-        if load_config_path:
-            store_path = store.get_path_from_url(store.url)
-            if store_path:
-                relative_store_path = PurePath(store_path).relative_to(
-                    config_copy.config_directory
-                )
-                new_store_path = str(load_config_path / relative_store_path)
-                profile.store_url = store.get_local_url(new_store_path)
-            else:
-                # the store url is not a local URL. This only happens
-                # in case of a REST ZenStore, in which case we don't
-                # want to modify the URL
-                profile.store_url = store.url
-
-        config_copy._write_config()
         return config_copy
 
     @property
@@ -459,154 +499,198 @@ class GlobalConfiguration(
         """
         return self._config_path
 
-    def add_or_update_profile(
-        self, profile: ProfileConfiguration
-    ) -> ProfileConfiguration:
-        """Adds or updates a profile in the global configuration.
-
-        Args:
-            profile: profile configuration
+    @property
+    def local_stores_path(self) -> str:
+        """Path where local stores information is stored.
 
         Returns:
-            the profile configuration added to the global configuration
+            The path where local stores information is stored.
         """
-        profile = profile.copy()
-        profile._config = self
-        if profile.name not in self.profiles:
-            profile.initialize()
-            track_event(
-                AnalyticsEvent.INITIALIZED_PROFILE,
-                {"store_type": profile.store_type.value},
-            )
-        self.profiles[profile.name] = profile
-        self._write_config()
-        return profile
-
-    def get_profile(self, profile_name: str) -> Optional[ProfileConfiguration]:
-        """Get a global configuration profile.
-
-        Args:
-            profile_name: name of the profile to get
-
-        Returns:
-            The profile configuration or None if the profile doesn't exist
-        """
-        return self.profiles.get(profile_name)
-
-    def has_profile(self, profile_name: str) -> bool:
-        """Check if a named global configuration profile exists.
-
-        Args:
-            profile_name: name of the profile to check
-
-        Returns:
-            True if the profile exists, otherwise False
-        """
-        return profile_name in self.profiles
-
-    def activate_profile(self, profile_name: str) -> None:
-        """Set a profile as the active.
-
-        Args:
-            profile_name: name of the profile to add
-
-        Raises:
-            KeyError: If the profile with the given name does not exist.
-        """
-        if profile_name not in self.profiles:
-            raise KeyError(f"Profile '{profile_name}' not found.")
-        self.activated_profile = profile_name
-        self._write_config()
-
-    def _add_and_activate_default_profile(
-        self,
-    ) -> Optional[ProfileConfiguration]:
-        """Creates and activates the default configuration profile if no profiles are configured.
-
-        Returns:
-            The newly created default profile or None if other profiles are
-            configured.
-        """
-        if self.profiles:
-            return None
-        logger.info("Creating default profile...")
-        default_profile = ProfileConfiguration(
-            name=DEFAULT_PROFILE_NAME,
+        return os.path.join(
+            self.config_directory,
+            LOCAL_STORES_DIRECTORY_NAME,
         )
-        self.add_or_update_profile(default_profile)
-        self.activate_profile(DEFAULT_PROFILE_NAME)
-        logger.info("Created and activated default profile.")
 
-        return default_profile
-
-    @property
-    def active_profile(self) -> Optional[ProfileConfiguration]:
-        """Return the active profile.
+    def get_default_store(self) -> StoreConfiguration:
+        """Get the default store configuration.
 
         Returns:
-            The active profile.
+            The default store configuration.
         """
-        if not self.activated_profile:
-            return None
-        return self.profiles[self.activated_profile]
+        from zenml.zen_stores.base_zen_store import BaseZenStore
 
-    @property
-    def active_profile_name(self) -> Optional[str]:
-        """Return the name of the active profile.
+        env_config: Dict[str, str] = {}
+        for k, v in os.environ.items():
+            if v == "":
+                continue
+            if k.startswith(ENV_ZENML_STORE_PREFIX):
+                env_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
+        if len(env_config):
+            logger.debug(
+                "Using environment variables to configure the default store"
+            )
+            return StoreConfiguration(**env_config)
 
-        Returns:
-            The name of the active profile.
+        return BaseZenStore.get_default_store_config(
+            path=os.path.join(
+                self.local_stores_path,
+                DEFAULT_STORE_DIRECTORY_NAME,
+            )
+        )
+
+    def set_default_store(self) -> None:
+        """Creates and sets the default store configuration.
+
+        Call this method to initialize or revert the store configuration to the
+        default store.
         """
-        return self.activated_profile
+        default_store_cfg = self.get_default_store()
+        self._configure_store(default_store_cfg)
+        logger.info("Using the default store for the global config.")
+        track_event(
+            AnalyticsEvent.INITIALIZED_STORE,
+            {"store_type": default_store_cfg.type.value},
+        )
 
-    def delete_profile(self, profile_name: str) -> None:
-        """Deletes a profile from the global configuration.
+    def set_store(
+        self,
+        config: StoreConfiguration,
+        skip_default_registrations: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        """Update the active store configuration.
 
-        If the profile is active, it cannot be removed.
+        Call this method to validate and update the active store configuration.
 
         Args:
-            profile_name: name of the profile to delete
-
-        Raises:
-            KeyError: if the profile does not exist
-            ValueError: if the profile is active
+            config: The new store configuration to use.
+            skip_default_registrations: If `True`, the creation of the default
+                stack and user in the store will be skipped.
+            **kwargs: Additional keyword arguments to pass to the store
+                constructor.
         """
-        if profile_name not in self.profiles:
-            raise KeyError(f"Profile '{profile_name}' not found.")
-        if profile_name == self.active_profile:
-            raise ValueError(
-                f"Unable to delete active profile '{profile_name}'."
+        self._configure_store(config, skip_default_registrations, **kwargs)
+        logger.info("Updated the global store configuration.")
+
+        if self.zen_store.type == StoreType.REST:
+            # Every time a client connects to a ZenML server, we want to
+            # group the client ID and the server ID together. This records
+            # only that a particular client has successfully connected to a
+            # particular server at least once, but no information about the
+            # user account is recorded here.
+            server_info = self.zen_store.get_store_info()
+
+            identify_group(
+                AnalyticsGroup.ZENML_SERVER_GROUP,
+                group_id=str(server_info.id),
+                group_metadata={
+                    "version": server_info.version,
+                    "deployment_type": str(server_info.deployment_type),
+                    "database_type": str(server_info.database_type),
+                },
             )
 
-        profile = self.profiles[profile_name]
-        del self.profiles[profile_name]
-        profile.cleanup()
+            track_event(AnalyticsEvent.ZENML_SERVER_CONNECTED)
 
-        self._write_config()
-
-    def activate_stack(self, stack_name: str) -> None:
-        """Set the active stack for the active profile.
-
-        Args:
-            stack_name: name of the stack to activate
-        """
-        if not self.active_profile:
-            return
-        self.active_profile.active_stack = stack_name
-        self._write_config()
+        track_event(
+            AnalyticsEvent.INITIALIZED_STORE, {"store_type": config.type.value}
+        )
 
     @property
-    def active_stack_name(self) -> Optional[str]:
-        """Get the active stack name from the active profile.
+    def zen_store(self) -> "BaseZenStore":
+        """Initialize and/or return the global zen store.
+
+        If the store hasn't been initialized yet, it is initialized when this
+        property is first accessed according to the global store configuration.
 
         Returns:
-            The active stack name or None if no active stack is set or if
-            no active profile is set.
+            The current zen store.
         """
-        if not self.active_profile:
-            return None
+        if not self.store:
+            self.set_default_store()
+        elif self._zen_store is None:
+            self._configure_store(self.store)
 
-        return self.active_profile.get_active_stack()
+        assert self._zen_store is not None
+
+        return self._zen_store
+
+    @property
+    def active_project(self) -> "ProjectModel":
+        """Get the currently active project of the local client.
+
+        Returns:
+            The active project.
+
+        Raises:
+            RuntimeError: If no project is active.
+        """
+        if (
+            self._active_project
+            and self._active_project.name != self.active_project_name
+        ):
+            # in case someone tries to set the active project name directly
+            # outside of this class
+            self._active_project = None
+        if not self._active_project:
+            if not self.active_project_name:
+                raise RuntimeError(
+                    "No active project is configured. Run "
+                    "`zenml project set PROJECT_NAME` to set the active "
+                    "project."
+                )
+            self._active_project = self.zen_store.get_project(
+                project_name_or_id=self.active_project_name
+            )
+        return self._active_project
+
+    def set_active_project(self, project: "ProjectModel") -> None:
+        """Set the project for the local client.
+
+        Args:
+            project: The project to set active.
+        """
+        self.active_project_name = project.name
+        self._active_project = project
+
+    def record_email_opt_in_out(
+        self, opted_in: bool, email: Optional[str], source: AnalyticsEventSource
+    ) -> None:
+        """Set the email address associated with this client.
+
+        Args:
+            opted_in: Whether the user has opted in to email communication.
+            email: The email address to use for this client, if given.
+            source: The analytics event source.
+        """
+        # Whenever a new email address is associated with the client, we want
+        # to identify the client by that email address. If the email address has
+        # been changed, we also want to update the information.
+        if opted_in and email and self.user_email != email:
+            identify_user(
+                {
+                    "email": email,
+                    "source": source,
+                }
+            )
+            self.user_email = email
+
+        if (
+            self.user_email_opt_in is None
+            or opted_in
+            and not self.user_email_opt_in
+        ):
+
+            # When the user opts out giving the email for the first time, or
+            # when the user opts in after opting out (e.g. when connecting to
+            # a new server where the account has opt-in enabled), we want to
+            # record the information as an analytics event.
+            track_event(
+                AnalyticsEvent.OPT_IN_OUT_EMAIL,
+                {"opted_in": opted_in, "source": source},
+            )
+
+            self.user_email_opt_in = opted_in
 
     class Config:
         """Pydantic configuration class."""
@@ -614,8 +698,9 @@ class GlobalConfiguration(
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes
         validate_assignment = True
-        # Ignore extra attributes from configs of previous ZenML versions
-        extra = "ignore"
+        # Allow extra attributes from configs of previous ZenML versions to
+        # permit downgrading
+        extra = "allow"
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True

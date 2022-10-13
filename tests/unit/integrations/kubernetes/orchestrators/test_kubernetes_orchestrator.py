@@ -14,64 +14,60 @@
 
 
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
+from uuid import uuid4
 
 import pytest
 
-from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
-from zenml.container_registries import DefaultContainerRegistry
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
-from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
+from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
+    KubernetesOrchestratorConfig,
+)
 from zenml.integrations.kubernetes.orchestrators import KubernetesOrchestrator
-from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.stack import Stack
 
 
-def test_kubernetes_orchestrator_attributes() -> None:
-    """Test that the Kubernetes orchestrator has correct type and flavor."""
-    orchestrator = KubernetesOrchestrator(name="", skip_config_loading=True)
-    assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
-    assert orchestrator.FLAVOR == "kubernetes"
-
-
-def test_kubernetes_orchestrator_remote_stack() -> None:
-    """Test that the kubernetes orchestrator works with remote stacks."""
-    orchestrator = KubernetesOrchestrator(name="", skip_config_loading=True)
-    remote_metadata_store = MySQLMetadataStore(
+def _get_kubernetes_orchestrator() -> KubernetesOrchestrator:
+    """Helper function to get a Kubernetes orchestrator."""
+    return KubernetesOrchestrator(
         name="",
-        username="",
-        password="",
-        host="",
-        port=0,
-        database="zenml",
+        id=uuid4(),
+        config=KubernetesOrchestratorConfig(skip_config_loading=True),
+        flavor="kubernetes",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
-    remote_container_registry = DefaultContainerRegistry(
-        name="", uri="gcr.io/my-project"
-    )
-    remote_artifact_store = GCPArtifactStore(name="", path="gs://bucket")
+
+
+def test_kubernetes_orchestrator_remote_stack(
+    remote_artifact_store, remote_container_registry
+) -> None:
+    """Test that the kubernetes orchestrator works with remote stacks."""
+    orchestrator = _get_kubernetes_orchestrator()
     with does_not_raise():
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
-            metadata_store=remote_metadata_store,
             artifact_store=remote_artifact_store,
             container_registry=remote_container_registry,
         ).validate()
 
 
-def test_kubernetes_orchestrator_local_stack() -> None:
+def test_kubernetes_orchestrator_local_stack(
+    local_artifact_store, local_container_registry
+) -> None:
     """Test that the kubernetes orchestrator raises an error in local stacks."""
-    orchestrator = KubernetesOrchestrator(name="", skip_config_loading=True)
-    local_container_registry = DefaultContainerRegistry(
-        name="", uri="localhost:5000"
-    )
-    local_metadata_store = SQLiteMetadataStore(name="", uri="metadata.db")
-    local_artifact_store = LocalArtifactStore(name="", path="artifacts/")
+    orchestrator = _get_kubernetes_orchestrator()
     with pytest.raises(StackValidationError):
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
-            metadata_store=local_metadata_store,
             artifact_store=local_artifact_store,
             container_registry=local_container_registry,
         ).validate()

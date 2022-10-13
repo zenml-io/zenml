@@ -14,16 +14,17 @@
 """Implementation of the AWS container registry integration."""
 
 import re
-from typing import ClassVar, List, Optional
+from typing import List, Optional, cast
 
 import boto3
 from botocore.exceptions import ClientError
-from pydantic import validator
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
-from zenml.integrations.aws import AWS_CONTAINER_REGISTRY_FLAVOR
+from zenml.integrations.aws.flavors.aws_container_registry_flavor import (
+    AWSContainerRegistryConfig,
+)
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -32,29 +33,14 @@ logger = get_logger(__name__)
 class AWSContainerRegistry(BaseContainerRegistry):
     """Class for AWS Container Registry."""
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = AWS_CONTAINER_REGISTRY_FLAVOR
-
-    @validator("uri")
-    def validate_aws_uri(cls, uri: str) -> str:
-        """Validates that the URI is in the correct format.
-
-        Args:
-            uri: URI to validate.
+    @property
+    def config(self) -> AWSContainerRegistryConfig:
+        """Returns the `AWSContainerRegistryConfig` config.
 
         Returns:
-            URI in the correct format.
-
-        Raises:
-            ValueError: If the URI contains a slash character.
+            The configuration.
         """
-        if "/" in uri:
-            raise ValueError(
-                "Property `uri` can not contain a `/`. An example of a valid "
-                "URI is: `715803424592.dkr.ecr.us-east-1.amazonaws.com`"
-            )
-
-        return uri
+        return cast(AWSContainerRegistryConfig, self._config)
 
     def _get_region(self) -> str:
         """Parses the AWS region from the registry URI.
@@ -65,10 +51,12 @@ class AWSContainerRegistry(BaseContainerRegistry):
         Returns:
             The region string.
         """
-        match = re.fullmatch(r".*\.dkr\.ecr\.(.*)\.amazonaws\.com", self.uri)
+        match = re.fullmatch(
+            r".*\.dkr\.ecr\.(.*)\.amazonaws\.com", self.config.uri
+        )
         if not match:
             raise RuntimeError(
-                f"Unable to parse region from ECR URI {self.uri}."
+                f"Unable to parse region from ECR URI {self.config.uri}."
             )
 
         return match.group(1)
@@ -97,7 +85,7 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
         repo_exists = any(image_name.startswith(f"{uri}:") for uri in repo_uris)
         if not repo_exists:
-            match = re.search(f"{self.uri}/(.*):.*", image_name)
+            match = re.search(f"{self.config.uri}/(.*):.*", image_name)
             if not match:
                 raise ValueError(f"Invalid docker image name '{image_name}'.")
 
@@ -122,7 +110,7 @@ class AWSContainerRegistry(BaseContainerRegistry):
             "Amazon ECR requires you to create a repository before you can "
             "push an image to it. If you want to for example run a pipeline "
             "using our Kubeflow orchestrator, ZenML will automatically build a "
-            f"docker image called `{self.uri}/zenml-kubeflow:<PIPELINE_NAME>` "
+            f"docker image called `{self.config.uri}/zenml-kubeflow:<PIPELINE_NAME>` "
             f"and try to push it. This will fail unless you create the "
             f"repository `zenml-kubeflow` inside your amazon registry."
         )

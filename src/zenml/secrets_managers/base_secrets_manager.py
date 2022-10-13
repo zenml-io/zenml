@@ -14,15 +14,28 @@
 """Base class for ZenML secrets managers."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, List, Optional, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    cast,
+)
 
 from pydantic import root_validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.secret.base_secret import BaseSecretSchema
-from zenml.stack import StackComponent
+from zenml.stack import Flavor, StackComponent
+from zenml.stack.stack_component import StackComponentConfig
+from zenml.utils import secret_utils
 from zenml.utils.enum_utils import StrEnum
+
+if TYPE_CHECKING:
+    from zenml.secret.base_secret import BaseSecretSchema
 
 logger = get_logger(__name__)
 
@@ -40,35 +53,37 @@ class SecretsManagerScope(StrEnum):
     NAMESPACE = "namespace"
 
 
-class BaseSecretsManager(StackComponent, ABC):
-    """Base class for all ZenML secrets managers.
+class BaseSecretsManagerConfig(StackComponentConfig):
+    """Base configuration for secrets managers.
 
     Attributes:
-        scope: The Secrets Manager scope determines how secrets are visible and
-            shared across different Secrets Manager instances:
-
-            * global: secrets are shared across all Secrets Manager instances
-            that connect to the same backend and have a global scope.
-            * component: secrets are not shared outside this Secrets Manager
-            instance.
-            * namespace: secrets are shared only by Secrets Manager instances
-            that connect to the same backend *and* have the same `namespace`
-            value configured.
-            * none: only used to preserve backwards compatibility with
-            old Secrets Manager instances that do not yet understand the
-            concept of secrets scoping. Will be deprecated and removed in
-            future versions.
-        namespace: Optional namespace to use with a `namespace` scoped Secrets
-            Manager.
+        scope: The scope of the secrets manager.
+        namespace: The namespace of the secrets manager.
     """
 
-    # Class configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.SECRETS_MANAGER
-    FLAVOR: ClassVar[str]
     SUPPORTS_SCOPING: ClassVar[bool] = False
-
     scope: SecretsManagerScope = SecretsManagerScope.COMPONENT
     namespace: Optional[str] = None
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Ensures that no attributes are specified as a secret reference.
+
+        Args:
+            **kwargs: Arguments to initialize this secrets manager.
+
+        Raises:
+            ValueError: If any of the secrets manager attributes are specified
+                as a secret reference.
+        """
+        for key, value in kwargs.items():
+            if secret_utils.is_secret_reference(value):
+                raise ValueError(
+                    "Using secret references to specify attributes on a "
+                    "secrets manager is not allowed. Please specify the "
+                    f"real value for the attribute {key}."
+                )
+
+        super().__init__(**kwargs)
 
     @root_validator(pre=True)
     def scope_initializer(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -94,28 +109,21 @@ class BaseSecretsManager(StackComponent, ABC):
             # Secrets Manager that doesn't support scoping
             if scope != SecretsManagerScope.NONE and not cls.SUPPORTS_SCOPING:
                 raise ValueError(
-                    f"The {cls.FLAVOR} Secrets Manager does not support "
-                    f"scoping. You can only use a `none` scope value."
+                    "This Secrets Manager does not support "
+                    "scoping. You can only use a `none` scope value."
                 )
         elif not cls.SUPPORTS_SCOPING:
             # disable scoping by default for Secrets Managers that don't
             # support scoping
             values["scope"] = SecretsManagerScope.NONE
 
-        elif "uuid" in values:
-            # this is an existing Secrets Manager instance without a scope
-            # explicitly set (i.e. a legacy Secrets Manager that was already
-            # in operation before scoping was introduced). Continue to use
-            # unscoped secrets.
-            values["scope"] = SecretsManagerScope.NONE
-
         # warn if the user tries to explicitly disable scoping for a
         # Secrets Manager that does support scoping
         if scope == SecretsManagerScope.NONE and cls.SUPPORTS_SCOPING:
             logger.warning(
-                f"Unscoped support for the {cls.FLAVOR} Secrets "
-                f"Manager is deprecated and will be removed in a future "
-                f"release. You should use the `global` scope instead."
+                "Unscoped support for this Secrets "
+                "Manager is deprecated and will be removed in a future "
+                "release. You should use the `global` scope instead."
             )
 
         return values
@@ -165,6 +173,38 @@ class BaseSecretsManager(StackComponent, ABC):
         """
         ...
 
+
+class BaseSecretsManager(StackComponent, ABC):
+    """Base class for all ZenML secrets managers.
+
+    Attributes:
+        scope: The Secrets Manager scope determines how secrets are visible and
+            shared across different Secrets Manager instances:
+
+            * global: secrets are shared across all Secrets Manager instances
+            that connect to the same backend and have a global scope.
+            * component: secrets are not shared outside this Secrets Manager
+            instance.
+            * namespace: secrets are shared only by Secrets Manager instances
+            that connect to the same backend *and* have the same `namespace`
+            value configured.
+            * none: only used to preserve backwards compatibility with
+            old Secrets Manager instances that do not yet understand the
+            concept of secrets scoping. Will be deprecated and removed in
+            future versions.
+        namespace: Optional namespace to use with a `namespace` scoped Secrets
+            Manager.
+    """
+
+    @property
+    def config(self) -> BaseSecretsManagerConfig:
+        """Returns the `BaseSecretsManagerConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(BaseSecretsManagerConfig, self._config)
+
     def _get_scope_path(self) -> List[str]:
         """Get the secret path for the current scope.
 
@@ -174,14 +214,17 @@ class BaseSecretsManager(StackComponent, ABC):
         Returns:
             the secret scope path
         """
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             return []
 
-        path = [ZENML_SCOPE_PATH_PREFIX, self.scope]
-        if self.scope == SecretsManagerScope.COMPONENT:
-            path.append(str(self.uuid))
-        elif self.scope == SecretsManagerScope.NAMESPACE and self.namespace:
-            path.append(self.namespace)
+        path = [ZENML_SCOPE_PATH_PREFIX, self.config.scope]
+        if self.config.scope == SecretsManagerScope.COMPONENT:
+            path.append(str(self.id))
+        elif (
+            self.config.scope == SecretsManagerScope.NAMESPACE
+            and self.config.namespace
+        ):
+            path.append(self.config.namespace)
 
         return path
 
@@ -309,24 +352,29 @@ class BaseSecretsManager(StackComponent, ABC):
             Dictionary with scope metadata information uniquely identifying the
             secret.
         """
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             # unscoped secrets do not have tags, for backwards compatibility
             # purposes
             return {}
 
         metadata = {
-            "zenml_scope": self.scope.value,
+            "zenml_scope": self.config.scope.value,
         }
         if secret_name:
             metadata[ZENML_SECRET_NAME_LABEL] = secret_name
-        if self.scope == SecretsManagerScope.NAMESPACE and self.namespace:
-            metadata["zenml_namespace"] = self.namespace
-        if self.scope == SecretsManagerScope.COMPONENT:
-            metadata["zenml_component_uuid"] = str(self.uuid)
+        if (
+            self.config.scope == SecretsManagerScope.NAMESPACE
+            and self.config.namespace
+        ):
+            metadata["zenml_namespace"] = self.config.namespace
+        if self.config.scope == SecretsManagerScope.COMPONENT:
+            metadata["zenml_component_uuid"] = str(self.id)
 
         return metadata
 
-    def _get_secret_metadata(self, secret: BaseSecretSchema) -> Dict[str, str]:
+    def _get_secret_metadata(
+        self, secret: "BaseSecretSchema"
+    ) -> Dict[str, str]:
         """Get a dictionary with metadata describing a secret.
 
         This is utility method can be used with Secrets Managers that can
@@ -343,7 +391,7 @@ class BaseSecretsManager(StackComponent, ABC):
         Returns:
             Dictionary with metadata information describing the secret.
         """
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             # unscoped secrets do not have tags, for backwards compatibility
             # purposes
             return {}
@@ -354,7 +402,7 @@ class BaseSecretsManager(StackComponent, ABC):
         scope_metadata.update(
             {
                 "zenml_component_name": self.name,
-                "zenml_component_uuid": str(self.uuid),
+                "zenml_component_uuid": str(self.id),
                 "zenml_secret_schema": secret.TYPE,
             }
         )
@@ -362,7 +410,7 @@ class BaseSecretsManager(StackComponent, ABC):
         return scope_metadata
 
     @abstractmethod
-    def register_secret(self, secret: BaseSecretSchema) -> None:
+    def register_secret(self, secret: "BaseSecretSchema") -> None:
         """Registers a new secret.
 
         The implementation should throw a `SecretExistsError` exception if the
@@ -373,7 +421,7 @@ class BaseSecretsManager(StackComponent, ABC):
         """
 
     @abstractmethod
-    def get_secret(self, secret_name: str) -> BaseSecretSchema:
+    def get_secret(self, secret_name: str) -> "BaseSecretSchema":
         """Gets the value of a secret.
 
         The implementation should throw a `KeyError` exception if the
@@ -388,7 +436,7 @@ class BaseSecretsManager(StackComponent, ABC):
         """Get all secret keys."""
 
     @abstractmethod
-    def update_secret(self, secret: BaseSecretSchema) -> None:
+    def update_secret(self, secret: "BaseSecretSchema") -> None:
         """Update an existing secret.
 
         The implementation should throw a `KeyError` exception if the
@@ -412,3 +460,34 @@ class BaseSecretsManager(StackComponent, ABC):
     @abstractmethod
     def delete_all_secrets(self) -> None:
         """Delete all existing secrets."""
+
+
+class BaseSecretsManagerFlavor(Flavor):
+    """Class for the `BaseSecretsManagerFlavor`."""
+
+    @property
+    def type(self) -> StackComponentType:
+        """Returns the flavor type.
+
+        Returns:
+            The flavor type.
+        """
+        return StackComponentType.SECRETS_MANAGER
+
+    @property
+    def config_class(self) -> Type[BaseSecretsManagerConfig]:
+        """Returns the config class.
+
+        Returns:
+            The config class.
+        """
+        return BaseSecretsManagerConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type["BaseSecretsManager"]:
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """

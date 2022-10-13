@@ -95,6 +95,9 @@ cd zenml_examples/feast_feature_store
 
 # Initialize ZenML repo
 zenml init
+
+# Start the ZenServer to enable dashboard access
+zenml up
 ```
 
 You then should setup the Feast feature store stack component and activate it as
@@ -105,7 +108,7 @@ part of your current working stack:
 zenml feature-store register feast_store --flavor=feast --feast_repo="./feast_feature_repo"
 
 # register and activate the feature store stack
-zenml stack register fs_stack -m default -o default -a default -f feast_store --set
+zenml stack register fs_stack -o default -a default -f feast_store --set
 
 # view the current active stack
 zenml stack describe
@@ -147,4 +150,4 @@ and you can `kill` the process from the terminal.
 # 📜 Learn more
 
 Our docs regarding the Feast feature store integration can be
-found [here](https://docs.zenml.io/mlops-stacks/feature-stores/feast).
+found [here](https://docs.zenml.io/component-gallery/feature-stores/feast).
