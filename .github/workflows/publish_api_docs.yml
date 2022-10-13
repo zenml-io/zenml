@@ -46,8 +46,10 @@ jobs:
       - name: Install Dependencies
         run: |
           source $VENV
-          zenml integration install -y --ignore-integration feast --ignore-integration label_studio
-          pip install click~=8.0.3
+          zenml integration install -y feast
+          zenml integration install -y label_studio seldon
+          zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration seldon
+          poetry install --extras server
 
       - name: Setup git user
         run: |
