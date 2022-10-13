@@ -768,7 +768,7 @@ def deploy(
         skip_check: Skip the checking of locals.tf file before executing
             the recipe.
     """
-    import python_terraform
+    import python_terraform  # type:ignore[import]
 
     cli_utils.warning(ALPHA_MESSAGE)
     stack_recipes_dir = Path(os.getcwd()) / path
@@ -976,7 +976,7 @@ def destroy(
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
-    import python_terraform
+    import python_terraform  # type:ignore[import]
 
     cli_utils.warning(ALPHA_MESSAGE)
 
