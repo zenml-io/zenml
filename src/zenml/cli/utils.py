@@ -816,11 +816,11 @@ def describe_pydantic_object(schema_json: str) -> None:
         for prop, prop_schema in properties.items():
             warning(
                 f"{prop}, {prop_schema['type']}"
-                f"{', required' if prop_schema in required else ''}"
+                f"{', REQUIRED' if prop in required else ''}"
             )
 
             if "description" in prop_schema:
-                declare(f"{prop_schema['description']}", width=80)
+                declare(f"  {prop_schema['description']}", width=80)
 
 
 def get_stack_by_id_or_name_or_prefix(
