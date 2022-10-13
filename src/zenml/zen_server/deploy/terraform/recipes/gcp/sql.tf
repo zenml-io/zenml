@@ -1,7 +1,7 @@
 module "metadata_store" {
   source  = "GoogleCloudPlatform/sql-db/google//modules/mysql"
   version = "11.0.0"
-  count   = var.create_cloudsql? 1 : 0
+  count   = var.create_sql? 1 : 0
 
   project_id       = var.project_id
   name             = "${var.name}-${var.cloudsql_name}"

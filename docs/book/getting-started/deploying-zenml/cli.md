@@ -122,6 +122,7 @@ ingress_controller_hostname: The ingress controller hostname to use for
     the ingress self-signed certificate and to compute the ZenML server
     URL.
 
+create_sql [true]: Whether to create a SQL database as part of the recipe.
 database_username [admin]: The username for the database.
 database_password: The password for the database.
 database_url: The URL of the database to use for the ZenML server.
@@ -148,7 +149,6 @@ log_level [ERROR]: The log level to set the terraform client to. Choose one of
 ```
 region [eu-west-1]: The AWS region to deploy to.
 
-create_rds [true]: Whether to create an RDS database.
 rds_name [zenmlserver]: The name of the RDS instance to create
 db_name [zenmlserver]: Name of RDS database to create.
 db_type [mysql]: Type of RDS database to create.
@@ -167,7 +167,6 @@ The `database_username` and `database_password` from the general config is used 
 project_id: The project in GCP to deploy the server to.
 region [europe-west3]: The GCP region to deploy to.
 
-create_cloudsql [true]: Whether to create an CloudSQL database.
 cloudsql_name [zenmlserver]: The name of the CloudSQL instance to create
 db_name [zenmlserver]: Name of CloudSQL database to create.
 db_instance_tier [db-n1-standard-1]: Instance class of CloudSQL database to create.
