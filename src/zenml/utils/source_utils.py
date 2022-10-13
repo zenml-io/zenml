@@ -117,9 +117,11 @@ def is_third_party_module(file_path: str) -> bool:
         if pathlib.Path(path).resolve() in absolute_file_path.parents:
             return True
 
-    return (
-        pathlib.Path(get_source_root_path()) not in absolute_file_path.parents
-    )
+    try:
+        source_root_path = pathlib.Path(get_source_root_path())
+        return source_root_path not in absolute_file_path.parents
+    except RuntimeError:
+        return False
 
 
 def create_zenml_pin() -> str:
