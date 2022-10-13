@@ -23,7 +23,10 @@ from kubernetes import client
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
-from zenml.integrations.kserve.constants import KSERVE_DOCKER_IMAGE_KEY
+from zenml.integrations.kserve.constants import (
+    KSERVE_CUSTOM_DEPLOYMENT,
+    KSERVE_DOCKER_IMAGE_KEY,
+)
 from zenml.integrations.kserve.flavors.kserve_model_deployer_flavor import (
     KServeModelDeployerConfig,
 )
@@ -135,11 +138,17 @@ class KServeModelDeployer(BaseModelDeployer):
             deployment: The pipeline deployment configuration.
             stack: The stack on which the pipeline will be deployed.
         """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_and_push_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(KSERVE_DOCKER_IMAGE_KEY, repo_digest)
+        needs_docker_image = False
+        for step in deployment.steps.values():
+            if step.config.extra.get(KSERVE_CUSTOM_DEPLOYMENT, False) is True:
+                needs_docker_image = True
+
+        if needs_docker_image:
+            docker_image_builder = PipelineDockerImageBuilder()
+            repo_digest = docker_image_builder.build_and_push_docker_image(
+                deployment=deployment, stack=stack
+            )
+            deployment.add_extra(KSERVE_DOCKER_IMAGE_KEY, repo_digest)
 
     def _set_credentials(self) -> None:
         """Set the credentials for the given service instance.
