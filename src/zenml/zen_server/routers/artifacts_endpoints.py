@@ -47,4 +47,4 @@ def list_runs(
     Returns:
         The artifacts according to query filters.
     """
-    return zen_store.list_artifacts(artifact_uri=artifact_uri)
+    return zen_store().list_artifacts(artifact_uri=artifact_uri)
