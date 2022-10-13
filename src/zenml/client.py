@@ -45,7 +45,6 @@ if TYPE_CHECKING:
     from zenml.models import (
         ComponentModel,
         FlavorModel,
-        HydratedComponentModel,
         HydratedStackModel,
         PipelineModel,
         ProjectModel,

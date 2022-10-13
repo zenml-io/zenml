@@ -12,17 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import subprocess
-
 import os
-
+import subprocess
 from typing import ClassVar, Optional, cast
 
 from zenml.cli.stack_recipes import STACK_FILE_NAME, logger
 from zenml.services import ServiceType
 from zenml.services.terraform.terraform_service import (
+    SERVICE_CONFIG_FILE_NAME,
     TerraformService,
-    SERVICE_CONFIG_FILE_NAME
 )
 from zenml.utils import io_utils
 

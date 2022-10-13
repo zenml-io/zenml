@@ -29,7 +29,6 @@ from zenml.cli.stack import import_stack, stack
 from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
-
 from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -202,7 +201,7 @@ class StackRecipeRepo:
                 branch_name.startswith("release/")
                 and branch.commit == self.repo.head.commit
             ):
-                return branch_name[len("release/"):]
+                return branch_name[len("release/") :]
 
         return None
 
@@ -461,14 +460,11 @@ def list_stack_recipes(
     cli_utils.warning(ALPHA_MESSAGE)
     stack_recipes = [
         {"stack_recipe_name": stack_recipe_instance.name}
-        for stack_recipe_instance
-        in git_stack_recipes_handler.get_stack_recipes()
+        for stack_recipe_instance in git_stack_recipes_handler.get_stack_recipes()
     ]
     cli_utils.print_table(stack_recipes)
 
-    cli_utils.declare(
-        "\n" + "To get the latest list of stack recipes, run: "
-    )
+    cli_utils.declare("\n" + "To get the latest list of stack recipes, run: ")
     text = Text("zenml stack recipe pull -y", style="markdown.code_block")
     cli_utils.declare(text)
 
@@ -488,9 +484,7 @@ def list_stack_recipes(
     help="Relative path at which you want to clean the stack_recipe(s)",
 )
 @pass_git_stack_recipes_handler
-def clean(
-    git_stack_recipes_handler: GitStackRecipesHandler, path: str
-) -> None:
+def clean(git_stack_recipes_handler: GitStackRecipesHandler, path: str) -> None:
     """Deletes the stack recipes directory from your working directory.
 
     Args:
@@ -576,9 +570,7 @@ def describe(
         logger.info(metadata["Description"])
 
 
-@stack_recipe.command(
-    help="The active version of the mlops-stacks repository"
-)
+@stack_recipe.command(help="The active version of the mlops-stacks repository")
 @pass_git_stack_recipes_handler
 def version(
     git_stack_recipes_handler: GitStackRecipesHandler,
@@ -812,9 +804,7 @@ def deploy(
         try:
             # warn that prerequisites should be met
             metadata = yaml_utils.read_yaml(
-                file_path=os.path.join(
-                    local_stack_recipe.path, "metadata.yaml"
-                )
+                file_path=os.path.join(local_stack_recipe.path, "metadata.yaml")
             )
             if not cli_utils.confirmation(
                 "\nPrerequisites for running this recipe are as follows.\n"
@@ -1003,9 +993,7 @@ def destroy(
         )
 
     try:
-        _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
-            0
-        ]
+        _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[0]
     except KeyError as e:
         cli_utils.error(str(e))
     else:

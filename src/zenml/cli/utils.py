@@ -1103,7 +1103,9 @@ def get_component_by_id_or_name_or_prefix(
             if str(component.id).startswith(id_or_name_or_prefix)
         ]
         if len(filtered_comps) > 1:
-            hydrated_components = [c.to_hydrated_model() for c in all_components]
+            hydrated_components = [
+                c.to_hydrated_model() for c in all_components
+            ]
 
             print_components_table(
                 client=client,
