@@ -968,7 +968,6 @@ def destroy(
     same relative path before the destroy command.
 
     Args:
-        ctx: The click context.
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
         stack_recipe_name: The name of the stack_recipe.
         path: The path at which you want to install the stack_recipe(s).
