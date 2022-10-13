@@ -545,8 +545,7 @@ def describe(
     git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
 ) -> None:
-    """Describe the stack components and their tools that are created as
-    part of this recipe.
+    """Describe the stack components and their tools that are created as part of this recipe.
 
     Outputs the "Description" section of the recipe metadata.
 

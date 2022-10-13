@@ -325,7 +325,7 @@ _BASE_ENVIRONMENT_COMPONENT_NAME = "base_environment_component"
 
 
 class EnvironmentComponentMeta(type):
-    """Metaclass registering EnvironmentComponents in the global Environment."""
+    """Metaclass registering environment components in the global Environment."""
 
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
