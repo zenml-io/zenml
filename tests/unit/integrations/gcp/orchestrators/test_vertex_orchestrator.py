@@ -12,12 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 from uuid import uuid4
 
+import kfp
 import pytest
+from kfp.v2.compiler import Compiler as KFPV2Compiler
 
+from zenml.config.resource_settings import ResourceSettings
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.azure.artifact_stores import AzureArtifactStore
@@ -125,3 +129,96 @@ def test_vertex_orchestrator_stack_validation(
             artifact_store=gcp_artifact_store,
             container_registry=gcp_container_registry,
         ).validate()
+
+
+@pytest.mark.parametrize(
+    "resource_settings, orchestrator_resource_settings, expected_resources",
+    [
+        # ResourceSettings specified for the step, should take values from here
+        (
+            ResourceSettings(cpu_count=1, gpu_count=1, memory="1GB"),
+            {"cpu_limit": None, "gpu_limit": 1, "memory_limit": "1G"},
+            {
+                "accelerator": {"count": "1", "type": "NVIDIA_TESLA_K80"},
+                "cpuLimit": 1.0,
+                "memoryLimit": 1.0,
+            },
+        ),
+        # No ResourceSettings, should take values from the orchestrator
+        (
+            ResourceSettings(cpu_count=None, gpu_count=None, memory=None),
+            {"cpu_limit": 1, "gpu_limit": 1, "memory_limit": "1G"},
+            {
+                "accelerator": {"count": "1", "type": "NVIDIA_TESLA_K80"},
+                "cpuLimit": 1.0,
+                "memoryLimit": 1.0,
+            },
+        ),
+        # GPU count is None, 1 gpu should be used (KFP default)
+        (
+            ResourceSettings(cpu_count=1, gpu_count=None, memory="1GB"),
+            {"cpu_limit": None, "gpu_limit": None, "memory_limit": None},
+            {
+                "accelerator": {"count": "1", "type": "NVIDIA_TESLA_K80"},
+                "cpuLimit": 1.0,
+                "memoryLimit": 1.0,
+            },
+        ),
+        # GPU count is 0, should not be set in the resource spec
+        (
+            ResourceSettings(cpu_count=1, gpu_count=0, memory="1GB"),
+            {"cpu_limit": None, "gpu_limit": None, "memory_limit": None},
+            {"cpuLimit": 1.0, "memoryLimit": 1.0},
+        ),
+    ],
+)
+def test_vertex_orchestrator_configure_container_resources(
+    resource_settings: ResourceSettings,
+    orchestrator_resource_settings: dict,
+    expected_resources: dict,
+) -> None:
+    """Tests that the vertex orchestrator sets the correct container resources
+    for a step."""
+    accelerator = "NVIDIA_TESLA_K80"
+    orchestrator = _get_vertex_orchestrator(
+        location="europe-west4",
+        pipeline_root="gs://my-bucket/pipeline",
+        node_selector_constraint=(
+            "cloud.google.com/gke-accelerator",
+            accelerator,
+        ),
+        **orchestrator_resource_settings,
+    )
+
+    step_name = "unit-test"
+
+    def _build_kfp_pipeline() -> None:
+        container_op = kfp.components.load_component_from_text(
+            f"""
+            name: {step_name}
+            implementation:
+                container:
+                    image: hello-world
+            """
+        )()
+
+        orchestrator._configure_container_resources(
+            container_op, resource_settings
+        )
+
+    package_path = "unit_test_pipeline.json"
+
+    KFPV2Compiler().compile(
+        pipeline_func=_build_kfp_pipeline,
+        package_path=package_path,
+        pipeline_name="unit-test",
+    )
+
+    with open(package_path, "r") as f:
+        pipeline_json = json.load(f)
+
+    job_spec = pipeline_json["pipelineSpec"]["deploymentSpec"]["executors"][
+        f"exec-{step_name}"
+    ]["container"]
+
+    assert job_spec["resources"] == expected_resources
