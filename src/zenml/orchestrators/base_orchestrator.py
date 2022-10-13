@@ -440,6 +440,9 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Returns:
             Optional execution info returned by the launcher.
+
+        Raises:
+            RuntimeError: If the execution failed during preparation.
         """
         pipeline_step_name = tfx_launcher._pipeline_node.node_info.id
         start_time = time.time()
