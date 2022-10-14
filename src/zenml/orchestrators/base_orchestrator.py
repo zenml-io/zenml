@@ -31,6 +31,7 @@
 """Base orchestrator class."""
 import os
 import time
+import types
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -439,11 +440,43 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Returns:
             Optional execution info returned by the launcher.
+
+        Raises:
+            RuntimeError: If the execution failed during preparation.
         """
         pipeline_step_name = tfx_launcher._pipeline_node.node_info.id
         start_time = time.time()
         logger.info(f"Step `{pipeline_step_name}` has started.")
+
+        # There is no way to differentiate between a cached and a failed
+        # execution based on the execution info returned by the TFX launcher.
+        # We patch the _publish_failed_execution method in order to check
+        # if an execution failed.
+        execution_failed = False
+        original_publish_failed_execution = (
+            tfx_launcher._publish_failed_execution
+        )
+
+        def _new_publish_failed_execution(
+            self: launcher.Launcher, *args: Any, **kwargs: Any
+        ) -> None:
+            original_publish_failed_execution(*args, **kwargs)
+            nonlocal execution_failed
+            execution_failed = True
+
+        setattr(
+            tfx_launcher,
+            "_publish_failed_execution",
+            types.MethodType(_new_publish_failed_execution, tfx_launcher),
+        )
         execution_info = tfx_launcher.launch()
+        if execution_failed:
+            raise RuntimeError(
+                "Failed to execute step. This is probably because some input "
+                f"artifacts for the step {pipeline_step_name} could not be "
+                "found in the database."
+            )
+
         if execution_info and get_cache_status(execution_info):
             logger.info(f"Using cached version of `{pipeline_step_name}`.")
 
