@@ -38,8 +38,10 @@ from google.cloud import aiplatform
 from kfp import dsl
 from kfp.v2 import dsl as dslv2
 from kfp.v2.compiler import Compiler as KFPV2Compiler
+from kubernetes import client as k8s_client
 
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp.constants import (
@@ -50,10 +52,6 @@ from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
-)
-from zenml.integrations.gcp.orchestrators.vertex_entrypoint_configuration import (
-    VERTEX_JOB_ID_OPTION,
-    VertexEntrypointConfiguration,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -68,6 +66,7 @@ if TYPE_CHECKING:
     from zenml.steps import ResourceSettings
 
 logger = get_logger(__name__)
+ENV_ZENML_VERTEX_RUN_ID = "ZENML_VERTEX_RUN_ID"
 
 
 def _clean_pipeline_name(pipeline_name: str) -> str:
@@ -334,18 +333,14 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             `KFPV2Compiler` all `dsl.ContainerOp` instances will be
             automatically added to a singular `dsl.Pipeline` instance.
             """
+            command = StepEntrypointConfiguration.get_entrypoint_command()
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.steps.items():
-                # The command will be needed to eventually call the python step
-                # within the docker container
-                command = VertexEntrypointConfiguration.get_entrypoint_command()
-
-                # The arguments are passed to configure the entrypoint of the
-                # docker container when the step is called.
-                arguments = VertexEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name,
-                    **{VERTEX_JOB_ID_OPTION: dslv2.PIPELINE_JOB_ID_PLACEHOLDER},
+                arguments = (
+                    StepEntrypointConfiguration.get_entrypoint_arguments(
+                        step_name=step_name,
+                    )
                 )
 
                 # Create the `ContainerOp` for the step. Using the
@@ -359,6 +354,13 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                             image: {image_name}
                             command: {command + arguments}"""
                 )()
+
+                container_op.container.add_env_variable(
+                    k8s_client.V1EnvVar(
+                        name=ENV_ZENML_VERTEX_RUN_ID,
+                        value=dslv2.PIPELINE_JOB_ID_PLACEHOLDER,
+                    )
+                )
 
                 # Set upstream tasks as a dependency of the current step
                 for upstream_step_name in step.spec.upstream_steps:
@@ -502,4 +504,13 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         except RuntimeError as e:
             logger.error(
                 "The Vertex AI Pipelines job execution has failed: %s", e
+            )
+
+    def get_run_id(self) -> str:
+        try:
+            return os.environ[ENV_ZENML_VERTEX_RUN_ID]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to read run id from environment variable "
+                f"{ENV_ZENML_VERTEX_RUN_ID}."
             )

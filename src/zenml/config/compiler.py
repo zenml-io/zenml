@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Class for compiling ZenML pipelines into a serializable format."""
 import copy
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
 import tfx.orchestration.pipeline as tfx_pipeline
@@ -299,10 +298,7 @@ class Compiler:
         Returns:
             Run name.
         """
-        return (
-            f"{pipeline_name}-"
-            f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
-        )
+        return f"{pipeline_name}-{{date}}-{{time}}"
 
     @staticmethod
     def _get_sorted_steps(

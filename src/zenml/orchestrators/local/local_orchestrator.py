@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML local orchestrator."""
 
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Any, Optional, Type
+from uuid import UUID, uuid4
 
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
@@ -36,6 +37,8 @@ class LocalOrchestrator(BaseOrchestrator):
     does not support running on a schedule.
     """
 
+    _run_id: Optional[UUID] = None
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
@@ -54,6 +57,8 @@ class LocalOrchestrator(BaseOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
+        self._run_id = uuid4()
+
         # Run each step
         for step in deployment.steps.values():
             if self.requires_resources_in_orchestration_environment(step):
@@ -67,6 +72,14 @@ class LocalOrchestrator(BaseOrchestrator):
             self.run_step(
                 step=step,
             )
+
+        self._run_id = None
+
+    def get_run_id(self) -> str:
+        if not self._run_id:
+            raise RuntimeError("No run id set.")
+
+        return str(self._run_id)
 
 
 class LocalOrchestratorConfig(BaseOrchestratorConfig):

@@ -60,7 +60,6 @@ from zenml.integrations.kubeflow.orchestrators import (
     utils,
 )
 from zenml.integrations.kubeflow.orchestrators.kubeflow_entrypoint_configuration import (
-    ENV_ZENML_RUN_NAME,
     METADATA_UI_PATH_OPTION,
     KubeflowEntrypointConfiguration,
 )
@@ -70,6 +69,7 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.utils import get_run_display_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
@@ -87,8 +87,7 @@ KFP_POD_LABELS = {
     "pipelines.kubeflow.org/pipeline-sdk-type": "zenml",
 }
 
-SINGLE_RUN_RUN_NAME_PLACEHOLDER = "{{workflow.name}}"
-SCHEDULED_RUN_NAME_PLACEHOLDER = "{{workflow.name}}"
+ENV_KFP_RUN_ID = "KFP_RUN_ID"
 
 
 class KubeflowOrchestrator(BaseOrchestrator):
@@ -457,18 +456,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
         for k, v in KFP_POD_LABELS.items():
             container_op.add_pod_label(k, v)
 
-        run_name = (
-            SCHEDULED_RUN_NAME_PLACEHOLDER
-            if is_scheduled_run
-            else SINGLE_RUN_RUN_NAME_PLACEHOLDER
-        )
-        container_op.container.add_env_variable(
-            k8s_client.V1EnvVar(
-                name=ENV_ZENML_RUN_NAME,
-                value=run_name,
-            )
-        )
-
         # Mounts configmap containing Metadata gRPC server configuration.
         container_op.apply(utils.mount_config_map_op("metadata-grpc-configmap"))
 
@@ -652,7 +639,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             pipeline_file_path: Path to the pipeline definition file.
         """
         pipeline_name = deployment.pipeline.name
-        run_name = deployment.run_name
+        run_display_name = get_run_display_name(pipeline_name=pipeline_name)
         enable_cache = deployment.pipeline.enable_cache
         settings = cast(
             Optional[KubeflowOrchestratorSettings],
@@ -698,7 +685,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
                 result = client.create_recurring_run(
                     experiment_id=experiment.id,
-                    job_name=run_name,
+                    job_name=run_display_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=enable_cache,
                     cron_expression=deployment.schedule.cron_expression,
@@ -716,7 +703,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 result = client.create_run_from_pipeline_package(
                     pipeline_file_path,
                     arguments={},
-                    run_name=run_name,
+                    run_name=run_display_name,
                     enable_caching=enable_cache,
                     namespace=user_namespace,
                 )
@@ -737,6 +724,15 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 f"{self.kubernetes_context} kubernetes context is configured "
                 f"correctly.",
                 error,
+            )
+
+    def get_run_id(self) -> str:
+        try:
+            return os.environ[ENV_KFP_RUN_ID]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to read run id from environment variable "
+                f"{ENV_KFP_RUN_ID}."
             )
 
     def _get_kfp_client(

@@ -72,6 +72,7 @@ from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     FlavorSchema,
+    PipelineRunNameSchema,
     PipelineRunSchema,
     PipelineSchema,
     ProjectSchema,
@@ -2499,6 +2500,36 @@ class SqlZenStore(BaseZenStore):
     # --------------
     # Pipeline runs
     # --------------
+
+    def get_run_name(self, orchestrator_run_id: str, run_name: str) -> str:
+        """"""
+        with Session(self.engine) as session:
+            existing_run_name = session.exec(
+                select(PipelineRunNameSchema.run_name).where(
+                    PipelineRunNameSchema.orchestrator_run_id
+                    == orchestrator_run_id
+                )
+            ).one_or_none()
+
+            if existing_run_name:
+                return existing_run_name
+            # TODO: potential race condition here
+
+            if session.exec(
+                select(PipelineRunNameSchema).where(
+                    PipelineRunNameSchema.run_name == run_name
+                )
+            ).one_or_none():
+                import random
+
+                run_name += f"_{random.getrandbits(32):08x}"
+
+            run_name_schema = PipelineRunNameSchema(
+                orchestrator_run_id=orchestrator_run_id, run_name=run_name
+            )
+            session.add(run_name_schema)
+            session.commit()
+        return run_name
 
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.

@@ -16,6 +16,7 @@
 import os
 import sys
 from typing import TYPE_CHECKING, Any, Dict, Type
+from uuid import uuid4
 
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
@@ -32,6 +33,8 @@ if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
+
+ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID = "ZENML_DOCKER_ORCHESTRATOR_RUN_ID"
 
 
 class LocalDockerOrchestrator(BaseOrchestrator):
@@ -70,6 +73,15 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             )
             deployment.add_extra(
                 ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name
+            )
+
+    def get_run_id(self) -> str:
+        try:
+            return os.environ[ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to read run id from environment variable "
+                f"{ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID}."
             )
 
     @staticmethod
@@ -117,7 +129,7 @@ class LocalDockerOrchestrator(BaseOrchestrator):
         docker_client = DockerClient.from_env()
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
         entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
-
+        environment = {ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID: str(uuid4())}
         # Run each step
         for step_name, step in deployment.steps.items():
             if self.requires_resources_in_orchestration_environment(step):
@@ -142,6 +154,7 @@ class LocalDockerOrchestrator(BaseOrchestrator):
                 command=arguments,
                 user=user,
                 volumes=volumes,
+                environment=environment,
                 stream=True,
             )
 

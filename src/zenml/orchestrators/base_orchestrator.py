@@ -33,6 +33,7 @@ import os
 import time
 import types
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -209,6 +210,20 @@ class BaseOrchestrator(StackComponent, ABC):
         return cast(BaseOrchestratorConfig, self._config)
 
     @abstractmethod
+    def get_run_id(self) -> str:
+        """_summary_
+
+        _extended_summary_
+
+        Raises:
+            RuntimeError: _description_
+            KeyError: _description_
+
+        Returns:
+            _description_
+        """
+
+    @abstractmethod
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
@@ -272,14 +287,11 @@ class BaseOrchestrator(StackComponent, ABC):
 
         return result
 
-    def run_step(
-        self, step: "Step", run_name: Optional[str] = None
-    ) -> Optional[data_types.ExecutionInfo]:
+    def run_step(self, step: "Step") -> Optional[data_types.ExecutionInfo]:
         """This sets up a component launcher and executes the given step.
 
         Args:
             step: The step to be executed
-            run_name: The unique run name
 
         Returns:
             The execution info of the step.
@@ -292,7 +304,8 @@ class BaseOrchestrator(StackComponent, ABC):
         step_name = step.config.name
         pb2_pipeline = self._active_pb2_pipeline
 
-        run_name = run_name or self._active_deployment.run_name
+        run_name = self._get_run_name()
+
         # Substitute the runtime parameter to be a concrete run_id, it is
         # important for this to be unique for each run.
         runtime_parameter_utils.substitute_runtime_parameter(
@@ -314,9 +327,6 @@ class BaseOrchestrator(StackComponent, ABC):
 
         metadata_connection_cfg = Client().zen_store.get_metadata_config()
 
-        # At this point the active metadata store is queried for the
-        # metadata_connection
-        stack = Client().active_stack
         executor_operator = self._get_executor_operator(
             step_operator=step.config.step_operator
         )
@@ -333,6 +343,7 @@ class BaseOrchestrator(StackComponent, ABC):
         # The protobuf node for the current step is loaded here.
         pipeline_node = self._get_node_with_step_name(step_name)
 
+        stack = Client().active_stack
         proto_utils.add_mlmd_contexts(
             pipeline_node=pipeline_node,
             step=step,
@@ -404,6 +415,21 @@ class BaseOrchestrator(StackComponent, ABC):
         """Cleans up the active run."""
         self._active_deployment = None
         self._active_pb2_pipeline = None
+
+    def _get_run_name(self) -> str:
+        assert self._active_deployment
+        orchestrator_run_id = f"{self.id}_{self.get_run_id()}"
+
+        date = datetime.now().strftime("%Y_%m_%d")
+        time = datetime.now().strftime("%H_%M_%S_%f")
+        provisional_run_name = self._active_deployment.run_name.format(
+            date=date, time=time
+        )
+        run_name = Client().zen_store.get_run_name(
+            orchestrator_run_id=orchestrator_run_id,
+            run_name=provisional_run_name,
+        )
+        return run_name
 
     @staticmethod
     def _ensure_artifact_classes_loaded(

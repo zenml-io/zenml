@@ -13,15 +13,13 @@
 #  permissions and limitations under the License.
 """Utility functions for the orchestrator."""
 
-from typing import TYPE_CHECKING, Optional
+import random
+from typing import Optional
 
 from tfx.orchestration.portable import data_types
 
+from zenml.client import Client
 from zenml.logger import get_logger
-
-if TYPE_CHECKING:
-    pass
-
 
 logger = get_logger(__name__)
 
@@ -43,3 +41,8 @@ def get_cache_status(
         return True
     else:
         return False
+
+
+def get_run_display_name(pipeline_name: str) -> str:
+    user_name = Client().active_user.name
+    return f"{pipeline_name}_{user_name}_{random.getrandbits(32):08x}"

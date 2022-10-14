@@ -1259,6 +1259,8 @@ class RestZenStore(BaseZenStore):
     # --------------
     # Pipeline runs
     # --------------
+    def get_run_name(self, orchestrator_run_id: str, run_name: str) -> str:
+        return ""
 
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.

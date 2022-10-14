@@ -109,6 +109,11 @@ class PipelineSchema(SQLModel, table=True):
         )
 
 
+class PipelineRunNameSchema(SQLModel, table=True):
+    orchestrator_run_id: str = Field(primary_key=True)
+    run_name: str
+
+
 class PipelineRunSchema(SQLModel, table=True):
     """SQL Model for pipeline runs."""
 
