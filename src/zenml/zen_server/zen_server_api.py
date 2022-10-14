@@ -82,7 +82,7 @@ app.add_middleware(
 def initialize() -> None:
     """Initialize the ZenML server."""
     # IMPORTANT: this needs to be done before the fastapi app starts, to avoid
-    # race-conditions
+    # race conditions
     initialize_zen_store()
     sync_pipeline_runs()
 
