@@ -209,14 +209,25 @@ And that's it, you have successfully installed ZenML in Python 3.9 under Rosetta
 
 ### TensorFlow Integration
 ZenML's TensorFlow integration is based on the `tensorflow` pip package, which
-currently doesn't support M1 Macs. 
-Therefore, ZenML is currently unfortunately not compatible with TensorFlow under
-M1 Macs.
+doesn't support M1 Macs. 
+Therefore, ZenML is currently not compatible with TensorFlow on M1 Macs.
 
 As a result, `zenml integration install tensorflow` will install an incompatible 
 package, which will cause all ZenML commands to fail with error 
-`83476 illegal hardware instruction`. If you encounter this error, simply
+`83476 illegal hardware instruction`. If you encounter this error,
 uninstall TensorFlow again via `zenml integration uninstall tensorflow`.
+
+There already exist an M1-Mac-compatible TensorFlow package 
+[tensorflow-macos](https://pypi.org/project/tensorflow-macos/) and a package
+for Mac-GPU-accelerated training of TensorFlow models 
+[tensorflow-metal](https://pypi.org/project/tensorflow-metal/), but they are
+not yet integrated with ZenML. We are actively working on supporting these
+packages and hope to remove this limitation soon.
+
+### Other Tools
+Many other tools and packages commonly used by data scientists and ML engineers
+do not yet fully support the M1 Mac architecture either. See, e.g., this 
+[list of limitations](https://github.com/neurolabusc/AppleSiliconForNeuroimaging#limitations-facing-apple-silicon).
 
 ## Resources:
 - [Installing Rosetta](https://osxdaily.com/2020/12/04/how-install-rosetta-2-apple-silicon-mac/)
