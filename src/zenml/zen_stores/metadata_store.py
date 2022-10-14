@@ -90,15 +90,22 @@ class MetadataStore:
     upgrade_migration_enabled: bool = True
     store: metadata_store.MetadataStore
 
-    def __init__(self, config: metadata_store_pb2.ConnectionConfig) -> None:
+    def __init__(
+        self,
+        config: metadata_store_pb2.ConnectionConfig,
+        is_legacy: bool = False,
+    ) -> None:
         """Initializes the metadata store.
 
         Args:
             config: The connection configuration for the metadata store.
+            is_legacy: Whether the metadata store is a legacy store from
+                before ZenML 0.20.0.
         """
         self.store = metadata_store.MetadataStore(
             config, enable_upgrade_migration=True
         )
+        self.is_legacy = is_legacy
 
     @property
     def step_type_mapping(self) -> Dict[int, str]:
@@ -190,14 +197,19 @@ class MetadataStore:
                     # ignore it
                     pass
 
-        step_context_properties = self._get_zenml_execution_context_properties(
-            execution=execution,
-        )
-        step_configuration = json.loads(
-            step_context_properties.get(
-                MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME
-            ).string_value
-        )
+        if not self.is_legacy:
+            step_context_properties = (
+                self._get_zenml_execution_context_properties(
+                    execution=execution,
+                )
+            )
+            step_configuration = json.loads(
+                step_context_properties.get(
+                    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME
+                ).string_value
+            )
+        else:
+            step_configuration = {}
 
         # TODO [ENG-222]: This is a lot of querying to the metadata store. We
         #  should refactor and make it nicer. Probably it makes more sense

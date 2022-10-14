@@ -47,7 +47,7 @@ class ExecutionStatus(StrEnum):
         """Returns the overall run status based on the list of step statuses.
 
         Args:
-            step_status_list: A list of step statuses.
+            step_statuses: A list of step statuses.
             num_steps: The number of steps in the pipeline.
 
         Returns:
