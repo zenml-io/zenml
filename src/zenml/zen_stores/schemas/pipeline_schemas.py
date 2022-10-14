@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import Column, ForeignKey
@@ -147,7 +147,7 @@ class PipelineRunSchema(SQLModel, table=True):
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
 
-    mlmd_id: int = Field(default=None, nullable=True)
+    mlmd_id: Optional[int] = Field(default=None, nullable=True)
 
     @classmethod
     def from_create_model(
@@ -231,7 +231,7 @@ class StepRunSchema(SQLModel, table=True):
     step_configuration: str = Field(max_length=4096)
     docstring: Optional[str] = Field(max_length=4096, nullable=True)
 
-    mlmd_id: int = Field(default=None, nullable=True)
+    mlmd_id: Optional[int] = Field(default=None, nullable=True)
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -273,13 +273,17 @@ class StepRunSchema(SQLModel, table=True):
         return self
 
     def to_model(
-        self, parent_step_ids: List[UUID], mlmd_parent_step_ids: List[int]
+        self,
+        parent_step_ids: List[UUID],
+        mlmd_parent_step_ids: List[int],
+        input_artifacts: Dict[str, UUID],
     ) -> StepRunModel:
         """Convert a `StepRunSchema` to a `StepRunModel`.
 
         Args:
             parent_step_ids: The parent step ids to link to the step.
             mlmd_parent_step_ids: The parent step ids in MLMD.
+            input_artifacts: The input artifacts to link to the step.
 
         Returns:
             The created StepRunModel.
@@ -289,6 +293,7 @@ class StepRunSchema(SQLModel, table=True):
             name=self.name,
             pipeline_run_id=self.pipeline_run_id,
             parent_step_ids=parent_step_ids,
+            input_artifacts=input_artifacts,
             status=self.status,
             entrypoint_name=self.entrypoint_name,
             parameters=json.loads(self.parameters),
@@ -323,9 +328,9 @@ class ArtifactSchema(SQLModel, table=True):
     data_type: str
     is_cached: bool
 
-    mlmd_id: int = Field(default=None, nullable=True)
-    mlmd_parent_step_id: int = Field(default=None, nullable=True)
-    mlmd_producer_step_id: int = Field(default=None, nullable=True)
+    mlmd_id: Optional[int] = Field(default=None, nullable=True)
+    mlmd_parent_step_id: Optional[int] = Field(default=None, nullable=True)
+    mlmd_producer_step_id: Optional[int] = Field(default=None, nullable=True)
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)

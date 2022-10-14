@@ -60,6 +60,24 @@ def list_run_steps(
     return zen_store.list_run_steps(run_id=run_id)
 
 
+@router.post(
+    "",
+    response_model=StepRunModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_run_step(step: StepRunModel) -> StepRunModel:
+    """Create a run step.
+
+    Args:
+        step: The run step to create.
+
+    Returns:
+        The created run step.
+    """
+    return zen_store.create_run_step(step=step)
+
+
 @router.get(
     "/{step_id}",
     response_model=StepRunModel,

@@ -993,6 +993,21 @@ class ZenStoreInterface(ABC):
     # --------------
 
     @abstractmethod
+    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            EntityExistsError: If an identical pipeline run already exists.
+            KeyError: If the pipeline does not exist.
+        """
+
+    @abstractmethod
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
 
@@ -1001,26 +1016,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    # TODO: Figure out what exactly gets returned from this
-    @abstractmethod
-    def get_run_component_side_effects(
-        self,
-        run_id: UUID,
-        component_id: Optional[UUID] = None,
-    ) -> Dict[str, Any]:
-        """Gets the side effects for a component in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-            component_id: The ID of the component to get.
-
-        Returns:
-            The side effects for the component in the pipeline run.
 
         Raises:
             KeyError: if the pipeline run doesn't exist.
@@ -1054,6 +1049,26 @@ class ZenStoreInterface(ABC):
             A list of all pipeline runs.
         """
 
+    # TODO: Figure out what exactly gets returned from this
+    @abstractmethod
+    def get_run_component_side_effects(
+        self,
+        run_id: UUID,
+        component_id: Optional[UUID] = None,
+    ) -> Dict[str, Any]:
+        """Gets the side effects for a component in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+            component_id: The ID of the component to get.
+
+        Returns:
+            The side effects for the component in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
     @abstractmethod
     def get_run_status(self, run_id: UUID) -> ExecutionStatus:
         """Gets the execution status of a pipeline run.
@@ -1070,6 +1085,21 @@ class ZenStoreInterface(ABC):
     # ------------------
 
     @abstractmethod
+    def create_run_step(self, step: StepRunModel) -> StepRunModel:
+        """Creates a step.
+
+        Args:
+            step: The step to create.
+
+        Returns:
+            The created step.
+
+        Raises:
+            EntityExistsError: if the step already exists.
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
     def get_run_step(self, step_id: UUID) -> StepRunModel:
         """Get a step by ID.
 
@@ -1081,6 +1111,19 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the step doesn't exist.
+        """
+
+    @abstractmethod
+    def list_run_steps(
+        self, run_id: Optional[UUID] = None
+    ) -> List[StepRunModel]:
+        """Get all run steps.
+
+        Args:
+            run_id: If provided, only return steps for this pipeline run.
+
+        Returns:
+            A list of all run steps.
         """
 
     @abstractmethod
@@ -1116,17 +1159,22 @@ class ZenStoreInterface(ABC):
             ExecutionStatus: The status of the step.
         """
 
+    # ---------
+    # Artifacts
+    # ---------
+
     @abstractmethod
-    def list_run_steps(
-        self, run_id: Optional[UUID] = None
-    ) -> List[StepRunModel]:
-        """Get all run steps.
+    def create_artifact(self, artifact: ArtifactModel) -> ArtifactModel:
+        """Creates an artifact.
 
         Args:
-            run_id: If provided, only return steps for this pipeline run.
+            artifact: The artifact to create.
 
         Returns:
-            A list of all run steps.
+            The created artifact.
+
+        Raises:
+            KeyError: if the parent step doesn't exist.
         """
 
     @abstractmethod

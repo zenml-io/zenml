@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Project Models for the API endpoint definitions."""
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from pydantic import Field
 
@@ -114,6 +115,23 @@ class HydratedPipelineModel(PipelineModel):
         )
 
 
+class CreatePipelineRunRequest(ProjectScopedCreateRequest[PipelineRunModel]):
+    """Pipeline run model for create requests."""
+
+    _MODEL_TYPE = PipelineRunModel
+
+    name: str = Field(
+        title="The name of the pipeline run.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    stack_id: Optional[UUID]
+    pipeline_id: Optional[UUID]
+    status: ExecutionStatus
+    pipeline_configuration: Dict[str, Any]
+    num_steps: int
+    mlmd_id: Optional[int]
+
+
 class HydratedPipelineRunModel(PipelineRunModel):
     """Pipeline model with User and Project fully hydrated."""
 
@@ -157,7 +175,7 @@ class HydratedPipelineRunModel(PipelineRunModel):
             user = zen_store.get_user(run_model.user)
 
         return cls(
-            **run_model.dict(exclude={"user", "pipeline", "stack"}),
+            **run_model.dict(exclude={"user", "pipeline", "stack", "status"}),
             pipeline=pipeline,
             stack=stack,
             user=user,

@@ -48,3 +48,21 @@ def list_artifacts(
         The artifacts according to query filters.
     """
     return zen_store.list_artifacts(artifact_uri=artifact_uri)
+
+
+@router.post(
+    "",
+    response_model=ArtifactModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_artifact(step: ArtifactModel) -> ArtifactModel:
+    """Create a new artifact.
+
+    Args:
+        step: The artifact to create.
+
+    Returns:
+        The created artifact.
+    """
+    return zen_store.create_artifact(step)
