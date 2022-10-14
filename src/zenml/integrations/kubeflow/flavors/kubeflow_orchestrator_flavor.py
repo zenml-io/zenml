@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Kubeflow orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
-from zenml.config.base_settings import BaseSettings, ConfigurationLevel
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
@@ -33,12 +33,14 @@ class KubeflowOrchestratorSettings(BaseSettings):
         client_args: Arguments to pass when initializing the KFP client.
         user_namespace: The user namespace to use when creating experiments
             and runs.
+        node_selectors: Node selectors to apply to KFP pods.
+        node_affinity: Node affinities to apply to KFP pods.
     """
-
-    LEVEL: ClassVar[ConfigurationLevel] = ConfigurationLevel.PIPELINE
 
     client_args: Dict[str, Any] = {}
     user_namespace: Optional[str] = None
+    node_selectors: Dict[str, str] = {}
+    node_affinity: Dict[str, List[str]] = {}
 
 
 class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
