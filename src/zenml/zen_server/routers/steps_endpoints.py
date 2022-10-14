@@ -55,7 +55,7 @@ def get_step(step_id: UUID) -> StepRunModel:
     Returns:
         The step.
     """
-    return zen_store.get_run_step(step_id)
+    return zen_store().get_run_step(step_id)
 
 
 @router.get(
@@ -73,7 +73,7 @@ def get_step_outputs(step_id: UUID) -> Dict[str, ArtifactModel]:
     Returns:
         All outputs of the step, mapping from output name to artifact model.
     """
-    return zen_store.get_run_step_outputs(step_id)
+    return zen_store().get_run_step_outputs(step_id)
 
 
 @router.get(
@@ -91,7 +91,7 @@ def get_step_inputs(step_id: UUID) -> Dict[str, ArtifactModel]:
     Returns:
         All inputs of the step, mapping from input name to artifact model.
     """
-    return zen_store.get_run_step_inputs(step_id)
+    return zen_store().get_run_step_inputs(step_id)
 
 
 @router.get(
@@ -109,7 +109,7 @@ def get_step_configuration(step_id: UUID) -> Dict[str, Any]:
     Returns:
         The step configuration.
     """
-    return zen_store.get_run_step(step_id).step_configuration
+    return zen_store().get_run_step(step_id).step_configuration
 
 
 @router.get(
@@ -127,4 +127,4 @@ def get_step_status(step_id: UUID) -> ExecutionStatus:
     Returns:
         The status of the step.
     """
-    return zen_store.get_run_step_status(step_id)
+    return zen_store().get_run_step_status(step_id)

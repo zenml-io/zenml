@@ -365,6 +365,11 @@ def print_active_config() -> None:
 
     gc = GlobalConfiguration()
     client = Client()
+
+    # We use gc.store here instead of client.zen_store for two reasons:
+    # 1. to avoid initializing ZenML with the default store just because we want
+    # to print the active config
+    # 2. to avoid connecting to the active store and keep this call lightweight
     if not gc.store:
         return
 

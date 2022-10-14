@@ -145,7 +145,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
                 f"deployer component or update your existing stack to add this "
                 f"component, e.g.:\n\n"
                 f"  'zenml model-deployer register mlflow --flavor={MLFLOW_MODEL_DEPLOYER_FLAVOR}'\n"
-                f"  'zenml stack create stack-name -d mlflow ...'\n"
+                f"  'zenml stack register stack-name -d mlflow ...'\n"
             )
         return model_deployer
 

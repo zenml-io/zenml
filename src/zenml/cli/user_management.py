@@ -105,16 +105,15 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
         user.active = True
 
     try:
-        user = Client().zen_store.create_user(user)
+        user = gc.zen_store.create_user(user)
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created user '{user_name}'.")
     if not user.active and user.activation_token is not None:
-        assert gc.store is not None
         cli_utils.declare(
             f"The created user account is currently inactive. You can activate "
             f"it by visiting the dashboard at the following URL:\n"
-            f"{gc.store.url}/signup?user={str(user.id)}&username={user.name}&token={user.activation_token.get_secret_value()}\n"
+            f"{gc.zen_store.url}/signup?user={str(user.id)}&username={user.name}&token={user.activation_token.get_secret_value()}\n"
         )
 
 

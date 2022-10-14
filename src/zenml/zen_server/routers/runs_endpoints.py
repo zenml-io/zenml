@@ -77,7 +77,7 @@ def list_runs(
     Returns:
         The pipeline runs according to query filters.
     """
-    runs = zen_store.list_runs(
+    runs = zen_store().list_runs(
         project_name_or_id=project_name_or_id,
         run_name=run_name,
         stack_id=stack_id,
@@ -112,7 +112,7 @@ def get_run(
     Returns:
         The pipeline run.
     """
-    run = zen_store.get_run(run_id=run_id)
+    run = zen_store().get_run(run_id=run_id)
     if hydrated:
         return HydratedPipelineRunModel.from_model(run)
     else:
@@ -138,7 +138,7 @@ def get_run_dag(
     """
     from zenml.post_execution.pipeline_run import PipelineRunView
 
-    run = zen_store.get_run(run_id=run_id)
+    run = zen_store().get_run(run_id=run_id)
     graph = LineageGraph()
     graph.generate_run_nodes_and_edges(PipelineRunView(run))
     return graph
@@ -159,7 +159,7 @@ def get_run_steps(run_id: UUID) -> List[StepRunModel]:
     Returns:
         The steps for a given pipeline run.
     """
-    return zen_store.list_run_steps(run_id)
+    return zen_store().list_run_steps(run_id)
 
 
 @router.get(
@@ -181,7 +181,7 @@ def get_run_component_side_effects(
     Returns:
         The component side-effects for a given pipeline run.
     """
-    return zen_store.get_run_component_side_effects(
+    return zen_store().get_run_component_side_effects(
         run_id=run_id,
         component_id=component_id,
     )
@@ -202,7 +202,7 @@ def get_pipeline_configuration(run_id: UUID) -> Dict[str, Any]:
     Returns:
         The pipeline configuration of the pipeline run.
     """
-    return zen_store.get_run(run_id=run_id).pipeline_configuration
+    return zen_store().get_run(run_id=run_id).pipeline_configuration
 
 
 @router.get(
@@ -220,4 +220,4 @@ def get_run_status(run_id: UUID) -> ExecutionStatus:
     Returns:
         The status of the pipeline run.
     """
-    return zen_store.get_run_status(run_id)
+    return zen_store().get_run_status(run_id)

@@ -19,10 +19,9 @@ into the details of the various components of a production MLOps workflow.
 
 | Practical MLOps Chapter | Corresponding ZenBytes Lesson |
 | ----------------------- | ----------------------------- |
-| [Stack Recipes](./advanced-guide/practical/stack-recipes.md) | [Stack Recipe Repo](https://github.com/zenml-io/mlops-stacks) |
+| [Stack Recipes](./advanced-guide/practical/stack-recipes.md) | [MLOps Stacks Repository](https://github.com/zenml-io/mlops-stacks) |
 | [Switching orchestration](./advanced-guide/practical/switching-orchestration.md) | N/A |
 |  [Secrets Management](./advanced-guide/practical/secrets-management.md) | N/A |
-| [Tracking experiments](./advanced-guide/practical/tracking-experiments.md) | [Experiment Tracking](https://colab.research.google.com/github/zenml-io/zenbytes/blob/main/2-1_Experiment_Tracking.ipynb) |
-| [Validating data](./advanced-guide/practical/validating-data.md) | [Data Skew](https://colab.research.google.com/github/zenml-io/zenbytes/blob/main/3-1_Data_Skew.ipynb) |
-| [Deploying models and batch inference](./advanced-guide/practical/deploying-models.md) | [Cloud Deployment](https://colab.research.google.com/github/zenml-io/zenbytes/blob/main/4-1_Cloud_Deployment.ipynb) |
-
+| [Tracking experiments](./advanced-guide/practical/tracking-experiments.md) | [2.1 Experiment Tracking](https://colab.research.google.com/github/zenml-io/zenbytes/blob/main/2-1_Experiment_Tracking.ipynb) |
+| [Validating data](./advanced-guide/practical/validating-data.md) | [3.1 Data Skew](https://colab.research.google.com/github/zenml-io/zenbytes/blob/main/3-1_Data_Skew.ipynb) |
+| [Deploying models and batch inference](./advanced-guide/practical/deploying-models.md) | [2.2 Local Deployment](https://colab.research.google.com/github/zenml-io/zenbytes/blob/main/2-2_Local_Deployment.ipynb), [2.3 Inference Pipelines](https://colab.research.google.com/github/zenml-io/zenbytes/blob/main/2-3_Inference_Pipelines.ipynb) |
