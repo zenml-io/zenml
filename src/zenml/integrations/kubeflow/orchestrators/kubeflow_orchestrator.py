@@ -47,7 +47,7 @@ from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
-from zenml.enums import StackComponentType
+from zenml.enums import ContainerRegistryFlavor, StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
@@ -546,6 +546,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        if (
+            self.is_local
+            and stack.container_registry.flavor
+            is ContainerRegistryFlavor.DEFAULT.value
+        ):
+            image_name = f"k3d-zenml-kubeflow-registry.{image_name}"
         is_scheduled_run = bool(deployment.schedule)
 
         # Create a callable for future compilation into a dsl.Pipeline.
