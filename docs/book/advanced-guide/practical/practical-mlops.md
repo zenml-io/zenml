@@ -19,7 +19,7 @@ into the details of the various components of a production MLOps workflow.
 
 | Practical MLOps Chapter | Corresponding ZenBytes Lesson |
 | ----------------------- | ----------------------------- |
-| [Stack Recipes](./advanced-guide/practical/stack-recipes.md) | [mlops-stacks Repository](https://github.com/zenml-io/mlops-stacks) |
+| [Stack Recipes](./advanced-guide/practical/stack-recipes.md) | [MLOps Stacks Repository](https://github.com/zenml-io/mlops-stacks) |
 | [Switching orchestration](./advanced-guide/practical/switching-orchestration.md) | N/A |
 |  [Secrets Management](./advanced-guide/practical/secrets-management.md) | N/A |
 | [Tracking experiments](./advanced-guide/practical/tracking-experiments.md) | [2.1 Experiment Tracking](https://colab.research.google.com/github/zenml-io/zenbytes/blob/main/2-1_Experiment_Tracking.ipynb) |
