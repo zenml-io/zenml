@@ -46,24 +46,35 @@ def zen_store() -> BaseZenStore:
 
     Returns:
         The ZenML Store.
+
+    Raises:
+        RuntimeError: If the ZenML Store has not been initialized.
     """
     global _zen_store
-
     if _zen_store is None:
-        _zen_store = GlobalConfiguration().zen_store
-
-        # We override track_analytics=False because we do not
-        # want to track anything server side.
-        _zen_store.track_analytics = False
-
-        if _zen_store.type == StoreType.REST:
-            raise ValueError(
-                "Server cannot be started with a REST store type. Make sure you "
-                "configure ZenML to use a non-networked store backend "
-                "when trying to start the ZenML Server."
-            )
-
+        raise RuntimeError("ZenML Store not initialized")
     return _zen_store
+
+
+def initialize_zen_store() -> None:
+    """Initialize the ZenML Store.
+
+    Raises:
+        ValueError: If the ZenML Store is using a REST back-end.
+    """
+    global _zen_store
+    _zen_store = GlobalConfiguration().zen_store
+
+    # We override track_analytics=False because we do not
+    # want to track anything server side.
+    _zen_store.track_analytics = False
+
+    if _zen_store.type == StoreType.REST:
+        raise ValueError(
+            "Server cannot be started with a REST store type. Make sure you "
+            "configure ZenML to use a non-networked store backend "
+            "when trying to start the ZenML Server."
+        )
 
 
 class ErrorModel(BaseModel):

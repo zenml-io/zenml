@@ -111,8 +111,6 @@ class GlobalConfigMetaClass(ModelMetaclass):
                 "GlobalConfiguration", super().__call__(*args, **kwargs)
             )
             cls._global_config._migrate_config()
-            if not cls._global_config.store:
-                cls._global_config.set_default_store()
         return cls._global_config
 
 

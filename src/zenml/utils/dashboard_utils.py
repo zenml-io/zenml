@@ -17,7 +17,6 @@ from typing import Optional
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StoreType
 from zenml.logger import get_logger
 
@@ -37,8 +36,6 @@ def get_run_url(
         A direct url link to the pipeline run details page. If run does not exist,
         returns None.
     """
-    gc = GlobalConfiguration()
-
     # Connected to ZenML Server
     client = Client()
 
@@ -47,10 +44,10 @@ def get_run_url(
 
     url = ""
     # We should only do the log if runs exist
-    if runs and gc.store and gc.store.type == StoreType.REST:
+    if runs and client.zen_store.type == StoreType.REST:
         # For now, take the first index to get the latest run
         run = runs[0]
-        url = gc.store.url
+        url = client.zen_store.url
         # Add this for unlisted runs
         if pipeline_id:
             url += f"/pipelines/{str(pipeline_id)}"
@@ -65,16 +62,16 @@ def print_run_url(run_name: str, pipeline_id: Optional[UUID] = None) -> None:
         run_name: Name of the pipeline run.
         pipeline_id: Optional pipeline_id, to be sent when available.
     """
-    gc = GlobalConfiguration()
+    client = Client()
 
-    if gc.store and gc.store.type == StoreType.REST:
+    if client.zen_store.type == StoreType.REST:
         url = get_run_url(
             run_name,
             pipeline_id,
         )
         if url:
             logger.info(f"Dashboard URL: {url}")
-    elif gc.store and gc.store.type == StoreType.SQL:
+    elif client.zen_store.type == StoreType.SQL:
         # Connected to SQL Store Type, we're local
         logger.info(
             "Pipeline visualization can be seen in the ZenML Dashboard. "
