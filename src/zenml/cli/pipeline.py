@@ -14,6 +14,8 @@
 """CLI functionality to interact with pipelines."""
 
 
+from datetime import datetime
+import json
 from uuid import UUID
 
 import click
@@ -23,7 +25,13 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
+from zenml.models.pipeline_models import (
+    ArtifactModel,
+    PipelineRunModel,
+    StepRunModel,
+)
 from zenml.utils.uuid_utils import is_valid_uuid
+from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 logger = get_logger(__name__)
 
@@ -155,4 +163,79 @@ def list_pipeline_runs(
 
     cli_utils.print_pipeline_runs_table(
         client=client, pipeline_runs=pipeline_runs
+    )
+
+
+@runs.command("export", help="Export all pipeline runs to a YAML file.")
+@click.argument("filename", type=str, required=True)
+def export_pipeline_runs(filename: str) -> None:
+    """Export all pipeline runs to a YAML file.
+
+    Args:
+        filename: The filename to export the pipeline runs to.
+    """
+    cli_utils.print_active_config()
+    client = Client()
+    pipeline_runs = client.zen_store.list_runs(
+        project_name_or_id=client.active_project.id
+    )
+    if not pipeline_runs:
+        cli_utils.error("No pipeline runs registered.")
+    yaml_data = []
+    for pipeline_run in pipeline_runs:
+        pipeline_run.status = client.zen_store.get_run_status(pipeline_run.id)
+        run_dict = json.loads(pipeline_run.json())
+        run_dict["steps"] = []
+        steps = client.zen_store.list_run_steps(run_id=pipeline_run.id)
+        for step in steps:
+            step.status = client.zen_store.get_run_step_status(step.id)
+            step_dict = json.loads(step.json())
+            step_dict["output_artifacts"] = []
+            artifacts = client.zen_store.get_run_step_outputs(step_id=step.id)
+            for artifact in sorted(artifacts.values(), key=lambda x: x.created):
+                artifact_dict = json.loads(artifact.json())
+                step_dict["output_artifacts"].append(artifact_dict)
+            run_dict["steps"].append(step_dict)
+        yaml_data.append(run_dict)
+    write_yaml(filename, yaml_data)
+    cli_utils.declare(f"Exported {len(yaml_data)} pipeline runs to {filename}.")
+
+
+@runs.command("import", help="Import pipeline runs from a YAML file.")
+@click.argument("filename", type=str, required=True)
+def import_pipeline_runs(filename: str) -> None:
+    """Import pipeline runs from a YAML file.
+
+    Args:
+        filename: The filename from which to import the pipeline runs.
+    """
+    cli_utils.print_active_config()
+    client = Client()
+    yaml_data = read_yaml(filename)
+    for pipeline_run_dict in yaml_data:
+        steps = pipeline_run_dict.pop("steps")
+        pipeline_run = PipelineRunModel.parse_obj(pipeline_run_dict)
+        pipeline_run.updated = datetime.now()
+        pipeline_run.user = Client().active_user.id
+        pipeline_run.project = Client().active_project.id
+        pipeline_run.stack_id = None
+        pipeline_run.pipeline_id = None
+        pipeline_run.mlmd_id = None
+        client.zen_store.create_run(pipeline_run)
+        for step_dict in steps:
+            artifacts = step_dict.pop("output_artifacts")
+            step = StepRunModel.parse_obj(step_dict)
+            step.updated = datetime.now()
+            step.mlmd_id = None
+            step.mlmd_parent_step_ids = []
+            client.zen_store.create_run_step(step)
+            for artifact_dict in artifacts:
+                artifact = ArtifactModel.parse_obj(artifact_dict)
+                artifact.updated = datetime.now()
+                artifact.mlmd_id = None
+                artifact.mlmd_parent_step_id = None
+                artifact.mlmd_producer_step_id = None
+                client.zen_store.create_artifact(artifact)
+    cli_utils.declare(
+        f"Imported {len(yaml_data)} pipeline runs from {filename}."
     )

@@ -2610,9 +2610,8 @@ class SqlZenStore(BaseZenStore):
                 project = self._get_project_schema(
                     project_name_or_id, session=session
                 )
-                query = query.where(StackSchema.project_id == project.id)
                 query = query.where(
-                    PipelineRunSchema.stack_id == StackSchema.id
+                    PipelineRunSchema.project_id == project.id
                 )
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
