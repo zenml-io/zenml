@@ -137,7 +137,7 @@ def test_vertex_orchestrator_stack_validation(
         # ResourceSettings specified for the step, should take values from here
         (
             ResourceSettings(cpu_count=1, gpu_count=1, memory="1GB"),
-            {"cpu_limit": None, "gpu_limit": 1, "memory_limit": "1G"},
+            {"cpu_limit": 4, "gpu_limit": 4, "memory_limit": "4G"},
             {
                 "accelerator": {"count": "1", "type": "NVIDIA_TESLA_K80"},
                 "cpuLimit": 1.0,
