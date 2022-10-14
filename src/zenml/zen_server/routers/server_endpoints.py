@@ -51,4 +51,4 @@ def server_info() -> ServerModel:
     Returns:
         Information about the server.
     """
-    return zen_store.get_store_info()
+    return zen_store().get_store_info()

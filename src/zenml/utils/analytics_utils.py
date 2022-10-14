@@ -157,24 +157,28 @@ class AnalyticsContext:
 
         from zenml.config.global_config import GlobalConfiguration
 
-        gc = GlobalConfiguration()
+        try:
+            gc = GlobalConfiguration()
 
-        self.analytics_opt_in = gc.analytics_opt_in
-        self.user_id = str(gc.user_id)
+            self.analytics_opt_in = gc.analytics_opt_in
+            self.user_id = str(gc.user_id)
 
-        # That means user opted out of analytics
-        if not gc.analytics_opt_in:
-            return
+            # That means user opted out of analytics
+            if not gc.analytics_opt_in:
+                return
 
-        if analytics.write_key is None:
-            analytics.write_key = get_segment_key()
+            if analytics.write_key is None:
+                analytics.write_key = get_segment_key()
 
-        assert (
-            analytics.write_key is not None
-        ), "Analytics key not set but trying to make telemetry call."
+            assert (
+                analytics.write_key is not None
+            ), "Analytics key not set but trying to make telemetry call."
 
-        # Set this to 1 to avoid backoff loop
-        analytics.max_retries = 1
+            # Set this to 1 to avoid backoff loop
+            analytics.max_retries = 1
+        except Exception as e:
+            self.analytics_opt_in = False
+            logger.debug(f"Analytics initialization failed: {e}")
 
     def __enter__(self) -> "AnalyticsContext":
         """Enter context manager.

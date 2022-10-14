@@ -46,7 +46,7 @@ def list_roles() -> List[RoleModel]:
     Returns:
         List of all roles.
     """
-    return zen_store.list_roles()
+    return zen_store().list_roles()
 
 
 @router.post(
@@ -66,7 +66,7 @@ def create_role(role: CreateRoleRequest) -> RoleModel:
     Returns:
         The created role.
     """
-    return zen_store.create_role(role=role.to_model())
+    return zen_store().create_role(role=role.to_model())
 
 
 @router.get(
@@ -84,7 +84,7 @@ def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
     Returns:
         A specific role.
     """
-    return zen_store.get_role(role_name_or_id=role_name_or_id)
+    return zen_store().get_role(role_name_or_id=role_name_or_id)
 
 
 @router.put(
@@ -107,8 +107,8 @@ def update_role(
     Returns:
         The created role.
     """
-    role_in_db = zen_store.get_role(role_name_or_id)
-    return zen_store.update_role(role=role_update.apply_to_model(role_in_db))
+    role_in_db = zen_store().get_role(role_name_or_id)
+    return zen_store().update_role(role=role_update.apply_to_model(role_in_db))
 
 
 @router.delete(
@@ -122,4 +122,4 @@ def delete_role(role_name_or_id: Union[str, UUID]) -> None:
     Args:
         role_name_or_id: Name or ID of the role.
     """
-    zen_store.delete_role(role_name_or_id=role_name_or_id)
+    zen_store().delete_role(role_name_or_id=role_name_or_id)
