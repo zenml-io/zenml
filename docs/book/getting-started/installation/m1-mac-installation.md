@@ -108,7 +108,7 @@ To install Homebrew under Rosetta, use the following command:
 arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 ```
 
-Then, reate the `brew86` alias like so:
+Then, create the `brew86` alias like so:
 
 ```
 alias brew86="arch -x86_64 /usr/local/bin/brew"
@@ -204,6 +204,19 @@ pip install zenml
 ```
 
 And that's it, you have successfully installed ZenML in Python 3.9 under Rosetta.
+
+## Known Limitations
+
+### TensorFlow Integration
+ZenML's TensorFlow integration is based on the `tensorflow` pip package, which
+currently doesn't support M1 Macs. 
+Therefore, ZenML is currently unfortunately not compatible with TensorFlow under
+M1 Macs.
+
+As a result, `zenml integration install tensorflow` will install an incompatible 
+package, which will cause all ZenML commands to fail with error 
+`83476 illegal hardware instruction`. If you encounter this error, simply
+uninstall TensorFlow again via `zenml integration uninstall tensorflow`.
 
 ## Resources:
 - [Installing Rosetta](https://osxdaily.com/2020/12/04/how-install-rosetta-2-apple-silicon-mac/)
