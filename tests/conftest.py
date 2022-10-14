@@ -81,9 +81,10 @@ def base_client(
     session_mocker.patch("analytics.group")
     session_mocker.patch("analytics.identify")
 
-    # initialize global config and repo at the new path
+    # initialize global config, repo and zen store at the new path
     GlobalConfiguration()
     client = Client()
+    _ = client.zen_store
 
     # monkey patch original cwd in for later use and yield
     client.original_cwd = orig_cwd
@@ -154,9 +155,10 @@ def clean_client(
     # separate from those used in the global testing environment
     os.environ["ZENML_CONFIG_PATH"] = str(tmp_path / "zenml")
 
-    # initialize global config and repo at the new path
+    # initialize global config, repo and zen store at the new path
     GlobalConfiguration()
     client = Client()
+    _ = client.zen_store
 
     # monkey patch base repo cwd for later user and yield
     client.original_cwd = base_client.original_cwd

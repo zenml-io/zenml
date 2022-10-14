@@ -83,7 +83,7 @@ def list_users() -> List[UserModel]:
     Returns:
         A list of all users.
     """
-    return zen_store.list_users()
+    return zen_store().list_users()
 
 
 @router.post(
@@ -115,7 +115,7 @@ def create_user(user: CreateUserRequest) -> CreateUserResponse:
         token = user_model.generate_activation_token()
     else:
         user_model.active = True
-    new_user = zen_store.create_user(user_model)
+    new_user = zen_store().create_user(user_model)
     # add back the original unhashed activation token, if generated, to
     # send it back to the client
     new_user.activation_token = token
@@ -137,7 +137,7 @@ def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
     Returns:
         A specific user.
     """
-    return zen_store.get_user(user_name_or_id=user_name_or_id)
+    return zen_store().get_user(user_name_or_id=user_name_or_id)
 
 
 @router.put(
@@ -158,9 +158,9 @@ def update_user(
     Returns:
         The updated user.
     """
-    existing_user = zen_store.get_user(user_name_or_id)
+    existing_user = zen_store().get_user(user_name_or_id)
     user_model = user.apply_to_model(existing_user)
-    return zen_store.update_user(user_model)
+    return zen_store().update_user(user_model)
 
 
 @activation_router.put(
@@ -196,7 +196,7 @@ def activate_user(
     user_model = user.apply_to_model(auth_context.user)
     user_model.active = True
     user_model.activation_token = None
-    return zen_store.update_user(user_model)
+    return zen_store().update_user(user_model)
 
 
 @router.put(
@@ -216,10 +216,10 @@ def deactivate_user(
     Returns:
         The generated activation token.
     """
-    user = zen_store.get_user(user_name_or_id)
+    user = zen_store().get_user(user_name_or_id)
     user.active = False
     token = user.generate_activation_token()
-    user = zen_store.update_user(user=user)
+    user = zen_store().update_user(user=user)
     # add back the original unhashed activation token
     user.activation_token = token
     return DeactivateUserResponse.from_model(user)
@@ -243,14 +243,14 @@ def delete_user(
     Raises:
         IllegalOperationError: If the user is not authorized to delete the user.
     """
-    user = zen_store.get_user(user_name_or_id)
+    user = zen_store().get_user(user_name_or_id)
 
     if auth_context.user.name == user.name:
         raise IllegalOperationError(
             "You cannot delete yourself. If you wish to delete your active "
             "user account, please contact your ZenML administrator."
         )
-    zen_store.delete_user(user_name_or_id=user_name_or_id)
+    zen_store().delete_user(user_name_or_id=user_name_or_id)
 
 
 @router.put(
@@ -271,7 +271,7 @@ def email_opt_in_response(
     Returns:
         The updated user.
     """
-    return zen_store.user_email_opt_in(
+    return zen_store().user_email_opt_in(
         user_name_or_id=user_name_or_id,
         email=user_response.email,
         user_opt_in_response=user_response.email_opted_in,
@@ -298,7 +298,7 @@ def get_role_assignments_for_user(
     Returns:
         A list of all roles that are assigned to a user.
     """
-    return zen_store.list_role_assignments(
+    return zen_store().list_role_assignments(
         user_name_or_id=user_name_or_id,
         project_name_or_id=project_name_or_id,
     )
@@ -323,7 +323,7 @@ def assign_role(
             role to the user. If this is not provided, the role will be
             assigned globally.
     """
-    zen_store.assign_role(
+    zen_store().assign_role(
         role_name_or_id=role_name_or_id,
         user_or_team_name_or_id=user_name_or_id,
         is_user=True,
@@ -349,7 +349,7 @@ def unassign_role(
         project_name_or_id: Name or ID of the project. If this is not
             provided, the role will be revoked globally.
     """
-    zen_store.revoke_role(
+    zen_store().revoke_role(
         role_name_or_id=role_name_or_id,
         user_or_team_name_or_id=user_name_or_id,
         is_user=True,

@@ -60,7 +60,7 @@ def list_flavors(
     Returns:
         All flavors.
     """
-    flavors_list = zen_store.list_flavors(
+    flavors_list = zen_store().list_flavors(
         project_name_or_id=project_name_or_id,
         component_type=component_type,
         user_name_or_id=user_name_or_id,
@@ -91,7 +91,7 @@ def get_flavor(flavor_id: UUID, hydrated: bool = False) -> FlavorModel:
     Returns:
         The requested stack.
     """
-    flavor = zen_store.get_flavor(flavor_id)
+    flavor = zen_store().get_flavor(flavor_id)
     # if hydrated:
     #     return flavor.to_hydrated_model()
     # else:
@@ -120,7 +120,7 @@ def update_flavor(
         The updated flavor.
     """
     flavor.id = flavor_id
-    updated_flavor = zen_store.update_flavor(flavor=flavor)
+    updated_flavor = zen_store().update_flavor(flavor=flavor)
     # if hydrated:
     #     return updated_flavor.to_hydrated_model()
     # else:
@@ -139,4 +139,4 @@ def delete_flavor(flavor_id: UUID) -> None:
     Args:
         flavor_id: ID of the flavor.
     """
-    zen_store.delete_flavor(flavor_id)
+    zen_store().delete_flavor(flavor_id)
