@@ -549,7 +549,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         if (
             self.is_local
             and stack.container_registry.flavor
-            is ContainerRegistryFlavor.DEFAULT.value
+            == ContainerRegistryFlavor.DEFAULT.value
         ):
             image_name = f"k3d-zenml-kubeflow-registry.{image_name}"
         is_scheduled_run = bool(deployment.schedule)
