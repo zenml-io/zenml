@@ -2610,9 +2610,7 @@ class SqlZenStore(BaseZenStore):
                 project = self._get_project_schema(
                     project_name_or_id, session=session
                 )
-                query = query.where(
-                    PipelineRunSchema.project_id == project.id
-                )
+                query = query.where(PipelineRunSchema.project_id == project.id)
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
             if component_id:
@@ -2707,21 +2705,9 @@ class SqlZenStore(BaseZenStore):
             The status of the pipeline run.
         """
         steps = self.list_run_steps(run_id)
-
-        # If any step is failed or running, return that status respectively
-        for step in steps:
-            step_status = self.get_run_step_status(step.id)
-            if step_status == ExecutionStatus.FAILED:
-                return ExecutionStatus.FAILED
-            if step_status == ExecutionStatus.RUNNING:
-                return ExecutionStatus.RUNNING
-
-        # If not all steps have started yet, return running
-        if len(steps) < self.get_run(run_id).num_steps:
-            return ExecutionStatus.RUNNING
-
-        # Otherwise, return succeeded
-        return ExecutionStatus.COMPLETED
+        step_statuses = [self.get_run_step_status(step.id) for step in steps]
+        num_steps = self.get_run(run_id).num_steps
+        return ExecutionStatus.run_status(step_statuses, num_steps)
 
     # ------------------
     # Pipeline run steps
