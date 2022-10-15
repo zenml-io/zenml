@@ -1,5 +1,23 @@
 <!-- markdown-link-check-disable -->
 
+# 0.20.4
+
+This release fixes another series of minor bugs that were introduced in 0.20.0.
+
+## What's Changed
+
+* Detect failed executions by @schustmi in https://github.com/zenml-io/zenml/pull/964
+* Only build docker images for custom deployments by @schustmi in https://github.com/zenml-io/zenml/pull/960
+* M1 Mac Installation Tutorial by @fa9r in https://github.com/zenml-io/zenml/pull/966
+* Update ZenBytes links in docs by @fa9r in https://github.com/zenml-io/zenml/pull/968
+* Fix the API docs builder by @stefannica in https://github.com/zenml-io/zenml/pull/967
+* Fix `gpu_limit` condition in `VertexOrchestrator` by @gabrielmbmb in https://github.com/zenml-io/zenml/pull/963
+* Add simple node affinitiy configurations by @schustmi in https://github.com/zenml-io/zenml/pull/973
+* First iteration of the CLI optimization by @bcdurak in https://github.com/zenml-io/zenml/pull/962
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.20.3...test
+
 # 0.20.3
 
 This release fixes another series of minor bugs that were introduced in 0.20.0.

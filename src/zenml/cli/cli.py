@@ -60,7 +60,7 @@ class ZenContext(click.Context):
 
 
 class ZenMLCLI(click.Group):
-    """Override the default click Group to create a custom format command help output."""
+    """Custom click Group to create a custom format command help output."""
 
     context_class = ZenContext
 
@@ -77,14 +77,15 @@ class ZenMLCLI(click.Group):
         """
         formatter = ctx.make_formatter()
         self.format_help(ctx, formatter)
-        # TODO [ENG-862]: Find solution for support console.pager and color support in print
+        # TODO [ENG-862]: Find solution for support console.pager and color
+        #   support in print
         rich.print(formatter.getvalue().rstrip("\n"))
         return ""
 
     def format_commands(
         self, ctx: click.Context, formatter: formatting.HelpFormatter
     ) -> None:
-        """Extra format methods for multi methods that adds all the commands after the options.
+        """Multi methods that adds all the commands after the options.
 
         This custom format_commands method is used to retrieve the commands and
         groups of commands with a tag. In order to call the new custom format
@@ -117,7 +118,7 @@ class ZenMLCLI(click.Group):
             ordered_categories = list(CliCategories.__members__.values())
             commands = list(
                 sorted(
-                    (commands),
+                    commands,
                     key=lambda x: (
                         ordered_categories.index(x[0]),
                         x[0].value,
@@ -127,8 +128,8 @@ class ZenMLCLI(click.Group):
             )
             rows: List[Tuple[str, str, str]] = []
             for (tag, subcommand, cmd) in commands:
-                help = cmd.get_short_help_str(limit=formatter.width)
-                rows.append((tag.value, subcommand, help))
+                help_ = cmd.get_short_help_str(limit=formatter.width)
+                rows.append((tag.value, subcommand, help_))
             if rows:
                 colored_section_title = (
                     "[dim cyan]Available ZenML Commands (grouped)[/dim cyan]"

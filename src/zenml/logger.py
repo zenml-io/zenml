@@ -18,7 +18,6 @@ import os
 import re
 import sys
 from contextlib import contextmanager
-from logging.handlers import TimedRotatingFileHandler
 from typing import Any, Dict, Iterator
 
 from absl import logging as absl_logging
@@ -137,22 +136,6 @@ def get_console_handler() -> Any:
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(CustomFormatter())
     return console_handler
-    # console_handler = RichHandler(
-    #     show_path=False, omit_repeated_times=False, console=console
-    # )
-    # console_handler.setFormatter(CustomFormatter())
-    # return console_handler
-
-
-def get_file_handler() -> Any:
-    """Return a file handler for logging.
-
-    Returns:
-        A file handler.
-    """
-    file_handler = TimedRotatingFileHandler(LOG_FILE, when="midnight")
-    file_handler.setFormatter(CustomFormatter())
-    return file_handler
 
 
 def get_logger(logger_name: str) -> logging.Logger:

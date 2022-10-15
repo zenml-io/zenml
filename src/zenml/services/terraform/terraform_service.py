@@ -19,7 +19,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, Generator, Optional, Tuple
 
-import python_terraform  # type: ignore
+import python_terraform
 from pydantic import Field
 
 from zenml.io import fileio

@@ -191,3 +191,6 @@ MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 TEST_STEP_INPUT_INT = 7
 ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator_docker_image"
 DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE = ".zenml_deployment_config.yaml"
+
+# Secret constants
+ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"
