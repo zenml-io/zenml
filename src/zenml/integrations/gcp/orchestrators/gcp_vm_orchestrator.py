@@ -26,33 +26,55 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
+
 # Minor parts of the `prepare_or_run_pipeline()` method of this file are
 # inspired by the kubeflow dag runner implementation of tfx
 import re
+import subprocess
 import sys
 import time
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    cast,
+)
 
 import google.cloud.logging
 from google.api_core.extended_operation import ExtendedOperation
 from google.cloud import compute_v1
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
+from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.enums import StackComponentType
+from zenml.environment import Environment
 from zenml.integrations.gcp import GCP_VM_ORCHESTRATOR_FLAVOR
+from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
+    GCPArtifactStoreConfig,
+)
 from zenml.integrations.gcp.orchestrators.gcp_vm_entrypoint_configuration import (
     RUN_NAME_OPTION,
     GCPVMEntrypointConfiguration,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
+from zenml.stack import StackValidator
+from zenml.utils import io_utils, networking_utils
 from zenml.utils.docker_utils import get_image_digest
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.pipelines.base_pipeline import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
     from zenml.steps import BaseStep
 
@@ -448,6 +470,73 @@ class GCPVMOrchestrator(BaseOrchestrator):
     # Class Configuration
     FLAVOR: ClassVar[str] = GCP_VM_ORCHESTRATOR_FLAVOR
 
+    @property
+    def config(self) -> GCPVMEntrypointConfiguration:
+        """Returns the `GCPVMEntrypointConfiguration` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(GCPVMEntrypointConfiguration, self._config)
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Ensures a stack with only remote components and a container registry.
+
+        Returns:
+            A `StackValidator` instance.
+        """
+
+        def _validate(stack: "Stack") -> Tuple[bool, str]:
+            container_registry = stack.container_registry
+
+            # should not happen, because the stack validation takes care of
+            # this, but just in case
+            assert container_registry is not None
+
+            # go through all stack components and identify those that
+            # advertise a local path where they persist information that
+            # they need to be available when running pipelines.
+            for stack_component in stack.components.values():
+                local_path = stack_component.local_path
+                if local_path is None:
+                    continue
+                return False, (
+                    f"The GCP VM orchestrator is configured to run "
+                    f"pipelines in a remote Kubernetes cluster designated "
+                    f"by the '{self.config.kubernetes_context}' configuration "
+                    f"context, but the '{stack_component.name}' "
+                    f"{stack_component.type.value} is a local stack component "
+                    f"and will not be available in the GCP pipeline."
+                    f"\nPlease ensure that you always use non-local "
+                    f"stack components with a GCP VM orchestrator, "
+                    f"otherwise you may run into pipeline execution "
+                    f"problems. You should use a flavor of "
+                    f"{stack_component.type.value} other than "
+                    f"'{stack_component.flavor}'."
+                )
+
+            if container_registry.config.is_local:
+                return False, (
+                    f"The GCP VM orchestrator is configured to run "
+                    f"pipelines using a container image accessible to a"
+                    f"remote VM, but the '{container_registry.name}' "
+                    f"container registry URI '{container_registry.config.uri}' "
+                    f"points to a local container registry. Please ensure "
+                    f"that you always use non-local stack components with "
+                    f"a GCP VM orchestrator, otherwise you will "
+                    f"run into problems. You should use a flavor of "
+                    f"container registry other than "
+                    f"'{container_registry.flavor}'."
+                )
+
+            return True, ""
+
+        return StackValidator(
+            required_components={StackComponentType.CONTAINER_REGISTRY},
+            custom_validation_function=_validate,
+        )
+
     def get_docker_image_name(self, pipeline_name: str) -> str:
         """Returns the full docker image name including registry and tag."""
 
@@ -462,56 +551,62 @@ class GCPVMOrchestrator(BaseOrchestrator):
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "BasePipeline",
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Builds a docker image for the current environment and uploads it to
-        a container registry if configured.
+        """Build a Docker image and push it to the container registry.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
         """
-        from zenml.utils import docker_utils
-
-        image_name = self.get_docker_image_name(pipeline.name)
-
-        requirements = {*stack.requirements(), *pipeline.requirements}
-
-        logger.debug("GCP VM docker image requirements: %s", requirements)
-
-        docker_utils.build_docker_image(
-            build_context_path=get_source_root_path(),
-            image_name=image_name,
-            dockerignore_path=pipeline.dockerignore_file,
-            requirements=requirements,
-            base_image=self.custom_docker_base_image_name,
+        docker_image_builder = PipelineDockerImageBuilder()
+        repo_digest = docker_image_builder.build_and_push_docker_image(
+            deployment=deployment, stack=stack
         )
-
-        assert stack.container_registry  # should never happen due to validation
-        stack.container_registry.push_image(image_name)
-
-        # Store the docker image digest in the runtime configuration so it gets
-        # tracked in the ZenStore
-        image_digest = docker_utils.get_image_digest(image_name) or image_name
-        runtime_configuration["docker_image"] = image_digest
+        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     def prepare_or_run_pipeline(
         self,
-        sorted_steps: List["BaseStep"],
-        pipeline: "BasePipeline",
-        pb2_pipeline: Pb2Pipeline,
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        image_name = self.get_docker_image_name(pipeline.name)
-        image_name = get_image_digest(image_name) or image_name
+        """Runs the pipeline on a GCP VM orchestrator.
 
-        run_name = runtime_configuration.run_name
-        assert run_name
+        This function first compiles the ZenML pipeline into a Tekton yaml
+        and then applies this configuration to run the pipeline.
 
-        for step in sorted_steps:
+        Args:
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
+
+        Raises:
+            RuntimeError: If you try to run the pipelines in a notebook environment.
+        """
+        # First check whether the code running in a notebook
+        if Environment.in_notebook():
+            raise RuntimeError(
+                "The GCP VM orchestrator cannot run pipelines in a notebook "
+                "environment. The reason is that it is non-trivial to create "
+                "a Docker image of a notebook. Please consider refactoring "
+                "your notebook cells into separate scripts in a Python module "
+                "and run the code outside of a notebook when using this "
+                "orchestrator."
+            )
+
+        if deployment.schedule:
+            logger.warning(
+                "The GCP VM does not support the "
+                "use of schedules. The `schedule` will be ignored "
+                "and the pipeline will be run immediately."
+            )
+
+        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+
+        for step_name, step in deployment.steps.items():
             command = GCPVMEntrypointConfiguration.get_entrypoint_command()
             arguments = GCPVMEntrypointConfiguration.get_entrypoint_arguments(
-                step=step,
-                pb2_pipeline=pb2_pipeline,
+                step_name=step_name,
                 **{RUN_NAME_OPTION: run_name},
             )
 

@@ -140,3 +140,10 @@ class AnalyticsEventSource(StrEnum):
 
     ZENML_GO = "zenml go"
     ZENML_SERVER = "zenml server"
+
+
+class VMState(StrEnum):
+    """Enum to identify states of VM."""
+
+    RUNNING = "running"
+    STOPPED = "stopped"

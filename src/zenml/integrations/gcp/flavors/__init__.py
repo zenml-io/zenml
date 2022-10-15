@@ -21,6 +21,10 @@ from zenml.integrations.gcp.flavors.gcp_secrets_manager_flavor import (
     GCPSecretsManagerConfig,
     GCPSecretsManagerFlavor,
 )
+from zenml.integrations.gcp.flavors.gcp_vm_orchestrator_flavor import (
+    GcpVMOrchestratorConfig,
+    GcpVMOrchestratorFlavor,
+)
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
     VertexOrchestratorConfig,
     VertexOrchestratorFlavor,
@@ -28,11 +32,6 @@ from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
 from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import (
     VertexStepOperatorConfig,
     VertexStepOperatorFlavor,
-)
-
-from zenml.integrations.gcp.flavors.gcp_vm_orchestrator_flavor import (
-    GcpVMOrchestratorConfig,
-    GcpVMOrchestratorFlavor,
 )
 
 __all__ = [
