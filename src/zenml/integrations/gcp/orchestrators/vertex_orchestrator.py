@@ -235,8 +235,12 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         if memory_limit is not None:
             container_op = container_op.set_memory_limit(memory_limit)
 
-        gpu_limit = resource_settings.gpu_count or self.config.gpu_limit
-        if gpu_limit is not None:
+        gpu_limit = (
+            resource_settings.gpu_count
+            if resource_settings.gpu_count is not None
+            else self.config.gpu_limit
+        )
+        if gpu_limit is not None and gpu_limit > 0:
             container_op = container_op.set_gpu_limit(gpu_limit)
 
         if self.config.node_selector_constraint is not None:

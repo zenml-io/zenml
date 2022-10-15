@@ -147,6 +147,8 @@ def up(
         image: A custom Docker image to use for the server, when the
             `--docker` flag is set.
     """
+    gc = GlobalConfiguration()
+
     if docker:
         provider = ServerProviderType.DOCKER
     else:
@@ -179,7 +181,6 @@ def up(
 
     server = deployer.deploy_server(server_config)
 
-    gc = GlobalConfiguration()
     assert gc.store is not None
 
     from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
@@ -199,7 +200,6 @@ def up(
             DEFAULT_USERNAME,
         )
 
-        gc = GlobalConfiguration()
         # Don't connect to the local server if the client is already connected
         # to a remote server.
         if (
@@ -215,7 +215,8 @@ def up(
                     cli_utils.declare(
                         "Skipped connecting to the local server. The client is "
                         "already connected to a remote ZenML server. Pass the "
-                        "`--connect` flag to connect to the local server anyway."
+                        "`--connect` flag to connect to the local server "
+                        "anyway."
                     )
             except Exception as e:
                 logger.debug(
@@ -258,13 +259,12 @@ def down() -> None:
     deployer.remove_server(server.config.name)
 
     gc = GlobalConfiguration()
-    assert gc.store is not None
     track_event(
         AnalyticsEvent.ZENML_SERVER_STOPPED,
         metadata={
             "server_id": str(gc.user_id),
             "server_deployment": str(server.config.provider),
-            "database_type": str(gc.store.type),
+            "database_type": str(gc.store.type) if gc.store else "",
         },
     )
 
