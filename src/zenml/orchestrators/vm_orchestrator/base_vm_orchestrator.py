@@ -298,3 +298,6 @@ class BaseVMOrchestrator(BaseOrchestrator):
             logger.info("Keyboard interupt detected! Exiting logs streaming.")
             if logs_url:
                 logger.info(f"Please view logs directly at {logs_url}")
+        except Exception as e:
+            logger.error("Failed to fetch logs. Raising original exception.")
+            raise e
