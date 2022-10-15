@@ -17,9 +17,8 @@ from typing import Any, ClassVar, Dict
 
 from pydantic import root_validator
 
+from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE
 from zenml.secret.base_secret import BaseSecretSchema
-
-ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"
 
 
 class ArbitrarySecretSchema(BaseSecretSchema):
