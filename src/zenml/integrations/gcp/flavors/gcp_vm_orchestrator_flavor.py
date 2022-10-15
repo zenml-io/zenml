@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """VM orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING, List, Optional, Type
+
+from google.cloud import compute_v1
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.gcp import GCP_VM_ORCHESTRATOR_FLAVOR
@@ -60,14 +62,13 @@ class GCPVMOrchestratorConfig(
     """
 
     project_id: str
-    zone: str
-    instance_name: str
+    zone: str = "us-west3-b"
     network_link: str = "global/networks/default"
-    subnetwork_link: str = None
-    internal_ip: str = None
+    subnetwork_link: Optional[str] = None
+    internal_ip: Optional[str] = None
     external_access: bool = False
-    external_ipv4: str = None
-    custom_hostname: str = None
+    external_ipv4: Optional[str] = None
+    custom_hostname: Optional[str] = None
     delete_protection: bool = False
     disk_size_gb: int = 10
 
@@ -98,9 +99,9 @@ class GCPVMOrchestratorSettings(BaseSettings):
             or not.
     """
 
-    machine_type: str = "n1-standard-1"
-    accelerators: List[compute_v1.AcceleratorConfig] = None
-    preemptible: bool = False
+    machine_type: str = "n1-standard-4"
+    # accelerators: List[compute_v1.AcceleratorConfig] = None
+    preemptible: bool = True
 
 
 class GCPVMOrchestratorFlavor(BaseOrchestratorFlavor):

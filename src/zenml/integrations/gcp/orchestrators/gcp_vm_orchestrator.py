@@ -30,21 +30,13 @@ import os
 import re
 import sys
 from datetime import datetime, timedelta, timezone
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 import google.cloud.logging
 from google.api_core.extended_operation import ExtendedOperation
 from google.cloud import compute_v1
 
+from zenml.enums import VMState
 from zenml.integrations.gcp import GCP_VM_ORCHESTRATOR_FLAVOR
 from zenml.integrations.gcp.flavors.gcp_vm_orchestrator_flavor import (
     GCPVMOrchestratorConfig,
@@ -81,7 +73,6 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
 
     @staticmethod
     def wait_for_extended_operation(
-        cls,
         operation: ExtendedOperation,
         verbose_name: str = "operation",
         timeout: int = 300,
@@ -164,7 +155,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
     @staticmethod
     def sanitize_gcp_vm_name(bad_name: str) -> str:
         """Get a good name from a bad name"""
-        return bad_name.replace("_", "-")
+        return bad_name.replace("_", "-").lower()
 
     @staticmethod
     def get_image_from_family(project: str, family: str) -> compute_v1.Image:
@@ -223,7 +214,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         boot_disk.boot = boot
         return boot_disk
 
-    def get_instance_name(deployment: "PipelineDeployment") -> str:
+    def get_instance_name(self, deployment: "PipelineDeployment") -> str:
         """From pipeline deployment, get name of launched instance.
 
         Args:
@@ -233,7 +224,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
             Name of the instance.
         """
         return GCPVMOrchestrator.sanitize_gcp_vm_name(
-            "zenml-" + deployment.run_name
+            "zenml-" + str(deployment.pipeline.name)
         )
 
     def launch_instance(
@@ -273,7 +264,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         )
 
         disk = GCPVMOrchestrator.disk_from_image(
-            f"zones/{self.zone}/diskTypes/pd-ssd",
+            f"zones/{self.config.zone}/diskTypes/pd-ssd",
             disk_size_gb=self.config.disk_size_gb,
             boot=True,
             source_image=f"projects/gce-uefi-images/global/images/{image.name}",
@@ -311,8 +302,8 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
                 f"zones/{self.config.zone}/machineTypes/{settings.machine_type}"
             )
 
-        if settings.accelerators:
-            instance.guest_accelerators = settings.accelerators
+        # if settings.accelerators:
+        #     instance.guest_accelerators = settings.accelerators
 
         instance.network_interfaces = [network_interface]
 
@@ -375,11 +366,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
             operation, "instance creation"
         )
 
-        return instance_client.get(
-            project=self.config.project_id,
-            zone=self.config.zone,
-            instance=instance_name,
-        )
+        return self.get_instance(deployment)
 
     def get_instance(self, deployment: "PipelineDeployment") -> VMInstanceView:
         """Returns the launched instance.
@@ -392,10 +379,18 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         """
         instance_name = self.get_instance_name(deployment)
         instance_client = compute_v1.InstancesClient()
-        return instance_client.get(
+        gcp_instance = instance_client.get(
             project=self.config.project_id,
             zone=self.config.zone,
             instance=instance_name,
+        )
+
+        return VMInstanceView(
+            id=gcp_instance.id,
+            name=gcp_instance.name,
+            status=VMState.RUNNING
+            if gcp_instance.status == "RUNNING"
+            else VMState.STOPPED,
         )
 
     def get_logs_url(self, deployment: "PipelineDeployment") -> Optional[str]:
@@ -407,13 +402,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         Returns:
             A string URL.
         """
-        instance_name = self.get_instance_name(deployment)
-        instance_client = compute_v1.InstancesClient()
-        return instance_client.get(
-            project=self.config.project_id,
-            zone=self.config.zone,
-            instance=instance_name,
-        )
+        return None
 
     def stream_logs(
         self,

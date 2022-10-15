@@ -32,7 +32,10 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple, cast
 
 from pydantic import BaseModel
 
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.constants import (
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
+    SHOULD_PREVENT_PIPELINE_EXECUTION,
+)
 from zenml.entrypoints.pipeline_entrypoint_configuration import (
     PipelineEntrypointConfiguration,
 )
@@ -133,12 +136,17 @@ class BaseVMOrchestrator(BaseOrchestrator):
             custom_validation_function=_validate,
         )
 
-    @property
-    def is_running(self) -> bool:
-        """Returns True if the orchestrator is running
-        a pipeline, else False.
+    def is_running(self, deployment: "PipelineDeployment") -> bool:
+        """Check whether pipeline is running or not.
+
+        Args:
+            deployment: Deployment of the pipeline.
+
+        Returns:
+            Returns True if the orchestrator is running
+            a pipeline, else False.
         """
-        instance = self.get_instance()
+        instance = self.get_instance(deployment)
         return instance.status == VMState.RUNNING
 
     @abstractmethod
@@ -230,6 +238,10 @@ class BaseVMOrchestrator(BaseOrchestrator):
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook environment.
         """
+        # Prevent execution of nested pipelines which might lead to unexpected
+        # behavior
+        SHOULD_PREVENT_PIPELINE_EXECUTION = True
+
         # First check whether the code running in a notebook
         if Environment.in_notebook():
             raise RuntimeError(
@@ -272,7 +284,7 @@ class BaseVMOrchestrator(BaseOrchestrator):
 
         try:
             # While VM is running, stream the logs
-            while self.is_running:
+            while self.is_running(deployment):
                 self.stream_logs(
                     deployment=deployment,
                     seconds_before=STREAM_LOGS_POLLING_INTERVAL_SECS,
