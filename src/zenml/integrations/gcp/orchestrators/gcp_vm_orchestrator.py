@@ -223,6 +223,19 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         boot_disk.boot = boot
         return boot_disk
 
+    def get_instance_name(deployment: "PipelineDeployment") -> str:
+        """From pipeline deployment, get name of launched instance.
+
+        Args:
+            deployment: Deployment of the pipeline.
+
+        Returns:
+            Name of the instance.
+        """
+        return GCPVMOrchestrator.sanitize_gcp_vm_name(
+            "zenml-" + deployment.run_name
+        )
+
     def launch_instance(
         self,
         deployment: "PipelineDeployment",
@@ -253,9 +266,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         # Get the c_params
         c_params = " ".join(command + arguments)
 
-        instance_name = GCPVMOrchestrator.sanitize_gcp_vm_name(
-            "zenml-" + deployment.run_name
-        )
+        instance_name = self.get_instance_name(deployment)
 
         image = GCPVMOrchestrator.get_image_from_family(
             "gce-uefi-images", family="cos-69-lts"
@@ -370,33 +381,56 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
             instance=instance_name,
         )
 
-    def get_instance(
-        self, deployment: "PipelineDeployment", **kwargs: Any
-    ) -> VMInstanceView:
-        """Returns the launched instance"""
-        pass
+    def get_instance(self, deployment: "PipelineDeployment") -> VMInstanceView:
+        """Returns the launched instance.
 
-    def get_logs_url(
-        self, deployment: "PipelineDeployment", **kwargs: Any
-    ) -> Optional[str]:
-        """Returns the logs url if instance is running."""
+        Args:
+            deployment: Deployment of the pipeline.
+
+        Returns:
+            A `VMInstanceView` with metadata of launched VM.
+        """
+        instance_name = self.get_instance_name(deployment)
         instance_client = compute_v1.InstancesClient()
         return instance_client.get(
-            project=project_id, zone=zone, instance=instance_name
+            project=self.config.project_id,
+            zone=self.config.zone,
+            instance=instance_name,
+        )
+
+    def get_logs_url(self, deployment: "PipelineDeployment") -> Optional[str]:
+        """Returns the logs url if instance is running.
+
+        Args:
+            deployment: Deployment of the pipeline.
+
+        Returns:
+            A string URL.
+        """
+        instance_name = self.get_instance_name(deployment)
+        instance_client = compute_v1.InstancesClient()
+        return instance_client.get(
+            project=self.config.project_id,
+            zone=self.config.zone,
+            instance=instance_name,
         )
 
     def stream_logs(
         self,
         deployment: "PipelineDeployment",
         seconds_before: int,
-        **kwargs: Any,
     ) -> None:
-        """Streams logs onto the logger"""
+        """Streams logs onto the logger
+
+        Args:
+            deployment: Deployment of the pipeline.
+            seconds_before: How many seconds before to stream logs from.
+        """
         client = google.cloud.logging.Client()
         time_format = "%Y-%m-%dT%H:%M:%S.%fZ"
         before = datetime.now(timezone.utc) - timedelta(seconds=seconds_before)
         filter_str = (
-            f'logName="projects/{project_id}/logs/gcplogs-docker-driver"'
+            f'logName="projects/{self.config.project_id}/logs/gcplogs-docker-driver"'
             f' AND timestamp>="{before.strftime(time_format)}"'
         )
         # query and print all matching logs

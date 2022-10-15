@@ -148,7 +148,6 @@ class BaseVMOrchestrator(BaseOrchestrator):
         image_name: str,
         command: str,
         arguments: str,
-        **kwargs: Any,
     ) -> VMInstanceView:
         """Defines launching a VM.
 
@@ -163,28 +162,39 @@ class BaseVMOrchestrator(BaseOrchestrator):
         """
 
     @abstractmethod
-    def get_instance(
-        self, deployment: "PipelineDeployment", **kwargs: Any
-    ) -> VMInstanceView:
-        """Returns the launched instance"""
-        pass
+    def get_instance(self, deployment: "PipelineDeployment") -> VMInstanceView:
+        """Returns the launched instance.
+
+        Args:
+            deployment: Deployment of the pipeline.
+
+        Returns:
+            A `VMInstanceView` with metadata of launched VM.
+        """
 
     @abstractmethod
-    def get_logs_url(
-        self, deployment: "PipelineDeployment", **kwargs: Any
-    ) -> Optional[str]:
-        """Returns the logs url if instance is running."""
-        pass
+    def get_logs_url(self, deployment: "PipelineDeployment") -> Optional[str]:
+        """Returns the logs url if instance is running.
+
+        Args:
+            deployment: Deployment of the pipeline.
+
+        Returns:
+            A string URL.
+        """
 
     @abstractmethod
     def stream_logs(
         self,
         deployment: "PipelineDeployment",
         seconds_before: int,
-        **kwargs: Any,
     ) -> None:
-        """Streams logs onto the logger"""
-        pass
+        """Streams logs onto the logger
+
+        Args:
+            deployment: Deployment of the pipeline.
+            seconds_before: How many seconds before to stream logs from.
+        """
 
     def prepare_pipeline_deployment(
         self,
