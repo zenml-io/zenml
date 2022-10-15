@@ -170,7 +170,7 @@ def register_secrets_manager_subcommands() -> None:
         elif name == "name":
             error("Secret names cannot be named 'name'.")
 
-        from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
+        from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE
 
         if secret_schema_type != ARBITRARY_SECRET_SCHEMA_TYPE:
             warning(
