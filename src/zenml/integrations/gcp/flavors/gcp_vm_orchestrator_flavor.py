@@ -33,71 +33,43 @@ class GCPVMOrchestratorConfig(
     """Configuration for the VM orchestrator.
 
     Attributes:
-        project: GCP project name. If `None`, the project will be inferred from
-            the environment.
-        location: Name of GCP region where the pipeline job will be executed.
-            VM AI Pipelines is available in the following regions:
-            https://cloud.google.com/vertex-ai/docs/general/locations#feature
-            -availability
-        labels: Labels to assign to the pipeline job.
-        pipeline_root: a Cloud Storage URI that will be used by the VM AI
-            Pipelines. If not provided but the artifact store in the stack used
-            to execute the pipeline is a
-            `zenml.integrations.gcp.artifact_stores.GCPArtifactStore`,
-            then a subdirectory of the artifact store will be used.
-        encryption_spec_key_name: The Cloud KMS resource identifier of the
-            customer managed encryption key used to protect the job. Has the form:
-            `projects/<PRJCT>/locations/<REGION>/keyRings/<KR>/cryptoKeys/<KEY>`
-            . The key needs to be in the same region as where the compute
-            resource is created.
-        workload_service_account: the service account for workload run-as
-            account. Users submitting jobs must have act-as permission on this
-            run-as account.
-            If not provided, the default service account will be used.
-        network: the full name of the Compute Engine Network to which the job
-            should be peered. For example, `projects/12345/global/networks/myVPC`
-            If not provided, the job will not be peered with any network.
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on VM AI Pipelines
-            service.
-        cpu_limit: The maximum CPU limit for this operator. This string value
-            can be a number (integer value for number of CPUs) as string,
-            or a number followed by "m", which means 1/1000. You can specify
-            at most 96 CPUs.
-            (see. https://cloud.google.com/vertex-ai/docs/pipelines/machine-types)
-        memory_limit: The maximum memory limit for this operator. This string
-            value can be a number, or a number followed by "K" (kilobyte),
-            "M" (megabyte), or "G" (gigabyte). At most 624GB is supported.
-        node_selector_constraint: Each constraint is a key-value pair label.
-            For the container to be eligible to run on a node, the node must have
-            each of the constraints appeared as labels.
-            For example a GPU type can be providing by one of the following tuples:
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_A100")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_K80")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P4")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P100")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_T4")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_V100")
-            Hint: the selected region (location) must provide the requested accelerator
-            (see https://cloud.google.com/compute/docs/gpus/gpu-regions-zones).
-        gpu_limit: The GPU limit (positive number) for the operator.
-            For more information about GPU resources, see:
-            https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus
+        project_id: project ID or project number of the Cloud project you want to use.
+        zone: name of the zone to create the instance in. For example: "us-west3-b"
+        instance_name: name of the new virtual machine (VM) instance.
+        disks: a list of compute_v1.AttachedDisk objects describing the disks
+            you want to attach to your new instance.
+        network_link: name of the network you want the new instance to use.
+            For example: "global/networks/default" represents the network
+            named "default", which is created automatically for each project.
+        subnetwork_link: name of the subnetwork you want the new instance to use.
+            This value uses the following format:
+            "regions/{region}/subnetworks/{subnetwork_name}"
+        internal_ip: internal IP address you want to assign to the new instance.
+            By default, a free address from the pool of available internal IP addresses of
+            used subnet will be used.
+        external_access: boolean flag indicating if the instance should have an external IPv4
+            address assigned.
+        external_ipv4: external IPv4 address to be assigned to this instance. If you specify
+            an external IP address, it must live in the same region as the zone of the instance.
+            This setting requires `external_access` to be set to True to work.
+        custom_hostname: Custom hostname of the new VM instance.
+            Custom hostnames must conform to RFC 1035 requirements for valid hostnames.
+        delete_protection: boolean value indicating if the new virtual machine should be
+            protected against deletion or not.
+        disk_size_gb: int value indicating size of attached disk in GB.
     """
 
-    project: Optional[str] = None
-    location: str
-    pipeline_root: Optional[str] = None
-    labels: Dict[str, str] = {}
-    encryption_spec_key_name: Optional[str] = None
-    workload_service_account: Optional[str] = None
-    network: Optional[str] = None
-    synchronous: bool = False
-
-    cpu_limit: Optional[str] = None
-    memory_limit: Optional[str] = None
-    node_selector_constraint: Optional[Tuple[str, str]] = None
-    gpu_limit: Optional[int] = None
+    project_id: str
+    zone: str
+    instance_name: str
+    network_link: str = "global/networks/default"
+    subnetwork_link: str = None
+    internal_ip: str = None
+    external_access: bool = False
+    external_ipv4: str = None
+    custom_hostname: str = None
+    delete_protection: bool = False
+    disk_size_gb: int = 10
 
     @property
     def is_remote(self) -> bool:
@@ -117,10 +89,18 @@ class GCPVMOrchestratorSettings(BaseSettings):
     """Settings for the GCP VM Orchestrator.
 
     Attributes:
-        run_name: The Wandb run name.
-        tags: Tags for the Wandb run.
-        settings: Settings for the Wandb run.
+        machine_type: machine type of the VM being created. This value uses the
+            following format: "zones/{zone}/machineTypes/{type_name}".
+            For example: "zones/europe-west3-c/machineTypes/f1-micro"
+        accelerators: a list of AcceleratorConfig objects describing the accelerators that will
+            be attached to the new instance.
+        preemptible: boolean value indicating if the new instance should be preemptible
+            or not.
     """
+
+    machine_type: str = "n1-standard-1"
+    accelerators: List[compute_v1.AcceleratorConfig] = None
+    preemptible: bool = False
 
 
 class GCPVMOrchestratorFlavor(BaseOrchestratorFlavor):

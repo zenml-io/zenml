@@ -48,6 +48,7 @@ from google.cloud import compute_v1
 from zenml.integrations.gcp import GCP_VM_ORCHESTRATOR_FLAVOR
 from zenml.integrations.gcp.flavors.gcp_vm_orchestrator_flavor import (
     GCPVMOrchestratorConfig,
+    GCPVMOrchestratorSettings,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
@@ -57,6 +58,9 @@ from zenml.orchestrators.vm_orchestrator.base_vm_orchestrator import (
     BaseVMOrchestrator,
     VMInstanceView,
 )
+
+if TYPE_CHECKING:
+    from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
 
@@ -76,7 +80,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         return cast(GCPVMOrchestratorConfig, self._config)
 
     @staticmethod
-    def _wait_for_extended_operation(
+    def wait_for_extended_operation(
         cls,
         operation: ExtendedOperation,
         verbose_name: str = "operation",
@@ -151,7 +155,9 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         operation = instance_client.delete(
             project=project_id, zone=zone, instance=machine_name
         )
-        wait_for_extended_operation(operation, "instance deletion")
+        GCPVMOrchestrator.wait_for_extended_operation(
+            operation, "instance deletion"
+        )
         logger.info(f"Instance {machine_name} deleted.")
         return
 
@@ -218,58 +224,46 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         return boot_disk
 
     def launch_instance(
-        self, image_name: str, command: str, arguments: str
+        self,
+        deployment: "PipelineDeployment",
+        image_name: str,
+        command: str,
+        arguments: str,
     ) -> VMInstanceView:
         """Send an instance creation request to the Compute Engine API and wait
         for it to complete.
 
         Args:
-            image_name: The docker image to run when VM starts.
-            c_params: The params to run the docker image with.
-            project_id: project ID or project number of the Cloud project you want to use.
-            zone: name of the zone to create the instance in. For example: "us-west3-b"
-            instance_name: name of the new virtual machine (VM) instance.
-            disks: a list of compute_v1.AttachedDisk objects describing the disks
-                you want to attach to your new instance.
-            machine_type: machine type of the VM being created. This value uses the
-                following format: "zones/{zone}/machineTypes/{type_name}".
-                For example: "zones/europe-west3-c/machineTypes/f1-micro"
-            network_link: name of the network you want the new instance to use.
-                For example: "global/networks/default" represents the network
-                named "default", which is created automatically for each project.
-            subnetwork_link: name of the subnetwork you want the new instance to use.
-                This value uses the following format:
-                "regions/{region}/subnetworks/{subnetwork_name}"
-            internal_ip: internal IP address you want to assign to the new instance.
-                By default, a free address from the pool of available internal IP addresses of
-                used subnet will be used.
-            external_access: boolean flag indicating if the instance should have an external IPv4
-                address assigned.
-            external_ipv4: external IPv4 address to be assigned to this instance. If you specify
-                an external IP address, it must live in the same region as the zone of the instance.
-                This setting requires `external_access` to be set to True to work.
-            accelerators: a list of AcceleratorConfig objects describing the accelerators that will
-                be attached to the new instance.
-            preemptible: boolean value indicating if the new instance should be preemptible
-                or not.
-            custom_hostname: Custom hostname of the new VM instance.
-                Custom hostnames must conform to RFC 1035 requirements for valid hostnames.
-            delete_protection: boolean value indicating if the new virtual machine should be
-                protected against deletion or not.
+            deployment: Deployment of the pipeline.
+            image_name: Name of image to be run on VM startup.
+            command: Command to be run on VM startup.
+            arguments: Arguments to be added to command on VM startup.
 
         Returns:
             A `VMInstanceView` with metadata of launched VM.
         """
+        # Get settings
+        settings = cast(
+            Optional[GCPVMOrchestratorSettings],
+            self.get_settings(deployment) or GCPVMOrchestratorSettings(),
+        )
+
         instance_client = compute_v1.InstancesClient()
 
         # Get the c_params
         c_params = " ".join(command + arguments)
 
-        image = get_image_from_family("gce-uefi-images", family="cos-69-lts")
+        instance_name = GCPVMOrchestrator.sanitize_gcp_vm_name(
+            "zenml-" + deployment.run_name
+        )
 
-        disk = disk_from_image(
+        image = GCPVMOrchestrator.get_image_from_family(
+            "gce-uefi-images", family="cos-69-lts"
+        )
+
+        disk = GCPVMOrchestrator.disk_from_image(
             f"zones/{self.zone}/diskTypes/pd-ssd",
-            disk_size_gb=10,
+            disk_size_gb=self.config.disk_size_gb,
             boot=True,
             source_image=f"projects/gce-uefi-images/global/images/{image.name}",
             auto_delete=True,
@@ -277,35 +271,37 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
 
         # Use the network interface provided in the network_link argument.
         network_interface = compute_v1.NetworkInterface()
-        network_interface.name = network_link
-        if subnetwork_link:
-            network_interface.subnetwork = subnetwork_link
+        network_interface.name = self.config.network_link
+        if self.config.subnetwork_link:
+            network_interface.subnetwork = self.config.subnetwork_link
 
-        if internal_ip:
-            network_interface.network_i_p = internal_ip
+        if self.config.internal_ip:
+            network_interface.network_i_p = self.config.internal_ip
 
-        if external_access:
+        if self.config.external_access:
             access = compute_v1.AccessConfig()
             access.type_ = compute_v1.AccessConfig.Type.ONE_TO_ONE_NAT.name
             access.name = "External NAT"
             access.network_tier = access.NetworkTier.PREMIUM.name
-            if external_ipv4:
-                access.nat_i_p = external_ipv4
+            if self.config.external_ipv4:
+                access.nat_i_p = self.config.external_ipv4
             network_interface.access_configs = [access]
 
         # Collect information into the Instance object.
         instance = compute_v1.Instance()
-        instance.name = sanitize_gcp_vm_name("zenml-" + step.name)
+        instance.name = instance_name
         instance.disks = [disk]
         if re.match(
-            r"^zones/[a-z\d\-]+/machineTypes/[a-z\d\-]+$", machine_type
+            r"^zones/[a-z\d\-]+/machineTypes/[a-z\d\-]+$", settings.machine_type
         ):
-            instance.machine_type = machine_type
+            instance.machine_type = settings.machine_type
         else:
-            instance.machine_type = f"zones/{zone}/machineTypes/{machine_type}"
+            instance.machine_type = (
+                f"zones/{self.config.zone}/machineTypes/{settings.machine_type}"
+            )
 
-        if accelerators:
-            instance.guest_accelerators = accelerators
+        if settings.accelerators:
+            instance.guest_accelerators = settings.accelerators
 
         instance.network_interfaces = [network_interface]
 
@@ -338,48 +334,63 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
             }
         ]
 
-        if preemptible:
+        if settings.preemptible:
             # Set the preemptible setting
             instance.scheduling = compute_v1.Scheduling()
             instance.scheduling.preemptible = True
 
-        if custom_hostname is not None:
+        if self.config.custom_hostname is not None:
             # Set the custom hostname for the instance
-            instance.hostname = custom_hostname
+            instance.hostname = self.config.custom_hostname
 
-        if delete_protection:
+        if self.config.delete_protection:
             # Set the delete protection bit
             instance.deletion_protection = True
 
         # Prepare the request to insert an instance.
         request = compute_v1.InsertInstanceRequest()
-        request.zone = zone
-        request.project = project_id
+        request.zone = self.config.zone
+        request.project = self.config.project_id
         request.instance_resource = instance
 
         # Wait for the create operation to complete.
-        logger.info(f"Creating the {instance_name} instance in {zone}...")
+        logger.info(
+            f"Creating the {instance_name} instance in {self.config.zone}..."
+        )
 
         operation = instance_client.insert(request=request)
 
-        wait_for_extended_operation(operation, "instance creation")
-
-        return instance_client.get(
-            project=project_id, zone=zone, instance=instance_name
+        GCPVMOrchestrator.wait_for_extended_operation(
+            operation, "instance creation"
         )
 
-    def get_instance(self, **kwargs: Any) -> VMInstanceView:
+        return instance_client.get(
+            project=self.config.project_id,
+            zone=self.config.zone,
+            instance=instance_name,
+        )
+
+    def get_instance(
+        self, deployment: "PipelineDeployment", **kwargs: Any
+    ) -> VMInstanceView:
         """Returns the launched instance"""
         pass
 
-    def get_logs_url(self, **kwargs: Any) -> Optional[str]:
+    def get_logs_url(
+        self, deployment: "PipelineDeployment", **kwargs: Any
+    ) -> Optional[str]:
         """Returns the logs url if instance is running."""
         instance_client = compute_v1.InstancesClient()
         return instance_client.get(
             project=project_id, zone=zone, instance=instance_name
         )
 
-    def stream_logs(self, seconds_before: int, **kwargs: Any) -> None:
+    def stream_logs(
+        self,
+        deployment: "PipelineDeployment",
+        seconds_before: int,
+        **kwargs: Any,
+    ) -> None:
         """Streams logs onto the logger"""
         client = google.cloud.logging.Client()
         time_format = "%Y-%m-%dT%H:%M:%S.%fZ"

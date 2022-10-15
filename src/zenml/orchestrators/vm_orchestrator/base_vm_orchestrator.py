@@ -143,26 +143,46 @@ class BaseVMOrchestrator(BaseOrchestrator):
 
     @abstractmethod
     def launch_instance(
-        self, image_name: str, command: str, arguments: str, **kwargs: Any
+        self,
+        deployment: "PipelineDeployment",
+        image_name: str,
+        command: str,
+        arguments: str,
+        **kwargs: Any,
     ) -> VMInstanceView:
         """Defines launching a VM.
+
+        Args:
+            deployment: Deployment of the pipeline.
+            image_name: Name of image to be run on VM startup.
+            command: Command to be run on VM startup.
+            arguments: Arguments to be added to command on VM startup.
 
         Returns:
             A `VMInstanceView` with metadata of launched VM.
         """
 
     @abstractmethod
-    def get_instance(self, **kwargs: Any) -> VMInstanceView:
+    def get_instance(
+        self, deployment: "PipelineDeployment", **kwargs: Any
+    ) -> VMInstanceView:
         """Returns the launched instance"""
         pass
 
     @abstractmethod
-    def get_logs_url(self, **kwargs: Any) -> Optional[str]:
+    def get_logs_url(
+        self, deployment: "PipelineDeployment", **kwargs: Any
+    ) -> Optional[str]:
         """Returns the logs url if instance is running."""
         pass
 
     @abstractmethod
-    def stream_logs(self, seconds_before: int, **kwargs: Any) -> None:
+    def stream_logs(
+        self,
+        deployment: "PipelineDeployment",
+        seconds_before: int,
+        **kwargs: Any,
+    ) -> None:
         """Streams logs onto the logger"""
         pass
 
@@ -225,7 +245,10 @@ class BaseVMOrchestrator(BaseOrchestrator):
 
         # Launch the instance
         instance = self.launch_instance(
-            image_name=image_name, command=command, arguments=arguments
+            deployment=deployment,
+            image_name=image_name,
+            command=command,
+            arguments=arguments,
         )
 
         # Resolve the logs url
@@ -233,7 +256,7 @@ class BaseVMOrchestrator(BaseOrchestrator):
             f"Instance {instance.name} is now running the pipeline. "
             "Logs will be streamed soon. "
         )
-        logs_url = self.get_logs_url()
+        logs_url = self.get_logs_url(deployment)
         if logs_url:
             logger.info(f"You can also view the logs directly at: {logs_url}")
 
@@ -241,11 +264,13 @@ class BaseVMOrchestrator(BaseOrchestrator):
             # While VM is running, stream the logs
             while self.is_running:
                 self.stream_logs(
-                    seconds_before=STREAM_LOGS_POLLING_INTERVAL_SECS
+                    deployment=deployment,
+                    seconds_before=STREAM_LOGS_POLLING_INTERVAL_SECS,
                 )
                 time.sleep(STREAM_LOGS_POLLING_INTERVAL_SECS)
             self.stream_logs(
-                seconds_before=STREAM_LOGS_POLLING_INTERVAL_SECS * 2
+                deployment=deployment,
+                seconds_before=STREAM_LOGS_POLLING_INTERVAL_SECS * 2,
             )
         except KeyboardInterrupt:
             logger.info("Keyboard interupt detected! Exiting logs streaming.")
