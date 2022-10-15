@@ -258,7 +258,7 @@ module = [
     "model_archiver.*",
     "kfp_tekton.*",
     "mlflow.*",
-    "python-terraform.*"
+    "python_terraform.*"
 ]
 ignore_missing_imports = true
 
