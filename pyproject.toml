@@ -257,7 +257,8 @@ module = [
     "azure-keyvault-keys.*",
     "model_archiver.*",
     "kfp_tekton.*",
-    "mlflow.*"
+    "mlflow.*",
+    "python-terraform.*"
 ]
 ignore_missing_imports = true
 
