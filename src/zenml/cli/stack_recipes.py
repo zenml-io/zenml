@@ -975,7 +975,7 @@ def destroy(
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
-    import python_terraform  # type:ignore[import]
+    import python_terraform
 
     cli_utils.warning(ALPHA_MESSAGE)
 

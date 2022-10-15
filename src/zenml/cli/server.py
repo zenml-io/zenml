@@ -184,7 +184,6 @@ def up(
 
     assert gc.store is not None
 
-
     track_event(
         AnalyticsEvent.ZENML_SERVER_STARTED,
         metadata={
