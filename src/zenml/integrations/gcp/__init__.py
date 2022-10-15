@@ -61,7 +61,7 @@ class GcpIntegration(Integration):
         from zenml.integrations.gcp.flavors import (
             GCPArtifactStoreFlavor,
             GCPSecretsManagerFlavor,
-            GcpVMOrchestratorFlavor,
+            GCPVMOrchestratorFlavor,
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
         )
@@ -69,7 +69,7 @@ class GcpIntegration(Integration):
         return [
             GCPArtifactStoreFlavor,
             GCPSecretsManagerFlavor,
-            GcpVMOrchestratorFlavor,
+            GCPVMOrchestratorFlavor,
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
         ]

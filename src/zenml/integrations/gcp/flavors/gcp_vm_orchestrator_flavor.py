@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.gcp import GCP_VM_ORCHESTRATOR_FLAVOR
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
     from zenml.integrations.gcp.orchestrators import GCPVMOrchestrator
 
 
-class GcpVMOrchestratorConfig(
+class GCPVMOrchestratorConfig(
     BaseOrchestratorConfig,
     GoogleCredentialsConfigMixin,
 ):
@@ -112,7 +113,17 @@ class GcpVMOrchestratorConfig(
         return True
 
 
-class GcpVMOrchestratorFlavor(BaseOrchestratorFlavor):
+class GCPVMOrchestratorSettings(BaseSettings):
+    """Settings for the GCP VM Orchestrator.
+
+    Attributes:
+        run_name: The Wandb run name.
+        tags: Tags for the Wandb run.
+        settings: Settings for the Wandb run.
+    """
+
+
+class GCPVMOrchestratorFlavor(BaseOrchestratorFlavor):
     """VM Orchestrator flavor."""
 
     @property
@@ -125,13 +136,22 @@ class GcpVMOrchestratorFlavor(BaseOrchestratorFlavor):
         return GCP_VM_ORCHESTRATOR_FLAVOR
 
     @property
-    def config_class(self) -> Type[GcpVMOrchestratorConfig]:
-        """Returns GcpVMOrchestratorConfig config class.
+    def config_class(self) -> Type[GCPVMOrchestratorConfig]:
+        """Returns GCPVMOrchestratorConfig config class.
 
         Returns:
                 The config class.
         """
-        return GcpVMOrchestratorConfig
+        return GCPVMOrchestratorConfig
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """settings class for the GCP VM orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return GCPVMOrchestratorSettings
 
     @property
     def implementation_class(self) -> Type["GCPVMOrchestrator"]:
@@ -140,6 +160,6 @@ class GcpVMOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             Implementation class for this flavor.
         """
-        from zenml.integrations.gcp.orchestrators import VMOrchestrator
+        from zenml.integrations.gcp.orchestrators import GCPVMOrchestrator
 
-        return VMOrchestrator
+        return GCPVMOrchestrator

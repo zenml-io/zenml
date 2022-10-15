@@ -26,31 +26,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
 import time
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Tuple, cast
 
 from pydantic import BaseModel
 
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.entrypoints.pipeline_entrypoint_configuration import (
+    PipelineEntrypointConfiguration,
+)
 from zenml.enums import StackComponentType, VMState
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.vm_orchestrator.base_entrypoint_configuration import (
-    VMEntrypointConfiguration,
-)
-from zenml.repository import Repository
 from zenml.stack import Stack, StackComponentConfig, StackValidator
-from zenml.utils.docker_utils import get_image_digest
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
-from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
-    from zenml.pipelines.base_pipeline import BasePipeline
-    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -73,13 +67,13 @@ class BaseVMOrchestrator(BaseOrchestrator):
     """Base VM orchestrator interface for all VM-based orchestrators."""
 
     @property
-    def config(self) -> VMEntrypointConfiguration:
-        """Returns the `GCPVMEntrypointConfiguration` config.
+    def config(self) -> PipelineEntrypointConfiguration:
+        """Returns the `PipelineEntrypointConfiguration` config.
 
         Returns:
             The configuration.
         """
-        return cast(VMEntrypointConfiguration, self._config)
+        return cast(PipelineEntrypointConfiguration, self._config)
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -149,7 +143,7 @@ class BaseVMOrchestrator(BaseOrchestrator):
 
     @abstractmethod
     def launch_instance(
-        image_name: str, command: str, arguments: str, **kwargs: Any
+        self, image_name: str, command: str, arguments: str, **kwargs: Any
     ) -> VMInstanceView:
         """Defines launching a VM.
 
@@ -157,15 +151,18 @@ class BaseVMOrchestrator(BaseOrchestrator):
             A `VMInstanceView` with metadata of launched VM.
         """
 
-    def get_instance(**kwargs: Any) -> VMInstanceView:
+    @abstractmethod
+    def get_instance(self, **kwargs: Any) -> VMInstanceView:
         """Returns the launched instance"""
         pass
 
-    def get_logs_url(**kwargs: Any) -> Optional[str]:
+    @abstractmethod
+    def get_logs_url(self, **kwargs: Any) -> Optional[str]:
         """Returns the logs url if instance is running."""
         pass
 
-    def stream_logs(seconds_before: int, **kwargs: Any):
+    @abstractmethod
+    def stream_logs(self, seconds_before: int, **kwargs: Any) -> None:
         """Streams logs onto the logger"""
         pass
 
@@ -223,11 +220,8 @@ class BaseVMOrchestrator(BaseOrchestrator):
 
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
-        command = VMEntrypointConfiguration.get_entrypoint_command()
-        arguments = VMEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=step_name,
-            **{RUN_NAME_OPTION: run_name},
-        )
+        command = PipelineEntrypointConfiguration.get_entrypoint_command()
+        arguments = PipelineEntrypointConfiguration.get_entrypoint_arguments()
 
         # Launch the instance
         instance = self.launch_instance(
@@ -236,7 +230,7 @@ class BaseVMOrchestrator(BaseOrchestrator):
 
         # Resolve the logs url
         logger.info(
-            f"Instance {instance.id} is now running the pipeline. "
+            f"Instance {instance.name} is now running the pipeline. "
             "Logs will be streamed soon. "
         )
         logs_url = self.get_logs_url()
@@ -254,6 +248,6 @@ class BaseVMOrchestrator(BaseOrchestrator):
                 seconds_before=STREAM_LOGS_POLLING_INTERVAL_SECS * 2
             )
         except KeyboardInterrupt:
-            logger.info(f"Keyboard interupt detected! Exiting logs streaming.")
+            logger.info("Keyboard interupt detected! Exiting logs streaming.")
             if logs_url:
                 logger.info(f"Please view logs directly at {logs_url}")
