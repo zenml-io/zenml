@@ -490,7 +490,7 @@ def status() -> None:
     if client.root:
         cli_utils.declare(f"Active repository root: {client.root}")
     if store_cfg is not None:
-        if store_cfg == gc.get_default_store():
+        if gc.uses_default_store():
             cli_utils.declare(f"Using the local database ('{store_cfg.url}')")
         else:
             cli_utils.declare(f"Connected to a ZenML server: '{store_cfg.url}'")
