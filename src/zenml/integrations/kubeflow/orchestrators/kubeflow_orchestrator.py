@@ -46,7 +46,10 @@ from zenml.artifact_stores import LocalArtifactStore
 from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.constants import (
+    ENV_ZENML_LOCAL_STORES_PATH,
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
+)
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import ProvisioningError
@@ -372,9 +375,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
             container_op: The kubeflow container operation to configure.
             is_scheduled_run: Whether the pipeline is scheduled or a single run.
             settings: Optional orchestrator settings for this step.
-
-        Raises:
-            ValueError: If the local path is not in the global config directory.
         """
         # Path to a metadata file that will be displayed in the KFP UI
         # This metadata file needs to be in a mounted emptyDir to avoid
@@ -393,34 +393,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
         }
 
         stack = Client().active_stack
-        local_stores_path = GlobalConfiguration().local_stores_path
 
-        # go through all stack components and identify those that advertise
-        # a local path where they persist information that they need to be
-        # available when running pipelines.
-        has_local_paths = False
-        for stack_comp in stack.components.values():
-            local_path = stack_comp.local_path
-            if not local_path:
-                continue
-            # double-check this convention, just in case it wasn't respected
-            # as documented in `StackComponent.local_path`
-            if not local_path.startswith(local_stores_path):
-                raise ValueError(
-                    f"Local path {local_path} for component "
-                    f"{stack_comp.name} is not in the local stores "
-                    f"directory ({local_stores_path})."
-                )
-            has_local_paths = True
-            logger.debug(
-                "The host path for %s %s (path: %s) will be mounted "
-                "in the kubeflow pipelines container.",
-                stack_comp.type.value,
-                stack_comp.name,
-                local_path,
-            )
+        if self.is_local:
+            stack.check_local_paths()
 
-        if has_local_paths or self.is_local:
+            local_stores_path = GlobalConfiguration().local_stores_path
+
             host_path = k8s_client.V1HostPathVolumeSource(
                 path=local_stores_path, type="Directory"
             )
@@ -454,6 +432,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     "Setting security context UID and GID to local user/group "
                     "in kubeflow pipelines container."
                 )
+
+            container_op.container.add_env_variable(
+                k8s_client.V1EnvVar(
+                    name=ENV_ZENML_LOCAL_STORES_PATH,
+                    value=local_stores_path,
+                )
+            )
 
         container_op.add_pvolumes(volumes)
 
