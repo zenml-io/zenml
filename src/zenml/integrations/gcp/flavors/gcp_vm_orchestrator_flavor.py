@@ -66,7 +66,7 @@ class GCPVMOrchestratorConfig(
     network_link: str = "global/networks/default"
     subnetwork_link: Optional[str] = None
     internal_ip: Optional[str] = None
-    external_access: bool = False
+    external_access: bool = True  # unused and deprecated
     external_ipv4: Optional[str] = None
     custom_hostname: Optional[str] = None
     delete_protection: bool = False

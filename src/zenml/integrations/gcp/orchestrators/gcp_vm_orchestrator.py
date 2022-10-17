@@ -280,14 +280,14 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         if self.config.internal_ip:
             network_interface.network_i_p = self.config.internal_ip
 
-        if self.config.external_access:
-            access = compute_v1.AccessConfig()
-            access.type_ = compute_v1.AccessConfig.Type.ONE_TO_ONE_NAT.name
-            access.name = "External NAT"
-            access.network_tier = access.NetworkTier.PREMIUM.name
-            if self.config.external_ipv4:
-                access.nat_i_p = self.config.external_ipv4
-            network_interface.access_configs = [access]
+        # Always allow external access
+        access = compute_v1.AccessConfig()
+        access.type_ = compute_v1.AccessConfig.Type.ONE_TO_ONE_NAT.name
+        access.name = "External NAT"
+        access.network_tier = access.NetworkTier.PREMIUM.name
+        if self.config.external_ipv4:
+            access.nat_i_p = self.config.external_ipv4
+        network_interface.access_configs = [access]
 
         # Collect information into the Instance object.
         instance = compute_v1.Instance()
