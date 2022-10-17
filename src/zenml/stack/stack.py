@@ -481,6 +481,11 @@ class Stack:
 
         Returns:
             True if the stack has local paths, False otherwise.
+
+        Raises:
+            ValueError: If the stack has local paths that do not conform to
+                the convention that all local path must be relative to the
+                local stores directory.
         """
         from zenml.config.global_config import GlobalConfiguration
 

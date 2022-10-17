@@ -336,13 +336,16 @@ class RestZenStore(BaseZenStore):
         if metadata_config_pb.HasField("sqlite") and not os.path.isfile(
             metadata_config_pb.sqlite.filename_uri
         ):
+            message = (
+                f"The ZenML server is using a SQLite database at "
+                f"{metadata_config_pb.sqlite.filename_uri} that is not "
+                f"available locally. Using the default local SQLite "
+                f"database instead."
+            )
             if not self.is_local_store():
-                logger.warning(
-                    f"The ZenML server is using a SQLite database at "
-                    f"{metadata_config_pb.sqlite.filename_uri} that is not "
-                    f"available locally. Using the default local SQLite "
-                    f"database instead."
-                )
+                logger.warning(message)
+            else:
+                logger.debug(message)
             default_store_cfg = GlobalConfiguration().get_default_store()
             assert isinstance(default_store_cfg, SqlZenStoreConfiguration)
             return default_store_cfg.get_metadata_config()
