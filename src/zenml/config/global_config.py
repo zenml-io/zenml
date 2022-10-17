@@ -261,7 +261,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             The attribute value.
         """
         value = super().__getattribute__(key)
-        if key.startswith("_"):
+        if key.startswith("_") or key not in type(self).__fields__:
             return value
 
         environment_variable_name = f"{CONFIG_ENV_VAR_PREFIX}{key.upper()}"
