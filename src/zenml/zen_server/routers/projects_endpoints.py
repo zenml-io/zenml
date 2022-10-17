@@ -535,12 +535,12 @@ def create_pipeline_run(
     Returns:
         The created pipeline run.
     """
-    project = zen_store.get_project(project_name_or_id)
+    project = zen_store().get_project(project_name_or_id)
     pipeline_run_model = pipeline_run.to_model(
         project=project.id,
         user=auth_context.user.id,
     )
-    return zen_store.create_run(pipeline_run=pipeline_run_model)
+    return zen_store().create_run(pipeline_run=pipeline_run_model)
 
 
 @router.get(

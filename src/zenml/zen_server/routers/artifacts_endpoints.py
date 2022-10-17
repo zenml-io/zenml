@@ -65,4 +65,4 @@ def create_artifact(step: ArtifactModel) -> ArtifactModel:
     Returns:
         The created artifact.
     """
-    return zen_store.create_artifact(step)
+    return zen_store().create_artifact(step)

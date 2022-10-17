@@ -57,7 +57,7 @@ def list_run_steps(
     Returns:
         The run steps according to query filters.
     """
-    return zen_store.list_run_steps(run_id=run_id)
+    return zen_store().list_run_steps(run_id=run_id)
 
 
 @router.post(
@@ -75,7 +75,7 @@ def create_run_step(step: StepRunModel) -> StepRunModel:
     Returns:
         The created run step.
     """
-    return zen_store.create_run_step(step=step)
+    return zen_store().create_run_step(step=step)
 
 
 @router.get(
