@@ -22,6 +22,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories
+from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.utils.uuid_utils import is_valid_uuid
 
@@ -184,19 +185,53 @@ def import_pipeline_runs(filename: str) -> None:
     """
     cli_utils.print_active_config()
     client = Client()
-    client.import_pipeline_runs(filename=filename)
+    try:
+        client.import_pipeline_runs(filename=filename)
+    except EntityExistsError as err:
+        cli_utils.error(str(err))
 
 
-# TODO: support MySQL migration
 @runs.command("migrate", help="Migrate pipeline runs from a MySQl DB file.")
 @click.argument("database", type=str, required=True)
-def migrate_pipeline_runs(database: str) -> None:
+@click.option("--database_type", type=str, default="sqlite", required=False)
+@click.option("--mysql_host", type=str, required=False)
+@click.option("--mysql_port", type=int, default=3306, required=False)
+@click.option("--mysql_username", type=str, required=False)
+@click.option("--mysql_password", type=str, required=False)
+def migrate_pipeline_runs(
+    database: str,
+    database_type: str,
+    mysql_host: str,
+    mysql_port: int,
+    mysql_username: str,
+    mysql_password: str,
+) -> None:
     """Migrate pipeline runs from a metadata store of ZenML < 0.20.0.
 
     Args:
         database: The metadata store database from which to migrate the pipeline
             runs.
+        database_type: The type of the metadata store database (sqlite | mysql).
+        mysql_host: The host of the MySQL database.
+        mysql_port: The port of the MySQL database.
+        mysql_username: The username of the MySQL database.
+        mysql_password: The password of the MySQL database.
     """
     cli_utils.print_active_config()
     client = Client()
-    client.migrate_pipeline_runs(database=database)
+    try:
+        client.migrate_pipeline_runs(
+            database=database,
+            database_type=database_type,
+            mysql_host=mysql_host,
+            mysql_port=mysql_port,
+            mysql_username=mysql_username,
+            mysql_password=mysql_password,
+        )
+    except (
+        EntityExistsError,
+        NotImplementedError,
+        RuntimeError,
+        ValueError,
+    ) as err:
+        cli_utils.error(str(err))

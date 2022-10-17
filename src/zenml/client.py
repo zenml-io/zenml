@@ -1224,6 +1224,9 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             filename: The filename to export the pipeline runs to.
+
+        Raises:
+            RuntimeError: If no pipeline runs exist.
         """
         import json
 
@@ -1297,12 +1300,32 @@ class Client(metaclass=ClientMetaClass):
                     self.zen_store.create_artifact(artifact)
         logger.info(f"Imported {len(yaml_data)} pipeline runs from {filename}.")
 
-    def migrate_pipeline_runs(self, database: str) -> None:
+    def migrate_pipeline_runs(
+        self,
+        database: str,
+        database_type: str = "sqlite",
+        mysql_host: Optional[str] = None,
+        mysql_port: int = 3306,
+        mysql_username: Optional[str] = None,
+        mysql_password: Optional[str] = None,
+    ) -> None:
         """Migrate pipeline runs from a metadata store of ZenML < 0.20.0.
 
         Args:
-            database: The metadata store database from which to migrate the pipeline
-                runs.
+            database: The metadata store database from which to migrate the
+                pipeline runs.
+            database_type: The type of the metadata store database
+                ("sqlite" | "mysql"). Defaults to "sqlite".
+            mysql_host: The host of the MySQL database.
+            mysql_port: The port of the MySQL database. Defaults to 3306.
+            mysql_username: The username of the MySQL database.
+            mysql_password: The password of the MySQL database.
+
+        Raises:
+            NotImplementedError: If the database type is not supported.
+            RuntimeError: If no pipeline runs exist.
+            ValueError: If the database type is "mysql" but the MySQL host,
+                username or password are not provided.
         """
         from tfx.dsl.compiler.constants import PIPELINE_RUN_CONTEXT_TYPE_NAME
         from tfx.orchestration import metadata
@@ -1315,15 +1338,46 @@ class Client(metaclass=ClientMetaClass):
         )
         from zenml.zen_stores.metadata_store import MetadataStore
 
+        # Define MLMD connection config based on the database type.
+        if database_type == "sqlite":
+            mlmd_config = metadata.sqlite_metadata_connection_config(database)
+        elif database_type == "mysql":
+            if not mysql_host or not mysql_username or mysql_password is None:
+                raise ValueError(
+                    "Migration from MySQL requires username, password and host "
+                    "to be set."
+                )
+            mlmd_config = metadata.mysql_metadata_connection_config(
+                database=database,
+                host=mysql_host,
+                port=mysql_port,
+                username=mysql_username,
+                password=mysql_password,
+            )
+        else:
+            raise NotImplementedError(
+                "Migrating pipeline runs is only supported for SQLite and MySQL."
+            )
+
+        metadata_store = MetadataStore(config=mlmd_config, is_legacy=True)
+
+        # Dicts to keep tracks of MLMD IDs, which we need to resolve later.
         step_mlmd_id_mapping: Dict[int, UUID] = {}
         artifact_mlmd_id_mapping: Dict[int, UUID] = {}
-        mlmd_config = metadata.sqlite_metadata_connection_config(database)
-        metadata_store = MetadataStore(config=mlmd_config, is_legacy=True)
+
+        # Get all pipeline runs from the metadata store.
         pipeline_run_contexts = metadata_store.store.get_contexts_by_type(
             PIPELINE_RUN_CONTEXT_TYPE_NAME
         )
+        if not pipeline_run_contexts:
+            raise RuntimeError("No pipeline runs found in the metadata store.")
+
+        # For each run, first store the pipeline run, then all steps, then all
+        # output artifacts of each step.
+        # Runs, steps, and artifacts need to be sorted chronologically ensure
+        # that the MLMD IDs of producer steps and parent steps can be resolved.
         for pipeline_run_context in sorted(
-            pipeline_run_contexts, key=lambda x: cast(int, x.id)
+            pipeline_run_contexts, key=lambda x: int(x.id)
         ):
             steps = metadata_store.get_pipeline_run_steps(
                 pipeline_run_context.id
@@ -1390,6 +1444,7 @@ class Client(metaclass=ClientMetaClass):
                     artifact_mlmd_id_mapping[
                         mlmd_artifact.mlmd_id
                     ] = new_artifact.id
+        logger.info(f"Migrated {len(pipeline_run_contexts)} pipeline runs.")
 
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.
