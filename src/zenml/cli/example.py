@@ -21,7 +21,6 @@ from pathlib import Path
 from typing import List, Optional, cast
 
 import click
-from packaging.version import Version, parse
 from rich.markdown import Markdown
 from rich.text import Text
 
@@ -176,7 +175,7 @@ class LocalExample:
         Args:
             example_runner: Sequence of locations of executable file(s)
                             to run the example
-            force: Whether to force the install
+            force: Whether to force the installation
             prevent_stack_setup: Prevents the example from setting up a custom
                 stack.
 
@@ -333,6 +332,8 @@ class ExamplesRepo:
         Returns:
             The name of the latest release branch.
         """
+        from packaging.version import Version, parse
+
         tags = sorted(
             self.repo.tags,
             key=lambda t: t.commit.committed_datetime,  # type: ignore
@@ -459,10 +460,10 @@ class GitExamplesHandler(object):
 
     @property
     def is_matching_versions(self) -> bool:
-        """Whether the checked out examples are on the same code version as ZenML.
+        """Checks whether examples are on the same code version as ZenML.
 
         Returns:
-            Whether the checked out examples are on the same code version as ZenML.
+            Checks whether examples are on the same code version as ZenML.
         """
         return zenml_version_installed == str(self.examples_repo.active_version)
 
@@ -542,20 +543,22 @@ class GitExamplesHandler(object):
         """Pulls the latest examples from the examples repository."""
         self.pull(branch=self.examples_repo.latest_release_branch, force=True)
 
-    def copy_example(self, example: Example, destination_dir: str) -> None:
+    @staticmethod
+    def copy_example(example_: Example, destination_dir: str) -> None:
         """Copies an example to the destination_dir.
 
         Args:
-            example: The example to copy.
+            example_: The example to copy.
             destination_dir: The destination directory to copy the example to.
         """
         io_utils.create_dir_if_not_exists(destination_dir)
         io_utils.copy_dir(
-            str(example.path_in_repo), destination_dir, overwrite=True
+            str(example_.path_in_repo), destination_dir, overwrite=True
         )
 
-    def clean_current_examples(self) -> None:
-        """Deletes the ZenML examples directory from your current working directory."""
+    @staticmethod
+    def clean_current_examples() -> None:
+        """Deletes the examples directory from the current working directory."""
         examples_directory = os.path.join(os.getcwd(), "zenml_examples")
         shutil.rmtree(examples_directory)
 
@@ -608,8 +611,8 @@ def list_examples(git_examples_handler: GitExamplesHandler) -> None:
     """
     check_for_version_mismatch(git_examples_handler)
     examples = [
-        {"example_name": example.name}
-        for example in git_examples_handler.get_examples()
+        {"example_name": example_.name}
+        for example_ in git_examples_handler.get_examples()
     ]
     print_table(examples)
 
@@ -775,28 +778,28 @@ def pull(
         error(str(e))
 
     else:
-        for example in examples:
-            destination_dir = os.path.join(os.getcwd(), path, example.name)
+        for example_ in examples:
+            destination_dir = os.path.join(os.getcwd(), path, example_.name)
             if LocalExample(
-                name=example.name, path=Path(destination_dir)
+                name=example_.name, path=Path(destination_dir)
             ).is_present():
                 if force or confirmation(
-                    f"Example {example.name} is already pulled. "
+                    f"Example {example_.name} is already pulled. "
                     "Do you wish to overwrite the directory at "
                     f"{destination_dir}?"
                 ):
                     fileio.rmtree(destination_dir)
                 else:
-                    warning(f"Example {example.name} not overwritten.")
+                    warning(f"Example {example_.name} not overwritten.")
                     continue
 
-            declare(f"Pulling example {example.name}...")
+            declare(f"Pulling example {example_.name}...")
 
             io_utils.create_dir_if_not_exists(destination_dir)
-            git_examples_handler.copy_example(example, destination_dir)
+            git_examples_handler.copy_example(example_, destination_dir)
             declare(f"Example pulled in directory: {destination_dir}")
             track_event(
-                AnalyticsEvent.PULL_EXAMPLE, {"example_name": example.name}
+                AnalyticsEvent.PULL_EXAMPLE, {"example_name": example_.name}
             )
 
 

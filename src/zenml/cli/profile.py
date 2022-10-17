@@ -16,7 +16,16 @@
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, DefaultDict, Dict, Generator, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    DefaultDict,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+)
 from uuid import UUID
 
 import click
@@ -32,10 +41,11 @@ from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import EntityExistsError, ValidationError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, ProjectModel, StackModel
-from zenml.models.flavor_models import FlavorModel
 from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
+
+if TYPE_CHECKING:
+    from zenml.models import ComponentModel, StackModel
 
 logger = get_logger(__name__)
 
@@ -57,7 +67,7 @@ class LegacyComponentModel(BaseModel):
     flavor: str
     configuration: Dict[str, Any]
 
-    def to_model(self, project_id: UUID, user_id: UUID) -> ComponentModel:
+    def to_model(self, project_id: UUID, user_id: UUID) -> "ComponentModel":
         """Converts to a component model.
 
         Args:
@@ -67,6 +77,8 @@ class LegacyComponentModel(BaseModel):
         Returns:
             The component model.
         """
+        from zenml.models import ComponentModel
+
         return ComponentModel(
             name=self.name,
             type=self.type,
@@ -84,8 +96,11 @@ class LegacyStackModel(BaseModel):
     components: Dict[StackComponentType, str]
 
     def to_model(
-        self, project_id: UUID, user_id: UUID, components: List[ComponentModel]
-    ) -> StackModel:
+        self,
+        project_id: UUID,
+        user_id: UUID,
+        components: List["ComponentModel"],
+    ) -> "StackModel":
         """Converts to a stack model.
 
         Args:
@@ -96,6 +111,8 @@ class LegacyStackModel(BaseModel):
         Returns:
             The stack model.
         """
+        from zenml.models import StackModel
+
         return StackModel(
             name=self.name,
             components={c.type: [c.id] for c in components},
@@ -144,7 +161,7 @@ class LocalStore(BaseModel):
         return defaultdict(dict, stack_components)
 
     def __init__(self, config_file: str) -> None:
-        """Create a local store instance initialized from a configuration file on disk.
+        """Create a local store instance from a configuration file on disk.
 
         Args:
             config_file: configuration file path. If the file exists, the model
@@ -390,7 +407,6 @@ def find_profiles(
     Yields:
         A local profile store.
     """
-    dirs: List[str] = []
     if path is None:
         path = get_global_config_directory()
     if os.path.isdir(os.path.join(path, "profiles")):
@@ -435,8 +451,8 @@ def list_profiles(
         "alternative to profiles, you can use projects as a scoping mechanism "
         "for stacks, stack components and other ZenML objects.\n\n"
         "The information stored in legacy profiles is not automatically "
-        "migrated. You can do so manually by using the `zenml profile list` and "
-        "`zenml profile migrate` commands."
+        "migrated. You can do so manually by using the `zenml profile list` "
+        "and `zenml profile migrate` commands."
     )
     profiles_found = False
     for store in find_profiles(path):
@@ -465,8 +481,8 @@ def list_profiles(
     If your migrated stack components have configurations that are no longer
     valid, you can pass the `--skip-validation` flag to import them anyway.
     The invalid configurations can be fixed manually afterwards by using the
-    `zenml <component-type> update` and `zenml <component-type> remove-attribute`
-    commands.
+    `zenml <component-type> update` and 
+    `zenml <component-type> remove-attribute` commands.
 
     To avoid name clashes, you can specify a prefix value that will be prepended
     to the names of all migrated stacks, stack components and flavors.
@@ -495,16 +511,14 @@ def list_profiles(
 @click.option(
     "--ignore-errors",
     is_flag=True,
-    help=(
-        "Continue the migration process if an error is encountered for a "
-        "particular entry."
-    ),
+    help="Continue the migration process if an error is encountered for a "
+    "particular entry.",
     type=click.BOOL,
 )
 @click.option(
     "--skip-validation",
     is_flag=True,
-    help=("Don't validate the migrated stack component configurations."),
+    help="Don't validate the migrated stack component configurations.",
     type=click.BOOL,
 )
 @click.option(
@@ -521,10 +535,8 @@ def list_profiles(
     "project_name",
     type=str,
     default=None,
-    help=(
-        "Migrate the stacks, components and flavors to a custom project. If the "
-        "project does not exist, it will be created."
-    ),
+    help="Migrate the stacks, components and flavors to a custom project. "
+    "If the project does not exist, it will be created.",
 )
 @click.argument("profile_path", type=click.STRING)
 def migrate_profiles(
@@ -546,8 +558,8 @@ def migrate_profiles(
         ignore_errors: Continue the import process if an error is encountered.
         skip_validation: Don't validate the migrated stack component
             configurations.
-        prefix: Use a prefix for the names of imported stacks, stack components and
-            flavors.
+        prefix: Use a prefix for the names of imported stacks, stack components
+            and flavors.
         profile_path: Path where the profile files are located.
         project_name: Migrate the stacks, components and flavors to a custom
             project.
@@ -571,13 +583,14 @@ def migrate_profiles(
     store = stores[0]
 
     client = Client()
-    project: Optional[ProjectModel] = None
     user = client.active_user
     if project_name:
         try:
             project = client.zen_store.get_project(project_name)
         except KeyError:
             cli_utils.declare(f"Creating project {project_name}")
+            from zenml.models import ProjectModel
+
             project = client.zen_store.create_project(
                 ProjectModel(
                     name=project_name,
@@ -609,6 +622,8 @@ def migrate_profiles(
             for flavor in store.stack_component_flavors:
                 name = f"{prefix}{flavor.name}"
                 try:
+                    from zenml.models import FlavorModel
+
                     client.zen_store.create_flavor(
                         FlavorModel(
                             source=flavor.source,
@@ -716,7 +731,7 @@ def migrate_profiles(
 
                 # resolve components
                 missing_components: List[Tuple[StackComponentType, str]] = []
-                components: List[ComponentModel] = []
+                components: List["ComponentModel"] = []
                 for c_type, name in legacy_stack.components.items():
                     existing_components = (
                         client.zen_store.list_stack_components(

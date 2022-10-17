@@ -32,7 +32,6 @@ from zenml.enums import AnalyticsEventSource
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.stack.stack_component import StackComponent
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
 
@@ -99,6 +98,8 @@ def _delete_local_files(force_delete: bool = False) -> None:
         for _, components in stack_components.items():
             # TODO: [server] this needs to be adjusted as the ComponentModel
             #  does not have the local_path property anymore
+            from zenml.stack.stack_component import StackComponent
+
             local_path = StackComponent.from_model(components[0]).local_path
             if local_path:
                 for path in Path(local_path).iterdir():
@@ -136,18 +137,20 @@ def clean(yes: bool = False, local: bool = False) -> None:
 
     Args:
         yes: If you don't want a confirmation prompt.
-        local: If you want to delete local files associated with the active stack.
+        local: If you want to delete local files associated with the active
+            stack.
     """
     if local:
         _delete_local_files(force_delete=yes)
         return
 
+    confirm = None
     if not yes:
         confirm = confirmation(
-            "DANGER: This will completely delete all artifacts, metadata and stacks \n"
-            "ever created during the use of ZenML. Pipelines and stack components running non-\n"
-            "locally will still exist. Please delete those manually. \n\n"
-            "Are you sure you want to proceed?"
+            "DANGER: This will completely delete all artifacts, metadata and "
+            "stacks \never created during the use of ZenML. Pipelines and "
+            "stack components running non-\nlocally will still exist. Please "
+            "delete those manually. \n\nAre you sure you want to proceed?"
         )
 
     if yes or confirm:
@@ -165,7 +168,8 @@ def clean(yes: bool = False, local: bool = False) -> None:
             for dir_name in fileio.listdir(str(global_zen_config)):
                 if fileio.isdir(str(global_zen_config / str(dir_name))):
                     warning(
-                        f"Deleting '{str(dir_name)}' directory from global config."
+                        f"Deleting '{str(dir_name)}' directory from global "
+                        f"config."
                     )
             fileio.rmtree(str(global_zen_config))
             declare(f"Deleted global ZenML config from {global_zen_config}.")
@@ -225,8 +229,8 @@ def go() -> None:
                 "your machine to let you dive right into our code. However, "
                 "this machine has no installation of Git. Feel free to install "
                 "git and rerun this command. Alternatively you can also "
-                f"download the repo manually here: {TUTORIAL_REPO}. The tutorial "
-                "is in the 'examples/quickstart/notebooks' directory."
+                f"download the repo manually here: {TUTORIAL_REPO}. The "
+                f"tutorial is in the 'examples/quickstart/notebooks' directory."
             )
             raise GitNotFoundError(e)
 
