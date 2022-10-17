@@ -21,6 +21,8 @@ import click
 import yaml
 from rich.errors import MarkupError
 
+import webbrowser
+
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.client import Client
@@ -242,6 +244,7 @@ def up(
                 f"'{server.status.url}'. You can connect to it using the "
                 f"'{DEFAULT_USERNAME}' username and an empty password."
             )
+            webbrowser.open(server.status.url)
 
 
 @cli.command("down", help="Shut down the local ZenML dashboard.")
