@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.20.3"
+version = "0.20.4"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -257,7 +257,8 @@ module = [
     "azure-keyvault-keys.*",
     "model_archiver.*",
     "kfp_tekton.*",
-    "mlflow.*"
+    "mlflow.*",
+    "python_terraform.*"
 ]
 ignore_missing_imports = true
 

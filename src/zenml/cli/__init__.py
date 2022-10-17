@@ -26,6 +26,7 @@ order to find out which version of ZenML you are running, type:
 ```bash
    zenml version
 ```
+
 If you ever need more information on exactly what a certain command will
 do, use the ``--help`` flag attached to the end of your command string.
 
@@ -35,6 +36,7 @@ while using the ``zenml`` command, type:
 ```bash
    zenml --help
 ```
+
 If you were instead looking to know more about a specific command, you
 can type something like this:
 
@@ -117,6 +119,7 @@ default is to copy all the examples, like this:
 ```bash
 zenml example pull
 ```
+
 If you'd only like to pull a single example, add the name of that
 example (for example, ``quickstart``) as an argument to the same
 command, as follows:
@@ -124,6 +127,7 @@ command, as follows:
 ```bash
 zenml example pull quickstart
 ```
+
 If you would like to force-redownload the examples, use the ``--yes``
 or ``-y`` flag as in this example:
 
@@ -138,6 +142,7 @@ download examples corresponding to a previous release of ZenML, use the
 ```bash
 zenml example pull --yes --version 0.3.8
 ```
+
 If you wish to run the example, allowing the ZenML CLI to do the work of setting
 up whatever dependencies are required, use the ``run`` subcommand:
 
@@ -225,12 +230,14 @@ command:
 ```bash
 zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR [--ORCHESTRATOR_OPTIONS]
 ```
+
 If you wish to list the orchestrators that have already been registered
 within your ZenML project / repository, type:
 
 ```bash
 zenml orchestrator list
 ```
+
 If you wish to delete a particular orchestrator, pass the name of the
 orchestrator into the CLI with the following command:
 
@@ -490,8 +497,8 @@ model deployers into the CLI with the following command:
 zenml model-deployer delete MODEL_DEPLOYER_NAME
 ```
 
-If you wish to retrieve logs corresponding to a particular model deployer, pass the name
-of the model deployer into the CLI with the following command:
+If you wish to retrieve logs corresponding to a particular model deployer, pass
+the name of the model deployer into the CLI with the following command:
 
 ```bash
 zenml model-deployer logs MODEL_DEPLOYER_NAME
@@ -673,7 +680,7 @@ zenml STACK_COMPONENT copy SOURCE_COMPONENT_NAME TARGET_COMPONENT_NAME
 
 If you wish to update a specific stack component, use the following command,
 switching out "STACK_COMPONENT" for the component you wish to update (i.e.
-'orchestrator' or 'artifact-store' etc):
+'orchestrator' or 'artifact-store' etc.):
 
 ```shell
 zenml STACK_COMPONENT update --some_property=NEW_VALUE
@@ -1058,9 +1065,9 @@ The ZenML CLI provides a simple way to deploy ZenML to the cloud.
 Deploying cloud resources using Stack Recipes
 -----------------------------------------------
 
-Stack Recipes allow you to quickly deploy fully-fledged MLOps stacks with just a few
-commands. Each recipe uses Terraform modules under the hood and once executed can set up
-a ZenML stack, ready to run your pipelines!
+Stack Recipes allow you to quickly deploy fully-fledged MLOps stacks with just
+a few commands. Each recipe uses Terraform modules under the hood and once
+executed can set up a ZenML stack, ready to run your pipelines!
 
 A number of stack recipes are already available at [the `mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks/). List them
 using the following command:
@@ -1069,14 +1076,20 @@ using the following command:
 zenml stack recipes list
 ```
 
-If you want to pull any specific recipe to your local system, use the `pull` command:
+If you want to pull any specific recipe to your local system, use the `pull`
+command:
+
 ```bash
 zenml stack recipe pull <stack-recipe-name>
 ```
-If you don't specify a name, `zenml stack recipe pull` will pull all the recipes.
 
-If you notice any inconsistency with the locally-pulled version and the GitHub repository,
-run the `pull` command with the `-y` flag to download any recent changes.
+If you don't specify a name, `zenml stack recipe pull` will pull all the
+recipes.
+
+If you notice any inconsistency with the locally-pulled version and the GitHub
+repository, run the `pull` command with the `-y` flag to download any recent
+changes.
+
 ```bash
 zenml stack recipe pull <stack-recipe-name> -y
 ```
@@ -1089,38 +1102,47 @@ zenml stack recipe pull <stack-recipe-name> --path=<PATH>
 By default, all recipes get downloaded under a directory called `zenml_stack_recipes`.
 
 To deploy a recipe, use the `deploy` command. Before running deploy, review the 
-`zenml_stack_recipes/<stack-recipe-name>/locals.tf` file for configuring non-sensitive 
-variables and the `zenml_stack_recipes/<stack-recipe-name>/values.tfvars` file to 
-add sensitive information like access keys and passwords.
+`zenml_stack_recipes/<stack-recipe-name>/locals.tf` file for configuring
+non-sensitive variables and the `zenml_stack_recipes/<stack-recipe-name>/values.tfvars`
+file to add sensitive information like access keys and passwords.
+
 ```bash
 zenml stack recipe deploy <stack-recipe-name>
 ```
 
-Running deploy without any options will create a new ZenML stack with the same name as
-the stack recipe name. Use the `--stack-name` option to specify your own name.
+Running deploy without any options will create a new ZenML stack with the same
+name as the stack recipe name. Use the `--stack-name` option to specify your
+own name.
+
 ```bash
 zenml stack recipe deploy <stack-recipe-name> --stack-name=my_stack
 ```
 
-If you wish to review the stack information from the newly-generated resources before
-importing, you can run `deploy` with the `--no-import` flag.
+If you wish to review the stack information from the newly-generated resources
+before importing, you can run `deploy` with the `--no-import` flag.
+
 ```bash
 zenml stack recipe deploy <stack-recipe-name> --no-import
 ```
-This will still create a stack YAML configuration file but will not auto-import it. You can
-make any changes you want to the configuration and then run `zenml stack import` manually.
+This will still create a stack YAML configuration file but will not auto-import
+it. You can make any changes you want to the configuration and then run
+`zenml stack import` manually.
 
-To remove all resources created as part of the recipe, run the `destroy` command.
+To remove all resources created as part of the recipe, run the `destroy`
+command.
+
 ```bash
 zenml stack recipe destroy <stack-recipe-name>
 ```
 
-To delete all the recipe files from your system, you can use the `clean` command.
+To delete all the recipe files from your system, you can use the `clean`
+ command.
+
 ```bash
 zenml stack recipe clean
 ```
-This deletes all the recipes from the default path where they were downloaded.
 
+This deletes all the recipes from the default path where they were downloaded.
 """
 
 from zenml.cli.annotator import *  # noqa

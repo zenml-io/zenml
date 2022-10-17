@@ -92,8 +92,8 @@ class ZenFormatter(formatting.HelpFormatter):
         The default behavior is to format the rows in a definition list
         with rows of 2 columns following the format ``(term, value)``.
         But for new CLI commands, we want to format the rows in a definition
-        list with rows of 3 columns following the format the format
-                            ``(term, value, description)``.
+        list with rows of 3 columns following the format
+        ``(term, value, description)``.
 
         Raises:
             TypeError: if the number of columns is not 2 or 3.
@@ -141,7 +141,8 @@ class ZenFormatter(formatting.HelpFormatter):
                 if current_tag != first:
                     current_tag = first
                     self.write("\n")
-                    # Adding [#431d93] [/#431d93] makes the tag colorful when it is printed by rich print
+                    # Adding [#431d93] [/#431d93] makes the tag colorful when
+                    # it is printed by rich print
                     self.write(
                         f"[#431d93]{'':>{self.current_indent}}{first}:[/#431d93]\n"
                     )

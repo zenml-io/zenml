@@ -16,10 +16,9 @@
 import fnmatch
 import os
 from pathlib import Path
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
 
 import click
-from tfx.dsl.io.filesystem import PathType
 
 from zenml.constants import APP_NAME, ENV_ZENML_CONFIG_PATH, REMOTE_FS_PREFIX
 from zenml.io.fileio import (
@@ -32,6 +31,9 @@ from zenml.io.fileio import (
     open,
     walk,
 )
+
+if TYPE_CHECKING:
+    from tfx.dsl.io.filesystem import PathType
 
 
 def get_global_config_directory() -> str:
@@ -75,7 +77,7 @@ def read_file_contents_as_string(file_path: str) -> str:
         return f.read()  # type: ignore[no-any-return]
 
 
-def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
+def find_files(dir_path: "PathType", pattern: str) -> Iterable[str]:
     """Find files in a directory that match pattern.
 
     Args:
@@ -208,7 +210,7 @@ def get_parent(dir_path: str) -> str:
     return Path(dir_path).parent.stem
 
 
-def convert_to_str(path: PathType) -> str:
+def convert_to_str(path: "PathType") -> str:
     """Converts a PathType to a str using UTF-8.
 
     Args:

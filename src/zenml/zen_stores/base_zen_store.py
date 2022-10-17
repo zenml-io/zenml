@@ -177,13 +177,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             The default store configuration.
         """
-        from zenml.zen_stores.sql_zen_store import (
-            SqlZenStore,
-            SqlZenStoreConfiguration,
-        )
+        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         config = SqlZenStoreConfiguration(
-            type=StoreType.SQL, url=SqlZenStore.get_local_url(path)
+            type=StoreType.SQL, url=SqlZenStoreConfiguration.get_local_url(path)
         )
         return config
 

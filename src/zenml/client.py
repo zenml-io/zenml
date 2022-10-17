@@ -20,14 +20,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
-from zenml.enums import StackComponentType, StoreType
 from zenml.environment import Environment
 from zenml.exceptions import (
     AlreadyExistsException,
@@ -37,19 +35,24 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, FlavorModel, ProjectModel, StackModel
-from zenml.models.pipeline_models import PipelineModel
-from zenml.stack import Flavor
-from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
-from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME, BaseZenStore
 
 if TYPE_CHECKING:
-    from zenml.models import HydratedStackModel, UserModel
-    from zenml.stack import Stack
-
+    from zenml.config.pipeline_configurations import PipelineSpec
+    from zenml.enums import StackComponentType
+    from zenml.models import (
+        ComponentModel,
+        FlavorModel,
+        HydratedStackModel,
+        PipelineModel,
+        ProjectModel,
+        StackModel,
+        UserModel,
+    )
+    from zenml.stack import Stack, StackComponentConfig
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
@@ -67,9 +70,9 @@ class ClientConfiguration(FileSyncModel):
 
     active_stack_id: Optional[UUID]
     active_project_name: Optional[str]
-    _active_project: Optional[ProjectModel] = None
+    _active_project: Optional["ProjectModel"] = None
 
-    def set_active_project(self, project: ProjectModel) -> None:
+    def set_active_project(self, project: "ProjectModel") -> None:
         """Set the project for the local client.
 
         Args:
@@ -404,8 +407,8 @@ class Client(metaclass=ClientMetaClass):
                 f"environment variable '{ENV_ZENML_REPOSITORY_PATH}'."
             )
         else:
-            # try to find the repository in the parent directories of the current
-            # working directory
+            # try to find the repository in the parent directories of the
+            # current working directory
             path = Path.cwd()
             search_parent_directories = True
             warning_message = (
@@ -534,7 +537,7 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active project is not set.
         """
-        project: Optional[ProjectModel] = None
+        project: Optional["ProjectModel"] = None
         if self._config:
             project = self._config._active_project
 
@@ -547,6 +550,9 @@ class Client(metaclass=ClientMetaClass):
                 "`zenml project set PROJECT_NAME` to set the active "
                 "project."
             )
+
+        from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
+
         if project.name != DEFAULT_PROJECT_NAME:
             logger.warning(
                 f"You are running with a non-default project "
@@ -569,7 +575,7 @@ class Client(metaclass=ClientMetaClass):
 
     @property
     def stacks(self) -> List["HydratedStackModel"]:
-        """All stack models in the active project, owned by the current user or shared.
+        """All stack models in the active project, owned by the user or shared.
 
         This property is intended as a quick way to get information about the
         components of the registered stacks without loading all installed
@@ -688,6 +694,8 @@ class Client(metaclass=ClientMetaClass):
             )
 
             # Create and validate the configuration
+            from zenml.stack import Flavor
+
             flavor = Flavor.from_model(flavor_model)
             configuration = flavor.config_class(**component.configuration)
             if configuration.is_local:
@@ -700,7 +708,7 @@ class Client(metaclass=ClientMetaClass):
                 )
 
         if local_components and remote_components:
-            logger.warn(
+            logger.warning(
                 f"You are configuring a stack that is composed of components "
                 f"that are relying on local resources "
                 f"({', '.join(local_components)}) as well as "
@@ -777,29 +785,11 @@ class Client(metaclass=ClientMetaClass):
     # .------------.
     # | COMPONENTS |
     # '------------'
-    @property
-    def stack_components(self) -> List[ComponentModel]:
-        """The list of registered stack components.
-
-        Returns:
-            The list of registered stack components.
-        """
-        owned_stack_components = self.zen_store.list_stack_components(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
-            is_shared=False,
-        )
-        shared_stack_components = self.zen_store.list_stack_components(
-            project_name_or_id=self.active_project_name,
-            is_shared=True,
-        )
-
-        return owned_stack_components + shared_stack_components
 
     def _validate_stack_component_configuration(
         self,
-        component_type: StackComponentType,
-        configuration: StackComponentConfig,
+        component_type: "StackComponentType",
+        configuration: "StackComponentConfig",
     ) -> None:
         """Validates the configuration of a stack component.
 
@@ -807,9 +797,11 @@ class Client(metaclass=ClientMetaClass):
             component_type: The type of the component.
             configuration: The component configuration to validate.
         """
+        from zenml.enums import StackComponentType, StoreType
+
         if configuration.is_remote and self.zen_store.is_local_store():
             if self.zen_store.type == StoreType.REST:
-                logger.warn(
+                logger.warning(
                     "You are configuring a stack component that is running "
                     "remotely while using a local database. The component "
                     "may not be able to reach the local database and will "
@@ -817,7 +809,7 @@ class Client(metaclass=ClientMetaClass):
                     "and/or using a remote ZenML server instead."
                 )
             else:
-                logger.warn(
+                logger.warning(
                     "You are configuring a stack component that is running "
                     "remotely while using a local ZenML server. The component "
                     "may not be able to reach the local ZenML server and will "
@@ -825,18 +817,18 @@ class Client(metaclass=ClientMetaClass):
                     "and/or using a remote ZenML server instead."
                 )
         elif configuration.is_local and not self.zen_store.is_local_store():
-            logger.warn(
+            logger.warning(
                 "You are configuring a stack component that is using "
                 "local resources while connected to a remote ZenML server. The "
-                "stack component may not be usable from other hosts or by other "
-                "users. You should consider using a non-local stack component "
-                "alternative instead."
+                "stack component may not be usable from other hosts or by "
+                "other users. You should consider using a non-local stack "
+                "component alternative instead."
             )
             if component_type in [
                 StackComponentType.ORCHESTRATOR,
                 StackComponentType.STEP_OPERATOR,
             ]:
-                logger.warn(
+                logger.warning(
                     "You are configuring a stack component that is running "
                     "pipeline code on your local host while connected to a "
                     "remote ZenML server. This will significantly affect the "
@@ -864,6 +856,8 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Create and validate the configuration
+        from zenml.stack import Flavor
+
         flavor = Flavor.from_model(flavor_model)
         configuration = flavor.config_class(**component.configuration)
 
@@ -901,6 +895,8 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Use the flavor class to validate the new configuration
+        from zenml.stack import Flavor
+
         flavor = Flavor.from_model(flavor_model)
         configuration = flavor.config_class(**component.configuration)
 
@@ -914,7 +910,7 @@ class Client(metaclass=ClientMetaClass):
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(component=component)
 
-    def deregister_stack_component(self, component: ComponentModel) -> None:
+    def deregister_stack_component(self, component: "ComponentModel") -> None:
         """Deletes a registered stack component.
 
         Args:
@@ -935,15 +931,7 @@ class Client(metaclass=ClientMetaClass):
                 component.name,
             )
 
-    def get_stack_components(self) -> List[ComponentModel]:
-        """Gets all registered stack components.
-
-        Returns:
-            The list of registered stack components.
-        """
-        return self.stack_components
-
-    def get_stack_component_by_id(self, component_id: UUID) -> ComponentModel:
+    def get_stack_component_by_id(self, component_id: UUID) -> "ComponentModel":
         """Fetches a registered stack component.
 
         Args:
@@ -959,12 +947,12 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.get_stack_component(component_id=component_id)
 
     def list_stack_components_by_type(
-        self, type: StackComponentType, is_shared: bool = False
-    ) -> List[ComponentModel]:
+        self, type_: "StackComponentType", is_shared: bool = False
+    ) -> List["ComponentModel"]:
         """Fetches all registered stack components of a given type.
 
         Args:
-            type: The type of the components to fetch.
+            type_: The type of the components to fetch.
             is_shared: Whether to fetch shared components or not.
 
         Returns:
@@ -973,13 +961,13 @@ class Client(metaclass=ClientMetaClass):
         owned_stack_components = self.zen_store.list_stack_components(
             project_name_or_id=self.active_project_name,
             user_name_or_id=self.active_user.id,
-            type=type,
+            type=type_,
             is_shared=False,
         )
         shared_stack_components = self.zen_store.list_stack_components(
             project_name_or_id=self.active_project_name,
             is_shared=True,
-            type=type,
+            type=type_,
         )
         return owned_stack_components + shared_stack_components
 
@@ -987,7 +975,7 @@ class Client(metaclass=ClientMetaClass):
     # | FLAVORS |
     # '---------'
     @property
-    def flavors(self) -> List[FlavorModel]:
+    def flavors(self) -> List["FlavorModel"]:
         """Fetches all the flavor models.
 
         Returns:
@@ -1020,7 +1008,7 @@ class Client(metaclass=ClientMetaClass):
 
         return self.zen_store.create_flavor(flavor=flavor_model)
 
-    def delete_flavor(self, flavor: FlavorModel) -> None:
+    def delete_flavor(self, flavor: "FlavorModel") -> None:
         """Deletes a flavor.
 
         Args:
@@ -1037,7 +1025,7 @@ class Client(metaclass=ClientMetaClass):
                 f"'{flavor.type}': No flavor with this name could be found.",
             )
 
-    def get_flavors(self) -> List[FlavorModel]:
+    def get_flavors(self) -> List["FlavorModel"]:
         """Fetches all the flavor models.
 
         Returns:
@@ -1053,8 +1041,8 @@ class Client(metaclass=ClientMetaClass):
         return zenml_flavors + custom_flavors
 
     def get_flavors_by_type(
-        self, component_type: StackComponentType
-    ) -> List[FlavorModel]:
+        self, component_type: "StackComponentType"
+    ) -> List["FlavorModel"]:
         """Fetches the list of flavor for a stack component type.
 
         Args:
@@ -1079,8 +1067,8 @@ class Client(metaclass=ClientMetaClass):
         return zenml_flavors + custom_flavors
 
     def get_flavor_by_name_and_type(
-        self, name: str, component_type: StackComponentType
-    ) -> FlavorModel:
+        self, name: str, component_type: "StackComponentType"
+    ) -> "FlavorModel":
         """Fetches a registered flavor.
 
         Args:
@@ -1142,7 +1130,7 @@ class Client(metaclass=ClientMetaClass):
     # | Pipelines & Runs |
     # '------------------'
 
-    def get_pipeline_by_name(self, name: str) -> PipelineModel:
+    def get_pipeline_by_name(self, name: str) -> "PipelineModel":
         """Fetches a pipeline by name.
 
         Args:
@@ -1158,7 +1146,7 @@ class Client(metaclass=ClientMetaClass):
     def register_pipeline(
         self,
         pipeline_name: str,
-        pipeline_spec: PipelineSpec,
+        pipeline_spec: "PipelineSpec",
         pipeline_docstring: Optional[str],
     ) -> UUID:
         """Registers a pipeline in the ZenStore within the active project.
@@ -1185,6 +1173,8 @@ class Client(metaclass=ClientMetaClass):
 
         # A) If there is no pipeline with this name, register a new pipeline.
         except KeyError:
+            from zenml.models import PipelineModel
+
             pipeline = PipelineModel(
                 project=self.active_project.id,
                 user=self.active_user.id,
@@ -1207,8 +1197,8 @@ class Client(metaclass=ClientMetaClass):
             "already been registered with a different pipeline "
             "configuration. You have three options to resolve this issue:\n"
             "1) You can register a new pipeline by changing the name "
-            "of your pipeline, e.g., via `@pipeline(name='new_pipeline_name').\n"
-            "2) You can execute the current run without linking it to any "
+            "of your pipeline, e.g., via `@pipeline(name='new_pipeline_name')."
+            "\n2) You can execute the current run without linking it to any "
             "pipeline by setting the 'unlisted' argument to `True`, e.g., "
             "via `my_pipeline_instance.run(unlisted=True)`. "
             "Unlisted runs are not linked to any pipeline, but are still "
