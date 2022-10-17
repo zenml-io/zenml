@@ -371,9 +371,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
         Args:
             container_op: The kubeflow container operation to configure.
             is_scheduled_run: Whether the pipeline is scheduled or a single run.
-
-        Raises:
-            ValueError: If the local path is not in the global config directory.
         """
         # Path to a metadata file that will be displayed in the KFP UI
         # This metadata file needs to be in a mounted emptyDir to avoid
