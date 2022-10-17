@@ -227,9 +227,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             return v
 
         if not isinstance(version.parse(v), version.Version):
-            # If the version parsing fails, it returns a `LegacyVersion` instead.
-            # Check to make sure it's an actual `Version` object which represents
-            # a valid version.
+            # If the version parsing fails, it returns a `LegacyVersion`
+            # instead. Check to make sure it's an actual `Version` object
+            # which represents a valid version.
             raise RuntimeError(f"Invalid version in global configuration: {v}.")
 
         return v

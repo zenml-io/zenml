@@ -23,10 +23,8 @@ point of registration, ZenML will set the schema as `ArbitrarySecretSchema`, a
 kind of default schema where things that aren't attached to a grouping can be
 stored.
 """
-from zenml.secret.arbitrary_secret_schema import (
-    ARBITRARY_SECRET_SCHEMA_TYPE,
-    ArbitrarySecretSchema,
-)
+from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE
+from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import (
     SecretSchemaClassRegistry,
@@ -34,7 +32,6 @@ from zenml.secret.secret_schema_class_registry import (
 )
 
 __all__ = [
-    "ARBITRARY_SECRET_SCHEMA_TYPE",
     "ArbitrarySecretSchema",
     "BaseSecretSchema",
     "SecretSchemaClassRegistry",

@@ -360,7 +360,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     def _configure_container_op(
-        self, container_op: dsl.ContainerOp, is_scheduled_run: bool
+        self,
+        container_op: dsl.ContainerOp,
+        is_scheduled_run: bool,
+        settings: Optional[KubeflowOrchestratorSettings] = None,
     ) -> None:
         """Makes changes in place to the configuration of the container op.
 
@@ -371,6 +374,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         Args:
             container_op: The kubeflow container operation to configure.
             is_scheduled_run: Whether the pipeline is scheduled or a single run.
+            settings: Optional orchestrator settings for this step.
         """
         # Path to a metadata file that will be displayed in the KFP UI
         # This metadata file needs to be in a mounted emptyDir to avoid
@@ -453,6 +457,37 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 value=run_name,
             )
         )
+
+        if settings:
+            for key, value in settings.node_selectors.items():
+                container_op.add_node_selector_constraint(
+                    label_name=key, value=value
+                )
+
+            if settings.node_affinity:
+                match_expressions = []
+
+                for key, values in settings.node_affinity.items():
+                    match_expressions.append(
+                        k8s_client.V1NodeSelectorRequirement(
+                            key=key,
+                            operator="In",
+                            values=values,
+                        )
+                    )
+
+                affinity = k8s_client.V1Affinity(
+                    node_affinity=k8s_client.V1NodeAffinity(
+                        required_during_scheduling_ignored_during_execution=k8s_client.V1NodeSelector(
+                            node_selector_terms=[
+                                k8s_client.V1NodeSelectorTerm(
+                                    match_expressions=match_expressions
+                                )
+                            ]
+                        )
+                    )
+                )
+                container_op.add_affinity(affinity)
 
         # Mounts configmap containing Metadata gRPC server configuration.
         container_op.apply(utils.mount_config_map_op("metadata-grpc-configmap"))
@@ -584,8 +619,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     },
                 )
 
+                settings = cast(
+                    Optional[KubeflowOrchestratorSettings],
+                    self.get_settings(step),
+                )
                 self._configure_container_op(
-                    container_op=container_op, is_scheduled_run=is_scheduled_run
+                    container_op=container_op,
+                    is_scheduled_run=is_scheduled_run,
+                    settings=settings,
                 )
 
                 if self.requires_resources_in_orchestration_environment(step):

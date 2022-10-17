@@ -31,7 +31,6 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.io import fileio
-from zenml.models import ComponentModel, FlavorModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
@@ -149,7 +148,7 @@ def generate_stack_component_list_command(
 
         client = Client()
 
-        components = client.list_stack_components_by_type(type=component_type)
+        components = client.list_stack_components_by_type(component_type)
         hydrated_comps = [s.to_hydrated_model() for s in components]
 
         cli_utils.print_components_table(
@@ -224,6 +223,8 @@ def generate_stack_component_register_command(
                 share = False
 
             # Create a new stack component model
+            from zenml.models import ComponentModel
+
             component_create_model = ComponentModel(
                 user=client.active_user.id,
                 project=client.active_project.id,
@@ -589,6 +590,8 @@ def generate_stack_component_copy_command(
             )
 
             # Register a new one with a new name
+            from zenml.models import ComponentModel
+
             component_create_model = ComponentModel(
                 user=client.active_user.id,
                 project=client.active_project.id,
@@ -947,6 +950,8 @@ def generate_stack_component_flavor_register_command(
             # Create a new model
             # TODO: Investigate how we can create this model without empty
             #   strings as values for name and config_schema
+            from zenml.models import FlavorModel
+
             flavor_create_model = FlavorModel(
                 source=source,
                 type=component_type,

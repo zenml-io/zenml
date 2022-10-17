@@ -25,10 +25,10 @@ from types import ModuleType
 # around it and registers it to the filesystem registry (and if `tfx` is not
 # installed, it does nothing).
 #
-# The problem is that if TensorFlow is indeed installed, it takes a quite a long time
-# to set it up and there is no point in the code where we are utilizing the
-# generated filesystem. That's why it is now blocked by a mock module,
-# before `tfx.fileio` gets imported.
+# The problem is that if TensorFlow is indeed installed, it takes a quite a
+# long time to set it up and there is no point in the code where we are
+# utilizing the generated filesystem. That's why it is now blocked by a mock
+# module, before `tfx.fileio` gets imported.
 
 sys.modules["tfx.dsl.io.plugins.tensorflow_gfile"] = ModuleType(
     "Oops, Aria walked over my keyboard."

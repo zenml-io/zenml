@@ -270,7 +270,7 @@ class Environment(metaclass=SingletonMetaClass):
         return self._components.copy()
 
     def has_component(self, name: str) -> bool:
-        """Check if the environment component with a known name is currently available.
+        """Check if the environment component with a known name is available.
 
         Args:
             name: the environment component name.
@@ -292,7 +292,8 @@ class Environment(metaclass=SingletonMetaClass):
             given name.
 
         Raises:
-            KeyError: if no environment component is registered for the given name.
+            KeyError: if no environment component is registered for the given
+                name.
         """
         if name in self._components:
             return self._components[name]
@@ -324,7 +325,7 @@ _BASE_ENVIRONMENT_COMPONENT_NAME = "base_environment_component"
 
 
 class EnvironmentComponentMeta(type):
-    """Metaclass responsible for registering different EnvironmentComponent instances in the global Environment."""
+    """Metaclass registering environment components in the global Environment."""
 
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
@@ -344,9 +345,10 @@ class EnvironmentComponentMeta(type):
             super().__new__(mcs, name, bases, dct),
         )
         if name != "BaseEnvironmentComponent":
-            assert (
-                cls.NAME and cls.NAME != _BASE_ENVIRONMENT_COMPONENT_NAME
-            ), "You should specify a unique NAME when creating an EnvironmentComponent !"
+            assert cls.NAME and cls.NAME != _BASE_ENVIRONMENT_COMPONENT_NAME, (
+                "You should specify a unique NAME when creating an "
+                "EnvironmentComponent!"
+            )
         return cls
 
 
