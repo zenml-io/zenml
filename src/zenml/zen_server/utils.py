@@ -15,7 +15,7 @@
 
 import os
 from functools import wraps
-from typing import Any, Callable, List, TypeVar, cast
+from typing import Any, Callable, List, Optional, TypeVar, cast
 
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -38,19 +38,43 @@ logger = get_logger(__name__)
 ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "")
 
 
-# TODO(Stefan): figure out how not to populate the ZenStore with default
-# user/stack and make this a method instead of a global variable
-zen_store: BaseZenStore = GlobalConfiguration().zen_store
-# We override track_analytics=False because we do not
-# want to track anything server side.
-zen_store.track_analytics = False
+_zen_store: Optional[BaseZenStore] = None
 
-if zen_store.type == StoreType.REST:
-    raise ValueError(
-        "Server cannot be started with a REST store type. Make sure you "
-        "configure ZenML to use a non-networked store backend "
-        "when trying to start the ZenML Server."
-    )
+
+def zen_store() -> BaseZenStore:
+    """Initialize the ZenML Store.
+
+    Returns:
+        The ZenML Store.
+
+    Raises:
+        RuntimeError: If the ZenML Store has not been initialized.
+    """
+    global _zen_store
+    if _zen_store is None:
+        raise RuntimeError("ZenML Store not initialized")
+    return _zen_store
+
+
+def initialize_zen_store() -> None:
+    """Initialize the ZenML Store.
+
+    Raises:
+        ValueError: If the ZenML Store is using a REST back-end.
+    """
+    global _zen_store
+    _zen_store = GlobalConfiguration().zen_store
+
+    # We override track_analytics=False because we do not
+    # want to track anything server side.
+    _zen_store.track_analytics = False
+
+    if _zen_store.type == StoreType.REST:
+        raise ValueError(
+            "Server cannot be started with a REST store type. Make sure you "
+            "configure ZenML to use a non-networked store backend "
+            "when trying to start the ZenML Server."
+        )
 
 
 class ErrorModel(BaseModel):

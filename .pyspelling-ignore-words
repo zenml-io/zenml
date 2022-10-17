@@ -829,6 +829,7 @@ backfill
 backoff
 baseclass
 basename
+baz
 bdb
 bff
 bigrams
@@ -1498,3 +1499,8 @@ zenmldocker
 zenmlregistry
 zenmlserver
 zenserver
+Homebrew
+Pipenv
+VSCode
+ZSH
+macos

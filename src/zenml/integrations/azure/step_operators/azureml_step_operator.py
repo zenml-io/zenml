@@ -16,7 +16,7 @@
 import itertools
 import os
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, List, Optional, Tuple, cast
 
 from azureml.core import (
     ComputeTarget,
@@ -39,6 +39,7 @@ from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
     AzureMLStepOperatorConfig,
 )
 from zenml.logger import get_logger
+from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
@@ -69,6 +70,32 @@ class AzureMLStepOperator(BaseStepOperator):
             The configuration.
         """
         return cast(AzureMLStepOperatorConfig, self._config)
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Validates the stack.
+
+        Returns:
+            A validator that checks that the stack contains a remote artifact
+            store.
+        """
+
+        def _validate_remote_artifact_store(stack: "Stack") -> Tuple[bool, str]:
+            if stack.artifact_store.config.is_local:
+                return False, (
+                    "The AzureML step operator runs code remotely and "
+                    "needs to write files into the artifact store, but the "
+                    f"artifact store `{stack.artifact_store.name}` of the "
+                    "active stack is local. Please ensure that your stack "
+                    "contains a remote artifact store when using the AzureML "
+                    "step operator."
+                )
+
+            return True, ""
+
+        return StackValidator(
+            custom_validation_function=_validate_remote_artifact_store,
+        )
 
     def _get_authentication(self) -> Optional[AbstractAuthentication]:
         """Returns the authentication object for the AzureML environment.

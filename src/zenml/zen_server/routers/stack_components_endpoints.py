@@ -70,7 +70,7 @@ def list_stack_components(
     Returns:
         List of stack components for a specific type.
     """
-    components_list = zen_store.list_stack_components(
+    components_list = zen_store().list_stack_components(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         type=type,
@@ -103,7 +103,7 @@ def get_stack_component(
     Returns:
         The requested stack component.
     """
-    component = zen_store.get_stack_component(component_id)
+    component = zen_store().get_stack_component(component_id)
     if hydrated:
         return component.to_hydrated_model()
     else:
@@ -132,9 +132,9 @@ def update_stack_component(
     Returns:
         Updated stack component.
     """
-    component_in_db = zen_store.get_stack_component(component_id)
+    component_in_db = zen_store().get_stack_component(component_id)
 
-    updated_component = zen_store.update_stack_component(
+    updated_component = zen_store().update_stack_component(
         component=component_update.apply_to_model(component_in_db)
     )
     if hydrated:
@@ -154,7 +154,7 @@ def deregister_stack_component(component_id: UUID) -> None:
     Args:
         component_id: ID of the stack component.
     """
-    zen_store.delete_stack_component(component_id)
+    zen_store().delete_stack_component(component_id)
 
 
 @types_router.get(

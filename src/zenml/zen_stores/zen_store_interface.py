@@ -14,10 +14,8 @@
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
 from pathlib import PurePath
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
-
-from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType
@@ -36,6 +34,9 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.server_models import ServerModel
+
+if TYPE_CHECKING:
+    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
 
 class ZenStoreInterface(ABC):
@@ -172,7 +173,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> ConnectionConfig:
+    ) -> "ConnectionConfig":
         """Get the TFX metadata config of this ZenStore.
 
         Args:

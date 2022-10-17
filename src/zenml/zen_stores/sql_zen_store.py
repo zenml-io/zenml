@@ -30,10 +30,6 @@ from typing import (
 )
 from uuid import UUID
 
-from ml_metadata.proto.metadata_store_pb2 import (
-    ConnectionConfig,
-    MySQLDatabaseConfig,
-)
 from pydantic import root_validator
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
@@ -41,7 +37,6 @@ from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlalchemy.sql.operators import is_
 from sqlmodel import Session, SQLModel, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
-from tfx.orchestration import metadata
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
@@ -73,7 +68,7 @@ from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import io_utils, uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
+from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     FlavorSchema,
@@ -95,6 +90,8 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
 if TYPE_CHECKING:
+    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+
     from zenml.zen_stores.metadata_store import MetadataStore
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
@@ -274,7 +271,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> ConnectionConfig:
+    ) -> "ConnectionConfig":
         """Get the metadata configuration for the SQL ZenML store.
 
         Args:
@@ -287,6 +284,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         Raises:
             NotImplementedError: If the SQL driver is not supported.
         """
+        from ml_metadata.proto.metadata_store_pb2 import MySQLDatabaseConfig
+        from tfx.orchestration import metadata
+
         sql_url = make_url(self.url)
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             assert self.database is not None
@@ -555,7 +555,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> ConnectionConfig:
+    ) -> "ConnectionConfig":
         """Get the TFX metadata config of this ZenStore.
 
         Args:
@@ -1428,7 +1428,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The active username.
         """
-        return DEFAULT_USERNAME
+        return self._default_user_name
 
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserModel) -> UserModel:
@@ -1523,7 +1523,6 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
 
-    @track(AnalyticsEvent.OPT_IN_OUT_EMAIL)
     def user_email_opt_in(
         self,
         user_name_or_id: Union[str, UUID],

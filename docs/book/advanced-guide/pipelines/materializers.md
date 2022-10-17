@@ -128,7 +128,15 @@ materializer definition in your code is enough to enable the respective data
 type to be used in your pipelines.
 
 Alternatively, you can also explicitly define which materializer to use for a
-specific step using the `configure()` method of the step. E.g.:
+specific step 
+
+```python
+@step(output_materializers=MyMaterializer)
+def my_first_step(...) -> ...:
+    ...
+```
+
+Or you can use the `configure()` method of the step. E.g.:
 
 ```python
 first_pipeline(
@@ -164,8 +172,7 @@ steps:
     ...
     materializers:
       <OUTPUT_NAME>:
-        name: <MaterializerName>
-        file: <relative/filepath>
+        materializer_source: __main__.MyMaterializer # or full source path to materializer class
 ```
 
 The name of the output can be found in the function declaration, e.g. 

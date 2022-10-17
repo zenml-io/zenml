@@ -75,7 +75,7 @@ def list_projects() -> List[ProjectModel]:
     Returns:
         A list of projects.
     """
-    return zen_store.list_projects()
+    return zen_store().list_projects()
 
 
 @router.post(
@@ -95,7 +95,7 @@ def create_project(project: CreateProjectRequest) -> ProjectModel:
     Returns:
         The created project.
     """
-    return zen_store.create_project(project=project.to_model())
+    return zen_store().create_project(project=project.to_model())
 
 
 @router.get(
@@ -115,7 +115,7 @@ def get_project(project_name_or_id: Union[str, UUID]) -> ProjectModel:
     Returns:
         The requested project.
     """
-    return zen_store.get_project(project_name_or_id=project_name_or_id)
+    return zen_store().get_project(project_name_or_id=project_name_or_id)
 
 
 @router.put(
@@ -138,9 +138,9 @@ def update_project(
     Returns:
         The updated project.
     """
-    project_in_db = zen_store.get_project(project_name_or_id)
+    project_in_db = zen_store().get_project(project_name_or_id)
 
-    return zen_store.update_project(
+    return zen_store().update_project(
         project=project_update.apply_to_model(project_in_db),
     )
 
@@ -156,7 +156,7 @@ def delete_project(project_name_or_id: Union[str, UUID]) -> None:
     Args:
         project_name_or_id: Name or ID of the project.
     """
-    zen_store.delete_project(project_name_or_id=project_name_or_id)
+    zen_store().delete_project(project_name_or_id=project_name_or_id)
 
 
 @router.get(
@@ -182,7 +182,7 @@ def get_role_assignments_for_project(
     Returns:
         A list of all roles that are assigned to a team.
     """
-    return zen_store.list_role_assignments(
+    return zen_store().list_role_assignments(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         team_name_or_id=team_name_or_id,
@@ -219,7 +219,7 @@ def list_project_stacks(
     Returns:
         All stacks part of the specified project.
     """
-    stacks_list = zen_store.list_stacks(
+    stacks_list = zen_store().list_stacks(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         component_id=component_id,
@@ -256,13 +256,13 @@ def create_stack(
     Returns:
         The created stack.
     """
-    project = zen_store.get_project(project_name_or_id)
+    project = zen_store().get_project(project_name_or_id)
     full_stack = stack.to_model(
         project=project.id,
         user=auth_context.user.id,
     )
 
-    created_stack = zen_store.create_stack(stack=full_stack)
+    created_stack = zen_store().create_stack(stack=full_stack)
     if hydrated:
         return created_stack.to_hydrated_model()
     else:
@@ -301,7 +301,7 @@ def list_project_stack_components(
     Returns:
         All stack components part of the specified project.
     """
-    components_list = zen_store.list_stack_components(
+    components_list = zen_store().list_stack_components(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         type=type,
@@ -339,7 +339,7 @@ def create_stack_component(
     Returns:
         The created stack component.
     """
-    project = zen_store.get_project(project_name_or_id)
+    project = zen_store().get_project(project_name_or_id)
     full_component = component.to_model(
         project=project.id,
         user=auth_context.user.id,
@@ -348,7 +348,7 @@ def create_stack_component(
     # TODO: [server] if possible it should validate here that the configuration
     #  conforms to the flavor
 
-    created_component = zen_store.create_stack_component(
+    created_component = zen_store().create_stack_component(
         component=full_component,
     )
     if hydrated:
@@ -387,7 +387,7 @@ def list_project_flavors(
     Returns:
         All stack components of a certain type that are part of a project.
     """
-    flavors_list = zen_store.list_flavors(
+    flavors_list = zen_store().list_flavors(
         project_name_or_id=project_name_or_id,
         component_type=component_type,
         user_name_or_id=user_name_or_id,
@@ -425,10 +425,10 @@ def create_flavor(
     Returns:
         The created stack component flavor.
     """
-    project = zen_store.get_project(project_name_or_id)
+    project = zen_store().get_project(project_name_or_id)
     flavor.project = project.id
     flavor.user = auth_context.user.id
-    created_flavor = zen_store.create_flavor(
+    created_flavor = zen_store().create_flavor(
         flavor=flavor,
     )
     # if hydrated:
@@ -464,7 +464,7 @@ def list_project_pipelines(
     Returns:
         All pipelines within the project.
     """
-    pipelines_list = zen_store.list_pipelines(
+    pipelines_list = zen_store().list_pipelines(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         name=name,
@@ -502,12 +502,12 @@ def create_pipeline(
     Returns:
         The created pipeline.
     """
-    project = zen_store.get_project(project_name_or_id)
+    project = zen_store().get_project(project_name_or_id)
     pipeline_model = pipeline.to_model(
         project=project.id,
         user=auth_context.user.id,
     )
-    created_pipeline = zen_store.create_pipeline(pipeline=pipeline_model)
+    created_pipeline = zen_store().create_pipeline(pipeline=pipeline_model)
     if hydrated:
         return HydratedPipelineModel.from_model(created_pipeline)
     else:
@@ -564,18 +564,20 @@ def get_project_statistics(
     """
     # TODO: [server] instead of actually querying all the rows, we should
     #  use zen_store methods that just return counts
-    zen_store.list_runs()
+    zen_store().list_runs()
     return {
         "stacks": len(
-            zen_store.list_stacks(project_name_or_id=project_name_or_id)
+            zen_store().list_stacks(project_name_or_id=project_name_or_id)
         ),
         "components": len(
-            zen_store.list_stack_components(
+            zen_store().list_stack_components(
                 project_name_or_id=project_name_or_id
             )
         ),
         "pipelines": len(
-            zen_store.list_pipelines(project_name_or_id=project_name_or_id)
+            zen_store().list_pipelines(project_name_or_id=project_name_or_id)
         ),
-        "runs": len(zen_store.list_runs(project_name_or_id=project_name_or_id)),
+        "runs": len(
+            zen_store().list_runs(project_name_or_id=project_name_or_id)
+        ),
     }
