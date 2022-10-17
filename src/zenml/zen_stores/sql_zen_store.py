@@ -3357,14 +3357,16 @@ class SqlZenStore(BaseZenStore):
         # order of their ID.
         with Session(self.engine) as session:
             synced_mlmd_ids = session.exec(
-                select(PipelineRunSchema.mlmd_id)
-                .where(isnot(PipelineRunSchema.mlmd_id, None))
+                select(PipelineRunSchema.mlmd_id).where(
+                    isnot(PipelineRunSchema.mlmd_id, None)
+                )
             ).all()
-        highest_synced_mlmd_id = max(synced_mlmd_ids) if synced_mlmd_ids else 0
-
+        max_synced_mlmd_id = max(
+            [id_ for id_ in synced_mlmd_ids if id_ is not None], default=0
+        )
 
         unsynced_mlmd_runs = self.metadata_store.get_all_runs(
-            min_mlmd_id=highest_synced_mlmd_id + 1
+            min_mlmd_id=max_synced_mlmd_id + 1
         )
         for mlmd_run in unsynced_mlmd_runs:
             new_run = PipelineRunModel(
