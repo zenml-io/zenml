@@ -685,12 +685,21 @@ def rename_stack(
 
 
 @stack.command("list")
-def list_stacks() -> None:
-    """List all available stacks."""
+@click.option("--just_mine", "-m", is_flag=True, required=False)
+def list_stacks(just_mine: str = False) -> None:
+    """List all available stacks.
+
+    Args:
+        just_mine: To list only the stacks that the current user has created.
+    """
     cli_utils.print_active_config()
 
     client = Client()
     stacks = client.stacks
+    if just_mine:
+        stacks = [
+            stack for stack in stacks if stack.user.id == client.active_user.id
+        ]
     print_stacks_table(client, stacks)
 
 
