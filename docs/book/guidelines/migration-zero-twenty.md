@@ -83,16 +83,6 @@ The architecture changes for the remote case are shown in the diagram below:
 ![ZenML remote metadata before 0.20.0](../assets/migration/remote-metadata-pre-0.20.png)
 ![ZenML remote metadata after 0.20.0](../assets/migration/remote-metadata-post-0.20.png)
 
-
-{% hint style="warning" %}
-It is currently not possible to migrate the pipeline run information already
-stored in the existing Metadata Stores to the new ZenML paradigm. This
-unfortunately means that this information is lost when upgrading to ZenML
-0.20.0. If it is crucial for you that you retain this information after the
-update, please reach out to us on [Slack](https://zenml.io/slack) and let us
-know. We're more than happy to work with you to find a solution.
-{% endhint %}
-
 If you're already using ZenML, aside from the above limitation, this change will
 impact you differently, depending on the flavor of Metadata Stores you have in
 your stacks:
@@ -144,6 +134,43 @@ located as close as possible to and reachable from where your pipelines and step
 operators are running. This will ensure the best possible performance and
 usability.
 {% endhint %}
+
+### 👣 How to migrate pipeline runs from your old metadata stores
+
+To migrate the pipeline run information already stored in an existing metadata 
+store to the new ZenML paradigm, you can use the `zenml pipeline runs migrate`
+CLI command.
+
+1. Before upgrading ZenML, make a backup of all metadata stores you
+want to migrate, then upgrade ZenML.
+
+2. Decide the ZenML deployment model that you want to follow for your projects.
+See the [ZenML deployment documentation](../getting-started/deploying-zenml/deploying-zenml.md)
+for available deployment scenarios. If you decide on using a local or remote
+ZenML server to manage your pipelines, make sure that you first connect your
+client to it by running `zenml connect`.
+
+3. Use the `zenml pipeline runs migrate` CLI command to migrate your old
+pipeline runs: 
+
+  - If you want to migrate from a local SQLite metadata store, you 
+only need to pass the path to the metadata store to the command, e.g.:
+
+```bash
+zenml pipeline runs migrate PATH/TO/LOCAL/STORE/metadata.db
+```
+
+- If you would like to migrate any other store, you will need to set 
+`--database_type=mysql` and provide the MySQL host, username, and password in
+addition to the database, e.g.:
+
+```bash
+zenml pipeline runs migrate DATABASE_NAME \
+  --database_type=mysql \
+  --mysql_host=URL/TO/MYSQL \
+  --mysql_username=MYSQL_USERNAME \
+  --mysql_password=MYSQL_PASSWORD
+```
 
 ### 💾 The New Way (CLI Command Cheat Sheet)
 

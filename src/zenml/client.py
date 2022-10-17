@@ -1313,7 +1313,8 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             database: The metadata store database from which to migrate the
-                pipeline runs.
+                pipeline runs. Either a path to a SQLite database or a database
+                name for a MySQL database.
             database_type: The type of the metadata store database
                 ("sqlite" | "mysql"). Defaults to "sqlite".
             mysql_host: The host of the MySQL database.
