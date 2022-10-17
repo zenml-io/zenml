@@ -101,7 +101,6 @@ class ServerDeployer(metaclass=SingletonMetaClass):
         Returns:
             The server deployment.
         """
-
         # We do this here to ensure that the zenml store is always initialized
         # before the server is deployed. This is necessary because the server
         # may require access to the local store configuration or database.

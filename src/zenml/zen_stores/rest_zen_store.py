@@ -209,7 +209,6 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     def expand_certificates(self) -> None:
         """Expands the certificates in the verify_ssl field."""
-
         # Load the certificate values back into the configuration
         if isinstance(self.verify_ssl, str) and os.path.isfile(self.verify_ssl):
             with open(self.verify_ssl, "r") as f:

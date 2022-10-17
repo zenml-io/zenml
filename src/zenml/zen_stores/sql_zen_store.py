@@ -286,7 +286,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     def expand_certificates(self) -> None:
         """Expands the certificates in the verify_ssl field."""
-
         # Load the certificate values back into the configuration
         for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
             file_path = getattr(self, key, None)
