@@ -44,7 +44,6 @@ from zenml.constants import (
     INPUTS,
     LOGIN,
     METADATA_CONFIG,
-    OUTPUTS,
     PIPELINES,
     PROJECTS,
     ROLES,
@@ -1339,18 +1338,6 @@ class RestZenStore(BaseZenStore):
             component_id: The ID of the component to get.
         """
 
-    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get the status for.
-
-        Returns:
-            The execution status of the pipeline run.
-        """
-        body = self.get(f"{RUNS}/{str(run_id)}{STATUS}")
-        return ExecutionStatus(body)
-
     # ------------------
     # Pipeline run steps
     # ------------------
@@ -1402,27 +1389,6 @@ class RestZenStore(BaseZenStore):
             resource_model=StepRunModel,
             **filters,
         )
-
-    def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
-        """Get a list of outputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get outputs for.
-
-        Returns:
-            A dict mapping artifact names to the output artifacts for the step.
-
-        Raises:
-            ValueError: if the response from the API is not a dict.
-        """
-        body = self.get(f"{STEPS}/{str(step_id)}{OUTPUTS}")
-        if not isinstance(body, dict):
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
-        return {
-            name: ArtifactModel.parse_obj(entry) for name, entry in body.items()
-        }
 
     def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
         """Get a list of inputs for a specific step.
@@ -1476,13 +1442,17 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_artifacts(
-        self, artifact_uri: Optional[str] = None
+        self,
+        artifact_uri: Optional[str] = None,
+        parent_step_id: Optional[UUID] = None,
     ) -> List[ArtifactModel]:
         """Lists all artifacts.
 
         Args:
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
+            parent_step_id: If specified, only artifacts for the given step run
+                will be returned.
 
         Returns:
             A list of all artifacts.

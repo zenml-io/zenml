@@ -1229,7 +1229,7 @@ class Client(metaclass=ClientMetaClass):
             raise RuntimeError("No pipeline runs found.")
         yaml_data = []
         for pipeline_run in pipeline_runs:
-            pipeline_run.status = self.zen_store.get_run_status(pipeline_run.id)
+            pipeline_run.status = self.zen_store.get_run(pipeline_run.id).status
             run_dict = json.loads(pipeline_run.json())
             run_dict["steps"] = []
             steps = self.zen_store.list_run_steps(run_id=pipeline_run.id)
@@ -1237,10 +1237,10 @@ class Client(metaclass=ClientMetaClass):
                 step.status = self.zen_store.get_run_step_status(step.id)
                 step_dict = json.loads(step.json())
                 step_dict["output_artifacts"] = []
-                artifacts = self.zen_store.get_run_step_outputs(step_id=step.id)
-                for artifact in sorted(
-                    artifacts.values(), key=lambda x: x.created
-                ):
+                artifacts = self.zen_store.list_artifacts(
+                    parent_step_id=step.id
+                )
+                for artifact in sorted(artifacts, key=lambda x: x.created):
                     artifact_dict = json.loads(artifact.json())
                     step_dict["output_artifacts"].append(artifact_dict)
                 run_dict["steps"].append(step_dict)

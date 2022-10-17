@@ -111,7 +111,10 @@ def get_step_outputs(step_id: UUID) -> Dict[str, ArtifactModel]:
     Returns:
         All outputs of the step, mapping from output name to artifact model.
     """
-    return zen_store().get_run_step_outputs(step_id)
+    return {
+        artifact.name: artifact
+        for artifact in zen_store().list_artifacts(parent_step_id=step_id)
+    }
 
 
 @router.get(

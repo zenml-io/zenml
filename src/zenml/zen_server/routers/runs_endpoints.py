@@ -220,4 +220,4 @@ def get_run_status(run_id: UUID) -> ExecutionStatus:
     Returns:
         The status of the pipeline run.
     """
-    return zen_store().get_run_status(run_id)
+    return zen_store().get_run(run_id).status

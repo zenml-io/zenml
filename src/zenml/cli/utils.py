@@ -1177,7 +1177,7 @@ def print_pipeline_runs_table(
             stack_name = "[DELETED]"
         else:
             stack_name = client.zen_store.get_stack(pipeline_run.stack_id).name
-        status = client.zen_store.get_run_status(pipeline_run.id)
+        status = client.zen_store.get_run(pipeline_run.id).status
         status_emoji = get_execution_status_emoji(status)
         run_dict = {
             "PIPELINE NAME": pipeline_name,

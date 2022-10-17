@@ -292,19 +292,24 @@ class MetadataStore:
             num_steps=num_steps,
         )
 
-    def get_all_runs(self) -> Dict[str, MLMDPipelineRunModel]:
+    def get_all_runs(self, min_mlmd_id: int = 1) -> List[MLMDPipelineRunModel]:
         """Gets a mapping run name -> ID for all runs registered in MLMD.
+
+        Args:
+            min_mlmd_id: Minimum MLMD ID to consider. Useful to filter out
+                runs that were created before a certain point in time.
 
         Returns:
             A mapping run name -> ID for all runs registered in MLMD.
         """
-        all_pipeline_runs = self.store.get_contexts_by_type(
+        run_contexts = self.store.get_contexts_by_type(
             PIPELINE_RUN_CONTEXT_TYPE_NAME
         )
-        return {
-            run.name: self._get_pipeline_run_model_from_context(run)
-            for run in all_pipeline_runs
-        }
+        return [
+            self._get_pipeline_run_model_from_context(run_context)
+            for run_context in run_contexts
+            if run_context.id >= min_mlmd_id
+        ]
 
     def get_pipeline_run_steps(
         self, run_id: int

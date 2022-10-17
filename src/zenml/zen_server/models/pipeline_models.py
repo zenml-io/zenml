@@ -99,7 +99,7 @@ class HydratedPipelineModel(PipelineModel):
         last_x_runs = runs[:num_runs]
         status_last_x_runs = []
         for run in last_x_runs:
-            status_last_x_runs.append(zen_store.get_run_status(run_id=run.id))
+            status_last_x_runs.append(zen_store.get_run(run_id=run.id).status)
 
         return cls(
             id=pipeline_model.id,
@@ -161,7 +161,7 @@ class HydratedPipelineRunModel(PipelineRunModel):
         """
         zen_store = GlobalConfiguration().zen_store
 
-        status = zen_store.get_run_status(run_id=run_model.id)
+        status = zen_store.get_run(run_id=run_model.id).status
 
         pipeline = None
         stack = None
