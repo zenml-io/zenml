@@ -566,6 +566,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        if self.is_local and stack.container_registry.config.is_local:
+            image_name = f"k3d-zenml-kubeflow-registry.{image_name}"
         is_scheduled_run = bool(deployment.schedule)
 
         # Create a callable for future compilation into a dsl.Pipeline.
