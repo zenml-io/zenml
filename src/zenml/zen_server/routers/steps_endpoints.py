@@ -96,6 +96,27 @@ def get_step(step_id: UUID) -> StepRunModel:
     return zen_store().get_run_step(step_id)
 
 
+@router.put(
+    "/{step_id}",
+    response_model=StepRunModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def update_step(step_id: UUID, step_model: StepRunModel) -> StepRunModel:
+    """Updates a step.
+
+    Args:
+        step_id: ID of the step.
+        step_model: Step model to use for the update.
+
+    Returns:
+        The updated step model.
+    """
+    step_model.id = step_id
+    updated_step = zen_store().update_run_step(step=step_model)
+    return updated_step
+
+
 @router.get(
     "/{step_id}" + OUTPUTS,
     response_model=Dict[str, ArtifactModel],

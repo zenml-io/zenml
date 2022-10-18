@@ -1324,6 +1324,20 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
+    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
+        """Updates a pipeline run.
+
+        Args:
+            run: The pipeline run to use for the update.
+
+        Returns:
+            The updated pipeline run.
+        """
+        return self._update_resource(
+            resource=run,
+            route=RUNS,
+        )
+
     # TODO: Figure out what exactly gets returned from this
     def get_run_component_side_effects(
         self,
@@ -1387,6 +1401,20 @@ class RestZenStore(BaseZenStore):
             route=STEPS,
             resource_model=StepRunModel,
             **filters,
+        )
+
+    def update_run_step(self, step: StepRunModel) -> StepRunModel:
+        """Updates a step.
+
+        Args:
+            step: The step to update.
+
+        Returns:
+            The updated step.
+        """
+        return self._update_resource(
+            resource=step,
+            route=STEPS,
         )
 
     def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:

@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
@@ -21,9 +22,6 @@ from zenml.constants import API, ARTIFACTS, VERSION_1
 from zenml.models.pipeline_models import ArtifactModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
-
-if TYPE_CHECKING:
-    from uuid import UUID
 
 router = APIRouter(
     prefix=API + VERSION_1 + ARTIFACTS,
@@ -41,7 +39,7 @@ router = APIRouter(
 @handle_exceptions
 def list_artifacts(
     artifact_uri: Optional[str] = None,
-    parent_step_id: Optional["UUID"] = None,
+    parent_step_id: Optional[UUID] = None,
 ) -> List[ArtifactModel]:
     """Get artifacts according to query filters.
 

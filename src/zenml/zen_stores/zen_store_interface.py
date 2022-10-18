@@ -1005,6 +1005,20 @@ class ZenStoreInterface(ABC):
             A list of all pipeline runs.
         """
 
+    @abstractmethod
+    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
+        """Updates a pipeline run.
+
+        Args:
+            run: The pipeline run to use for the update.
+
+        Returns:
+            The updated pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
     # TODO: Figure out what exactly gets returned from this
     @abstractmethod
     def get_run_component_side_effects(
@@ -1069,6 +1083,20 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A list of all run steps.
+        """
+
+    @abstractmethod
+    def update_run_step(self, step: StepRunModel) -> StepRunModel:
+        """Updates a step.
+
+        Args:
+            step: The step to update.
+
+        Returns:
+            The updated step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
         """
 
     @abstractmethod
