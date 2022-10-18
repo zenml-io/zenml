@@ -168,4 +168,4 @@ def get_step_status(step_id: UUID) -> ExecutionStatus:
     Returns:
         The status of the step.
     """
-    return zen_store().get_run_step_status(step_id)
+    return zen_store().get_run_step(step_id).status

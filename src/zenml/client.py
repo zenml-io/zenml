@@ -1214,9 +1214,6 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             filename: The filename to export the pipeline runs to.
-
-        Raises:
-            RuntimeError: If no pipeline runs exist.
         """
         import json
 
@@ -1226,15 +1223,14 @@ class Client(metaclass=ClientMetaClass):
             project_name_or_id=self.active_project.id
         )
         if not pipeline_runs:
-            raise RuntimeError("No pipeline runs found.")
+            logger.warning("No pipeline runs found. Nothing to export.")
+            return
         yaml_data = []
         for pipeline_run in pipeline_runs:
-            pipeline_run.status = self.zen_store.get_run(pipeline_run.id).status
             run_dict = json.loads(pipeline_run.json())
             run_dict["steps"] = []
             steps = self.zen_store.list_run_steps(run_id=pipeline_run.id)
             for step in steps:
-                step.status = self.zen_store.get_run_step_status(step.id)
                 step_dict = json.loads(step.json())
                 step_dict["output_artifacts"] = []
                 artifacts = self.zen_store.list_artifacts(

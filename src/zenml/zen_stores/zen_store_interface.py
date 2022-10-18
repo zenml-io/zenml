@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.models import (
     ArtifactModel,
     ComponentModel,
@@ -1080,17 +1080,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A dict mapping artifact names to the input artifacts for the step.
-        """
-
-    @abstractmethod
-    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a single step.
-
-        Args:
-            step_id: The ID of the step to get the status for.
-
-        Returns:
-            ExecutionStatus: The status of the step.
         """
 
     # ---------

@@ -169,10 +169,7 @@ def export_pipeline_runs(filename: str) -> None:
     """
     cli_utils.print_active_config()
     client = Client()
-    try:
-        client.export_pipeline_runs(filename=filename)
-    except RuntimeError as err:
-        cli_utils.error(str(err))
+    client.export_pipeline_runs(filename=filename)
 
 
 @runs.command("import", help="Import pipeline runs from a YAML file.")

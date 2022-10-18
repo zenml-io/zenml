@@ -50,13 +50,12 @@ from zenml.constants import (
     RUNS,
     STACK_COMPONENTS,
     STACKS,
-    STATUS,
     STEPS,
     TEAMS,
     USERS,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
     DoesNotExistException,
@@ -1410,18 +1409,6 @@ class RestZenStore(BaseZenStore):
         return {
             name: ArtifactModel.parse_obj(entry) for name, entry in body.items()
         }
-
-    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a single step.
-
-        Args:
-            step_id: The ID of the step to get the status for.
-
-        Returns:
-            The execution status of the step.
-        """
-        body = self.get(f"{STEPS}/{str(step_id)}{STATUS}")
-        return ExecutionStatus(body)
 
     # ---------
     # Artifacts

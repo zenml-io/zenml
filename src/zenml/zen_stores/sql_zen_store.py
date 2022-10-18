@@ -2581,15 +2581,37 @@ class SqlZenStore(BaseZenStore):
                     f"No pipeline run with this ID found."
                 )
             run_model = run.to_model()
-
-            # Sync run status
-            if run_model.status == ExecutionStatus.RUNNING:
-                status = self._get_current_run_status(run_id)
-                if run_model.status != status:
-                    run_model.status = status
-                    self.update_run(run_model)
-
+            run_model = self._update_run_status(run_model)
             return run_model
+
+    def _update_run_status(
+        self, run_model: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Updates the status of a pipeline run model.
+
+        In contrast to other update methods, this does not use the status of the
+        model to overwrite the DB. Instead, the status is computed based on the
+        status of each step, and if that is different from the status in the DB,
+        the DB and model are both updated.
+
+        Args:
+            run_model: The pipeline run model to update.
+
+        Returns:
+            The pipeline run model with updated status.
+        """
+        if run_model.status != ExecutionStatus.RUNNING:
+            return run_model
+
+        steps = self.list_run_steps(run_id=run_model.id)
+        status = ExecutionStatus.run_status(
+            step_statuses=[step.status for step in steps],
+            num_steps=len(steps),
+        )
+        if run_model.status != status:
+            run_model.status = status
+            self.update_run(run_model)
+        return run_model
 
     def list_runs(
         self,
@@ -2692,36 +2714,6 @@ class SqlZenStore(BaseZenStore):
         """
         # TODO: raise KeyError if run doesn't exist
         pass  # TODO
-
-    def _get_current_run_status(self, run_id: UUID) -> ExecutionStatus:
-        """Gets the current execution status of a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get the status for.
-
-        Returns:
-            The status of the pipeline run.
-        """
-        with Session(self.engine) as session:
-            num_steps = session.exec(
-                select(PipelineRunSchema.num_steps).where(
-                    PipelineRunSchema.id == run_id
-                )
-            ).first()
-            if num_steps is None:
-                raise KeyError(
-                    f"Unable to get status for pipeline run with ID {run_id}: "
-                    f"No pipeline run with this ID found."
-                )
-            step_ids = session.exec(
-                select(StepRunSchema.id).where(
-                    StepRunSchema.pipeline_run_id == run_id
-                )
-            ).all()
-        step_statuses = [
-            self.get_run_step_status(step_id) for step_id in step_ids
-        ]
-        return ExecutionStatus.run_status(step_statuses, num_steps)
 
     # ------------------
     # Pipeline run steps
@@ -2928,6 +2920,8 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get step with ID {step_id}: No step with this "
                     "ID found."
                 )
+
+            # Get parent steps.
             parent_steps = session.exec(
                 select(StepRunSchema)
                 .where(StepRunOrderSchema.child_id == step.id)
@@ -2939,6 +2933,8 @@ class SqlZenStore(BaseZenStore):
                 for parent_step in parent_steps
                 if parent_step.mlmd_id is not None
             ]
+
+            # Get input artifacts.
             input_artifact_list = session.exec(
                 select(
                     StepInputArtifactSchema.artifact_id,
@@ -2949,11 +2945,24 @@ class SqlZenStore(BaseZenStore):
                 input_artifact[1]: input_artifact[0]
                 for input_artifact in input_artifact_list
             }
+
+            # Convert to model.
             step_model = step.to_model(
                 parent_step_ids=parent_step_ids,
                 mlmd_parent_step_ids=mlmd_parent_step_ids,
                 input_artifacts=input_artifacts,
             )
+
+            # Update status.
+            if (
+                step_model.status == ExecutionStatus.RUNNING
+                and step_model.mlmd_id is not None
+            ):
+                status = self.metadata_store.get_step_status(step_model.mlmd_id)
+                if step_model.status != status:
+                    step_model.status = status
+                    self.update_run_step(step_model)
+
             return step_model
 
     def list_run_steps(
@@ -2973,9 +2982,7 @@ class SqlZenStore(BaseZenStore):
             if not self.runs_inside_server:
                 self._sync_run_steps(run_id)
         elif not self.runs_inside_server:
-            runs = self.list_runs()
-            for run in runs:
-                self._sync_run_steps(run.id)
+            self._sync_runs()
         with Session(self.engine) as session:
             steps = session.exec(query).all()
             return [self.get_run_step(step.id) for step in steps]
@@ -3045,23 +3052,6 @@ class SqlZenStore(BaseZenStore):
                 step_input_artifact.name: artifact.to_model()
                 for artifact, step_input_artifact in query_result
             }
-
-    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a single step.
-
-        Args:
-            step_id: The ID of the step to get the status for.
-
-        Returns:
-            ExecutionStatus: The status of the step.
-        """
-        step = self.get_run_step(step_id)
-        if step.status == ExecutionStatus.RUNNING and step.mlmd_id is not None:
-            status = self.metadata_store.get_step_status(step.mlmd_id)
-            if step.status != status:
-                step.status = status
-                self.update_run_step(step)
-        return step.status
 
     # ---------
     # Artifacts
@@ -3384,14 +3374,14 @@ class SqlZenStore(BaseZenStore):
 
         # Sync steps of all unfinished runs.
         with Session(self.engine) as session:
-            unfinished_run_ids = session.exec(
-                select(PipelineRunSchema.id).where(
+            unfinished_runs = session.exec(
+                select(PipelineRunSchema).where(
                     PipelineRunSchema.status == ExecutionStatus.RUNNING
                 )
             ).all()
-        for run_id in unfinished_run_ids:
-            self._sync_run_steps(run_id)
-            self.get_run(run_id)  # Updates run status if it has changed.
+        for run_ in unfinished_runs:
+            self._sync_run_steps(run_.id)
+            self._update_run_status(run_.to_model())
 
     def _sync_run_steps(self, run_id: UUID) -> None:
         """Sync run steps from MLMD into the database.

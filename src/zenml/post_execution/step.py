@@ -212,7 +212,9 @@ class StepView:
         Returns:
             The current status of the step.
         """
-        return Client().zen_store.get_run_step_status(self.id)
+        # Query the step again since the status might have changed since this
+        # object was created.
+        return Client().zen_store.get_run_step(self.id).status
 
     @property
     def is_cached(self) -> bool:
