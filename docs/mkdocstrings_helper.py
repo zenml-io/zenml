@@ -8,8 +8,10 @@ PYDOCSTYLE_CMD = "pydocstyle --convention=google --add-ignore=D100,D101,D102," \
                  "D103,D104,D105,D107,D202"
 
 API_DOCS_TITLE = '# Welcome to the ZenML Api Docs\n'
+INTEGRATION_DOCS_TITLE = '# Welcome to the ZenML Integration Docs\n'
 
-API_DOCS = 'api_docs'
+API_DOCS = 'core_code_docs'
+INTEGRATION_DOCS = 'integration_code_docs'
 
 
 def to_md_file(
@@ -63,7 +65,8 @@ def generate_title(s: str) -> str:
 def create_entity_docs(api_doc_file_dir: Path,
                        ignored_modules: List[str],
                        sources_path: Path,
-                       index_file_contents: Optional[List[str]]
+                       index_file_contents: Optional[List[str]],
+                       md_prefix: Optional[str]
                        ) -> Optional[List[str]]:
     """ Create structure for mkdocs with separate md files for each top level
     entity.
@@ -73,6 +76,7 @@ def create_entity_docs(api_doc_file_dir: Path,
         ignored_modules: List of entities to ignore
         sources_path: Path to the zenml src directory
         index_file_contents: Contents of the index file to append to
+        md_prefix: Prefix that will help distinguish between the pages
 
     """
     for item in sources_path.iterdir():
@@ -94,16 +98,21 @@ def create_entity_docs(api_doc_file_dir: Path,
                             f"      show_root_heading: true\n" \
                             f"      show_source: true\n"
 
+                if md_prefix:
+                    file_name = md_prefix + '-' + item.stem
+                else:
+                    file_name = item.stem
                 to_md_file(
                     module_md,
-                    item.stem,
+                    file_name,
                     out_path=api_doc_file_dir,
                 )
 
+                relative_base_path = '/'.join(item.parts[1:-1])
                 if index_file_contents:
                     index_entry = f"# [{item_name}]" \
-                                  f"({api_doc_file_dir.name}/{item.stem})\n\n" \
-                                  f"::: zenml.{item.stem}\n" \
+                                  f"({relative_base_path}/{item.stem})\n\n" \
+                                  f"::: {zenml_import_path}.{item.stem}\n" \
                                   f"    handler: python\n" \
                                   f"    selection:\n" \
                                   f"        members: false\n"
@@ -122,8 +131,11 @@ def create_cli_docs(cli_dev_doc_file_dir: Path,
     #  https://github.com/mkdocstrings/mkdocstrings/issues/162
     #  https://mkdocstrings.github.io/troubleshooting/#my-wrapped-function-shows-documentationcode-for-its-wrapper-instead-of-its-own
     create_entity_docs(
-        api_doc_file_dir=cli_dev_doc_file_dir, ignored_modules=ignored_modules,
-        sources_path=sources_path, index_file_contents=None
+        api_doc_file_dir=cli_dev_doc_file_dir,
+        ignored_modules=ignored_modules,
+        sources_path=sources_path,
+        index_file_contents=None,
+        md_prefix="cli"
     )
 
 
@@ -145,9 +157,11 @@ def generate_docs(
     # Set up output paths for the generated md files
     api_doc_file_dir = output_path / API_DOCS
     cli_dev_doc_file_dir = output_path / API_DOCS / 'cli'
+    integrations_dev_doc_file_dir = output_path / INTEGRATION_DOCS
 
     api_doc_file_dir.mkdir(parents=True, exist_ok=True)
     cli_dev_doc_file_dir.mkdir(parents=True, exist_ok=True)
+    integrations_dev_doc_file_dir.mkdir(parents=True, exist_ok=True)
 
     if not ignored_modules:
         ignored_modules = list()
@@ -155,6 +169,7 @@ def generate_docs(
     # The Cli docs are treated differently as the user facing docs need to be
     # split from the developer-facing docs
     ignored_modules.append('cli')
+    ignored_modules.append('integrations')
 
     # Validate that all docstrings conform to pydocstyle rules
     if (validate and Path(path).is_dir() and
@@ -164,14 +179,11 @@ def generate_docs(
     index_file_contents = [API_DOCS_TITLE]
 
     index_file_contents = create_entity_docs(
-        api_doc_file_dir=api_doc_file_dir, ignored_modules=ignored_modules,
-        sources_path=path, index_file_contents=index_file_contents
-    )
-
-    create_cli_docs(
-        cli_dev_doc_file_dir=cli_dev_doc_file_dir,
+        api_doc_file_dir=api_doc_file_dir,
         ignored_modules=ignored_modules,
-        sources_path=path / 'cli',
+        sources_path=path,
+        index_file_contents=index_file_contents,
+        md_prefix="core"
     )
 
     index_file_str = '\n'.join(index_file_contents)
@@ -180,6 +192,21 @@ def generate_docs(
         'index.md',
         out_path=output_path,
     )
+
+    integration_file_contents = [INTEGRATION_DOCS_TITLE]
+    integrations_file_content = create_entity_docs(
+        api_doc_file_dir=integrations_dev_doc_file_dir,
+        ignored_modules=["__init__.py", "__pycache__"],
+        sources_path=path / 'integrations',
+        index_file_contents=integration_file_contents,
+        md_prefix='integrations'
+    )
+    # integrations_file_str = '\n'.join(integrations_file_content)
+    # to_md_file(
+    #     integrations_file_str,
+    #     'integrations.md',
+    #     out_path=output_path,
+    # )
 
 
 if __name__ == "__main__":
