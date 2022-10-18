@@ -1,0 +1,7 @@
+Description: |
+  A simple recipe to spin up an RDS MySQL metadata store, 
+  S3 artifact store and an ECR container registry.
+
+Prerequisites: |
+  * The AWS CLI on your local machine must be configured with 
+    the account you want to deploy resources to. Run `aws configure`.

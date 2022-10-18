@@ -56,7 +56,6 @@ DATABASE_PASSWORD_OUTPUT = "metadata-db-password"
 INGRESS_CONTROLLER_HOST_OUTPUT = "ingress-controller-host"
 PROJECT_ID_OUTPUT = "project-id"
 ZENML_VERSION_VARIABLE = "zenml-version"
-ZEN_SERVER_VARIABLE = "deploy_zenserver"
 ALPHA_MESSAGE = (
     "The stack recipes CLI is in alpha and actively being developed. "
     "Please avoid running mission-critical workloads on resources deployed "
@@ -1152,7 +1151,7 @@ if terraform_installed:  # noqa: C901
                                     "This recipe doesn't create a Kubernetes cluster "
                                     "and as of now, an existing cluster is required "
                                     "for ZenML deployment. Please take a look at the "
-                                    "guide for steps on how to proceed. "
+                                    "guide for steps on how to proceed: "
                                     "https://docs.zenml.io/getting-started/deploying-zenml/cli#option-1-starting-from-scratch"
                                 )
                                 logger.info(

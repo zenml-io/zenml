@@ -1,0 +1,9 @@
+Description: |
+  A recipe that creates an MLOps stack with an AKS cluster as 
+  orchestrator, Azure Blob Storage container artifact store,
+  ACR container registry, Flexible MySQL server as metadata store, 
+  MLflow experiment tracker and Seldon Core model deployer.
+
+Prerequisites: |
+  * The Az CLI on your local machine must be configured with 
+    the account you want to deploy resources to. Run `az login`.
