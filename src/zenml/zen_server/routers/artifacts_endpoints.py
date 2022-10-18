@@ -66,13 +66,13 @@ def list_artifacts(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_artifact(step: ArtifactModel) -> ArtifactModel:
+def create_artifact(artifact: ArtifactModel) -> ArtifactModel:
     """Create a new artifact.
 
     Args:
-        step: The artifact to create.
+        artifact: The artifact to create.
 
     Returns:
         The created artifact.
     """
-    return zen_store().create_artifact(step)
+    return zen_store().create_artifact(artifact)
