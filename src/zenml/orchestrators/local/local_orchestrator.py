@@ -49,7 +49,7 @@ class LocalOrchestrator(BaseOrchestrator):
         """
         if deployment.schedule:
             logger.warning(
-                "Local Orchestrator currently does not support the"
+                "Local Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )

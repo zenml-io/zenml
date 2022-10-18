@@ -228,6 +228,7 @@ class AzureMLStepOperator(BaseStepOperator):
             "dockerignore",
             "copy_files",
             "copy_global_config",
+            "apt_packages",
         ]
         docker_settings = info.pipeline.docker_settings
         ignored_docker_fields = docker_settings.__fields_set__.intersection(
@@ -237,7 +238,7 @@ class AzureMLStepOperator(BaseStepOperator):
         if ignored_docker_fields:
             logger.warning(
                 "The AzureML step operator currently does not support all "
-                "options defined in your Docker configuration. Ignoring all "
+                "options defined in your Docker settings. Ignoring all "
                 "values set for the attributes: %s",
                 ignored_docker_fields,
             )

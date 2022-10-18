@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Graphviz pipeline run DAG visualizer."""
 
+import shutil
 import tempfile
 from abc import abstractmethod
 from typing import Any
@@ -58,6 +59,11 @@ class PipelineRunDagVisualizer(BaseVisualizer):
         logger.warning(
             "This integration is not completed yet. Results might be unexpected."
         )
+        if not shutil.which("dot"):
+            raise RuntimeError(
+                "Unable to find the `dot` package on your system. Please "
+                "install it (https://graphviz.org/download/) and try again."
+            )
 
         dot = graphviz.Digraph(comment=object.name)
 
