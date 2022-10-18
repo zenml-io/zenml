@@ -224,7 +224,7 @@ class StackRecipeService(TerraformService):
             return None
         except FileNotFoundError:
             return None
-    
+
     def get_vars(self) -> Dict[str, Any]:
         """Get variables as a dictionary.
 
@@ -240,13 +240,11 @@ class StackRecipeService(TerraformService):
         vars = super().get_vars()
         # update zenml version to current version
         vars[ZENML_VERSION_VARIABLE] = zenml.__version__
-        # set the variable that deploys server conditionally
-        vars[ZEN_SERVER_VARIABLE] = self.create_zen_server
         return vars
 
     def get_deployment_info(self) -> str:
         """Return deployment details as a YAML document.
-        
+
         Returns:
             A YAML document that can be passed as config to
             the server deploy function.
@@ -258,30 +256,24 @@ class StackRecipeService(TerraformService):
         )["Cloud"]
 
         config = {
-            'name': f'{provider}-server',
-            'provider': f'{provider}',
-            'username': 'default',
-            'password': 'zenml',
-            'create_sql': True,
-            'create_ingress_controller': False,
+            "name": f"{provider}-server",
+            "provider": f"{provider}",
+            "username": "default",
+            "password": "zenml",
+            "create_sql": True,
+            "create_ingress_controller": False,
+            "ingress_controller_hostname": self.terraform_client.output(
+                INGRESS_CONTROLLER_HOST_OUTPUT, full_value=True
+            ),
         }
 
-        if provider is 'gcp':
-            config['project_id'] = self.terraform_client.output(
+        if provider == "gcp":
+            config["project_id"] = self.terraform_client.output(
                 PROJECT_ID_OUTPUT, full_value=True
             )
 
-        vars = self.get_vars()
-        filter = ['aws-stores-minimal', 'azureml-minimal', 'vertex-ai']
-        if Path(self.terraform_client.working_dir).name in filter and \
-            ("enable_mlflow" not in vars or vars["enable_mlflow"] is False):
-            config["create_ingress_controller"] = True
-        else:
-            ingress_controller_hostname = self.terraform_client.output(
-                INGRESS_CONTROLLER_HOST_OUTPUT, full_value=True
-            )
-            config["ingress_controller_hostname"] = ingress_controller_hostname
         return yaml.dump(config)
+
 
 class LocalStackRecipe:
     """Class to encapsulate the local recipe that can be run from the CLI."""
@@ -988,7 +980,7 @@ if terraform_installed:  # noqa: C901
     @click.option(
         "--no-server",
         is_flag=True,
-        help="Don't deploy ZenML even if there's no active cloud deployment.",        
+        help="Don't deploy ZenML even if there's no active cloud deployment.",
     )
     @pass_git_stack_recipes_handler
     @click.pass_context
@@ -1121,20 +1113,59 @@ if terraform_installed:  # noqa: C901
                             config=terraform_config
                         )
 
-                    stack_recipe_service.create_zen_server = not (
-                        no_server or
-                        zen_server_exists()
-                    )
                     # start the service (the init and apply operation)
                     stack_recipe_service.start()
 
                     # invoke server deploy
-                    if stack_recipe_service.create_zen_server:
-                        ctx.invoke(
-                            server.deploy,
-                            config=stack_recipe_service.get_deployment_info(),
-                            connect=True,
+                    if no_server:
+                        logger.info(
+                            "The --no-server flag was passed. "
+                            "Skipping the remote deployment of ZenML. "
+                            "Please note that if you wish to use the stack "
+                            "that you created through this recipe, you will "
+                            "need to deploy ZenML on the cloud."
                         )
+                    else:
+                        if zen_server_exists():
+                            logger.info(
+                                "A ZenML deployment exists already with URL: "
+                                f"{GlobalConfiguration().store.url}. The recipe will "
+                                "not create a new installation."
+                            )
+                        else:
+                            logger.info(
+                                "No remote deployment of ZenML detected. "
+                            )
+                            vars = stack_recipe_service.get_vars()
+                            filter = [
+                                "aws-stores-minimal",
+                                "azureml-minimal",
+                                "vertex-ai",
+                            ]
+                            if Path(
+                                stack_recipe_service.terraform_client.working_dir
+                            ).name in filter and (
+                                "enable_mlflow" not in vars
+                                or vars["enable_mlflow"] == False
+                            ):
+                                logger.warning(
+                                    "This recipe doesn't create a Kubernetes cluster "
+                                    "and as of now, an existing cluster is required "
+                                    "for ZenML deployment. Please take a look at the "
+                                    "guide for steps on how to proceed. "
+                                    "https://docs.zenml.io/getting-started/deploying-zenml/cli#option-1-starting-from-scratch"
+                                )
+                                logger.info(
+                                    "Not attempting to import the generated YAML file "
+                                    "since there isn't any active ZenML deployment."
+                                )
+                                return
+                            else:
+                                ctx.invoke(
+                                    server.deploy,
+                                    config=stack_recipe_service.get_deployment_info(),
+                                    connect=True,
+                                )
 
                     # get the stack yaml path
                     stack_yaml_file = os.path.join(
@@ -1205,9 +1236,9 @@ if terraform_installed:  # noqa: C901
 
     def zen_server_exists() -> bool:
         """Check if a remote ZenServer is active.
-        
+
         Returns:
-            True if active, false otherwise.    
+            True if active, false otherwise.
         """
         gc = GlobalConfiguration()
 
