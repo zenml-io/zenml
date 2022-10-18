@@ -242,7 +242,9 @@ def kserve_model_deployer_step(
     Returns:
         KServe deployment service
     """
-    model_deployer = KServeModelDeployer.get_active_model_deployer()
+    model_deployer = cast(
+        KServeModelDeployer, KServeModelDeployer.get_active_model_deployer()
+    )
 
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
@@ -358,7 +360,9 @@ def kserve_custom_model_deployer_step(
         )
 
     # get the active model deployer
-    model_deployer = KServeModelDeployer.get_active_model_deployer()
+    model_deployer = cast(
+        KServeModelDeployer, KServeModelDeployer.get_active_model_deployer()
+    )
 
     # get pipeline name, step name, run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
