@@ -250,6 +250,23 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         """
         active_project: ProjectModel
 
+        # Figure out a project to use if one isn't configured or
+        # available:
+        #   1. If the default project is configured, use that.
+        #   2. If the default project is not configured, use the first
+        #      project in the store.
+        #   3. If there are no projects in the store, create the default
+        #      project and use that
+        try:
+            default_project = self._default_project
+        except KeyError:
+            projects = self.list_projects()
+            if len(projects) == 0:
+                self._create_default_project()
+                default_project = self._default_project
+            else:
+                default_project = projects[0]
+
         # Ensure that the current active project is still valid
         if active_project_name_or_id:
             try:
@@ -257,16 +274,18 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             except KeyError:
                 logger.warning(
                     "The current %s active project is no longer available. "
-                    "Resetting the active project to default.",
+                    "Resetting the active project to '%s'.",
                     config_name,
+                    default_project.name,
                 )
-                active_project = self._default_project
+                active_project = default_project
         else:
             logger.info(
-                "Setting the %s active project to default.",
+                "Setting the %s active project to '%s'.",
                 config_name,
+                default_project.name,
             )
-            active_project = self._default_project
+            active_project = default_project
 
         active_stack: StackModel
 
