@@ -781,6 +781,9 @@ class BaseStep(metaclass=BaseStepMeta):
                 overwrite all existing ones. See the general description of this
                 method for an example.
 
+        Returns:
+            The step instance that this method was called on.
+
         Raises:
             StepInterfaceError: If a materializer or artifact for a non-existent
                 output name are configured.

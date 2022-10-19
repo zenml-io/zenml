@@ -212,6 +212,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
+
+        Returns:
+            The pipeline instance that this method was called on.
         """
         values = dict_utils.remove_none_values(
             {
