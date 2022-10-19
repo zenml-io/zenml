@@ -39,9 +39,9 @@ class GitHubActionsOrchestratorConfig(BaseOrchestratorConfig):
             be committed and pushed manually.
     """
 
-    skip_dirty_repository_check: bool = False
-    skip_github_repository_check: bool = False
-    push: bool = False
+    skip_dirty_repository_check: bool = False  # TODO[1376]: Setting
+    skip_github_repository_check: bool = False  # TODO[1376]: Setting
+    push: bool = False  # TODO[1376]: Setting
 
     @property
     def is_remote(self) -> bool:

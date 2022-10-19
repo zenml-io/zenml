@@ -46,8 +46,8 @@ class SparkStepOperatorConfig(BaseStepOperatorConfig):
     """
 
     master: str
-    deploy_mode: str = "cluster"
-    submit_kwargs: Optional[Dict[str, Any]] = None
+    deploy_mode: str = "cluster"  # TODO[1376]: Setting
+    submit_kwargs: Optional[Dict[str, Any]] = None  # TODO[1376]: Setting
 
     @validator("submit_kwargs", pre=True)
     def _convert_json_string(

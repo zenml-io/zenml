@@ -38,7 +38,7 @@ class TektonOrchestratorConfig(BaseOrchestratorConfig):
             daemon will be skipped.
     """
 
-    kubernetes_context: str
+    kubernetes_context: str  # TODO[1376]: Setting
     kubernetes_namespace: str = "zenml"
     tekton_ui_port: int = DEFAULT_TEKTON_UI_PORT
     skip_ui_daemon_provisioning: bool = False

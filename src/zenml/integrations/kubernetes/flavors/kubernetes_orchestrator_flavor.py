@@ -40,10 +40,10 @@ class KubernetesOrchestratorConfig(BaseOrchestratorConfig):
             clients. This is only useful for unit testing.
     """
 
-    kubernetes_context: Optional[str] = None
+    kubernetes_context: Optional[str] = None  # TODO[1376]: Setting
     kubernetes_namespace: str = "zenml"
-    synchronous: bool = False
-    skip_config_loading: bool = False
+    synchronous: bool = False  # TODO[1376]: Setting
+    skip_config_loading: bool = False  # TODO[1376]: Remove
 
     @property
     def is_remote(self) -> bool:

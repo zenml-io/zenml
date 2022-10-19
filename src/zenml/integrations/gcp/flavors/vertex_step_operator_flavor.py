@@ -47,9 +47,9 @@ class VertexStepOperatorConfig(
 
     region: str
     project: Optional[str] = None
-    accelerator_type: Optional[str] = None
-    accelerator_count: int = 0
-    machine_type: str = "n1-standard-4"
+    accelerator_type: Optional[str] = None  # TODO[1376]: Setting
+    accelerator_count: int = 0  # TODO[1376]: Setting
+    machine_type: str = "n1-standard-4"  # TODO[1376]: Setting
 
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set

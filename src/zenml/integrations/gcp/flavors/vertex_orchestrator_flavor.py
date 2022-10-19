@@ -87,15 +87,15 @@ class VertexOrchestratorConfig(
     project: Optional[str] = None
     location: str
     pipeline_root: Optional[str] = None
-    labels: Dict[str, str] = {}
+    labels: Dict[str, str] = {}  # TODO[1376]: Setting
     encryption_spec_key_name: Optional[str] = None
     workload_service_account: Optional[str] = None
     network: Optional[str] = None
-    synchronous: bool = False
+    synchronous: bool = False  # TODO[1376]: Setting
 
     cpu_limit: Optional[str] = None
     memory_limit: Optional[str] = None
-    node_selector_constraint: Optional[Tuple[str, str]] = None
+    node_selector_constraint: Optional[Tuple[str, str]] = None  # TODO[1376]: Setting
     gpu_limit: Optional[int] = None
 
     @property

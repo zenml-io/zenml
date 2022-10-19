@@ -52,7 +52,7 @@ class AzureMLStepOperatorConfig(BaseStepOperatorConfig):
     compute_target_name: str
 
     # Environment
-    environment_name: Optional[str] = None
+    environment_name: Optional[str] = None  # TODO[1376]: Setting
 
     # Service principal authentication
     # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal

@@ -34,7 +34,7 @@ class SlackAlerterConfig(BaseAlerterConfig):
     """
 
     slack_token: str = SecretField()
-    default_slack_channel_id: Optional[str] = None
+    default_slack_channel_id: Optional[str] = None  # TODO[1376]: Setting
 
 
 class SlackAlerterFlavor(BaseAlerterFlavor):
