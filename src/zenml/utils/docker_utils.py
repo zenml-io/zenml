@@ -44,7 +44,6 @@ def check_docker() -> bool:
     Returns:
         `True` if Docker is installed, `False` otherwise.
     """
-
     # Try to ping Docker, to see if it's running
     try:
         docker_client = DockerClient.from_env()
