@@ -248,7 +248,7 @@ def up(
                 try:
                     import webbrowser
                     webbrowser.open(server.status.url)
-                    cli_utils.declare(f"Automatically opening the dashboard in your browser. To disable this, set the the env variable AUTO_OPEN_DASHBOARD=false.")
+                    cli_utils.declare(f"Automatically opening the dashboard in your browser. To disable this, set the env variable AUTO_OPEN_DASHBOARD=false.")
                 except Exception as e:
                     logger.error(e)
         
