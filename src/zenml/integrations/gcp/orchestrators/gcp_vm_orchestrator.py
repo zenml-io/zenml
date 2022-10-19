@@ -52,6 +52,8 @@ from zenml.orchestrators.vm_orchestrator.base_vm_orchestrator import (
 )
 
 if TYPE_CHECKING:
+    from google.auth.credentials import Credentials
+
     from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
@@ -131,50 +133,9 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         return result
 
     @staticmethod
-    def delete_instance(project_id: str, zone: str, machine_name: str) -> None:
-        """
-        Send an instance deletion request to the Compute Engine API and wait for it to complete.
-
-        Args:
-            project_id: project ID or project number of the Cloud project you want to use.
-            zone: name of the zone you want to use. For example: “us-west3-b”
-            machine_name: name of the machine you want to delete.
-        """
-        instance_client = compute_v1.InstancesClient()
-
-        logger.info(f"Deleting {machine_name} from {zone}...")
-        operation = instance_client.delete(
-            project=project_id, zone=zone, instance=machine_name
-        )
-        GCPVMOrchestrator.wait_for_extended_operation(
-            operation, "instance deletion"
-        )
-        logger.info(f"Instance {machine_name} deleted.")
-        return
-
-    @staticmethod
     def sanitize_gcp_vm_name(bad_name: str) -> str:
         """Get a good name from a bad name"""
         return bad_name.replace("_", "-").lower()
-
-    @staticmethod
-    def get_image_from_family(project: str, family: str) -> compute_v1.Image:
-        """
-        Retrieve the newest image that is part of a given family in a project.
-
-        Args:
-            project: project ID or project number of the Cloud project you want to get image from.
-            family: name of the image family you want to get image from.
-
-        Returns:
-            An Image object.
-        """
-        image_client = compute_v1.ImagesClient()
-        # List of public operating system (OS) images: https://cloud.google.com/compute/docs/images/os-details
-        newest_image = image_client.get_from_family(
-            project=project, family=family
-        )
-        return newest_image
 
     @staticmethod
     def disk_from_image(
@@ -214,6 +175,93 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         boot_disk.boot = boot
         return boot_disk
 
+    def _get_credentials(self) -> "Credentials":
+        """Get credentails based on supplied authentication info.
+
+        Returns:
+            Credentials: Google cloud credentials.
+        """
+        credentials, project_id = self._get_authentication()
+        if self.config.project_id != project_id:
+            logger.warning(
+                "The orchestrator is configured to run on project: "
+                f"{self.config.project_id} but the service account credentials file "
+                f"{self.service_account_path} seems to be for project {project_id}. "
+                "Ignoring service account project value and using configured value "
+                f"{self.config.project_id}..)"
+            )
+        return credentials
+
+    def _get_instances_client(self) -> compute_v1.InstancesClient:
+        """Returns google instances client.
+
+        Returns:
+            a `compute_v1.InstancesClient` object from the google internal lib.
+        """
+        credentials = self._get_credentials()
+        return compute_v1.InstancesClient(credentials=credentials)
+
+    def _get_logging_client(self) -> compute_v1.InstancesClient:
+        """Returns a google logging client.
+
+        Returns:
+            a `google.cloud.logging.Client` object from the google internal lib.
+        """
+        credentials = self._get_credentials()
+        return google.cloud.logging.Client(credentials=credentials)
+
+    def _get_images_client(self) -> compute_v1.InstancesClient:
+        """Returns google images client.
+
+        Returns:
+            a `compute_v1.ImagesClient` object from the google internal lib.
+        """
+        credentials = self._get_credentials()
+        return compute_v1.ImagesClient(credentials=credentials)
+
+    def delete_instance(
+        self, project_id: str, zone: str, machine_name: str
+    ) -> None:
+        """
+        Send an instance deletion request to the Compute Engine API and wait for it to complete.
+
+        Args:
+            project_id: project ID or project number of the Cloud project you want to use.
+            zone: name of the zone you want to use. For example: “us-west3-b”
+            machine_name: name of the machine you want to delete.
+        """
+        instance_client = compute_v1.InstancesClient()
+
+        logger.info(f"Deleting {machine_name} from {zone}...")
+        operation = instance_client.delete(
+            project=project_id, zone=zone, instance=machine_name
+        )
+        GCPVMOrchestrator.wait_for_extended_operation(
+            operation, "instance deletion"
+        )
+        logger.info(f"Instance {machine_name} deleted.")
+        return
+
+    def get_image_from_family(
+        self, project: str, family: str
+    ) -> compute_v1.Image:
+        """
+        Retrieve the newest image that is part of a given family in a project.
+
+        Args:
+            project: project ID or project number of the Cloud project you want to get image from.
+            family: name of the image family you want to get image from.
+
+        Returns:
+            An Image object.
+        """
+        image_client = self._get_images_client()
+        # List of public operating system (OS) images: https://cloud.google.com/compute/docs/images/os-details
+        newest_image = image_client.get_from_family(
+            project=project, family=family
+        )
+        return newest_image
+
     def get_instance_name(self, deployment: "PipelineDeployment") -> str:
         """From pipeline deployment, get name of launched instance.
 
@@ -224,7 +272,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
             Name of the instance.
         """
         return GCPVMOrchestrator.sanitize_gcp_vm_name(
-            "zenml-" + str(deployment.pipeline.name)
+            "zenml-" + str(deployment.run_name)
         )
 
     def launch_instance(
@@ -252,14 +300,14 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
             self.get_settings(deployment) or GCPVMOrchestratorSettings(),
         )
 
-        instance_client = compute_v1.InstancesClient()
+        instance_client = self._get_instances_client()
 
         # Get the c_params
         c_params = " ".join(command + arguments)
 
         instance_name = self.get_instance_name(deployment)
 
-        image = GCPVMOrchestrator.get_image_from_family(
+        image = self.get_image_from_family(
             "gce-uefi-images", family="cos-69-lts"
         )
 
@@ -409,13 +457,13 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         deployment: "PipelineDeployment",
         seconds_before: int,
     ) -> None:
-        """Streams logs onto the logger
+        """Streams logs to the logger.
 
         Args:
-            deployment: Deployment of the pipeline.
+            deployment: Deployment of the pipeline.client.
             seconds_before: How many seconds before to stream logs from.
         """
-        client = google.cloud.logging.Client()
+        client = self._get_logging_client()
         time_format = "%Y-%m-%dT%H:%M:%S.%fZ"
         before = datetime.now(timezone.utc) - timedelta(seconds=seconds_before)
         filter_str = (
@@ -424,4 +472,5 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         )
         # query and print all matching logs
         for entry in client.list_entries(filter_=filter_str):  # API call(s)
-            logger.info(entry.payload["data"])
+            if "data" in entry.payload:
+                logger.info(entry.payload["data"])

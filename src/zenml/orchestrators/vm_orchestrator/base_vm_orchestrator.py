@@ -26,16 +26,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 import time
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Tuple, cast
 
 from pydantic import BaseModel
 
-from zenml.constants import (
-    ORCHESTRATOR_DOCKER_IMAGE_KEY,
-    SHOULD_PREVENT_PIPELINE_EXECUTION,
-)
+from zenml import constants
+from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints.pipeline_entrypoint_configuration import (
     PipelineEntrypointConfiguration,
 )
@@ -135,6 +134,36 @@ class BaseVMOrchestrator(BaseOrchestrator):
             required_components={StackComponentType.CONTAINER_REGISTRY},
             custom_validation_function=_validate,
         )
+
+    def _output_logs(self, deployment: "PipelineDeployment") -> None:
+        """Output logs to the logger.
+
+        Args:
+            deployment: Deployment of the pipeline.
+        """
+        logs_url = self.get_logs_url(deployment)
+        if logs_url:
+            logger.info(f"You can also view the logs directly at: {logs_url}")
+
+        try:
+            # While VM is running, stream the logs
+            while self.is_running(deployment):
+                self.stream_logs(
+                    deployment=deployment,
+                    seconds_before=STREAM_LOGS_POLLING_INTERVAL_SECS * 2,
+                )
+                time.sleep(STREAM_LOGS_POLLING_INTERVAL_SECS)
+            self.stream_logs(
+                deployment=deployment,
+                seconds_before=STREAM_LOGS_POLLING_INTERVAL_SECS * 2,
+            )
+        except KeyboardInterrupt:
+            logger.info("Keyboard interupt detected! Exiting logs streaming.")
+            if logs_url:
+                logger.info(f"Please view logs directly at {logs_url}")
+        except Exception as e:
+            logger.error("Failed to fetch logs. Raising original exception.")
+            raise e
 
     def is_running(self, deployment: "PipelineDeployment") -> bool:
         """Check whether pipeline is running or not.
@@ -240,7 +269,7 @@ class BaseVMOrchestrator(BaseOrchestrator):
         """
         # Prevent execution of nested pipelines which might lead to unexpected
         # behavior
-        SHOULD_PREVENT_PIPELINE_EXECUTION = True
+        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
 
         # First check whether the code running in a notebook
         if Environment.in_notebook():
@@ -276,28 +305,8 @@ class BaseVMOrchestrator(BaseOrchestrator):
         # Resolve the logs url
         logger.info(
             f"Instance {instance.name} is now running the pipeline. "
-            "Logs will be streamed soon. "
+            "The next logs will be from the remote instance. "
+            "Logs will be streamed soon.."
         )
-        logs_url = self.get_logs_url(deployment)
-        if logs_url:
-            logger.info(f"You can also view the logs directly at: {logs_url}")
 
-        try:
-            # While VM is running, stream the logs
-            while self.is_running(deployment):
-                self.stream_logs(
-                    deployment=deployment,
-                    seconds_before=STREAM_LOGS_POLLING_INTERVAL_SECS,
-                )
-                time.sleep(STREAM_LOGS_POLLING_INTERVAL_SECS)
-            self.stream_logs(
-                deployment=deployment,
-                seconds_before=STREAM_LOGS_POLLING_INTERVAL_SECS * 2,
-            )
-        except KeyboardInterrupt:
-            logger.info("Keyboard interupt detected! Exiting logs streaming.")
-            if logs_url:
-                logger.info(f"Please view logs directly at {logs_url}")
-        except Exception as e:
-            logger.error("Failed to fetch logs. Raising original exception.")
-            raise e
+        self._output_logs(deployment)
