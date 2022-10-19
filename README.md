@@ -141,7 +141,7 @@ Read more [here](https://blog.zenml.io/why-zenml/).
 # 💡 What is ZenML?
 
 <div align="center">
-    <img src="docs/book/assets/tailor.gif">
+    <img src="docs/book/assets/stack.gif">
 </div>
 
 
