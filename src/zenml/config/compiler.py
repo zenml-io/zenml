@@ -154,7 +154,7 @@ class Compiler:
         Raises:
             PipelineInterfaceError: If multiple steps share the same name.
         """
-        step_names = {}
+        step_names: Dict[str, str] = {}
 
         for step_argument_name, step in pipeline.steps.items():
             previous_argument_name = step_names.get(step.name, None)
