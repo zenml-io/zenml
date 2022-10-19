@@ -15,6 +15,7 @@
 
 import ipaddress
 import os
+import sys
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import click
@@ -30,6 +31,7 @@ from zenml.enums import ServerProviderType, StoreType
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.docker_utils import check_docker
 
 logger = get_logger(__name__)
 
@@ -153,8 +155,23 @@ def up(
     gc = GlobalConfiguration()
 
     if docker:
+        if not check_docker():
+            cli_utils.error(
+                "Docker does not seem to be installed on your system. Please "
+                "install Docker to use the Docker ZenML server local "
+                "deployment or use one of the other deployment options."
+            )
         provider = ServerProviderType.DOCKER
     else:
+        if sys.platform == "win32" and not blocking:
+            cli_utils.error(
+                "Running the ZenML server locally as a background process is "
+                "not supported on Windows. Please use the `--blocking` flag "
+                "to run the server in blocking mode, or run the server in "
+                "a Docker container by setting `--docker` instead."
+            )
+        else:
+            pass
         provider = ServerProviderType.LOCAL
 
     deployer = ServerDeployer()
