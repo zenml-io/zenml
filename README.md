@@ -111,15 +111,15 @@
       <a href="#%EF%B8%8F-infrastructure-requirements">Infrastructure Requirements</a>
       <ul>
         <li><a href="#-deploy-zenml">Deploy ZenML</a></li>
-        <li><a href="#-open-source-mlops-stack-recipes">MLOps Recipes</a></li>
+        <li><a href="#-open-source-mlops-stack-recipes">MLOps Stack Recipes</a></li>
       </ul>
     </li>
-    <li><a href="#-learn-more">Learn More</a></li>
     <li><a href="#-roadmap">Roadmap</a></li>
     <li><a href="#-contributing-and-community">Contributing and Community</a></li>
     <li><a href="#-meet-the-team">Meet the Team</a></li>
     <li><a href="#-getting-help">Getting Help</a></li>
     <li><a href="#-license">License</a></li>
+    <li><a href="#-learn-more">Learn More</a></li>
   </ol>
 </details>
 
