@@ -124,6 +124,12 @@ class AzureMLStepOperator(BaseStepOperator):
     def prepare_pipeline_deployment(
         self, deployment: "PipelineDeployment", stack: "Stack"
     ) -> None:
+        """Store the active deployment in an environment variable.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
+        """
         steps_to_run = [
             step
             for step in deployment.steps.values()
@@ -278,6 +284,8 @@ class AzureMLStepOperator(BaseStepOperator):
             with open(deployment_path, "w") as f:
                 f.write(deployment)
         elif not os.path.exists(deployment_path):
+            # We're running in a non-local environment which should already
+            # include the deployment at the source root
             raise RuntimeError("Unable to find deployment configuration.")
 
         with _include_global_config(
