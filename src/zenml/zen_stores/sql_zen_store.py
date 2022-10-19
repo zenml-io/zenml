@@ -537,7 +537,6 @@ class SqlZenStore(BaseZenStore):
     def _initialize(self) -> None:
         """Initialize the SQL store."""
         from zenml.zen_stores.metadata_store import MetadataStore
-
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
 
         metadata_config = self.config.get_metadata_config()
@@ -547,7 +546,34 @@ class SqlZenStore(BaseZenStore):
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
         )
+
+        self.migrate_database()
         SQLModel.metadata.create_all(self._engine)
+
+    def migrate_database(
+            self,
+            revision="head"
+    ):
+        """ Migrate the Database to the head as defined by the current python package
+
+        Args:
+            revision: Version of the db-schema to up/downgrade to
+        """
+        from alembic.config import Config
+        from alembic import command
+
+        url, connect_args, engine_args = self.config.get_sqlmodel_config()
+        connection = self._engine.connect()
+
+        # TODO: This feels wrong, any suggestions how to improve this
+        ini_file_path = Path.absolute(Path(__file__).parents[1] / "alembic.ini")
+
+        config = Config(str(ini_file_path))
+        config.set_main_option('script_location', "zenml:zen_stores/migrations")
+        config.set_main_option('sqlalchemy.url', url)
+        if connection is not None:
+            config.attributes['connection'] = connection
+        command.upgrade(config, revision)
 
     def get_store_info(self) -> ServerModel:
         """Get information about the store.
