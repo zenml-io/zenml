@@ -30,7 +30,7 @@ from zenml.enums import ServerProviderType, StoreType
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.constants import ENV_AUTO_OPEN_DASHBOARD
+from zenml.constants import ENV_AUTO_OPEN_DASHBOARD, handle_bool_env_var
 
 logger = get_logger(__name__)
 
