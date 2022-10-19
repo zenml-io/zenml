@@ -201,12 +201,6 @@ def generate_docs(
         index_file_contents=integration_file_contents,
         md_prefix='integrations'
     )
-    # integrations_file_str = '\n'.join(integrations_file_content)
-    # to_md_file(
-    #     integrations_file_str,
-    #     'integrations.md',
-    #     out_path=output_path,
-    # )
 
 
 if __name__ == "__main__":
