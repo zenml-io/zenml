@@ -55,6 +55,9 @@ class PipelineRunDagVisualizer(BaseVisualizer):
 
         Returns:
             A graphviz digraph object.
+
+        Raises:
+            RuntimeError: If the `dot` package isn't installed.
         """
         logger.warning(
             "This integration is not completed yet. Results might be unexpected."
