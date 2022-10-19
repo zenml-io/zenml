@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
-from typing import TYPE_CHECKING
-
 import click
 
 from zenml.cli import utils as cli_utils
@@ -22,9 +20,6 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import CliCategories, LoggingLevels
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-
-if TYPE_CHECKING:
-    pass
 
 
 # Analytics

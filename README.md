@@ -74,7 +74,7 @@
     ·
     <a href="#-meet-the-team">Meet the Team</a>
     <br />
-    🎉 Version 0.20.3 is out. Check out the release notes
+    🎉 Version 0.20.4 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />
@@ -83,6 +83,9 @@
     </a>
     <a href="https://twitter.com/zenml_io">
     <img src="https://img.shields.io/badge/-Twitter-black.svg?style=for-the-badge&logo=twitter&colorB=555" alt="Logo">
+    </a>
+    <a href="https://www.youtube.com/c/ZenML">
+    <img src="https://img.shields.io/badge/-YouTube-black.svg?style=for-the-badge&logo=youtube&colorB=555" alt="Logo">
     </a>
   </p>
 </div>
@@ -111,15 +114,15 @@
       <a href="#%EF%B8%8F-infrastructure-requirements">Infrastructure Requirements</a>
       <ul>
         <li><a href="#-deploy-zenml">Deploy ZenML</a></li>
-        <li><a href="#-open-source-mlops-stack-recipes">MLOps Recipes</a></li>
+        <li><a href="#-open-source-mlops-stack-recipes">MLOps Stack Recipes</a></li>
       </ul>
     </li>
-    <li><a href="#-learn-more">Learn More</a></li>
     <li><a href="#-roadmap">Roadmap</a></li>
     <li><a href="#-contributing-and-community">Contributing and Community</a></li>
     <li><a href="#-meet-the-team">Meet the Team</a></li>
     <li><a href="#-getting-help">Getting Help</a></li>
     <li><a href="#-license">License</a></li>
+    <li><a href="#-learn-more">Learn More</a></li>
   </ol>
 </details>
 
@@ -141,7 +144,7 @@ Read more [here](https://blog.zenml.io/why-zenml/).
 # 💡 What is ZenML?
 
 <div align="center">
-    <img src="docs/book/assets/tailor.gif">
+    <img src="docs/book/assets/stack.gif">
 </div>
 
 
@@ -347,7 +350,7 @@ image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f
 
 # 👩‍👩‍👧‍👦 Meet the Team
 
-![Meet the Team](./docs/book/assets/meet_the_team.jpeg)
+![Meet the Team](./docs/book/assets/meet_the_team.png)
 
 Have a question that's too hard to express on our Slack? Is it just too much effort to say everything on a 
 long GitHub issue? Or are you just curious about what ZenML has been up to in the past week? Well, register now for the ZenML Office (Half) Hour to get your answers and more!

@@ -15,10 +15,14 @@
 
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, Type
 from uuid import uuid4
 
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import (
+    ENV_ZENML_LOCAL_STORES_PATH,
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
@@ -84,28 +88,6 @@ class LocalDockerOrchestrator(BaseOrchestrator):
                 f"{ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID}."
             )
 
-    @staticmethod
-    def _get_volumes(stack: "Stack") -> Dict[str, Dict[str, str]]:
-        """Get mount volumes for all necessary local stack components.
-
-        Args:
-            stack: The stack on which the pipeline is running.
-
-        Returns:
-            List of volumes to mount.
-        """
-        volumes = {}
-
-        # Add a volume for all local paths of stack components
-        for stack_component in stack.components.values():
-            local_path = stack_component.local_path
-            if not local_path:
-                continue
-
-            volumes[local_path] = {"bind": local_path, "mode": "rw"}
-
-        return volumes
-
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
@@ -129,7 +111,21 @@ class LocalDockerOrchestrator(BaseOrchestrator):
         docker_client = DockerClient.from_env()
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
         entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
-        environment = {ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID: str(uuid4())}
+
+        # Add the local stores path as a volume mount
+        stack.check_local_paths()
+        local_stores_path = GlobalConfiguration().local_stores_path
+        volumes = {
+            local_stores_path: {
+                "bind": local_stores_path,
+                "mode": "rw",
+            }
+        }
+        environment = {
+            ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID: str(uuid4()),
+            ENV_ZENML_LOCAL_STORES_PATH: local_stores_path,
+        }
+
         # Run each step
         for step_name, step in deployment.steps.items():
             if self.requires_resources_in_orchestration_environment(step):
@@ -143,7 +139,6 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name
             )
-            volumes = self._get_volumes(stack=stack)
             user = None
             if sys.platform != "win32":
                 user = os.getuid()

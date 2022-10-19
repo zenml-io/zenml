@@ -27,10 +27,8 @@ from zenml.cli.utils import (
     print_served_model_configuration,
     warning,
 )
-from zenml.client import Client
 from zenml.console import console
 from zenml.enums import StackComponentType
-from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
@@ -53,21 +51,25 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         Args:
             ctx: The click context.
         """
+        from zenml.client import Client
+        from zenml.stack.stack_component import StackComponent
+
         client = Client()
-        model_deployer_models = client.active_stack_model.components[
+        model_deployer_models = client.active_stack_model.components.get(
             StackComponentType.MODEL_DEPLOYER
-        ]
+        )
         if model_deployer_models is None:
             error(
-                "No active model deployer found. Please add a model_deployer to "
-                "your stack."
+                "No active model deployer found. Please add a model_deployer "
+                "to your stack."
             )
             return
         ctx.obj = StackComponent.from_model(model_deployer_models[0])
 
     @models.command(
         "list",
-        help="Get a list of all served models within the model-deployer stack component.",
+        help="Get a list of all served models within the model-deployer stack "
+        "component.",
     )
     @click.option(
         "--pipeline",
@@ -114,12 +116,12 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         model: Optional[str],
         running: bool,
     ) -> None:
-        """Get a list of all served models within the model-deployer stack component.
+        """List of all served models within the model-deployer stack component.
 
         Args:
             model_deployer: The model-deployer stack component.
-            pipeline: Show only served models that were deployed by the indicated
-                pipeline.
+            pipeline: Show only served models that were deployed by the
+                indicated pipeline.
             step: Show only served models that were deployed by the indicated
                 pipeline step.
             pipeline_run: Show only served models that were deployed by the
@@ -211,9 +213,9 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         "-t",
         type=click.INT,
         default=300,
-        help="Time in seconds to wait for the model to start. Set to 0 to return "
-        "immediately after telling the server to start, without waiting for it to "
-        "become fully active (default: 300s).",
+        help="Time in seconds to wait for the model to start. Set to 0 to "
+        "return immediately after telling the server to start, without "
+        "waiting for it to become fully active (default: 300s).",
     )
     @click.pass_obj
     def start_model_service(
@@ -248,9 +250,9 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         "-t",
         type=click.INT,
         default=300,
-        help="Time in seconds to wait for the model to start. Set to 0 to return "
-        "immediately after telling the server to stop, without waiting for it to "
-        "become inactive (default: 300s).",
+        help="Time in seconds to wait for the model to start. Set to 0 to "
+        "return immediately after telling the server to stop, without "
+        "waiting for it to become inactive (default: 300s).",
     )
     @click.option(
         "--yes",
@@ -258,17 +260,17 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         "force",
         is_flag=True,
         help="Force the model server to stop. This will bypass any graceful "
-        "shutdown processes and try to force the model server to stop immediately, "
-        "if possible.",
+        "shutdown processes and try to force the model server to stop "
+        "immediately, if possible.",
     )
     @click.option(
         "--force",
         "-f",
         "old_force",
         is_flag=True,
-        help="DEPRECATED: Force the model server to stop. This will bypass any graceful "
-        "shutdown processes and try to force the model server to stop immediately, "
-        "if possible. Use `-y/--yes` instead.",
+        help="DEPRECATED: Force the model server to stop. This will bypass "
+        "any graceful shutdown processes and try to force the model "
+        "server to stop immediately, if possible. Use `-y/--yes` instead.",
     )
     @click.pass_obj
     def stop_model_service(
@@ -290,7 +292,8 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         if old_force:
             force = old_force
             warning(
-                "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+                "The `--force` flag will soon be deprecated. Use `--yes` or "
+                "`-y` instead."
             )
         served_models = model_deployer.find_model_server(
             service_uuid=uuid.UUID(served_model_uuid)
@@ -313,8 +316,8 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         type=click.INT,
         default=300,
         help="Time in seconds to wait for the model to be deleted. Set to 0 to "
-        "return immediately after stopping and deleting the model server, without "
-        "waiting for it to release all allocated resources.",
+        "return immediately after stopping and deleting the model server, "
+        "without waiting for it to release all allocated resources.",
     )
     @click.option(
         "--yes",
@@ -322,17 +325,18 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         "force",
         is_flag=True,
         help="Force the model server to stop and delete. This will bypass any "
-        "graceful shutdown processes and try to force the model server to stop and "
-        "delete immediately, if possible.",
+        "graceful shutdown processes and try to force the model server to "
+        "stop and delete immediately, if possible.",
     )
     @click.option(
         "--force",
         "-f",
         "old_force",
         is_flag=True,
-        help="DEPRECATED: Force the model server to stop and delete. This will bypass any "
-        "graceful shutdown processes and try to force the model server to stop and "
-        "delete immediately, if possible. Use `-y/--yes` instead.",
+        help="DEPRECATED: Force the model server to stop and delete. This will "
+        "bypass any graceful shutdown processes and try to force the model "
+        "server to stop and delete immediately, if possible. Use `-y/--yes` "
+        "instead.",
     )
     @click.pass_obj
     def delete_model_service(
@@ -354,7 +358,8 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         if old_force:
             force = old_force
             warning(
-                "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+                "The `--force` flag will soon be deprecated. Use `--yes` or "
+                "`-y` instead."
             )
         served_models = model_deployer.find_model_server(
             service_uuid=uuid.UUID(served_model_uuid)

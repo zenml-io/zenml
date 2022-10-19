@@ -23,6 +23,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     ZEN_SERVER_ENTRYPOINT,
 )
@@ -127,13 +128,14 @@ class LocalZenServer(LocalDaemonService):
         """
         gc = GlobalConfiguration()
 
-        # this creates a copy of the global configuration with and saves it to
-        # the server configuration path. The store is set to the local store
-        # unless a custom store configuration is explicitly supplied with the
-        # server configuration.
+        # this creates a copy of the global configuration and saves it to
+        # the server configuration path. The store is set to point to the local
+        # default database unless a custom store configuration is explicitly
+        # supplied with the server configuration.
         gc.copy_configuration(
             config_path=self._global_config_path,
-            store_config=self.config.server.store or gc.get_default_store(),
+            store_config=self.config.server.store,
+            empty_store=self.config.server.store is None,
         )
 
     @classmethod
@@ -169,6 +171,12 @@ class LocalZenServer(LocalDaemonService):
         cmd, env = super()._get_daemon_cmd()
         env[ENV_ZENML_CONFIG_PATH] = self._global_config_path
         env[ENV_ZENML_SERVER_DEPLOYMENT_TYPE] = ServerDeploymentType.LOCAL
+        # Set the local stores path to the same path used by the client. This
+        # ensures that the server's store configuration is initialized with
+        # the same path as the client.
+        env[
+            ENV_ZENML_LOCAL_STORES_PATH
+        ] = GlobalConfiguration().local_stores_path
         return cmd, env
 
     def provision(self) -> None:
