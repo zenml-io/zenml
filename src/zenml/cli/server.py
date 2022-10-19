@@ -244,7 +244,7 @@ def up(
                 f"'{DEFAULT_USERNAME}' username and an empty password. To open the dashboard in a browser automatically, set the env variable AUTO_OPEN_DASHBOARD=true."
             )
 
-            if os.environ.get(ENV_AUTO_OPEN_DASHBOARD) == "true":
+            if handle_bool_env_var(ENV_AUTO_OPEN_DASHBOARD, default=True):
                 try:
                     import webbrowser
                     webbrowser.open(server.status.url)
