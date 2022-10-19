@@ -347,7 +347,7 @@ image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f
 
 # 👩‍👩‍👧‍👦 Meet the Team
 
-![Meet the Team](./docs/book/assets/meet_the_team.jpeg)
+![Meet the Team](./docs/book/assets/meet_the_team.png)
 
 Have a question that's too hard to express on our Slack? Is it just too much effort to say everything on a 
 long GitHub issue? Or are you just curious about what ZenML has been up to in the past week? Well, register now for the ZenML Office (Half) Hour to get your answers and more!
