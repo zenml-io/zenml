@@ -196,9 +196,6 @@ class KServeDeploymentService(BaseService):
 
         Returns:
             The active KServeModelDeployer.
-
-        Raises:
-            TypeError: if the current stack has no KServeModelDeployer.
         """
         from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
             KServeModelDeployer,
