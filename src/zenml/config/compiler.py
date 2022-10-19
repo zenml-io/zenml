@@ -103,8 +103,7 @@ class Compiler:
         run_name = run_configuration.run_name or self._get_default_run_name(
             pipeline_name=pipeline.name
         )
-        print(pb2_pipeline)
-        breakpoint()
+
         encoded_pb2_pipeline = string_utils.b64_encode(
             json_format.MessageToJson(pb2_pipeline)
         )
