@@ -65,7 +65,7 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.server_models import ServerDatabaseType, ServerModel
-from zenml.utils import io_utils, uuid_utils
+from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -116,6 +116,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     Attributes:
         type: The type of the store.
+        driver: The SQL database driver.
         database: database name. If not already present on the server, it will
             be created automatically on first access.
         username: The database username.
@@ -133,6 +134,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.SQL
 
+    driver: Optional[SQLDatabaseDriver] = None
     database: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
@@ -182,6 +184,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 url,
                 ", ".join(SQLDatabaseDriver.values()),
             )
+        values["driver"] = SQLDatabaseDriver(sql_url.drivername)
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             if (
                 sql_url.username
@@ -268,6 +271,74 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         values["url"] = str(sql_url)
         return values
+
+    @staticmethod
+    def get_local_url(path: str) -> str:
+        """Get a local SQL url for a given local path.
+
+        Args:
+            path: The path to the local sqlite file.
+
+        Returns:
+            The local SQL url for the given path.
+        """
+        return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
+
+    def expand_certificates(self) -> None:
+        """Expands the certificates in the verify_ssl field."""
+        # Load the certificate values back into the configuration
+        for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+            file_path = getattr(self, key, None)
+            if file_path and os.path.isfile(file_path):
+                with open(file_path, "r") as f:
+                    setattr(self, key, f.read())
+
+    @classmethod
+    def copy_configuration(
+        cls,
+        config: "StoreConfiguration",
+        config_path: str,
+        load_config_path: Optional[PurePath] = None,
+    ) -> "StoreConfiguration":
+        """Create a copy of the store config using a different configuration path.
+
+        This method is used to create a copy of the store configuration that can
+        be loaded using a different configuration path or in the context of a
+        new environment, such as a container image.
+
+        The configuration files accompanying the store configuration are also
+        copied to the new configuration path (e.g. certificates etc.).
+
+        Args:
+            config: The store configuration to copy.
+            config_path: new path where the configuration copy will be loaded
+                from.
+            load_config_path: absolute path that will be used to load the copied
+                configuration. This can be set to a value different from
+                `config_path` if the configuration copy will be loaded from
+                a different environment, e.g. when the configuration is copied
+                to a container image and loaded using a different absolute path.
+                This will be reflected in the paths and URLs encoded in the
+                copied configuration.
+
+        Returns:
+            A new store configuration object that reflects the new configuration
+            path.
+        """
+        assert isinstance(config, SqlZenStoreConfiguration)
+        config = config.copy()
+
+        if config.driver == SQLDatabaseDriver.MYSQL:
+            # Load the certificate values back into the configuration
+            config.expand_certificates()
+
+        elif config.driver == SQLDatabaseDriver.SQLITE:
+            if load_config_path:
+                config.url = cls.get_local_url(str(load_config_path))
+            else:
+                config.url = cls.get_local_url(config_path)
+
+        return config
 
     def get_metadata_config(
         self, expand_certs: bool = False
@@ -389,9 +460,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     class Config:
         """Pydantic configuration class."""
 
-        # Validate attributes when assigning them. We need to set this in order
-        # to have a mix of mutable and immutable attributes
-        validate_assignment = True
+        # Don't validate attributes when assigning them. This is necessary
+        # because the certificate attributes can be expanded to the contents
+        # of the certificate files.
+        validate_assignment = False
         # Forbid extra attributes set in the class.
         extra = "forbid"
 
@@ -475,68 +547,6 @@ class SqlZenStore(BaseZenStore):
             url=url, connect_args=connect_args, **engine_args
         )
         SQLModel.metadata.create_all(self._engine)
-
-    @staticmethod
-    def get_local_url(path: str) -> str:
-        """Get a local SQL url for a given local path.
-
-        Args:
-            path: The path to the local sqlite file.
-
-        Returns:
-            The local SQL url for the given path.
-        """
-        return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
-
-    @classmethod
-    def copy_local_store(
-        cls,
-        config: StoreConfiguration,
-        path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> StoreConfiguration:
-        """Copy a local store to a new location.
-
-        Use this method to create a copy of a store database to a new location
-        and return a new store configuration pointing to the database copy. This
-        only applies to stores that use the local filesystem to store their
-        data. Calling this method for remote stores simply returns the input
-        store configuration unaltered.
-
-        Args:
-            config: The configuration of the store to copy.
-            path: The new local path where the store DB will be copied.
-            load_config_path: path that will be used to load the copied store
-                database. This can be set to a value different from `path`
-                if the local database copy will be loaded from a different
-                environment, e.g. when the database is copied to a container
-                image and loaded using a different absolute path. This will be
-                reflected in the paths and URLs encoded in the copied store
-                configuration.
-
-        Returns:
-            The store configuration of the copied store.
-        """
-        config_copy = config.copy()
-
-        sql_url = make_url(config.url)
-        if sql_url.drivername != SQLDatabaseDriver.SQLITE:
-            # this is not a configuration backed by a local filesystem
-            return config_copy
-
-        assert sql_url.database
-        local_path = Path(sql_url.database)
-
-        io_utils.create_dir_recursive_if_not_exists(path)
-        fileio.copy(
-            str(local_path), str(Path(path) / local_path.name), overwrite=True
-        )
-        if load_config_path:
-            config_copy.url = cls.get_local_url(str(load_config_path))
-        else:
-            config_copy.url = cls.get_local_url(path)
-
-        return config_copy
 
     def get_store_info(self) -> ServerModel:
         """Get information about the store.

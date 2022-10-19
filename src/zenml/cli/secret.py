@@ -58,9 +58,9 @@ def register_secrets_manager_subcommands() -> None:
         from zenml.stack.stack_component import StackComponent
 
         client = Client()
-        secrets_manager_models = client.active_stack_model.components[
+        secrets_manager_models = client.active_stack_model.components.get(
             StackComponentType.SECRETS_MANAGER
-        ]
+        )
         if secrets_manager_models is None:
             error(
                 "No active secrets manager found. Please create a secrets "

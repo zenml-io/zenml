@@ -454,8 +454,8 @@ class StackComponent:
 
         IMPORTANT: the path returned by this property must always be a path
         that is relative to the ZenML local store's directory. The local
-        Kubeflow orchestrator relies on this convention to correctly mount the
-        local folders in the Kubeflow containers. This is an example of a valid
+        orchestrators rely on this convention to correctly mount the
+        local folders in the containers. This is an example of a valid
         path:
 
         ```python
