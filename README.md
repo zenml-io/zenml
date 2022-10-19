@@ -84,6 +84,9 @@
     <a href="https://twitter.com/zenml_io">
     <img src="https://img.shields.io/badge/-Twitter-black.svg?style=for-the-badge&logo=twitter&colorB=555" alt="Logo">
     </a>
+    <a href="https://www.youtube.com/c/ZenML">
+    <img src="https://img.shields.io/badge/-YouTube-black.svg?style=for-the-badge&logo=youtube&colorB=555" alt="Logo">
+    </a>
   </p>
 </div>
 
