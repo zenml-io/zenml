@@ -35,7 +35,10 @@ from zenml.models import (
 from zenml.models.server_models import ServerModel
 
 if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+    from ml_metadata.proto.metadata_store_pb2 import (
+        ConnectionConfig,
+        MetadataStoreClientConfig,
+    )
 
 
 class ZenStoreInterface(ABC):
@@ -129,7 +132,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> "ConnectionConfig":
+    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
         """Get the TFX metadata config of this ZenStore.
 
         Args:

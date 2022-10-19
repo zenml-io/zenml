@@ -105,7 +105,10 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
 if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+    from ml_metadata.proto.metadata_store_pb2 import (
+        ConnectionConfig,
+        MetadataStoreClientConfig,
+    )
 
     from zenml.zen_stores.metadata_store import (
         MetadataStore,
@@ -150,6 +153,18 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             enabled if client certificates are used.
         ssl_verify_server_cert: set to verify the identity of the server
             against the provided server certificate.
+        pool_size: The maximum number of connections to keep in the SQLAlchemy
+            pool.
+        pool_recycle: The number of seconds after which a connection should be
+            recycled.
+        grpc_metadata_host: The host to use for the gRPC metadata server.
+        grpc_metadata_port: The port to use for the gRPC metadata server.
+        grpc_metadata_ssl_ca: The certificate authority certificate to use for
+            the gRPC metadata server connection.
+        grpc_metadata_ssl_cert: The client certificate to use for the gRPC
+            metadata server connection.
+        grpc_metadata_ssl_key: The client certificate private key to use for
+            the gRPC metadata server connection.
     """
 
     type: StoreType = StoreType.SQL
@@ -164,6 +179,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     ssl_verify_server_cert: bool = False
     pool_size: int = 20
     max_overflow: int = 20
+
+    grpc_metadata_host: Optional[str] = None
+    grpc_metadata_port: Optional[int] = None
+    grpc_metadata_ssl_ca: Optional[str] = None
+    grpc_metadata_ssl_key: Optional[str] = None
+    grpc_metadata_ssl_cert: Optional[str] = None
 
     @root_validator
     def _validate_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -658,7 +679,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> "ConnectionConfig":
+    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
         """Get the TFX metadata config of this ZenStore.
 
         Args:
@@ -668,6 +689,33 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The TFX metadata config of this ZenStore.
         """
+        from ml_metadata.proto.metadata_store_pb2 import (
+            MetadataStoreClientConfig,
+        )
+        from tfx.orchestration import metadata
+
+        # If the gRPC metadata store connection configuration is present,
+        # advertise it to the client instead of the direct SQL connection
+        # config.
+        if self.config.grpc_metadata_host:
+            mlmd_config = MetadataStoreClientConfig()
+            mlmd_config.host = self.config.grpc_metadata_host
+            mlmd_config.port = self.config.grpc_metadata_port
+            if self.config.grpc_metadata_ssl_ca:
+                mlmd_config.ssl_config.custom_ca = (
+                    self.config.grpc_metadata_ssl_ca
+                )
+            if self.config.grpc_metadata_ssl_cert:
+                mlmd_config.ssl_config.server_cert = (
+                    self.config.grpc_metadata_ssl_cert
+                )
+            if self.config.grpc_metadata_ssl_key:
+                mlmd_config.ssl_config.client_key = (
+                    self.config.grpc_metadata_ssl_key
+                )
+
+            return mlmd_config
+
         return self.config.get_metadata_config(expand_certs=expand_certs)
 
     # ------

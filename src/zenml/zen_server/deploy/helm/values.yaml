@@ -101,7 +101,7 @@ zenml:
       pullPolicy: Always
       tag: "1.8.0"
     service:
-      type: LoadBalancer
+      type: ClusterIP
       port: 8080
 
 serviceAccount:
@@ -151,6 +151,8 @@ ingress:
     host:
     tls:
       enabled: false
+      secretName: zenml-tls-client-certs
+
 
 
 resources: {}
