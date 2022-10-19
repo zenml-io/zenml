@@ -72,7 +72,7 @@ logger = get_logger(__name__)
 
 STEP_INNER_FUNC_NAME = "entrypoint"
 SINGLE_RETURN_OUT_NAME = "output"
-PARAM_STEP_NAME = "step_name"
+PARAM_STEP_NAME = "name"
 PARAM_ENABLE_CACHE = "enable_cache"
 PARAM_PIPELINE_PARAMETER_NAME = "pipeline_parameter_name"
 PARAM_CREATED_BY_FUNCTIONAL_API = "created_by_functional_api"

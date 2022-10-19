@@ -67,6 +67,7 @@ from zenml.steps.utils import (
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_PIPELINE_PARAMETER_NAME,
     PARAM_SETTINGS,
+    PARAM_STEP_NAME,
     PARAM_STEP_OPERATOR,
     create_component_class,
     parse_return_type_annotations,
@@ -279,13 +280,13 @@ class BaseStep(metaclass=BaseStepMeta):
             *args: Positional arguments passed to the step.
             **kwargs: Keyword arguments passed to the step.
         """
-        name = self.__class__.__name__
         self.pipeline_parameter_name: Optional[str] = None
         self._component: Optional["_SimpleComponent"] = None
         self._has_been_called = False
         self._upstream_steps: Set[str] = set()
 
-        kwargs.update(self.INSTANCE_CONFIGURATION)
+        kwargs = {**self.INSTANCE_CONFIGURATION, **kwargs}
+        name = kwargs.pop(PARAM_STEP_NAME, None) or self.__class__.__name__
 
         # This value is only used in `BaseStep.__created_by_functional_api()`
         kwargs.pop(PARAM_CREATED_BY_FUNCTIONAL_API, None)
@@ -732,7 +733,8 @@ class BaseStep(metaclass=BaseStepMeta):
         return self._configuration
 
     def configure(
-        self,
+        self: T,
+        name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
@@ -744,7 +746,7 @@ class BaseStep(metaclass=BaseStepMeta):
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         merge: bool = True,
-    ) -> None:
+    ) -> T:
         """Configures the step.
 
         Configuration merging example:
@@ -758,6 +760,7 @@ class BaseStep(metaclass=BaseStepMeta):
             step.configuration.extra # {"key2": 2}
 
         Args:
+            name: The name of the step.
             enable_cache: If caching should be enabled for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
@@ -837,6 +840,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         values = dict_utils.remove_none_values(
             {
+                "name": name,
                 "enable_cache": enable_cache,
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
@@ -848,6 +852,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
         config = StepConfigurationUpdate(**values)
         self._apply_configuration(config, merge=merge)
+        return self
 
     def _apply_configuration(
         self,

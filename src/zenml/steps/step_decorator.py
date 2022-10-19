@@ -36,6 +36,7 @@ from zenml.steps.utils import (
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
+    PARAM_STEP_NAME,
     PARAM_STEP_OPERATOR,
     STEP_INNER_FUNC_NAME,
 )
@@ -130,14 +131,13 @@ def step(
         Returns:
             The class of a newly generated ZenML Step.
         """
-        step_name = name or func.__name__
-
         return type(  # noqa
-            step_name,
+            func.__name__,
             (BaseStep,),
             {
                 STEP_INNER_FUNC_NAME: staticmethod(func),
                 INSTANCE_CONFIGURATION: {
+                    PARAM_STEP_NAME: name,
                     PARAM_CREATED_BY_FUNCTIONAL_API: True,
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_EXPERIMENT_TRACKER: experiment_tracker,

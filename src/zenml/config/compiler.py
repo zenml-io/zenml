@@ -27,7 +27,7 @@ from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
-from zenml.exceptions import StackValidationError
+from zenml.exceptions import PipelineInterfaceError, StackValidationError
 from zenml.utils import source_utils, string_utils
 
 if TYPE_CHECKING:
@@ -66,6 +66,8 @@ class Compiler:
         self._apply_run_configuration(
             pipeline=pipeline, config=run_configuration
         )
+        self._verify_distinct_step_names(pipeline=pipeline)
+
         pipeline.connect(**pipeline.steps)
         pb2_pipeline = self._compile_proto_pipeline(
             pipeline=pipeline, stack=stack
@@ -142,6 +144,32 @@ class Compiler:
             if step_name not in pipeline.steps:
                 raise KeyError(f"No step with name {step_name}.")
             pipeline.steps[step_name]._apply_configuration(step_config)
+
+    def _verify_distinct_step_names(self, pipeline: "BasePipeline") -> None:
+        """Verifies that all steps inside the pipeline have separate names.
+
+        Args:
+            pipeline: The pipeline to verify.
+
+        Raises:
+            PipelineInterfaceError: If multiple steps share the same name.
+        """
+        step_names = {}
+
+        for step_argument_name, step in pipeline.steps.items():
+            previous_argument_name = step_names.get(step.name, None)
+            if previous_argument_name:
+                raise PipelineInterfaceError(
+                    f"Found multiple step objects with the same name "
+                    f"`{step.name}` for arguments '{previous_argument_name}' "
+                    f"and '{step_argument_name}' in pipeline "
+                    f"'{pipeline.name}'. All steps of a ZenML pipeline need "
+                    "to have distinct names. To solve this issue, assign a new "
+                    "name to one of the steps by calling "
+                    "`my_step_instance.configure(name='some_distinct_name')`"
+                )
+
+            step_names[step.name] = step_argument_name
 
     def _filter_and_validate_settings(
         self,
