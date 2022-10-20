@@ -23,6 +23,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     ZEN_SERVER_ENTRYPOINT,
@@ -177,6 +178,8 @@ class LocalZenServer(LocalDaemonService):
         env[
             ENV_ZENML_LOCAL_STORES_PATH
         ] = GlobalConfiguration().local_stores_path
+        env[ENV_ZENML_DISABLE_DATABASE_MIGRATION] = "True"
+
         return cmd, env
 
     def provision(self) -> None:
