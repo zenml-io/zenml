@@ -389,7 +389,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             )
 
         logger.info(
-            f"Creating default stack for user {user.name} in project "
+            f"Creating default stack for user '{user.name}' in project "
             f"{project.name}..."
         )
 
