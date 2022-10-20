@@ -864,7 +864,7 @@ def get_stack_by_id_or_name_or_prefix(
         is_shared=True,
     )
 
-    named_stacks = user_only_stacks + shared_stacks
+    named_stacks = user_only_stacks + shared_stacks  # type: ignore[operator]
 
     if len(named_stacks) > 1:
         hydrated_name_stacks = [s.to_hydrated_model() for s in named_stacks]
@@ -894,7 +894,7 @@ def get_stack_by_id_or_name_or_prefix(
             is_shared=True,
         )
 
-        all_stacks = user_only_stacks + shared_stacks
+        all_stacks = user_only_stacks + shared_stacks  # type: ignore[operator]
 
         filtered_stacks = [
             stack

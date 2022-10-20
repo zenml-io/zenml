@@ -597,7 +597,7 @@ class Client(metaclass=ClientMetaClass):
             hydrated=True,
         )
 
-        return owned_stacks + shared_stacks
+        return owned_stacks + shared_stacks  # type: ignore[operator, return-value]
 
     @property
     def active_stack_model(self) -> "HydratedStackModel":
