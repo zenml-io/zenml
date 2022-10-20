@@ -145,7 +145,7 @@ class StackSchema(SQLModel, table=True):
             user=self.user.to_model(),
             project=self.project.to_model(),
             is_shared=self.is_shared,
-            components=[c.to_model() for c in self.components],
+            components={c.type: [c.to_model()] for c in self.components},
             created=self.created,
             updated=self.updated,
         )
