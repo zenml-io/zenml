@@ -129,8 +129,8 @@ Optionally, you might want to run the following commands to ensure you have all
 integrations for `mypy` checks:
 
 ```
-zenml integration install -f
-zenml integration install -y -i feast
+poetry run zenml integration install -f
+poetry run zenml integration install -y -i feast
 pip install click~=8.0.3
 mypy --install-types
 ```

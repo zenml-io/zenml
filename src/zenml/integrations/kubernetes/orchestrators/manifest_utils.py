@@ -16,6 +16,7 @@
 from typing import Any, Dict, List, Optional, cast
 
 from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
+from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
 
 
 def build_pod_manifest(
@@ -26,6 +27,7 @@ def build_pod_manifest(
     command: List[str],
     args: List[str],
     service_account_name: Optional[str] = None,
+    settings: Optional[KubernetesOrchestratorSettings] = None,
 ) -> Dict[str, Any]:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -39,6 +41,7 @@ def build_pod_manifest(
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
+        settings: KubernetesOrchestratorSettings object
 
     Returns:
         Pod manifest.
@@ -74,7 +77,59 @@ def build_pod_manifest(
     if service_account_name is not None:
         spec = cast(Dict[str, Any], manifest["spec"])  # mypy stupid
         spec["serviceAccountName"] = service_account_name
+
+    if settings is not None:
+        spec = cast(Dict[str, Any], manifest["spec"])
+        spec.update(add_pod_settings(settings))
     return manifest
+
+
+def add_pod_settings(settings):
+    spec = {}
+    if settings.node_affinity:
+        spec["affinity"] = add_pod_affinity(settings.node_affinity)
+
+    if settings.tolerations:
+        spec["tolerations"] = add_pod_tolerations(settings.tolerations)
+
+    return spec
+
+
+def add_pod_tolerations(toleration_settings):
+    tolerations = []
+    for toleration_values in toleration_settings:
+        tolerations.append(
+            dict(
+                key=toleration_values.get("key"),
+                operator=toleration_values.get("operator"),
+                value=""
+                if toleration_values.get("operator") == "Exists"
+                else toleration_values.get("value"),
+                effect=toleration_values.get("effect"),
+            )
+        )
+    return tolerations
+
+
+def add_pod_affinity(affinity_settings):
+    match_expressions = []
+    for affinity_values in affinity_settings:
+        match_expressions.append(
+            dict(
+                key=affinity_values.get("key"),
+                operator=affinity_values.get("operator"),
+                values=affinity_values.get("values"),
+            )
+        )
+
+    affinity = {
+        "nodeAffinity": {
+            "requiredDuringSchedulingIgnoredDuringExecution": {
+                "nodeSelectorTerms": [{"matchExpressions": match_expressions}]
+            }
+        }
+    }
+    return affinity
 
 
 def build_cron_job_manifest(
@@ -86,6 +141,7 @@ def build_cron_job_manifest(
     command: List[str],
     args: List[str],
     service_account_name: Optional[str] = None,
+    settings: Optional[KubernetesOrchestratorSettings] = None,
 ) -> Dict[str, Any]:
     """Create a manifest for launching a pod as scheduled CRON job.
 
@@ -100,6 +156,7 @@ def build_cron_job_manifest(
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
+        settings: KubernetesOrchestratorSettings object
 
     Returns:
         CRON job manifest.
@@ -112,6 +169,7 @@ def build_cron_job_manifest(
         command=command,
         args=args,
         service_account_name=service_account_name,
+        settings=settings,
     )
     return {
         "apiVersion": "batch/v1beta1",
