@@ -31,7 +31,6 @@ from zenml.steps.step_interfaces.base_analyzer_step import (
     BaseAnalyzerParameters,
     BaseAnalyzerStep,
 )
-from zenml.steps.utils import clone_step
 from zenml.utils import settings_utils
 
 
@@ -92,9 +91,7 @@ def whylogs_profiler_step(
     Returns:
         a WhylogsProfilerStep step instance
     """
-    step_class = clone_step(WhylogsProfilerStep, step_name)
-    step_instance = step_class(params=params)
-
+    step_instance = WhylogsProfilerStep(name=step_name, params=params)
     key = settings_utils.get_flavor_setting_key(WhylogsDataValidatorFlavor())
 
     settings = WhylogsDataValidatorSettings(
