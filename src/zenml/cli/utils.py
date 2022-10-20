@@ -380,11 +380,10 @@ def print_active_config() -> None:
     if not gc.store:
         return
 
-    if gc.store.type == StoreType.SQL:
-        if gc.store.url == gc.get_default_store().url:
-            declare("Using the default local database.")
-        else:
-            declare(f"Using the SQL database: '{gc.store.url}'.")
+    if gc.uses_default_store():
+        declare("Using the default local database.")
+    elif gc.store.type == StoreType.SQL:
+        declare(f"Using the SQL database: '{gc.store.url}'.")
     elif gc.store.type == StoreType.REST:
         declare(f"Connected to the ZenML server: '{gc.store.url}'")
     if gc.active_project_name:
