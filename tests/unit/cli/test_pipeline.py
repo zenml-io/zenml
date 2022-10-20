@@ -12,10 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import platform
 import subprocess
 import sys
 
 import click
+import pytest
 from click.testing import CliRunner
 
 from zenml.cli.base import clean
@@ -118,6 +120,11 @@ def test_pipeline_run_multifile(clean_client, files_dir: str) -> None:
             del sys.modules[mod]
 
 
+# TODO: Fix this test for windows once we have public run delete methods
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="ZenML clean not supported on Windows.",
+)
 def test_pipeline_export_delete_import(
     clean_client,
     sample_pipeline_run_model,
