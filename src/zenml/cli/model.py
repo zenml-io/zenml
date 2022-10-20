@@ -55,9 +55,9 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         from zenml.stack.stack_component import StackComponent
 
         client = Client()
-        model_deployer_models = client.active_stack_model.components[
+        model_deployer_models = client.active_stack_model.components.get(
             StackComponentType.MODEL_DEPLOYER
-        ]
+        )
         if model_deployer_models is None:
             error(
                 "No active model deployer found. Please add a model_deployer "

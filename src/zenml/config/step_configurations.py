@@ -39,6 +39,7 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 class StepConfigurationUpdate(StrictBaseModel):
     """Class for step configuration updates."""
 
+    name: Optional[str] = None
     enable_cache: Optional[bool] = None
     step_operator: Optional[str] = None
     experiment_tracker: Optional[str] = None

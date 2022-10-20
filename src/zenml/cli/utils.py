@@ -1073,7 +1073,7 @@ def get_component_by_id_or_name_or_prefix(
             components=hydrated_components,
         )
         error(
-            f"Multiple components have been found for name "
+            f"Multiple {component_type.value} components have been found for name "
             f"'{id_or_name_or_prefix}'. The components listed above all share "
             f"this name. Please specify the component by full or partial id."
         )

@@ -27,6 +27,7 @@ from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
+from zenml.constants import ENV_AUTO_OPEN_DASHBOARD, handle_bool_env_var
 from zenml.enums import ServerProviderType, StoreType
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
@@ -257,8 +258,23 @@ def up(
             cli_utils.declare(
                 f"The local ZenML dashboard is available at "
                 f"'{server.status.url}'. You can connect to it using the "
-                f"'{DEFAULT_USERNAME}' username and an empty password."
+                f"'{DEFAULT_USERNAME}' username and an empty password. "
+                f"To open the dashboard in a browser automatically, "
+                f"set the env variable AUTO_OPEN_DASHBOARD=true."
             )
+
+            if handle_bool_env_var(ENV_AUTO_OPEN_DASHBOARD, default=True):
+                try:
+                    import webbrowser
+
+                    webbrowser.open(server.status.url)
+                    cli_utils.declare(
+                        "Automatically opening the dashboard in your browser. "
+                        "To disable this, set the env variable "
+                        "AUTO_OPEN_DASHBOARD=false."
+                    )
+                except Exception as e:
+                    logger.error(e)
 
 
 @cli.command("down", help="Shut down the local ZenML dashboard.")
