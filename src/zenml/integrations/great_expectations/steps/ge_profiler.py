@@ -24,7 +24,6 @@ from zenml.integrations.great_expectations.data_validators.ge_data_validator imp
 )
 from zenml.logger import get_logger
 from zenml.steps import BaseParameters, BaseStep
-from zenml.steps.utils import clone_step
 
 logger = get_logger(__name__)
 
@@ -99,4 +98,4 @@ def great_expectations_profiler_step(
     Returns:
         a GreatExpectationsProfilerStep step instance
     """
-    return clone_step(GreatExpectationsProfilerStep, step_name)(params=params)
+    return GreatExpectationsProfilerStep(name=step_name, params=params)

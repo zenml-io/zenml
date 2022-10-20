@@ -30,7 +30,6 @@ from zenml.steps.step_interfaces.base_drift_detection_step import (
     BaseDriftDetectionParameters,
     BaseDriftDetectionStep,
 )
-from zenml.steps.utils import clone_step
 
 
 class EvidentlyColumnMapping(BaseModel):
@@ -214,4 +213,4 @@ def evidently_profile_step(
     Returns:
         a EvidentlyProfileStep step instance
     """
-    return clone_step(EvidentlyProfileStep, step_name)(params=params)
+    return EvidentlyProfileStep(name=step_name, params=params)
