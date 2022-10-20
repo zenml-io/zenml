@@ -2,14 +2,9 @@
 
 ## How alembic is works
 
-src/zenml/alembic.ini is used for the configuration of alembic in general. For 
-the cli to work for you, you will have to configure the `sqlalchemy.url`
-field to point at your sqlite database (given that you are running zenml directly 
-on the sql_zen_store). It might look like this for you.
-
-```shell
-sqlalchemy.url = sqlite:////home/apenner/.config/zenml/local_stores/default_zen_store/zenml.db
-```
+src/zenml/alembic.ini is used for the configuration of alembic in general. The
+env.py file is the entrypoint for alembic where we are able to influence some
+settings, like for example the location of our sqlite db.
 
 Now when you create an alembic revision using `alembic revision ...` the 
 database instance will be compared to the state of all SQLModels under 
@@ -33,8 +28,8 @@ order to create the initial state of their database.
 ## Create a revision
 
 
-1) Make sure the `sqlalchemy.url` points at an instance of the database that 
-   represents the status-quo
+1) Make sure the `store.url` of your global config points at an instance of the 
+   database that represents the status-quo before your changes to teh database
 2) You have updated a Schema at src/zenml/zen_stores/schemas
    (e.g. adding a new column to stacks called `stack_cats`)
 3) in ~/src/zenml run `alembic revision --autogenerate -m "<insert description>"`
