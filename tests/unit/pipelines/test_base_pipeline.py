@@ -127,8 +127,9 @@ def test_initialize_pipeline_with_repeated_args(
 ):
     """Test that pipeline initialization fails when same step
     object is used"""
+    step_instance = empty_step()
     with pytest.raises(PipelineInterfaceError):
-        unconnected_two_step_pipeline(empty_step(), empty_step())
+        unconnected_two_step_pipeline(step_instance, step_instance)
 
 
 def test_initialize_pipeline_with_repeated_kwargs(
@@ -136,8 +137,11 @@ def test_initialize_pipeline_with_repeated_kwargs(
 ):
     """Test that pipeline initialization fails when same step
     object is used"""
+    step_instance = empty_step()
     with pytest.raises(PipelineInterfaceError):
-        unconnected_two_step_pipeline(step_1=empty_step(), step_2=empty_step())
+        unconnected_two_step_pipeline(
+            step_1=step_instance, step_2=step_instance
+        )
 
 
 def test_initialize_pipeline_with_repeated_args_and_kwargs(
@@ -145,8 +149,9 @@ def test_initialize_pipeline_with_repeated_args_and_kwargs(
 ):
     """Test that pipeline initialization fails when same step
     object is used"""
+    step_instance = empty_step()
     with pytest.raises(PipelineInterfaceError):
-        unconnected_two_step_pipeline(empty_step(), step_2=empty_step())
+        unconnected_two_step_pipeline(step_instance, step_2=step_instance)
 
 
 def test_initialize_pipeline_with_wrong_arg_type(
