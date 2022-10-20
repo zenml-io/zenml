@@ -1,16 +1,0 @@
-
-O
-1
-	driver_id	driver id"	driver_idJfeature_repo
-ŸË¦•èˆæMŸË¦•èˆæM
-C
-%
-__dummy"
-__dummy_idJfeature_repo
-ŸË¦•˜ğèMŸË¦•ĞëM1"$b304ae54-0991-4dfa-9131-54a90f22933d*ŸË¦• ÿğM2¹
-š
-driver_hourly_statsfeature_repo	driver_id"
-	conv_rate"
-acc_rate"
-avg_daily_trips2€£:¯event_timestamp*createdZ.,feast_feature_repo/data/driver_stats.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢,feast_feature_repo/data/driver_stats.parquet@
-ŸË¦•ÈœÕMŸË¦•ÈœÕMb¾event_timestamp*createdZ.,feast_feature_repo/data/driver_stats.parquetŠ1feast.infra.offline_stores.file_source.FileSource¢,feast_feature_repo/data/driver_stats.parquetªfeature_repo

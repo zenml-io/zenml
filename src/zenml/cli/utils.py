@@ -380,11 +380,10 @@ def print_active_config() -> None:
     if not gc.store:
         return
 
-    if gc.store.type == StoreType.SQL:
-        if gc.store.url == gc.get_default_store().url:
-            declare("Using the default local database.")
-        else:
-            declare(f"Using the SQL database: '{gc.store.url}'.")
+    if gc.uses_default_store():
+        declare("Using the default local database.")
+    elif gc.store.type == StoreType.SQL:
+        declare(f"Using the SQL database: '{gc.store.url}'.")
     elif gc.store.type == StoreType.REST:
         declare(f"Connected to the ZenML server: '{gc.store.url}'")
     if gc.active_project_name:
@@ -1074,7 +1073,7 @@ def get_component_by_id_or_name_or_prefix(
             components=hydrated_components,
         )
         error(
-            f"Multiple components have been found for name "
+            f"Multiple {component_type.value} components have been found for name "
             f"'{id_or_name_or_prefix}'. The components listed above all share "
             f"this name. Please specify the component by full or partial id."
         )

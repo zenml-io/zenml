@@ -45,9 +45,9 @@ def register_annotator_subcommands() -> None:
         from zenml.client import Client
         from zenml.stack.stack_component import StackComponent
 
-        annotator_models = Client().active_stack_model.components[
+        annotator_models = Client().active_stack_model.components.get(
             StackComponentType.ANNOTATOR
-        ]
+        )
         if annotator_models is None:
             cli_utils.error(
                 "No active annotator found. Please register an annotator "

@@ -18,8 +18,6 @@ from typing import Any, Dict, List, Union, cast
 import pandas as pd
 import redis
 from feast import FeatureStore  # type: ignore[import]
-
-# from feast.registry import Registry  # type: ignore[import]
 from feast.infra.registry.registry import Registry  # type: ignore[import]
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
