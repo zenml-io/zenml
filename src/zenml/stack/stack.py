@@ -20,6 +20,7 @@ from typing import (
     AbstractSet,
     Any,
     Dict,
+    List,
     NoReturn,
     Optional,
     Set,
@@ -475,6 +476,19 @@ class Stack:
             if component.type not in exclude_components
         ]
         return set.union(*requirements) if requirements else set()
+
+    @property
+    def apt_packages(self) -> List[str]:
+        """List of APT package requirements for the stack.
+
+        Returns:
+            A list of APT package requirements for the stack.
+        """
+        return [
+            package
+            for component in self.components.values()
+            for package in component.apt_packages
+        ]
 
     def check_local_paths(self) -> bool:
         """Checks if the stack has local paths.
