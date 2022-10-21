@@ -350,8 +350,23 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
                 f"zones/{self.config.zone}/machineTypes/{settings.machine_type}"
             )
 
-        # if settings.accelerators:
-        #     instance.guest_accelerators = settings.accelerators
+        if settings.accelerator_types:
+            # First, check passed in settings and resolve counts.
+            accelerator_dict = {}
+            for accelerator_type in settings.accelerator_types:
+                if accelerator_type not in accelerator_dict:
+                    accelerator_dict[accelerator_type] = 0
+                accelerator_dict[accelerator_type] += 1
+
+            # Second, create list of `compute_v1.AcceleratorConfig` instances.
+            accelerators = []
+            for x, y in accelerator_dict.items():
+                accelerators.append(
+                    compute_v1.AcceleratorConfig(
+                        accelerator_type=x, accelerator_count=y
+                    )
+                )
+            instance.guest_accelerators = accelerators
 
         instance.network_interfaces = [network_interface]
 

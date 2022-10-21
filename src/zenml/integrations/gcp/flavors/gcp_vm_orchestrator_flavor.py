@@ -13,9 +13,7 @@
 #  permissions and limitations under the License.
 """VM orchestrator flavor."""
 
-from typing import TYPE_CHECKING, List, Optional, Type
-
-from google.cloud import compute_v1
+from typing import TYPE_CHECKING, Optional, Type, List
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.gcp import GCP_VM_ORCHESTRATOR_FLAVOR
@@ -93,14 +91,20 @@ class GCPVMOrchestratorSettings(BaseSettings):
         machine_type: machine type of the VM being created. This value uses the
             following format: "zones/{zone}/machineTypes/{type_name}".
             For example: "zones/europe-west3-c/machineTypes/f1-micro"
-        accelerators: a list of AcceleratorConfig objects describing the accelerators that will
-            be attached to the new instance.
+        accelerator_type: List of Accelerator type from list:
+            "NVIDIA_TESLA_A100", "NVIDIA_TESLA_K80",
+            "NVIDIA_TESLA_P4", "NVIDIA_TESLA_P100", "NVIDIA_TESLA_T4", "NVIDIA_TESLA_V100",
+            "TPU_V2", "TPU_V3", "TPU_V2_POD", "TPU_V3_POD"
+            or one of https://cloud.google.com/ai-platform/training/docs/reference/rest/v1/AcceleratorType.
+            If multiple of GPUs required, simply pass in more of the same type. E.g. a value of
+            ["NVIDIA_TESLA_A100", "NVIDIA_TESLA_A100", "NVIDIA_TESLA_K80"] will attach 2 x
+            NVIDIA_TESLA_A100 and 1 x NVIDIA_TESLA_K80 to the VM.
         preemptible: boolean value indicating if the new instance should be preemptible
             or not.
     """
 
     machine_type: str = "n1-standard-4"
-    # accelerators: List[compute_v1.AcceleratorConfig] = None
+    accelerator_types: Optional[List[str]] = []
     preemptible: bool = True
 
 
