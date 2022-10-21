@@ -40,10 +40,10 @@ class SagemakerStepOperatorConfig(BaseStepOperatorConfig):
             independent.
     """
 
-    role: str
-    instance_type: str
-    bucket: Optional[str] = None
-    experiment_name: Optional[str] = None
+    role: str  # TODO[1376]: Config
+    instance_type: str  # TODO[1376]: Setting also add list to docstring
+    bucket: Optional[str] = None  # TODO[1376]: Config
+    experiment_name: Optional[str] = None  # TODO[1376]: Setting
 
     @property
     def is_remote(self) -> bool:
