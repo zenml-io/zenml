@@ -14,9 +14,10 @@
 """Base class for all ZenML model deployers."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, Generator, List, Optional, Type, cast
+from typing import ClassVar, Dict, Generator, List, Optional, Type, cast
 from uuid import UUID
 
+from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.services import BaseService, ServiceConfig
 from zenml.stack import StackComponent
@@ -65,6 +66,9 @@ class BaseModelDeployer(StackComponent, ABC):
     (see `stop_model_server`, `start_model_server` and `delete_model_server`).
     """
 
+    NAME: ClassVar[str]
+    FLAVOR: ClassVar[Type["BaseModelDeployerFlavor"]]
+
     @property
     def config(self) -> BaseModelDeployerConfig:
         """Returns the `BaseModelDeployerConfig` config.
@@ -73,6 +77,36 @@ class BaseModelDeployer(StackComponent, ABC):
             The configuration.
         """
         return cast(BaseModelDeployerConfig, self._config)
+
+    @classmethod
+    def get_active_model_deployer(cls) -> "BaseModelDeployer":
+        """Get the model deployer registered in the active stack.
+
+        Returns:
+            The model deployer registered in the active stack.
+
+        Raises:
+            TypeError: if a model deployer is not part of the
+                active stack.
+        """
+        flavor: BaseModelDeployerFlavor = cls.FLAVOR()
+        client = Client(skip_client_check=True)  # type: ignore[call-arg]
+        model_deployer = client.active_stack.model_deployer
+        if not model_deployer or not isinstance(model_deployer, cls):
+            raise TypeError(
+                f"The active stack needs to have a {cls.NAME} model "
+                f"deployer component registered to be able deploy models "
+                f"with {cls.NAME}. You can create a new stack with "
+                f"a {cls.NAME} model deployer component or update your "
+                f"active stack to add this component, e.g.:\n\n"
+                f"  `zenml model-deployer register {flavor.name} "
+                f"--flavor={flavor.name} ...`\n"
+                f"  `zenml stack register <STACK-NAME> -d {flavor.name} ...`\n"
+                f"  or:\n"
+                f"  `zenml stack update -d {flavor.name}`\n\n"
+            )
+
+        return model_deployer
 
     @abstractmethod
     def deploy_model(

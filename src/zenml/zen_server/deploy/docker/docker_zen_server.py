@@ -17,6 +17,7 @@ import ipaddress
 import os
 from typing import Dict, List, Optional, Tuple, Union, cast
 
+import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
@@ -47,7 +48,9 @@ from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 logger = get_logger(__name__)
 
 ZEN_SERVER_HEALTHCHECK_URL_PATH = "health"
-DOCKER_ZENML_SERVER_DEFAULT_IMAGE = "zenmldocker/zenml-server"
+DOCKER_ZENML_SERVER_DEFAULT_IMAGE = (
+    f"zenmldocker/zenml-server:{zenml.__version__}"
+)
 DOCKER_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
 

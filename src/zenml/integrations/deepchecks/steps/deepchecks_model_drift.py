@@ -27,7 +27,6 @@ from zenml.integrations.deepchecks.validation_checks import (
     DeepchecksModelDriftCheck,
 )
 from zenml.steps import BaseParameters, BaseStep
-from zenml.steps.utils import clone_step
 
 
 class DeepchecksModelDriftCheckStepParameters(BaseParameters):
@@ -109,4 +108,4 @@ def deepchecks_model_drift_check_step(
     Returns:
         a DeepchecksModelDriftCheckStep step instance
     """
-    return clone_step(DeepchecksModelDriftCheckStep, step_name)(params=params)
+    return DeepchecksModelDriftCheckStep(name=step_name, params=params)

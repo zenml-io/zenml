@@ -10,8 +10,8 @@ In order to run your ZenML pipelines using GitHub Actions, we need to set up a f
 
 * First you'll need a [GitHub](https://github.com) account and a cloned repository.
 * You'll also need to create a GitHub personal access token that allows you read/write GitHub secrets and push Docker images to your GitHub container registry. To do so, please follow [this guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) and make sure to assign your token the **repo** and **write:packages** scopes.
-* A MySQL database that ZenML will use to store metadata. See [here](../../docs/book/stack-deployment-guide/overview.md) for more information on how to set one up on AWS/GCP/Azure.
-* An artifact store to save the outputs of your pipeline steps. See [here](../../docs/book/stack-deployment-guide/overview.md) for more information on how to set one up on AWS/GCP/Azure.
+* A remote ZenML deployment to store metadata related to your pipeline runs. See [here](https://docs.zenml.io/getting-started/deploying-zenml#deploying-zenml-in-the-cloud-remote-deployment-of-the-http-server-and-database) for more information on how to deploy ZenML.
+* A remote artifact store to save the outputs of your pipeline steps. See [here](https://docs.zenml.io/component-gallery/artifact-stores) for more information on how to set one up on AWS/GCP/Azure.
 
 ```bash
 pip install zenml
@@ -25,8 +25,8 @@ cd <PATH_INSIDE_GITHUB_REPOSITORY>
 # initialize zenml inside the repository
 zenml init
 
-# Start the ZenServer to enable dashboard access
-zenml up
+# Connect to the remote ZenML deployment
+zenml connect --url=<ZENML_SERVER_URL>
 
 # If your git repository already contains a ZenML pipeline, you can skip these next few commands
 zenml example pull github_actions_orchestration --path=.
@@ -119,7 +119,7 @@ python run.py
 ```
 
 Running your first pipeline using the ZenML GitHub Actions orchestrator will create a [GitHub package](https://github.com/features/packages) called **zenml-github-actions** which by default won't be accessible by GitHub Actions.
-Luckily it doesn't take much effort to resolve this problem: Head to `https://github.com/users/<GITHUB_REPOSITORY_OWNER>/packages/container/package/zenml-github-actions` (replace <GITHUB_REPOSITORY_OWNER> with the value you passed earlier during stack configuration) and click on `Package settings` on the right side. In there you can either
+Luckily it doesn't take much effort to resolve this problem: Head to `https://github.com/users/<GITHUB_REPOSITORY_OWNER>/packages/container/package/zenml` (replace <GITHUB_REPOSITORY_OWNER> with the value you passed earlier during stack configuration) and click on `Package settings` on the right side. In there you can either
 * change the package visibility to `public`
 * give your repository permissions to access this package using GitHub Actions in the `Manage Actions access` section (see [here](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility#ensuring-workflow-access-to-your-package))
 
@@ -137,4 +137,4 @@ GitHub Actions and you should be able to access it from the GitHub UI. It will l
 # 📜 Learn more
 
 If you want to learn more about orchestrators in general or about how to build your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/component-gallery/orchestrators/orchestrators).
+check out our [docs](https://docs.zenml.io/component-gallery/orchestrators/).

@@ -302,6 +302,9 @@ def register_secrets_manager_subcommands() -> None:
         """
         with console.status("Getting secret names..."):
             secret_names = secrets_manager.get_all_secret_keys()
+            if not secret_names:
+                warning("No secrets registered.")
+                return
             print_list_items(
                 list_items=secret_names, column_title="SECRET_NAMES"
             )

@@ -27,7 +27,6 @@ from zenml.integrations.deepchecks.validation_checks import (
     DeepchecksModelValidationCheck,
 )
 from zenml.steps import BaseParameters, BaseStep
-from zenml.steps.utils import clone_step
 
 
 class DeepchecksModelValidationCheckStepParameters(BaseParameters):
@@ -106,6 +105,4 @@ def deepchecks_model_validation_check_step(
     Returns:
         a DeepchecksModelValidationCheckStep step instance
     """
-    return clone_step(DeepchecksModelValidationCheckStep, step_name)(
-        params=params
-    )
+    return DeepchecksModelValidationCheckStep(name=step_name, params=params)
