@@ -134,7 +134,7 @@ class StackSchema(SQLModel, table=True):
         )
 
     def to_hydrated_model(self) -> "HydratedStackModel":
-        """Creates a hydrated stack model from an instance of a 'StackSchema'.
+        """Creates a `HydratedStackModel` from an instance of a 'StackSchema'.
 
         Returns:
             a 'HydratedStackModel'.
