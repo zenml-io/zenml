@@ -20,6 +20,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # fetch all commits/branches including gh-pages
 
       - name: Get the version from the github branch name
         id: get_version
