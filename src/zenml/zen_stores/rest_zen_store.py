@@ -405,7 +405,7 @@ class RestZenStore(BaseZenStore):
             request_model=CreateStackRequest,
         )
 
-    def get_stack(self, stack_id: UUID, hydrated: bool = False) -> StackModel:
+    def get_stack(self, stack_id: UUID) -> StackModel:
         """Get a stack by its unique ID.
 
         Args:
