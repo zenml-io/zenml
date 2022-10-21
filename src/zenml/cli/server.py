@@ -150,6 +150,8 @@ def up(
         image: A custom Docker image to use for the server, when the
             `--docker` flag is set.
     """
+    # flake8: noqa: C901
+
     from zenml.zen_server.deploy.deployer import ServerDeployer
     from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
 
