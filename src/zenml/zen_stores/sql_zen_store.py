@@ -2668,7 +2668,10 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(PipelineRunSchema.user_id == user.id)
                 query = query.order_by(PipelineRunSchema.created)
             runs = session.exec(query).all()
-            return [run.to_model() for run in runs]
+            run_models = [run.to_model() for run in runs]
+            for run_model in run_models:
+                self._update_run_status(run_model)
+            return run_models
 
     def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
         """Updates a pipeline run.

@@ -188,7 +188,10 @@ def import_pipeline_runs(filename: str) -> None:
         cli_utils.error(str(err))
 
 
-@runs.command("migrate", help="Migrate pipeline runs from a MySQl DB file.")
+@runs.command(
+    "migrate",
+    help="Migrate pipeline runs from an existing metadata store database.",
+)
 @click.argument("database", type=str, required=True)
 @click.option("--database_type", type=str, default="sqlite", required=False)
 @click.option("--mysql_host", type=str, required=False)
