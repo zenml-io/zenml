@@ -686,7 +686,7 @@ def rename_stack(
 
 @stack.command("list")
 @click.option("--just-mine", "-m", is_flag=True, required=False)
-def list_stacks(just_mine: str = False) -> None:
+def list_stacks(just_mine: bool = False) -> None:
     """List all available stacks.
 
     Args:
