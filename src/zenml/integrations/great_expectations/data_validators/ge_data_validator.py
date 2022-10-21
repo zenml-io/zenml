@@ -14,7 +14,7 @@
 """Implementation of the Great Expectations data validator."""
 
 import os
-from typing import Any, Dict, List, Optional, Sequence, cast
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Type, cast
 
 import pandas as pd
 import yaml
@@ -37,10 +37,11 @@ from great_expectations.profile.user_configurable_profiler import (  # type: ign
 )
 
 from zenml.client import Client
-from zenml.data_validators import BaseDataValidator
+from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
 from zenml.environment import Environment
 from zenml.integrations.great_expectations.flavors.great_expectations_data_validator_flavor import (
     GreatExpectationsDataValidatorConfig,
+    GreatExpectationsDataValidatorFlavor,
 )
 from zenml.integrations.great_expectations.ge_store_backend import (
     ZenMLArtifactStoreBackend,
@@ -57,6 +58,11 @@ logger = get_logger(__name__)
 
 class GreatExpectationsDataValidator(BaseDataValidator):
     """Great Expectations data validator stack component."""
+
+    NAME: ClassVar[str] = "Great Expectations"
+    FLAVOR: ClassVar[
+        Type[BaseDataValidatorFlavor]
+    ] = GreatExpectationsDataValidatorFlavor
 
     _context: BaseDataContext = None
     _context_config: Optional[Dict[str, Any]] = None

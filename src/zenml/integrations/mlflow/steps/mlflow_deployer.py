@@ -88,7 +88,9 @@ def mlflow_model_deployer_step(
     Returns:
         MLflow deployment service
     """
-    model_deployer = MLFlowModelDeployer.get_active_model_deployer()
+    model_deployer = cast(
+        MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
+    )
 
     # fetch the MLflow artifacts logged during the pipeline run
     experiment_tracker = Client(  # type: ignore[call-arg]
