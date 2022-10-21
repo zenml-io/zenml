@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
+import logging
 import os
 import re
 from pathlib import Path, PurePath
@@ -44,7 +45,12 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
-from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.enums import (
+    ExecutionStatus,
+    LoggingLevels,
+    StackComponentType,
+    StoreType,
+)
 from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
@@ -52,7 +58,7 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.io import fileio
-from zenml.logger import get_logger
+from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
     ArtifactModel,
     ComponentModel,
@@ -478,6 +484,7 @@ class SqlZenStore(BaseZenStore):
 
     Attributes:
         config: The configuration of the SQL ZenML store.
+        skip_migrations: Whether to skip migrations when initializing the store.
         TYPE: The type of the store.
         CONFIG_TYPE: The type of the store configuration.
         _engine: The SQLAlchemy engine.
@@ -485,6 +492,7 @@ class SqlZenStore(BaseZenStore):
     """
 
     config: SqlZenStoreConfiguration
+    skip_migrations: bool = False
     TYPE: ClassVar[StoreType] = StoreType.SQL
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
@@ -531,6 +539,20 @@ class SqlZenStore(BaseZenStore):
             return True
         return False
 
+    @property
+    def alembic(self) -> Alembic:
+        """The Alembic wrapper.
+
+        Returns:
+            The Alembic wrapper.
+
+        Raises:
+            ValueError: If the store is not initialized.
+        """
+        if not self._alembic:
+            raise ValueError("Store not initialized")
+        return self._alembic
+
     # ====================================
     # ZenML Store interface implementation
     # ====================================
@@ -553,17 +575,54 @@ class SqlZenStore(BaseZenStore):
             url=url, connect_args=connect_args, **engine_args
         )
         self._alembic = Alembic(self.engine)
-        if ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ:
+        if (
+            not self.skip_migrations
+            and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
+        ):
             self.migrate_database()
-        # SQLModel.metadata.create_all(self._engine)
 
-    def migrate_database(self, revision="head") -> None:
-        """Migrate the database to the head as defined by the current python package.
+    def migrate_database(self) -> None:
+        """Migrate the database to the head as defined by the current python package."""
 
-        Args:
-            revision: Version of the db-schema to upgrade to
-        """
-        self._alembic.upgrade(revision)
+        alembic_logger = logging.getLogger("alembic")
+
+        # remove all existing handlers
+        while len(alembic_logger.handlers):
+            alembic_logger.removeHandler(alembic_logger.handlers[0])
+
+        logging_level = get_logging_level()
+
+        # suppress alembic info logging if zenml's logging level is not debug
+        if logging_level == LoggingLevels.DEBUG:
+            alembic_logger.setLevel(logging.DEBUG)
+        else:
+            alembic_logger.setLevel(logging.WARNING)
+
+        alembic_logger.addHandler(get_console_handler())
+
+        # We need to account for 3 distinct cases here:
+        # 1. the database is completely empty (not initialized)
+        # 2. the database is not empty, but has never been migrated with alembic
+        #   before (i.e. was created with SQLModel back when alembic wasn't
+        #   used)
+        # 3. the database is not empty and has been migrated with alembic before
+
+        if self.alembic.current_revision() is not None:
+            # Case 3: the database has been migrated with alembic before. Just
+            # upgrade to the latest revision.
+            self.alembic.upgrade()
+        else:
+            if self.alembic.db_is_empty():
+                # Case 1: the database is empty. We can just create the
+                # tables from scratch with alembic.
+                self.alembic.upgrade()
+            else:
+                # Case 2: the database is not empty, but has never been
+                # migrated with alembic before. We need to create the alembic
+                # version table, initialize it with the first revision where we
+                # introduced alembic and then upgrade to the latest revision.
+                self.alembic.initialize_db()
+                self.alembic.upgrade()
 
     def get_store_info(self) -> ServerModel:
         """Get information about the store.

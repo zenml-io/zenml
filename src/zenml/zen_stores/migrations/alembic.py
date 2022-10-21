@@ -1,20 +1,53 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Alembic utilities wrapper.
+
+The Alembic class defined here acts as a wrapper around the Alembic
+library that automatically configures Alembic to use the ZenML SQL store
+database connection.
+"""
+
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Sequence, Union
-
-from sqlalchemy.engine import Engine
-from sqlalchemy.sql.schema import MetaData
-
-from sqlmodel import SQLModel
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Union,
+    cast,
+)
 
 from alembic.config import Config
 from alembic.runtime.environment import EnvironmentContext
+from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
+from sqlalchemy.engine import Engine
+from sqlalchemy.sql.schema import MetaData
+from sqlmodel import SQLModel
 
 from zenml.zen_stores import schemas
 
 if TYPE_CHECKING:
-    from alembic.runtime.migration import StampStep
+    pass
 
+ZENML_ALEMBIC_START_REVISION = "alembic_start"
+
+# Tables that should be ignored by the Alembic migration utilities. Currently,
+# this is a list of MLMD tables, which are handled by the MLMD library.
 exclude_tables = [
     "Event",
     "EventPath",
@@ -35,7 +68,21 @@ exclude_tables = [
 ]
 
 
-def include_object(object, name, type_, *args, **kwargs):
+def include_object(
+    object: Any, name: str, type_: str, *args: Any, **kwargs: Any
+) -> bool:
+    """Function used to exclude tables from the migration scripts.
+
+    Args:
+        object: The schema item object to check.
+        name: The name of the object to check.
+        type_: The type of the object to check.
+        *args: Additional arguments.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        True if the object should be included, False otherwise.
+    """
     return not (type_ == "table" and name in exclude_tables)
 
 
@@ -43,40 +90,32 @@ _RevIdType = Union[str, Sequence[str]]
 
 
 class Alembic:
-    """Alembic environment and migration API."""
+    """Alembic environment and migration API.
+
+    This class provides a wrapper around the Alembic library that automatically
+    configures Alembic to use the ZenML SQL store database connection.
+    """
 
     def __init__(
         self,
         engine: Engine,
         metadata: MetaData = SQLModel.metadata,
+        context: Optional[EnvironmentContext] = None,
         **kwargs: Any,
     ) -> None:
+        """Initialize the Alembic wrapper.
+
+        Args:
+            engine: The SQLAlchemy engine to use.
+            metadata: The SQLAlchemy metadata to use.
+            context: The Alembic environment context to use. If not set, a new
+                context is created pointing to the ZenML migrations directory.
+            **kwargs: Additional keyword arguments to pass to the Alembic
+                environment context.
+        """
         self.engine = engine
         self.metadata = metadata
         self.context_kwargs = kwargs
-
-        # # add logging handler if not configured
-        # console_handler = logging.StreamHandler(sys.stderr)
-        # console_handler.formatter = logging.Formatter(
-        #     fmt="%(levelname)-5.5s [%(name)s] %(message)s", datefmt="%H:%M:%S"
-        # )
-
-        # sqlalchemy_logger = logging.getLogger("sqlalchemy")
-        # alembic_logger = logging.getLogger("alembic")
-
-        # if not sqlalchemy_logger.hasHandlers():
-        #     sqlalchemy_logger.setLevel(logging.WARNING)
-        #     sqlalchemy_logger.addHandler(console_handler)
-
-        # # alembic adds a null handler, remove it
-        # if len(alembic_logger.handlers) == 1 and isinstance(
-        #     alembic_logger.handlers[0], logging.NullHandler
-        # ):
-        #     alembic_logger.removeHandler(alembic_logger.handlers[0])
-
-        # if not alembic_logger.hasHandlers():
-        #     alembic_logger.setLevel(logging.INFO)
-        #     alembic_logger.addHandler(console_handler)
 
         self.config = Config()
         self.config.set_main_option(
@@ -87,14 +126,42 @@ class Alembic:
         )
 
         self.script_directory = ScriptDirectory.from_config(self.config)
-        self.environment_context = EnvironmentContext(
-            self.config, self.script_directory
+        if context is None:
+            self.environment_context = EnvironmentContext(
+                self.config, self.script_directory
+            )
+        else:
+            self.environment_context = context
+
+    def db_is_empty(self) -> bool:
+        """Check if the database is empty.
+
+        Returns:
+            True if the database is empty, False otherwise.
+        """
+        # Check the existence of any of the SQLModel tables
+        return not self.engine.dialect.has_table(
+            self.engine.connect(), cast(str, schemas.StackSchema.__tablename__)
         )
 
-    def _run_migrations(
-        self, fn: Callable[[_RevIdType, EnvironmentContext], List["StampStep"]]
-    ):
-        """Run an online migration function in the current migration context."""
+    def initialize_db(self) -> None:
+        """Initialize the database with the first revision when alembic was introduced."""
+        self.stamp(ZENML_ALEMBIC_START_REVISION)
+
+    def run_migrations(
+        self,
+        fn: Optional[Callable[[_RevIdType, MigrationContext], List[Any]]],
+    ) -> None:
+        """Run an online migration function in the current migration context.
+
+        Args:
+            fn: Migration function to run. If not set, the function configured
+                externally by the Alembic CLI command is used.
+        """
+        fn_context_args: Dict[Any, Any] = {}
+        if fn is not None:
+            fn_context_args["fn"] = fn
+
         with self.engine.connect() as connection:
             self.environment_context.configure(
                 connection=connection,
@@ -102,26 +169,47 @@ class Alembic:
                 include_object=include_object,
                 compare_type=True,
                 render_as_batch=True,
-                fn=fn,
+                **fn_context_args,
                 **self.context_kwargs,
             )
 
             with self.environment_context.begin_transaction():
                 self.environment_context.run_migrations()
 
-    def stamp(self, revision: str):
+    def current_revision(self) -> Optional[str]:
+        """Get the current database revision.
+
+        Returns:
+            String revision.
+        """
+        current_revisions: List[str] = []
+
+        def do_get_current_rev(rev: _RevIdType, context: Any) -> List[Any]:
+            nonlocal current_revisions
+
+            for r in self.script_directory.get_all_current(
+                rev  # type:ignore [arg-type]
+            ):
+                if r is None:
+                    continue
+                current_revisions.append(r.revision)
+            return []
+
+        self.run_migrations(do_get_current_rev)
+
+        return current_revisions[0] if current_revisions else None
+
+    def stamp(self, revision: str) -> None:
         """Stamp the revision table with the given revision without running any migrations.
 
         Args:
             revision: String revision target.
         """
 
-        def do_stamp(
-            rev: _RevIdType, context: EnvironmentContext
-        ) -> List["StampStep"]:
+        def do_stamp(rev: _RevIdType, context: Any) -> List[Any]:
             return self.script_directory._stamp_revs(revision, rev)
 
-        self._run_migrations(do_stamp)
+        self.run_migrations(do_stamp)
 
     def upgrade(self, revision: str = "heads") -> None:
         """Upgrade the database to a later version.
@@ -130,12 +218,12 @@ class Alembic:
             revision: String revision target.
         """
 
-        def do_upgrade(
-            rev: _RevIdType, context: EnvironmentContext
-        ) -> List["StampStep"]:
-            return self.script_directory._upgrade_revs(revision, rev)
+        def do_upgrade(rev: _RevIdType, context: Any) -> List[Any]:
+            return self.script_directory._upgrade_revs(
+                revision, rev  # type:ignore [arg-type]
+            )
 
-        self._run_migrations(do_upgrade)
+        self.run_migrations(do_upgrade)
 
     def downgrade(self, revision: str) -> None:
         """Revert the database to a previous version.
@@ -144,9 +232,9 @@ class Alembic:
             revision: String revision target.
         """
 
-        def do_downgrade(
-            rev: _RevIdType, context: EnvironmentContext
-        ) -> List["StampStep"]:
-            return self.script_directory._downgrade_revs(revision, rev)
+        def do_downgrade(rev: _RevIdType, context: Any) -> List[Any]:
+            return self.script_directory._downgrade_revs(
+                revision, rev  # type:ignore [arg-type]
+            )
 
-        self._run_migrations(do_downgrade)
+        self.run_migrations(do_downgrade)

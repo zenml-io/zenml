@@ -1,17 +1,16 @@
-"""init
+"""Initialize db with first revision.
 
-Revision ID: a8c6cd6b3f34
-Revises: 
+Revision ID: alembic_start
+Revises:
 Create Date: 2022-10-19 11:17:54.753102
 
 """
+import sqlalchemy as sa
 import sqlmodel
 from alembic import op
-import sqlalchemy as sa
-
 
 # revision identifiers, used by Alembic.
-revision = "a8c6cd6b3f34"
+revision = "alembic_start"
 down_revision = None
 branch_labels = None
 depends_on = None
