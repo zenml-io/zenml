@@ -585,19 +585,25 @@ class Client(metaclass=ClientMetaClass):
             A list of all stacks available in the current project and owned by
             the current user.
         """
-        owned_stacks = self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
-            is_shared=False,
-            hydrated=True,
+        owned_stacks = cast(
+            List["HydratedStackModel"],
+            self.zen_store.list_stacks(
+                project_name_or_id=self.active_project_name,
+                user_name_or_id=self.active_user.id,
+                is_shared=False,
+                hydrated=True,
+            ),
         )
-        shared_stacks = self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name,
-            is_shared=True,
-            hydrated=True,
+        shared_stacks = cast(
+            List["HydratedStackModel"],
+            self.zen_store.list_stacks(
+                project_name_or_id=self.active_project_name,
+                is_shared=True,
+                hydrated=True,
+            ),
         )
 
-        return owned_stacks + shared_stacks  # type: ignore[operator, return-value]
+        return owned_stacks + shared_stacks
 
     @property
     def active_stack_model(self) -> "HydratedStackModel":
