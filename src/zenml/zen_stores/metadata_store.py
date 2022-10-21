@@ -52,12 +52,12 @@ class MLMDPipelineRunModel(BaseModel):
 
     mlmd_id: int
     name: str
-    project: UUID
-    user: UUID
+    project: Optional[UUID]
+    user: Optional[UUID]
     pipeline_id: Optional[UUID]
-    stack_id: UUID
+    stack_id: Optional[UUID]
     pipeline_configuration: Dict[str, Any]
-    num_steps: int
+    num_steps: Optional[int]
 
 
 class MLMDStepRunModel(BaseModel):
@@ -90,22 +90,15 @@ class MetadataStore:
     upgrade_migration_enabled: bool = True
     store: metadata_store.MetadataStore
 
-    def __init__(
-        self,
-        config: metadata_store_pb2.ConnectionConfig,
-        is_legacy: bool = False,
-    ) -> None:
+    def __init__(self, config: metadata_store_pb2.ConnectionConfig) -> None:
         """Initializes the metadata store.
 
         Args:
             config: The connection configuration for the metadata store.
-            is_legacy: Whether the metadata store is a legacy store from
-                before ZenML 0.20.0.
         """
         self.store = metadata_store.MetadataStore(
             config, enable_upgrade_migration=True
         )
-        self.is_legacy = is_legacy
 
     @property
     def step_type_mapping(self) -> Dict[int, str]:
@@ -197,12 +190,10 @@ class MetadataStore:
                     # ignore it
                     pass
 
-        if not self.is_legacy:
-            step_context_properties = (
-                self._get_zenml_execution_context_properties(
-                    execution=execution,
-                )
-            )
+        step_context_properties = self._get_zenml_execution_context_properties(
+            execution=execution,
+        )
+        if MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME in step_context_properties:
             step_configuration = json.loads(
                 step_context_properties.get(
                     MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME
@@ -266,28 +257,45 @@ class MetadataStore:
         context_properties = self._get_zenml_execution_context_properties(
             self.store.get_executions_by_context(context_id=context.id)[-1]
         )
-        model_ids = json.loads(
-            context_properties.get(
-                MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME
-            ).string_value
-        )
-        pipeline_configuration = json.loads(
-            context_properties.get(
-                MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME
-            ).string_value
-        )
-        num_steps = int(
-            context_properties.get(
-                MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME
-            ).string_value
-        )
+
+        if MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME in context_properties:
+            model_ids = json.loads(
+                context_properties.get(
+                    MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME
+                ).string_value
+            )
+            project = model_ids["project_id"]
+            user = model_ids["user_id"]
+            pipeline_id = model_ids["pipeline_id"]
+            stack_id = model_ids["stack_id"]
+        else:
+            project, user, pipeline_id, stack_id = None, None, None, None
+
+        if MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME in context_properties:
+            pipeline_configuration = json.loads(
+                context_properties.get(
+                    MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME
+                ).string_value
+            )
+        else:
+            pipeline_configuration = {}
+
+        if MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME in context_properties:
+            num_steps = int(
+                context_properties.get(
+                    MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME
+                ).string_value
+            )
+        else:
+            num_steps = None
+
         return MLMDPipelineRunModel(
             mlmd_id=context.id,
             name=context.name,
-            project=model_ids["project_id"],
-            user=model_ids["user_id"],
-            pipeline_id=model_ids["pipeline_id"],
-            stack_id=model_ids["stack_id"],
+            project=project,
+            user=user,
+            pipeline_id=pipeline_id,
+            stack_id=stack_id,
             pipeline_configuration=pipeline_configuration,
             num_steps=num_steps,
         )

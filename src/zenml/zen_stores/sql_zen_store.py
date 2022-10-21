@@ -3359,16 +3359,35 @@ class SqlZenStore(BaseZenStore):
             min_mlmd_id=max_synced_mlmd_id + 1
         )
         for mlmd_run in unsynced_mlmd_runs:
+
+            # For legacy runs, we have no `num_steps`. Therefore, we cannot
+            # determine the status of the run correctly. Instead, we need to
+            # load all steps from MLMD and compute `status` and `num_steps`
+            # from that.
+            if mlmd_run.num_steps is None:
+                mlmd_steps = self.metadata_store.get_pipeline_run_steps(
+                    mlmd_run.mlmd_id
+                )
+                num_steps = len(mlmd_steps)
+                step_statuses = [
+                    self.metadata_store.get_step_status(step.mlmd_id)
+                    for step in mlmd_steps.values()
+                ]
+                status = ExecutionStatus.run_status(step_statuses, num_steps)
+            else:
+                num_steps = mlmd_run.num_steps
+                status = ExecutionStatus.RUNNING
+
             new_run = PipelineRunModel(
                 name=mlmd_run.name,
                 mlmd_id=mlmd_run.mlmd_id,
-                project=mlmd_run.project,
-                user=mlmd_run.user,
+                project=mlmd_run.project or self._default_project.id,
+                user=mlmd_run.user or self._default_user.id,
                 stack_id=mlmd_run.stack_id,
                 pipeline_id=mlmd_run.pipeline_id,
                 pipeline_configuration=mlmd_run.pipeline_configuration,
-                num_steps=mlmd_run.num_steps,
-                status=ExecutionStatus.RUNNING,
+                num_steps=num_steps,
+                status=status,
             )
             self.create_run(new_run)
 

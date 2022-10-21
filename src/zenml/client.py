@@ -1314,7 +1314,6 @@ class Client(metaclass=ClientMetaClass):
             ValueError: If the database type is "mysql" but the MySQL host,
                 username or password are not provided.
         """
-        from tfx.dsl.compiler.constants import PIPELINE_RUN_CONTEXT_TYPE_NAME
         from tfx.orchestration import metadata
 
         from zenml.enums import ExecutionStatus
@@ -1346,40 +1345,45 @@ class Client(metaclass=ClientMetaClass):
                 "Migrating pipeline runs is only supported for SQLite and MySQL."
             )
 
-        metadata_store = MetadataStore(config=mlmd_config, is_legacy=True)
+        metadata_store = MetadataStore(config=mlmd_config)
 
         # Dicts to keep tracks of MLMD IDs, which we need to resolve later.
         step_mlmd_id_mapping: Dict[int, UUID] = {}
         artifact_mlmd_id_mapping: Dict[int, UUID] = {}
 
         # Get all pipeline runs from the metadata store.
-        pipeline_run_contexts = metadata_store.store.get_contexts_by_type(
-            PIPELINE_RUN_CONTEXT_TYPE_NAME
-        )
-        if not pipeline_run_contexts:
+        pipeline_runs = metadata_store.get_all_runs()
+        if not pipeline_runs:
             raise RuntimeError("No pipeline runs found in the metadata store.")
 
         # For each run, first store the pipeline run, then all steps, then all
         # output artifacts of each step.
         # Runs, steps, and artifacts need to be sorted chronologically ensure
         # that the MLMD IDs of producer steps and parent steps can be resolved.
-        for pipeline_run_context in sorted(
-            pipeline_run_contexts, key=lambda x: int(x.id)
-        ):
+        for mlmd_run in sorted(pipeline_runs, key=lambda x: x.mlmd_id):
             steps = metadata_store.get_pipeline_run_steps(
-                pipeline_run_context.id
+                mlmd_run.mlmd_id
             ).values()
-            step_statuses = [
-                metadata_store.get_step_status(step.mlmd_id) for step in steps
-            ]
+
+            # Mark all steps that haven't finished yet as failed.
+            step_statuses = []
+            for step in steps:
+                status = metadata_store.get_step_status(step.mlmd_id)
+                if status == ExecutionStatus.RUNNING:
+                    status = ExecutionStatus.FAILED
+                step_statuses.append(status)
+
             num_steps = len(steps)
             pipeline_run = PipelineRunModel(
-                name=pipeline_run_context.name,
-                pipeline_configuration={},
+                user=self.active_user.id,  # Old user might not exist.
+                project=self.active_project.id,  # Old project might not exist.
+                name=mlmd_run.name,
+                stack_id=None,  # Stack might not exist in new DB.
+                pipeline_id=None,  # Pipeline might not exist in new DB.
                 status=ExecutionStatus.run_status(step_statuses, num_steps),
+                pipeline_configuration=mlmd_run.pipeline_configuration,
                 num_steps=num_steps,
-                user=self.active_user.id,
-                project=self.active_project.id,
+                mlmd_id=None,  # Run might not exist in new MLMD.
             )
             new_run = self.zen_store.create_run(pipeline_run)
             for step, step_status in sorted(
@@ -1431,7 +1435,7 @@ class Client(metaclass=ClientMetaClass):
                     artifact_mlmd_id_mapping[
                         mlmd_artifact.mlmd_id
                     ] = new_artifact.id
-        logger.info(f"Migrated {len(pipeline_run_contexts)} pipeline runs.")
+        logger.info(f"Migrated {len(pipeline_runs)} pipeline runs.")
 
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.
