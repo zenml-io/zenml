@@ -27,7 +27,6 @@ from zenml.integrations.deepchecks.validation_checks import (
 )
 from zenml.steps import BaseParameters
 from zenml.steps.base_step import BaseStep
-from zenml.steps.utils import clone_step
 
 
 class DeepchecksDataIntegrityCheckStepParameters(BaseParameters):
@@ -102,6 +101,4 @@ def deepchecks_data_integrity_check_step(
     Returns:
         a DeepchecksDataIntegrityCheckStep step instance
     """
-    return clone_step(DeepchecksDataIntegrityCheckStep, step_name)(
-        params=params
-    )
+    return DeepchecksDataIntegrityCheckStep(name=step_name, params=params)

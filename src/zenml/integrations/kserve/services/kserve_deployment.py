@@ -16,7 +16,7 @@
 import json
 import os
 import re
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple, cast
 from uuid import UUID
 
 import requests
@@ -196,23 +196,14 @@ class KServeDeploymentService(BaseService):
 
         Returns:
             The active KServeModelDeployer.
-
-        Raises:
-            TypeError: if the current stack has no KServeModelDeployer.
         """
         from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
             KServeModelDeployer,
         )
 
-        try:
-            model_deployer = KServeModelDeployer.get_active_model_deployer()
-        except TypeError:
-            raise TypeError(
-                "No active KServe model deployer is present in the active "
-                "stack. Please make sure that a KServe model deployer is "
-                "present in the active stack."
-            )
-        return model_deployer
+        return cast(
+            KServeModelDeployer, KServeModelDeployer.get_active_model_deployer()
+        )
 
     def _get_client(self) -> KServeClient:
         """Get the KServe client from the active KServe model deployer.

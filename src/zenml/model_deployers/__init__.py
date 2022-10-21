@@ -30,8 +30,12 @@ to a particular pipeline run or step, or to suspend, resume or delete
 an external model server managed through ZenML.
 """
 
-from zenml.model_deployers.base_model_deployer import BaseModelDeployer
+from zenml.model_deployers.base_model_deployer import (
+    BaseModelDeployer,
+    BaseModelDeployerFlavor,
+)
 
 __all__ = [
     "BaseModelDeployer",
+    "BaseModelDeployerFlavor",
 ]

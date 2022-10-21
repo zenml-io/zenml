@@ -14,6 +14,7 @@
 """Utility functions for networking."""
 
 import socket
+import sys
 from typing import Optional, cast
 
 from zenml.logger import get_logger
@@ -37,7 +38,13 @@ def port_available(port: int, address: str = "127.0.0.1") -> bool:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            if sys.platform != "win32":
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            else:
+                # The SO_REUSEPORT socket option is not supported on Windows.
+                # This if clause exists just for mypy to not complain about
+                # missing code paths.
+                pass
             s.bind((address, port))
     except socket.error as e:
         logger.debug("Port %d unavailable on %s: %s", port, address, e)
