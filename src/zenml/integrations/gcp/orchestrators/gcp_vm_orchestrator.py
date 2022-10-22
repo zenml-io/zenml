@@ -373,11 +373,12 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
             for x, y in accelerator_dict.items():
                 accelerators.append(
                     compute_v1.AcceleratorConfig(
-                        accelerator_type=f"projects/{self.config.project_id}/zones/{self.config.zone}/{x}",
+                        accelerator_type=f"projects/{self.config.project_id}"
+                        f"/zones/{self.config.zone}"
+                        f"/acceleratorTypes/{x}",
                         accelerator_count=y,
                     )
                 )
-            print(accelerators)
             instance.guest_accelerators = accelerators
 
         instance.network_interfaces = [network_interface]
