@@ -26,7 +26,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
 import time
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Tuple, cast
@@ -61,8 +60,6 @@ class VMInstanceView(BaseModel):
 
 class BaseVMOrchestratorConfig(StackComponentConfig):
     """Base VM orchestrator config."""
-
-    pass
 
 
 class BaseVMOrchestrator(BaseOrchestrator):
@@ -244,6 +241,7 @@ class BaseVMOrchestrator(BaseOrchestrator):
             deployment: The pipeline deployment configuration.
             stack: The stack on which the pipeline will be deployed.
         """
+        self.get_settings(deployment)
         docker_image_builder = PipelineDockerImageBuilder()
         repo_digest = docker_image_builder.build_and_push_docker_image(
             deployment=deployment, stack=stack

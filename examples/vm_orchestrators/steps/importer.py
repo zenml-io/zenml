@@ -14,9 +14,10 @@
 
 import numpy as np
 import pandas as pd
+
+from zenml.config.resource_configuration import ResourceConfiguration
 from zenml.integrations.sklearn.helpers.digits import get_digits
 from zenml.steps import Output, step
-from zenml.config.resource_configuration import ResourceConfiguration
 
 
 @step(resource_configuration=ResourceConfiguration(cpu_count=1, memory="256MB"))

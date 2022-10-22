@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """VM orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type, List
+from typing import TYPE_CHECKING, List, Optional, Type
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.gcp import GCP_VM_ORCHESTRATOR_FLAVOR
@@ -64,7 +64,6 @@ class GCPVMOrchestratorConfig(
     network_link: str = "global/networks/default"
     subnetwork_link: Optional[str] = None
     internal_ip: Optional[str] = None
-    external_access: bool = True  # unused and deprecated
     external_ipv4: Optional[str] = None
     custom_hostname: Optional[str] = None
     delete_protection: bool = False
@@ -91,7 +90,7 @@ class GCPVMOrchestratorSettings(BaseSettings):
         machine_type: machine type of the VM being created. This value uses the
             following format: "zones/{zone}/machineTypes/{type_name}".
             For example: "zones/europe-west3-c/machineTypes/f1-micro"
-        accelerator_type: List of Accelerator type from list:
+        accelerator_types: List of Accelerator type from list:
             "NVIDIA_TESLA_A100", "NVIDIA_TESLA_K80",
             "NVIDIA_TESLA_P4", "NVIDIA_TESLA_P100", "NVIDIA_TESLA_T4", "NVIDIA_TESLA_V100",
             "TPU_V2", "TPU_V3", "TPU_V2_POD", "TPU_V3_POD"
@@ -128,15 +127,6 @@ class GCPVMOrchestratorFlavor(BaseOrchestratorFlavor):
                 The config class.
         """
         return GCPVMOrchestratorConfig
-
-    @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
-        """settings class for the GCP VM orchestrator.
-
-        Returns:
-            The settings class.
-        """
-        return GCPVMOrchestratorSettings
 
     @property
     def implementation_class(self) -> Type["GCPVMOrchestrator"]:

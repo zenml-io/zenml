@@ -12,11 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.pipelines import pipeline
-
 from steps.evaluator import evaluator
 from steps.importer import importer
 from steps.sklearn_trainer import svc_trainer
+
+from zenml.pipelines import pipeline
 
 
 @pipeline

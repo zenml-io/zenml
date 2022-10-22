@@ -12,11 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from pipelines.digits_pipeline import digits_pipeline
 from steps.evaluator import evaluator
 from steps.importer import importer
 from steps.sklearn_trainer import svc_trainer
-
-from pipelines.digits_pipeline import digits_pipeline
 
 # redefine and rerun our pipeline, this time with tree_trainer()
 digits_tree_pipeline = digits_pipeline(

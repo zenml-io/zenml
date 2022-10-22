@@ -30,7 +30,7 @@ import os
 import re
 import sys
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Type, cast
 
 import google.cloud.logging
 from google.api_core.extended_operation import ExtendedOperation
@@ -54,6 +54,7 @@ from zenml.orchestrators.vm_orchestrator.base_vm_orchestrator import (
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
 
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
@@ -72,6 +73,15 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
             The configuration.
         """
         return cast(GCPVMOrchestratorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """settings class for the GCP VM orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return GCPVMOrchestratorSettings
 
     @staticmethod
     def wait_for_extended_operation(
@@ -363,9 +373,11 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
             for x, y in accelerator_dict.items():
                 accelerators.append(
                     compute_v1.AcceleratorConfig(
-                        accelerator_type=x, accelerator_count=y
+                        accelerator_type=f"projects/{self.config.project_id}/zones/{self.config.zone}/{x}",
+                        accelerator_count=y,
                     )
                 )
+            print(accelerators)
             instance.guest_accelerators = accelerators
 
         instance.network_interfaces = [network_interface]
