@@ -15,11 +15,15 @@
 
 import argparse
 import socket
+from typing import Optional, cast
 
 from kubernetes import client as k8s_client
 
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
+from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
+    KubernetesOrchestratorSettings,
+)
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.dag_runner import (
     ThreadedDagRunner,
@@ -93,6 +97,11 @@ def main() -> None:
     config_dict = yaml_utils.read_yaml(DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE)
     deployment_config = PipelineDeployment.parse_obj(config_dict)
 
+    settings = cast(
+        Optional[KubernetesOrchestratorSettings],
+        deployment_config.pipeline.settings.get("orchestrator.kubernetes"),
+    )
+
     pipeline_dag = {}
     step_name_to_pipeline_step_name = {}
     for name_in_pipeline, step in deployment_config.steps.items():
@@ -128,6 +137,7 @@ def main() -> None:
             image_name=args.image_name,
             command=step_command,
             args=step_args,
+            settings=settings,
         )
 
         # Create and run pod.

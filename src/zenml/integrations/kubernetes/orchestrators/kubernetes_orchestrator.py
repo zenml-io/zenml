@@ -255,13 +255,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 "orchestrator."
             )
 
-        settings = None
         for step in deployment.steps.values():
-            # Gets Settings from any step since they are shared.
-            settings = cast(
-                Optional[KubernetesOrchestratorSettings],
-                self.get_settings(step),
-            )
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not yet supported for "
@@ -286,6 +280,11 @@ class KubernetesOrchestrator(BaseOrchestrator):
             run_name=run_name,
             image_name=image_name,
             kubernetes_namespace=self.config.kubernetes_namespace,
+        )
+
+        settings = cast(
+            Optional[KubernetesOrchestratorSettings],
+            deployment.pipeline.settings.get("orchestrator.kubernetes"),
         )
 
         # Authorize pod to run Kubernetes commands inside the cluster.
