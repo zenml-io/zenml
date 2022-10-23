@@ -583,7 +583,6 @@ class SqlZenStore(BaseZenStore):
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the current python package."""
-
         alembic_logger = logging.getLogger("alembic")
 
         # remove all existing handlers
@@ -592,7 +591,7 @@ class SqlZenStore(BaseZenStore):
 
         logging_level = get_logging_level()
 
-        # suppress alembic info logging if zenml's logging level is not debug
+        # suppress alembic info logging if the zenml logging level is not debug
         if logging_level == LoggingLevels.DEBUG:
             alembic_logger.setLevel(logging.DEBUG)
         else:
