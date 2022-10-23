@@ -29,7 +29,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     """Settings for the Kubernetes orchestrator.
 
     Attributes:
-        node_selectors: Node selectors to apply to Kubernetes pods.
+        tolerations: Tolerations to apply to Kubernetes pods.
         node_affinity: Node affinities to apply to Kubernetes pods.
     """
 
