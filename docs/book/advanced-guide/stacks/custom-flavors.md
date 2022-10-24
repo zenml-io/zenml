@@ -251,7 +251,7 @@ section for more details.
 Check out [this short (< 3 minutes) video](https://www.youtube.com/watch?v=CQRVSKbBjtQ) on how to quickly get some more
 information about the registered flavors available to you:
 
-[![Describing Flavors 🌮 Makes Your Life Easier](../assets/flavors-video-snapshot.png)](https://www.youtube.com/watch?v=CQRVSKbBjtQ)
+{% embed url="https://www.youtube.com/watch?v=CQRVSKbBjtQ" %} Describe MLOps Stack Component Flavors {% endembed %}
 
 ## Extending Specific Stack Components
 
