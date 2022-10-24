@@ -1,4 +1,4 @@
-"""Increase length on flavor config schema.
+"""Increase length on flavor config schema [c1b18cec3a48].
 
 Revision ID: c1b18cec3a48
 Revises: alembic_start
@@ -6,6 +6,7 @@ Create Date: 2022-10-19 17:12:19.481776
 
 """
 import sqlalchemy as sa
+import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -22,7 +23,7 @@ def upgrade() -> None:
         batch_op.alter_column(
             "config_schema",
             existing_type=sa.VARCHAR(),
-            type_=sa.String(4096),
+            type_=sqlmodel.sql.sqltypes.AutoString(4096),
             nullable=True,
         )
 
@@ -36,7 +37,7 @@ def downgrade() -> None:
         batch_op.alter_column(
             "config_schema",
             existing_type=sa.VARCHAR(),
-            type_=sa.String(),
+            type_=sqlmodel.sql.sqltypes.AutoString(),
             nullable=False,
         )
 

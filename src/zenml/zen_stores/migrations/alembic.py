@@ -144,10 +144,6 @@ class Alembic:
             self.engine.connect(), cast(str, schemas.StackSchema.__tablename__)
         )
 
-    def initialize_db(self) -> None:
-        """Initialize the database with the first revision when alembic was introduced."""
-        self.stamp(ZENML_ALEMBIC_START_REVISION)
-
     def run_migrations(
         self,
         fn: Optional[Callable[[_RevIdType, MigrationContext], List[Any]]],
@@ -176,11 +172,11 @@ class Alembic:
             with self.environment_context.begin_transaction():
                 self.environment_context.run_migrations()
 
-    def current_revision(self) -> Optional[str]:
-        """Get the current database revision.
+    def current_revisions(self) -> List[str]:
+        """Get the current database revisions.
 
         Returns:
-            String revision.
+            List of head revisions.
         """
         current_revisions: List[str] = []
 
@@ -197,7 +193,7 @@ class Alembic:
 
         self.run_migrations(do_get_current_rev)
 
-        return current_revisions[0] if current_revisions else None
+        return current_revisions
 
     def stamp(self, revision: str) -> None:
         """Stamp the revision table with the given revision without running any migrations.

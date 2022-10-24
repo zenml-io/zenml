@@ -79,7 +79,10 @@ from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.base_zen_store import BaseZenStore
-from zenml.zen_stores.migrations.alembic import Alembic
+from zenml.zen_stores.migrations.alembic import (
+    ZENML_ALEMBIC_START_REVISION,
+    Alembic,
+)
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     FlavorSchema,
@@ -606,7 +609,15 @@ class SqlZenStore(BaseZenStore):
         #   used)
         # 3. the database is not empty and has been migrated with alembic before
 
-        if self.alembic.current_revision() is not None:
+        revisions = self.alembic.current_revisions()
+        if len(revisions) >= 1:
+            if len(revisions) > 1:
+                logger.warning(
+                    "The ZenML database has more than one migration head "
+                    "revision. This is not expected and might indicate a "
+                    "database migration problem. Please raise an issue on "
+                    "GitHub if you encounter this."
+                )
             # Case 3: the database has been migrated with alembic before. Just
             # upgrade to the latest revision.
             self.alembic.upgrade()
@@ -620,7 +631,7 @@ class SqlZenStore(BaseZenStore):
                 # migrated with alembic before. We need to create the alembic
                 # version table, initialize it with the first revision where we
                 # introduced alembic and then upgrade to the latest revision.
-                self.alembic.initialize_db()
+                self.alembic.stamp(ZENML_ALEMBIC_START_REVISION)
                 self.alembic.upgrade()
 
     def get_store_info(self) -> ServerModel:
