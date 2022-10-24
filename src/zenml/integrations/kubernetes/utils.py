@@ -19,7 +19,7 @@ def serialize_kubernetes_model(model: object) -> Dict[str, Any]:
     if not is_model_class(model.__class__.__name__):
         raise TypeError(f"Unable to serialize non-kubernetes model {model}.")
     assert hasattr(model, "to_dict")
-    return cast(Dict[str, Any], model.to_dict())
+    return cast(Dict[str, Any], model.to_dict())  # type: ignore[attr-defined]
 
 
 def deserialize_kubernetes_model(data: Dict[str, Any], class_name: str) -> Any:
@@ -53,14 +53,16 @@ def deserialize_kubernetes_model(data: Dict[str, Any], class_name: str) -> Any:
         if not value:
             deserialized_attributes[key] = value
         elif attribute_class.startswith("list["):
-            inner_class = re.match(r"list\[(.*)\]", attribute_class).group(1)
+            match = re.fullmatch(r"list\[(.*)\]", attribute_class)
+            assert match
+            inner_class = match.group(1)
             deserialized_attributes[key] = _deserialize_list(
                 value, class_name=inner_class
             )
         elif attribute_class.startswith("dict("):
-            inner_class = re.match(
-                r"dict\(([^,]*), (.*)\)", attribute_class
-            ).group(2)
+            match = re.fullmatch(r"dict\(([^,]*), (.*)\)", attribute_class)
+            assert match
+            inner_class = match.group(1)
             deserialized_attributes[key] = _deserialize_dict(
                 value, class_name=inner_class
             )
@@ -105,6 +107,7 @@ def get_model_class(class_name: str) -> Type[Any]:
             f"Unable to find kubernetes model class with name {class_name}."
         )
 
+    assert isinstance(class_, type)
     return class_
 
 
@@ -189,7 +192,7 @@ class KubernetesPodSettings(BaseSettings):
     @validator("tolerations", pre=True)
     def _convert_tolerations(
         cls, value: List[Union[Dict[str, Any], V1Toleration]]
-    ) -> Dict[str, Any]:
+    ) -> List[Dict[str, Any]]:
         """Converts Kubernetes tolerations to dicts.
 
         Args:
