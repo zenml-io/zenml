@@ -184,7 +184,7 @@ class MissingStepParameterError(ZenMLBaseException):
             (2) Specify the parameters in code when creating the pipeline:
             `my_pipeline({step_name}(params={parameters_class.__name__}(...))`
             (3) Specify the parameters in a yaml configuration file and pass
-            it to the pipeline: `my_pipeline(...).with_config('path_to_yaml')`
+            it to the pipeline: `my_pipeline(...).run(config_path='path_to_yaml')`
             """
             )
         )

@@ -69,6 +69,7 @@ from zenml.models import (
     ArtifactModel,
     ComponentModel,
     FlavorModel,
+    HydratedStackModel,
     PipelineModel,
     PipelineRunModel,
     ProjectModel,
@@ -424,7 +425,8 @@ class RestZenStore(BaseZenStore):
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[StackModel]:
+        hydrated: bool = False,
+    ) -> Union[List[StackModel], List[HydratedStackModel]]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -435,17 +437,25 @@ class RestZenStore(BaseZenStore):
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
+            hydrated: Flag to decide whether to return hydrated models.
 
         Returns:
             A list of all stacks matching the filter criteria.
         """
         filters = locals()
         filters.pop("self")
-        return self._list_resources(
-            route=STACKS,
-            resource_model=StackModel,
-            **filters,
-        )
+        if hydrated:
+            return self._list_resources(
+                route=STACKS,
+                resource_model=HydratedStackModel,
+                **filters,
+            )
+        else:
+            return self._list_resources(
+                route=STACKS,
+                resource_model=StackModel,
+                **filters,
+            )
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
