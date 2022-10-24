@@ -23,6 +23,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     LOCAL_STORES_DIRECTORY_NAME,
@@ -193,6 +194,8 @@ class DockerZenServer(ContainerService):
             SERVICE_CONTAINER_GLOBAL_CONFIG_PATH,
             LOCAL_STORES_DIRECTORY_NAME,
         )
+        env[ENV_ZENML_DISABLE_DATABASE_MIGRATION] = "True"
+
         return cmd, env
 
     def provision(self) -> None:
