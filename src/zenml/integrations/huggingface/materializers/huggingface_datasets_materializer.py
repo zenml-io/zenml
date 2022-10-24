@@ -43,12 +43,12 @@ class HFDatasetMaterializer(BaseMaterializer):
             The dataset read from the specified dir.
         """
         super().handle_input(data_type)
-        with TemporaryDirectory() as temp_dir:
-            io_utils.copy_dir(
-                os.path.join(self.artifact.uri, DEFAULT_DATASET_DIR),
-                temp_dir,
-            )
-            return load_from_disk(temp_dir)
+        temp_dir = TemporaryDirectory()
+        io_utils.copy_dir(
+            os.path.join(self.artifact.uri, DEFAULT_DATASET_DIR),
+            temp_dir.name,
+        )
+        return load_from_disk(temp_dir.name)
 
     def handle_return(self, ds: Type[Any]) -> None:
         """Writes a Dataset to the specified dir.
