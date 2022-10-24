@@ -59,7 +59,7 @@ def get_model_class(class_name: str) -> Type[Any]:
     class_ = getattr(kubernetes.client.models, class_name, None)
 
     if not class_:
-        raise ValueError(
+        raise TypeError(
             f"Unable to find kubernetes model class with name {class_name}."
         )
 
@@ -90,7 +90,7 @@ def _deserialize_dict(data: Any, class_name: str) -> Dict[str, Any]:
 
 from typing import Union
 
-from kubernetes.client import V1Affinity, V1Toleration
+from kubernetes.client.models import V1Affinity, V1Toleration
 from pydantic import validator
 
 from zenml.config.base_settings import BaseSettings
