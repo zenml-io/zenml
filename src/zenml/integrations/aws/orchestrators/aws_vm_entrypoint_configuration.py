@@ -47,6 +47,8 @@ PB2_PIPELINE_JSON_FILE_PATH = "pb2_pipeline_json_file_path"
 
 
 class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
+    """Entrypoint for AWS VM orchestrators."""
+    
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
         """Gets all options required for running an entrypoint with this configuration.
@@ -88,6 +90,7 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
 
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
+        """Get custom entrypoint options."""
         return {RUN_NAME_OPTION, PB2_PIPELINE_JSON_FILE_PATH}
 
     @classmethod
@@ -208,6 +211,7 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
     def get_custom_entrypoint_arguments(
         cls, step: BaseStep, *args: Any, **kwargs: Any
     ) -> List[str]:
+        """Get custom entrypoint aguments."""
         return [
             f"--{RUN_NAME_OPTION}",
             kwargs[RUN_NAME_OPTION],
@@ -216,6 +220,7 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
         ]
 
     def get_run_name(self, pipeline_name: str) -> str:
+        """Returns the run name."""
         return self.entrypoint_args[RUN_NAME_OPTION]
 
     def run(self) -> None:

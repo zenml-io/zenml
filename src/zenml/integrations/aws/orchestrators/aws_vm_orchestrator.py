@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML AWS VM orchestrator."""
 
 import os
 import time
@@ -52,7 +53,7 @@ AWS_LOGS_GROUP_NAME = "/zenml/ec2/pipelines"
 
 
 def stream_logs(stream_name: str, seconds_before: int = 10) -> None:
-    """Streams logs onto the logger"""
+    """Streams logs onto the logger."""
     now = datetime.now(timezone.utc)
     before = now - timedelta(seconds=seconds_before)
 
@@ -76,13 +77,12 @@ def stream_logs(stream_name: str, seconds_before: int = 10) -> None:
 
 
 def sanitize_aws_vm_name(bad_name: str) -> str:
-    """Get a good name from a bad name"""
+    """Get a good name from a bad name."""
     return bad_name.replace("_", "-")
 
 
 def get_image_from_family() -> str:
-    """
-    Retrieve the newest image from the AWS Deep Learning Catalog.
+    """Retrieve the newest image from the AWS Deep Learning Catalog.
 
     Returns:
         An AMI ID of the image.
@@ -100,7 +100,7 @@ def get_image_from_family() -> str:
         ],
         Owners=["amazon"],
     )
-    # Sort on Creation date Desc
+    # Sort on Creation date descending
     image_details = sorted(
         response["Images"], key=itemgetter("CreationDate"), reverse=True
     )
@@ -109,8 +109,7 @@ def get_image_from_family() -> str:
 
 
 def delete_instance(instance_id: str) -> None:
-    """
-    Send an instance deletion request to the EC2 API and wait for it to complete.
+    """Send an instance deletion request to the EC2 API and wait for it to complete.
 
     Args:
         instance_id: ID of the EC2 instance.
@@ -190,8 +189,7 @@ def create_instance(
     registry_name: str,
     log_stream_name: str,
 ) -> dict:
-    """
-    Send an instance creation request to the Compute Engine API and wait for it to complete.
+    """Send an instance creation request to the Compute Engine API and wait for it to complete.
 
     Args:
         image_name: The docker image to run when VM starts.
@@ -232,6 +230,7 @@ def create_instance(
 
 
 def setup_session():
+    """Sets up a boto3 session."""
     session = boto3.Session()
     # credentials = session.get_credentials()
     # os.environ[AWS_ACCESS_KEY_ID] = credentials.access_key
@@ -240,36 +239,20 @@ def setup_session():
 
 
 class AWSVMOrchestrator(BaseOrchestrator):
-    iam_role: str = "ec2_vm_role"
-    instance_type: str = "t3.large"
-    instance_image: str = None  # ami-02e9f4e447e4cda79
-    custom_executor_image_name: str = None
-    region: str = "us-east-1"
-    key_name: str = None
-    security_group: str = None
-    # TODO: Remove these
-    min_count: int = 1
-    max_count: int = 1
-    """
-    # TODO: Re-write these, and add other arguments
-    Base class for the orchestrator on AWS.
-    
-    iam_role: the name of the role created in AWS IAM, defaults to ec2_vm_role
-    instance_type: the type of the EC2 instance, defaults to t2.micro  instance on EC2
-    instance_image: the image for the EC2 instance, defaults to the public image: AWS Deep Learning Base AMI GPU CUDA 11
-    custom_executor_image_name: refers to the image with ZenML
-    region: the name of the region that AWS is working on
-    key_name: the name of the key to be used whilst creating the
-    security_group: the name of a selected security group
-    min_count: the minimum number of instances, defaults to 1
-    max_count: the maximum number of instances, defaults to 1
-    """
+    """Orchestrator responsible for running pipelines using AWS VM."""
 
     # Class Configuration
     FLAVOR: ClassVar[str] = AWS_VM_ORCHESTRATOR_FLAVOR
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Returns the full docker image name including registry and tag."""
+        """Returns the full docker image name, including registry and tag.
+        
+        Args:
+            pipeline_name: Name of the pipeline.
+            
+        Returns:
+            The base image name.
+        """
 
         base_image_name = f"aws-vm-orchestrator:{pipeline_name}"
         container_registry = Repository().active_stack.container_registry
@@ -286,9 +269,7 @@ class AWSVMOrchestrator(BaseOrchestrator):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Builds a docker image for the current environment and uploads it to
-        a container registry if configured.
-        """
+        """Builds a docker image for the current environment and uploads it to a container registry if configured."""
         from zenml.utils import docker_utils
 
         image_name = self.get_docker_image_name(pipeline.name)
@@ -321,6 +302,7 @@ class AWSVMOrchestrator(BaseOrchestrator):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
+        """Prepares and runs pipeline."""
         executor_image_name = self.get_docker_image_name(pipeline.name)
         executor_image_name = (
             get_image_digest(executor_image_name) or executor_image_name
@@ -363,7 +345,7 @@ class AWSVMOrchestrator(BaseOrchestrator):
         )
         ###############################################################
         # TODO: Launch a VM with the docker image `image_name` which  #
-        # *syncronously executes the `command` with `arguments`       #
+        # *synchronously executes the `command` with `arguments`       #
         instance = create_instance(
             executor_image_name,
             c_params,

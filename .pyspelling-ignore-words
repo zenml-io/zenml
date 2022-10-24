@@ -1482,6 +1482,7 @@ virtualenvwrapper
 vo
 vpc
 vpcs
+VM
 walkthrough
 wandb
 wb
@@ -1508,3 +1509,13 @@ zenmldocker
 zenmlregistry
 zenmlserver
 zenserver
+machineTypes
+preemptible
+TPU
+GCPVMOrchestratorConfig
+AttachedDisk
+diskTypes
+gb
+ssd
+AMI
+ami

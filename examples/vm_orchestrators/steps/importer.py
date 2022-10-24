@@ -35,7 +35,6 @@ def get_reference_data(
     X_test: np.ndarray,
 ) -> Output(reference=pd.DataFrame, comparison=pd.DataFrame):
     """Splits data for drift detection."""
-    # X_train = _add_awgn(X_train)
     columns = [str(x) for x in list(range(X_train.shape[1]))]
     return pd.DataFrame(X_test, columns=columns), pd.DataFrame(
         X_train, columns=columns

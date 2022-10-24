@@ -25,6 +25,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML GCP VM orchestrator."""
 
 import os
 import re
@@ -61,6 +62,7 @@ logger = get_logger(__name__)
 
 
 class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
+    """GCP VM orchestrator implementation."""
 
     # Class Configuration
     FLAVOR: ClassVar[str] = GCP_VM_ORCHESTRATOR_FLAVOR
@@ -89,7 +91,8 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         verbose_name: str = "operation",
         timeout: int = 300,
     ) -> Any:
-        """
+        """Wait for extended GCP operation.
+        
         This method will wait for the extended (long-running) operation to
         complete. If the operation is successful, it will return its result.
         If the operation ends with an error, an exception will be raised.
@@ -144,7 +147,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
 
     @staticmethod
     def sanitize_gcp_vm_name(bad_name: str) -> str:
-        """Get a good name from a bad name"""
+        """Get a good name from a bad name."""
         return bad_name.replace("_", "-").lower()
 
     @staticmethod
@@ -155,8 +158,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         source_image: str,
         auto_delete: bool = True,
     ) -> compute_v1.AttachedDisk:
-        """
-        Create an AttachedDisk object to be used in VM instance creation. Uses an image as the
+        """Create an AttachedDisk object to be used in VM instance creation. Uses an image as the
         source for the new disk.
 
         Args:
@@ -186,7 +188,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         return boot_disk
 
     def _get_credentials(self) -> "Credentials":
-        """Get credentails based on supplied authentication info.
+        """Get credentials based on supplied authentication info.
 
         Returns:
             Credentials: Google cloud credentials.
@@ -232,8 +234,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
     def delete_instance(
         self, project_id: str, zone: str, machine_name: str
     ) -> None:
-        """
-        Send an instance deletion request to the Compute Engine API and wait for it to complete.
+        """Send an instance deletion request to the Compute Engine API and wait for it to complete.
 
         Args:
             project_id: project ID or project number of the Cloud project you want to use.
@@ -255,8 +256,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
     def get_image_from_family(
         self, project: str, family: str
     ) -> compute_v1.Image:
-        """
-        Retrieve the newest image that is part of a given family in a project.
+        """Retrieve the newest image that is part of a given family in a project.
 
         Args:
             project: project ID or project number of the Cloud project you want to get image from.
@@ -292,8 +292,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         command: str,
         arguments: str,
     ) -> VMInstanceView:
-        """Send an instance creation request to the Compute Engine API and wait
-        for it to complete.
+        """Send an instance creation request to the Compute Engine API and wait for it to complete.
 
         Args:
             deployment: Deployment of the pipeline.
