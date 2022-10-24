@@ -5,6 +5,17 @@ import kubernetes.client.models
 
 
 def serialize_kubernetes_model(model: object) -> Dict[str, Any]:
+    """Serializes a Kubernetes model.
+
+    Args:
+        model: The model to serialize.
+
+    Raises:
+        TypeError: If the model is not a Kubernetes model.
+
+    Returns:
+        The serialized model.
+    """
     if not is_model_class(model.__class__.__name__):
         raise TypeError(f"Unable to serialize non-kubernetes model {model}.")
     assert hasattr(model, "to_dict")
@@ -12,6 +23,18 @@ def serialize_kubernetes_model(model: object) -> Dict[str, Any]:
 
 
 def deserialize_kubernetes_model(data: Dict[str, Any], class_name: str) -> Any:
+    """Deserializes a Kubernetes model.
+
+    Args:
+        data: The model data.
+        class_name: Name of the Kubernetes model class.
+
+    Raises:
+        KeyError: If the data contains values for an invalid attribute.
+
+    Returns:
+        The deserialized model.
+    """
     model_class = get_model_class(class_name=class_name)
     assert hasattr(model_class, "openapi_types")
     attribute_mapping = cast(Dict[str, str], model_class.openapi_types)
@@ -52,10 +75,29 @@ def deserialize_kubernetes_model(data: Dict[str, Any], class_name: str) -> Any:
 
 
 def is_model_class(class_name: str) -> bool:
+    """Checks whether the given class name is a Kubernetes model class.
+
+    Args:
+        class_name: Name of the class to check.
+
+    Returns:
+        If the given class name is a Kubernetes model class.
+    """
     return hasattr(kubernetes.client.models, class_name)
 
 
 def get_model_class(class_name: str) -> Type[Any]:
+    """Gets a Kubernetes model class.
+
+    Args:
+        class_name: Name of the class to get.
+
+    Raises:
+        TypeError: If no Kubernetes model class exists for this name.
+
+    Returns:
+        The model class.
+    """
     class_ = getattr(kubernetes.client.models, class_name, None)
 
     if not class_:
@@ -67,6 +109,15 @@ def get_model_class(class_name: str) -> Type[Any]:
 
 
 def _deserialize_list(data: Any, class_name: str) -> List[Any]:
+    """Deserializes a list of potential Kubernetes models.
+
+    Args:
+        data: The data to deserialize.
+        class_name: Name of the class of the elements of the list.
+
+    Returns:
+        The deserialized list.
+    """
     assert isinstance(data, List)
     if is_model_class(class_name):
         return [
@@ -78,6 +129,15 @@ def _deserialize_list(data: Any, class_name: str) -> List[Any]:
 
 
 def _deserialize_dict(data: Any, class_name: str) -> Dict[str, Any]:
+    """Deserializes a dict of potential Kubernetes models.
+
+    Args:
+        data: The data to deserialize.
+        class_name: Name of the class of the elements of the dict.
+
+    Returns:
+        The deserialized dict.
+    """
     assert isinstance(data, Dict)
     if is_model_class(class_name):
         return {
@@ -97,6 +157,14 @@ from zenml.config.base_settings import BaseSettings
 
 
 class KubernetesPodSettings(BaseSettings):
+    """Kubernetes Pod settings.
+
+    Attributes:
+        node_selectors: Node selectors to apply to the pod.
+        affinity: Affinity to apply to the pod.
+        tolerations: Tolerations to apply to the pod.
+    """
+
     node_selectors: Dict[str, str] = {}
     affinity: Dict[str, Any] = {}
     tolerations: List[Dict[str, Any]] = []
@@ -105,6 +173,14 @@ class KubernetesPodSettings(BaseSettings):
     def _convert_affinity(
         cls, value: Union[Dict[str, Any], V1Affinity]
     ) -> Dict[str, Any]:
+        """Converts Kubernetes affinity to a dict.
+
+        Args:
+            value: The affinity value.
+
+        Returns:
+            The converted value.
+        """
         if isinstance(value, V1Affinity):
             return serialize_kubernetes_model(value)
         else:
@@ -114,6 +190,14 @@ class KubernetesPodSettings(BaseSettings):
     def _convert_tolerations(
         cls, value: List[Union[Dict[str, Any], V1Toleration]]
     ) -> Dict[str, Any]:
+        """Converts Kubernetes tolerations to dicts.
+
+        Args:
+            value: The tolerations list.
+
+        Returns:
+            The converted tolerations.
+        """
         result = []
         for element in value:
             if isinstance(element, V1Toleration):
@@ -130,6 +214,12 @@ from kfp.dsl import ContainerOp
 def apply_pod_settings(
     container_op: "ContainerOp", settings: KubernetesPodSettings
 ) -> None:
+    """Applies Kubernetes Pod settings to a container.
+
+    Args:
+        container_op: The container to which to apply the settings.
+        settings: The settings to apply.
+    """
     for key, value in settings.node_selectors.items():
         container_op.add_node_selector_constraint(label_name=key, value=value)
 
