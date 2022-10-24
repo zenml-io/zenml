@@ -2,30 +2,39 @@
 
 replicaCount: 1
 
-image:
-  repository: zenmldocker/zenml-server
-  pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-  tag:
-
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
 zenml:
+
+  image:
+    repository: zenmldocker/zenml-server
+    pullPolicy: Always
+    # Overrides the image tag whose default is the chart appVersion.
+    tag:
+
+  initImage:
+    repository: zenmldocker/zenml
+    pullPolicy: Always
+    # Overrides the image tag whose default is the chart appVersion.
+    tag:
+
   debug: True
 
   # ZenML server deployment type
   deploymentType:
 
-  # Unique server UUID
+  # Unique server UUID. Used to uniquely identify the server in the
+  # telemetry events. If not set, a random UUID will be generated when the helm
+  # chart is installed and reused for all subsequent upgrades.
   serverId:
 
   # The ZenML authentication scheme. Use one of:
   # 
   # NO_AUTH - No authentication
   # HTTP_BASIC - HTTP Basic authentication
-  # OAUTH2_PASSWORD_BEARER - OAuth2 password bearer
+  # OAUTH2_PASSWORD_BEARER - OAuth2 password bearer with JWT tokens
   authType: OAUTH2_PASSWORD_BEARER
 
   # The ZenML server periodically syncs metadata information from the MLMD
@@ -36,6 +45,25 @@ zenml:
   # runs, you may want to increase this value to reduce the load on the ZenML
   # server.
   metadataSyncPeriod: 10
+  
+  # The secret key used to sign JWT tokens. Only relevant if the
+  # OAUTH2_PASSWORD_BEARER authentication scheme is used. This should be set to
+  # a random string with a recommended length of at least 32 characters, e.g.:
+  #
+  #   ```python
+  #   from secrets import token_hex
+  #   token_hex(32)
+  #   ```
+  #   
+  # or:
+  #
+  #   ```shell
+  #   openssl rand -hex 32
+  #   ```
+  #
+  # If not explicitly set, a random key will be generated when the helm
+  # chart is installed and reused for all subsequent upgrades.
+  jwtSecretKey:
 
   # The root URL path to use when behind a proxy. This is useful when the
   # `rewrite-target` annotation is used in the ingress controller, e.g.:

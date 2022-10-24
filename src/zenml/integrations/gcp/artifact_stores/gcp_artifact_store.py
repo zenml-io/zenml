@@ -179,6 +179,9 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         return [
             _extract_basename(dict_)
             for dict_ in self.filesystem.listdir(path=path)
+            # gcsfs.listdir also returns the root directory, so we filter
+            # it out here
+            if _extract_basename(dict_)
         ]
 
     def makedirs(self, path: PathType) -> None:
