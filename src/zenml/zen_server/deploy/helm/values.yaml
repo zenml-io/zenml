@@ -26,7 +26,8 @@ zenml:
   deploymentType:
 
   # Unique server UUID. Used to uniquely identify the server in the
-  # telemetry events. If not set, a random UUID will be generated.
+  # telemetry events. If not set, a random UUID will be generated when the helm
+  # chart is installed and reused for all subsequent upgrades.
   serverId:
 
   # The ZenML authentication scheme. Use one of:
