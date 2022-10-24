@@ -26,7 +26,11 @@ def upgrade() -> None:
         )
     op.execute("UPDATE pipelinerunschema SET status = 'running'")
     with op.batch_alter_table("pipelinerunschema", schema=None) as batch_op:
-        batch_op.alter_column("status", nullable=False)
+        batch_op.alter_column(
+            "status",
+            nullable=False,
+            existing_type=sqlmodel.sql.sqltypes.AutoString(),
+        )
 
     with op.batch_alter_table("steprunschema", schema=None) as batch_op:
         batch_op.add_column(
@@ -36,7 +40,11 @@ def upgrade() -> None:
         )
     op.execute("UPDATE steprunschema SET status = 'running'")
     with op.batch_alter_table("steprunschema", schema=None) as batch_op:
-        batch_op.alter_column("status", nullable=False)
+        batch_op.alter_column(
+            "status",
+            nullable=False,
+            existing_type=sqlmodel.sql.sqltypes.AutoString(),
+        )
 
 
 def downgrade() -> None:
