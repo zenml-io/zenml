@@ -502,9 +502,7 @@ class KServeModelDeployer(BaseModelDeployer):
         """
         if self.config.secret:
 
-            secret_manager = Client(  # type: ignore [call-arg]
-                skip_client_check=True
-            ).active_stack.secrets_manager
+            secret_manager = Client().active_stack.secrets_manager
 
             if not secret_manager or not isinstance(
                 secret_manager, BaseSecretsManager

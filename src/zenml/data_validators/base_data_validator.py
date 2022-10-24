@@ -52,7 +52,7 @@ class BaseDataValidator(StackComponent):
                 active stack.
         """
         flavor: BaseDataValidatorFlavor = cls.FLAVOR()
-        client = Client(skip_client_check=True)  # type: ignore[call-arg]
+        client = Client()
         data_validator = client.active_stack.data_validator
         if not data_validator or not isinstance(data_validator, cls):
             raise TypeError(
