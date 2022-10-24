@@ -24,7 +24,7 @@ matrix:
         - .pyspelling-ignore-words
 
     sources:
-      - "src/zenml/**/*.py|tests/**/*.py|examples/**/*.py"
+      - "src/zenml/**/*.py|tests/**/*.py|examples/**/*.py|!src/zenml/zen_stores/migrations/versions/*.py"
   - name: markdown
     aspell:
       lang: en
