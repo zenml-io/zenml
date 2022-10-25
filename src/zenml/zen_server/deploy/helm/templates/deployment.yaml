@@ -27,12 +27,39 @@ spec:
       serviceAccountName: {{ include "zenml.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: {{ .Chart.Name }}-db-init
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.zenml.initImage.repository }}:{{ .Values.zenml.initImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.zenml.initImage.pullPolicy }}
+          command: ['zenml', 'init']
+          env:
+            - name: ZENML_DEBUG
+              value: {{ .Values.zenml.debug | quote }}
+            - name: ANALYTICS_OPT_IN
+              value: "False"
+            - name: ZENML_DEFAULT_PROJECT_NAME
+              value: {{ .Values.zenml.defaultProject | quote }}
+            - name: ZENML_DEFAULT_USER_NAME
+              value: {{ .Values.zenml.defaultUsername | quote }}
+            {{- if .Values.zenml.database.url }}
+            - name: ZENML_STORE_TYPE
+              value: sql
+            - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
+              value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
+            {{- end }}
+            - name: ZENML_SERVER_DEPLOYMENT_TYPE
+              value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
+          envFrom:
+          - secretRef:
+              name: {{ include "zenml.fullname" . }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
           env:
             - name: ZENML_DEBUG
               value: {{ .Values.zenml.debug | quote }}
@@ -51,11 +78,11 @@ spec:
             {{- if .Values.zenml.database.url }}
             - name: ZENML_STORE_TYPE
               value: sql
+            - name: DISABLE_DATABASE_MIGRATION
+              value: "True"
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
             {{- end }}
-            - name: ZENML_USER_ID
-              value: {{ .Values.zenml.serverId | default uuidv4 | quote}}
             - name: ZENML_SERVER_DEPLOYMENT_TYPE
               value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
             - name: ZENML_SERVER_METADATA_SYNC_PERIOD
