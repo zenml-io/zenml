@@ -99,7 +99,7 @@ def get_pipeline(
             "on the name of the pipeline or even the class or instance "
             "of the pipeline. Learn more in our API docs: %s",
             get_apidocs_link(
-                "repository", "zenml.post_execution.pipeline.get_pipeline"
+                "core-repository", "zenml.post_execution.pipeline.get_pipeline"
             ),
         )
 
@@ -110,7 +110,7 @@ def get_pipeline(
             "within the `get_pipeline()` method. Learn more "
             "in our API docs: %s",
             get_apidocs_link(
-                "repository", "zenml.post_execution.pipeline.get_pipeline"
+                "core-repository", "zenml.post_execution.pipeline.get_pipeline"
             ),
         )
 

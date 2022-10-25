@@ -75,4 +75,4 @@ A concrete example of using the GitHub Actions orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/github_actions_orchestration).
 
 For more information and a full list of configurable attributes of the GitHub 
-Actions orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.github.orchestrators.github_actions_orchestrator.GitHubActionsOrchestrator).
+Actions orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-github/#zenml.integrations.github.orchestrators.github_actions_orchestrator.GitHubActionsOrchestrator).
