@@ -11,17 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List, Optional
-
 from datetime import datetime
-
+from typing import List, Optional
 from uuid import UUID, uuid4
 
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.models import RoleModel, RoleAssignmentModel
-from zenml.zen_stores.schemas import UserSchema, ProjectSchema, TeamSchema
-
+from zenml.models import RoleAssignmentModel, RoleModel
+from zenml.zen_stores.schemas import ProjectSchema, TeamSchema, UserSchema
 
 
 class RoleSchema(SQLModel, table=True):

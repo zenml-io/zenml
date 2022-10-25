@@ -13,18 +13,21 @@
 #  permissions and limitations under the License.
 
 from datetime import datetime
-
-from typing import Optional, List
-
+from typing import List, Optional
 from uuid import UUID
 
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import UserModel
 from zenml.zen_stores.schemas import (
-    TeamSchema, TeamAssignmentSchema,
-    UserRoleAssignmentSchema, StackSchema, StackComponentSchema, FlavorSchema,
-    PipelineSchema, PipelineRunSchema
+    FlavorSchema,
+    PipelineRunSchema,
+    PipelineSchema,
+    StackComponentSchema,
+    StackSchema,
+    TeamAssignmentSchema,
+    TeamSchema,
+    UserRoleAssignmentSchema,
 )
 
 

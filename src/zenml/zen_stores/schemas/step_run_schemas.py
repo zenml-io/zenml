@@ -4,7 +4,10 @@ from uuid import UUID
 
 from sqlmodel import Field, SQLModel
 
-from zenml.new_models.step_run_models import StepRunResponseModel, StepRunRequestModel
+from zenml.new_models.step_run_models import (
+    StepRunRequestModel,
+    StepRunResponseModel,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 if TYPE_CHECKING:
@@ -49,7 +52,7 @@ class StepRunSchema(BaseSchema, table=True):
             parameters=json.dumps(request.parameters),
             step_configuration=json.dumps(request.step_configuration),
             docstring=request.docstring,
-            mlmd_id = request.mlmd_id,
+            mlmd_id=request.mlmd_id,
         )
 
     def to_model(

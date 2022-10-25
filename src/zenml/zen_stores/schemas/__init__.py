@@ -19,20 +19,20 @@ from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.role_schemas import (
+    RoleSchema,
+    TeamRoleAssignmentSchema,
+    UserRoleAssignmentSchema,
+)
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.step_run_schemas import (
     StepInputArtifactSchema,
     StepRunOrderSchema,
     StepRunSchema,
 )
-from zenml.zen_stores.schemas.role_schemas import (
-    RoleSchema,
-    UserRoleAssignmentSchema,
-    TeamRoleAssignmentSchema
-)
 from zenml.zen_stores.schemas.team_schemas import (
+    TeamAssignmentSchema,
     TeamSchema,
-    TeamAssignmentSchema
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
