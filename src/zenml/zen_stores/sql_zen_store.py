@@ -106,7 +106,12 @@ from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
-    from zenml.zen_stores.metadata_store import MetadataStore
+    from zenml.zen_stores.metadata_store import (
+        MetadataStore,
+        MLMDArtifactModel,
+        MLMDPipelineRunModel,
+        MLMDStepRunModel,
+    )
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -3491,24 +3496,17 @@ class SqlZenStore(BaseZenStore):
         max_synced_mlmd_id = max(
             [id_ for id_ in synced_mlmd_ids if id_ is not None], default=0
         )
-
         unsynced_mlmd_runs = self.metadata_store.get_all_runs(
             min_mlmd_id=max_synced_mlmd_id + 1
         )
         for mlmd_run in unsynced_mlmd_runs:
-
-            new_run = PipelineRunModel(
-                name=mlmd_run.name,
-                mlmd_id=mlmd_run.mlmd_id,
-                project=mlmd_run.project or self._default_project.id,
-                user=mlmd_run.user or self._default_user.id,
-                stack_id=mlmd_run.stack_id,
-                pipeline_id=mlmd_run.pipeline_id,
-                pipeline_configuration=mlmd_run.pipeline_configuration,
-                num_steps=mlmd_run.num_steps or -1,
-                status=ExecutionStatus.RUNNING,
-            )
-            self.create_run(new_run)
+            try:
+                self._sync_run(mlmd_run)
+            except (KeyError, EntityExistsError) as err:
+                logger.warning(
+                    f"Syncing run '{mlmd_run.name}' failed: {str(err)}"
+                )
+                continue
 
         # Sync steps and status of all unfinished runs.
         with Session(self.engine) as session:
@@ -3520,6 +3518,28 @@ class SqlZenStore(BaseZenStore):
         for run_ in unfinished_runs:
             self._sync_run_steps(run_.id)
             self._update_run_status(run_.to_model())
+
+    def _sync_run(self, mlmd_run: "MLMDPipelineRunModel") -> PipelineRunModel:
+        """Sync a single run from MLMD into the database.
+
+        Args:
+            mlmd_run: The MLMD run model to sync.
+
+        Returns:
+            The synced run model.
+        """
+        new_run = PipelineRunModel(
+            name=mlmd_run.name,
+            mlmd_id=mlmd_run.mlmd_id,
+            project=mlmd_run.project or self._default_project.id,
+            user=mlmd_run.user or self._default_user.id,
+            stack_id=mlmd_run.stack_id,
+            pipeline_id=mlmd_run.pipeline_id,
+            pipeline_configuration=mlmd_run.pipeline_configuration,
+            num_steps=mlmd_run.num_steps or -1,
+            status=ExecutionStatus.RUNNING,
+        )
+        return self.create_run(new_run)
 
     def _sync_run_steps(self, run_id: UUID, check: bool = False) -> bool:
         """Sync run steps from MLMD into the database.
@@ -3573,38 +3593,15 @@ class SqlZenStore(BaseZenStore):
                 if check:
                     return True
 
-                # Build dict of input artifacts.
-                mlmd_inputs, _ = self.metadata_store.get_step_artifacts(
-                    step_id=mlmd_step.mlmd_id,
-                    step_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
-                    step_name=mlmd_step.entrypoint_name,
-                )
-                input_artifacts = {}
-                for input_name, mlmd_artifact in mlmd_inputs.items():
-                    artifact_id = self._resolve_mlmd_artifact_id(
-                        mlmd_id=mlmd_artifact.mlmd_id,
-                        mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
+                try:
+                    step_model = self._sync_run_step(
+                        run_id, step_name, mlmd_step
                     )
-                    input_artifacts[input_name] = artifact_id
-
-                # Create step.
-                new_step = StepRunModel(
-                    name=step_name,
-                    mlmd_id=mlmd_step.mlmd_id,
-                    mlmd_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
-                    entrypoint_name=mlmd_step.entrypoint_name,
-                    parameters=mlmd_step.parameters,
-                    step_configuration=mlmd_step.step_configuration,
-                    docstring=mlmd_step.docstring,
-                    pipeline_run_id=run_id,
-                    parent_step_ids=[
-                        self._resolve_mlmd_step_id(parent_step_id)
-                        for parent_step_id in mlmd_step.mlmd_parent_step_ids
-                    ],
-                    input_artifacts=input_artifacts,
-                    status=ExecutionStatus.RUNNING,
-                )
-                step_model = self.create_run_step(new_step)
+                except (KeyError, EntityExistsError) as err:
+                    logger.warning(
+                        f"Syncing run step '{step_name}' failed: {str(err)}"
+                    )
+                    continue
 
             elif check:
                 continue
@@ -3614,11 +3611,56 @@ class SqlZenStore(BaseZenStore):
                 step_model = self._run_step_schema_to_model(step_schema)
 
             # Sync artifacts and status of all steps.
-            if step_model.status == ExecutionStatus.RUNNING:
-                self._sync_run_step_artifacts(step_model)
-                self._update_run_step_status(step_model)
+            self._sync_run_step_artifacts(step_model)
+            self._update_run_step_status(step_model)
 
         return False
+
+    def _sync_run_step(
+        self, run_id: UUID, step_name: str, mlmd_step: "MLMDStepRunModel"
+    ) -> StepRunModel:
+        """Sync a single run step from MLMD into the database.
+
+        Args:
+            run_id: The ID of the pipeline run to sync the step for.
+            step_name: The name of the step to sync.
+            mlmd_step: The MLMD step model to sync.
+
+        Returns:
+            The synced run step model.
+        """
+        # Build dict of input artifacts.
+        mlmd_inputs, _ = self.metadata_store.get_step_artifacts(
+            step_id=mlmd_step.mlmd_id,
+            step_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
+            step_name=mlmd_step.entrypoint_name,
+        )
+        input_artifacts = {}
+        for input_name, mlmd_artifact in mlmd_inputs.items():
+            artifact_id = self._resolve_mlmd_artifact_id(
+                mlmd_id=mlmd_artifact.mlmd_id,
+                mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
+            )
+            input_artifacts[input_name] = artifact_id
+
+        # Create step.
+        new_step = StepRunModel(
+            name=step_name,
+            mlmd_id=mlmd_step.mlmd_id,
+            mlmd_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
+            entrypoint_name=mlmd_step.entrypoint_name,
+            parameters=mlmd_step.parameters,
+            step_configuration=mlmd_step.step_configuration,
+            docstring=mlmd_step.docstring,
+            pipeline_run_id=run_id,
+            parent_step_ids=[
+                self._resolve_mlmd_step_id(parent_step_id)
+                for parent_step_id in mlmd_step.mlmd_parent_step_ids
+            ],
+            input_artifacts=input_artifacts,
+            status=ExecutionStatus.RUNNING,
+        )
+        return self.create_run_step(new_step)
 
     def _sync_run_step_artifacts(
         self, step_model: StepRunModel, check: bool = False
@@ -3662,23 +3704,43 @@ class SqlZenStore(BaseZenStore):
                 if check:
                     return True
 
-                new_artifact = ArtifactModel(
-                    name=output_name,
-                    mlmd_id=mlmd_artifact.mlmd_id,
-                    type=mlmd_artifact.type,
-                    uri=mlmd_artifact.uri,
-                    materializer=mlmd_artifact.materializer,
-                    data_type=mlmd_artifact.data_type,
-                    mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
-                    mlmd_producer_step_id=mlmd_artifact.mlmd_producer_step_id,
-                    is_cached=mlmd_artifact.is_cached,
-                    parent_step_id=self._resolve_mlmd_step_id(
-                        mlmd_artifact.mlmd_parent_step_id
-                    ),
-                    producer_step_id=self._resolve_mlmd_step_id(
-                        mlmd_artifact.mlmd_producer_step_id
-                    ),
-                )
-                self.create_artifact(new_artifact)
+                try:
+                    self._sync_run_step_artifact(output_name, mlmd_artifact)
+                except KeyError as err:
+                    logger.warning(
+                        f"Syncing artifact '{output_name}' failed: {str(err)}"
+                    )
+                    continue
 
         return False
+
+    def _sync_run_step_artifact(
+        self, output_name: str, mlmd_artifact: "MLMDArtifactModel"
+    ) -> ArtifactModel:
+        """Sync a single run step artifact from MLMD into the database.
+
+        Args:
+            output_name: The name of the output artifact.
+            mlmd_artifact: The MLMD artifact model to sync.
+
+        Returns:
+            The synced artifact model.
+        """
+        new_artifact = ArtifactModel(
+            name=output_name,
+            mlmd_id=mlmd_artifact.mlmd_id,
+            type=mlmd_artifact.type,
+            uri=mlmd_artifact.uri,
+            materializer=mlmd_artifact.materializer,
+            data_type=mlmd_artifact.data_type,
+            mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
+            mlmd_producer_step_id=mlmd_artifact.mlmd_producer_step_id,
+            is_cached=mlmd_artifact.is_cached,
+            parent_step_id=self._resolve_mlmd_step_id(
+                mlmd_artifact.mlmd_parent_step_id
+            ),
+            producer_step_id=self._resolve_mlmd_step_id(
+                mlmd_artifact.mlmd_producer_step_id
+            ),
+        )
+        return self.create_artifact(new_artifact)
