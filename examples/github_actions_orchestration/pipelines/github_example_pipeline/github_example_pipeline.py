@@ -17,7 +17,6 @@ from zenml.pipelines import pipeline
 
 @pipeline
 def github_example_pipeline(first_step, second_step, third_step):
-    # Link all the steps together
     first_num = first_step()
     random_num = second_step()
     third_step(first_num, random_num)

@@ -154,8 +154,6 @@ def register_secrets_manager_subcommands() -> None:
         """
         # flake8: noqa: C901
 
-        # TODO [ENG-871]: Formatting for `zenml secrets-manager secret register
-        #  --help` currently broken.
         # TODO [ENG-725]: Allow passing in json/dict when registering a secret
         #  as an additional option for the user on top of the interactive
 

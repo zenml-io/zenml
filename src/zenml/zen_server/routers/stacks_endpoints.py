@@ -61,17 +61,14 @@ def list_stacks(
     Returns:
         All stacks.
     """
-    stacks_list = zen_store().list_stacks(
+    return zen_store().list_stacks(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         component_id=component_id,
         is_shared=is_shared,
         name=name,
+        hydrated=hydrated,
     )
-    if hydrated:
-        return [stack.to_hydrated_model() for stack in stacks_list]
-    else:
-        return stacks_list
 
 
 @router.get(

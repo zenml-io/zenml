@@ -17,11 +17,13 @@ import ipaddress
 import os
 from typing import Dict, List, Optional, Tuple, Union, cast
 
+import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     LOCAL_STORES_DIRECTORY_NAME,
@@ -47,7 +49,9 @@ from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 logger = get_logger(__name__)
 
 ZEN_SERVER_HEALTHCHECK_URL_PATH = "health"
-DOCKER_ZENML_SERVER_DEFAULT_IMAGE = "zenmldocker/zenml-server"
+DOCKER_ZENML_SERVER_DEFAULT_IMAGE = (
+    f"zenmldocker/zenml-server:{zenml.__version__}"
+)
 DOCKER_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
 
@@ -190,6 +194,8 @@ class DockerZenServer(ContainerService):
             SERVICE_CONTAINER_GLOBAL_CONFIG_PATH,
             LOCAL_STORES_DIRECTORY_NAME,
         )
+        env[ENV_ZENML_DISABLE_DATABASE_MIGRATION] = "True"
+
         return cmd, env
 
     def provision(self) -> None:

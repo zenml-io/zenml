@@ -69,7 +69,8 @@ instance/
 .scrapy
 
 # mkdocs documentation
-docs/mkdocs/api_docs
+docs/mkdocs/integration_code_docs
+docs/mkdocs/core_code_docs
 docs/mkdocs/index.md
 
 # PyBuilder

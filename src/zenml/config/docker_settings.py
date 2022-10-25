@@ -120,10 +120,11 @@ class DockerSettings(BaseSettings):
             be installed inside the Docker image.
         install_stack_requirements: If `True`, ZenML will automatically detect
             if components of your active stack are part of a ZenML integration
-            and install the corresponding requirements. If you set this to
-            `False` or use custom components in your stack, you need to make
-            sure these get installed by specifying them in the `requirements`
-            attribute.
+            and install the corresponding requirements and apt packages.
+            If you set this to `False` or use custom components in your stack,
+            you need to make sure these get installed by specifying them in
+            the `requirements` and `apt_packages` attributes.
+        apt_packages: APT packages to install inside the Docker image.
         environment: Dictionary of environment variables to set inside the
             Docker image.
         dockerignore: Path to a dockerignore file to use when building the
@@ -158,6 +159,8 @@ class DockerSettings(BaseSettings):
     requirements: Union[None, str, List[str]] = None
     required_integrations: List[str] = []
     install_stack_requirements: bool = True
+
+    apt_packages: List[str] = []
 
     environment: Dict[str, Any] = {}
     dockerignore: Optional[str] = None

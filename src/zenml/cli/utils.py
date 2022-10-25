@@ -30,6 +30,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 from uuid import UUID
 
@@ -851,17 +852,23 @@ def get_stack_by_id_or_name_or_prefix(
     except ValueError:
         pass
 
-    user_only_stacks = client.zen_store.list_stacks(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        user_name_or_id=client.active_user.name,
-        is_shared=False,
+    user_only_stacks = cast(
+        List["StackModel"],
+        client.zen_store.list_stacks(
+            project_name_or_id=client.active_project.name,
+            name=id_or_name_or_prefix,
+            user_name_or_id=client.active_user.name,
+            is_shared=False,
+        ),
     )
 
-    shared_stacks = client.zen_store.list_stacks(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        is_shared=True,
+    shared_stacks = cast(
+        List["StackModel"],
+        client.zen_store.list_stacks(
+            project_name_or_id=client.active_project.name,
+            name=id_or_name_or_prefix,
+            is_shared=True,
+        ),
     )
 
     named_stacks = user_only_stacks + shared_stacks
@@ -883,15 +890,21 @@ def get_stack_by_id_or_name_or_prefix(
             f"exists. Trying to resolve as partial_id"
         )
 
-        user_only_stacks = client.zen_store.list_stacks(
-            project_name_or_id=client.active_project.name,
-            user_name_or_id=client.active_user.name,
-            is_shared=False,
+        user_only_stacks = cast(
+            List["StackModel"],
+            client.zen_store.list_stacks(
+                project_name_or_id=client.active_project.name,
+                user_name_or_id=client.active_user.name,
+                is_shared=False,
+            ),
         )
 
-        shared_stacks = client.zen_store.list_stacks(
-            project_name_or_id=client.active_project.name,
-            is_shared=True,
+        shared_stacks = cast(
+            List["StackModel"],
+            client.zen_store.list_stacks(
+                project_name_or_id=client.active_project.name,
+                is_shared=True,
+            ),
         )
 
         all_stacks = user_only_stacks + shared_stacks
@@ -941,9 +954,9 @@ def print_stacks_table(
         stacks: List of stacks
     """
     stack_dicts = []
+    active_stack_model_id = client.active_stack_model.id
     for stack in stacks:
-        active_stack_id = client.active_stack_model.id
-        is_active = stack.id == active_stack_id
+        is_active = stack.id == active_stack_model_id
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,

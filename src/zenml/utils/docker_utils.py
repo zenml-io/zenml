@@ -38,6 +38,23 @@ from zenml.utils import io_utils, string_utils
 logger = get_logger(__name__)
 
 
+def check_docker() -> bool:
+    """Checks if Docker is installed and running.
+
+    Returns:
+        `True` if Docker is installed, `False` otherwise.
+    """
+    # Try to ping Docker, to see if it's running
+    try:
+        docker_client = DockerClient.from_env()
+        docker_client.ping()
+        return True
+    except Exception:
+        logger.debug("Docker is not running.", exc_info=True)
+
+    return False
+
+
 def _parse_dockerignore(dockerignore_path: str) -> List[str]:
     """Parses a dockerignore file and returns a list of patterns to ignore.
 
