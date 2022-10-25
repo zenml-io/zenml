@@ -1948,7 +1948,7 @@ of this contextmanager.</p></td>
 
 
 <h3 id="zenml.logger.get_apidocs_link" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">get_apidocs_link</span><span class="p">(</span><span class="n">docs_section</span><span class="p">,</span> <span class="n">caller_path</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">get_apidocs_link</span><span class="p">(</span><span class="n">docs_section</span><span class="p">,</span> <span class="n">caller_path</span><span class="p">,</span> <span class="n">core</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
 
 
 </h3>
@@ -1982,6 +1982,12 @@ part of.</p></td>
 doc-link should point.</p></td>
         <td><em>required</em></td>
       </tr>
+      <tr>
+        <td><code>core</code></td>
+        <td><code>bool</code></td>
+        <td><p>Boolean to toggle which submenu of the apidocs to link to</p></td>
+        <td><code>True</code></td>
+      </tr>
   </tbody>
 </table>
 <p><strong>Returns:</strong></p>
@@ -2001,7 +2007,7 @@ doc-link should point.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/logger.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_apidocs_link</span><span class="p">(</span><span class="n">docs_section</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">caller_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_apidocs_link</span><span class="p">(</span><span class="n">docs_section</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">caller_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">core</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Get link to api_docs of the caller.</span>
 
 <span class="sd">    Args:</span>
@@ -2009,12 +2015,14 @@ doc-link should point.</p></td>
 <span class="sd">            part of.</span>
 <span class="sd">        caller_path: Path to the class, method or function to which the api</span>
 <span class="sd">            doc-link should point.</span>
+<span class="sd">        core: Boolean to toggle which submenu of the apidocs to link to</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Link to the api docs for the given caller_path</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">submenu</span> <span class="o">=</span> <span class="s2">&quot;core_code_docs&quot;</span> <span class="k">if</span> <span class="n">core</span> <span class="k">else</span> <span class="s2">&quot;integration_code_docs&quot;</span>
     <span class="k">return</span> <span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;https://apidocs.zenml.io/</span><span class="si">{</span><span class="n">zenml</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">/api_docs/&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;https://apidocs.zenml.io/</span><span class="si">{</span><span class="n">zenml</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">submenu</span><span class="si">}</span><span class="s2">/&quot;</span>
         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">docs_section</span><span class="si">}</span><span class="s2">/#</span><span class="si">{</span><span class="n">caller_path</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="p">)</span>
 </code></pre></div>
