@@ -35,6 +35,7 @@ from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
     authorize,
+    user_has_write_permissions, user_has_read_permissions
 )
 from zenml.zen_server.models.user_management_models import (
     ActivateUserRequest,
@@ -44,7 +45,11 @@ from zenml.zen_server.models.user_management_models import (
     EmailOptInModel,
     UpdateUserRequest,
 )
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    zen_store
+)
 
 logger = get_logger(__name__)
 
@@ -77,7 +82,9 @@ current_user_router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_users() -> List[UserModel]:
+def list_users(
+    _=Depends(user_has_read_permissions)
+) -> List[UserModel]:
     """Returns a list of all users.
 
     Returns:
@@ -92,7 +99,10 @@ def list_users() -> List[UserModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_user(user: CreateUserRequest) -> CreateUserResponse:
+def create_user(
+    user: CreateUserRequest,
+    has_write_permissions=Depends(user_has_write_permissions)
+) -> CreateUserResponse:
     """Creates a user.
 
     # noqa: DAR401
@@ -128,7 +138,10 @@ def create_user(user: CreateUserRequest) -> CreateUserResponse:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
+def get_user(
+    user_name_or_id: Union[str, UUID],
+    _=Depends(user_has_read_permissions)
+) -> UserModel:
     """Returns a specific user.
 
     Args:
@@ -147,7 +160,9 @@ def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
 )
 @handle_exceptions
 def update_user(
-    user_name_or_id: Union[str, UUID], user: UpdateUserRequest
+    user_name_or_id: Union[str, UUID],
+    user: UpdateUserRequest,
+    _=Depends(user_has_write_permissions)
 ) -> UserModel:
     """Updates a specific user.
 
@@ -206,7 +221,7 @@ def activate_user(
 )
 @handle_exceptions
 def deactivate_user(
-    user_name_or_id: Union[str, UUID]
+    user_name_or_id: Union[str, UUID],
 ) -> DeactivateUserResponse:
     """Deactivates a user and generates a new activation token for it.
 
@@ -233,6 +248,7 @@ def deactivate_user(
 def delete_user(
     user_name_or_id: Union[str, UUID],
     auth_context: AuthContext = Depends(authorize),
+    _=Depends(user_has_write_permissions)
 ) -> None:
     """Deletes a specific user.
 
@@ -244,7 +260,6 @@ def delete_user(
         IllegalOperationError: If the user is not authorized to delete the user.
     """
     user = zen_store().get_user(user_name_or_id)
-
     if auth_context.user.name == user.name:
         raise IllegalOperationError(
             "You cannot delete yourself. If you wish to delete your active "
@@ -260,7 +275,8 @@ def delete_user(
 )
 @handle_exceptions
 def email_opt_in_response(
-    user_name_or_id: Union[str, UUID], user_response: EmailOptInModel
+    user_name_or_id: Union[str, UUID],
+    user_response: EmailOptInModel
 ) -> UserModel:
     """Deactivates a user and generates a new activation token for it.
 
@@ -287,6 +303,7 @@ def email_opt_in_response(
 def get_role_assignments_for_user(
     user_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
+    _=Depends(user_has_read_permissions)
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a user.
 
@@ -313,6 +330,7 @@ def assign_role(
     user_name_or_id: Union[str, UUID],
     role_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
+    _=Depends(user_has_write_permissions)
 ) -> None:
     """Assign a role to a user for all resources within a given project or globally.
 
@@ -340,6 +358,7 @@ def unassign_role(
     user_name_or_id: Union[str, UUID],
     role_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]],
+    _=Depends(user_has_write_permissions)
 ) -> None:
     """Remove a users role within a project or globally.
 

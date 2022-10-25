@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Set
 
 import click
 
@@ -21,7 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.enums import CliCategories, StoreType
+from zenml.enums import CliCategories, StoreType, PermissionType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.utils.uuid_utils import parse_name_or_uuid
 
@@ -459,17 +459,42 @@ def list_roles() -> None:
 
 @role.command("create", help="Create a new role.")
 @click.argument("role_name", type=str, required=True)
-def create_role(role_name: str) -> None:
+@click.option(
+    "--write",
+    "-w",
+    "write",
+    is_flag=True,
+    default=False,
+)
+@click.option(
+    "--read",
+    "-r",
+    "read",
+    is_flag=True,
+    default=False,
+)
+def create_role(
+    role_name: str,
+    write: bool,
+    read: bool
+) -> None:
     """Create a new role.
 
     Args:
         role_name: Name of the role to create.
+        write: Give this role general read permission
+        read: Give this role general write permission
     """
     cli_utils.print_active_config()
 
     from zenml.models import RoleModel
-
-    Client().zen_store.create_role(role=RoleModel(name=role_name))
+    permissions = set()
+    if write:
+        permissions.add(PermissionType.WRITE.value)
+    if read:
+        permissions.add(PermissionType.READ.value)
+    Client().zen_store.create_role(role=RoleModel(name=role_name,
+                                                  permissions=permissions))
 
     cli_utils.declare(f"Created role '{role_name}'.")
 

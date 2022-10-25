@@ -140,3 +140,10 @@ class AnalyticsEventSource(StrEnum):
 
     ZENML_GO = "zenml go"
     ZENML_SERVER = "zenml server"
+
+
+class PermissionType(Enum):
+    """All permission types."""
+
+    WRITE = "write"
+    READ = "read"

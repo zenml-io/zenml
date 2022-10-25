@@ -102,6 +102,7 @@ from zenml.zen_stores.schemas import (
     UserSchema,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
+from zenml.zen_stores.schemas.user_management_schemas import PermissionSchema
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
@@ -1890,6 +1891,17 @@ class SqlZenStore(BaseZenStore):
                 raise EntityExistsError(
                     f"Unable to create role '{role.name}': Role already exists."
                 )
+
+            # Get the Schemas of all permissions mentioned
+            filters = [
+                (PermissionSchema.name == permission)
+                for permission in role.permissions
+            ]
+
+            attached_permissions = session.exec(
+                select(PermissionSchema).where(or_(*filters))
+            ).all()
+            role.permissions = attached_permissions
 
             # Create role
             role_schema = RoleSchema.from_create_model(role)

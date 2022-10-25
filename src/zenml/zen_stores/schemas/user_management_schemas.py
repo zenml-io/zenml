@@ -15,6 +15,7 @@
 
 
 from datetime import datetime
+from enum import Enum
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID, uuid4
 
@@ -187,6 +188,23 @@ class TeamSchema(SQLModel, table=True):
         )
 
 
+class RolePermissionsSchema(SQLModel, table=True):
+    """SQL Model for team assignments."""
+
+    permission_id: int = Field(primary_key=True, foreign_key="permissionschema.id")
+    role_id: UUID = Field(primary_key=True, foreign_key="roleschema.id")
+
+
+class PermissionSchema(SQLModel, table=True):
+    """SQL Model for roles."""
+
+    id: int = Field(primary_key=True)
+    name: str
+    roles: List["RoleSchema"] = Relationship(
+        back_populates="permissions", link_model=RolePermissionsSchema
+    )
+
+
 class RoleSchema(SQLModel, table=True):
     """SQL Model for roles."""
 
@@ -194,7 +212,9 @@ class RoleSchema(SQLModel, table=True):
     name: str
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
-
+    permissions: List["PermissionSchema"] = Relationship(
+        back_populates="roles", link_model=RolePermissionsSchema
+    )
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="role", sa_relationship_kwargs={"cascade": "delete"}
     )
@@ -212,7 +232,7 @@ class RoleSchema(SQLModel, table=True):
         Returns:
             The created `RoleSchema`.
         """
-        return cls(id=model.id, name=model.name)
+        return cls(id=model.id, name=model.name, permissions=model.permissions)
 
     def from_update_model(self, model: RoleModel) -> "RoleSchema":
         """Update a `RoleSchema` from a `RoleModel`.
@@ -238,6 +258,7 @@ class RoleSchema(SQLModel, table=True):
             name=self.name,
             created=self.created,
             updated=self.updated,
+            permissions=[p.name for p in self.permissions]
         )
 
 

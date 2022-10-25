@@ -14,7 +14,8 @@
 """Authentication module for ZenML server."""
 
 import os
-from typing import Callable, Optional, Union
+from functools import wraps
+from typing import Callable, Optional, Union, List, cast
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -26,10 +27,12 @@ from fastapi.security import (
 from pydantic import BaseModel
 
 from zenml.constants import API, ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
+from zenml.enums import PermissionType
+from zenml.exceptions import NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.models.user_management_models import UserModel
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
+from zenml.zen_server.utils import ROOT_URL_PATH, zen_store, F, logger
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
@@ -207,3 +210,39 @@ def authentication_provider() -> Callable[..., AuthContext]:
 
 
 authorize = authentication_provider()
+
+
+def user_has_write_permissions(auth_context: AuthContext = Depends(authorize)):
+    # Get the corresponding ids for the authorized roles
+    required_permission = PermissionType.WRITE.value
+
+    current_user = auth_context.user
+    # Get all global role assignments for this user
+    roles = zen_store().list_role_assignments(
+        user_name_or_id=current_user.id,
+        project_name_or_id=None
+    )
+
+    for role in roles:
+        for permission in zen_store().get_role(role.role).permissions:
+            if permission == required_permission:
+                return True
+    raise NotAuthorizedError("Unauthorized")
+
+
+def user_has_read_permissions(auth_context: AuthContext = Depends(authorize)):
+    # Get the corresponding ids for the authorized roles
+    required_permission = PermissionType.READ.value
+
+    current_user = auth_context.user
+    # Get all global role assignments for this user
+    roles = zen_store().list_role_assignments(
+        user_name_or_id=current_user.id,
+        project_name_or_id=None
+    )
+
+    for role in roles:
+        for permission in zen_store().get_role(role.role).permissions:
+            if permission == required_permission:
+                return True
+    raise NotAuthorizedError("Unauthorized")

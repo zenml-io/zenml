@@ -16,7 +16,7 @@
 import re
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast, Set
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
@@ -361,6 +361,7 @@ class RoleModel(DomainModel, AnalyticsTrackedModelMixin):
         title="The unique name of the role.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
+    permissions: Set[str]
 
 
 class TeamModel(DomainModel, AnalyticsTrackedModelMixin):
