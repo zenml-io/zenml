@@ -2699,9 +2699,19 @@ class SqlZenStore(BaseZenStore):
             return run_model
 
         steps = self.list_run_steps(run_id=run_model.id)
+
+        # For legacy runs, we have no `num_steps`. Therefore, we cannot
+        # determine the status of the run correctly. Instead, we need to
+        # load all steps from MLMD and compute `status` and `num_steps`
+        # from that.
+        if run_model.num_steps > 0:
+            num_steps = run_model.num_steps
+        else:
+            num_steps = len(steps)
+
         status = ExecutionStatus.run_status(
             step_statuses=[step.status for step in steps],
-            num_steps=run_model.num_steps,
+            num_steps=num_steps,
         )
         if run_model.status != status:
             run_model.status = status
@@ -3487,24 +3497,6 @@ class SqlZenStore(BaseZenStore):
         )
         for mlmd_run in unsynced_mlmd_runs:
 
-            # For legacy runs, we have no `num_steps`. Therefore, we cannot
-            # determine the status of the run correctly. Instead, we need to
-            # load all steps from MLMD and compute `status` and `num_steps`
-            # from that.
-            if mlmd_run.num_steps is None:
-                mlmd_steps = self.metadata_store.get_pipeline_run_steps(
-                    mlmd_run.mlmd_id
-                )
-                num_steps = len(mlmd_steps)
-                step_statuses = [
-                    self.metadata_store.get_step_status(step.mlmd_id)
-                    for step in mlmd_steps.values()
-                ]
-                status = ExecutionStatus.run_status(step_statuses, num_steps)
-            else:
-                num_steps = mlmd_run.num_steps
-                status = ExecutionStatus.RUNNING
-
             new_run = PipelineRunModel(
                 name=mlmd_run.name,
                 mlmd_id=mlmd_run.mlmd_id,
@@ -3513,8 +3505,8 @@ class SqlZenStore(BaseZenStore):
                 stack_id=mlmd_run.stack_id,
                 pipeline_id=mlmd_run.pipeline_id,
                 pipeline_configuration=mlmd_run.pipeline_configuration,
-                num_steps=num_steps,
-                status=status,
+                num_steps=mlmd_run.num_steps or -1,
+                status=ExecutionStatus.RUNNING,
             )
             self.create_run(new_run)
 
