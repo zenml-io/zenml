@@ -161,6 +161,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         store = store_class(
             config=config,
             skip_default_registrations=skip_default_registrations,
+            **kwargs,
         )
         return store
 

@@ -149,7 +149,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         Returns:
             The MLflow tracking URI for the local MLflow backend.
         """
-        client = Client(skip_client_check=True)  # type: ignore[call-arg]
+        client = Client()
         artifact_store = client.active_stack.artifact_store
         local_mlflow_backend_uri = os.path.join(artifact_store.path, "mlruns")
         if not os.path.exists(local_mlflow_backend_uri):
