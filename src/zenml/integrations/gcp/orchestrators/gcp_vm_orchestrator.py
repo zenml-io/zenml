@@ -99,6 +99,8 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         If there were any warnings during the execution of the operation
         they will be printed to sys.stderr.
 
+        # noqa: DAR401,DAR402
+
         Args:
             operation: a long-running operation you want to wait on.
             verbose_name: (optional) a more verbose name of the operation,
@@ -108,11 +110,6 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
 
         Returns:
             Whatever the operation.result() returns.
-
-        Raises:
-            Exception: If there is no exception set, but there is an `error_code`
-                set for the `operation`. In case of an operation taking longer than 
-                `timeout` seconds to complete, a `TimeoutError` will result.
         """
         result = operation.result(timeout=timeout)
 
