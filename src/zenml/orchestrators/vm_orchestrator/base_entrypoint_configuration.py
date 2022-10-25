@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Entrypoint for the VM orchestrators."""
 
 import importlib
 import json
@@ -88,6 +89,7 @@ class VMEntrypointConfiguration(StepEntrypointConfiguration):
 
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
+        """Get custom entrypoint options."""
         return {RUN_NAME_OPTION, PB2_PIPELINE_JSON_FILE_PATH}
 
     @classmethod
@@ -208,6 +210,7 @@ class VMEntrypointConfiguration(StepEntrypointConfiguration):
     def get_custom_entrypoint_arguments(
         cls, step: BaseStep, *args: Any, **kwargs: Any
     ) -> List[str]:
+        """Get custom entrypoint arguments."""
         return [
             f"--{RUN_NAME_OPTION}",
             kwargs[RUN_NAME_OPTION],
@@ -216,6 +219,7 @@ class VMEntrypointConfiguration(StepEntrypointConfiguration):
         ]
 
     def get_run_name(self, pipeline_name: str) -> str:
+        """Returns the run name."""
         return self.entrypoint_args[RUN_NAME_OPTION]
 
     def run(self) -> None:

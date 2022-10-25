@@ -211,7 +211,7 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
     def get_custom_entrypoint_arguments(
         cls, step: BaseStep, *args: Any, **kwargs: Any
     ) -> List[str]:
-        """Get custom entrypoint aguments."""
+        """Get custom entrypoint arguments."""
         return [
             f"--{RUN_NAME_OPTION}",
             kwargs[RUN_NAME_OPTION],

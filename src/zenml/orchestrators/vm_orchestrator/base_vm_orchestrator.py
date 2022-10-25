@@ -53,6 +53,8 @@ STREAM_LOGS_POLLING_INTERVAL_SECS = 10
 
 
 class VMInstanceView(BaseModel):
+    """VM instance view container."""
+    
     id: str
     name: str
     status: VMState
@@ -223,7 +225,7 @@ class BaseVMOrchestrator(BaseOrchestrator):
         deployment: "PipelineDeployment",
         seconds_before: int,
     ) -> None:
-        """Streams logs onto the logger
+        """Streams logs onto the logger.
 
         Args:
             deployment: Deployment of the pipeline.
