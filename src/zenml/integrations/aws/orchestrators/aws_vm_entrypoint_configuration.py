@@ -91,7 +91,11 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
 
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
-        """Get custom entrypoint options."""
+        """Get custom entrypoint options.
+        
+        Returns:
+            A set of custom options.
+        """
         return {RUN_NAME_OPTION, PB2_PIPELINE_JSON_FILE_PATH}
 
     @classmethod
@@ -212,7 +216,16 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
     def get_custom_entrypoint_arguments(
         cls, step: BaseStep, *args: Any, **kwargs: Any
     ) -> List[str]:
-        """Get custom entrypoint arguments."""
+        """Get custom entrypoint arguments.
+        
+        Args:
+            step: A ZenML step.
+            *args: Free arguments.
+            **kwargs: Free named arguments.
+
+        Returns:
+            List of custom entrypoint arguments.
+        """
         return [
             f"--{RUN_NAME_OPTION}",
             kwargs[RUN_NAME_OPTION],
@@ -221,7 +234,14 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
         ]
 
     def get_run_name(self, pipeline_name: str) -> str:
-        """Returns the run name."""
+        """Returns the run name.
+        
+        Args:
+            pipeline_name: Name of the pipeline.
+
+        Returns:
+            The run name.
+        """
         return self.entrypoint_args[RUN_NAME_OPTION]
 
     def run(self) -> None:

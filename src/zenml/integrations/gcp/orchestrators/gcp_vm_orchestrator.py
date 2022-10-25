@@ -110,12 +110,9 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
             Whatever the operation.result() returns.
 
         Raises:
-            This method will raise the exception received from `operation.exception()`
-            or RuntimeError if there is no exception set, but there is an `error_code`
-            set for the `operation`.
-
-            In case of an operation taking longer than `timeout` seconds to complete,
-            a `concurrent.futures.TimeoutError` will be raised.
+            Exception: If there is no exception set, but there is an `error_code`
+                set for the `operation`. In case of an operation taking longer than 
+                `timeout` seconds to complete, a `TimeoutError` will result.
         """
         result = operation.result(timeout=timeout)
 
@@ -147,7 +144,14 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
 
     @staticmethod
     def sanitize_gcp_vm_name(bad_name: str) -> str:
-        """Get a good name from a bad name."""
+        """Get a good name from a bad name.
+        
+        Args:
+            bad_name: Original name of VM.
+
+        Returns:
+            A good name.
+        """
         return bad_name.replace("_", "-").lower()
 
     @staticmethod

@@ -38,7 +38,7 @@ from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
     from zenml.steps import BaseStep
 
@@ -53,7 +53,12 @@ AWS_LOGS_GROUP_NAME = "/zenml/ec2/pipelines"
 
 
 def stream_logs(stream_name: str, seconds_before: int = 10) -> None:
-    """Streams logs onto the logger."""
+    """Streams logs onto the logger.
+    
+    Args:
+        stream_name: Name of stream.
+        seconds_before: How many seconds before to stream logs.
+    """
     now = datetime.now(timezone.utc)
     before = now - timedelta(seconds=seconds_before)
 
@@ -77,7 +82,14 @@ def stream_logs(stream_name: str, seconds_before: int = 10) -> None:
 
 
 def sanitize_aws_vm_name(bad_name: str) -> str:
-    """Get a good name from a bad name."""
+    """Get a good name from a bad name.
+    
+    Args:
+        bad_name: Original name of VM.
+        
+    Returns:
+        A good name for the VM.
+    """
     return bad_name.replace("_", "-")
 
 
@@ -129,6 +141,9 @@ def get_instance(
 
     Args:
         instance_id (str): ID of the instance.
+    
+    Returns:
+        Get instance type.
     """
     session = setup_session()
     ec2_resource = session.resource("ec2")
@@ -152,6 +167,8 @@ def get_startup_script(
         region (str): Region to launch VM.
         image_name (str): Image to run in the VM.
         c_params (str): Params for the container.
+        registry_name (str): Name of registry.
+        log_stream_name (str): Name of log stream.
 
     Returns:
         script (str): String to attach to VM on launch.
@@ -192,13 +209,18 @@ def create_instance(
     """Send an instance creation request to the Compute Engine API.
 
     Args:
-        image_name: The docker image to run when VM starts.
-        c_params: The params to run the docker image with.
-        project_id: project ID or project number of the Cloud project you want to use.
-        zone: name of the zone to create the instance in. For example: "us-west3-b"
-        instance_name: name of the new virtual machine (VM) instance.
-        registry_name: name of the registry where image is stored.
-        log_stream_name: name of stream.
+        executor_image_name (str): temp.
+        c_params (str): temp.
+        iam_role (str): temp.
+        instance_type (str): temp.
+        instance_image (str): temp.
+        region (str): temp.
+        key_name (str): temp.
+        security_group (str): temp.
+        min_count (str): temp.
+        max_count (str): temp.
+        registry_name (str): temp.
+        log_stream_name (str): temp.
         
     Returns:
         Instance object.
@@ -230,8 +252,12 @@ def create_instance(
     return instances[0]
 
 
-def setup_session():
-    """Sets up a boto3 session."""
+def setup_session() -> boto3.Session:
+    """Sets up a boto3 session.
+    
+    Returns:
+        A boto session.
+    """
     session = boto3.Session()
     # credentials = session.get_credentials()
     # os.environ[AWS_ACCESS_KEY_ID] = credentials.access_key
@@ -244,158 +270,3 @@ class AWSVMOrchestrator(BaseOrchestrator):
 
     # Class Configuration
     FLAVOR: ClassVar[str] = AWS_VM_ORCHESTRATOR_FLAVOR
-
-    def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Returns the full docker image name, including registry and tag.
-        
-        Args:
-            pipeline_name: Name of the pipeline.
-            
-        Returns:
-            The base image name.
-        """
-        base_image_name = f"aws-vm-orchestrator:{pipeline_name}"
-        container_registry = Repository().active_stack.container_registry
-
-        if container_registry:
-            registry_uri = container_registry.uri.rstrip("/")
-            return f"{registry_uri}/{base_image_name}"
-        else:
-            return base_image_name
-
-    def prepare_pipeline_deployment(
-        self,
-        pipeline: "BasePipeline",
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
-    ) -> None:
-        """Builds a docker image for the current environment and uploads it to a container registry if configured."""
-        from zenml.utils import docker_utils
-
-        image_name = self.get_docker_image_name(pipeline.name)
-
-        requirements = {*stack.requirements(), *pipeline.requirements}
-
-        logger.debug("AWS VM docker image requirements: %s", requirements)
-
-        docker_utils.build_docker_image(
-            build_context_path=get_source_root_path(),
-            image_name=image_name,
-            dockerignore_path=pipeline.dockerignore_file,
-            requirements=requirements,
-            base_image=self.custom_executor_image_name,
-        )
-
-        assert stack.container_registry  # should never happen due to validation
-        stack.container_registry.push_image(image_name)
-
-        # Store the docker image digest in the runtime configuration so it gets
-        # tracked in the ZenStore
-        image_digest = docker_utils.get_image_digest(image_name) or image_name
-        runtime_configuration["docker_image"] = image_digest
-
-    def prepare_or_run_pipeline(
-        self,
-        sorted_steps: List["BaseStep"],
-        pipeline: "BasePipeline",
-        pb2_pipeline: Pb2Pipeline,
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
-    ) -> Any:
-        """Prepares and runs pipeline."""
-        executor_image_name = self.get_docker_image_name(pipeline.name)
-        executor_image_name = (
-            get_image_digest(executor_image_name) or executor_image_name
-        )
-
-        instance_image = self.instance_image or get_image_from_family()
-
-        # TODO: Get rid of this
-        if self.security_group is not None:
-            security_group = [self.security_group]
-        else:
-            security_group = self.security_group
-
-        iam_role = {"Name": self.iam_role}
-
-        run_name = runtime_configuration.run_name
-        assert run_name
-
-        # Write pb2 pipeline to artifact store
-        artifact_store = Repository().active_stack.artifact_store
-        pb2_pipeline_json_file_path = os.path.join(
-            artifact_store.path, run_name, "pipeline.json"
-        )
-        yaml_utils.write_json_string(
-            pb2_pipeline_json_file_path, json_format.MessageToJson(pb2_pipeline)
-        )
-
-        command = AWSVMEntrypointConfiguration.get_entrypoint_command()
-        arguments = AWSVMEntrypointConfiguration.get_entrypoint_arguments(
-            steps=sorted_steps,
-            pb2_pipeline=pb2_pipeline,
-            **{
-                RUN_NAME_OPTION: run_name,
-                PB2_PIPELINE_JSON_FILE_PATH: pb2_pipeline_json_file_path,
-            },
-        )
-        c_params = " ".join(command + arguments)
-        registry_uri = Repository().active_stack.container_registry.uri.rstrip(
-            "/"
-        )
-        ###############################################################
-        # TODO: Launch a VM with the docker image `image_name` which  #
-        # *synchronously executes the `command` with `arguments`       #
-        instance = create_instance(
-            executor_image_name,
-            c_params,
-            iam_role,
-            self.instance_type,
-            instance_image,
-            self.region,
-            self.key_name,
-            security_group,
-            self.min_count,
-            self.max_count,
-            registry_uri,
-            run_name,
-        )
-
-        instance_id = instance.id
-
-        logger.info(
-            f"Instance {instance_id} is booting up. "
-            "This might take a few minutes..."
-        )
-
-        instance.wait_until_running()
-
-        group_name_sanitized = AWS_LOGS_GROUP_NAME.replace("/", "$252F")
-        logs_url = (
-            f"https://{self.region}.console.aws.amazon.com/"
-            f"cloudwatch/home?region={self.region}#logsV2:log-groups/log-group/"
-            f"{group_name_sanitized}/log-events/{run_name}"
-        )
-        logger.info(
-            f"Instance {instance_id} is now running the pipeline. Logs will be streamed soon. "
-            f"You can also view the logs directly at: {logs_url}"
-        )
-
-        instance = get_instance(instance_id)
-        seconds_wait = 10
-        try:
-            while instance.state["Name"] not in [
-                "stopped",
-                "terminated",
-                "stopping",
-                "shutting-down",
-            ]:
-                instance = get_instance(instance_id)
-                stream_logs(run_name, seconds_before=seconds_wait)
-                time.sleep(seconds_wait)
-            stream_logs(run_name, seconds_before=seconds_wait)
-        except KeyboardInterrupt:
-            logger.info(
-                f"Keyboard interupt detected! Exiting logs streaming. "
-                f"Please view logs directly at {logs_url}"
-            )

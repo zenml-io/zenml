@@ -137,9 +137,12 @@ class BaseVMOrchestrator(BaseOrchestrator):
 
     def _output_logs(self, deployment: "PipelineDeployment") -> None:
         """Output logs to the logger.
-
+        
         Args:
             deployment: Deployment of the pipeline.
+            
+        Raises:
+            Exception: A general exception.
         """
         logs_url = self.get_logs_url(deployment)
         if logs_url:
