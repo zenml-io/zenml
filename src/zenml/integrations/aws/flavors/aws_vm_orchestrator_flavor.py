@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from zenml.integrations.aws.orchestrators import AWSVMOrchestrator
 
 
-class AwsVMOrchestratorConfig(
+class AWSVMOrchestratorConfig(
     BaseOrchestratorConfig,
 ):
     """Configuration for the VM orchestrator.
@@ -121,13 +121,13 @@ class AwsVMOrchestratorFlavor(BaseOrchestratorFlavor):
         return AWS_VM_ORCHESTRATOR_FLAVOR
 
     @property
-    def config_class(self) -> Type[AwsVMOrchestratorConfig]:
-        """Returns AwsVMOrchestratorConfig config class.
+    def config_class(self) -> Type[AWSVMOrchestratorConfig]:
+        """Returns AWSVMOrchestratorConfig config class.
 
         Returns:
                 The config class.
         """
-        return AwsVMOrchestratorConfig
+        return AWSVMOrchestratorConfig
 
     @property
     def implementation_class(self) -> Type["AWSVMOrchestrator"]:
