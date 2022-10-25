@@ -6,7 +6,7 @@ metadata:
     {{- include "zenml.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.zenml.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -49,8 +49,6 @@ spec:
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
             {{- end }}
-            - name: ZENML_SERVER_DEPLOYMENT_TYPE
-              value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}

@@ -1,12 +1,12 @@
 # Default values for zenml.
 
-replicaCount: 1
-
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
 zenml:
+
+  replicaCount: 1
 
   image:
     repository: zenmldocker/zenml-server
@@ -22,7 +22,8 @@ zenml:
 
   debug: True
 
-  # ZenML server deployment type
+  # ZenML server deployment type. This field is used for telemetry purposes.
+  # Example values are "local", "kubernetes", "aws", "gcp", "azure".
   deploymentType:
 
   # Unique server UUID. Used to uniquely identify the server in the
