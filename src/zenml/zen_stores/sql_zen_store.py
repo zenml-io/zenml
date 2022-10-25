@@ -3484,20 +3484,16 @@ class SqlZenStore(BaseZenStore):
         exists in the database, and if not, creates it.
         """
         # Sync all MLMD runs that don't exist in ZenML.
-        # For performance reasons, we determine this by checking the MLMD ID
-        # of the run, which we can do since MLMD returns runs in ascending
-        # order of their ID.
+        # For performance reasons, we determine this by explicitly ignoring runs
+        # that already exist in ZenML when querying MLMD.
         with Session(self.engine) as session:
             synced_mlmd_ids = session.exec(
                 select(PipelineRunSchema.mlmd_id).where(
                     isnot(PipelineRunSchema.mlmd_id, None)
                 )
             ).all()
-        max_synced_mlmd_id = max(
-            [id_ for id_ in synced_mlmd_ids if id_ is not None], default=0
-        )
         unsynced_mlmd_runs = self.metadata_store.get_all_runs(
-            min_mlmd_id=max_synced_mlmd_id + 1
+            ignored_ids=[id_ for id_ in synced_mlmd_ids if id_ is not None]
         )
         for mlmd_run in unsynced_mlmd_runs:
             try:
@@ -3531,13 +3527,13 @@ class SqlZenStore(BaseZenStore):
         new_run = PipelineRunModel(
             name=mlmd_run.name,
             mlmd_id=mlmd_run.mlmd_id,
-            project=mlmd_run.project or self._default_project.id,
-            user=mlmd_run.user or self._default_user.id,
+            project=mlmd_run.project or self._default_project.id,  # For legacy
+            user=mlmd_run.user or self._default_user.id,  # For legacy
             stack_id=mlmd_run.stack_id,
             pipeline_id=mlmd_run.pipeline_id,
             pipeline_configuration=mlmd_run.pipeline_configuration,
-            num_steps=mlmd_run.num_steps or -1,
-            status=ExecutionStatus.RUNNING,
+            num_steps=mlmd_run.num_steps or -1,  # For legacy
+            status=ExecutionStatus.RUNNING,  # Update later.
         )
         return self.create_run(new_run)
 
@@ -3558,7 +3554,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the run couldn't be found.
         """
-        # Get all steps from ZenML.
         with Session(self.engine) as session:
             run = session.exec(
                 select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
@@ -3575,7 +3570,7 @@ class SqlZenStore(BaseZenStore):
             if run.mlmd_id is None:
                 return False
 
-            # Get the ID and names of all steps that are already in ZenML.
+            # Get all steps that already exist in the database.
             zenml_steps = session.exec(
                 select(StepRunSchema).where(
                     StepRunSchema.pipeline_run_id == run_id
@@ -3589,10 +3584,8 @@ class SqlZenStore(BaseZenStore):
         # For each step in MLMD, sync it into ZenML if it doesn't exist yet.
         for step_name, mlmd_step in mlmd_steps.items():
             if step_name not in zenml_step_dict:
-
                 if check:
                     return True
-
                 try:
                     step_model = self._sync_run_step(
                         run_id, step_name, mlmd_step
@@ -3658,7 +3651,7 @@ class SqlZenStore(BaseZenStore):
                 for parent_step_id in mlmd_step.mlmd_parent_step_ids
             ],
             input_artifacts=input_artifacts,
-            status=ExecutionStatus.RUNNING,
+            status=ExecutionStatus.RUNNING,  # Update later.
         )
         return self.create_run_step(new_step)
 
@@ -3700,10 +3693,8 @@ class SqlZenStore(BaseZenStore):
         # For each output in MLMD, sync it into ZenML if it doesn't exist yet.
         for output_name, mlmd_artifact in mlmd_outputs.items():
             if output_name not in zenml_output_names:
-
                 if check:
                     return True
-
                 try:
                     self._sync_run_step_artifact(output_name, mlmd_artifact)
                 except KeyError as err:

@@ -309,12 +309,13 @@ class MetadataStore:
             num_steps=num_steps,
         )
 
-    def get_all_runs(self, min_mlmd_id: int = 1) -> List[MLMDPipelineRunModel]:
+    def get_all_runs(
+        self, ignored_ids: Optional[List[int]] = None
+    ) -> List[MLMDPipelineRunModel]:
         """Gets a mapping run name -> ID for all runs registered in MLMD.
 
         Args:
-            min_mlmd_id: Minimum MLMD ID to consider. Useful to filter out
-                runs that were created before a certain point in time.
+            ignored_ids: A list of run IDs to ignore.
 
         Returns:
             A mapping run name -> ID for all runs registered in MLMD.
@@ -325,7 +326,7 @@ class MetadataStore:
         return [
             self._get_pipeline_run_model_from_context(run_context)
             for run_context in run_contexts
-            if run_context.id >= min_mlmd_id
+            if not ignored_ids or run_context.id not in ignored_ids
         ]
 
     def get_pipeline_run_steps(
