@@ -2701,7 +2701,7 @@ class SqlZenStore(BaseZenStore):
         steps = self.list_run_steps(run_id=run_model.id)
         status = ExecutionStatus.run_status(
             step_statuses=[step.status for step in steps],
-            num_steps=len(steps),
+            num_steps=run_model.num_steps,
         )
         if run_model.status != status:
             run_model.status = status
