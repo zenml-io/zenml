@@ -90,7 +90,7 @@ class BaseModelDeployer(StackComponent, ABC):
                 active stack.
         """
         flavor: BaseModelDeployerFlavor = cls.FLAVOR()
-        client = Client(skip_client_check=True)  # type: ignore[call-arg]
+        client = Client()
         model_deployer = client.active_stack.model_deployer
         if not model_deployer or not isinstance(model_deployer, cls):
             raise TypeError(

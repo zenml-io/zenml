@@ -26,7 +26,6 @@ from zenml.constants import (
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
-from zenml.environment import Environment
 from zenml.exceptions import (
     AlreadyExistsException,
     IllegalOperationError,
@@ -132,32 +131,6 @@ class ClientMetaClass(ABCMeta):
         Returns:
             Client: The global Client instance.
         """
-        from zenml.steps.step_environment import (
-            STEP_ENVIRONMENT_NAME,
-            StepEnvironment,
-        )
-
-        step_env = cast(
-            StepEnvironment, Environment().get_component(STEP_ENVIRONMENT_NAME)
-        )
-
-        # `skip_client_check` is a special kwarg that can be passed to
-        # the Client constructor to silent the message that warns users
-        # about accessing external information in their steps.
-        if not kwargs.pop("skip_client_check", False):
-            if step_env and step_env.cache_enabled:
-                logger.warning(
-                    "You are accessing client information from a step "
-                    "that has caching enabled. Future executions of this step "
-                    "may be cached even though the client information may "
-                    "be different. You should take this into consideration and "
-                    "adjust your step to disable caching if needed. "
-                    "Alternatively, use a `StepContext` inside your step "
-                    "instead, as covered here: "
-                    "https://docs.zenml.io/advanced-guide/pipelines/step-metadata"
-                    "/step-fixtures#step-contexts",
-                )
-
         if args or kwargs:
             return cast("Client", super().__call__(*args, **kwargs))
 
