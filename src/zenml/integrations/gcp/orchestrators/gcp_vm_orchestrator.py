@@ -93,13 +93,13 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
     ) -> Any:
         """Wait for extended GCP operation.
         
+        # noqa: DAR401
+        
         This method will wait for the extended (long-running) operation to
         complete. If the operation is successful, it will return its result.
         If the operation ends with an error, an exception will be raised.
         If there were any warnings during the execution of the operation
         they will be printed to sys.stderr.
-
-        # noqa: DAR401,DAR402
 
         Args:
             operation: a long-running operation you want to wait on.
