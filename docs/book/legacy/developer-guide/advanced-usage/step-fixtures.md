@@ -79,7 +79,7 @@ def my_step(context: StepContext):
 ```
 
 {% hint style="info" %}
-See the [API Docs](https://apidocs.zenml.io/latest/api_docs/steps/) for
+See the [API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-steps/) for
 more information on which attributes and methods the `StepContext` provides.
 {% endhint %}
 

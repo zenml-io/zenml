@@ -166,7 +166,7 @@ Possible report options supported by Evidently are:
 - "regressionmodelperformance"
 - "probabilisticmodelperformance"
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileStep), the step takes in
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileStep), the step takes in
 a reference dataset and a comparison dataset required for data drift and
 model comparison reports. It returns an Evidently `Profile` object and a
 `Dashboard` rendered as an HTML string:
@@ -252,7 +252,7 @@ config=EvidentlyProfileParameters(
 )
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileConfig) in the API
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileConfig) in the API
 docs.
 
 You can also check out our examples pages for working examples that use the
@@ -321,7 +321,7 @@ def data_drift_detection(
     return [profile, dashboard.html()]
 ```
 
-Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.data_validators.evidently_data_validator.EvidentlyDataValidator) in the API docs.
+Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.data_validators.evidently_data_validator.EvidentlyDataValidator) in the API docs.
 
 ### Call Evidently directly
 

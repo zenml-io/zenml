@@ -235,7 +235,7 @@ class PipelineRunView:
         self._ensure_steps_fetched()
 
         api_doc_link = get_apidocs_link(
-            "post_execution",
+            "core-post_execution",
             "zenml.post_execution.pipeline_run.PipelineRunView" ".get_step",
         )
         step_name = kwargs.get("name", None)
