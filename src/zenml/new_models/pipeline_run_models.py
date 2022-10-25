@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional, cast
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from zenml import __version__ as current_zenml_version
 from zenml.enums import ExecutionStatus
@@ -11,7 +11,6 @@ from zenml.new_models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
 def get_git_sha(clean: bool = True) -> Optional[str]:
@@ -44,50 +43,14 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
     return cast(str, repo.head.object.hexsha)
 
 
-# -------- #
-# RESPONSE #
-# -------- #
-
-
-class RunResponseModel(ProjectScopedResponseModel, AnalyticsTrackedModelMixin):
-    """Pipeline model with User and Project fully hydrated."""
-
+# ---- #
+# BASE #
+# ---- #
+class PipelineRunBaseModel(BaseModel):
     name: str = Field(
         title="The name of the pipeline run.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    pipeline: Optional[PipelineModel] = Field(
-        title="The pipeline this run belongs to."
-    )
-    stack: Optional[StackModel] = Field(
-        title="The stack that was used for this run."
-    )
-
-    pipeline_configuration: Dict[str, Any]
-    num_steps: int
-    zenml_version: str = Field(title="")  # TODO
-    git_sha: str = Field(title="")  # TODO
-
-    status: ExecutionStatus = Field(title="The status of the run.")
-
-    mlmd_id: Optional[int]  # Modeled as Optional, so we can remove it later.
-
-
-# ------- #
-# REQUEST #
-# ------- #
-
-
-class RunRequestModel(ProjectScopedRequestModel, AnalyticsTrackedModelMixin):
-    """Domain Model representing a pipeline run."""
-
-    name: str = Field(
-        title="The name of the pipeline run.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
-    )
-
-    stack: Optional[UUID]  # Might become None if the stack is deleted.
-    pipeline: Optional[UUID]  # Unlisted runs have this as None.
 
     pipeline_configuration: Dict[str, Any]
     num_steps: int
@@ -96,3 +59,35 @@ class RunRequestModel(ProjectScopedRequestModel, AnalyticsTrackedModelMixin):
 
     # ID in MLMD - needed for some metadata store methods.
     mlmd_id: Optional[int]  # Modeled as Optional, so we can remove it later.
+
+
+# -------- #
+# RESPONSE #
+# -------- #
+
+
+class PipelineRunResponseModel(
+    PipelineRunBaseModel, ProjectScopedResponseModel
+):
+    """Pipeline model with User and Project fully hydrated."""
+
+    status: ExecutionStatus = Field(title="The status of the run.")
+
+    pipeline: Optional[PipelineModel] = Field(
+        title="The pipeline this run belongs to."
+    )
+    stack: Optional[StackModel] = Field(
+        title="The stack that was used for this run."
+    )
+
+
+# ------- #
+# REQUEST #
+# ------- #
+
+
+class PipelineRunRequestModel(PipelineRunBaseModel, ProjectScopedRequestModel):
+    """Domain Model representing a pipeline run."""
+
+    stack: Optional[UUID]  # Might become None if the stack is deleted.
+    pipeline: Optional[UUID]  # Unlisted runs have this as None.

@@ -11,20 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
 from uuid import UUID
 
+from pydantic import BaseModel
+
 from zenml.enums import ArtifactType
-from zenml.new_models.base_models import BaseResponseModel
+from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
 
-# -------- #
-# RESPONSE #
-# -------- #
+# ---- #
+# BASE #
+# ---- #
 
 
-class ArtifactRequestModel(BaseResponseModel):
-    """Domain Model representing an artifact."""
-
+class ArtifactBaseModel(BaseModel):
     name: str  # Name of the output in the parent step
 
     parent_step_id: UUID
@@ -40,6 +39,15 @@ class ArtifactRequestModel(BaseResponseModel):
     mlmd_id: int
     mlmd_parent_step_id: int
     mlmd_producer_step_id: int
+
+
+# -------- #
+# RESPONSE #
+# -------- #
+
+
+class ArtifactRequestModel(ArtifactBaseModel, BaseRequestModel):
+    """Domain Model representing an artifact."""
 
 
 # ------- #
@@ -47,21 +55,5 @@ class ArtifactRequestModel(BaseResponseModel):
 # ------- #
 
 
-class ArtifactResponseModel(BaseResponseModel):
+class ArtifactResponseModel(ArtifactBaseModel, BaseResponseModel):
     """Domain Model representing an artifact."""
-
-    name: str  # Name of the output in the parent step
-
-    parent_step_id: UUID
-    producer_step_id: UUID
-
-    type: ArtifactType
-    uri: str
-    materializer: str
-    data_type: str
-    is_cached: bool
-
-    # IDs in MLMD - needed for some metadata store methods
-    mlmd_id: int
-    mlmd_parent_step_id: int
-    mlmd_producer_step_id: int

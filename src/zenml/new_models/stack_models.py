@@ -1,7 +1,7 @@
 from typing import Dict, List
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.constants import (
@@ -13,19 +13,16 @@ from zenml.new_models.base_models import (
     ShareableResponseModel,
 )
 from zenml.new_models.component_models import ComponentResponseModel
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 # TODO: Add example schemas and analytics fields
 # TODO: Add base models
 
-# -------- #
-# RESPONSE #
-# -------- #
+# ---- #
+# BASE #
+# ---- #
 
 
-class StackResponseModel(ShareableResponseModel, AnalyticsTrackedModelMixin):
-    """Stack model with Components, User and Project fully hydrated."""
-
+class StackBaseModel(BaseModel):
     name: str = Field(
         title="The name of the stack.", max_length=MODEL_NAME_FIELD_MAX_LENGTH
     )
@@ -34,6 +31,16 @@ class StackResponseModel(ShareableResponseModel, AnalyticsTrackedModelMixin):
         title="The description of the stack",
         max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
+
+
+# -------- #
+# RESPONSE #
+# -------- #
+
+
+class StackResponseModel(StackBaseModel, ShareableResponseModel):
+    """Stack model with Components, User and Project fully hydrated."""
+
     components: Dict[StackComponentType, List[ComponentResponseModel]] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
@@ -45,16 +52,7 @@ class StackResponseModel(ShareableResponseModel, AnalyticsTrackedModelMixin):
 # ------- #
 
 
-class StackRequestModel(ShareableRequestModel, AnalyticsTrackedModelMixin):
-
-    name: str = Field(
-        title="The name of the stack.", max_length=MODEL_NAME_FIELD_MAX_LENGTH
-    )
-    description: str = Field(
-        default="",
-        title="The description of the stack",
-        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
-    )
+class StackRequestModel(StackBaseModel, ShareableRequestModel):
     components: Dict[StackComponentType, List[UUID]] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."

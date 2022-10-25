@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ExecutionStatus
@@ -9,18 +9,13 @@ from zenml.new_models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
-from zenml.new_models.pipeline_run_models import RunResponseModel
-# -------- #
-# RESPONSE #
-# -------- #
+from zenml.new_models.pipeline_run_models import PipelineRunResponseModel
 
 
-class PipelineResponseModel(
-    ProjectScopedResponseModel, AnalyticsTrackedModelMixin
-):
-    """Pipeline model with User and Project fully hydrated."""
-
+# ---- #
+# BASE #
+# ---- #
+class PipelineBaseModel(BaseModel):
     name: str = Field(
         title="The name of the pipeline.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
@@ -29,7 +24,16 @@ class PipelineResponseModel(
     docstring: Optional[str]
     spec: PipelineSpec
 
-    runs: Optional[List["RunResponseModel"]] = Field(
+
+# -------- #
+# RESPONSE #
+# -------- #
+
+
+class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
+    """Pipeline model with User and Project fully hydrated."""
+
+    runs: Optional[List["PipelineRunResponseModel"]] = Field(
         title="A list of the last x Pipeline Runs."
     )
     status: List[ExecutionStatus] = Field(
@@ -42,15 +46,5 @@ class PipelineResponseModel(
 # ------- #
 
 
-class PipelineRequestModel(
-    ProjectScopedRequestModel, AnalyticsTrackedModelMixin
-):
+class PipelineRequestModel(PipelineBaseModel, ProjectScopedRequestModel):
     """Domain model representing a pipeline."""
-
-    name: str = Field(
-        title="The name of the pipeline.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
-    )
-
-    docstring: Optional[str]
-    spec: PipelineSpec

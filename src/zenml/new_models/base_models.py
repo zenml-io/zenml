@@ -21,13 +21,14 @@ from pydantic import BaseModel, Field
 
 from zenml.models.project_models import ProjectModel
 from zenml.models.user_management_models import UserModel
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 # --------------- #
 # RESPONSE MODELS #
 # --------------- #
 
 
-class BaseResponseModel(BaseModel):
+class BaseResponseModel(BaseModel, AnalyticsTrackedModelMixin):
 
     """Base domain model.
 
@@ -66,7 +67,7 @@ class BaseResponseModel(BaseModel):
     updated: datetime = Field(title="Time when this resource was last updated.")
 
 
-class UserOwnedResponseModel(BaseResponseModel):
+class UserOwnedResponseModel(BaseResponseModel, AnalyticsTrackedModelMixin):
     """Base user-owned domain model.
 
     Used as a base class for all domain models that are "owned" by a user.
