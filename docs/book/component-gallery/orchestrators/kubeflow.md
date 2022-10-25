@@ -315,4 +315,4 @@ A concrete example of using the Kubeflow orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).
 
 For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out the
-[API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator).
+[API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-kubeflow/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator).

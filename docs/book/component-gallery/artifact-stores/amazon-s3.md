@@ -208,7 +208,7 @@ zenml artifact-store register minio_store -f s3 \
 ```
 
 For more, up-to-date information on the S3 Artifact Store implementation and its
-configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.s3.artifact_stores.s3_artifact_store).
+configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-s3/#zenml.integrations.s3.artifact_stores.s3_artifact_store).
 
 ## How do you use it?
 

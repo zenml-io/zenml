@@ -65,4 +65,4 @@ az acr login --name=<REGISTRY_NAME>
 ```
 
 For more information and a full list of configurable attributes of the Azure 
-container registry, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/container_registries/#zenml.container_registries.azure_container_registry.AzureContainerRegistry).
+container registry, check out the [API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-container_registries/#zenml.container_registries.azure_container_registry.AzureContainerRegistry).

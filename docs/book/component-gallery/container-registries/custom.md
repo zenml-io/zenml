@@ -72,7 +72,7 @@ class BaseContainerRegistryFlavor(Flavor):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
-and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/api_docs/container_registries/#zenml.container_registries.base_container_registry.BaseContainerRegistry).
+and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/core_code_docs/core-container_registries/#zenml.container_registries.base_container_registry.BaseContainerRegistry).
 {% endhint %}
 
 ## Building your own container registry

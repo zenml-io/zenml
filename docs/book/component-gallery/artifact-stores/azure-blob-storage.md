@@ -182,7 +182,7 @@ zenml secrets-manager secret register az_secret -s azure \
 {% endtabs %}
 
 For more, up-to-date information on the Azure Artifact Store implementation and
-its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.azure.artifact_stores).
+its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-azure/#zenml.integrations.azure.artifact_stores).
 
 ## How do you use it?
 
