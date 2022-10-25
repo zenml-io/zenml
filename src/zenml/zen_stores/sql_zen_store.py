@@ -16,6 +16,7 @@
 import logging
 import os
 import re
+from datetime import datetime, timedelta
 from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
@@ -3514,6 +3515,22 @@ class SqlZenStore(BaseZenStore):
         for run_ in unfinished_runs:
             self._sync_run_steps(run_.id)
             self._update_run_status(run_.to_model())
+
+        # Sync steps of all recently updated runs when running in a server.
+        # This is done to prevent missing output artifacts of steps in case the
+        # run status was updated after all steps of a run have completed but
+        # before the last artifact was written to MLMD.
+        if self.runs_inside_server:
+            with Session(self.engine) as session:
+                recently_updated_runs = session.exec(
+                    select(PipelineRunSchema).where(
+                        PipelineRunSchema.updated
+                        >= datetime.now() - timedelta(minutes=1)
+                    )
+                ).all()
+            for run_ in recently_updated_runs:
+                if run_ not in unfinished_runs:
+                    self._sync_run_steps(run_.id)
 
     def _sync_run(self, mlmd_run: "MLMDPipelineRunModel") -> PipelineRunModel:
         """Sync a single run from MLMD into the database.
