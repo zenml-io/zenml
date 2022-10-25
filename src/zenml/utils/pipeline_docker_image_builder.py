@@ -444,9 +444,6 @@ class PipelineDockerImageBuilder:
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
-        if docker_settings.user:
-            lines.append(f"USER {docker_settings.user}")
-
         if docker_settings.copy_global_config:
             lines.append(
                 f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
@@ -473,6 +470,10 @@ class PipelineDockerImageBuilder:
             lines.append(f"COPY {DOCKER_IMAGE_ZENML_CONFIG_DIR} .")
 
         lines.append("RUN chmod -R a+rw .")
+
+        if docker_settings.user:
+            lines.append(f"USER {docker_settings.user}")
+            lines.append(f"RUN chown -R {docker_settings.user} .")
 
         if entrypoint:
             lines.append(f"ENTRYPOINT {entrypoint}")
