@@ -3573,9 +3573,6 @@ class SqlZenStore(BaseZenStore):
                 if check:
                     return True
 
-                # Extract docstring.
-                docstring = mlmd_step.step_configuration["config"]["docstring"]
-
                 # Build dict of input artifacts.
                 mlmd_inputs, _ = self.metadata_store.get_step_artifacts(
                     step_id=mlmd_step.mlmd_id,
@@ -3598,7 +3595,7 @@ class SqlZenStore(BaseZenStore):
                     entrypoint_name=mlmd_step.entrypoint_name,
                     parameters=mlmd_step.parameters,
                     step_configuration=mlmd_step.step_configuration,
-                    docstring=docstring,
+                    docstring=mlmd_step.docstring,
                     pipeline_run_id=run_id,
                     parent_step_ids=[
                         self._resolve_mlmd_step_id(parent_step_id)

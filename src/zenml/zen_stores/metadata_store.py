@@ -69,6 +69,7 @@ class MLMDStepRunModel(BaseModel):
     name: str
     parameters: Dict[str, str]
     step_configuration: Dict[str, Any]
+    docstring: Optional[str]
 
 
 class MLMDArtifactModel(BaseModel):
@@ -202,6 +203,13 @@ class MetadataStore:
         else:
             step_configuration = {}
 
+        # Extract docstring.
+        docstring = None
+        if "config" in step_configuration:
+            step_configuration_config = step_configuration["config"]
+            if "docstring" in step_configuration_config:
+                docstring = step_configuration_config["docstring"]
+
         # TODO [ENG-222]: This is a lot of querying to the metadata store. We
         #  should refactor and make it nicer. Probably it makes more sense
         #  to first get `executions_ids_for_current_run` and then filter on
@@ -249,6 +257,7 @@ class MetadataStore:
             name=step_name,
             parameters=step_parameters,
             step_configuration=step_configuration,
+            docstring=docstring,
         )
 
     def _get_pipeline_run_model_from_context(
