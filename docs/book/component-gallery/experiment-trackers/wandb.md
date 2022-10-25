@@ -96,7 +96,7 @@ Experiment Tracker.
 {% endtabs %}
 
 For more, up-to-date information on the Weights & Biases Experiment Tracker
-implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker).
+implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker).
 
 ## How do you use it?
 

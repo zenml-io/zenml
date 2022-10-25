@@ -129,4 +129,4 @@ This can be used to manage your global settings from within Python.
 
 To explore all possible operations that can be performed via the 
 `GlobalConfiguration`, please consult the API docs sections on 
-[GlobalConfiguration](https://apidocs.zenml.io/latest/api_docs/config/#zenml.config.global_config.GlobalConfiguration).
+[GlobalConfiguration](https://apidocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.global_config.GlobalConfiguration).

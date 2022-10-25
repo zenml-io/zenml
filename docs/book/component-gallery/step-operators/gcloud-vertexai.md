@@ -83,4 +83,4 @@ A concrete example of using the Vertex step operator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training).
 
 For more information and a full list of configurable attributes of the Vertex 
-step operator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.step_operators.vertex_step_operator.VertexStepOperator).
+step operator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.step_operators.vertex_step_operator.VertexStepOperator).
