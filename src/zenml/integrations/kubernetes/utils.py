@@ -1,10 +1,11 @@
 import re
+from datetime import date, datetime
 from typing import Any, Dict, List, Type, cast
 
 import kubernetes.client.models
 
 
-def serialize_kubernetes_model(model: object) -> Dict[str, Any]:
+def serialize_kubernetes_model(model: Any) -> Dict[str, Any]:
     """Serializes a Kubernetes model.
 
     Args:
@@ -18,8 +19,59 @@ def serialize_kubernetes_model(model: object) -> Dict[str, Any]:
     """
     if not is_model_class(model.__class__.__name__):
         raise TypeError(f"Unable to serialize non-kubernetes model {model}.")
-    assert hasattr(model, "to_dict")
-    return cast(Dict[str, Any], model.to_dict())  # type: ignore[attr-defined]
+
+    assert hasattr(model, "attribute_map")
+    attribute_mapping = cast(Dict[str, str], model.attribute_map)
+
+    model_attributes = {
+        serialized_attribute_name: getattr(model, attribute_name)
+        for attribute_name, serialized_attribute_name in attribute_mapping.items()
+    }
+    return _serialize_dict(model_attributes)
+
+
+def _serialize_dict(dict_: Dict[str, Any]) -> Dict[str, Any]:
+    """Serializes a dictionary.
+
+    Args:
+        dict_: Dict to serialize.
+
+    Returns:
+        The serialized dict.
+    """
+    return {key: _serialize(value) for key, value in dict_.items()}
+
+
+def _serialize(value: Any) -> Any:
+    """Serializes any object.
+
+    Args:
+        value: The object to serialize.
+
+    Raises:
+        TypeError: If the object is not serializable.
+
+    Returns:
+        The serialized object.
+    """
+    primitive_types = (float, bool, bytes, str, int)
+
+    if value is None:
+        return None
+    elif isinstance(value, primitive_types):
+        return value
+    elif isinstance(value, (datetime, date)):
+        return value.isoformat()
+    elif isinstance(value, List):
+        return [_serialize(item) for item in value]
+    elif isinstance(value, tuple):
+        return tuple(_serialize(item) for item in value)
+    elif isinstance(value, Dict):
+        return _serialize_dict(value)
+    elif is_model_class(value.__class__.__name__):
+        return serialize_kubernetes_model(value)
+    else:
+        raise TypeError(f"Failed to serialize unknown object {value}")
 
 
 def deserialize_kubernetes_model(data: Dict[str, Any], class_name: str) -> Any:
@@ -37,7 +89,12 @@ def deserialize_kubernetes_model(data: Dict[str, Any], class_name: str) -> Any:
     """
     model_class = get_model_class(class_name=class_name)
     assert hasattr(model_class, "openapi_types")
-    attribute_mapping = cast(Dict[str, str], model_class.openapi_types)
+    assert hasattr(model_class, "attribute_map")
+    type_mapping = cast(Dict[str, str], model_class.openapi_types)
+    reverse_attribute_mapping = cast(Dict[str, str], model_class.attribute_map)
+    attribute_mapping = {
+        value: key for key, value in reverse_attribute_mapping.items()
+    }
 
     deserialized_attributes: Dict[str, Any] = {}
 
@@ -48,30 +105,31 @@ def deserialize_kubernetes_model(data: Dict[str, Any], class_name: str) -> Any:
                 f"available attributes {set(attribute_mapping)}."
             )
 
-        attribute_class = attribute_mapping[key]
+        attribute_name = attribute_mapping[key]
+        attribute_class = type_mapping[attribute_name]
 
         if not value:
-            deserialized_attributes[key] = value
+            deserialized_attributes[attribute_name] = value
         elif attribute_class.startswith("list["):
             match = re.fullmatch(r"list\[(.*)\]", attribute_class)
             assert match
             inner_class = match.group(1)
-            deserialized_attributes[key] = _deserialize_list(
+            deserialized_attributes[attribute_name] = _deserialize_list(
                 value, class_name=inner_class
             )
         elif attribute_class.startswith("dict("):
             match = re.fullmatch(r"dict\(([^,]*), (.*)\)", attribute_class)
             assert match
             inner_class = match.group(1)
-            deserialized_attributes[key] = _deserialize_dict(
+            deserialized_attributes[attribute_name] = _deserialize_dict(
                 value, class_name=inner_class
             )
         elif is_model_class(attribute_class):
-            deserialized_attributes[key] = deserialize_kubernetes_model(
-                value, attribute_class
-            )
+            deserialized_attributes[
+                attribute_name
+            ] = deserialize_kubernetes_model(value, attribute_class)
         else:
-            deserialized_attributes[key] = value
+            deserialized_attributes[attribute_name] = value
 
     return model_class(**deserialized_attributes)
 
