@@ -63,6 +63,13 @@ You should install the relevant integrations:
 zenml integration install label_studio pytorch azure
 ```
 
+For this example we also need to upgrade the `torchvision` dependency, so please
+run:
+
+```shell
+pip install "torchvision==0.13.1"
+```
+
 Some setup for your stack is required. This assumes you have a cloud secrets
 manager setup and installed. (See
 [here](https://docs.zenml.io/component-gallery/secrets-managers/secrets-managers) 
