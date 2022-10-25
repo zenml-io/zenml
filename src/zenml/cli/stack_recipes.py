@@ -255,7 +255,7 @@ class StackRecipeService(TerraformService):
         )["Cloud"]
 
         config = {
-            "name": f"{provider}-server",
+            "name": f"{provider}",
             "provider": f"{provider}",
             "username": "default",
             "password": "zenml",
