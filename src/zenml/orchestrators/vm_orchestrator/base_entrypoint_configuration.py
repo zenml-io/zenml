@@ -48,6 +48,8 @@ PB2_PIPELINE_JSON_FILE_PATH = "pb2_pipeline_json_file_path"
 
 
 class VMEntrypointConfiguration(StepEntrypointConfiguration):
+    """VM entrypoint configuration."""
+
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
         """Gets all options required for running an entrypoint with this configuration.

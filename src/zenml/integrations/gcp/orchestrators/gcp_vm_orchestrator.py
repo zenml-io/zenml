@@ -158,8 +158,9 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         source_image: str,
         auto_delete: bool = True,
     ) -> compute_v1.AttachedDisk:
-        """Create an AttachedDisk object to be used in VM instance creation. Uses an image as the
-        source for the new disk.
+        """Create an AttachedDisk object to be used in VM instance creation.
+        
+        Uses an image as the source for the new disk.
 
         Args:
             disk_type: the type of disk you want to create. This value uses the following format:

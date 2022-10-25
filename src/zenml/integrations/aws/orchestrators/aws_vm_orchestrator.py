@@ -189,7 +189,7 @@ def create_instance(
     registry_name: str,
     log_stream_name: str,
 ) -> dict:
-    """Send an instance creation request to the Compute Engine API and wait for it to complete.
+    """Send an instance creation request to the Compute Engine API.
 
     Args:
         image_name: The docker image to run when VM starts.
@@ -197,8 +197,9 @@ def create_instance(
         project_id: project ID or project number of the Cloud project you want to use.
         zone: name of the zone to create the instance in. For example: "us-west3-b"
         instance_name: name of the new virtual machine (VM) instance.
-        registry_name: name of the registry where image is stored
-        log_stream_name: name of stream
+        registry_name: name of the registry where image is stored.
+        log_stream_name: name of stream.
+        
     Returns:
         Instance object.
     """
@@ -253,7 +254,6 @@ class AWSVMOrchestrator(BaseOrchestrator):
         Returns:
             The base image name.
         """
-
         base_image_name = f"aws-vm-orchestrator:{pipeline_name}"
         container_registry = Repository().active_stack.container_registry
 
