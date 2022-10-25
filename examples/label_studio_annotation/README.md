@@ -265,7 +265,8 @@ running on a default port of 8093.
 
 ### ▶️ Run the Code
 
-There are several parts to running the pipeline. Start with:
+There are several parts to running the pipeline. Start with (remembering to
+substitute `azure` or `gcp` if you're not running this on an AWS stack):
 
 ```shell
 python run.py aws --train
