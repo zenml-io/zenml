@@ -34,6 +34,11 @@ def my_pipeline(...):
     ...
 ```
 
+If you were using Tensorflow, perhaps you might use the
+`tensorflow/tensorflow:latest-gpu` image as detailed in [the official TensorFlow
+documentation](https://www.tensorflow.org/install/docker#gpu_support) or in
+[their DockerHub overview](https://hub.docker.com/r/tensorflow/tensorflow).
+
 2. Add ZenML as an explicit pip requirement
 
 ZenML requires that ZenML itself be installed for the containers running our
@@ -54,3 +59,20 @@ CUDA is enabled for the specific steps that require GPU acceleration. Note that 
 are **required** for the GPU hardware to be properly utilized. If you don't
 update the settings, your steps might run but they will not see any boost in
 performance from the custom hardware.
+
+Note that you need to be quite careful with the image that you choose so that
+switching between local and remote environments doesn't get muddled. For
+example, you might have one version of PyTorch installed locally with a
+particular CUDA version, but then when you switch to your remote stack or
+environment you might be forced to use a different CUDA version.
+
+The core cloud operators all offer prebuilt Docker images that fit with their
+hardware. You can find more information on them here:
+
+- [AWS](https://github.com/aws/deep-learning-containers/blob/master/available_images.md)
+- [GCP](https://cloud.google.com/deep-learning-vm/docs/images)
+- [Azure](https://learn.microsoft.com/en-us/azure/machine-learning/concept-prebuilt-docker-images-inference)
+
+Not all of these images are available on DockerHub, so your orchestrator node
+would have to have permission, for example, to pull images from registries if
+you were to use one of those.
