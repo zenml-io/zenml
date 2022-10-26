@@ -12,9 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
-
+import base64
+import json
 import os
 import re
+from datetime import datetime
 from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
@@ -50,22 +52,33 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import (
-    ArtifactModel,
-    ComponentModel,
-    FlavorModel,
-    HydratedStackModel,
-    PipelineModel,
-    PipelineRunModel,
+from zenml.new_models import (
     ProjectModel,
-    RoleAssignmentModel,
+    ProjectRequestModel,
     RoleModel,
-    StackModel,
-    StepRunModel,
+    RoleRequestModel,
     TeamModel,
+    TeamRequestModel,
     UserModel,
+    UserRequestModel,
 )
 from zenml.models.server_models import ServerDatabaseType, ServerModel
+from zenml.new_models import (
+    ArtifactModel,
+    ArtifactRequestModel,
+    ComponentModel,
+    ComponentRequestModel,
+    FlavorModel,
+    FlavorRequestModel,
+    PipelineModel,
+    PipelineRequestModel,
+PipelineRunModel,
+    PipelineRunRequestModel,
+    StackModel,
+    StackRequestModel,
+    StepRunModel,
+    StepRunRequestModel,
+)
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
@@ -583,10 +596,7 @@ class SqlZenStore(BaseZenStore):
     # ------
 
     @track(AnalyticsEvent.REGISTERED_STACK)
-    def create_stack(
-        self,
-        stack: StackModel,
-    ) -> StackModel:
+    def create_stack(self, stack: StackRequestModel) -> StackModel:
         """Register a new stack.
 
         Args:
@@ -600,20 +610,13 @@ class SqlZenStore(BaseZenStore):
                 registered in the store.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(stack.project, session=session)
-            user = self._get_user_schema(stack.user, session=session)
-
-            self.fail_if_stack_with_id_already_exists(
+            self._fail_if_stack_with_name_exists_for_user(
                 stack=stack, session=session
             )
 
-            self.fail_if_stack_with_name_exists_for_user(
-                stack=stack, project=project, user=user, session=session
-            )
-
             if stack.is_shared:
-                self.fail_if_stack_with_name_already_shared(
-                    stack=stack, project=project, session=session
+                self._fail_if_stack_with_name_already_shared(
+                    stack=stack, session=session
                 )
 
             # Get the Schemas of all components mentioned
@@ -630,28 +633,21 @@ class SqlZenStore(BaseZenStore):
             defined_components = session.exec(
                 select(StackComponentSchema).where(or_(*filters))
             ).all()
-            defined_component_ids = [c.id for c in defined_components]
 
-            # check if all component IDs are valid
-            if len(component_ids) > 0 and len(defined_component_ids) != len(
-                component_ids
-            ):
-                raise KeyError(
-                    f"Some components referenced in the stack were not found: "
-                    f"{set(component_ids) - set(defined_component_ids)}"
-                )
-
-            # Create the stack
-            stack_in_db = StackSchema.from_create_model(
-                defined_components=defined_components,
-                stack=stack,
+            new_stack_schema = StackSchema(
+                project_id=stack.project,
+                user_id=stack.user,
+                is_shared=stack.name,
+                name=stack.is_shared,
+                description=stack.description,
+                components=defined_components,
             )
-            session.add(stack_in_db)
+
+            session.add(new_stack_schema)
             session.commit()
+            session.refresh(new_stack_schema)
 
-            session.refresh(stack_in_db)
-
-            return stack_in_db.to_model()
+            return new_stack_schema.to_model()
 
     def get_stack(self, stack_id: UUID) -> StackModel:
         """Get a stack by its unique ID.
@@ -681,19 +677,17 @@ class SqlZenStore(BaseZenStore):
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        hydrated: bool = False,
-    ) -> Union[List[StackModel], List[HydratedStackModel]]:
+    ) -> List[StackModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
-            project_name_or_id: Id or name of the Project containing the stack
+            project_name_or_id: ID or name of the Project containing the stack
             user_name_or_id: Optionally filter stacks by their owner
             component_id: Optionally filter for stacks that contain the
                           component
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
-            hydrated: Flag to decide whether to return hydrated models.
 
         Returns:
             A list of all stacks matching the filter criteria.
@@ -701,7 +695,6 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Get a list of all stacks
             query = select(StackSchema)
-            # TODO: prettify
             if project_name_or_id:
                 project = self._get_project_schema(
                     project_name_or_id, session=session
@@ -721,17 +714,17 @@ class SqlZenStore(BaseZenStore):
 
             stacks = session.exec(query.order_by(StackSchema.name)).all()
 
-            if hydrated:
-                return [stack.to_hydrated_model() for stack in stacks]
-            else:
-                return [stack.to_model() for stack in stacks]
+            return [stack.to_model() for stack in stacks]
 
     @track(AnalyticsEvent.UPDATED_STACK)
-    def update_stack(self, stack: StackModel) -> StackModel:
+    def update_stack(
+        self, stack_id: UUID, stack_update: StackRequestModel
+    ) -> StackModel:
         """Update a stack.
 
         Args:
-            stack: The stack to use for the update.
+            stack_id: The ID of the stack update.
+            stack_update: The update request on the stack.
 
         Returns:
             The updated stack.
@@ -743,43 +736,33 @@ class SqlZenStore(BaseZenStore):
             # Check if stack with the domain key (name, project, owner) already
             #  exists
             existing_stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack.id)
+                select(StackSchema).where(StackSchema.id == stack_id)
             ).first()
 
             if existing_stack is None:
                 raise KeyError(
-                    f"Unable to update stack with id "
-                    f"'{stack.id}': Found no"
+                    f"Unable to update stack with id '{stack_id}': Found no"
                     f"existing stack with this id."
                 )
             # In case of a renaming update, make sure no stack already exists
             # with that name
-            if existing_stack.name != stack.name:
-                project = self._get_project_schema(
-                    project_name_or_id=stack.project, session=session
-                )
-                user = self._get_user_schema(
-                    user_name_or_id=stack.user, session=session
-                )
-                self.fail_if_stack_with_name_exists_for_user(
-                    stack=stack, project=project, user=user, session=session
+            if existing_stack.name != stack_update.name:
+                self._fail_if_stack_with_name_exists_for_user(
+                    stack=stack_update, session=session
                 )
 
-            # Check if stack update makes the stack a shared stack,
-            # In that case check if a stack with the same name is
-            # already shared within the project
-            if not existing_stack.is_shared and stack.is_shared:
-                project = self._get_project_schema(
-                    project_name_or_id=stack.project, session=session
-                )
-                self.fail_if_stack_with_name_already_shared(
-                    stack=stack, project=project, session=session
+            # Check if stack update makes the stack a shared stack. In that
+            # case, check if a stack with the same name is already shared
+            # within the project
+            if not existing_stack.is_shared and stack_update.is_shared:
+                self._fail_if_stack_with_name_already_shared(
+                    stack=stack_update, session=session
                 )
 
             # Get the Schemas of all components mentioned
             filters = [
                 (StackComponentSchema.id == component_id)
-                for list_of_component_ids in stack.components.values()
+                for list_of_component_ids in stack_update.components.values()
                 for component_id in list_of_component_ids
             ]
 
@@ -787,11 +770,15 @@ class SqlZenStore(BaseZenStore):
                 select(StackComponentSchema).where(or_(*filters))
             ).all()
 
-            existing_stack.from_update_model(
-                stack=stack, defined_components=defined_components
-            )
+            existing_stack.name = stack_update.name
+            existing_stack.is_shared = stack_update.is_shared
+            existing_stack.description = stack_update.description
+            existing_stack.components = defined_components
+            existing_stack.updated = datetime.now()
+
             session.add(existing_stack)
             session.commit()
+            session.refresh(existing_stack)
 
             return existing_stack.to_model()
 
@@ -816,43 +803,15 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-    @staticmethod
-    def fail_if_stack_with_id_already_exists(
-        stack: StackModel, session: Session
-    ) -> None:
-        """Raise an exception if a Stack with the same id already exists.
-
-        Args:
-            stack: The Stack
-            session: The Session
-
-        Raises:
-            StackExistsError: If a stack with the same id already
-                              exists
-        """
-        existing_id_stack = session.exec(
-            select(StackSchema).where(StackSchema.id == stack.id)
-        ).first()
-        if existing_id_stack is not None:
-            raise StackExistsError(
-                f"Unable to register stack with name "
-                f"'{stack.name}' and id '{stack.id}': "
-                f" Found an existing component with the same id."
-            )
-
-    @staticmethod
-    def fail_if_stack_with_name_exists_for_user(
-        stack: StackModel,
-        project: ProjectSchema,
+    def _fail_if_stack_with_name_exists_for_user(
+        self,
+        stack: StackRequestModel,
         session: Session,
-        user: UserSchema,
     ) -> None:
         """Raise an exception if a Component with same name exists for user.
 
         Args:
             stack: The Stack
-            project: The project scope within which to check
-            user: The user that owns the Stack
             session: The Session
 
         Returns:
@@ -869,6 +828,12 @@ class SqlZenStore(BaseZenStore):
             .where(StackSchema.user_id == stack.user)
         ).first()
         if existing_domain_stack is not None:
+            project = self._get_project_schema(
+                project_name_or_id=stack.project, session=session
+            )
+            user = self._get_user_schema(
+                user_name_or_id=stack.user, session=session
+            )
             raise StackExistsError(
                 f"Unable to register stack with name "
                 f"'{stack.name}': Found an existing stack with the same "
@@ -877,14 +842,15 @@ class SqlZenStore(BaseZenStore):
             )
         return None
 
-    def fail_if_stack_with_name_already_shared(
-        self, stack: StackModel, project: ProjectSchema, session: Session
+    def _fail_if_stack_with_name_already_shared(
+        self,
+        stack: StackRequestModel,
+        session: Session,
     ) -> None:
         """Raise an exception if a Stack with same name is already shared.
 
         Args:
             stack: The Stack
-            project: The project scope within which to check
             session: The Session
 
         Raises:
@@ -900,6 +866,9 @@ class SqlZenStore(BaseZenStore):
             .where(StackSchema.is_shared == stack.is_shared)
         ).first()
         if existing_shared_stack is not None:
+            project = self._get_project_schema(
+                project_name_or_id=stack.project, session=session
+            )
             owner_of_shared = self._get_user_schema(
                 existing_shared_stack.user_id, session=session
             )
@@ -917,7 +886,7 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
     def create_stack_component(
         self,
-        component: ComponentModel,
+        component: ComponentRequestModel,
     ) -> ComponentModel:
         """Create a stack component.
 
@@ -928,37 +897,34 @@ class SqlZenStore(BaseZenStore):
             The created stack component.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(
-                project_name_or_id=component.project, session=session
-            )
-            user = self._get_user_schema(
-                user_name_or_id=component.user, session=session
-            )
-
-            self.fail_if_component_with_id_already_exists(
+            self._fail_if_component_with_name_type_exists_for_user(
                 component=component, session=session
             )
 
-            self.fail_if_component_with_name_type_exists_for_user(
-                component=component, project=project, user=user, session=session
-            )
-
             if component.is_shared:
-                self.fail_if_component_with_name_type_already_shared(
-                    component=component, project=project, session=session
+                self._fail_if_component_with_name_type_already_shared(
+                    component=component, session=session
                 )
 
             # Create the component
-            component_in_db = StackComponentSchema.from_create_model(
-                component=component
+            new_component = StackComponentSchema(
+                name=component.name,
+                project_id=component.project,
+                user_id=component.user,
+                is_shared=component.is_shared,
+                type=component.type,
+                flavor=component.flavor,
+                configuration=base64.b64encode(
+                    json.dumps(component.configuration).encode("utf-8")
+                ),
             )
 
-            session.add(component_in_db)
+            session.add(new_component)
             session.commit()
 
-            session.refresh(component_in_db)
+            session.refresh(new_component)
 
-            return component_in_db.to_model()
+            return new_component.to_model()
 
     def get_stack_component(self, component_id: UUID) -> ComponentModel:
         """Get a stack component by ID.
@@ -1038,12 +1004,13 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
-        self, component: ComponentModel
+        self, component_id: UUID, component_update: ComponentRequestModel
     ) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
-            component: The stack component model to use for the update.
+            component_id: The ID of the stack component to update.
+            component_update: The update to be applied to the stack component.
 
         Returns:
             The updated stack component.
@@ -1054,45 +1021,40 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             existing_component = session.exec(
                 select(StackComponentSchema).where(
-                    StackComponentSchema.id == component.id
+                    StackComponentSchema.id == component_id
                 )
             ).first()
 
             if existing_component is None:
                 raise KeyError(
                     f"Unable to update component with id "
-                    f"'{component.id}': Found no"
+                    f"'{component_id}': Found no"
                     f"existing component with this id."
                 )
 
             # In case of a renaming update, make sure no component of the same
             # type already exists with that name
-            if existing_component.name != component.name:
-                project = self._get_project_schema(
-                    project_name_or_id=component.project, session=session
-                )
-                user = self._get_user_schema(
-                    user_name_or_id=component.user, session=session
-                )
-                self.fail_if_component_with_name_type_exists_for_user(
-                    component=component,
-                    project=project,
-                    user=user,
+            if existing_component.name != component_update.name:
+                self._fail_if_component_with_name_type_exists_for_user(
+                    component=component_update,
                     session=session,
                 )
 
             # Check if component update makes the component a shared component,
             # In that case check if a component with the same name, type are
             # already shared within the project
-            if not existing_component.is_shared and component.is_shared:
-                project = self._get_project_schema(
-                    project_name_or_id=component.project, session=session
-                )
-                self.fail_if_component_with_name_type_already_shared(
-                    component=component, project=project, session=session
+            if not existing_component.is_shared and component_update.is_shared:
+                self._fail_if_component_with_name_type_already_shared(
+                    component=component_update, session=session
                 )
 
-            existing_component.from_update_model(component=component)
+            existing_component.name = component_update.name
+            existing_component.is_shared = component_update.is_shared
+            existing_component.configuration = base64.b64encode(
+                json.dumps(component_update.configuration).encode("utf-8")
+            )
+            existing_component.updated = datetime.now()
+
             session.add(existing_component)
             session.commit()
 
@@ -1134,62 +1096,15 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-    def get_stack_component_side_effects(
+    def _fail_if_component_with_name_type_exists_for_user(
         self,
-        component_id: UUID,
-        run_id: UUID,
-        pipeline_id: UUID,
-        stack_id: UUID,
-    ) -> Dict[Any, Any]:
-        """Get the side effects of a stack component.
-
-        Args:
-            component_id: The id of the stack component to get side effects for.
-            run_id: The id of the run to get side effects for.
-            pipeline_id: The id of the pipeline to get side effects for.
-            stack_id: The id of the stack to get side effects for.
-        """
-        pass  # TODO: implement this
-
-    @staticmethod
-    def fail_if_component_with_id_already_exists(
-        component: ComponentModel, session: Session
-    ) -> None:
-        """Raise an exception if a Component with the same id already exists.
-
-        Args:
-            component: The Component
-            session: The Session
-
-        Raises:
-            StackComponentExistsError: If a component with the same id already
-                                       exists
-        """
-        existing_id_component = session.exec(
-            select(StackComponentSchema).where(
-                StackComponentSchema.id == component.id
-            )
-        ).first()
-        if existing_id_component is not None:
-            raise StackComponentExistsError(
-                f"Unable to register '{component.type.value}' component "
-                f"with name '{component.name}' and id '{component.id}': "
-                f" Found an existing component with the same id."
-            )
-
-    @staticmethod
-    def fail_if_component_with_name_type_exists_for_user(
-        component: ComponentModel,
-        project: ProjectSchema,
+        component: ComponentRequestModel,
         session: Session,
-        user: UserSchema,
     ) -> None:
         """Raise an exception if a Component with same name/type exists for user.
 
         Args:
             component: The Component
-            project: The project scope within which to check
-            user: The user that owns the Component
             session: The Session
 
         Returns:
@@ -1209,6 +1124,12 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.type == component.type)
         ).first()
         if existing_domain_component is not None:
+            project = self._get_project_schema(
+                project_name_or_id=component.project, session=session
+            )
+            user = self._get_user_schema(
+                user_name_or_id=component.user, session=session
+            )
             raise StackComponentExistsError(
                 f"Unable to register '{component.type.value}' component "
                 f"with name '{component.name}': Found an existing "
@@ -1218,17 +1139,15 @@ class SqlZenStore(BaseZenStore):
             )
         return None
 
-    def fail_if_component_with_name_type_already_shared(
+    def _fail_if_component_with_name_type_already_shared(
         self,
-        component: ComponentModel,
-        project: ProjectSchema,
+        component: ComponentRequestModel,
         session: Session,
     ) -> None:
         """Raise an exception if a Component with same name/type already shared.
 
         Args:
             component: The Component
-            project: The project scope within which to check
             session: The Session
 
         Raises:
@@ -1245,6 +1164,9 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.type == component.type)
         ).first()
         if existing_shared_component is not None:
+            project = self._get_project_schema(
+                project_name_or_id=component.project, session=session
+            )
             owner_of_shared = self._get_user_schema(
                 existing_shared_component.user_id, session=session
             )
@@ -1262,10 +1184,7 @@ class SqlZenStore(BaseZenStore):
     # -----------------------
 
     @track(AnalyticsEvent.CREATED_FLAVOR)
-    def create_flavor(
-        self,
-        flavor: FlavorModel,
-    ) -> FlavorModel:
+    def create_flavor(self, flavor: FlavorRequestModel) -> FlavorModel:
         """Creates a new stack component flavor.
 
         Args:
@@ -1297,12 +1216,20 @@ class SqlZenStore(BaseZenStore):
                     f"'{flavor.project}' project owned by the same "
                     f"'{flavor.user}' user."
                 )
-            flavor_in_db = FlavorSchema.from_create_model(flavor=flavor)
 
-            session.add(flavor_in_db)
+            new_flavor = FlavorSchema(
+                name=flavor.name,
+                type=flavor.type,
+                source=flavor.source,
+                config_schema=flavor.config_schema,
+                integration=flavor.integration,
+                project_id=flavor.project,
+                user_id=flavor.user,
+            )
+            session.add(new_flavor)
             session.commit()
 
-            return flavor_in_db.to_model()
+            return new_flavor.to_model()
 
     def get_flavor(self, flavor_id: UUID) -> FlavorModel:
         """Get a flavor by ID.
@@ -1366,36 +1293,6 @@ class SqlZenStore(BaseZenStore):
 
         return [flavor.to_model() for flavor in list_of_flavors_in_db]
 
-    @track(AnalyticsEvent.UPDATED_FLAVOR)
-    def update_flavor(self, flavor: FlavorModel) -> FlavorModel:
-        """Update an existing stack component flavor.
-
-        Args:
-            flavor: The model of the flavor to update.
-
-        Returns:
-            The updated flavor.
-
-        Raises:
-            KeyError: if the flavor doesn't exist.
-        """
-        with Session(self.engine) as session:
-            existing_flavor = session.exec(
-                select(FlavorSchema).where(FlavorSchema.id == flavor.id)
-            ).first()
-
-            if existing_flavor is None:
-                raise KeyError(
-                    f"Unable to update flavor with id '{flavor.id}': Found no"
-                    f"existing component with this id."
-                )
-
-            existing_flavor.from_update_model(flavor=flavor)
-            session.add(existing_flavor)
-            session.commit()
-
-        return existing_flavor.to_model()
-
     @track(AnalyticsEvent.DELETED_FLAVOR)
     def delete_flavor(self, flavor_id: UUID) -> None:
         """Delete a flavor.
@@ -1448,7 +1345,7 @@ class SqlZenStore(BaseZenStore):
         return self._default_user_name
 
     @track(AnalyticsEvent.CREATED_USER)
-    def create_user(self, user: UserModel) -> UserModel:
+    def create_user(self, user: UserRequestModel) -> UserModel:
         """Creates a new user.
 
         Args:
@@ -1472,7 +1369,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the user
-            new_user = UserSchema.from_create_model(user)
+            new_user = UserSchema.from_request(user)
             session.add(new_user)
             session.commit()
 
@@ -1503,18 +1400,28 @@ class SqlZenStore(BaseZenStore):
         return [user.to_model() for user in users]
 
     @track(AnalyticsEvent.UPDATED_USER)
-    def update_user(self, user: UserModel) -> UserModel:
+    def update_user(
+        self, user_id: UUID, user_update: UserRequestModel
+    ) -> UserModel:
         """Updates an existing user.
 
         Args:
-            user: The User model to use for the update.
+            user_id: The id of the user to update.
+            user_update: The update to be applied to the user.
 
         Returns:
             The updated user.
         """
         with Session(self.engine) as session:
-            existing_user = self._get_user_schema(user.id, session=session)
-            existing_user.from_update_model(user)
+            existing_user = self._get_user_schema(user_id, session=session)
+
+            existing_user.name = user_update.name
+            existing_user.full_name = user_update.full_name
+            existing_user.active = user_update.active
+            existing_user.password = user_update.get_hashed_password()
+            existing_user.activation_token = user_update.get_hashed_activation_token()
+            existing_user.updated = datetime.now()
+
             session.add(existing_user)
             session.commit()
 
@@ -1581,7 +1488,7 @@ class SqlZenStore(BaseZenStore):
     # -----
 
     @track(AnalyticsEvent.CREATED_TEAM)
-    def create_team(self, team: TeamModel) -> TeamModel:
+    def create_team(self, team: TeamRequestModel) -> TeamModel:
         """Creates a new team.
 
         Args:
@@ -1605,7 +1512,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the team
-            new_team = TeamSchema.from_create_model(team)
+            new_team = TeamSchema.from_request(team)
             session.add(new_team)
             session.commit()
 
@@ -1635,11 +1542,14 @@ class SqlZenStore(BaseZenStore):
             return [team.to_model() for team in teams]
 
     @track(AnalyticsEvent.UPDATED_TEAM)
-    def update_team(self, team: TeamModel) -> TeamModel:
+    def update_team(
+        self, team_id: UUID, team_update: TeamRequestModel
+    ) -> TeamModel:
         """Update an existing team.
 
         Args:
-            team: The team to use for the update.
+            team_id: The ID of the team to be updated.
+            team_update: The update to be applied to the team.
 
         Returns:
             The updated team.
@@ -1649,18 +1559,19 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_team = session.exec(
-                select(TeamSchema).where(TeamSchema.id == team.id)
+                select(TeamSchema).where(TeamSchema.id == team_id)
             ).first()
 
             if existing_team is None:
                 raise KeyError(
                     f"Unable to update team with id "
-                    f"'{team.id}': Found no"
+                    f"'{team_id}': Found no"
                     f"existing teams with this id."
                 )
 
             # Update the team
-            existing_team.from_update_model(team)
+            existing_team.name = team_update.name
+            existing_team.updated = datetime.now()
 
             session.add(existing_team)
             session.commit()
@@ -1707,84 +1618,12 @@ class SqlZenStore(BaseZenStore):
             team = self._get_team_schema(team_name_or_id, session=session)
             return [user.to_model() for user in team.users]
 
-    def get_teams_for_user(
-        self, user_name_or_id: Union[str, UUID]
-    ) -> List[TeamModel]:
-        """Fetches all teams for a user.
-
-        Args:
-            user_name_or_id: The name or ID of the user for which to get all
-                teams.
-
-        Returns:
-            A list of all teams that the user is part of.
-        """
-        with Session(self.engine) as session:
-            user = self._get_user_schema(user_name_or_id, session=session)
-            return [team.to_model() for team in user.teams]
-
-    def add_user_to_team(
-        self,
-        user_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Adds a user to a team.
-
-        Args:
-            user_name_or_id: Name or ID of the user to add to the team.
-            team_name_or_id: Name or ID of the team to which to add the user to.
-
-        Raises:
-            EntityExistsError: If the user is already a member of the team.
-        """
-        with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id, session=session)
-            user = self._get_user_schema(user_name_or_id, session=session)
-
-            # Check if user is already in the team
-            existing_user_in_team = session.exec(
-                select(TeamAssignmentSchema)
-                .where(TeamAssignmentSchema.user_id == user.id)
-                .where(TeamAssignmentSchema.team_id == team.id)
-            ).first()
-            if existing_user_in_team is not None:
-                raise EntityExistsError(
-                    f"Unable to add user '{user.name}' to team "
-                    f"'{team.name}': User is already in the team."
-                )
-
-            # Add user to team
-            team.users = team.users + [user]
-            session.add(team)
-            session.commit()
-
-    def remove_user_from_team(
-        self,
-        user_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Removes a user from a team.
-
-        Args:
-            user_name_or_id: Name or ID of the user to remove from the team.
-            team_name_or_id: Name or ID of the team from which to remove the
-                user.
-        """
-        with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id, session=session)
-            user = self._get_user_schema(user_name_or_id, session=session)
-
-            # Remove user from team
-            team.users = [user_ for user_ in team.users if user_.id != user.id]
-            session.add(team)
-            session.commit()
-
     # -----
     # Roles
     # -----
 
     @track(AnalyticsEvent.CREATED_ROLE)
-    def create_role(self, role: RoleModel) -> RoleModel:
+    def create_role(self, role: RoleRequestModel) -> RoleModel:
         """Creates a new role.
 
         Args:
@@ -1807,7 +1646,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create role
-            role_schema = RoleSchema.from_create_model(role)
+            role_schema = RoleSchema.from_request(role)
             session.add(role_schema)
             session.commit()
             return role_schema.to_model()
@@ -1837,11 +1676,14 @@ class SqlZenStore(BaseZenStore):
             return [role.to_model() for role in roles]
 
     @track(AnalyticsEvent.UPDATED_ROLE)
-    def update_role(self, role: RoleModel) -> RoleModel:
+    def update_role(
+        self, role_id: UUID, role_update: RoleRequestModel
+    ) -> RoleModel:
         """Update an existing role.
 
         Args:
-            role: The role to use for the update.
+            role_id: The ID of the role to be updated.
+            role_update: The update to be applied to the role.
 
         Returns:
             The updated role.
@@ -1851,18 +1693,19 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_role = session.exec(
-                select(RoleSchema).where(RoleSchema.id == role.id)
+                select(RoleSchema).where(RoleSchema.id == role_id)
             ).first()
 
             if existing_role is None:
                 raise KeyError(
                     f"Unable to update role with id "
-                    f"'{role.id}': Found no"
+                    f"'{role_id}': Found no"
                     f"existing roles with this id."
                 )
 
             # Update the role
-            existing_role.from_update_model(role)
+            existing_role.name = role_update.name
+            existing_role.updated = datetime.now()
 
             session.add(existing_role)
             session.commit()
@@ -2221,7 +2064,7 @@ class SqlZenStore(BaseZenStore):
     # --------
 
     @track(AnalyticsEvent.CREATED_PROJECT)
-    def create_project(self, project: ProjectModel) -> ProjectModel:
+    def create_project(self, project: ProjectRequestModel) -> ProjectModel:
         """Creates a new project.
 
         Args:
@@ -2245,7 +2088,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the project
-            new_project = ProjectSchema.from_create_model(project)
+            new_project = ProjectSchema.from_request(project)
             session.add(new_project)
             session.commit()
 
@@ -2280,11 +2123,14 @@ class SqlZenStore(BaseZenStore):
             return [project.to_model() for project in projects]
 
     @track(AnalyticsEvent.UPDATED_PROJECT)
-    def update_project(self, project: ProjectModel) -> ProjectModel:
+    def update_project(
+        self, project_id: UUID, project_update: ProjectRequestModel
+    ) -> ProjectModel:
         """Update an existing project.
 
         Args:
-            project: The project to use for the update.
+            project_id: The ID of the project to be updated.
+            project_update: The update to be applied to the project.
 
         Returns:
             The updated project.
@@ -2294,18 +2140,20 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_project = session.exec(
-                select(ProjectSchema).where(ProjectSchema.id == project.id)
+                select(ProjectSchema).where(ProjectSchema.id == project_id)
             ).first()
 
             if existing_project is None:
                 raise KeyError(
                     f"Unable to update project with id "
-                    f"'{project.id}': Found no"
+                    f"'{project_id}': Found no"
                     f"existing projects with this id."
                 )
 
             # Update the project
-            existing_project.from_update_model(project)
+            existing_project.name = project_update.name
+            existing_project.description = project_update.description
+            existing_project.updated = datetime.now()
 
             session.add(existing_project)
             session.commit()
@@ -2336,10 +2184,6 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
 
-    # ------------
-    # Repositories
-    # ------------
-
     # ---------
     # Pipelines
     # ---------
@@ -2347,7 +2191,7 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.CREATE_PIPELINE)
     def create_pipeline(
         self,
-        pipeline: PipelineModel,
+        pipeline: PipelineRequestModel,
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
@@ -2375,7 +2219,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the pipeline
-            new_pipeline = PipelineSchema.from_create_model(pipeline=pipeline)
+            new_pipeline = PipelineSchema()
             session.add(new_pipeline)
             session.commit()
             # Refresh the Model that was just created
@@ -2446,11 +2290,14 @@ class SqlZenStore(BaseZenStore):
             return [pipeline.to_model() for pipeline in pipelines]
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
-    def update_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
+    def update_pipeline(
+        self, pipeline_id: UUID, pipeline_update: PipelineRequestModel
+    ) -> PipelineModel:
         """Updates a pipeline.
 
         Args:
-            pipeline: The pipeline to use for the update.
+            pipeline_id: The ID of the pipeline to be updated.
+            pipeline_update: The update to be applied.
 
         Returns:
             The updated pipeline.
@@ -2461,16 +2308,19 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline with the given ID exists
             existing_pipeline = session.exec(
-                select(PipelineSchema).where(PipelineSchema.id == pipeline.id)
+                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
             ).first()
             if existing_pipeline is None:
                 raise KeyError(
-                    f"Unable to update pipeline with ID {pipeline.id}: "
+                    f"Unable to update pipeline with ID {pipeline_id}: "
                     f"No pipeline with this ID found."
                 )
 
             # Update the pipeline
-            existing_pipeline.from_update_model(pipeline)
+            existing_pipeline.name = pipeline_update.name
+            existing_pipeline.updated = datetime.now()
+            existing_pipeline.docstring = pipeline_update.docstring
+            existing_pipeline.spec = pipeline_update.spec.json(sort_keys=True)
 
             session.add(existing_pipeline)
             session.commit()
@@ -2500,18 +2350,6 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(pipeline)
             session.commit()
-
-    # --------------
-    # Pipeline steps
-    # --------------
-
-    def list_steps(self, pipeline_id: UUID) -> List[StepRunModel]:
-        """List all steps.
-
-        Args:
-            pipeline_id: The ID of the pipeline to list steps for.
-        """
-        pass  # TODO
 
     # --------------
     # Pipeline runs
@@ -2544,19 +2382,6 @@ class SqlZenStore(BaseZenStore):
 
             return run.to_model()
 
-    def get_run_component_side_effects(
-        self,
-        run_id: UUID,
-        component_id: Optional[UUID] = None,
-    ) -> Dict[str, Any]:
-        """Gets the side effects for a component in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-            component_id: The ID of the component to get.
-        """
-        # TODO: raise KeyError if run doesn't exist
-        pass  # TODO
 
     def list_runs(
         self,
@@ -3031,7 +2856,7 @@ class SqlZenStore(BaseZenStore):
 
             # If the run is in MLMD but not in ZenML, we create it
             if run_name not in zenml_runs:
-                new_run = PipelineRunModel(
+                new_run = PipelineRunRequestModel(
                     name=run_name,
                     mlmd_id=mlmd_run.mlmd_id,
                     project=mlmd_run.project,
@@ -3085,7 +2910,7 @@ class SqlZenStore(BaseZenStore):
         for step_name, mlmd_step in mlmd_steps.items():
             if step_name not in zenml_steps:
                 docstring = mlmd_step.step_configuration["config"]["docstring"]
-                new_step = StepRunModel(
+                new_step = StepRunRequestModel(
                     name=step_name,
                     mlmd_id=mlmd_step.mlmd_id,
                     mlmd_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
@@ -3137,7 +2962,7 @@ class SqlZenStore(BaseZenStore):
         # For each output in MLMD, sync it into ZenML if it doesn't exist yet.
         for output_name, mlmd_artifact in mlmd_outputs.items():
             if output_name not in zenml_outputs:
-                new_artifact = ArtifactModel(
+                new_artifact = ArtifactRequestModel(
                     name=output_name,
                     mlmd_id=mlmd_artifact.mlmd_id,
                     type=mlmd_artifact.type,
@@ -3169,7 +2994,7 @@ class SqlZenStore(BaseZenStore):
                     name=input_name,
                 )
 
-    def _create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
+    def _create_run(self, pipeline_run: PipelineRunRequestModel) -> PipelineRunModel:
         """Creates a pipeline run.
 
         Args:
@@ -3195,42 +3020,43 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to create pipeline run {pipeline_run.name}: "
                     f"A pipeline run with this name already exists."
                 )
-            existing_id_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.id == pipeline_run.id
-                )
-            ).first()
-            if existing_id_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run {pipeline_run.id}: "
-                    f"A pipeline run with this id already exists."
-                )
 
             # Query pipeline
-            if pipeline_run.pipeline_id is not None:
+            if pipeline_run.pipeline is not None:
                 pipeline = session.exec(
                     select(PipelineSchema).where(
-                        PipelineSchema.id == pipeline_run.pipeline_id
+                        PipelineSchema.id == pipeline_run.pipeline
                     )
                 ).first()
                 if pipeline is None:
                     raise KeyError(
                         f"Unable to create pipeline run: {pipeline_run.name}: "
-                        f"No pipeline with ID {pipeline_run.pipeline_id} found."
+                        f"No pipeline with ID {pipeline_run.pipeline} found."
                     )
-                new_run = PipelineRunSchema.from_create_model(
-                    run=pipeline_run, pipeline=pipeline
-                )
-            else:
-                new_run = PipelineRunSchema.from_create_model(run=pipeline_run)
 
+            new_run = PipelineRunSchema(
+                name=pipeline_run.name,
+                stack_id=pipeline_run.stack,
+                project_id=pipeline_run.project,
+                user_id=pipeline_run.user,
+                pipeline_id=pipeline_run.pipeline,
+                pipeline_configuration=json.dumps(
+                    pipeline_run.pipeline_configuration
+                ),
+                num_steps=pipeline_run.num_steps,
+                git_sha=pipeline_run.git_sha,
+                zenml_version=pipeline_run.zenml_version,
+                mlmd_id=pipeline_run.mlmd_id,
+            )
             # Create the pipeline run
             session.add(new_run)
             session.commit()
 
             return new_run.to_model()
 
-    def _update_run(self, run: PipelineRunModel) -> PipelineRunModel:
+    def _update_run(
+        self, run_id: UUID, run_update: PipelineRunRequestModel
+    ) -> PipelineRunModel:
         """Updates a pipeline run.
 
         Args:
@@ -3245,27 +3071,32 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             existing_run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run.id)
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
             ).first()
             if existing_run is None:
                 raise KeyError(
-                    f"Unable to update pipeline run with ID {run.id}: "
+                    f"Unable to update pipeline run with ID {run_id}: "
                     f"No pipeline run with this ID found."
                 )
 
             # Update the pipeline run
-            existing_run.from_update_model(run)
+            existing_run.name = run_update.name
+            existing_run.git_sha = run_update.git_sha
+            existing_run.zenml_version = run_update.zenml_version
+            existing_run.mlmd_id = run_update.mlmd_id
+            existing_run.updated = datetime.now()
+
             session.add(existing_run)
             session.commit()
 
             session.refresh(existing_run)
             return existing_run.to_model()
 
-    def _create_run_step(self, step: StepRunModel) -> StepRunModel:
+    def _create_run_step(self, step_run: StepRunRequestModel) -> StepRunModel:
         """Creates a step.
 
         Args:
-            step: The step to create.
+            step_run: The step to create.
 
         Returns:
             The created step.
@@ -3275,53 +3106,55 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
-
             # Check if the step already exists
             existing_step = session.exec(
                 select(StepRunSchema).where(
-                    StepRunSchema.mlmd_id == step.mlmd_id
+                    StepRunSchema.mlmd_id == step_run.mlmd_id
                 )
             ).first()
             if existing_step is not None:
                 raise EntityExistsError(
-                    f"Unable to create step '{step.name}': A step with MLMD ID "
-                    f"'{step.mlmd_id}' already exists."
+                    f"Unable to create step '{step_run.name}': A step with MLMD "
+                    f"ID '{step_run.mlmd_id}' already exists."
                 )
 
             # Check if the pipeline run exists
             run = session.exec(
                 select(PipelineRunSchema).where(
-                    PipelineRunSchema.id == step.pipeline_run_id
+                    PipelineRunSchema.id == step_run.pipeline_run_id
                 )
             ).first()
             if run is None:
                 raise KeyError(
-                    f"Unable to create step '{step.name}': No pipeline run "
-                    f"with ID '{step.pipeline_run_id}' found."
+                    f"Unable to create step '{step_run.name}': No pipeline run "
+                    f"with ID '{step_run.pipeline_run_id}' found."
                 )
 
             # Check if the step name already exists in the pipeline run
             existing_step = session.exec(
                 select(StepRunSchema)
-                .where(StepRunSchema.name == step.name)
-                .where(StepRunSchema.pipeline_run_id == step.pipeline_run_id)
+                .where(StepRunSchema.name == step_run.name)
+                .where(
+                    StepRunSchema.pipeline_run_id == step_run.pipeline_run_id
+                )
             ).first()
             if existing_step is not None:
                 raise EntityExistsError(
-                    f"Unable to create step '{step.name}': A step with this "
+                    f"Unable to create step '{step_run.name}': A step with this "
                     f"name already exists in the pipeline run with ID "
-                    f"'{step.pipeline_run_id}'."
+                    f"'{step_run.pipeline_run_id}'."
                 )
 
             # Create the step
-            step_schema = StepRunSchema.from_create_model(step)
+
+            step_schema = StepRunSchema.from_request(step_run)
             session.add(step_schema)
             session.commit()
 
-            assert step.parent_step_ids is not None
+            assert step_run.parent_step_ids is not None
             return step_schema.to_model(
-                parent_step_ids=step.parent_step_ids,
-                mlmd_parent_step_ids=step.mlmd_parent_step_ids,
+                parent_step_ids=step_run.parent_step_ids,
+                mlmd_parent_step_ids=step_run.mlmd_parent_step_ids,
             )
 
     def _set_parent_step(self, child_id: UUID, parent_id: UUID) -> None:
@@ -3374,7 +3207,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     def _create_run_step_artifact(
-        self, artifact: ArtifactModel
+        self, artifact: ArtifactRequestModel
     ) -> ArtifactModel:
         """Creates an artifact of a step.
 
@@ -3401,7 +3234,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the artifact
-            artifact_schema = ArtifactSchema.from_create_model(artifact)
+            artifact_schema = ArtifactSchema.from_request(artifact)
             session.add(artifact_schema)
             session.commit()
             return artifact_schema.to_model()
