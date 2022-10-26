@@ -25,7 +25,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
 import zenml
-from zenml.constants import API, HEALTH
+from zenml.constants import API, ENV_ZENML_SERVER_METADATA_SYNC_PERIOD, HEALTH
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
@@ -42,7 +42,11 @@ from zenml.zen_server.routers import (
     teams_endpoints,
     users_endpoints,
 )
-from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
+from zenml.zen_server.utils import (
+    ROOT_URL_PATH,
+    initialize_zen_store,
+    zen_store,
+)
 
 DASHBOARD_DIRECTORY = "dashboard"
 
@@ -72,6 +76,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def initialize() -> None:
+    """Initialize the ZenML server."""
+    # IMPORTANT: this needs to be done before the fastapi app starts, to avoid
+    # race conditions
+    initialize_zen_store()
+    sync_pipeline_runs()
+
 
 app.mount(
     "/static",
@@ -141,11 +155,14 @@ app.include_router(users_endpoints.activation_router)
 
 
 @app.on_event("startup")
-@repeat_every(seconds=10)
+@repeat_every(
+    seconds=float(os.getenv(ENV_ZENML_SERVER_METADATA_SYNC_PERIOD, 10)),
+    wait_first=True,
+)
 def sync_pipeline_runs() -> None:
     """Sync pipeline runs."""
     logger.info("Syncing pipeline runs...")
-    zen_store._sync_runs()
+    zen_store()._sync_runs()
 
 
 def get_root_static_files() -> List[str]:

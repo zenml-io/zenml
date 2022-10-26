@@ -157,4 +157,4 @@ You can check the MLflow deployment example for more details.
 - [Model Deployer with MLflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment)
 
 For more information and a full list of configurable attributes of the MLflow 
-Model Deployer, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.mlflow.model_deployers).
+Model Deployer, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.model_deployers).

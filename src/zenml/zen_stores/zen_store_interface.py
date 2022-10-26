@@ -13,18 +13,15 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from pathlib import PurePath
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
-
-from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import (
     ArtifactModel,
     ComponentModel,
     FlavorModel,
+    HydratedStackModel,
     PipelineModel,
     PipelineRunModel,
     ProjectModel,
@@ -36,6 +33,9 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.server_models import ServerModel
+
+if TYPE_CHECKING:
+    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
 
 class ZenStoreInterface(ABC):
@@ -114,49 +114,6 @@ class ZenStoreInterface(ABC):
         be used to set up the backend (database, connection etc.).
         """
 
-    @staticmethod
-    @abstractmethod
-    def get_local_url(path: str) -> str:
-        """Get a local URL for a given local path.
-
-        Args:
-            path: the path string to build a URL out of.
-
-        Returns:
-            Url pointing to the path for the store type.
-        """
-
-    @classmethod
-    @abstractmethod
-    def copy_local_store(
-        cls,
-        config: StoreConfiguration,
-        path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> StoreConfiguration:
-        """Copy a local store to a new location.
-
-        Use this method to create a copy of a store database to a new location
-        and return a new store configuration pointing to the database copy. This
-        only applies to stores that use the local filesystem to store their
-        data. Calling this method for remote stores simply returns the input
-        store configuration unaltered.
-
-        Args:
-            config: The configuration of the store to copy.
-            path: The new local path where the store DB will be copied.
-            load_config_path: path that will be used to load the copied store
-                database. This can be set to a value different from `path`
-                if the local database copy will be loaded from a different
-                environment, e.g. when the database is copied to a container
-                image and loaded using a different absolute path. This will be
-                reflected in the paths and URLs encoded in the copied store
-                configuration.
-
-        Returns:
-            The store configuration of the copied store.
-        """
-
     @abstractmethod
     def get_store_info(self) -> ServerModel:
         """Get information about the store.
@@ -172,7 +129,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> ConnectionConfig:
+    ) -> "ConnectionConfig":
         """Get the TFX metadata config of this ZenStore.
 
         Args:
@@ -227,17 +184,19 @@ class ZenStoreInterface(ABC):
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[StackModel]:
+        hydrated: bool = False,
+    ) -> Union[List[StackModel], List[HydratedStackModel]]:
         """List all stacks matching the given filter criteria.
 
         Args:
-            project_name_or_id: Id or name of the Project containing the stack
+            project_name_or_id: ID or name of the Project containing the stack
             user_name_or_id: Optionally filter stacks by their owner
             component_id: Optionally filter for stacks that contain the
                           component
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
+            hydrated: Flag to decide whether to return hydrated models
 
 
         Returns:

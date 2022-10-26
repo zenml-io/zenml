@@ -15,7 +15,7 @@
 import textwrap
 from abc import ABC
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Extra, root_validator
@@ -445,6 +445,18 @@ class StackComponent:
         return set(get_requirements_for_module(self.__module__))
 
     @property
+    def apt_packages(self) -> List[str]:
+        """List of APT package requirements for the component.
+
+        Returns:
+            A list of APT package requirements for the component.
+        """
+        from zenml.integrations.utils import get_integration_for_module
+
+        integration = get_integration_for_module(self.__module__)
+        return integration.APT_PACKAGES if integration else []
+
+    @property
     def local_path(self) -> Optional[str]:
         """Path to a local directory used by the component to store persistent information.
 
@@ -454,8 +466,8 @@ class StackComponent:
 
         IMPORTANT: the path returned by this property must always be a path
         that is relative to the ZenML local store's directory. The local
-        Kubeflow orchestrator relies on this convention to correctly mount the
-        local folders in the Kubeflow containers. This is an example of a valid
+        orchestrators rely on this convention to correctly mount the
+        local folders in the containers. This is an example of a valid
         path:
 
         ```python

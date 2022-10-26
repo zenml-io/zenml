@@ -24,7 +24,6 @@ from zenml.integrations.great_expectations.data_validators.ge_data_validator imp
     GreatExpectationsDataValidator,
 )
 from zenml.steps import BaseParameters, BaseStep
-from zenml.steps.utils import clone_step
 
 
 class GreatExpectationsValidatorParameters(BaseParameters):
@@ -117,4 +116,4 @@ def great_expectations_validator_step(
     Returns:
         a GreatExpectationsProfilerStep step instance
     """
-    return clone_step(GreatExpectationsValidatorStep, step_name)(params=params)
+    return GreatExpectationsValidatorStep(name=step_name, params=params)

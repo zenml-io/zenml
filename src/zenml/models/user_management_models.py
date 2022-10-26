@@ -136,6 +136,7 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         "name",
         "full_name",
         "active",
+        "email_opted_in",
     ]
 
     name: str = Field(

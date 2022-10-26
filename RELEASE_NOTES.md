@@ -1,5 +1,71 @@
 <!-- markdown-link-check-disable -->
 
+# 0.20.5
+
+ZenML 0.20.5 fixes another series of minor bugs, significantly improves the performance of the CLI, and adds an option to specify APT packages in Docker images.
+
+## What's Changed
+* Fix accessing local zen store and artifact store in containers by @stefannica in https://github.com/zenml-io/zenml/pull/976
+* K3d local registry pod spec updated by @wjayesh in https://github.com/zenml-io/zenml/pull/972
+* Update readme page by @dnth in https://github.com/zenml-io/zenml/pull/985
+* Remove beam dependency by @schustmi in https://github.com/zenml-io/zenml/pull/986
+* Fix error message when registering secret without secrets manager by @schustmi in https://github.com/zenml-io/zenml/pull/981
+* Update cheat sheet up to `zenml==0.20.4` by @dnth in https://github.com/zenml-io/zenml/pull/987
+* Example fixes (part 2) by @strickvl in https://github.com/zenml-io/zenml/pull/971
+* Allow duplicate step classes inside a pipeline by @schustmi in https://github.com/zenml-io/zenml/pull/989
+* Include deployment in azureml docker build by @schustmi in https://github.com/zenml-io/zenml/pull/984
+* Automatically open browser upon `zenml up` command by @dnth in https://github.com/zenml-io/zenml/pull/978
+* Add a `just_mine` flag for `zenml stack list` by @strickvl in https://github.com/zenml-io/zenml/pull/979
+* Add option to specify apt packages by @schustmi in https://github.com/zenml-io/zenml/pull/982
+* Replace old flavor references, fix the windows local ZenML server and other fixes by @stefannica in https://github.com/zenml-io/zenml/pull/988
+* Improve docker and k8s detection by @schustmi in https://github.com/zenml-io/zenml/pull/991
+* Update GH actions example by @schustmi in https://github.com/zenml-io/zenml/pull/993
+* Update `MissingStepParameterError` exception message by @gabrielmbmb in https://github.com/zenml-io/zenml/pull/996
+* Seprated code docs into `core` and `integration` docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/983
+* Add docs/mkdocstrings_helper.py to format script sources by @fa9r in https://github.com/zenml-io/zenml/pull/997
+* Further CLI optimization by @bcdurak in https://github.com/zenml-io/zenml/pull/992
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.20.4...0.20.5
+
+
+# 0.20.4
+
+This release fixes another series of minor bugs that were introduced in 0.20.0.
+
+## What's Changed
+* Detect failed executions by @schustmi in https://github.com/zenml-io/zenml/pull/964
+* Only build docker images for custom deployments by @schustmi in https://github.com/zenml-io/zenml/pull/960
+* M1 Mac Installation Tutorial by @fa9r in https://github.com/zenml-io/zenml/pull/966
+* Update ZenBytes links in docs by @fa9r in https://github.com/zenml-io/zenml/pull/968
+* Fix the API docs builder by @stefannica in https://github.com/zenml-io/zenml/pull/967
+* Fix `gpu_limit` condition in `VertexOrchestrator` by @gabrielmbmb in https://github.com/zenml-io/zenml/pull/963
+* Add simple node affinitiy configurations by @schustmi in https://github.com/zenml-io/zenml/pull/973
+* First iteration of the CLI optimization by @bcdurak in https://github.com/zenml-io/zenml/pull/962
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.20.3...0.20.4
+
+# 0.20.3
+
+This release fixes another series of minor bugs that were introduced in 0.20.0.
+
+## What's Changed
+* Fixed GitHub/Colab JSON formatting error on quickstart. by @fa9r in https://github.com/zenml-io/zenml/pull/947
+* Update YAML config template by @htahir1 in https://github.com/zenml-io/zenml/pull/952
+* correct code from merge and fix import by @wjayesh in https://github.com/zenml-io/zenml/pull/950
+* Check for active component using id instead of name by @schustmi in https://github.com/zenml-io/zenml/pull/956
+* Tekton fix by @htahir1 in https://github.com/zenml-io/zenml/pull/955
+* Improve zenml up/down UX and other fixes by @stefannica in https://github.com/zenml-io/zenml/pull/957
+* Update kubeflow docs for multi-tenant deployments by @htahir1 in https://github.com/zenml-io/zenml/pull/958
+* Update kubeflow.md by @abohmeed in https://github.com/zenml-io/zenml/pull/959
+* Add additional stack validation for step operators by @schustmi in https://github.com/zenml-io/zenml/pull/954
+* Fix pipeline run dashboard URL for unlisted runs by @fa9r in https://github.com/zenml-io/zenml/pull/951
+* Support subclasses of registered types in recursive materialization by @fa9r in https://github.com/zenml-io/zenml/pull/953
+
+## New Contributors
+* @abohmeed made their first contribution in https://github.com/zenml-io/zenml/pull/959
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.20.2...0.20.3
+
 # 0.20.2
 
 After a successful release of the new ZenML server and dashboard paradigm, we set to ironing out some bugs that slipped through.

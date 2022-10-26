@@ -235,6 +235,7 @@ ExecutionInfo
 ExecutionStatus
 ExperimentTracker
 FASTAI
+FV
 FacetStatisticsVisualizer
 FastAPI
 FastaiLearnerMaterializer
@@ -301,7 +302,9 @@ HTTPException
 Hacky
 HashiCorp
 HelpFormatter
+Homebrew
 HuggingFace
+HydratedStackModel
 IAM
 IAM
 IOError
@@ -490,6 +493,7 @@ PipelineRunWrapper
 PipelineView
 PipelineWrapper
 Pipelining
+Pipenv
 Plotly
 PoC
 Popen
@@ -516,12 +520,14 @@ PythonOperators
 README
 REPL
 RESTful
+REUSEPORT
 RG
 RGW
 RIL
 RL
 RedPill
 Reproducibility
+RequestSource
 ResourceConfiguration
 ResourceConfigurations
 ResourceSettings
@@ -706,6 +712,7 @@ VPC
 VPCs
 VPN
 VRAM
+VSCode
 ValidationError
 ValueError
 VertexAI
@@ -731,6 +738,7 @@ XGBoost
 XServiceConfig
 XServiceStatus
 YRrJyVJUVfSKpA
+ZSH
 ZW
 ZenAzure
 ZenBytes
@@ -829,6 +837,7 @@ backfill
 backoff
 baseclass
 basename
+baz
 bdb
 bff
 bigrams
@@ -1150,6 +1159,7 @@ lr
 luna
 lwm
 machinelearning
+macos
 mailto
 makedirs
 matchwith

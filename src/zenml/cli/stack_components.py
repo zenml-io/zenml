@@ -15,7 +15,7 @@
 
 import time
 from importlib import import_module
-from typing import TYPE_CHECKING, Callable, List
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 import click
 from rich.markdown import Markdown
@@ -31,7 +31,6 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.io import fileio
-from zenml.models import ComponentModel, FlavorModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
@@ -149,7 +148,7 @@ def generate_stack_component_list_command(
 
         client = Client()
 
-        components = client.list_stack_components_by_type(type=component_type)
+        components = client.list_stack_components_by_type(component_type)
         hydrated_comps = [s.to_hydrated_model() for s in components]
 
         cli_utils.print_components_table(
@@ -177,7 +176,6 @@ def generate_stack_component_register_command(
     @click.argument(
         "name",
         type=str,
-        required=True,
     )
     @click.option(
         "--flavor",
@@ -209,21 +207,24 @@ def generate_stack_component_register_command(
             share: Share the stack with other users.
             args: Additional arguments to pass to the component.
         """
+        # Parse the given args
+        # name is guaranteed to be set by parse_name_and_extra_arguments
+        name, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
+            list(args) + [name], expand_args=True
+        )
+
         with console.status(f"Registering {display_name} '{name}'...\n"):
             cli_utils.print_active_config()
             cli_utils.print_active_stack()
             client = Client()
-
-            # Parse the given args
-            parsed_args = cli_utils.parse_unknown_options(
-                args, expand_args=True
-            )
 
             # click<8.0.0 gives flags a default of None
             if share is None:
                 share = False
 
             # Create a new stack component model
+            from zenml.models import ComponentModel
+
             component_create_model = ComponentModel(
                 user=client.active_user.id,
                 project=client.active_project.id,
@@ -265,7 +266,7 @@ def generate_stack_component_update_command(
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def update_stack_component_command(
-        name_or_id: str, args: List[str]
+        name_or_id: Optional[str], args: List[str]
     ) -> None:
         """Updates a stack component.
 
@@ -273,17 +274,36 @@ def generate_stack_component_update_command(
             name_or_id: The name or id of the stack component to update.
             args: Additional arguments to pass to the update command.
         """
-        with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
-            cli_utils.print_active_config()
-            cli_utils.print_active_stack()
+        args = list(args)
+        if name_or_id:
+            args.append(name_or_id)
+        # Parse the given args
+        name_or_id, parsed_args = cli_utils.parse_name_and_extra_arguments(
+            args,
+            expand_args=True,
+            name_mandatory=False,
+        )
 
-            # Parse the given args
-            parsed_args = cli_utils.parse_unknown_options(
-                args=args, expand_args=True
+        cli_utils.print_active_config()
+        cli_utils.print_active_stack()
+
+        client = Client()
+        if not name_or_id:
+            cli_utils.declare(
+                f"No name or id was provided. Trying to update the active "
+                f"{display_name}."
             )
+            active_stack = client.active_stack_model
+            if component_type not in active_stack.components:
+                cli_utils.error(
+                    f"The active stack has no {display_name} and no name or id "
+                    f"was provided."
+                )
+            name_or_id = str(active_stack.components[component_type][0].id)
+
+        with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
 
             # Get the existing component
-            client = Client()
             existing_component = (
                 cli_utils.get_component_by_id_or_name_or_prefix(
                     client=client,
@@ -570,6 +590,8 @@ def generate_stack_component_copy_command(
             )
 
             # Register a new one with a new name
+            from zenml.models import ComponentModel
+
             component_create_model = ComponentModel(
                 user=client.active_user.id,
                 project=client.active_project.id,
@@ -928,6 +950,8 @@ def generate_stack_component_flavor_register_command(
             # Create a new model
             # TODO: Investigate how we can create this model without empty
             #   strings as values for name and config_schema
+            from zenml.models import FlavorModel
+
             flavor_create_model = FlavorModel(
                 source=source,
                 type=component_type,

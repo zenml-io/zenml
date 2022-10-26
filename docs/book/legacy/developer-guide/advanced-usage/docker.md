@@ -34,7 +34,7 @@ This section covers all the different ways in which you can hook into the Docker
 process to customize the resulting image to your needs.
 
 For a full list of configuration options, check out
-[our API Docs](https://apidocs.zenml.io/latest/api_docs/config/#zenml.config.docker_configuration.DockerConfiguration).
+[our API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_configuration.DockerConfiguration).
 
 For the configuration examples described below, you'll need to import the `DockerConfiguration` module:
 ```python

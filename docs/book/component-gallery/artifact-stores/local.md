@@ -101,7 +101,7 @@ to be able to access the local Artifact Store.
 {% endhint %}
 
 For more, up-to-date information on the local Artifact Store implementation and
-its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.local_artifact_store). 
+its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/core_code_docs/core-artifact_stores/#zenml.artifact_stores.local_artifact_store). 
 
 ## How do you use it?
 

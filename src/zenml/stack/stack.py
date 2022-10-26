@@ -20,6 +20,7 @@ from typing import (
     AbstractSet,
     Any,
     Dict,
+    List,
     NoReturn,
     Optional,
     Set,
@@ -475,6 +476,54 @@ class Stack:
             if component.type not in exclude_components
         ]
         return set.union(*requirements) if requirements else set()
+
+    @property
+    def apt_packages(self) -> List[str]:
+        """List of APT package requirements for the stack.
+
+        Returns:
+            A list of APT package requirements for the stack.
+        """
+        return [
+            package
+            for component in self.components.values()
+            for package in component.apt_packages
+        ]
+
+    def check_local_paths(self) -> bool:
+        """Checks if the stack has local paths.
+
+        Returns:
+            True if the stack has local paths, False otherwise.
+
+        Raises:
+            ValueError: If the stack has local paths that do not conform to
+                the convention that all local path must be relative to the
+                local stores directory.
+        """
+        from zenml.config.global_config import GlobalConfiguration
+
+        local_stores_path = GlobalConfiguration().local_stores_path
+
+        # go through all stack components and identify those that advertise
+        # a local path where they persist information that they need to be
+        # available when running pipelines.
+        has_local_paths = False
+        for stack_comp in self.components.values():
+            local_path = stack_comp.local_path
+            if not local_path:
+                continue
+            # double-check this convention, just in case it wasn't respected
+            # as documented in `StackComponent.local_path`
+            if not local_path.startswith(local_stores_path):
+                raise ValueError(
+                    f"Local path {local_path} for component "
+                    f"{stack_comp.name} is not in the local stores "
+                    f"directory ({local_stores_path})."
+                )
+            has_local_paths = True
+
+        return has_local_paths
 
     @property
     def required_secrets(self) -> Set["secret_utils.SecretReference"]:

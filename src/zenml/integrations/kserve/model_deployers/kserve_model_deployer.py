@@ -14,7 +14,16 @@
 """Implementation of the KServe Model Deployer."""
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 from kserve import KServeClient, V1beta1InferenceService, constants, utils
@@ -22,10 +31,13 @@ from kubernetes import client
 
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
-from zenml.integrations.kserve.constants import KSERVE_DOCKER_IMAGE_KEY
+from zenml.integrations.kserve.constants import (
+    KSERVE_CUSTOM_DEPLOYMENT,
+    KSERVE_DOCKER_IMAGE_KEY,
+)
 from zenml.integrations.kserve.flavors.kserve_model_deployer_flavor import (
     KServeModelDeployerConfig,
+    KServeModelDeployerFlavor,
 )
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
@@ -33,7 +45,7 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.model_deployers.base_model_deployer import BaseModelDeployer
+from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
@@ -50,6 +62,9 @@ DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 class KServeModelDeployer(BaseModelDeployer):
     """KServe model deployer stack component implementation."""
+
+    NAME: ClassVar[str] = "KServe"
+    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = KServeModelDeployerFlavor
 
     _client: Optional[KServeClient] = None
 
@@ -82,35 +97,6 @@ class KServeModelDeployer(BaseModelDeployer):
             "KSERVE_INFERENCE_SERVICE": service_instance.crd_name,
         }
 
-    @staticmethod
-    def get_active_model_deployer() -> "KServeModelDeployer":
-        """Get the KServe model deployer registered in the active stack.
-
-        Returns:
-            The KServe model deployer registered in the active stack.
-
-        Raises:
-            TypeError: if the KServe model deployer is not available.
-        """
-        model_deployer = Client(  # type: ignore [call-arg]
-            skip_client_check=True
-        ).active_stack.model_deployer
-        if not model_deployer or not isinstance(
-            model_deployer, KServeModelDeployer
-        ):
-            raise TypeError(
-                f"The active stack needs to have a KServe model deployer "
-                f"component registered to be able to deploy models with KServe "
-                f"You can create a new stack with a KServe model "
-                f"deployer component or update your existing stack to add this "
-                f"component, e.g.:\n\n"
-                f"  'zenml model-deployer register kserve --flavor={KSERVE_MODEL_DEPLOYER_FLAVOR} "
-                f"--kubernetes_context=context-name --kubernetes_namespace="
-                f"namespace-name --base_url=https://ingress.cluster.kubernetes'\n"
-                f"  'zenml stack create stack-name -d kserve ...'\n"
-            )
-        return model_deployer
-
     @property
     def kserve_client(self) -> KServeClient:
         """Get the KServe client associated with this model deployer.
@@ -135,11 +121,17 @@ class KServeModelDeployer(BaseModelDeployer):
             deployment: The pipeline deployment configuration.
             stack: The stack on which the pipeline will be deployed.
         """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_and_push_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(KSERVE_DOCKER_IMAGE_KEY, repo_digest)
+        needs_docker_image = False
+        for step in deployment.steps.values():
+            if step.config.extra.get(KSERVE_CUSTOM_DEPLOYMENT, False) is True:
+                needs_docker_image = True
+
+        if needs_docker_image:
+            docker_image_builder = PipelineDockerImageBuilder()
+            repo_digest = docker_image_builder.build_and_push_docker_image(
+                deployment=deployment, stack=stack
+            )
+            deployment.add_extra(KSERVE_DOCKER_IMAGE_KEY, repo_digest)
 
     def _set_credentials(self) -> None:
         """Set the credentials for the given service instance.
@@ -510,9 +502,7 @@ class KServeModelDeployer(BaseModelDeployer):
         """
         if self.config.secret:
 
-            secret_manager = Client(  # type: ignore [call-arg]
-                skip_client_check=True
-            ).active_stack.secrets_manager
+            secret_manager = Client().active_stack.secrets_manager
 
             if not secret_manager or not isinstance(
                 secret_manager, BaseSecretsManager

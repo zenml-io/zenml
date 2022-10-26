@@ -29,9 +29,6 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
-from zenml.models import ComponentModel
-from zenml.models.stack_models import StackModel
-from zenml.secret import ArbitrarySecretSchema
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -220,6 +217,8 @@ def register_stack(
         # click<8.0.0 gives flags a default of None
         if share is None:
             share = False
+
+        from zenml.models import StackModel
 
         stack_ = StackModel(
             name=stack_name,
@@ -686,12 +685,21 @@ def rename_stack(
 
 
 @stack.command("list")
-def list_stacks() -> None:
-    """List all available stacks."""
+@click.option("--just-mine", "-m", is_flag=True, required=False)
+def list_stacks(just_mine: bool = False) -> None:
+    """List all available stacks.
+
+    Args:
+        just_mine: To list only the stacks that the current user has created.
+    """
     cli_utils.print_active_config()
 
     client = Client()
     stacks = client.stacks
+    if just_mine:
+        stacks = [
+            stack for stack in stacks if stack.user.id == client.active_user.id
+        ]
     print_stacks_table(client, stacks)
 
 
@@ -1022,6 +1030,8 @@ def _import_stack_component(
     except KeyError:
         pass
 
+    from zenml.models import ComponentModel
+
     registered_component = client.register_stack_component(
         ComponentModel(
             user=client.active_user.id,
@@ -1167,6 +1177,8 @@ def copy_stack(
         stack_to_copy.user = client.active_user.id
         stack_to_copy.project = client.active_project.id
 
+        from zenml.models import StackModel
+
         copied_stack = StackModel.parse_obj(
             stack_to_copy.dict(exclude={"id", "created", "updated"})
         )
@@ -1275,6 +1287,8 @@ def register_secrets(
                 needs_update = True
 
             secret_content[key] = value
+
+        from zenml.secret import ArbitrarySecretSchema
 
         secret = ArbitrarySecretSchema(name=name, **secret_content)
 

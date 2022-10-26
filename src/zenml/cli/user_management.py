@@ -23,7 +23,6 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
-from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 
 
@@ -97,6 +96,9 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
             )
 
     cli_utils.print_active_config()
+
+    from zenml.models import UserModel
+
     user = UserModel(name=user_name, password=password or None)
     # Use the activation workflow only if connected to a ZenML server.
     if gc.zen_store.type != StoreType.REST:
@@ -105,16 +107,15 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
         user.active = True
 
     try:
-        user = Client().zen_store.create_user(user)
+        user = gc.zen_store.create_user(user)
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created user '{user_name}'.")
     if not user.active and user.activation_token is not None:
-        assert gc.store is not None
         cli_utils.declare(
             f"The created user account is currently inactive. You can activate "
             f"it by visiting the dashboard at the following URL:\n"
-            f"{gc.store.url}/signup?user={str(user.id)}&username={user.name}&token={user.activation_token.get_secret_value()}\n"
+            f"{gc.zen_store.url}/signup?user={str(user.id)}&username={user.name}&token={user.activation_token.get_secret_value()}\n"
         )
 
 
@@ -188,6 +189,8 @@ def create_team(team_name: str) -> None:
     """
     cli_utils.print_active_config()
     try:
+        from zenml.models import TeamModel
+
         Client().zen_store.create_team(TeamModel(name=team_name))
     except EntityExistsError as err:
         cli_utils.error(str(err))
@@ -334,6 +337,8 @@ def create_project(project_name: str, description: str) -> None:
     warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     try:
+        from zenml.models import ProjectModel
+
         Client().zen_store.create_project(
             ProjectModel(name=project_name, description=description)
         )
@@ -461,7 +466,11 @@ def create_role(role_name: str) -> None:
         role_name: Name of the role to create.
     """
     cli_utils.print_active_config()
+
+    from zenml.models import RoleModel
+
     Client().zen_store.create_role(role=RoleModel(name=role_name))
+
     cli_utils.declare(f"Created role '{role_name}'.")
 
 

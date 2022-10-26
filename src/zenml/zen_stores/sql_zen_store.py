@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
+import logging
 import os
 import re
 from pathlib import Path, PurePath
@@ -30,10 +31,6 @@ from typing import (
 )
 from uuid import UUID
 
-from ml_metadata.proto.metadata_store_pb2 import (
-    ConnectionConfig,
-    MySQLDatabaseConfig,
-)
 from pydantic import root_validator
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
@@ -41,12 +38,19 @@ from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlalchemy.sql.operators import is_
 from sqlmodel import Session, SQLModel, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
-from tfx.orchestration import metadata
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
-from zenml.constants import ENV_ZENML_SERVER_DEPLOYMENT_TYPE
-from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.constants import (
+    ENV_ZENML_DISABLE_DATABASE_MIGRATION,
+    ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+)
+from zenml.enums import (
+    ExecutionStatus,
+    LoggingLevels,
+    StackComponentType,
+    StoreType,
+)
 from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
@@ -54,11 +58,12 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.io import fileio
-from zenml.logger import get_logger
+from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
     ArtifactModel,
     ComponentModel,
     FlavorModel,
+    HydratedStackModel,
     PipelineModel,
     PipelineRunModel,
     ProjectModel,
@@ -70,10 +75,14 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.server_models import ServerDatabaseType, ServerModel
-from zenml.utils import io_utils, uuid_utils
+from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
+from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.migrations.alembic import (
+    ZENML_ALEMBIC_START_REVISION,
+    Alembic,
+)
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     FlavorSchema,
@@ -95,6 +104,8 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
 if TYPE_CHECKING:
+    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+
     from zenml.zen_stores.metadata_store import MetadataStore
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
@@ -119,6 +130,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     Attributes:
         type: The type of the store.
+        driver: The SQL database driver.
         database: database name. If not already present on the server, it will
             be created automatically on first access.
         username: The database username.
@@ -136,6 +148,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.SQL
 
+    driver: Optional[SQLDatabaseDriver] = None
     database: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
@@ -185,6 +198,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 url,
                 ", ".join(SQLDatabaseDriver.values()),
             )
+        values["driver"] = SQLDatabaseDriver(sql_url.drivername)
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             if (
                 sql_url.username
@@ -272,9 +286,77 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         values["url"] = str(sql_url)
         return values
 
+    @staticmethod
+    def get_local_url(path: str) -> str:
+        """Get a local SQL url for a given local path.
+
+        Args:
+            path: The path to the local sqlite file.
+
+        Returns:
+            The local SQL url for the given path.
+        """
+        return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
+
+    def expand_certificates(self) -> None:
+        """Expands the certificates in the verify_ssl field."""
+        # Load the certificate values back into the configuration
+        for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+            file_path = getattr(self, key, None)
+            if file_path and os.path.isfile(file_path):
+                with open(file_path, "r") as f:
+                    setattr(self, key, f.read())
+
+    @classmethod
+    def copy_configuration(
+        cls,
+        config: "StoreConfiguration",
+        config_path: str,
+        load_config_path: Optional[PurePath] = None,
+    ) -> "StoreConfiguration":
+        """Create a copy of the store config using a different configuration path.
+
+        This method is used to create a copy of the store configuration that can
+        be loaded using a different configuration path or in the context of a
+        new environment, such as a container image.
+
+        The configuration files accompanying the store configuration are also
+        copied to the new configuration path (e.g. certificates etc.).
+
+        Args:
+            config: The store configuration to copy.
+            config_path: new path where the configuration copy will be loaded
+                from.
+            load_config_path: absolute path that will be used to load the copied
+                configuration. This can be set to a value different from
+                `config_path` if the configuration copy will be loaded from
+                a different environment, e.g. when the configuration is copied
+                to a container image and loaded using a different absolute path.
+                This will be reflected in the paths and URLs encoded in the
+                copied configuration.
+
+        Returns:
+            A new store configuration object that reflects the new configuration
+            path.
+        """
+        assert isinstance(config, SqlZenStoreConfiguration)
+        config = config.copy()
+
+        if config.driver == SQLDatabaseDriver.MYSQL:
+            # Load the certificate values back into the configuration
+            config.expand_certificates()
+
+        elif config.driver == SQLDatabaseDriver.SQLITE:
+            if load_config_path:
+                config.url = cls.get_local_url(str(load_config_path))
+            else:
+                config.url = cls.get_local_url(config_path)
+
+        return config
+
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> ConnectionConfig:
+    ) -> "ConnectionConfig":
         """Get the metadata configuration for the SQL ZenML store.
 
         Args:
@@ -287,6 +369,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         Raises:
             NotImplementedError: If the SQL driver is not supported.
         """
+        from ml_metadata.proto.metadata_store_pb2 import MySQLDatabaseConfig
+        from tfx.orchestration import metadata
+
         sql_url = make_url(self.url)
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             assert self.database is not None
@@ -389,9 +474,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     class Config:
         """Pydantic configuration class."""
 
-        # Validate attributes when assigning them. We need to set this in order
-        # to have a mix of mutable and immutable attributes
-        validate_assignment = True
+        # Don't validate attributes when assigning them. This is necessary
+        # because the certificate attributes can be expanded to the contents
+        # of the certificate files.
+        validate_assignment = False
         # Forbid extra attributes set in the class.
         extra = "forbid"
 
@@ -401,6 +487,7 @@ class SqlZenStore(BaseZenStore):
 
     Attributes:
         config: The configuration of the SQL ZenML store.
+        skip_migrations: Whether to skip migrations when initializing the store.
         TYPE: The type of the store.
         CONFIG_TYPE: The type of the store configuration.
         _engine: The SQLAlchemy engine.
@@ -408,11 +495,13 @@ class SqlZenStore(BaseZenStore):
     """
 
     config: SqlZenStoreConfiguration
+    skip_migrations: bool = False
     TYPE: ClassVar[StoreType] = StoreType.SQL
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
     _engine: Optional[Engine] = None
     _metadata_store: Optional["MetadataStore"] = None
+    _alembic: Optional[Alembic] = None
 
     @property
     def engine(self) -> Engine:
@@ -453,6 +542,20 @@ class SqlZenStore(BaseZenStore):
             return True
         return False
 
+    @property
+    def alembic(self) -> Alembic:
+        """The Alembic wrapper.
+
+        Returns:
+            The Alembic wrapper.
+
+        Raises:
+            ValueError: If the store is not initialized.
+        """
+        if not self._alembic:
+            raise ValueError("Store not initialized")
+        return self._alembic
+
     # ====================================
     # ZenML Store interface implementation
     # ====================================
@@ -474,69 +577,62 @@ class SqlZenStore(BaseZenStore):
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
         )
-        SQLModel.metadata.create_all(self._engine)
+        self._alembic = Alembic(self.engine)
+        if (
+            not self.skip_migrations
+            and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
+        ):
+            self.migrate_database()
 
-    @staticmethod
-    def get_local_url(path: str) -> str:
-        """Get a local SQL url for a given local path.
+    def migrate_database(self) -> None:
+        """Migrate the database to the head as defined by the current python package."""
+        alembic_logger = logging.getLogger("alembic")
 
-        Args:
-            path: The path to the local sqlite file.
+        # remove all existing handlers
+        while len(alembic_logger.handlers):
+            alembic_logger.removeHandler(alembic_logger.handlers[0])
 
-        Returns:
-            The local SQL url for the given path.
-        """
-        return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
+        logging_level = get_logging_level()
 
-    @classmethod
-    def copy_local_store(
-        cls,
-        config: StoreConfiguration,
-        path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> StoreConfiguration:
-        """Copy a local store to a new location.
-
-        Use this method to create a copy of a store database to a new location
-        and return a new store configuration pointing to the database copy. This
-        only applies to stores that use the local filesystem to store their
-        data. Calling this method for remote stores simply returns the input
-        store configuration unaltered.
-
-        Args:
-            config: The configuration of the store to copy.
-            path: The new local path where the store DB will be copied.
-            load_config_path: path that will be used to load the copied store
-                database. This can be set to a value different from `path`
-                if the local database copy will be loaded from a different
-                environment, e.g. when the database is copied to a container
-                image and loaded using a different absolute path. This will be
-                reflected in the paths and URLs encoded in the copied store
-                configuration.
-
-        Returns:
-            The store configuration of the copied store.
-        """
-        config_copy = config.copy()
-
-        sql_url = make_url(config.url)
-        if sql_url.drivername != SQLDatabaseDriver.SQLITE:
-            # this is not a configuration backed by a local filesystem
-            return config_copy
-
-        assert sql_url.database
-        local_path = Path(sql_url.database)
-
-        io_utils.create_dir_recursive_if_not_exists(path)
-        fileio.copy(
-            str(local_path), str(Path(path) / local_path.name), overwrite=True
-        )
-        if load_config_path:
-            config_copy.url = cls.get_local_url(str(load_config_path))
+        # suppress alembic info logging if the zenml logging level is not debug
+        if logging_level == LoggingLevels.DEBUG:
+            alembic_logger.setLevel(logging.DEBUG)
         else:
-            config_copy.url = cls.get_local_url(path)
+            alembic_logger.setLevel(logging.WARNING)
 
-        return config_copy
+        alembic_logger.addHandler(get_console_handler())
+
+        # We need to account for 3 distinct cases here:
+        # 1. the database is completely empty (not initialized)
+        # 2. the database is not empty, but has never been migrated with alembic
+        #   before (i.e. was created with SQLModel back when alembic wasn't
+        #   used)
+        # 3. the database is not empty and has been migrated with alembic before
+
+        revisions = self.alembic.current_revisions()
+        if len(revisions) >= 1:
+            if len(revisions) > 1:
+                logger.warning(
+                    "The ZenML database has more than one migration head "
+                    "revision. This is not expected and might indicate a "
+                    "database migration problem. Please raise an issue on "
+                    "GitHub if you encounter this."
+                )
+            # Case 3: the database has been migrated with alembic before. Just
+            # upgrade to the latest revision.
+            self.alembic.upgrade()
+        else:
+            if self.alembic.db_is_empty():
+                # Case 1: the database is empty. We can just create the
+                # tables from scratch with alembic.
+                self.alembic.upgrade()
+            else:
+                # Case 2: the database is not empty, but has never been
+                # migrated with alembic before. We need to create the alembic
+                # version table, initialize it with the first revision where we
+                # introduced alembic and then upgrade to the latest revision.
+                self.alembic.stamp(ZENML_ALEMBIC_START_REVISION)
+                self.alembic.upgrade()
 
     def get_store_info(self) -> ServerModel:
         """Get information about the store.
@@ -555,7 +651,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> ConnectionConfig:
+    ) -> "ConnectionConfig":
         """Get the TFX metadata config of this ZenStore.
 
         Args:
@@ -670,7 +766,8 @@ class SqlZenStore(BaseZenStore):
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[StackModel]:
+        hydrated: bool = False,
+    ) -> Union[List[StackModel], List[HydratedStackModel]]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -681,6 +778,7 @@ class SqlZenStore(BaseZenStore):
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
+            hydrated: Flag to decide whether to return hydrated models.
 
         Returns:
             A list of all stacks matching the filter criteria.
@@ -705,9 +803,13 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(StackSchema.name == name)
             if is_shared is not None:
                 query = query.where(StackSchema.is_shared == is_shared)
+
             stacks = session.exec(query.order_by(StackSchema.name)).all()
 
-            return [stack.to_model() for stack in stacks]
+            if hydrated:
+                return [stack.to_hydrated_model() for stack in stacks]
+            else:
+                return [stack.to_model() for stack in stacks]
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(self, stack: StackModel) -> StackModel:
@@ -1428,7 +1530,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The active username.
         """
-        return DEFAULT_USERNAME
+        return self._default_user_name
 
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserModel) -> UserModel:
@@ -1523,7 +1625,6 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
 
-    @track(AnalyticsEvent.OPT_IN_OUT_EMAIL)
     def user_email_opt_in(
         self,
         user_name_or_id: Union[str, UUID],

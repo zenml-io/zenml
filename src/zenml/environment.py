@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 import distro
 
 from zenml import __version__
+from zenml.constants import INSIDE_ZENML_CONTAINER
 from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
 
@@ -39,7 +40,9 @@ def get_environment() -> str:
     Returns:
         str: the execution environment
     """
-    if Environment.in_docker():
+    if Environment.in_kubernetes():
+        return "kubernetes"
+    elif Environment.in_docker():
         return "docker"
     elif Environment.in_google_colab():
         return "colab"
@@ -155,10 +158,34 @@ class Environment(metaclass=SingletonMetaClass):
             container, `False` otherwise.
         """
         # TODO [ENG-167]: Make this more reliable and add test.
+        if INSIDE_ZENML_CONTAINER:
+            return True
+
+        if os.path.exists("./dockerenv") or os.path.exists("/.dockerinit"):
+            return True
+
         try:
             with open("/proc/1/cgroup", "rt") as ifh:
                 info = ifh.read()
-                return "docker" in info or "kubepod" in info
+                return "docker" in info
+        except (FileNotFoundError, Exception):
+            return False
+
+    @staticmethod
+    def in_kubernetes() -> bool:
+        """If the current python process is running in a kubernetes pod.
+
+        Returns:
+            `True` if the current python process is running in a kubernetes
+            pod, `False` otherwise.
+        """
+        if "KUBERNETES_SERVICE_HOST" in os.environ:
+            return True
+
+        try:
+            with open("/proc/1/cgroup", "rt") as ifh:
+                info = ifh.read()
+                return "kubepod" in info
         except (FileNotFoundError, Exception):
             return False
 
@@ -270,7 +297,7 @@ class Environment(metaclass=SingletonMetaClass):
         return self._components.copy()
 
     def has_component(self, name: str) -> bool:
-        """Check if the environment component with a known name is currently available.
+        """Check if the environment component with a known name is available.
 
         Args:
             name: the environment component name.
@@ -292,7 +319,8 @@ class Environment(metaclass=SingletonMetaClass):
             given name.
 
         Raises:
-            KeyError: if no environment component is registered for the given name.
+            KeyError: if no environment component is registered for the given
+                name.
         """
         if name in self._components:
             return self._components[name]
@@ -324,7 +352,7 @@ _BASE_ENVIRONMENT_COMPONENT_NAME = "base_environment_component"
 
 
 class EnvironmentComponentMeta(type):
-    """Metaclass responsible for registering different EnvironmentComponent instances in the global Environment."""
+    """Metaclass registering environment components in the global Environment."""
 
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
@@ -344,9 +372,10 @@ class EnvironmentComponentMeta(type):
             super().__new__(mcs, name, bases, dct),
         )
         if name != "BaseEnvironmentComponent":
-            assert (
-                cls.NAME and cls.NAME != _BASE_ENVIRONMENT_COMPONENT_NAME
-            ), "You should specify a unique NAME when creating an EnvironmentComponent !"
+            assert cls.NAME and cls.NAME != _BASE_ENVIRONMENT_COMPONENT_NAME, (
+                "You should specify a unique NAME when creating an "
+                "EnvironmentComponent!"
+            )
         return cls
 
 

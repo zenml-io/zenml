@@ -90,7 +90,7 @@ def authenticate_credentials(
     auth_context: Optional[AuthContext] = None
     if user_name_or_id:
         try:
-            user = zen_store.get_user(user_name_or_id)
+            user = zen_store().get_user(user_name_or_id)
             auth_context = AuthContext(user=user)
         except KeyError:
             # even when the user does not exist, we still want to execute the

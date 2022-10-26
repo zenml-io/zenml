@@ -16,13 +16,21 @@
 import os
 import re
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 import requests
 import urllib3
-from google.protobuf.json_format import Parse
-from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 from pydantic import BaseModel, validator
 
 from zenml.config.global_config import GlobalConfiguration
@@ -63,6 +71,7 @@ from zenml.models import (
     ArtifactModel,
     ComponentModel,
     FlavorModel,
+    HydratedStackModel,
     PipelineModel,
     PipelineRunModel,
     ProjectModel,
@@ -108,6 +117,10 @@ from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
+if TYPE_CHECKING:
+    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+
+
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
@@ -115,6 +128,9 @@ AnyModel = TypeVar("AnyModel", bound=DomainModel)
 AnyProjectScopedModel = TypeVar(
     "AnyProjectScopedModel", bound=ProjectScopedDomainModel
 )
+
+
+DEFAULT_HTTP_TIMEOUT = 5
 
 
 class RestZenStoreConfiguration(StoreConfiguration):
@@ -126,12 +142,14 @@ class RestZenStoreConfiguration(StoreConfiguration):
         verify_ssl: Either a boolean, in which case it controls whether we
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
+        http_timeout: The timeout to use for all requests.
     """
 
     type: StoreType = StoreType.REST
     username: str
     password: str = ""
     verify_ssl: Union[bool, str] = True
+    http_timeout: int = DEFAULT_HTTP_TIMEOUT
 
     @validator("url")
     def validate_url(cls, url: str) -> str:
@@ -190,6 +208,52 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         return verify_ssl
 
+    def expand_certificates(self) -> None:
+        """Expands the certificates in the verify_ssl field."""
+        # Load the certificate values back into the configuration
+        if isinstance(self.verify_ssl, str) and os.path.isfile(self.verify_ssl):
+            with open(self.verify_ssl, "r") as f:
+                self.verify_ssl = f.read()
+
+    @classmethod
+    def copy_configuration(
+        cls,
+        config: "StoreConfiguration",
+        config_path: str,
+        load_config_path: Optional[PurePath] = None,
+    ) -> "StoreConfiguration":
+        """Create a copy of the store config using a different configuration path.
+
+        This method is used to create a copy of the store configuration that can
+        be loaded using a different configuration path or in the context of a
+        new environment, such as a container image.
+
+        The configuration files accompanying the store configuration are also
+        copied to the new configuration path (e.g. certificates etc.).
+
+        Args:
+            config: The store configuration to copy.
+            config_path: new path where the configuration copy will be loaded
+                from.
+            load_config_path: absolute path that will be used to load the copied
+                configuration. This can be set to a value different from
+                `config_path` if the configuration copy will be loaded from
+                a different environment, e.g. when the configuration is copied
+                to a container image and loaded using a different absolute path.
+                This will be reflected in the paths and URLs encoded in the
+                copied configuration.
+
+        Returns:
+            A new store configuration object that reflects the new configuration
+            path.
+        """
+        assert isinstance(config, RestZenStoreConfiguration)
+        config = config.copy(deep=True)
+
+        # Load the certificate values back into the configuration
+        config.expand_certificates()
+        return config
+
     class Config:
         """Pydantic configuration class."""
 
@@ -227,56 +291,6 @@ class RestZenStore(BaseZenStore):
         # try to connect to the server to validate the configuration
         self.active_user
 
-    @staticmethod
-    def get_local_url(path: str) -> str:
-        """Get a local URL for a given local path.
-
-        Args:
-            path: the path string to build a URL out of.
-
-        Raises:
-            NotImplementedError: always
-        """
-        raise NotImplementedError("Cannot build a REST url from a path.")
-
-    @classmethod
-    def copy_local_store(
-        cls,
-        config: StoreConfiguration,
-        path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> StoreConfiguration:
-        """Copy a local store to a new location.
-
-        Use this method to create a copy of a store database to a new location
-        and return a new store configuration pointing to the database copy. This
-        only applies to stores that use the local filesystem to store their
-        data. Calling this method for remote stores simply returns the input
-        store configuration unaltered.
-
-        Args:
-            config: The configuration of the store to copy.
-            path: The new local path where the store DB will be copied.
-            load_config_path: path that will be used to load the copied store
-                database. This can be set to a value different from `path`
-                if the local database copy will be loaded from a different
-                environment, e.g. when the database is copied to a container
-                image and loaded using a different absolute path. This will be
-                reflected in the paths and URLs encoded in the copied store
-                configuration.
-
-        Returns:
-            The store configuration of the copied store.
-        """
-        assert isinstance(config, RestZenStoreConfiguration)
-        if isinstance(config.verify_ssl, str) and os.path.isfile(
-            config.verify_ssl
-        ):
-            config = config.copy(deep=True)
-            with open(config.verify_ssl, "r") as f:
-                config.verify_ssl = f.read()
-        return config
-
     def get_store_info(self) -> ServerModel:
         """Get information about the server.
 
@@ -292,7 +306,7 @@ class RestZenStore(BaseZenStore):
 
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> ConnectionConfig:
+    ) -> "ConnectionConfig":
         """Get the TFX metadata config of this ZenStore.
 
         Args:
@@ -305,12 +319,37 @@ class RestZenStore(BaseZenStore):
         Returns:
             The TFX metadata config of this ZenStore.
         """
+        from google.protobuf.json_format import Parse
+        from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+
+        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
+
         body = self.get(f"{METADATA_CONFIG}")
         if not isinstance(body, str):
             raise ValueError(
                 f"Invalid response from server: {body}. Expected string."
             )
         metadata_config_pb = Parse(body, ConnectionConfig())
+
+        # if the server returns a SQLite connection config, but the file is not
+        # available locally, we need to replace the path with the local path of
+        # the default local SQLite database
+        if metadata_config_pb.HasField("sqlite") and not os.path.isfile(
+            metadata_config_pb.sqlite.filename_uri
+        ):
+            message = (
+                f"The ZenML server is using a SQLite database at "
+                f"{metadata_config_pb.sqlite.filename_uri} that is not "
+                f"available locally. Using the default local SQLite "
+                f"database instead."
+            )
+            if not self.is_local_store():
+                logger.warning(message)
+            else:
+                logger.debug(message)
+            default_store_cfg = GlobalConfiguration().get_default_store()
+            assert isinstance(default_store_cfg, SqlZenStoreConfiguration)
+            return default_store_cfg.get_metadata_config()
 
         if not expand_certs:
             if metadata_config_pb.HasField(
@@ -388,7 +427,8 @@ class RestZenStore(BaseZenStore):
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[StackModel]:
+        hydrated: bool = False,
+    ) -> Union[List[StackModel], List[HydratedStackModel]]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -399,17 +439,25 @@ class RestZenStore(BaseZenStore):
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
+            hydrated: Flag to decide whether to return hydrated models.
 
         Returns:
             A list of all stacks matching the filter criteria.
         """
         filters = locals()
         filters.pop("self")
-        return self._list_resources(
-            route=STACKS,
-            resource_model=StackModel,
-            **filters,
-        )
+        if hydrated:
+            return self._list_resources(
+                route=STACKS,
+                resource_model=HydratedStackModel,
+                **filters,
+            )
+        else:
+            return self._list_resources(
+                route=STACKS,
+                resource_model=StackModel,
+                **filters,
+            )
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
@@ -747,7 +795,6 @@ class RestZenStore(BaseZenStore):
             route=USERS,
         )
 
-    @track(AnalyticsEvent.OPT_IN_OUT_EMAIL)
     def user_email_opt_in(
         self,
         user_name_or_id: Union[str, UUID],
@@ -1444,6 +1491,7 @@ class RestZenStore(BaseZenStore):
                         "password": self.config.password,
                     },
                     verify=self.config.verify_ssl,
+                    timeout=self.config.http_timeout,
                 )
             )
             if not isinstance(response, dict) or "access_token" not in response:
@@ -1587,6 +1635,7 @@ class RestZenStore(BaseZenStore):
                     url,
                     params=params,
                     verify=self.config.verify_ssl,
+                    timeout=self.config.http_timeout,
                     **kwargs,
                 )
             )
@@ -1595,7 +1644,14 @@ class RestZenStore(BaseZenStore):
             # again
             self._session = None
             return self._handle_response(
-                self.session.request(method, url, **kwargs)
+                self.session.request(
+                    method,
+                    url,
+                    params=params,
+                    verify=self.config.verify_ssl,
+                    timeout=self.config.http_timeout,
+                    **kwargs,
+                )
             )
 
     def get(

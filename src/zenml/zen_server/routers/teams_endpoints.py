@@ -47,7 +47,7 @@ def list_teams() -> List[TeamModel]:
     Returns:
         List of all teams.
     """
-    return zen_store.list_teams()
+    return zen_store().list_teams()
 
 
 @router.post(
@@ -67,7 +67,7 @@ def create_team(team: CreateTeamRequest) -> TeamModel:
     Returns:
         The created team.
     """
-    return zen_store.create_team(team=team.to_model())
+    return zen_store().create_team(team=team.to_model())
 
 
 @router.get(
@@ -85,7 +85,7 @@ def get_team(team_name_or_id: Union[str, UUID]) -> TeamModel:
     Returns:
         A specific team.
     """
-    return zen_store.get_team(team_name_or_id=team_name_or_id)
+    return zen_store().get_team(team_name_or_id=team_name_or_id)
 
 
 @router.put(
@@ -108,8 +108,8 @@ def update_team(
     Returns:
         The created team.
     """
-    team_in_db = zen_store.get_team(team_name_or_id)
-    return zen_store.update_team(team=team_update.apply_to_model(team_in_db))
+    team_in_db = zen_store().get_team(team_name_or_id)
+    return zen_store().update_team(team=team_update.apply_to_model(team_in_db))
 
 
 @router.delete(
@@ -123,7 +123,7 @@ def delete_team(team_name_or_id: Union[str, UUID]) -> None:
     Args:
         team_name_or_id: Name or ID of the team.
     """
-    zen_store.delete_team(team_name_or_id=team_name_or_id)
+    zen_store().delete_team(team_name_or_id=team_name_or_id)
 
 
 @router.get(
@@ -146,7 +146,7 @@ def get_role_assignments_for_team(
     Returns:
         A list of all roles that are assigned to a team.
     """
-    return zen_store.list_role_assignments(
+    return zen_store().list_role_assignments(
         team_name_or_id=team_name_or_id,
         project_name_or_id=project_name_or_id,
     )

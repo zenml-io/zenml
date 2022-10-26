@@ -31,4 +31,4 @@ You can now [register, update or delete secrets](./secrets-managers.md#in-the-cl
 using the CLI or [fetch secret values inside your steps](./secrets-managers.md#in-a-zenml-step).
 
 For more information and a full list of configurable attributes of the local 
-secrets manager, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/secrets_managers/#zenml.secrets_managers.local.local_secrets_manager.LocalSecretsManager).
+secrets manager, check out the [API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-secrets_managers/#zenml.secrets_managers.local.local_secrets_manager.LocalSecretsManager).

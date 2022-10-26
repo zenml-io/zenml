@@ -16,22 +16,21 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Dict, List, Optional, cast
+from typing import ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
-from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
-from zenml.integrations.mlflow import MLFLOW_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.mlflow.flavors.mlflow_model_deployer_flavor import (
     MLFlowModelDeployerConfig,
+    MLFlowModelDeployerFlavor,
 )
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
     MLFlowDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.model_deployers.base_model_deployer import BaseModelDeployer
+from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.services import ServiceRegistry
 from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
 from zenml.services.service import BaseService, ServiceConfig
@@ -42,6 +41,9 @@ logger = get_logger(__name__)
 
 class MLFlowModelDeployer(BaseModelDeployer):
     """MLflow implementation of the BaseModelDeployer."""
+
+    NAME: ClassVar[str] = "MLflow"
+    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = MLFlowModelDeployerFlavor
 
     _service_path: Optional[str] = None
 
@@ -117,37 +119,6 @@ class MLFlowModelDeployer(BaseModelDeployer):
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
         }
-
-    @staticmethod
-    def get_active_model_deployer() -> "MLFlowModelDeployer":
-        """Returns the MLFlowModelDeployer component of the active stack.
-
-        Args:
-            None
-
-        Returns:
-            The MLFlowModelDeployer component of the active stack.
-
-        Raises:
-            TypeError: If the active stack does not contain an MLFlowModelDeployer component.
-        """
-        model_deployer = Client(  # type: ignore[call-arg]
-            skip_client_check=True
-        ).active_stack.model_deployer
-
-        if not model_deployer or not isinstance(
-            model_deployer, MLFlowModelDeployer
-        ):
-            raise TypeError(
-                f"The active stack needs to have an MLflow model deployer "
-                f"component registered to be able to deploy models with MLflow. "
-                f"You can create a new stack with an MLflow model "
-                f"deployer component or update your existing stack to add this "
-                f"component, e.g.:\n\n"
-                f"  'zenml model-deployer register mlflow --flavor={MLFLOW_MODEL_DEPLOYER_FLAVOR}'\n"
-                f"  'zenml stack create stack-name -d mlflow ...'\n"
-            )
-        return model_deployer
 
     def deploy_model(
         self,

@@ -4,7 +4,8 @@
 
 * [Introduction](./getting-started/introduction.md)
 * [Core Concepts](./getting-started/core-concepts.md)
-* [Installation](./getting-started/installation.md)
+* [Installation](./getting-started/installation/installation.md)
+  * [Installation on M1 Macs](./getting-started/installation/m1-mac-installation.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 * [Deploying ZenML](./getting-started/deploying-zenml/deploying-zenml.md)
   * [One Click Deployment using CLI](./getting-started/deploying-zenml/cli.md)

@@ -30,7 +30,7 @@ class KubeflowIntegration(Integration):
     """Definition of Kubeflow Integration for ZenML."""
 
     NAME = KUBEFLOW
-    REQUIREMENTS = ["kfp==1.8.9"]
+    REQUIREMENTS = ["kfp==1.8.13"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
