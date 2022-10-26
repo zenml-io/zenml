@@ -23,14 +23,18 @@ from fastapi.security import (
     HTTPBasic,
     HTTPBasicCredentials,
     OAuth2PasswordBearer,
+    SecurityScopes
 )
+from jose import JWTError, jwt
 from pydantic import BaseModel
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import API, ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
 from zenml.enums import PermissionType
-from zenml.exceptions import NotAuthorizedError
+from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.logger import get_logger
-from zenml.models.user_management_models import UserModel
+from zenml.models.user_management_models import UserModel, JWTToken, \
+    JWTTokenType
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_server.utils import ROOT_URL_PATH, zen_store, F, logger
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
@@ -141,13 +145,19 @@ def http_authentication(
 
 
 def oauth2_password_bearer_authentication(
+    security_scopes: SecurityScopes,
     token: str = Depends(
-        OAuth2PasswordBearer(tokenUrl=ROOT_URL_PATH + API + VERSION_1 + LOGIN)
+        OAuth2PasswordBearer(
+            tokenUrl=ROOT_URL_PATH + API + VERSION_1 + LOGIN,
+            scopes={"read": "Read permissions on all entities",
+                    "write": "Write permissions on all entities"}
+        )
     ),
 ) -> AuthContext:
     """Authenticates any request to the ZenML server with OAuth2 password bearer JWT tokens.
 
     Args:
+        security_scopes: Security scope for this token
         token: The JWT bearer token to be authenticated.
 
     Returns:
@@ -156,7 +166,27 @@ def oauth2_password_bearer_authentication(
     Raises:
         HTTPException: If the JWT token could not be authorized.
     """
+    if security_scopes.scopes:
+        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
+    else:
+        authenticate_value = f"Bearer"
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": authenticate_value},
+    )
     auth_context = authenticate_credentials(access_token=token)
+
+    access_token = JWTToken.decode(
+        token_type=JWTTokenType.ACCESS_TOKEN, token=token
+    )
+    for scope in security_scopes.scopes:
+        if scope not in access_token.permissions:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not enough permissions",
+                headers={"WWW-Authenticate": authenticate_value},
+            )
     if auth_context is None:
         # We have to return an additional WWW-Authenticate header here with the
         # value Bearer to be compliant with the OAuth2 spec.
@@ -165,7 +195,6 @@ def oauth2_password_bearer_authentication(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
     return auth_context
 
 
@@ -210,39 +239,3 @@ def authentication_provider() -> Callable[..., AuthContext]:
 
 
 authorize = authentication_provider()
-
-
-def user_has_write_permissions(auth_context: AuthContext = Depends(authorize)):
-    # Get the corresponding ids for the authorized roles
-    required_permission = PermissionType.WRITE.value
-
-    current_user = auth_context.user
-    # Get all global role assignments for this user
-    roles = zen_store().list_role_assignments(
-        user_name_or_id=current_user.id,
-        project_name_or_id=None
-    )
-
-    for role in roles:
-        for permission in zen_store().get_role(role.role).permissions:
-            if permission == required_permission:
-                return True
-    raise NotAuthorizedError("Unauthorized")
-
-
-def user_has_read_permissions(auth_context: AuthContext = Depends(authorize)):
-    # Get the corresponding ids for the authorized roles
-    required_permission = PermissionType.READ.value
-
-    current_user = auth_context.user
-    # Get all global role assignments for this user
-    roles = zen_store().list_role_assignments(
-        user_name_or_id=current_user.id,
-        project_name_or_id=None
-    )
-
-    for role in roles:
-        for permission in zen_store().get_role(role.role).permissions:
-            if permission == required_permission:
-                return True
-    raise NotAuthorizedError("Unauthorized")

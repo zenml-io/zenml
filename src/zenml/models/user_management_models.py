@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Model definitions for users, teams, and roles."""
-
+import base64
+import json
 import re
 from datetime import datetime, timedelta
 from secrets import token_hex
@@ -53,6 +54,7 @@ class JWTToken(BaseModel):
 
     token_type: JWTTokenType
     user_id: UUID
+    permissions: List[str]
 
     @classmethod
     def decode(cls, token_type: JWTTokenType, token: str) -> "JWTToken":
@@ -88,9 +90,16 @@ class JWTToken(BaseModel):
             raise AuthorizationException(
                 "Invalid JWT token: the subject claim is missing"
             )
+        permissions: list = payload.get("permissions")
+        if permissions is None:
+            raise AuthorizationException(
+                "Invalid JWT token: the permissions scope is missing"
+            )
 
         try:
-            return cls(token_type=token_type, user_id=UUID(subject))
+            return cls(token_type=token_type,
+                       user_id=UUID(subject),
+                       permissions=set(permissions))
         except ValueError as e:
             raise AuthorizationException(
                 f"Invalid JWT token: could not decode subject claim: {e}"
@@ -114,6 +123,7 @@ class JWTToken(BaseModel):
 
         claims: Dict[str, Any] = {
             "sub": str(self.user_id),
+            "permissions": list(self.permissions)
         }
 
         if expire_minutes:
@@ -276,18 +286,6 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
             return user
 
         return None
-
-    def generate_access_token(self) -> str:
-        """Generates an access token.
-
-        Generates an access token and returns it.
-
-        Returns:
-            The generated access token.
-        """
-        return JWTToken(
-            token_type=JWTTokenType.ACCESS_TOKEN, user_id=self.id
-        ).encode()
 
     def get_activation_token(self) -> Optional[str]:
         """Get the activation token.

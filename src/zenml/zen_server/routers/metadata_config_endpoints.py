@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for metadata config."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, METADATA_CONFIG, VERSION_1
 from zenml.zen_server.auth import authorize
@@ -22,7 +22,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + METADATA_CONFIG,
     tags=["metadata_config"],
-    dependencies=[Depends(authorize)],
+    dependencies=[Security(authorize, scopes=["read"])],
     responses={401: error_response},
 )
 
