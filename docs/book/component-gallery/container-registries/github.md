@@ -55,7 +55,7 @@ zenml stack update -c <NAME>
 ```
 
 For more information and a full list of configurable attributes of the GitHub 
-container registry, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/container_registries/#zenml.container_registries.github_container_registry.GitHubContainerRegistry).
+container registry, check out the [API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-container_registries/#zenml.container_registries.github_container_registry.GitHubContainerRegistry).
 
 
 

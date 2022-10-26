@@ -165,7 +165,7 @@ p = data_profiling_pipeline(
 p.run()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.whylogs.steps.whylogs_profiler.WhylogsProfilerStep),
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs_profiler.WhylogsProfilerStep),
 the step takes in a dataset and returns a whylogs `DatasetProfileView` object:
 
 ```python
@@ -183,7 +183,7 @@ class WhylogsProfilerStep(BaseAnalyzerStep):
 You should consult [the official whylogs documentation](https://whylogs.readthedocs.io/en/latest/index.html)
 for more information on what you can do with the collected profiles.
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.whylogs.steps.whylogs_profiler.WhylogsProfilerConfig) in the API
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-whylogs/#zenml.integrations.whylogs.steps.whylogs_profiler.WhylogsProfilerConfig) in the API
 docs.
 
 You can also check out our examples pages for working examples that use the
@@ -250,7 +250,7 @@ def data_profiler(
     return profile
 ```
 
-Have a look at [the complete list of methods and parameters available in the `WhylogsDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.whylogs.data_validators.whylogs_data_validator.WhylogsDataValidator) in the API docs.
+Have a look at [the complete list of methods and parameters available in the `WhylogsDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-whylogs/#zenml.integrations.whylogs.data_validators.whylogs_data_validator.WhylogsDataValidator) in the API docs.
 
 ### Call whylogs directly
 

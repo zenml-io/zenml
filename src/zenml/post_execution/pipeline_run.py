@@ -183,7 +183,9 @@ class PipelineRunView:
         Returns:
             The current status of the pipeline run.
         """
-        return Client().zen_store.get_run_status(self.id)
+        # Query the run again since the status might have changed since this
+        # object was created.
+        return Client().zen_store.get_run(self.id).status
 
     @property
     def steps(self) -> List[StepView]:
@@ -235,7 +237,7 @@ class PipelineRunView:
         self._ensure_steps_fetched()
 
         api_doc_link = get_apidocs_link(
-            "post_execution",
+            "core-post_execution",
             "zenml.post_execution.pipeline_run.PipelineRunView" ".get_step",
         )
         step_name = kwargs.get("name", None)

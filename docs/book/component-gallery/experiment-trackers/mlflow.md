@@ -138,7 +138,7 @@ Experiment Tracker.
 {% endtabs %}
 
 For more, up-to-date information on the MLflow Experiment Tracker implementation
-and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker).
+and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker).
 
 ## How do you use it?
 

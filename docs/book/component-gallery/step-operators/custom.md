@@ -68,7 +68,7 @@ class BaseStepOperatorFlavor(Flavor):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
-and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/api_docs/step_operators/#zenml.step_operators.base_step_operator.BaseStepOperator).
+and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/core_code_docs/core-step_operators/#zenml.step_operators.base_step_operator.BaseStepOperator).
 {% endhint %}
 
 ## Build your own custom step operator

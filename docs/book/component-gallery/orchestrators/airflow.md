@@ -68,4 +68,4 @@ A concrete example of using the Airflow orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/airflow_orchestration).
 
 For more information and a full list of configurable attributes of the Airflow 
-orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.airflow.orchestrators.airflow_orchestrator.AirflowOrchestrator).
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow_orchestrator.AirflowOrchestrator).

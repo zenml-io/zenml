@@ -95,7 +95,7 @@ important, as the artifact type is only used as a tag in the visualization tools
 
 {% hint style="info" %} 
 You can find a full list of available artifact types in the 
-[API Docs](https://apidocs.zenml.io/latest/api_docs/artifacts/).
+[API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-artifacts/).
 {% endhint %}
 
 ### Where to Store the Artifact
@@ -405,7 +405,7 @@ Materializers link pythonic types to artifact types implicitly. E.g., a
 `ModelArtifact` implicitly via their materializers.
 
 You can find a full list of available artifact types in the 
-[API Docs](https://apidocs.zenml.io/latest/api_docs/artifacts/).
+[API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-artifacts/).
 {% endhint %}
 
 ### Example
