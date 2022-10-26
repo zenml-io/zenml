@@ -593,7 +593,7 @@ The Post-execution workflow has changed as follows:
 
 - The `get_pipelines` and `get_pipeline` methods have been moved out of the `Repository` (i.e. the new `Client` ) class and lie directly in the post_execution module now. To use the user has to do:
 
-```bash
+```python
 from zenml.post_execution import get_pipelines, get_pipeline
 ```
 
