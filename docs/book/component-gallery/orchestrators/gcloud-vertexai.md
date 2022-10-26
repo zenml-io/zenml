@@ -21,11 +21,11 @@ You should use the Vertex orchestrator if:
 
 ## How to deploy it
 
-In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](../../getting-started/deploying-zenml/deploying-zenml.md). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not neccesary to do so. You must ensure that you are [connected to the remote ZenML server](../../starter-guide/collaborate/zenml-deployment.md) before using this stack component.
+In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](../../getting-started/deploying-zenml/deploying-zenml.md). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are [connected to the remote ZenML server](../../starter-guide/collaborate/zenml-deployment.md) before using this stack component.
 
-The only other thing neccessary to use the ZenML Vertex orchestrator is enabling Vertex relevant APIs on the Google Cloud project.
+The only other thing necessary to use the ZenML Vertex orchestrator is enabling Vertex relevant APIs on the Google Cloud project.
 
-In order to quickly enable APIs, and create other resources neccessary for to use this integration, you can also consider using the [Vertex AI stack recipe](https://github.com/zenml-io/mlops-stacks/tree/main/vertex-ai), which helps you set up the infrastructure with one click.
+In order to quickly enable APIs, and create other resources necessary for to use this integration, you can also consider using the [Vertex AI stack recipe](https://github.com/zenml-io/mlops-stacks/tree/main/vertex-ai), which helps you set up the infrastructure with one click.
 
 ## How to use it
 
