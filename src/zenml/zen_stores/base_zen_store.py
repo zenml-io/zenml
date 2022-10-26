@@ -30,20 +30,22 @@ from zenml.constants import (
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackExistsError
 from zenml.logger import get_logger
-from zenml.models import (
-    ComponentModel,
-    ProjectModel,
-    RoleAssignmentModel,
-    RoleModel,
-    StackModel,
-    TeamModel,
-    UserModel,
-)
-from zenml.models.pipeline_models import PipelineModel
 from zenml.models.server_models import (
     ServerDatabaseType,
     ServerDeploymentType,
     ServerModel,
+)
+from zenml.new_models import (
+    ComponentRequestModel,
+    PipelineModel,
+    ProjectModel,
+    ProjectRequestModel,
+    RoleModel,
+    StackModel,
+    StackRequestModel,
+    TeamModel,
+    UserModel,
+    UserRequestModel,
 )
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
@@ -395,7 +397,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         # Register the default orchestrator
         orchestrator = self.create_stack_component(
-            component=ComponentModel(
+            component=ComponentRequestModel(
                 user=user.id,
                 project=project.id,
                 name="default",
@@ -407,7 +409,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         # Register the default artifact store
         artifact_store = self.create_stack_component(
-            component=ComponentModel(
+            component=ComponentRequestModel(
                 user=user.id,
                 project=project.id,
                 name="default",
@@ -419,7 +421,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         components = {c.type: [c.id] for c in [orchestrator, artifact_store]}
         # Register the default stack
-        stack = StackModel(
+        stack = StackRequestModel(
             name="default",
             components=components,
             is_shared=False,
@@ -520,7 +522,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         logger.info(f"Creating default user '{user_name}' ...")
         return self.create_user(
-            UserModel(
+            UserRequestModel(
                 name=user_name,
                 active=True,
                 password=user_password,
@@ -597,7 +599,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME
         )
         logger.info(f"Creating default project '{project_name}' ...")
-        return self.create_project(ProjectModel(name=project_name))
+        return self.create_project(ProjectRequestModel(name=project_name))
 
     # ------------
     # Repositories

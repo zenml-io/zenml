@@ -52,16 +52,6 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.new_models import (
-    ProjectModel,
-    ProjectRequestModel,
-    RoleModel,
-    RoleRequestModel,
-    TeamModel,
-    TeamRequestModel,
-    UserModel,
-    UserRequestModel,
-)
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.new_models import (
     ArtifactModel,
@@ -72,12 +62,20 @@ from zenml.new_models import (
     FlavorRequestModel,
     PipelineModel,
     PipelineRequestModel,
-PipelineRunModel,
+    PipelineRunModel,
     PipelineRunRequestModel,
+    ProjectModel,
+    ProjectRequestModel,
+    RoleModel,
+    RoleRequestModel,
     StackModel,
     StackRequestModel,
     StepRunModel,
     StepRunRequestModel,
+    TeamModel,
+    TeamRequestModel,
+    UserModel,
+    UserRequestModel,
 )
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -95,7 +93,6 @@ from zenml.zen_stores.schemas import (
     StepInputArtifactSchema,
     StepRunOrderSchema,
     StepRunSchema,
-    TeamAssignmentSchema,
     TeamRoleAssignmentSchema,
     TeamSchema,
     UserRoleAssignmentSchema,
@@ -1419,7 +1416,9 @@ class SqlZenStore(BaseZenStore):
             existing_user.full_name = user_update.full_name
             existing_user.active = user_update.active
             existing_user.password = user_update.get_hashed_password()
-            existing_user.activation_token = user_update.get_hashed_activation_token()
+            existing_user.activation_token = (
+                user_update.get_hashed_activation_token()
+            )
             existing_user.updated = datetime.now()
 
             session.add(existing_user)
@@ -2382,7 +2381,6 @@ class SqlZenStore(BaseZenStore):
 
             return run.to_model()
 
-
     def list_runs(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -2994,7 +2992,9 @@ class SqlZenStore(BaseZenStore):
                     name=input_name,
                 )
 
-    def _create_run(self, pipeline_run: PipelineRunRequestModel) -> PipelineRunModel:
+    def _create_run(
+        self, pipeline_run: PipelineRunRequestModel
+    ) -> PipelineRunModel:
         """Creates a pipeline run.
 
         Args:

@@ -84,18 +84,17 @@ from zenml.new_models import (
     PipelineModel,
     PipelineRequestModel,
     PipelineRunModel,
-    StackModel,
-    StackRequestModel,
-    StepRunModel,
     ProjectModel,
     ProjectRequestModel,
     RoleModel,
     RoleRequestModel,
+    StackModel,
+    StackRequestModel,
+    StepRunModel,
     TeamModel,
     TeamRequestModel,
     UserModel,
     UserRequestModel,
-
 )
 from zenml.new_models.base_models import (
     BaseRequestModel,
@@ -104,7 +103,6 @@ from zenml.new_models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, track
-
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
