@@ -49,9 +49,8 @@ def my_pipeline(...):
     ...
 ```
 
-Adding these two extra settings options and applying them to whatever resource
-is appropriate for your pipelines and use cases will be enough to ensure that
-CUDA is enabled for those specific steps. Note that these configuration changes
+Adding these two extra settings options will be enough to ensure that
+CUDA is enabled for the specific steps that require GPU acceleration. Note that these configuration changes
 are **required** for the GPU hardware to be properly utilized. If you don't
 update the settings, your steps might run but they will not see any boost in
 performance from the custom hardware.
