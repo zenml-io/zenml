@@ -6,6 +6,10 @@ The Tekton orchestrator is an [orchestrator](./orchestrators.md) flavor
 provided with the ZenML `tekton` integration that uses [Tekton Pipelines](https://tekton.dev/) 
 to run your pipelines.
 
+{% hint style="warning" %}
+This component is only meant to be used within the context of [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+{% endhint %}
+
 ## When to use it
 
 You should use the Tekton orchestrator if:
@@ -23,6 +27,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 {% tabs %}
 {% tab title="AWS" %}
 
+* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md) for more information.
 * Have an existing
   AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html)
   set up.
@@ -40,6 +45,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 
 {% tab title="GCP" %}
 
+* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md) for more information.
 * Have an existing
   GCP [GKE cluster](https://cloud.google.com/kubernetes-engine/docs/quickstart)
   set up.
@@ -57,6 +63,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 
 {% tab title="Azure" %}
 
+* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md) for more information.
 * Have an
   existing [AKS cluster](https://azure.microsoft.com/en-in/services/kubernetes-service/#documentation)
   set up.

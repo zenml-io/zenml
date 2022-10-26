@@ -6,6 +6,10 @@ The Kubernetes orchestrator is an [orchestrator](./orchestrators.md) flavor
 provided with the ZenML `kubernetes` integration that runs your pipelines on a 
 [Kubernetes](https://kubernetes.io/) cluster.
 
+{% hint style="warning" %}
+This component is only meant to be used within the context of [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+{% endhint %}
+
 ## When to use it
 
 You should use the Kubernetes orchestrator if:
@@ -20,8 +24,9 @@ on your Kubernetes cluster.
 The Kubernetes orchestrator requires a Kubernetes cluster in order to run.
 There are many ways to deploy a Kubernetes cluster using different cloud providers
 or on your custom infrastructure, and we can't possibly cover all of them, 
-but you can check out our cloud guide [ZenML Cloud Guide](../../stack-deployment-guide/overview.md)
-for some complete stack deployments which use the Kubernetes orchestrator.
+but you can check out our cloud guide 
+
+If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](../../getting-started/deploying-zenml/deploying-zenml.md).
 
 ## How to use it
 
