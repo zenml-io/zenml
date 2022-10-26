@@ -15,7 +15,7 @@ from zenml.new_models.base_models import (
 from zenml.new_models.component_models import ComponentResponseModel
 
 # TODO: Add example schemas and analytics fields
-# TODO: Add base models
+
 
 # ---- #
 # BASE #

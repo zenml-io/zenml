@@ -11,14 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from datetime import datetime
 from typing import List
 from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import TeamModel
+from zenml.new_models import TeamModel, TeamRequestModel
 from zenml.zen_stores.schemas import TeamRoleAssignmentSchema, UserSchema
+from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 
 class TeamAssignmentSchema(SQLModel, table=True):
@@ -28,13 +29,10 @@ class TeamAssignmentSchema(SQLModel, table=True):
     team_id: UUID = Field(primary_key=True, foreign_key="teamschema.id")
 
 
-class TeamSchema(SQLModel, table=True):
+class TeamSchema(BaseSchema, table=True):
     """SQL Model for teams."""
 
-    id: UUID = Field(primary_key=True)
     name: str
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     users: List["UserSchema"] = Relationship(
         back_populates="teams", link_model=TeamAssignmentSchema
@@ -44,7 +42,7 @@ class TeamSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_create_model(cls, model: TeamModel) -> "TeamSchema":
+    def from_request(cls, model: TeamRequestModel) -> "TeamSchema":
         """Create a `TeamSchema` from a `TeamModel`.
 
         Args:
@@ -53,20 +51,7 @@ class TeamSchema(SQLModel, table=True):
         Returns:
             The created `TeamSchema`.
         """
-        return cls(id=model.id, name=model.name)
-
-    def from_update_model(self, model: TeamModel) -> "TeamSchema":
-        """Update a `TeamSchema` from a `TeamModel`.
-
-        Args:
-            model: The `TeamModel` from which to update the schema.
-
-        Returns:
-            The updated `TeamSchema`.
-        """
-        self.name = model.name
-        self.updated = datetime.now()
-        return self
+        return cls(name=model.name)
 
     def to_model(self) -> TeamModel:
         """Convert a `TeamSchema` to a `TeamModel`.

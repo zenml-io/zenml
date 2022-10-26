@@ -28,11 +28,19 @@ from zenml.new_models.pipeline_models import (
 )
 from zenml.new_models.pipeline_run_models import PipelineRunRequestModel
 from zenml.new_models.pipeline_run_models import (
-    PipelineRunResponseModel as RunModel,
+    PipelineRunResponseModel as PipelineRunModel,
 )
+from zenml.new_models.project_models import ProjectRequestModel
+from zenml.new_models.project_models import ProjectResponseModel as ProjectModel
+from zenml.new_models.role_models import RoleRequestModel
+from zenml.new_models.role_models import RoleResponseModel as RoleModel
 from zenml.new_models.stack_models import StackRequestModel
 from zenml.new_models.stack_models import StackResponseModel as StackModel
 from zenml.new_models.step_run_models import StepRunRequestModel
 from zenml.new_models.step_run_models import (
     StepRunResponseModel as StepRunModel,
 )
+from zenml.new_models.team_models import TeamRequestModel
+from zenml.new_models.team_models import TeamResponseModel as TeamModel
+from zenml.new_models.user_models import UserRequestModel
+from zenml.new_models.user_models import UserResponseModel as UserModel

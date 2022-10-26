@@ -12,13 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from datetime import datetime
 from typing import List, Optional
-from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
-from zenml.models import UserModel
+from zenml.new_models import UserModel, UserRequestModel
 from zenml.zen_stores.schemas import (
     FlavorSchema,
     PipelineRunSchema,
@@ -29,20 +27,18 @@ from zenml.zen_stores.schemas import (
     TeamSchema,
     UserRoleAssignmentSchema,
 )
+from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 
-class UserSchema(SQLModel, table=True):
+class UserSchema(BaseSchema, table=True):
     """SQL Model for users."""
 
-    id: UUID = Field(primary_key=True)
     name: str
     full_name: str
     email: Optional[str] = Field(nullable=True)
     active: bool
     password: Optional[str] = Field(nullable=True)
     activation_token: Optional[str] = Field(nullable=True)
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     email_opted_in: Optional[bool] = Field(nullable=True)
 
@@ -69,7 +65,7 @@ class UserSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_create_model(cls, model: UserModel) -> "UserSchema":
+    def from_request(cls, model: UserRequestModel) -> "UserSchema":
         """Create a `UserSchema` from a `UserModel`.
 
         Args:
@@ -79,30 +75,12 @@ class UserSchema(SQLModel, table=True):
             The created `UserSchema`.
         """
         return cls(
-            id=model.id,
             name=model.name,
             full_name=model.full_name,
             active=model.active,
             password=model.get_hashed_password(),
             activation_token=model.get_hashed_activation_token(),
         )
-
-    def from_update_model(self, model: UserModel) -> "UserSchema":
-        """Update a `UserSchema` from a `UserModel`.
-
-        Args:
-            model: The `UserModel` from which to update the schema.
-
-        Returns:
-            The updated `UserSchema`.
-        """
-        self.name = model.name
-        self.full_name = model.full_name
-        self.active = model.active
-        self.password = model.get_hashed_password()
-        self.activation_token = model.get_hashed_activation_token()
-        self.updated = datetime.now()
-        return self
 
     def to_model(self) -> UserModel:
         """Convert a `UserSchema` to a `UserModel`.
@@ -117,8 +95,6 @@ class UserSchema(SQLModel, table=True):
             email=self.email,
             email_opted_in=self.email_opted_in,
             active=self.active,
-            password=self.password,
-            activation_token=self.activation_token,
             created=self.created,
             updated=self.updated,
         )
