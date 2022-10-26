@@ -248,10 +248,10 @@ Use the credentials output from the command to get your
 
 ```shell
 # this secret must be named 'aws_label_studio'
-zenml secrets-manager secret register aws_label_studio --schema=aws_label_studio --aws_access_key_id="<LABEL_STUDIO_ACCESS_KEY_ID>" --aws_secret_access_key="<LABEL_STUDIO_SECRET_ACCESS_KEY>" --aws_session_token="<LABEL_STUDIO_AWS_SESSION_TOKEN>"
+zenml secrets-manager secret register aws_label_studio --schema=aws --aws_access_key_id="<LABEL_STUDIO_ACCESS_KEY_ID>" --aws_secret_access_key="<LABEL_STUDIO_SECRET_ACCESS_KEY>" --aws_session_token="<LABEL_STUDIO_AWS_SESSION_TOKEN>"
 
 # use your standard access key id and secret access key from ~/.aws/credentials here
-zenml secrets-manager secret register <YOUR_AWS_SECRET_NAME> --schema=aws_label_studio--aws_access_key_id="<YOUR_ACCESS_KEY_ID>" --aws_secret_access_key="<YOUR_SECRET_ACCESS_KEY>"
+zenml secrets-manager secret register <YOUR_AWS_SECRET_NAME> --schema=aws --aws_access_key_id="<YOUR_ACCESS_KEY_ID>" --aws_secret_access_key="<YOUR_SECRET_ACCESS_KEY>"
 
 zenml artifact-store register <YOUR_CLOUD_ARTIFACT_STORE> --flavor=s3 --path=s3://<YOUR_S3_BUCKET_NAME> --authentication_secret="<YOUR_AWS_SECRET_NAME>"
 
