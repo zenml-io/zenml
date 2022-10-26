@@ -1,8 +1,84 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Kubernetes pod settings."""
+
 import re
 from datetime import date, datetime
-from typing import Any, Dict, List, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Type, Union, cast
 
-import kubernetes.client.models
+from pydantic import validator
+
+from zenml.config.base_settings import BaseSettings
+
+if TYPE_CHECKING:
+    from kubernetes.client.models import V1Affinity, V1Toleration
+
+
+class KubernetesPodSettings(BaseSettings):
+    """Kubernetes Pod settings.
+
+    Attributes:
+        node_selectors: Node selectors to apply to the pod.
+        affinity: Affinity to apply to the pod.
+        tolerations: Tolerations to apply to the pod.
+    """
+
+    node_selectors: Dict[str, str] = {}
+    affinity: Dict[str, Any] = {}
+    tolerations: List[Dict[str, Any]] = []
+
+    @validator("affinity", pre=True)
+    def _convert_affinity(
+        cls, value: Union[Dict[str, Any], "V1Affinity"]
+    ) -> Dict[str, Any]:
+        """Converts Kubernetes affinity to a dict.
+
+        Args:
+            value: The affinity value.
+
+        Returns:
+            The converted value.
+        """
+        from kubernetes.client.models import V1Affinity
+
+        if isinstance(value, V1Affinity):
+            return serialize_kubernetes_model(value)
+        else:
+            return value
+
+    @validator("tolerations", pre=True)
+    def _convert_tolerations(
+        cls, value: List[Union[Dict[str, Any], "V1Toleration"]]
+    ) -> List[Dict[str, Any]]:
+        """Converts Kubernetes tolerations to dicts.
+
+        Args:
+            value: The tolerations list.
+
+        Returns:
+            The converted tolerations.
+        """
+        from kubernetes.client.models import V1Toleration
+
+        result = []
+        for element in value:
+            if isinstance(element, V1Toleration):
+                result.append(serialize_kubernetes_model(element))
+            else:
+                result.append(element)
+
+        return result
 
 
 def serialize_kubernetes_model(model: Any) -> Dict[str, Any]:
@@ -143,6 +219,8 @@ def is_model_class(class_name: str) -> bool:
     Returns:
         If the given class name is a Kubernetes model class.
     """
+    import kubernetes.client.models
+
     return hasattr(kubernetes.client.models, class_name)
 
 
@@ -158,6 +236,8 @@ def get_model_class(class_name: str) -> Type[Any]:
     Returns:
         The model class.
     """
+    import kubernetes.client.models
+
     class_ = getattr(kubernetes.client.models, class_name, None)
 
     if not class_:
@@ -207,91 +287,3 @@ def _deserialize_dict(data: Any, class_name: str) -> Dict[str, Any]:
         }
     else:
         return data
-
-
-from typing import Union
-
-from kubernetes.client.models import V1Affinity, V1Toleration
-from pydantic import validator
-
-from zenml.config.base_settings import BaseSettings
-
-
-class KubernetesPodSettings(BaseSettings):
-    """Kubernetes Pod settings.
-
-    Attributes:
-        node_selectors: Node selectors to apply to the pod.
-        affinity: Affinity to apply to the pod.
-        tolerations: Tolerations to apply to the pod.
-    """
-
-    node_selectors: Dict[str, str] = {}
-    affinity: Dict[str, Any] = {}
-    tolerations: List[Dict[str, Any]] = []
-
-    @validator("affinity", pre=True)
-    def _convert_affinity(
-        cls, value: Union[Dict[str, Any], V1Affinity]
-    ) -> Dict[str, Any]:
-        """Converts Kubernetes affinity to a dict.
-
-        Args:
-            value: The affinity value.
-
-        Returns:
-            The converted value.
-        """
-        if isinstance(value, V1Affinity):
-            return serialize_kubernetes_model(value)
-        else:
-            return value
-
-    @validator("tolerations", pre=True)
-    def _convert_tolerations(
-        cls, value: List[Union[Dict[str, Any], V1Toleration]]
-    ) -> List[Dict[str, Any]]:
-        """Converts Kubernetes tolerations to dicts.
-
-        Args:
-            value: The tolerations list.
-
-        Returns:
-            The converted tolerations.
-        """
-        result = []
-        for element in value:
-            if isinstance(element, V1Toleration):
-                result.append(serialize_kubernetes_model(element))
-            else:
-                result.append(element)
-
-        return result
-
-
-from kfp.dsl import ContainerOp
-
-
-def apply_pod_settings(
-    container_op: "ContainerOp", settings: KubernetesPodSettings
-) -> None:
-    """Applies Kubernetes Pod settings to a container.
-
-    Args:
-        container_op: The container to which to apply the settings.
-        settings: The settings to apply.
-    """
-    for key, value in settings.node_selectors.items():
-        container_op.add_node_selector_constraint(label_name=key, value=value)
-
-    if settings.affinity:
-        affinity: V1Affinity = deserialize_kubernetes_model(
-            settings.affinity, "V1Affinity"
-        )
-        container_op.add_affinity(affinity)
-
-    for toleration_dict in settings.tolerations:
-        toleration: V1Toleration = deserialize_kubernetes_model(
-            toleration_dict, "V1Toleration"
-        )
-        container_op.add_toleration(toleration)

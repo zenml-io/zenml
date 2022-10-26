@@ -17,7 +17,7 @@ from typing import Any, List
 import pytest
 from kubernetes import client as k8s_client
 
-from zenml.integrations.kubernetes.utils import (
+from zenml.integrations.kubernetes.pod_settings import (
     deserialize_kubernetes_model,
     get_model_class,
     serialize_kubernetes_model,

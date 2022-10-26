@@ -70,6 +70,7 @@ from zenml.integrations.kubeflow.orchestrators.kubeflow_entrypoint_configuration
 from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
     KFP_VERSION,
 )
+from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
@@ -458,36 +459,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
         )
 
-        if settings:
-            for key, value in settings.node_selectors.items():
-                container_op.add_node_selector_constraint(
-                    label_name=key, value=value
-                )
-
-            if settings.node_affinity:
-                match_expressions = []
-
-                for key, values in settings.node_affinity.items():
-                    match_expressions.append(
-                        k8s_client.V1NodeSelectorRequirement(
-                            key=key,
-                            operator="In",
-                            values=values,
-                        )
-                    )
-
-                affinity = k8s_client.V1Affinity(
-                    node_affinity=k8s_client.V1NodeAffinity(
-                        required_during_scheduling_ignored_during_execution=k8s_client.V1NodeSelector(
-                            node_selector_terms=[
-                                k8s_client.V1NodeSelectorTerm(
-                                    match_expressions=match_expressions
-                                )
-                            ]
-                        )
-                    )
-                )
-                container_op.add_affinity(affinity)
+        if settings and settings.pod_settings:
+            apply_pod_settings(
+                container_op=container_op, settings=settings.pod_settings
+            )
 
         # Mounts configmap containing Metadata gRPC server configuration.
         container_op.apply(utils.mount_config_map_op("metadata-grpc-configmap"))
