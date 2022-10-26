@@ -133,6 +133,12 @@ grpcMetadata:
   # This is not needed if the ingress is enabled and a host is set for it.
   externalHostname:
 
+  tls:
+    enabled: true
+    generateCerts: true
+    secretName: zenml-grpc-tls-certs
+    clientSecretName: zenml-grpc-client-tls-certs
+
   ingress:
     enabled: true
     className: "nginx"
@@ -143,9 +149,6 @@ grpcMetadata:
     host:
     tls:
       enabled: true
-      generateCerts: true
-      secretName: zenml-grpc-tls-certs
-      clientSecretName: zenml-grpc-client-tls-certs
 
 serviceAccount:
   # Specifies whether a service account should be created

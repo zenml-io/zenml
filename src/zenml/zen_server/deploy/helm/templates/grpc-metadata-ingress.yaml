@@ -18,9 +18,17 @@ metadata:
   name: {{ $fullName }}-grpc-metadata
   labels:
     {{- include "zenml.metadataLabels" . | nindent 4 }}
-  {{- with .Values.grpcMetadata.ingress.annotations }}
   annotations:
+    {{- if .Values.grpcMetadata.ingress.tls.enabled }}
     nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+    # Enable client certificate authentication
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
+    # The secret containing the trusted ca certificates
+    nginx.ingress.kubernetes.io/auth-tls-secret: {{ .Values.grpcMetadata.ingress.tls.clientSecretName }}
+    {{- else }}
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPCS"
+    {{- end }}
+  {{- with .Values.grpcMetadata.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:

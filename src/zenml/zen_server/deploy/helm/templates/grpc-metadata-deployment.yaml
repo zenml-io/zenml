@@ -46,6 +46,10 @@ spec:
           - name: certs
             mountPath: "/certs"
           {{- end }}
+          {{- if or (not .Values.grpcMetadata.ingress.enabled) (not .Values.grpcMetadata.ingress.tls.enabled) }}
+          - name: grpc-certs
+            mountPath: "/grpc-certs"
+          {{- end }}
           ports:
             - name: grpc-api
               containerPort: 80
@@ -90,6 +94,14 @@ spec:
               path: client-key.pem
             {{- end }}
         {{- end }}
+
+        {{- if or (not .Values.grpcMetadata.ingress.enabled) (not .Values.grpcMetadata.ingress.tls.enabled) }}
+        - name: grpc-certs
+          secret:
+            secretName: {{ include "zenml.fullname" . }}
+            mountPath: "/grpc-certs"
+        {{- end }}
+
 
       {{- with .Values.nodeSelector }}
       nodeSelector:
