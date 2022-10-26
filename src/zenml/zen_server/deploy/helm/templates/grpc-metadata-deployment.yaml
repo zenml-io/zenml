@@ -1,4 +1,4 @@
-{{- if and .Values.zenml.grpcMetadata.enabled .Values.zenml.database.url }}
+{{- if and .Values.grpcMetadata.enabled .Values.zenml.database.url }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +7,7 @@ metadata:
     {{- include "zenml.metadataLabels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.grpcMetadata.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -32,8 +32,8 @@ spec:
         - name: {{ .Chart.Name }}-grpc-metadata
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.zenml.grpcMetadata.image.repository }}:{{ .Values.zenml.grpcMetadata.image.tag }}"
-          imagePullPolicy: {{ .Values.zenml.grpcMetadata.image.pullPolicy }}
+          image: "{{ .Values.grpcMetadata.image.repository }}:{{ .Values.grpcMetadata.image.tag }}"
+          imagePullPolicy: {{ .Values.grpcMetadata.image.pullPolicy }}
           args:
           - --grpc_port=80
           - --metadata_store_server_config_file=/config/metadata-store-config.pb

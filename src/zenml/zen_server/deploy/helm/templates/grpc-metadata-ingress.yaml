@@ -1,9 +1,9 @@
-{{- if and .Values.ingress.enabled .Values.zenml.grpcMetadata.enabled .Values.ingress.grpcMetadata.enabled .Values.zenml.database.url -}}
+{{- if and .Values.grpcMetadata.enabled .Values.grpcMetadata.ingress.enabled .Values.zenml.database.url -}}
 {{- $fullName := include "zenml.fullname" . -}}
-{{- $svcPort := .Values.service.port -}}
-{{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
-  {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
-  {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
+{{- $svcPort := .Values.grpcMetadata.service.port -}}
+{{- if and .Values.grpcMetadata.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.grpcMetadata.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.grpcMetadata.ingress.annotations "kubernetes.io/ingress.class" .Values.grpcMetadata.ingress.className}}
   {{- end }}
 {{- end }}
 {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
@@ -18,20 +18,20 @@ metadata:
   name: {{ $fullName }}-grpc-metadata
   labels:
     {{- include "zenml.metadataLabels" . | nindent 4 }}
-  {{- with .Values.ingress.grpcMetadata.annotations }}
+  {{- with .Values.grpcMetadata.ingress.annotations }}
   annotations:
     nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ .Values.ingress.className }}
+  {{- if and .Values.grpcMetadata.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.grpcMetadata.ingress.className }}
   {{- end }}
-  {{- if .Values.ingress.grpcMetadata.tls.enabled }}
+  {{- if .Values.grpcMetadata.ingress.tls.enabled }}
   tls:
     - hosts:
-        - {{ .Values.ingress.grpcMetadata.host | quote }}
-      secretName: {{ .Values.ingress.tls.secretName }}
+        - {{ .Values.grpcMetadata.ingress.host | quote }}
+      secretName: {{ .Values.grpcMetadata.ingress.tls.secretName }}
   {{- end }}
   rules:
     - http:
@@ -50,7 +50,7 @@ spec:
               serviceName: {{ $fullName }}-grpc-metadata
               servicePort: {{ $svcPort }}
               {{- end }}
-      {{- if .Values.ingress.grpcMetadata.host }}
-      host: {{ .Values.ingress.grpcMetadata.host | quote }}
+      {{- if .Values.grpcMetadata.ingress.host }}
+      host: {{ .Values.grpcMetadata.ingress.host | quote }}
       {{- end }}
 {{- end }}

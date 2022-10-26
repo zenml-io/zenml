@@ -82,7 +82,7 @@ zenml:
   # ```
   rootUrlPath:
 
-  defaultProject: "default"
+  defaultProject: default
   defaultUsername: default
   # Use your own password here
   defaultPassword: zenml
@@ -95,15 +95,57 @@ zenml:
     # sslKey: /path/to/client-key.pem
     # sslVerifyServerCert: True
 
-  grpcMetadata:
+  service:
+    type: ClusterIP
+    port: 80
+
+  ingress:
     enabled: true
-    image:
-      repository: gcr.io/tfx-oss-public/ml_metadata_store_server
-      pullPolicy: Always
-      tag: "1.8.0"
-    service:
-      type: ClusterIP
-      port: 8080
+    className: "nginx"
+    annotations:
+      # nginx.ingress.kubernetes.io/rewrite-target: /$1
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+      # cert-manager.io/cluster-issuer: "letsencrypt"
+    host:
+    path: /
+    tls:
+      enabled: false
+      generateCerts: false
+      secretName: zenml-tls-certs
+
+
+grpcMetadata:
+  enabled: false
+
+  replicaCount: 1
+
+  image:
+    repository: gcr.io/tfx-oss-public/ml_metadata_store_server
+    pullPolicy: Always
+    tag: "1.8.0"
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  # The external hostname where the gRPC metadata service is accessible.
+  # This is not needed if the ingress is enabled and a host is set for it.
+  externalHostname:
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+      # cert-manager.io/cluster-issuer: "letsencrypt"
+    host:
+    tls:
+      enabled: true
+      generateCerts: true
+      secretName: zenml-grpc-tls-certs
+      clientSecretName: zenml-grpc-client-tls-certs
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -126,35 +168,6 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
-
-service:
-  type: ClusterIP
-  port: 80
-
-ingress:
-  enabled: true
-  className: "nginx"
-  annotations:
-    # nginx.ingress.kubernetes.io/rewrite-target: /$1
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-    # cert-manager.io/cluster-issuer: "letsencrypt"
-  host:
-  path: /
-  tls:
-    enabled: false
-    generateCerts: false
-    secretName: zenml-tls-certs
-  grpcMetadata:
-    enabled: true
-    annotations:
-      # kubernetes.io/ingress.class: nginx
-    host:
-    tls:
-      enabled: false
-      secretName: zenml-tls-client-certs
-
-
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
