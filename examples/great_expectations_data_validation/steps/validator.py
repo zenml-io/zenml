@@ -14,9 +14,8 @@
 
 from zenml.integrations.great_expectations.steps import (
     GreatExpectationsValidatorParameters,
-    GreatExpectationsValidatorStep,
+    great_expectations_validator_step,
 )
-from zenml.steps.utils import clone_step
 
 ge_validate_train_params = GreatExpectationsValidatorParameters(
     expectation_suite_name="steel_plates_suite",
@@ -27,12 +26,9 @@ ge_validate_test_params = GreatExpectationsValidatorParameters(
     data_asset_name="steel_plates_test_df",
 )
 
-# We clone the builtin step by calling the `clone_step` utility to use it twice
-# in our pipeline: on the training set and on the validation set.
-# This is necessary because a step cannot be used twice in the same pipeline.
-ge_validate_train_step = clone_step(
-    GreatExpectationsValidatorStep, "ge_validate_train_step_class"
-)(params=ge_validate_train_params)
-ge_validate_test_step = clone_step(
-    GreatExpectationsValidatorStep, "ge_validate_test_step_class"
-)(params=ge_validate_test_params)
+ge_validate_train_step = great_expectations_validator_step(
+    step_name="ge_validate_train_step_class", params=ge_validate_train_params
+)
+ge_validate_test_step = great_expectations_validator_step(
+    step_name="ge_validate_test_step_class", params=ge_validate_test_params
+)

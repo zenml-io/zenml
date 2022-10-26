@@ -130,4 +130,4 @@ gcloud auth configure-docker <REGION>-docker.pkg.dev
 
 
 For more information and a full list of configurable attributes of the GCP 
-container registry, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/container_registries/#zenml.container_registries.gcp_container_registry.GCPContainerRegistry).
+container registry, check out the [API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-container_registries/#zenml.container_registries.gcp_container_registry.GCPContainerRegistry).

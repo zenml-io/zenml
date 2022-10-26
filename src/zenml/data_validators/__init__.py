@@ -14,8 +14,12 @@
 
 """Data validators are stack components responsible for data profiling and validation."""
 
-from zenml.data_validators.base_data_validator import BaseDataValidator
+from zenml.data_validators.base_data_validator import (
+    BaseDataValidator,
+    BaseDataValidatorFlavor,
+)
 
 __all__ = [
     "BaseDataValidator",
+    "BaseDataValidatorFlavor",
 ]

@@ -15,17 +15,17 @@
 
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.integrations.seldon import SELDON_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.seldon.constants import (
     SELDON_CUSTOM_DEPLOYMENT,
     SELDON_DOCKER_IMAGE_KEY,
 )
 from zenml.integrations.seldon.flavors.seldon_model_deployer_flavor import (
     SeldonModelDeployerConfig,
+    SeldonModelDeployerFlavor,
 )
 from zenml.integrations.seldon.seldon_client import SeldonClient
 from zenml.integrations.seldon.services.seldon_deployment import (
@@ -33,7 +33,7 @@ from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.model_deployers.base_model_deployer import BaseModelDeployer
+from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
@@ -50,6 +50,9 @@ DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 class SeldonModelDeployer(BaseModelDeployer):
     """Seldon Core model deployer stack component implementation."""
+
+    NAME: ClassVar[str] = "Seldon Core"
+    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = SeldonModelDeployerFlavor
 
     _client: Optional[SeldonClient] = None
 
@@ -80,35 +83,6 @@ class SeldonModelDeployer(BaseModelDeployer):
             "MODEL_NAME": service_instance.config.model_name,
             "SELDON_DEPLOYMENT": service_instance.seldon_deployment_name,
         }
-
-    @staticmethod
-    def get_active_model_deployer() -> "SeldonModelDeployer":
-        """Get the Seldon Core model deployer registered in the active stack.
-
-        Returns:
-            The Seldon Core model deployer registered in the active stack.
-
-        Raises:
-            TypeError: if the Seldon Core model deployer is not available.
-        """
-        model_deployer = Client(  # type: ignore [call-arg]
-            skip_client_check=True
-        ).active_stack.model_deployer
-        if not model_deployer or not isinstance(
-            model_deployer, SeldonModelDeployer
-        ):
-            raise TypeError(
-                f"The active stack needs to have a Seldon Core model deployer "
-                f"component registered to be able to deploy models with Seldon "
-                f"Core. You can create a new stack with a Seldon Core model "
-                f"deployer component or update your existing stack to add this "
-                f"component, e.g.:\n\n"
-                f"  'zenml model-deployer register seldon --flavor={SELDON_MODEL_DEPLOYER_FLAVOR} "
-                f"--kubernetes_context=context-name --kubernetes_namespace="
-                f"namespace-name --base_url=https://ingress.cluster.kubernetes'\n"
-                f"  'zenml stack register stack-name -d seldon ...'\n"
-            )
-        return model_deployer
 
     @property
     def seldon_client(self) -> SeldonClient:
@@ -189,9 +163,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         # to the Seldon Core deployment
         if self.config.secret:
 
-            secret_manager = Client(  # type: ignore [call-arg]
-                skip_client_check=True
-            ).active_stack.secrets_manager
+            secret_manager = Client().active_stack.secrets_manager
 
             if not secret_manager or not isinstance(
                 secret_manager, BaseSecretsManager

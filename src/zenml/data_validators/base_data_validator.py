@@ -29,6 +29,7 @@ class BaseDataValidator(StackComponent):
     """Base class for all ZenML data validators."""
 
     NAME: ClassVar[str]
+    FLAVOR: ClassVar[Type["BaseDataValidatorFlavor"]]
 
     @property
     def config(self) -> BaseDataValidatorConfig:
@@ -50,33 +51,21 @@ class BaseDataValidator(StackComponent):
             TypeError: if a data validator is not part of the
                 active stack.
         """
-        client = Client(skip_client_check=True)  # type: ignore[call-arg]
+        flavor: BaseDataValidatorFlavor = cls.FLAVOR()
+        client = Client()
         data_validator = client.active_stack.data_validator
-        if not data_validator:
-            raise TypeError(
-                "The active stack needs to have a data validator component "
-                "registered to be able to run data validation actions. You "
-                "can create a new stack with a data validator component or "
-                "update your active stack to add this component e.g.:\n\n"
-                "  `zenml data-validator register <DV-NAME> "
-                "--flavor=FLAVOR ...`\n"
-                "  `zenml stack register <STACK-NAME> -dv <DV-NAME> ...`\n"
-                "  or:\n"
-                "  `zenml stack update -dv <DV-NAME>`\n\n"
-            )
-
-        if not isinstance(data_validator, cls):
+        if not data_validator or not isinstance(data_validator, cls):
             raise TypeError(
                 f"The active stack needs to have a {cls.NAME} data "
                 f"validator component registered to be able to run data validation "
                 f"actions with {cls.NAME}. You can create a new stack with "
                 f"a {cls.NAME} data validator component or update your "
                 f"active stack to add this component, e.g.:\n\n"
-                f"  `zenml data-validator register {cls.flavor} "
-                f"--flavor={cls.flavor} ...`\n"
-                f"  `zenml stack register <STACK-NAME> -dv {cls.flavor} ...`\n"
+                f"  `zenml data-validator register {flavor.name} "
+                f"--flavor={flavor.name} ...`\n"
+                f"  `zenml stack register <STACK-NAME> -dv {flavor.name} ...`\n"
                 f"  or:\n"
-                f"  `zenml stack update -dv {cls.flavor}`\n\n"
+                f"  `zenml stack update -dv {flavor.name}`\n\n"
             )
 
         return data_validator

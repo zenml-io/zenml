@@ -40,7 +40,7 @@ This section covers all the different ways in which you can hook into the Docker
 process to customize the resulting image to your needs.
 
 For a full list of configuration options, check out
-[our API Docs](https://apidocs.zenml.io/latest/api_docs/config/#zenml.config.docker_settings.DockerSettings).
+[our API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings).
 
 For the configuration examples described below, you'll need to import the `DockerSettings` class:
 ```python
@@ -106,7 +106,7 @@ This is an advanced feature and will most likely break your pipelines. If you us
 you're on your own and need to copy a stack configuration to the correct path yourself.
 {% endhint %}
 
-### How to install additional pip dependencies
+### How to install additional pip dependencies or apt packages
 
 By default, ZenML will automatically install all the packages required by your
 active ZenML stack. There are, however, various ways in which you can specify
@@ -143,6 +143,14 @@ package manager to get a list of your local packages):
     from zenml.integrations.constants import PYTORCH, EVIDENTLY
 
     docker_settings = DockerSettings(required_integrations=[PYTORCH, EVIDENTLY])
+
+    @pipeline(settings={"docker": docker_settings})
+    def my_pipeline(...):
+        ...
+    ```
+* Specify a list of apt packages in code:
+    ```python
+    docker_settings = DockerSettings(apt_packages=["git"])
 
     @pipeline(settings={"docker": docker_settings})
     def my_pipeline(...):

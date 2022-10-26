@@ -131,7 +131,9 @@ def seldon_model_deployer_step(
     Returns:
         Seldon Core deployment service
     """
-    model_deployer = SeldonModelDeployer.get_active_model_deployer()
+    model_deployer = cast(
+        SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
+    )
 
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
@@ -280,7 +282,9 @@ def seldon_custom_model_deployer_step(
             "the path of the custom predict function",
         )
     # get the active model deployer
-    model_deployer = SeldonModelDeployer.get_active_model_deployer()
+    model_deployer = cast(
+        SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
+    )
 
     # get pipeline name, step name, run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])

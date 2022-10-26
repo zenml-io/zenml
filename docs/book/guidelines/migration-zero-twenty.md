@@ -83,16 +83,6 @@ The architecture changes for the remote case are shown in the diagram below:
 ![ZenML remote metadata before 0.20.0](../assets/migration/remote-metadata-pre-0.20.png)
 ![ZenML remote metadata after 0.20.0](../assets/migration/remote-metadata-post-0.20.png)
 
-
-{% hint style="warning" %}
-It is currently not possible to migrate the pipeline run information already
-stored in the existing Metadata Stores to the new ZenML paradigm. This
-unfortunately means that this information is lost when upgrading to ZenML
-0.20.0. If it is crucial for you that you retain this information after the
-update, please reach out to us on [Slack](https://zenml.io/slack) and let us
-know. We're more than happy to work with you to find a solution.
-{% endhint %}
-
 If you're already using ZenML, aside from the above limitation, this change will
 impact you differently, depending on the flavor of Metadata Stores you have in
 your stacks:
@@ -144,6 +134,43 @@ located as close as possible to and reachable from where your pipelines and step
 operators are running. This will ensure the best possible performance and
 usability.
 {% endhint %}
+
+### 👣 How to migrate pipeline runs from your old metadata stores
+
+To migrate the pipeline run information already stored in an existing metadata 
+store to the new ZenML paradigm, you can use the `zenml pipeline runs migrate`
+CLI command.
+
+1. Before upgrading ZenML, make a backup of all metadata stores you
+want to migrate, then upgrade ZenML.
+
+2. Decide the ZenML deployment model that you want to follow for your projects.
+See the [ZenML deployment documentation](../getting-started/deploying-zenml/deploying-zenml.md)
+for available deployment scenarios. If you decide on using a local or remote
+ZenML server to manage your pipelines, make sure that you first connect your
+client to it by running `zenml connect`.
+
+3. Use the `zenml pipeline runs migrate` CLI command to migrate your old
+pipeline runs: 
+
+  - If you want to migrate from a local SQLite metadata store, you 
+only need to pass the path to the metadata store to the command, e.g.:
+
+```bash
+zenml pipeline runs migrate PATH/TO/LOCAL/STORE/metadata.db
+```
+
+- If you would like to migrate any other store, you will need to set 
+`--database_type=mysql` and provide the MySQL host, username, and password in
+addition to the database, e.g.:
+
+```bash
+zenml pipeline runs migrate DATABASE_NAME \
+  --database_type=mysql \
+  --mysql_host=URL/TO/MYSQL \
+  --mysql_username=MYSQL_USERNAME \
+  --mysql_password=MYSQL_PASSWORD
+```
 
 ### 💾 The New Way (CLI Command Cheat Sheet)
 
@@ -325,7 +352,7 @@ $ zenml profile migrate /home/stefan/.config/zenml/profiles/zenfiles --project z
 Unable to find ZenML repository in your current working directory (/home/stefan/aspyre/src/zenml) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
 Creating project zenfiles
-Creating default stack for user default in project zenfiles...
+Creating default stack for user 'default' in project zenfiles...
 No component flavors to migrate from /home/stefan/.config/zenml/profiles/zenfiles/stacks.yaml...
 Migrating stack components from /home/stefan/.config/zenml/profiles/zenfiles/stacks.yaml...
 Created artifact_store 'cloud_artifact_store' with flavor 's3'.
@@ -472,10 +499,10 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 ```python
 @step(
-    experiment_tracker="mlflow_stack_comp_name"  # name of registered component
+    experiment_tracker="mlflow_stack_comp_name",  # name of registered component
     settings={  # settings of registered component
         "experiment_tracker.mlflow": {  # this is `category`.`flavor`, so another example is `step_operator.spark`
-            "experiment_name": "name"
+            "experiment_name": "name",
             "nested": False
         }
     }
@@ -566,7 +593,7 @@ The Post-execution workflow has changed as follows:
 
 - The `get_pipelines` and `get_pipeline` methods have been moved out of the `Repository` (i.e. the new `Client` ) class and lie directly in the post_execution module now. To use the user has to do:
 
-```bash
+```python
 from zenml.post_execution import get_pipelines, get_pipeline
 ```
 

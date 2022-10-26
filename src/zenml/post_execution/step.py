@@ -212,7 +212,9 @@ class StepView:
         Returns:
             The current status of the step.
         """
-        return Client().zen_store.get_run_step_status(self.id)
+        # Query the step again since the status might have changed since this
+        # object was created.
+        return Client().zen_store.get_run_step(self.id).status
 
     @property
     def is_cached(self) -> bool:
@@ -304,10 +306,9 @@ class StepView:
             # we already fetched outputs, no need to do anything
             return
 
-        outputs = Client().zen_store.get_run_step_outputs(self.id)
+        outputs = Client().zen_store.list_artifacts(parent_step_id=self.id)
         self._outputs = {
-            output_name: ArtifactView(output)
-            for output_name, output in outputs.items()
+            output.name: ArtifactView(output) for output in outputs
         }
 
     def __repr__(self) -> str:

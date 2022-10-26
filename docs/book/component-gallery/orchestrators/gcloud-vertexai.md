@@ -64,4 +64,4 @@ A concrete example of using the Vertex orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/vertex_ai_orchestration).
 
 For more information and a full list of configurable attributes of the Vertex 
-orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.orchestrators.vertex_orchestrator.VertexOrchestrator).
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.orchestrators.vertex_orchestrator.VertexOrchestrator).

@@ -44,20 +44,18 @@ from zenml.constants import (
     INPUTS,
     LOGIN,
     METADATA_CONFIG,
-    OUTPUTS,
     PIPELINES,
     PROJECTS,
     ROLES,
     RUNS,
     STACK_COMPONENTS,
     STACKS,
-    STATUS,
     STEPS,
     TEAMS,
     USERS,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
     DoesNotExistException,
@@ -71,6 +69,7 @@ from zenml.models import (
     ArtifactModel,
     ComponentModel,
     FlavorModel,
+    HydratedStackModel,
     PipelineModel,
     PipelineRunModel,
     ProjectModel,
@@ -426,7 +425,8 @@ class RestZenStore(BaseZenStore):
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[StackModel]:
+        hydrated: bool = False,
+    ) -> Union[List[StackModel], List[HydratedStackModel]]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -437,17 +437,25 @@ class RestZenStore(BaseZenStore):
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
+            hydrated: Flag to decide whether to return hydrated models.
 
         Returns:
             A list of all stacks matching the filter criteria.
         """
         filters = locals()
         filters.pop("self")
-        return self._list_resources(
-            route=STACKS,
-            resource_model=StackModel,
-            **filters,
-        )
+        if hydrated:
+            return self._list_resources(
+                route=STACKS,
+                resource_model=HydratedStackModel,
+                **filters,
+            )
+        else:
+            return self._list_resources(
+                route=STACKS,
+                resource_model=StackModel,
+                **filters,
+            )
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
@@ -1260,25 +1268,22 @@ class RestZenStore(BaseZenStore):
         )
 
     # --------------
-    # Pipeline steps
-    # --------------
-
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    # TODO: Discuss whether we even need this, given that the endpoint is on
-    # pipeline runs
-    # TODO: [ALEX] add filtering param(s)
-    def list_steps(self, pipeline_id: UUID) -> List[StepRunModel]:
-        """List all steps.
-
-        Args:
-            pipeline_id: The ID of the pipeline to list steps for.
-        """
-
-    # --------------
     # Pipeline runs
     # --------------
-    def get_run_name(self, orchestrator_run_id: str, run_name: str) -> str:
-        return ""
+
+    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
+        """
+        return self._create_project_scoped_resource(
+            resource=pipeline_run,
+            route=RUNS,
+        )
 
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
@@ -1294,19 +1299,6 @@ class RestZenStore(BaseZenStore):
             route=RUNS,
             resource_model=PipelineRunModel,
         )
-
-    # TODO: Figure out what exactly gets returned from this
-    def get_run_component_side_effects(
-        self,
-        run_id: UUID,
-        component_id: Optional[UUID] = None,
-    ) -> Dict[str, Any]:
-        """Gets the side effects for a component in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-            component_id: The ID of the component to get.
-        """
 
     def list_runs(
         self,
@@ -1342,21 +1334,50 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
-    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a pipeline run.
+    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
+        """Updates a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to get the status for.
+            run: The pipeline run to use for the update.
 
         Returns:
-            The execution status of the pipeline run.
+            The updated pipeline run.
         """
-        body = self.get(f"{RUNS}/{str(run_id)}{STATUS}")
-        return ExecutionStatus(body)
+        return self._update_resource(
+            resource=run,
+            route=RUNS,
+        )
+
+    # TODO: Figure out what exactly gets returned from this
+    def get_run_component_side_effects(
+        self,
+        run_id: UUID,
+        component_id: Optional[UUID] = None,
+    ) -> Dict[str, Any]:
+        """Gets the side effects for a component in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+            component_id: The ID of the component to get.
+        """
 
     # ------------------
     # Pipeline run steps
     # ------------------
+
+    def create_run_step(self, step: StepRunModel) -> StepRunModel:
+        """Creates a step.
+
+        Args:
+            step: The step to create.
+
+        Returns:
+            The created step.
+        """
+        return self._create_resource(
+            resource=step,
+            route=STEPS,
+        )
 
     def get_run_step(self, step_id: UUID) -> StepRunModel:
         """Get a step by ID.
@@ -1373,26 +1394,38 @@ class RestZenStore(BaseZenStore):
             resource_model=StepRunModel,
         )
 
-    def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
-        """Get a list of outputs for a specific step.
+    def list_run_steps(
+        self, run_id: Optional[UUID] = None
+    ) -> List[StepRunModel]:
+        """Get all run steps.
 
         Args:
-            step_id: The id of the step to get outputs for.
+            run_id: If provided, only return steps for this pipeline run.
 
         Returns:
-            A dict mapping artifact names to the output artifacts for the step.
-
-        Raises:
-            ValueError: if the response from the API is not a dict.
+            A list of all run steps.
         """
-        body = self.get(f"{STEPS}/{str(step_id)}{OUTPUTS}")
-        if not isinstance(body, dict):
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
-        return {
-            name: ArtifactModel.parse_obj(entry) for name, entry in body.items()
-        }
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=STEPS,
+            resource_model=StepRunModel,
+            **filters,
+        )
+
+    def update_run_step(self, step: StepRunModel) -> StepRunModel:
+        """Updates a step.
+
+        Args:
+            step: The step to update.
+
+        Returns:
+            The updated step.
+        """
+        return self._update_resource(
+            resource=step,
+            route=STEPS,
+        )
 
     def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
         """Get a list of inputs for a specific step.
@@ -1415,40 +1448,36 @@ class RestZenStore(BaseZenStore):
             name: ArtifactModel.parse_obj(entry) for name, entry in body.items()
         }
 
-    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a single step.
+    # ---------
+    # Artifacts
+    # ---------
+
+    def create_artifact(self, artifact: ArtifactModel) -> ArtifactModel:
+        """Creates an artifact.
 
         Args:
-            step_id: The ID of the step to get the status for.
+            artifact: The artifact to create.
 
         Returns:
-            The execution status of the step.
+            The created artifact.
         """
-        body = self.get(f"{STEPS}/{str(step_id)}{STATUS}")
-        return ExecutionStatus(body)
-
-    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
-        """Gets all steps in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run for which to list runs.
-
-        Returns:
-            A mapping from step names to step models for all steps in the run.
-        """
-        return self._list_resources(
-            route=f"{RUNS}/{str(run_id)}{STEPS}",
-            resource_model=StepRunModel,
+        return self._create_resource(
+            resource=artifact,
+            route=ARTIFACTS,
         )
 
     def list_artifacts(
-        self, artifact_uri: Optional[str] = None
+        self,
+        artifact_uri: Optional[str] = None,
+        parent_step_id: Optional[UUID] = None,
     ) -> List[ArtifactModel]:
         """Lists all artifacts.
 
         Args:
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
+            parent_step_id: If specified, only artifacts for the given step run
+                will be returned.
 
         Returns:
             A list of all artifacts.
