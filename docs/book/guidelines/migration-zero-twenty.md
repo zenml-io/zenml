@@ -499,10 +499,10 @@ With the above changes, we are deprecating the much-loved `enable_xxx` decorator
 
 ```python
 @step(
-    experiment_tracker="mlflow_stack_comp_name"  # name of registered component
+    experiment_tracker="mlflow_stack_comp_name",  # name of registered component
     settings={  # settings of registered component
         "experiment_tracker.mlflow": {  # this is `category`.`flavor`, so another example is `step_operator.spark`
-            "experiment_name": "name"
+            "experiment_name": "name",
             "nested": False
         }
     }
@@ -593,7 +593,7 @@ The Post-execution workflow has changed as follows:
 
 - The `get_pipelines` and `get_pipeline` methods have been moved out of the `Repository` (i.e. the new `Client` ) class and lie directly in the post_execution module now. To use the user has to do:
 
-```bash
+```python
 from zenml.post_execution import get_pipelines, get_pipeline
 ```
 
