@@ -27,7 +27,7 @@ an example, if you wanted to use the latest CUDA-enabled official PyTorch image
 for your entire pipeline run, you could include the following code:
 
 ```python
-docker_settings = DockerSettings(parent_image="pytorch/pytorch:latest")
+docker_settings = DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime")
 
 @pipeline(settings={"docker": docker_settings})
 def my_pipeline(...):
@@ -42,7 +42,7 @@ be installed. There are lots of ways to specify this, but as one example, you
 could do the following (updating the code from above):
 
 ```python
-docker_settings = DockerSettings(parent_image="pytorch/pytorch:latest", requirements=["zenml==0.20.5", "torchvision"])
+docker_settings = DockerSettings(parent_image="pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime", requirements=["zenml==0.20.5", "torchvision"])
 
 @pipeline(settings={"docker": docker_settings})
 def my_pipeline(...):
