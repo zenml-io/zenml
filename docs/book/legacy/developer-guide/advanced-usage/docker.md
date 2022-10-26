@@ -114,6 +114,21 @@ package manager to get a list of your local packages):
     def my_pipeline(...):
         ...
     ```
+    If required, a custom command can be provided. This command has to output a list of requirements
+    following the format of the [requirements file](https://pip.pypa.io/en/stable/reference/requirements-file-format/):
+
+    ```python
+    docker_settings = DockerSettings(replicate_local_python_environment=[
+        "poetry",
+        "export",
+        "--extras=train",
+        "--format=requirements.txt"
+    ])
+
+    @pipeline(settings={"docker": docker_settings})
+    def my_pipeline(...):
+        ...
+    ```
 * Specify a list of pip requirements in code:
     ```python
     docker_config = DockerConfiguration(requirements=["torch==1.12.0", "torchvision"])
