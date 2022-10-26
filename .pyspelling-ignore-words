@@ -199,6 +199,7 @@ DefaultContainerRegistry
 Deprovision
 Deprovisions
 Deregisters
+Deserializes
 DevOps
 DockerConfiguration
 DockerHub
@@ -684,6 +685,7 @@ Terraform
 TheMatrix
 Tokenize
 Tokenizer
+Tolerations
 TorchServe
 TorchServe's
 TorchServeParameters
@@ -1426,6 +1428,7 @@ tokenize
 tokenized
 tokenizer
 tokenizers
+tolerations
 tolist
 topdown
 torch-model-archiver
