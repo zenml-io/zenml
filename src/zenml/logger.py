@@ -224,7 +224,9 @@ def disable_logging(log_level: int) -> Iterator[None]:
         logging.disable(old_level)
 
 
-def get_apidocs_link(docs_section: str, caller_path: str, core: bool = True) -> str:
+def get_apidocs_link(
+    docs_section: str, caller_path: str, core: bool = True
+) -> str:
     """Get link to api_docs of the caller.
 
     Args:
