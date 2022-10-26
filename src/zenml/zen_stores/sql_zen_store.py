@@ -2687,11 +2687,11 @@ class SqlZenStore(BaseZenStore):
 
             return new_run.to_model()
 
-    def get_run(self, run_id: UUID) -> PipelineRunModel:
+    def get_run(self, run_name_or_id: Union[str, UUID]) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to get.
+            run_name_or_id: The name or ID of the pipeline run to get.
 
         Returns:
             The pipeline run.
@@ -2700,14 +2700,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
-            run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
-            ).first()
-            if run is None:
-                raise KeyError(
-                    f"Unable to get pipeline run with ID {run_id}: "
-                    f"No pipeline run with this ID found."
-                )
+            run = self._get_run_schema(run_name_or_id, session=session)
             run_model = run.to_model()
             run_model = self._update_run_status(run_model)
             return run_model
@@ -3458,6 +3451,33 @@ class SqlZenStore(BaseZenStore):
                 object_name_or_id=role_name_or_id,
                 schema_class=RoleSchema,
                 schema_name="role",
+                session=session,
+            ),
+        )
+
+    def _get_run_schema(
+        self,
+        run_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> PipelineRunSchema:
+        """Gets a run schema by name or ID.
+
+        This is a helper method that is used in various places to find a run
+        by its name or ID.
+
+        Args:
+            run_name_or_id: The name or ID of the run to get.
+            session: The database session to use.
+
+        Returns:
+            The run schema.
+        """
+        return cast(
+            PipelineRunSchema,
+            self._get_schema_by_name_or_id(
+                object_name_or_id=run_name_or_id,
+                schema_class=PipelineRunSchema,
+                schema_name="run",
                 session=session,
             ),
         )
