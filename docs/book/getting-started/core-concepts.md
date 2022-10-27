@@ -104,7 +104,7 @@ The **ZenML Dashboard** also communicates with the ZenML Server to visualize you
 
 ![ZenML Dashboard](../assets/pipelines_dashboard.png)
 
-When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](../getting-started/deploying-zenml/). Don't worry though, there is a one-click way how to do it which we'll learn about [later](../starter-guide/collaborate/).
+When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](./deploying-zenml/deploying-zenml.md). Don't worry though, there is a one-click way how to do it which we'll learn about [later](../starter-guide/collaborate/collaborate.md).
 
 ## Other Bits and Pieces
 
