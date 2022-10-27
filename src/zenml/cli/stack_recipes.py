@@ -24,7 +24,8 @@ import click
 from rich.text import Text
 
 import zenml
-from zenml.cli import utils as cli_utils, server
+from zenml.cli import server
+from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StoreType
@@ -52,6 +53,7 @@ NOT_INSTALLED_MESSAGE = (
     "dependencies. To install the missing dependencies: \n\n"
     f'`pip install "zenml[stacks]=={zenml.__version__}"`.'
 )
+
 
 class LocalStackRecipe:
     """Class to encapsulate the local recipe that can be run from the CLI."""
@@ -401,7 +403,7 @@ class GitStackRecipesHandler(object):
         )
 
     def copy_stack_recipe(
-        self, stack_recipe: StackRecipe, destination_dir: str
+        self, stack_recipe_instance: StackRecipe, destination_dir: str
     ) -> None:
         """Copies a stack recipe to the destination_dir.
 
@@ -411,7 +413,9 @@ class GitStackRecipesHandler(object):
         """
         io_utils.create_dir_if_not_exists(destination_dir)
         io_utils.copy_dir(
-            str(stack_recipe.path_in_repo), destination_dir, overwrite=True
+            str(stack_recipe_instance.path_in_repo),
+            destination_dir,
+            overwrite=True,
         )
 
     @staticmethod
@@ -435,6 +439,7 @@ class GitStackRecipesHandler(object):
 pass_git_stack_recipes_handler = click.make_pass_decorator(
     GitStackRecipesHandler, ensure=True
 )
+
 
 @stack.group(
     "recipe",
@@ -472,6 +477,7 @@ def list_stack_recipes(
     )
     cli_utils.declare(text)
 
+
 @stack_recipe.command(help="Deletes the ZenML stack recipes directory.")
 @click.option(
     "--path",
@@ -481,9 +487,7 @@ def list_stack_recipes(
     help="Relative path at which you want to clean the stack_recipe(s)",
 )
 @pass_git_stack_recipes_handler
-def clean(
-    git_stack_recipes_handler: GitStackRecipesHandler, path: str
-) -> None:
+def clean(git_stack_recipes_handler: GitStackRecipesHandler, path: str) -> None:
     """Deletes the stack recipes directory from your working directory.
 
     Args:
@@ -506,6 +510,7 @@ def clean(
             f"{stack_recipes_directory} - "
             "as it was not found in your current working directory."
         )
+
 
 @stack_recipe.command(help="Find out more about a stack recipe.")
 @pass_git_stack_recipes_handler
@@ -531,6 +536,7 @@ def info(
 
     else:
         print(stack_recipe_obj.readme_content)
+
 
 @stack_recipe.command(
     help="Describe the stack components and their tools that are "
@@ -565,9 +571,8 @@ def describe(
         )
         logger.info(metadata["Description"])
 
-@stack_recipe.command(
-    help="The active version of the mlops-stacks repository"
-)
+
+@stack_recipe.command(help="The active version of the mlops-stacks repository")
 @pass_git_stack_recipes_handler
 def version(
     git_stack_recipes_handler: GitStackRecipesHandler,
@@ -582,6 +587,7 @@ def version(
         cli_utils.declare(active_version)
     else:
         cli_utils.warning("Unable to detect version.")
+
 
 @stack_recipe.command(
     help="Pull stack recipes straight into your current working directory."
@@ -664,7 +670,7 @@ def pull(
 
             io_utils.create_dir_if_not_exists(destination_dir)
             git_stack_recipes_handler.copy_stack_recipe(
-                stack_recipe, destination_dir
+                stack_recipe_instance, destination_dir
             )
             cli_utils.declare(
                 f"Stack recipe pulled in directory: {destination_dir}"
@@ -678,6 +684,7 @@ def pull(
                 AnalyticsEvent.PULL_STACK_RECIPE,
                 {"stack_recipe_name": stack_recipe_instance.name},
             )
+
 
 @stack_recipe.command(
     help="Run the stack_recipe that you previously pulled with "
@@ -771,7 +778,7 @@ def deploy(
         no_server: Don't deploy ZenML even if there's no active cloud deployment.
     """
     import python_terraform
-    
+
     cli_utils.warning(ALPHA_MESSAGE)
     stack_recipes_dir = Path(os.getcwd()) / path
 
@@ -785,9 +792,7 @@ def deploy(
         )
 
     try:
-        _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
-            0
-        ]
+        _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[0]
     except KeyError as e:
         cli_utils.error(str(e))
     else:
@@ -807,9 +812,7 @@ def deploy(
         try:
             # warn that prerequisites should be met
             metadata = yaml_utils.read_yaml(
-                file_path=os.path.join(
-                    local_stack_recipe.path, "metadata.yaml"
-                )
+                file_path=os.path.join(local_stack_recipe.path, "metadata.yaml")
             )
             if not cli_utils.confirmation(
                 "\nPrerequisites for running this recipe are as follows.\n"
@@ -892,9 +895,7 @@ def deploy(
                             "not create a new installation."
                         )
                     else:
-                        logger.info(
-                            "No remote deployment of ZenML detected. "
-                        )
+                        logger.info("No remote deployment of ZenML detected. ")
                         vars = stack_recipe_service.get_vars()
                         filter = [
                             "aws-stores-minimal",
@@ -993,6 +994,7 @@ def deploy(
                 f"run zenml stack recipe deploy {stack_recipe_name} again"
             )
 
+
 def zen_server_exists() -> bool:
     """Check if a remote ZenServer is active.
 
@@ -1002,6 +1004,7 @@ def zen_server_exists() -> bool:
     gc = GlobalConfiguration()
 
     return gc.store and gc.store.type == StoreType.REST
+
 
 @stack_recipe.command(
     help="Destroy the stack components created previously with "
@@ -1030,13 +1033,13 @@ def destroy(
     Args:
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
         stack_recipe_name: The name of the stack_recipe.
-        path: The path at which you want to install the stack_recipe(s).
+        path: The path of the stack recipe you want to destroy.
 
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
     import python_terraform
-    
+
     cli_utils.warning(ALPHA_MESSAGE)
 
     stack_recipes_dir = Path(os.getcwd()) / path
@@ -1051,9 +1054,7 @@ def destroy(
         )
 
     try:
-        _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
-            0
-        ]
+        _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[0]
     except KeyError as e:
         cli_utils.error(str(e))
     else:
@@ -1079,7 +1080,7 @@ def destroy(
             )
             # use the stack recipe directory path to find the service instance
             from zenml.recipes import StackRecipeService
-            
+
             stack_recipe_service = StackRecipeService.get_service(
                 str(local_stack_recipe.path)
             )

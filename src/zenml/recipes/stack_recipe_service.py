@@ -16,10 +16,11 @@
 import os
 import subprocess
 from typing import Any, ClassVar, Dict, Optional, cast
-import yaml
-import zenml
 
-from zenml.cli.stack_recipes import STACK_FILE_NAME, logger
+import yaml
+
+import zenml
+from zenml.cli.stack_recipes import logger
 from zenml.services import ServiceType
 from zenml.services.terraform.terraform_service import (
     SERVICE_CONFIG_FILE_NAME,
@@ -227,4 +228,3 @@ class StackRecipeService(TerraformService):
             )
 
         return yaml.dump(config)
-
