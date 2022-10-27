@@ -162,7 +162,10 @@ app.include_router(users_endpoints.activation_router)
 def sync_pipeline_runs() -> None:
     """Sync pipeline runs."""
     logger.info("Syncing pipeline runs...")
-    zen_store()._sync_runs()
+    try:
+        zen_store()._sync_runs()
+    except Exception:
+        logger.exception("Failed to sync pipeline runs.")
 
 
 def get_root_static_files() -> List[str]:

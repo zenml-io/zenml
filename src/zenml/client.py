@@ -16,7 +16,7 @@
 import os
 from abc import ABCMeta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
@@ -1106,6 +1106,10 @@ class Client(metaclass=ClientMetaClass):
                     "exists."
                 )
 
+    # .------------------.
+    # | Pipelines & Runs |
+    # '------------------'
+
     def get_pipeline_by_name(self, name: str) -> "PipelineModel":
         """Fetches a pipeline by name.
 
@@ -1184,6 +1188,254 @@ class Client(metaclass=ClientMetaClass):
             "change all existing runs of this pipeline to become unlisted."
         )
         raise AlreadyExistsException(error_msg)
+
+    def export_pipeline_runs(self, filename: str) -> None:
+        """Export all pipeline runs to a YAML file.
+
+        Args:
+            filename: The filename to export the pipeline runs to.
+        """
+        import json
+
+        from zenml.utils.yaml_utils import write_yaml
+
+        pipeline_runs = self.zen_store.list_runs(
+            project_name_or_id=self.active_project.id
+        )
+        if not pipeline_runs:
+            logger.warning("No pipeline runs found. Nothing to export.")
+            return
+        yaml_data = []
+        for pipeline_run in pipeline_runs:
+            run_dict = json.loads(pipeline_run.json())
+            run_dict["steps"] = []
+            steps = self.zen_store.list_run_steps(run_id=pipeline_run.id)
+            for step in steps:
+                step_dict = json.loads(step.json())
+                step_dict["output_artifacts"] = []
+                artifacts = self.zen_store.list_artifacts(
+                    parent_step_id=step.id
+                )
+                for artifact in sorted(artifacts, key=lambda x: x.created):
+                    artifact_dict = json.loads(artifact.json())
+                    step_dict["output_artifacts"].append(artifact_dict)
+                run_dict["steps"].append(step_dict)
+            yaml_data.append(run_dict)
+        write_yaml(filename, yaml_data)
+        logger.info(f"Exported {len(yaml_data)} pipeline runs to {filename}.")
+
+    def import_pipeline_runs(self, filename: str) -> None:
+        """Import pipeline runs from a YAML file.
+
+        Args:
+            filename: The filename from which to import the pipeline runs.
+        """
+        from datetime import datetime
+
+        from zenml.models.pipeline_models import (
+            ArtifactModel,
+            PipelineRunModel,
+            StepRunModel,
+        )
+        from zenml.utils.yaml_utils import read_yaml
+
+        step_id_mapping: Dict[str, UUID] = {}
+        artifact_id_mapping: Dict[str, UUID] = {}
+        yaml_data = read_yaml(filename)
+        for pipeline_run_dict in yaml_data:
+            steps = pipeline_run_dict.pop("steps")
+            pipeline_run_dict.pop("id")
+            pipeline_run = PipelineRunModel.parse_obj(pipeline_run_dict)
+            pipeline_run.updated = datetime.now()
+            pipeline_run.user = self.active_user.id
+            pipeline_run.project = self.active_project.id
+            pipeline_run.stack_id = None
+            pipeline_run.pipeline_id = None
+            pipeline_run.mlmd_id = None
+            pipeline_run = self.zen_store.create_run(pipeline_run)
+            for step_dict in steps:
+                artifacts = step_dict.pop("output_artifacts")
+                step_id = step_dict.pop("id")
+                step = StepRunModel.parse_obj(step_dict)
+                step.pipeline_run_id = pipeline_run.id
+                step.parent_step_ids = [
+                    step_id_mapping[str(parent_step_id)]
+                    for parent_step_id in step.parent_step_ids
+                ]
+                step.input_artifacts = {
+                    input_name: artifact_id_mapping[str(artifact_id)]
+                    for input_name, artifact_id in step.input_artifacts.items()
+                }
+                step.updated = datetime.now()
+                step.mlmd_id = None
+                step.mlmd_parent_step_ids = []
+                step = self.zen_store.create_run_step(step)
+                step_id_mapping[str(step_id)] = step.id
+                for artifact_dict in artifacts:
+                    artifact_id = artifact_dict.pop("id")
+                    artifact = ArtifactModel.parse_obj(artifact_dict)
+                    artifact.parent_step_id = step.id
+                    artifact.producer_step_id = step_id_mapping[
+                        str(artifact.producer_step_id)
+                    ]
+                    artifact.updated = datetime.now()
+                    artifact.mlmd_id = None
+                    artifact.mlmd_parent_step_id = None
+                    artifact.mlmd_producer_step_id = None
+                    self.zen_store.create_artifact(artifact)
+                    artifact_id_mapping[str(artifact_id)] = artifact.id
+        logger.info(f"Imported {len(yaml_data)} pipeline runs from {filename}.")
+
+    def migrate_pipeline_runs(
+        self,
+        database: str,
+        database_type: str = "sqlite",
+        mysql_host: Optional[str] = None,
+        mysql_port: int = 3306,
+        mysql_username: Optional[str] = None,
+        mysql_password: Optional[str] = None,
+    ) -> None:
+        """Migrate pipeline runs from a metadata store of ZenML < 0.20.0.
+
+        Args:
+            database: The metadata store database from which to migrate the
+                pipeline runs. Either a path to a SQLite database or a database
+                name for a MySQL database.
+            database_type: The type of the metadata store database
+                ("sqlite" | "mysql"). Defaults to "sqlite".
+            mysql_host: The host of the MySQL database.
+            mysql_port: The port of the MySQL database. Defaults to 3306.
+            mysql_username: The username of the MySQL database.
+            mysql_password: The password of the MySQL database.
+
+        Raises:
+            NotImplementedError: If the database type is not supported.
+            RuntimeError: If no pipeline runs exist.
+            ValueError: If the database type is "mysql" but the MySQL host,
+                username or password are not provided.
+        """
+        from tfx.orchestration import metadata
+
+        from zenml.enums import ExecutionStatus
+        from zenml.models.pipeline_models import (
+            ArtifactModel,
+            PipelineRunModel,
+            StepRunModel,
+        )
+        from zenml.zen_stores.metadata_store import MetadataStore
+
+        # Define MLMD connection config based on the database type.
+        if database_type == "sqlite":
+            mlmd_config = metadata.sqlite_metadata_connection_config(database)
+        elif database_type == "mysql":
+            if not mysql_host or not mysql_username or mysql_password is None:
+                raise ValueError(
+                    "Migration from MySQL requires username, password and host "
+                    "to be set."
+                )
+            mlmd_config = metadata.mysql_metadata_connection_config(
+                database=database,
+                host=mysql_host,
+                port=mysql_port,
+                username=mysql_username,
+                password=mysql_password,
+            )
+        else:
+            raise NotImplementedError(
+                "Migrating pipeline runs is only supported for SQLite and MySQL."
+            )
+
+        metadata_store = MetadataStore(config=mlmd_config)
+
+        # Dicts to keep tracks of MLMD IDs, which we need to resolve later.
+        step_mlmd_id_mapping: Dict[int, UUID] = {}
+        artifact_mlmd_id_mapping: Dict[int, UUID] = {}
+
+        # Get all pipeline runs from the metadata store.
+        pipeline_runs = metadata_store.get_all_runs()
+        if not pipeline_runs:
+            raise RuntimeError("No pipeline runs found in the metadata store.")
+
+        # For each run, first store the pipeline run, then all steps, then all
+        # output artifacts of each step.
+        # Runs, steps, and artifacts need to be sorted chronologically ensure
+        # that the MLMD IDs of producer steps and parent steps can be resolved.
+        for mlmd_run in sorted(pipeline_runs, key=lambda x: x.mlmd_id):
+            steps = metadata_store.get_pipeline_run_steps(
+                mlmd_run.mlmd_id
+            ).values()
+
+            # Mark all steps that haven't finished yet as failed.
+            step_statuses = []
+            for step in steps:
+                status = metadata_store.get_step_status(step.mlmd_id)
+                if status == ExecutionStatus.RUNNING:
+                    status = ExecutionStatus.FAILED
+                step_statuses.append(status)
+
+            num_steps = len(steps)
+            pipeline_run = PipelineRunModel(
+                user=self.active_user.id,  # Old user might not exist.
+                project=self.active_project.id,  # Old project might not exist.
+                name=mlmd_run.name,
+                stack_id=None,  # Stack might not exist in new DB.
+                pipeline_id=None,  # Pipeline might not exist in new DB.
+                status=ExecutionStatus.run_status(step_statuses, num_steps),
+                pipeline_configuration=mlmd_run.pipeline_configuration,
+                num_steps=num_steps,
+                mlmd_id=None,  # Run might not exist in new MLMD.
+            )
+            new_run = self.zen_store.create_run(pipeline_run)
+            for step, step_status in sorted(
+                zip(steps, step_statuses), key=lambda x: x[0].mlmd_id
+            ):
+                parent_step_ids = [
+                    step_mlmd_id_mapping[mlmd_parent_step_id]
+                    for mlmd_parent_step_id in step.mlmd_parent_step_ids
+                ]
+                inputs, outputs = metadata_store.get_step_artifacts(
+                    step_id=step.mlmd_id,
+                    step_parent_step_ids=step.mlmd_parent_step_ids,
+                    step_name=step.name,
+                )
+                input_artifacts = {
+                    input_name: artifact_mlmd_id_mapping[mlmd_artifact.mlmd_id]
+                    for input_name, mlmd_artifact in inputs.items()
+                }
+                step_run = StepRunModel(
+                    name=step.name,
+                    pipeline_run_id=new_run.id,
+                    parent_step_ids=parent_step_ids,
+                    input_artifacts=input_artifacts,
+                    status=step_status,
+                    entrypoint_name=step.entrypoint_name,
+                    parameters=step.parameters,
+                    step_configuration={},
+                    mlmd_parent_step_ids=[],
+                )
+                new_step = self.zen_store.create_run_step(step_run)
+                step_mlmd_id_mapping[step.mlmd_id] = new_step.id
+                for output_name, mlmd_artifact in sorted(
+                    outputs.items(), key=lambda x: x[1].mlmd_id
+                ):
+                    producer_step_id = step_mlmd_id_mapping[
+                        mlmd_artifact.mlmd_producer_step_id
+                    ]
+                    artifact = ArtifactModel(
+                        name=output_name,
+                        parent_step_id=new_step.id,
+                        producer_step_id=producer_step_id,
+                        type=mlmd_artifact.type,
+                        uri=mlmd_artifact.uri,
+                        materializer=mlmd_artifact.materializer,
+                        data_type=mlmd_artifact.data_type,
+                        is_cached=mlmd_artifact.is_cached,
+                    )
+                    new_artifact = self.zen_store.create_artifact(artifact)
+                    artifact_mlmd_id_mapping[
+                        mlmd_artifact.mlmd_id
+                    ] = new_artifact.id
+        logger.info(f"Migrated {len(pipeline_runs)} pipeline runs.")
 
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.

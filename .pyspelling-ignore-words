@@ -23,7 +23,7 @@ AmazonEKSClusterPolicy
 AmazonEKSWorkerNodePolicy
 AmazonRDS
 AmazonS
-Anys
+AnysCORS
 ApiException
 Archiver
 Argo
@@ -196,6 +196,7 @@ DeepchecksModelValidationCheck
 DeepchecksModelValidationCheckStep
 DeepchecksVisualizer
 DefaultContainerRegistry
+DeleteObject
 Deprovision
 Deprovisions
 Deregisters
@@ -272,6 +273,7 @@ GKE
 GPUs
 GRPC
 Gartner
+GetObject
 GettingStarted
 Gi
 GitBook
@@ -361,6 +363,7 @@ LabelStudio
 LabelStudioAnnotator
 LegacyVersion
 LightGBM
+ListBucket
 LocalArtifactStore
 LocalDaemonService
 LocalDaemonService
@@ -508,6 +511,7 @@ ProfileConfiguration
 ProfileVisualizer
 ProgrammingError
 ProvisioningError
+PutObject
 PyPI
 PyPi
 PySpark
@@ -719,6 +723,7 @@ VertexAI
 VertexOrchestrator
 VertexOrchestratorConfig
 VisionData
+VisualEditor
 VpcId
 Vpcs
 WandbCallback
@@ -878,6 +883,7 @@ conll
 containerise
 containerregistry
 copyfile
+cors
 cp
 cprf
 cpu
@@ -1344,6 +1350,7 @@ serverCaCert
 serverless
 serviceAccount
 serviceAccountName
+serviceAccountTokenCreator
 serviceAccountUser
 serviceAgent
 serviceacc
@@ -1452,6 +1459,7 @@ unregister
 unregistering
 unscoped
 unstaged
+unsynced
 untracked
 untyped
 updatable
