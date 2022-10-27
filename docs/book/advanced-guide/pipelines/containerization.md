@@ -7,8 +7,8 @@ use the `BaseSettings` concept to configure ZenML in various ways. In this guide
 one particular sub-class of `BaseSettings` which is of particular important: `DockerSettings`. Here is why it is important.
 
 When running locally, ZenML will execute the steps of your pipeline in the
-active Python environment. When using remote [orchestrators](../../mlops-stacks/orchestrators/orchestrators.md)
-or [step operators](../../mlops-stacks/step-operators/step-operators.md) instead,
+active Python environment. When using remote [orchestrators](../../component-gallery/orchestrators/orchestrators.md)
+or [step operators](../../component-gallery/step-operators/step-operators.md) instead,
 ZenML builds [Docker](https://www.docker.com/) images to transport and
 run your pipeline code in an isolated and well-defined environment.
 For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated and used
@@ -18,7 +18,7 @@ the following steps:
 * Starts from a parent image which needs to have ZenML installed. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](#using-a-custom-parent-image).
 * **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies.
 If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](#how-to-install-additional-pip-dependencies).
-* **Copies your global configuration**. This is needed so that ZenML can connect to your [deployed ZenML instance](../deploying-zenml/deployment.md) to fetch the active stack and other required information.
+* **Copies your global configuration**. This is needed so that ZenML can connect to your [deployed ZenML instance](../../getting-started/deploying-zenml/deploying-zenml.md) to fetch the active stack and other required information.
 * **Copies your source files**. These files need to be included in the Docker image so ZenML can execute your step code. Check out [this section](#which-files-get-included) for more information on which files get included by default and how to exclude files.
 * **Sets user-defined environment variables.**
 
@@ -51,7 +51,7 @@ from zenml.config import DockerSettings
 
 ZenML will try to determine the root directory of your source files in the following order:
 * If you've created a 
-[ZenML repository](../stacks-repositories/repository.md)
+[ZenML repository](../../starter-guide/stacks/stacks.md)
 for your project, the repository directory will be used.
 * Otherwise, the parent directory of the python file you're executing will be the source root.
 For example, running `python /path/to/file.py`, the source root would be `/path/to`.
@@ -138,7 +138,7 @@ package manager to get a list of your local packages):
     def my_pipeline(...):
         ...
     ```
-* Specify a list of [ZenML integrations](../../mlops-stacks/integrations.md) that you're using in your pipeline:
+* Specify a list of [ZenML integrations](../../component-gallery/integrations.md) that you're using in your pipeline:
     ```python
     from zenml.integrations.constants import PYTORCH, EVIDENTLY
 
@@ -166,8 +166,8 @@ package manager to get a list of your local packages):
     ```
 
 You can even combine these methods, but do make sure that your
-list of pip requirements [doesn't overlap](../../resources/best-practices.md#do-not-overlap-requiredintegrations-and-requirements)
-with the ones specified by your required integrations.
+list of pip requirements doesn't overlap with the ones specified by your required integrations.
+See our recommended [best practices](../../guidelines/best-practices.md) for more tips.
 
 Depending on all the options specified in your Docker settings, ZenML will install the requirements
 in the following order (each step optional):
