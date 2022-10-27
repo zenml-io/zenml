@@ -93,7 +93,7 @@ def list_runs(
 
 
 @router.get(
-    "/{run_id}",
+    "/{run_name_or_id}",
     response_model=Union[HydratedPipelineRunModel, PipelineRunModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
