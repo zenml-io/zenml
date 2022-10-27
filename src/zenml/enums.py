@@ -133,6 +133,7 @@ class ServerProviderType(StrEnum):
     DOCKER = "docker"
     AWS = "aws"
     GCP = "gcp"
+    AZURE = "azure"
 
 
 class AnalyticsEventSource(StrEnum):
