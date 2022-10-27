@@ -87,6 +87,7 @@ spec:
               value: {{ .Values.zenml.metadataSyncPeriod | default 10 | quote }}
 
             {{- if and .Values.grpcMetadata.enabled .Values.zenml.database.url }}
+
             {{-   if and .Values.grpcMetadata.ingress.enabled }}
 
             - name: ZENML_STORE_GRPC_METADATA_HOST
@@ -96,27 +97,11 @@ spec:
               value: {{ .Values.grpcMetadata.externalHostname }}
             {{-     end }}
             - name: ZENML_STORE_GRPC_METADATA_PORT
-            {{-     if and .Values.grpcMetadata.ingress.tls.enabled }}
+            {{-     if or .Values.grpcMetadata.tls.enabled .Values.grpcMetadata.ingress.tls.enabled }}
               value: "443"
             {{-     else }}
               value: "80"
             {{-     end }}
-
-            - name: ZENML_STORE_GRPC_METADATA_SSL_CA
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.grpcMetadata.ingress.tls.clientSecretName }}
-                  key: ca.crt
-            - name: ZENML_STORE_GRPC_METADATA_SSL_CERT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.grpcMetadata.ingress.tls.clientSecretName }}
-                  key: tls.crt
-            - name: ZENML_STORE_GRPC_METADATA_SSL_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.grpcMetadata.ingress.tls.clientSecretName }}
-                  key: tls.key
 
             {{-   else }}
 
@@ -126,6 +111,25 @@ spec:
               value: {{ .Values.grpcMetadata.service.port | quote }}
 
             {{-   end }}
+
+            {{-   if .Values.grpcMetadata.tls.enabled }}
+            - name: ZENML_STORE_GRPC_METADATA_SSL_CA
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.grpcMetadata.tls.clientSecretName }}
+                  key: ca.crt
+            - name: ZENML_STORE_GRPC_METADATA_SSL_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.grpcMetadata.tls.clientSecretName }}
+                  key: tls.crt
+            - name: ZENML_STORE_GRPC_METADATA_SSL_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.grpcMetadata.tls.clientSecretName }}
+                  key: tls.key
+            {{-   end }}
+
 
             {{- end }}
 

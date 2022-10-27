@@ -19,12 +19,12 @@ metadata:
   labels:
     {{- include "zenml.metadataLabels" . | nindent 4 }}
   annotations:
-    {{- if .Values.grpcMetadata.ingress.tls.enabled }}
+    {{- if and .Values.grpcMetadata.tls.enabled .Values.grpcMetadata.ingress.tls.enabled }}
     nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
     # Enable client certificate authentication
     nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
     # The secret containing the trusted ca certificates
-    nginx.ingress.kubernetes.io/auth-tls-secret: {{ .Values.grpcMetadata.ingress.tls.clientSecretName }}
+    nginx.ingress.kubernetes.io/auth-tls-secret: {{ .Values.grpcMetadata.tls.clientSecretName }}
     {{- else }}
     nginx.ingress.kubernetes.io/backend-protocol: "GRPCS"
     {{- end }}
@@ -35,11 +35,11 @@ spec:
   {{- if and .Values.grpcMetadata.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
   ingressClassName: {{ .Values.grpcMetadata.ingress.className }}
   {{- end }}
-  {{- if .Values.grpcMetadata.ingress.tls.enabled }}
+  {{- if and .Values.grpcMetadata.tls.enabled .Values.grpcMetadata.ingress.tls.enabled }}
   tls:
     - hosts:
         - {{ .Values.grpcMetadata.ingress.host | quote }}
-      secretName: {{ .Values.grpcMetadata.ingress.tls.secretName }}
+      secretName: {{ .Values.grpcMetadata.tls.secretName }}
   {{- end }}
   rules:
     - http:

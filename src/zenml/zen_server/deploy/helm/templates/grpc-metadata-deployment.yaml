@@ -98,8 +98,7 @@ spec:
         {{- if or (not .Values.grpcMetadata.ingress.enabled) (not .Values.grpcMetadata.ingress.tls.enabled) }}
         - name: grpc-certs
           secret:
-            secretName: {{ include "zenml.fullname" . }}
-            mountPath: "/grpc-certs"
+            secretName: {{ .Values.grpcMetadata.tls.secretName }}
         {{- end }}
 
 
