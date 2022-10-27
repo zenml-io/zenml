@@ -87,6 +87,7 @@ from zenml.zen_stores.migrations.alembic import (
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     FlavorSchema,
+    PipelineRunNameSchema,
     PipelineRunSchema,
     PipelineSchema,
     ProjectSchema,
@@ -2721,42 +2722,30 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The pipeline run model with updated status.
         """
-        # Update status only if the run is still running
-        if run_model.status != ExecutionStatus.RUNNING:
+        # Update status only if the run is running and fully synced.
+        if run_model.status != ExecutionStatus.RUNNING or self._sync_run_steps(
+            run_model.id, check=True
+        ):
             return run_model
 
-        # Update status only if the run is fully synced
-        if not self._sync_run_steps(run_model.id, check=True):
-            steps = self.list_run_steps(run_id=run_model.id)
+        steps = self.list_run_steps(run_id=run_model.id)
 
-            # For legacy runs, we have no `num_steps`. Therefore, we cannot
-            # determine the status of the run correctly. Instead, we need to
-            # load all steps from MLMD and compute `status` and `num_steps`
-            # from that.
-            if run_model.num_steps > 0:
-                num_steps = run_model.num_steps
-            else:
-                num_steps = len(steps)
+        # For legacy runs, we have no `num_steps`. Therefore, we cannot
+        # determine the status of the run correctly. Instead, we need to
+        # load all steps from MLMD and compute `status` and `num_steps`
+        # from that.
+        if run_model.num_steps > 0:
+            num_steps = run_model.num_steps
+        else:
+            num_steps = len(steps)
 
-            status = ExecutionStatus.run_status(
-                step_statuses=[step.status for step in steps],
-                num_steps=num_steps,
-            )
-            if run_model.status != status:
-                run_model.status = status
-                return self.update_run(run_model)
-
-        # Set status to failed if the run is still running and  wasn't updated
-        # in the last hour. This is primariliy used to set old aborted runs with
-        # hanging running status to failed so the sync doesn't need to check
-        # them every time.
-        if (
-            run_model.status == ExecutionStatus.RUNNING
-            and run_model.updated < datetime.now() - timedelta(hours=1)
-        ):
-            run_model.status = ExecutionStatus.FAILED
-            return self.update_run(run_model)
-
+        status = ExecutionStatus.run_status(
+            step_statuses=[step.status for step in steps],
+            num_steps=num_steps,
+        )
+        if run_model.status != status:
+            run_model.status = status
+            self.update_run(run_model)
         return run_model
 
     def list_runs(
