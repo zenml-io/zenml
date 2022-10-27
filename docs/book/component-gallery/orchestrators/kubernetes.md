@@ -66,8 +66,8 @@ python file_that_runs_a_zenml_pipeline.py
 For additional configuration of the Kubernetes orchestrator, you can pass
 `KubernetesOrchestratorSettings` which allows you to configure the following attributes:
 
-* `node_affinity`: NodeAffinity match expressions.
-* `tolerations`: Toleration settings for the pod.
+* `affinity`: Affinity constraints (`spec.affinity`) that can be defined to a pod.
+* `tolerations`: Toleration (`spec.tolerations`) so the pod can be scheduled.
 
 ```python
 from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
