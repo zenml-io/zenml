@@ -197,6 +197,7 @@ class PipelineRunSchema(SQLModel, table=True):
         Returns:
             The updated `PipelineRunSchema`.
         """
+        self.mlmd_id = model.mlmd_id
         self.status = model.status
         self.updated = datetime.now()
         return self
