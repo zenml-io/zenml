@@ -88,6 +88,8 @@ zenml:
   defaultPassword: zenml
 
   # MySQL database configuration. If not set, a local sqlite database will be used.
+  # The certificate files need to be copied in the helm chart folder and the
+  # paths configured here need to be relative to the root of the helm chart.
   database: {}
     # url: "mysql://admin:password@zenml-mysql:3306/database"
     # sslCa: /path/to/ca.pem
@@ -130,7 +132,9 @@ grpcMetadata:
     port: 8080
 
   # The external hostname where the gRPC metadata service is accessible.
-  # This is not needed if the ingress is enabled and a host is set for it.
+  # This is needed if the ingress is not enabled or a host is not set for it
+  # (e.g. this should be set to the LoadBalancer IP address, if an ingress is
+  # not used to expose the gRPC service).
   externalHostname:
 
   tls:
@@ -147,8 +151,6 @@ grpcMetadata:
       # kubernetes.io/tls-acme: "true"
       # cert-manager.io/cluster-issuer: "letsencrypt"
     host:
-    tls:
-      enabled: true
 
 serviceAccount:
   # Specifies whether a service account should be created

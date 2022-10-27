@@ -46,7 +46,7 @@ spec:
           - name: certs
             mountPath: "/certs"
           {{- end }}
-          {{- if or (not .Values.grpcMetadata.ingress.enabled) (not .Values.grpcMetadata.ingress.tls.enabled) }}
+          {{- if (not .Values.grpcMetadata.ingress.enabled) }}
           - name: grpc-certs
             mountPath: "/grpc-certs"
           {{- end }}
@@ -95,7 +95,7 @@ spec:
             {{- end }}
         {{- end }}
 
-        {{- if or (not .Values.grpcMetadata.ingress.enabled) (not .Values.grpcMetadata.ingress.tls.enabled) }}
+        {{- if (not .Values.grpcMetadata.ingress.enabled) }}
         - name: grpc-certs
           secret:
             secretName: {{ .Values.grpcMetadata.tls.secretName }}

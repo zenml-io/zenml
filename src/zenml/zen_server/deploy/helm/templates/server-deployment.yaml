@@ -97,11 +97,7 @@ spec:
               value: {{ .Values.grpcMetadata.externalHostname }}
             {{-     end }}
             - name: ZENML_STORE_GRPC_METADATA_PORT
-            {{-     if or .Values.grpcMetadata.tls.enabled .Values.grpcMetadata.ingress.tls.enabled }}
               value: "443"
-            {{-     else }}
-              value: "80"
-            {{-     end }}
 
             {{-   else }}
 

@@ -19,14 +19,16 @@ metadata:
   labels:
     {{- include "zenml.metadataLabels" . | nindent 4 }}
   annotations:
-    {{- if and .Values.grpcMetadata.tls.enabled .Values.grpcMetadata.ingress.tls.enabled }}
+    {{- if and .Values.grpcMetadata.tls.enabled }}
     nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
     # Enable client certificate authentication
     nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
     # The secret containing the trusted ca certificates
-    nginx.ingress.kubernetes.io/auth-tls-secret: {{ .Values.grpcMetadata.tls.clientSecretName }}
+    nginx.ingress.kubernetes.io/auth-tls-secret: {{ .Release.Namespace }}/{{ .Values.grpcMetadata.tls.clientSecretName }}
+    # Specify the verification depth in the client certificates chain
+    nginx.ingress.kubernetes.io/auth-tls-verify-depth: "1"
     {{- else }}
-    nginx.ingress.kubernetes.io/backend-protocol: "GRPCS"
+    {{- fail "TLS must be enabled for the gRPC metadata service is an ingress is used to expose the service" }}
     {{- end }}
   {{- with .Values.grpcMetadata.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
@@ -35,7 +37,7 @@ spec:
   {{- if and .Values.grpcMetadata.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
   ingressClassName: {{ .Values.grpcMetadata.ingress.className }}
   {{- end }}
-  {{- if and .Values.grpcMetadata.tls.enabled .Values.grpcMetadata.ingress.tls.enabled }}
+  {{- if .Values.grpcMetadata.tls.enabled }}
   tls:
     - hosts:
         - {{ .Values.grpcMetadata.ingress.host | quote }}
