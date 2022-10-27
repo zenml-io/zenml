@@ -87,7 +87,6 @@ from zenml.zen_stores.migrations.alembic import (
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     FlavorSchema,
-    PipelineRunNameSchema,
     PipelineRunSchema,
     PipelineSchema,
     ProjectSchema,
@@ -3535,26 +3534,49 @@ class SqlZenStore(BaseZenStore):
         This queries all runs from MLMD, checks for each whether it already
         exists in the database, and if not, creates it.
         """
-        # Sync all MLMD runs that don't exist in ZenML.
-        # For performance reasons, we determine this by explicitly ignoring runs
-        # that already exist in ZenML when querying MLMD.
+        # Find all runs that already have an MLMD ID. These are already synced
+        # and connected to MLMD, so we don't need to query them from MLMD again.
         with Session(self.engine) as session:
             synced_mlmd_ids = session.exec(
                 select(PipelineRunSchema.mlmd_id).where(
                     isnot(PipelineRunSchema.mlmd_id, None)
                 )
             ).all()
+
+        # Find all runs that have no MLMD ID. These might need to be connected.
+        with Session(self.engine) as session:
+            runs_without_mlmd_id = session.exec(
+                select(PipelineRunSchema).where(
+                    is_(PipelineRunSchema.mlmd_id, None)
+                )
+            ).all()
+        runs_without_mlmd_id_dict = {
+            run_.name: run_ for run_ in runs_without_mlmd_id
+        }
+
+        # Sync all MLMD runs that don't exist in ZenML. For performance reasons,
+        # we determine this by explicitly ignoring runs that are already synced.
         unsynced_mlmd_runs = self.metadata_store.get_all_runs(
             ignored_ids=[id_ for id_ in synced_mlmd_ids if id_ is not None]
         )
         for mlmd_run in unsynced_mlmd_runs:
-            try:
-                self._sync_run(mlmd_run)
-            except (KeyError, EntityExistsError) as err:
-                logger.warning(
-                    f"Syncing run '{mlmd_run.name}' failed: {str(err)}"
-                )
-                continue
+
+            # If a run is written in both ZenML and MLMD but doesn't have an
+            # MLMD ID set in the DB, we need to set it to connect the two.
+            if mlmd_run.name in runs_without_mlmd_id_dict:
+                run_model = runs_without_mlmd_id_dict[mlmd_run.name].to_model()
+                run_model.mlmd_id = mlmd_run.mlmd_id
+                self.update_run(run_model)
+
+            # Create runs that are in MLMD but not in the DB.
+            else:
+                try:
+                    self._sync_run(mlmd_run)
+                except (KeyError, EntityExistsError) as err:
+                    logger.warning(
+                        f"Syncing run '{mlmd_run.name}' failed: {str(err)}"
+                    )
+                    continue
 
         # Sync steps and status of all unfinished runs.
         with Session(self.engine) as session:
