@@ -62,5 +62,5 @@ Every week, we pop in a session for 30 minutes to interact directly with the
 community. Sometimes we'll be presenting a feature, other times just taking 
 questions and having fun. Join us if you are curious about ZenML or just want 
 to talk shop about MLOps. The session is free and open to everyone, 
-[join us](https://zenml.io/meet) now.
+[sign up](https://zenml.io/meet) now.
 
