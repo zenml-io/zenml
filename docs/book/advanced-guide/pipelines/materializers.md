@@ -20,7 +20,7 @@ then deserialized and read in the next step.
 
 For most data types, ZenML already includes built-in materializers that
 automatically handle artifacts of those data types. For instance, all of the 
-examples from the [Steps and Pipelines](../steps-pipelines/steps-and-pipelines.md)
+examples from the [Steps and Pipelines](./pipelines.md)
 section were using built-in materializers under the hood to store and load 
 artifacts correctly.
 
@@ -158,7 +158,7 @@ downstream steps will use the same materializer by default.
 ### Configuring Materializers at Runtime
 
 As briefly outlined in the
-[Runtime Configuration](../steps-pipelines/settings.md#defining-materializer-source-codes)
+[Runtime Configuration](./settings.md#defining-materializer-source-codes)
 section, which materializer to use for the output of what step can also be
 configured within YAML config files.
 
