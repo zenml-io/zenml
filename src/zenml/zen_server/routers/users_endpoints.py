@@ -70,7 +70,7 @@ activation_router = APIRouter(
 current_user_router = APIRouter(
     prefix=API + VERSION_1,
     tags=["users"],
-    dependencies=[Security(authorize, scopes=["read"])],
+    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 

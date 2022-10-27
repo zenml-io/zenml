@@ -350,6 +350,17 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         underscore_attrs_are_private = True
 
 
+class PermissionModel(BaseModel):
+    """Domain model for roles."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
+
+    id: int = Field(title="Id of the specific permission")
+    name: str = Field(
+        title="The unique name of the permission.",
+    )
+
+
 class RoleModel(DomainModel, AnalyticsTrackedModelMixin):
     """Domain model for roles."""
 

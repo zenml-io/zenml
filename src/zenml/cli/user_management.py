@@ -707,3 +707,16 @@ def list_role_assignments(
         cli_utils.declare("No roles assigned.")
         return
     cli_utils.print_pydantic_models(role_assignments)
+
+
+@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
+def permission() -> None:
+    """Commands for role management."""
+
+
+@permission.command("list")
+def list_permissions() -> None:
+    """List all role assignments."""
+    cli_utils.print_active_config()
+    permissions = Client().zen_store.list_permissions()
+    cli_utils.print_pydantic_models(permissions)

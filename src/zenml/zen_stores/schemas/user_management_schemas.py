@@ -22,6 +22,7 @@ from uuid import UUID, uuid4
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import RoleAssignmentModel, RoleModel, TeamModel, UserModel
+from zenml.models.user_management_models import PermissionModel
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -203,6 +204,17 @@ class PermissionSchema(SQLModel, table=True):
     roles: List["RoleSchema"] = Relationship(
         back_populates="permissions", link_model=RolePermissionsSchema
     )
+
+    def to_model(self) -> PermissionModel:
+        """Convert a `PermissionSchema` to a `PermissionModel`.
+
+        Returns:
+            The converted `PermissionModel`.
+        """
+        return PermissionModel(
+            id=self.id,
+            name=self.name,
+        )
 
 
 class RoleSchema(SQLModel, table=True):

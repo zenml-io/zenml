@@ -55,7 +55,7 @@ from zenml.constants import (
     STEPS,
     TEAMS,
     USERS,
-    VERSION_1,
+    VERSION_1, PERMISSIONS,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
@@ -84,6 +84,7 @@ from zenml.models import (
 )
 from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
 from zenml.models.server_models import ServerModel
+from zenml.models.user_management_models import PermissionModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_server.models.base_models import (
     CreateRequest,
@@ -944,6 +945,24 @@ class RestZenStore(BaseZenStore):
             user_name_or_id: Name or ID of the user to remove from the team.
             team_name_or_id: Name or ID of the team from which to remove the user.
         """
+
+    # -----
+    # Permission
+    # -----
+
+    def list_permissions(self) -> List[PermissionModel]:
+        """List all roles.
+
+        Returns:
+            A list of all roles.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=PERMISSIONS,
+            resource_model=PermissionModel,
+            **filters,
+        )
 
     # -----
     # Roles

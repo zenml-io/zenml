@@ -75,6 +75,7 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.server_models import ServerDatabaseType, ServerModel
+from zenml.models.user_management_models import PermissionModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
@@ -1864,6 +1865,21 @@ class SqlZenStore(BaseZenStore):
             team.users = [user_ for user_ in team.users if user_.id != user.id]
             session.add(team)
             session.commit()
+
+    # -----
+    # Permission
+    # -----
+
+    def list_permissions(self) -> List[PermissionModel]:
+        """List all roles.
+
+        Returns:
+            A list of all roles.
+        """
+        with Session(self.engine) as session:
+            permissions = session.exec(select(PermissionSchema)).all()
+
+            return [permission.to_model() for permission in permissions]
 
     # -----
     # Roles
