@@ -73,6 +73,7 @@ hardware. You can find more information on them here:
 - [GCP](https://cloud.google.com/deep-learning-vm/docs/images)
 - [Azure](https://learn.microsoft.com/en-us/azure/machine-learning/concept-prebuilt-docker-images-inference)
 
-Not all of these images are available on DockerHub, so your orchestrator node
-would have to have permission, for example, to pull images from registries if
-you were to use one of those.
+Not all of these images are available on DockerHub, so your please ensure
+that the orchestrator environment your pipeline runs in has sufficient
+permission(s) to pull images from registries if you are using one of those.
+
