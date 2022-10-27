@@ -16,7 +16,7 @@ a high chance someone else might have already answered it on Slack!
 
 ## YouTube Channel: Video tutorials 
 
-Our [YouTube Channel](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw) 
+Our [YouTube Channel](https://www.youtube.com/c/ZenML)
 features a growing set of videos that take you through the entire framework. 
 Go here if you are a visual learner, and follow along with some tutorials.
 

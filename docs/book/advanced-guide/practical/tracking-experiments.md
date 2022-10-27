@@ -78,5 +78,5 @@ example](https://github.com/zenml-io/zenml/tree/main/examples/wandb_tracking).
 
 {% hint style="info" %}
 To read a more detailed guide about how Experiment Trackers function in ZenML,
-[click here](../../component-gallery/experiment-trackers).
+[click here](../../component-gallery/experiment-trackers/experiment-trackers.md).
 {% endhint %}
