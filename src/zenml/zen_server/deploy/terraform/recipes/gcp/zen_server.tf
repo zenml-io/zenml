@@ -47,7 +47,7 @@ resource "helm_release" "zen-server" {
   }
   set {
     name = "ingress.host"
-    value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.ip}.nip.io" : var.ingress_controller_hostname
+    value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.ip}.nip.io" : "${var.ingress_controller_hostname}.nip.io"
   }
   set {
     name = "ingress.tls.enabled"
