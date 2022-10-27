@@ -36,3 +36,10 @@ python file_that_runs_a_zenml_pipeline.py
 
 For more information and a full list of configurable attributes of the local 
 Docker orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-orchestrators/#zenml.orchestrators.local_docker.local_docker_orchestrator.LocalDockerOrchestrator).
+
+### Enabling CUDA for GPU-backed hardware
+
+Note that if you wish to use this orchestrator to run steps on a GPU, you will
+need to follow [the instructions on this page](../../advanced-guide/pipelines/gpu-hardware.md) to ensure that it works. It
+requires adding some extra settings customization and is essential to enable
+CUDA for the GPU to give its full acceleration.

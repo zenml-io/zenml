@@ -73,3 +73,10 @@ A concrete example of using the Vertex orchestrator can be found
 
 For more information and a full list of configurable attributes of the Vertex 
 orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.orchestrators.vertex_orchestrator.VertexOrchestrator).
+
+### Enabling CUDA for GPU-backed hardware
+
+Note that if you wish to use this orchestrator to run steps on a GPU, you will
+need to follow [the instructions on this page](../../advanced-guide/pipelines/gpu-hardware.md) to ensure that it works. It
+requires adding some extra settings customization and is essential to enable
+CUDA for the GPU to give its full acceleration.
