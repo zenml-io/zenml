@@ -45,6 +45,7 @@ def upgrade() -> None:
 
     read_id = 0
     write_id = 1
+    myself_id = 2
 
     # Prefill the table with two possible permissions
     op.bulk_insert(
@@ -54,6 +55,8 @@ def upgrade() -> None:
              'name': 'read'},
             {'id': write_id,
              'name': 'write'},
+            {'id': myself_id,
+             'name': 'me'},
         ]
     )
 
@@ -89,8 +92,12 @@ def upgrade() -> None:
              'permission_id': read_id},
             {'role_id': admin_id,
              'permission_id': write_id},
+            {'role_id': admin_id,
+             'permission_id': myself_id},
             {'role_id': guest_id,
-             'permission_id': read_id}
+             'permission_id': read_id},
+            {'role_id': guest_id,
+             'permission_id': myself_id}
         ]
     )
 

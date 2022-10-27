@@ -145,5 +145,6 @@ class AnalyticsEventSource(StrEnum):
 class PermissionType(Enum):
     """All permission types."""
 
-    WRITE = "write"
-    READ = "read"
+    WRITE = "write"  # allows the user to create, update, delete everything
+    READ = "read"  # allows the user to read everything
+    ME = "me"  # allows the user to self administrate (change name, password...)

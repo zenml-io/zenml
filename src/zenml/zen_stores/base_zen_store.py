@@ -517,7 +517,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             RoleModel(
                 name=ADMIN_ROLE,
                 permissions=[PermissionType.READ.value,
-                             PermissionType.WRITE.value]
+                             PermissionType.WRITE.value,
+                             PermissionType.ME.value]
             )
         )
 
@@ -547,7 +548,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         return self.create_role(
             RoleModel(
                 name=GUEST_ROLE,
-                permissions=[PermissionType.READ.value]
+                permissions=[PermissionType.READ.value,
+                             PermissionType.ME.value]
             )
         )
 

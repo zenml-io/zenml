@@ -72,7 +72,20 @@ def list_users() -> None:
     required=False,
     type=str,
 )
-def create_user(user_name: str, password: Optional[str] = None) -> None:
+@click.option(
+    "--role",
+    "-r",
+    "initial_role",
+    help=(
+        "Give the user an initial role."
+    ),
+    required=False,
+    type=str,
+    default="guest"
+)
+def create_user(user_name: str,
+                password: Optional[str] = None,
+                initial_role: Optional[str] = "guest") -> None:
     """Create a new user.
 
     Args:
@@ -110,7 +123,18 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
         user = gc.zen_store.create_user(user)
     except EntityExistsError as err:
         cli_utils.error(str(err))
-    cli_utils.declare(f"Created user '{user_name}'.")
+
+    try:
+        gc.zen_store.assign_role(
+            role_name_or_id=initial_role,
+            user_or_team_name_or_id=user.id,
+            is_user=True
+        )
+    except KeyError as err:
+        cli_utils.error(str(err))
+
+    cli_utils.declare(f"Created user '{user_name}' with role "
+                      f"'{gc.zen_store._guest_role.name}'.")
     if not user.active and user.activation_token is not None:
         cli_utils.declare(
             f"The created user account is currently inactive. You can activate "
@@ -473,10 +497,18 @@ def list_roles() -> None:
     is_flag=True,
     default=False,
 )
+@click.option(
+    "--me",
+    "-m",
+    "me",
+    is_flag=True,
+    default=False,
+)
 def create_role(
     role_name: str,
     write: bool,
-    read: bool
+    read: bool,
+    me: bool
 ) -> None:
     """Create a new role.
 
@@ -484,6 +516,7 @@ def create_role(
         role_name: Name of the role to create.
         write: Give this role general read permission
         read: Give this role general write permission
+        me: Give this role permission the self-edit permission
     """
     cli_utils.print_active_config()
 
@@ -493,6 +526,8 @@ def create_role(
         permissions.add(PermissionType.WRITE.value)
     if read:
         permissions.add(PermissionType.READ.value)
+    if me:
+        permissions.add(PermissionType.ME.value)
     Client().zen_store.create_role(role=RoleModel(name=role_name,
                                                   permissions=permissions))
 
@@ -502,19 +537,49 @@ def create_role(
 @role.command("update", help="Update an existing role.")
 @click.argument("role_name", type=str, required=True)
 @click.option("--name", "-n", type=str, required=False, help="New role name.")
+@click.option(
+    "--remove-permission",
+    "-r",
+    type=str,
+    required=False,
+    help="Name of permission to remove."
+)
+@click.option(
+    "--add-permission",
+    "-a",
+    type=str,
+    required=False,
+    help="Name of permission to add."
+)
 def update_role(
     role_name: str,
     name: Optional[str] = None,
+    remove_permission: Optional[str] = None,
+    add_permission: Optional[str] = None
 ) -> None:
     """Update an existing role.
 
     Args:
         role_name: The name of the role.
         name: The new name of the role.
+        remove_permission: Name of permission to remove from role
+        add_permission: Name of permission to add to role
     """
     cli_utils.print_active_config()
     try:
         role = Client().zen_store.get_role(role_name)
+
+        if remove_permission in [p.value for p in PermissionType]:
+            try:
+                role.permissions.remove(remove_permission)
+            except KeyError:
+                cli_utils.error(f"Role {remove_permission} was already not "
+                                f"part of the {role} Role.")
+
+        if add_permission in [p.value for p in PermissionType]:
+            # Set won't throw an error if the item was already in the set
+            role.permissions.add(add_permission)
+
         role.name = name or role.name
         Client().zen_store.update_role(role)
     except (EntityExistsError, KeyError) as err:

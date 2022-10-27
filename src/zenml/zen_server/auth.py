@@ -150,7 +150,8 @@ def oauth2_password_bearer_authentication(
         OAuth2PasswordBearer(
             tokenUrl=ROOT_URL_PATH + API + VERSION_1 + LOGIN,
             scopes={"read": "Read permissions on all entities",
-                    "write": "Write permissions on all entities"}
+                    "write": "Write permissions on all entities",
+                    "me": "Editing permissions to own user"}
         )
     ),
 ) -> AuthContext:
@@ -170,11 +171,6 @@ def oauth2_password_bearer_authentication(
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
     else:
         authenticate_value = f"Bearer"
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": authenticate_value},
-    )
     auth_context = authenticate_credentials(access_token=token)
 
     access_token = JWTToken.decode(

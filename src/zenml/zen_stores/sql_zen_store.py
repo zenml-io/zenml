@@ -1973,6 +1973,16 @@ class SqlZenStore(BaseZenStore):
                     f"'{role.id}': Found no"
                     f"existing roles with this id."
                 )
+            # Get the Schemas of all permissions mentioned
+            filters = [
+                (PermissionSchema.name == permission)
+                for permission in role.permissions
+            ]
+
+            attached_permissions = session.exec(
+                select(PermissionSchema).where(or_(*filters))
+            ).all()
+            existing_role.permissions = attached_permissions
 
             # Update the role
             existing_role.from_update_model(role)
