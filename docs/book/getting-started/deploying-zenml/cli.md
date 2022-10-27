@@ -44,7 +44,7 @@ The `deploy` command, by default, tries to create an NGINX ingress controller on
 - Set `create_ingress_controller` to `false`.
 - Supply your controller's hostname to the `ingress_controller_hostname` variable.
     > **Note**
-    > If you're on GCP, the ingress host could be an IP address of the form `https://xx.xx.xx.xx`. Append `.nip.io` to this address before supplying the value to the `ingress_controller_hostname` variable. Learn more [here](https://nip.io/).
+    > The address should not have a trailing `/`.
 - You can now run the `deploy` command and pass the config file above, to it.
 
     ```
