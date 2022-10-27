@@ -19,7 +19,8 @@ a high chance someone else might have already answered it on Slack!
 We are active on [LinkedIn](https://www.linkedin.com/company/zenml) and 
 [Twitter](https://twitter.com/zenml_io) where we post bite-sized updates on releases, 
 events, and MLOps in general. Follow us to interact and stay up to date!
-We would appreciate it if you could comment and share our posts so more people can benefit from our work at ZenML!
+We would appreciate it if you could comment on and share our posts 
+so more people can benefit from our work at ZenML!
 
 ## YouTube Channel: Video tutorials, workshops, and more
 
