@@ -29,6 +29,7 @@
 # The `run_step()` method of this file is a modified version of the local dag
 # runner implementation of tfx
 """Base orchestrator class."""
+import hashlib
 import os
 import time
 import types
@@ -44,6 +45,7 @@ from typing import (
     Type,
     cast,
 )
+from uuid import UUID
 
 from google.protobuf import json_format
 from pydantic import root_validator
@@ -71,9 +73,10 @@ from tfx.types.artifact import Artifact
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.models import PipelineRunModel
 from zenml.orchestrators.utils import get_cache_status
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.utils import proto_utils, source_utils, string_utils
@@ -304,13 +307,13 @@ class BaseOrchestrator(StackComponent, ABC):
         step_name = step.config.name
         pb2_pipeline = self._active_pb2_pipeline
 
-        run_name = self._get_run_name()
+        run = self._create_or_reuse_run()
 
         # Substitute the runtime parameter to be a concrete run_id, it is
         # important for this to be unique for each run.
         runtime_parameter_utils.substitute_runtime_parameter(
             pb2_pipeline,
-            {PIPELINE_RUN_ID_PARAMETER_NAME: run_name},
+            {PIPELINE_RUN_ID_PARAMETER_NAME: run.name},
         )
 
         # Extract the deployment_configs and use it to access the executor and
@@ -337,7 +340,7 @@ class BaseOrchestrator(StackComponent, ABC):
         step_run_info = StepRunInfo(
             config=step.config,
             pipeline=self._active_deployment.pipeline,
-            run_name=run_name,
+            run_name=run.name,
         )
 
         # The protobuf node for the current step is loaded here.
@@ -370,6 +373,9 @@ class BaseOrchestrator(StackComponent, ABC):
             stack.prepare_step_run(info=step_run_info)
             try:
                 execution_info = self._execute_step(component_launcher)
+            except:
+                self._publish_failed_run(run_name=run.name)
+                raise
             finally:
                 stack.cleanup_step_run(info=step_run_info)
 
@@ -416,20 +422,64 @@ class BaseOrchestrator(StackComponent, ABC):
         self._active_deployment = None
         self._active_pb2_pipeline = None
 
-    def _get_run_name(self) -> str:
+    def _get_run_id_for_orchestrator_run_id(
+        self, orchestrator_run_id: str
+    ) -> UUID:
+        run_id_seed = f"{self.id}-{orchestrator_run_id}"
+
+        m = hashlib.md5()
+        m.update(run_id_seed.encode("utf-8"))
+        return UUID(hex=m.hexdigest(), version=4)
+
+    def _create_or_reuse_run(self) -> PipelineRunModel:
         assert self._active_deployment
-        orchestrator_run_id = f"{self.id}_{self.get_run_id()}"
+        orchestrator_run_id = self.get_run_id()
+
+        run_id = self._get_run_id_for_orchestrator_run_id(orchestrator_run_id)
+
+        try:
+            run = Client().zen_store.get_run(run_id)
+        except KeyError:
+            run = self._create_run(
+                run_id=run_id,
+                orchestrator_run_id=orchestrator_run_id,
+            )
+
+        return run
+
+    def _create_run(
+        self, run_id: UUID, orchestrator_run_id: str
+    ) -> PipelineRunModel:
+        assert self._active_deployment
 
         date = datetime.now().strftime("%Y_%m_%d")
         time = datetime.now().strftime("%H_%M_%S_%f")
-        provisional_run_name = self._active_deployment.run_name.format(
-            date=date, time=time
-        )
-        run_name = Client().zen_store.get_run_name(
+        run_name = self._active_deployment.run_name.format(date=date, time=time)
+
+        logger.debug("Creating run with ID: %s, name: %s", run_id, run_name)
+
+        client = Client()
+        run = PipelineRunModel(
+            id=run_id,
+            name=run_name,
             orchestrator_run_id=orchestrator_run_id,
-            run_name=provisional_run_name,
+            user=client.active_user.id,
+            project=client.active_project.id,
+            stack_id=self._active_deployment.stack_id,
+            pipeline_id=self._active_deployment.pipeline_id,
+            status=ExecutionStatus.RUNNING,
+            pipeline_configuration=self._active_deployment.pipeline.dict(),
+            num_steps=len(self._active_deployment.steps),
         )
-        return run_name
+
+        return client.zen_store.create_run(run)
+
+    @staticmethod
+    def _publish_failed_run(run_id: UUID) -> None:
+        client = Client()
+        run = client.zen_store.get_run(run_id)
+        run.status = ExecutionStatus.FAILED
+        client.zen_store.update_run(run)
 
     @staticmethod
     def _ensure_artifact_classes_loaded(

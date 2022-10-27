@@ -120,10 +120,12 @@ class CreatePipelineRunRequest(ProjectScopedCreateRequest[PipelineRunModel]):
 
     _MODEL_TYPE = PipelineRunModel
 
+    id: Optional[UUID]
     name: str = Field(
         title="The name of the pipeline run.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
+    orchestrator_run_id: Optional[str]
     stack_id: Optional[UUID]
     pipeline_id: Optional[UUID]
     status: ExecutionStatus

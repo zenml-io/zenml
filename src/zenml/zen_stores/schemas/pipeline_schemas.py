@@ -143,6 +143,8 @@ class PipelineRunSchema(SQLModel, table=True):
     )
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
+    orchestrator_run_id: Optional[str] = Field(nullable=True)
+
     status: ExecutionStatus
     pipeline_configuration: str = Field(max_length=4096)
     num_steps: int
@@ -172,6 +174,7 @@ class PipelineRunSchema(SQLModel, table=True):
         return cls(
             id=run.id,
             name=run.name,
+            orchestrator_run_id=run.orchestrator_run_id,
             stack_id=run.stack_id,
             project_id=run.project,
             user_id=run.user,
@@ -207,6 +210,7 @@ class PipelineRunSchema(SQLModel, table=True):
         return PipelineRunModel(
             id=self.id,
             name=self.name,
+            orchestrator_run_id=self.orchestrator_run_id,
             stack_id=self.stack_id,
             project=self.project_id,
             user=self.user_id,
