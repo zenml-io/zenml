@@ -284,7 +284,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
         settings = cast(
             Optional[KubernetesOrchestratorSettings],
-            deployment.pipeline.settings.get("orchestrator.kubernetes"),
+            self.get_settings(deployment),
         )
 
         # Authorize pod to run Kubernetes commands inside the cluster.

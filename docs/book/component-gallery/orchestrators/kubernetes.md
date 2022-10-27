@@ -73,16 +73,32 @@ For additional configuration of the Kubernetes orchestrator, you can pass
 from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
 
 kubernetes_settings = KubernetesOrchestratorSettings(
-    node_affinity=[{
-        "key": "node.kubernetes.io/name",
-        "operator": "In",
-        "values": ['my_powerful_node_group']
-        }],
-    tolerations=[{"key": "node.kubernetes.io/name",
-                  "operator": "Exists",
-                  "value": "training",
-                  "effect": "NoSchedule"
-      }])
+    affinity={
+        "nodeAffinity": {
+            "requiredDuringSchedulingIgnoredDuringExecution": {
+                "nodeSelectorTerms": [
+                    {
+                        "matchExpressions": [
+                            {
+                                "key": "node.kubernetes.io/name",
+                                "operator": "In",
+                                "values": ["my_powerful_node_group"],
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    tolerations=[
+        {
+            "key": "node.kubernetes.io/name",
+            "operator": "Exists",
+            "value": "",
+            "effect": "NoSchedule",
+        }
+    ],
+)
 
 @pipeline(
     settings={

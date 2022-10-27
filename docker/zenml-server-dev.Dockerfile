@@ -21,8 +21,8 @@ COPY src src
 RUN mkdir -p .zenconfig/local_stores/default_zen_store
 
 ENV ZENML_CONFIG_PATH=/zenml/.zenconfig \
-    ZENML_DEBUG=true \
+    ZENML_DEBUG=false \
     ZENML_ANALYTICS_OPT_IN=false
 
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app",  "--log-level", "debug"]
+ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app",  "--log-level", "info"]
 CMD ["--proxy-headers", "--port", "80", "--host",  "0.0.0.0"]

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
@@ -30,11 +30,11 @@ class KubernetesOrchestratorSettings(BaseSettings):
 
     Attributes:
         tolerations: Tolerations to apply to Kubernetes pods.
-        node_affinity: Node affinities to apply to Kubernetes pods.
+        affinity: Pod affinity(s) to apply to Kubernetes pods.
     """
 
     tolerations: List[Dict[str, str]] = []
-    node_affinity: List[Dict[str, Union[str, List[str]]]] = []
+    affinity: Dict[str, Dict[str, Any]] = {}
 
 
 class KubernetesOrchestratorConfig(BaseOrchestratorConfig):

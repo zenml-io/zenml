@@ -99,7 +99,9 @@ def main() -> None:
 
     settings = cast(
         Optional[KubernetesOrchestratorSettings],
-        deployment_config.pipeline.settings.get("orchestrator.kubernetes"),
+        KubernetesOrchestratorSettings.parse_obj(
+            deployment_config.pipeline.settings.get("orchestrator.kubernetes")
+        ),
     )
 
     pipeline_dag = {}
