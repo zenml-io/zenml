@@ -15,7 +15,6 @@
 
 
 from datetime import datetime
-from enum import Enum
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID, uuid4
 
@@ -192,7 +191,9 @@ class TeamSchema(SQLModel, table=True):
 class RolePermissionsSchema(SQLModel, table=True):
     """SQL Model for team assignments."""
 
-    permission_id: int = Field(primary_key=True, foreign_key="permissionschema.id")
+    permission_id: int = Field(
+        primary_key=True, foreign_key="permissionschema.id"
+    )
     role_id: UUID = Field(primary_key=True, foreign_key="roleschema.id")
 
 
@@ -270,7 +271,7 @@ class RoleSchema(SQLModel, table=True):
             name=self.name,
             created=self.created,
             updated=self.updated,
-            permissions=[p.name for p in self.permissions]
+            permissions=[p.name for p in self.permissions],
         )
 
 

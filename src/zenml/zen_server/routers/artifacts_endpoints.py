@@ -15,7 +15,7 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Security
 
 from zenml.constants import API, ARTIFACTS, VERSION_1
 from zenml.models.pipeline_models import ArtifactModel

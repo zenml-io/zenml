@@ -27,7 +27,7 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
-from zenml.enums import StackComponentType, StoreType, PermissionType
+from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.exceptions import StackExistsError
 from zenml.logger import get_logger
 from zenml.models import (
@@ -516,9 +516,11 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         return self.create_role(
             RoleModel(
                 name=ADMIN_ROLE,
-                permissions=[PermissionType.READ.value,
-                             PermissionType.WRITE.value,
-                             PermissionType.ME.value]
+                permissions=[
+                    PermissionType.READ.value,
+                    PermissionType.WRITE.value,
+                    PermissionType.ME.value,
+                ],
             )
         )
 
@@ -548,8 +550,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         return self.create_role(
             RoleModel(
                 name=GUEST_ROLE,
-                permissions=[PermissionType.READ.value,
-                             PermissionType.ME.value]
+                permissions=[
+                    PermissionType.READ.value,
+                    PermissionType.ME.value,
+                ],
             )
         )
 
@@ -625,7 +629,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         self.assign_role(
             role_name_or_id=self._admin_role.id,
             user_or_team_name_or_id=new_user.id,
-            is_user=True
+            is_user=True,
         )
         return new_user
 

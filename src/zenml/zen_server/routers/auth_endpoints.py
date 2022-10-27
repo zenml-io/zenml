@@ -100,18 +100,17 @@ def token(
         )
 
     role_assignments = zen_store().list_role_assignments(
-        user_name_or_id=auth_context.user.id,
-        project_name_or_id=None
+        user_name_or_id=auth_context.user.id, project_name_or_id=None
     )
 
-    permissions = set().union(*[
-        zen_store().get_role(ra.role).permissions for ra in role_assignments
-    ])
+    permissions = set().union(
+        *[zen_store().get_role(ra.role).permissions for ra in role_assignments]
+    )
 
     access_token = JWTToken(
         token_type=JWTTokenType.ACCESS_TOKEN,
         user_id=auth_context.user.id,
-        permissions=permissions
+        permissions=permissions,
     ).encode()
 
     # The response of the token endpoint must be a JSON object with the

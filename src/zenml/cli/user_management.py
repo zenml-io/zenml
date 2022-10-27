@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from typing import Optional, Tuple, Set
+from typing import Optional, Tuple
 
 import click
 
@@ -21,7 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.enums import CliCategories, StoreType, PermissionType
+from zenml.enums import CliCategories, PermissionType, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.utils.uuid_utils import parse_name_or_uuid
 
@@ -76,16 +76,16 @@ def list_users() -> None:
     "--role",
     "-r",
     "initial_role",
-    help=(
-        "Give the user an initial role."
-    ),
+    help=("Give the user an initial role."),
     required=False,
     type=str,
-    default="guest"
+    default="guest",
 )
-def create_user(user_name: str,
-                password: Optional[str] = None,
-                initial_role: Optional[str] = "guest") -> None:
+def create_user(
+    user_name: str,
+    password: Optional[str] = None,
+    initial_role: Optional[str] = "guest",
+) -> None:
     """Create a new user.
 
     Args:
@@ -128,13 +128,15 @@ def create_user(user_name: str,
         gc.zen_store.assign_role(
             role_name_or_id=initial_role,
             user_or_team_name_or_id=user.id,
-            is_user=True
+            is_user=True,
         )
     except KeyError as err:
         cli_utils.error(str(err))
 
-    cli_utils.declare(f"Created user '{user_name}' with role "
-                      f"'{gc.zen_store._guest_role.name}'.")
+    cli_utils.declare(
+        f"Created user '{user_name}' with role "
+        f"'{gc.zen_store._guest_role.name}'."
+    )
     if not user.active and user.activation_token is not None:
         cli_utils.declare(
             f"The created user account is currently inactive. You can activate "
@@ -504,12 +506,7 @@ def list_roles() -> None:
     is_flag=True,
     default=False,
 )
-def create_role(
-    role_name: str,
-    write: bool,
-    read: bool,
-    me: bool
-) -> None:
+def create_role(role_name: str, write: bool, read: bool, me: bool) -> None:
     """Create a new role.
 
     Args:
@@ -521,6 +518,7 @@ def create_role(
     cli_utils.print_active_config()
 
     from zenml.models import RoleModel
+
     permissions = set()
     if write:
         permissions.add(PermissionType.WRITE.value)
@@ -528,8 +526,9 @@ def create_role(
         permissions.add(PermissionType.READ.value)
     if me:
         permissions.add(PermissionType.ME.value)
-    Client().zen_store.create_role(role=RoleModel(name=role_name,
-                                                  permissions=permissions))
+    Client().zen_store.create_role(
+        role=RoleModel(name=role_name, permissions=permissions)
+    )
 
     cli_utils.declare(f"Created role '{role_name}'.")
 
@@ -542,20 +541,20 @@ def create_role(
     "-r",
     type=str,
     required=False,
-    help="Name of permission to remove."
+    help="Name of permission to remove.",
 )
 @click.option(
     "--add-permission",
     "-a",
     type=str,
     required=False,
-    help="Name of permission to add."
+    help="Name of permission to add.",
 )
 def update_role(
     role_name: str,
     name: Optional[str] = None,
     remove_permission: Optional[str] = None,
-    add_permission: Optional[str] = None
+    add_permission: Optional[str] = None,
 ) -> None:
     """Update an existing role.
 
@@ -573,8 +572,10 @@ def update_role(
             try:
                 role.permissions.remove(remove_permission)
             except KeyError:
-                cli_utils.error(f"Role {remove_permission} was already not "
-                                f"part of the {role} Role.")
+                cli_utils.error(
+                    f"Role {remove_permission} was already not "
+                    f"part of the {role} Role."
+                )
 
         if add_permission in [p.value for p in PermissionType]:
             # Set won't throw an error if the item was already in the set

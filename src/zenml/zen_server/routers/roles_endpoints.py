@@ -15,7 +15,7 @@
 from typing import List, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Security
 
 from zenml.constants import API, ROLES, VERSION_1
 from zenml.models import RoleModel

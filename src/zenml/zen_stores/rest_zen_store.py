@@ -45,6 +45,7 @@ from zenml.constants import (
     LOGIN,
     METADATA_CONFIG,
     OUTPUTS,
+    PERMISSIONS,
     PIPELINES,
     PROJECTS,
     ROLES,
@@ -55,7 +56,7 @@ from zenml.constants import (
     STEPS,
     TEAMS,
     USERS,
-    VERSION_1, PERMISSIONS,
+    VERSION_1,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (

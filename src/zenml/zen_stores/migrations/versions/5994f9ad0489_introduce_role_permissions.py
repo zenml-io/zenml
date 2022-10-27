@@ -8,40 +8,52 @@ Create Date: 2022-10-25 23:52:25.935344
 import datetime
 import uuid
 
+import sqlalchemy as sa
 import sqlmodel
 from alembic import op
-import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '5994f9ad0489'
-down_revision = 'c1b18cec3a48'
+revision = "5994f9ad0489"
+down_revision = "c1b18cec3a48"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-    op.create_table('permissionschema',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    op.create_table(
+        "permissionschema",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_table('rolepermissionsschema',
-    sa.Column('permission_id', sa.Integer(), nullable=False),
-    sa.Column('role_id', sqlmodel.sql.sqltypes.GUID(), nullable=False),
-    sa.ForeignKeyConstraint(['permission_id'], ['roleschema.id'], ),
-    sa.ForeignKeyConstraint(['role_id'], ['permissionschema.id'], ),
-    sa.PrimaryKeyConstraint('permission_id', 'role_id')
+    op.create_table(
+        "rolepermissionsschema",
+        sa.Column("permission_id", sa.Integer(), nullable=False),
+        sa.Column("role_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["permission_id"],
+            ["roleschema.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["role_id"],
+            ["permissionschema.id"],
+        ),
+        sa.PrimaryKeyConstraint("permission_id", "role_id"),
     )
     # get metadata from current connection
     meta = sa.MetaData(bind=op.get_bind())
 
     # pass in tuple with tables we want to reflect, otherwise whole database will get reflected
-    meta.reflect(only=('permissionschema',
-                       'roleschema',
-                       'rolepermissionsschema',
-                       'userroleassignmentschema',
-                       'userschema'))
+    meta.reflect(
+        only=(
+            "permissionschema",
+            "roleschema",
+            "rolepermissionsschema",
+            "userroleassignmentschema",
+            "userschema",
+        )
+    )
 
     read_id = 0
     write_id = 1
@@ -49,56 +61,52 @@ def upgrade() -> None:
 
     # Prefill the table with two possible permissions
     op.bulk_insert(
-        sa.Table('permissionschema', meta),
+        sa.Table("permissionschema", meta),
         [
-            {'id': read_id,
-             'name': 'read'},
-            {'id': write_id,
-             'name': 'write'},
-            {'id': myself_id,
-             'name': 'me'},
-        ]
+            {"id": read_id, "name": "read"},
+            {"id": write_id, "name": "write"},
+            {"id": myself_id, "name": "me"},
+        ],
     )
 
-    admin_id = str(uuid.uuid4()).replace('-', '')
-    guest_id = str(uuid.uuid4()).replace('-', '')
+    admin_id = str(uuid.uuid4()).replace("-", "")
+    guest_id = str(uuid.uuid4()).replace("-", "")
 
     # Prefill the roles table with an admin role
     op.bulk_insert(
         sa.Table(
-            'roleschema',
+            "roleschema",
             meta,
         ),
         [
-            {'id': admin_id,
-             'name': 'admin',
-             'created': datetime.datetime.now(),
-             'updated': datetime.datetime.now()},
-            {'id': guest_id,
-             'name': 'guest',
-             'created': datetime.datetime.now(),
-             'updated': datetime.datetime.now()}
-        ]
+            {
+                "id": admin_id,
+                "name": "admin",
+                "created": datetime.datetime.now(),
+                "updated": datetime.datetime.now(),
+            },
+            {
+                "id": guest_id,
+                "name": "guest",
+                "created": datetime.datetime.now(),
+                "updated": datetime.datetime.now(),
+            },
+        ],
     )
 
     # Give the admin read and write permissions, give the guest read permissions
     op.bulk_insert(
         sa.Table(
-            'rolepermissionsschema',
+            "rolepermissionsschema",
             meta,
         ),
         [
-            {'role_id': admin_id,
-             'permission_id': read_id},
-            {'role_id': admin_id,
-             'permission_id': write_id},
-            {'role_id': admin_id,
-             'permission_id': myself_id},
-            {'role_id': guest_id,
-             'permission_id': read_id},
-            {'role_id': guest_id,
-             'permission_id': myself_id}
-        ]
+            {"role_id": admin_id, "permission_id": read_id},
+            {"role_id": admin_id, "permission_id": write_id},
+            {"role_id": admin_id, "permission_id": myself_id},
+            {"role_id": guest_id, "permission_id": read_id},
+            {"role_id": guest_id, "permission_id": myself_id},
+        ],
     )
 
     # In order to not break permissions for existing users, all will be assigned
@@ -111,22 +119,24 @@ def upgrade() -> None:
     for user_id in user_ids:
         op.bulk_insert(
             sa.Table(
-                'userroleassignmentschema',
+                "userroleassignmentschema",
                 meta,
             ),
             [
-                {'id': str(uuid.uuid4()).replace('-', ''),
-                 'role_id': admin_id,
-                 'user_id': user_id[0],
-                 'created': datetime.datetime.now(),
-                 'updated': datetime.datetime.now()}
-            ]
+                {
+                    "id": str(uuid.uuid4()).replace("-", ""),
+                    "role_id": admin_id,
+                    "user_id": user_id[0],
+                    "created": datetime.datetime.now(),
+                    "updated": datetime.datetime.now(),
+                }
+            ],
         )
 
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table('rolepermissionsschema')
-    op.drop_table('permissionschema')
+    op.drop_table("rolepermissionsschema")
+    op.drop_table("permissionschema")
     # ### end Alembic commands ###

@@ -14,8 +14,7 @@
 """Authentication module for ZenML server."""
 
 import os
-from functools import wraps
-from typing import Callable, Optional, Union, List, cast
+from typing import Callable, Optional, Union
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -23,20 +22,19 @@ from fastapi.security import (
     HTTPBasic,
     HTTPBasicCredentials,
     OAuth2PasswordBearer,
-    SecurityScopes
+    SecurityScopes,
 )
-from jose import JWTError, jwt
 from pydantic import BaseModel
 
-from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import API, ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
-from zenml.enums import PermissionType
-from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.logger import get_logger
-from zenml.models.user_management_models import UserModel, JWTToken, \
-    JWTTokenType
+from zenml.models.user_management_models import (
+    JWTToken,
+    JWTTokenType,
+    UserModel,
+)
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_server.utils import ROOT_URL_PATH, zen_store, F, logger
+from zenml.zen_server.utils import ROOT_URL_PATH, logger, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
@@ -149,9 +147,11 @@ def oauth2_password_bearer_authentication(
     token: str = Depends(
         OAuth2PasswordBearer(
             tokenUrl=ROOT_URL_PATH + API + VERSION_1 + LOGIN,
-            scopes={"read": "Read permissions on all entities",
-                    "write": "Write permissions on all entities",
-                    "me": "Editing permissions to own user"}
+            scopes={
+                "read": "Read permissions on all entities",
+                "write": "Write permissions on all entities",
+                "me": "Editing permissions to own user",
+            },
         )
     ),
 ) -> AuthContext:

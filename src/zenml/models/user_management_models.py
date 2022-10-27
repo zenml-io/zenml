@@ -12,12 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Model definitions for users, teams, and roles."""
-import base64
-import json
 import re
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast, Set
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Set, cast
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
@@ -97,9 +95,11 @@ class JWTToken(BaseModel):
             )
 
         try:
-            return cls(token_type=token_type,
-                       user_id=UUID(subject),
-                       permissions=set(permissions))
+            return cls(
+                token_type=token_type,
+                user_id=UUID(subject),
+                permissions=set(permissions),
+            )
         except ValueError as e:
             raise AuthorizationException(
                 f"Invalid JWT token: could not decode subject claim: {e}"
@@ -123,7 +123,7 @@ class JWTToken(BaseModel):
 
         claims: Dict[str, Any] = {
             "sub": str(self.user_id),
-            "permissions": list(self.permissions)
+            "permissions": list(self.permissions),
         }
 
         if expire_minutes:

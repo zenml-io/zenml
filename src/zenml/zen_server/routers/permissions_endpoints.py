@@ -16,11 +16,10 @@ from typing import List
 
 from fastapi import APIRouter, Security
 
-from zenml.constants import API, VERSION_1, PERMISSIONS
+from zenml.constants import API, PERMISSIONS, VERSION_1
 from zenml.models import RoleModel
 from zenml.models.user_management_models import PermissionModel
 from zenml.zen_server.auth import authorize
-
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
