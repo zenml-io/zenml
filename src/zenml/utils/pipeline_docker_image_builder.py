@@ -353,7 +353,6 @@ class PipelineDockerImageBuilder:
 
         # Generate requirements file for the local environment if configured
         if docker_settings.replicate_local_python_environment:
-            command: List[str]
             if isinstance(
                 docker_settings.replicate_local_python_environment,
                 PythonEnvironmentExportMethod,
