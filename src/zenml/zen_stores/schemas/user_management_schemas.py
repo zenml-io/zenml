@@ -12,16 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Users, Teams, Roles."""
-
-
+import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from zenml.enums import PermissionType
 from zenml.models import RoleAssignmentModel, RoleModel, TeamModel, UserModel
-from zenml.models.user_management_models import PermissionModel
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -191,8 +190,8 @@ class TeamSchema(SQLModel, table=True):
 class RolePermissionsSchema(SQLModel, table=True):
     """SQL Model for team assignments."""
 
-    permission_id: int = Field(
-        primary_key=True, foreign_key="permissionschema.id"
+    permission_name: PermissionType = Field(
+        primary_key=True, foreign_key="permissionschema.name"
     )
     role_id: UUID = Field(primary_key=True, foreign_key="roleschema.id")
 
@@ -200,22 +199,18 @@ class RolePermissionsSchema(SQLModel, table=True):
 class PermissionSchema(SQLModel, table=True):
     """SQL Model for roles."""
 
-    id: int = Field(primary_key=True)
-    name: str
+    name: PermissionType = Field(primary_key=True)
     roles: List["RoleSchema"] = Relationship(
         back_populates="permissions", link_model=RolePermissionsSchema
     )
 
-    def to_model(self) -> PermissionModel:
-        """Convert a `PermissionSchema` to a `PermissionModel`.
+    def to_enum(self) -> PermissionType:
+        """Convert a `PermissionSchema` to a `PermissionType`.
 
         Returns:
             The converted `PermissionModel`.
         """
-        return PermissionModel(
-            id=self.id,
-            name=self.name,
-        )
+        return PermissionType(self.name)
 
 
 class RoleSchema(SQLModel, table=True):
@@ -260,6 +255,7 @@ class RoleSchema(SQLModel, table=True):
             The updated `RoleSchema`.
         """
         self.name = model.name
+        self.permissions = list(model.permissions)
         self.updated = datetime.now()
         return self
 

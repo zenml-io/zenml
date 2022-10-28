@@ -85,7 +85,6 @@ from zenml.models import (
 )
 from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
 from zenml.models.server_models import ServerModel
-from zenml.models.user_management_models import PermissionModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_server.models.base_models import (
     CreateRequest,
@@ -126,8 +125,7 @@ if TYPE_CHECKING:
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
-AnyModel = TypeVar("AnyModel", bound=BaseModel)
-AnyDomainModel = TypeVar("AnyDomainModel", bound=DomainModel)
+AnyModel = TypeVar("AnyModel", bound=DomainModel)
 AnyProjectScopedModel = TypeVar(
     "AnyProjectScopedModel", bound=ProjectScopedDomainModel
 )
@@ -947,24 +945,6 @@ class RestZenStore(BaseZenStore):
             user_name_or_id: Name or ID of the user to remove from the team.
             team_name_or_id: Name or ID of the team from which to remove the user.
         """
-
-    # -----
-    # Permission
-    # -----
-
-    def list_permissions(self) -> List[PermissionModel]:
-        """List all roles.
-
-        Returns:
-            A list of all roles.
-        """
-        filters = locals()
-        filters.pop("self")
-        return self._list_resources(
-            route=PERMISSIONS,
-            resource_model=PermissionModel,
-            **filters,
-        )
 
     # -----
     # Roles
@@ -1876,11 +1856,11 @@ class RestZenStore(BaseZenStore):
 
     def _update_resource(
         self,
-        resource: AnyDomainModel,
+        resource: AnyModel,
         route: str,
-        request_model: Optional[Type[UpdateRequest[AnyDomainModel]]] = None,
-        response_model: Optional[Type[UpdateResponse[AnyDomainModel]]] = None,
-    ) -> AnyDomainModel:
+        request_model: Optional[Type[UpdateRequest[AnyModel]]] = None,
+        response_model: Optional[Type[UpdateResponse[AnyModel]]] = None,
+    ) -> AnyModel:
         """Update an existing resource.
 
         Args:

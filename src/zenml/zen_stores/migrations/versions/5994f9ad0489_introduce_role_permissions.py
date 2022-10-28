@@ -21,26 +21,18 @@ depends_on = None
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-    op.create_table(
-        "permissionschema",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.PrimaryKeyConstraint("id"),
+    op.create_table('permissionschema',
+    sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.PrimaryKeyConstraint('name')
     )
-    op.create_table(
-        "rolepermissionsschema",
-        sa.Column("permission_id", sa.Integer(), nullable=False),
-        sa.Column("role_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["permission_id"],
-            ["roleschema.id"],
-        ),
-        sa.ForeignKeyConstraint(
-            ["role_id"],
-            ["permissionschema.id"],
-        ),
-        sa.PrimaryKeyConstraint("permission_id", "role_id"),
+    op.create_table('rolepermissionsschema',
+    sa.Column('permission_name', sa.Integer(), nullable=False),
+    sa.Column('role_id', sqlmodel.sql.sqltypes.GUID(), nullable=False),
+    sa.ForeignKeyConstraint(['permission_name'], ['permissionschema.name'], ),
+    sa.ForeignKeyConstraint(['role_id'], ['roleschema.id'], ),
+    sa.PrimaryKeyConstraint('permission_name', 'role_id')
     )
+
     # get metadata from current connection
     meta = sa.MetaData(bind=op.get_bind())
 
@@ -55,17 +47,17 @@ def upgrade() -> None:
         )
     )
 
-    read_id = 0
-    write_id = 1
-    myself_id = 2
+    read = "READ"
+    write = "WRITE"
+    me = "ME"
 
     # Prefill the table with two possible permissions
     op.bulk_insert(
         sa.Table("permissionschema", meta),
         [
-            {"id": read_id, "name": "read"},
-            {"id": write_id, "name": "write"},
-            {"id": myself_id, "name": "me"},
+            {"name": read},
+            {"name": write},
+            {"name": me},
         ],
     )
 
@@ -94,18 +86,19 @@ def upgrade() -> None:
         ],
     )
 
-    # Give the admin read and write permissions, give the guest read permissions
+    # Give the admin read, write and me permissions,
+    # give the guest read and me permissions
     op.bulk_insert(
         sa.Table(
             "rolepermissionsschema",
             meta,
         ),
         [
-            {"role_id": admin_id, "permission_id": read_id},
-            {"role_id": admin_id, "permission_id": write_id},
-            {"role_id": admin_id, "permission_id": myself_id},
-            {"role_id": guest_id, "permission_id": read_id},
-            {"role_id": guest_id, "permission_id": myself_id},
+            {"role_id": admin_id, "permission_name": read},
+            {"role_id": admin_id, "permission_name": write},
+            {"role_id": admin_id, "permission_name": me},
+            {"role_id": guest_id, "permission_name": read},
+            {"role_id": guest_id, "permission_name": me},
         ],
     )
 

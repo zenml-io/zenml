@@ -1867,21 +1867,6 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     # -----
-    # Permission
-    # -----
-
-    def list_permissions(self) -> List[PermissionModel]:
-        """List all roles.
-
-        Returns:
-            A list of all roles.
-        """
-        with Session(self.engine) as session:
-            permissions = session.exec(select(PermissionSchema)).all()
-
-            return [permission.to_model() for permission in permissions]
-
-    # -----
     # Roles
     # -----
 
@@ -1909,19 +1894,18 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Get the Schemas of all permissions mentioned
-            filters = [
-                (PermissionSchema.name == permission)
-                for permission in role.permissions
-            ]
-
-            attached_permissions = session.exec(
-                select(PermissionSchema).where(or_(*filters))
-            ).all()
+            permissions = list()
+            for permission in role.permissions:
+                permission_schema = session.exec(
+                    select(PermissionSchema).where(PermissionSchema.name == permission)
+                ).one_or_none()
+                if permission_schema:
+                    permissions.append(permission_schema)
+                else:
+                    permissions.append(PermissionSchema(name=permission))
 
             # Create role
-            role_schema = RoleSchema.from_create_model(
-                role, permissions=attached_permissions
-            )
+            role_schema = RoleSchema.from_create_model(role, permissions)
             session.add(role_schema)
             session.commit()
             return role_schema.to_model()

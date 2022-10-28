@@ -107,7 +107,7 @@ def token(
     )
 
     access_token = auth_context.user.generate_access_token(
-        permissions=permissions
+        permissions=[p.value for p in permissions]
     )
     # The response of the token endpoint must be a JSON object with the
     # following fields:

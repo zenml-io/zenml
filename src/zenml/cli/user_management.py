@@ -136,7 +136,7 @@ def create_user(
 
     cli_utils.declare(
         f"Created user '{user_name}' with role "
-        f"'{gc.zen_store._guest_role.name}'."
+        f"'{initial_role}'."
     )
     if not user.active and user.activation_token is not None:
         cli_utils.declare(

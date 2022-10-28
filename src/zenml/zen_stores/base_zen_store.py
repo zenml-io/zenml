@@ -503,7 +503,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         try:
             return self.get_role(ADMIN_ROLE)
         except KeyError:
-            raise KeyError(f"The '{ADMIN_ROLE}' role is not configured")
+            return self._create_admin_role()
 
     @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
     def _create_admin_role(self) -> RoleModel:
@@ -537,7 +537,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         try:
             return self.get_role(GUEST_ROLE)
         except KeyError:
-            raise KeyError(f"The '{GUEST_ROLE}' role is not configured")
+            return self._create_guest_role()
 
     @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
     def _create_guest_role(self) -> RoleModel:

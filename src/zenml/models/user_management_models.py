@@ -288,7 +288,7 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
 
         return None
 
-    def generate_access_token(self, permissions: Set[PermissionType]) -> str:
+    def generate_access_token(self, permissions: Set[str]) -> str:
         """Generates an access token.
 
         Generates an access token and returns it.
@@ -385,7 +385,7 @@ class RoleModel(DomainModel, AnalyticsTrackedModelMixin):
         title="The unique name of the role.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    permissions: Set[str]
+    permissions: Set[PermissionType]
 
 
 class TeamModel(DomainModel, AnalyticsTrackedModelMixin):
