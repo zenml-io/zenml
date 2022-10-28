@@ -43,6 +43,7 @@ from typing import (
     List,
     Optional,
     Type,
+    Union,
     cast,
 )
 from uuid import UUID
@@ -374,7 +375,7 @@ class BaseOrchestrator(StackComponent, ABC):
             try:
                 execution_info = self._execute_step(component_launcher)
             except:
-                self._publish_failed_run(run_name=run.name)
+                self._publish_failed_run(run_name_or_id=run.name)
                 raise
             finally:
                 stack.cleanup_step_run(info=step_run_info)
@@ -475,9 +476,14 @@ class BaseOrchestrator(StackComponent, ABC):
         return client.zen_store.create_run(run)
 
     @staticmethod
-    def _publish_failed_run(run_id: UUID) -> None:
+    def _publish_failed_run(run_name_or_id: Union[str, UUID]) -> None:
+        """Set a run to failed if an exception occured during orchestration.
+
+        Args:
+            run_name_or_id: The name or ID of the run that failed.
+        """
         client = Client()
-        run = client.zen_store.get_run(run_id)
+        run = client.zen_store.get_run(run_name_or_id)
         run.status = ExecutionStatus.FAILED
         client.zen_store.update_run(run)
 
