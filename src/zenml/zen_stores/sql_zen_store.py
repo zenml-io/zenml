@@ -483,14 +483,23 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 database=self.database,
             )
 
-            # Handle certificate params
+            sqlalchemy_ssl_args = {}
+
+            # Handle SSL params
             for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
                 ssl_setting = getattr(self, key)
-                if ssl_setting and os.path.isfile(ssl_setting):
-                    if key == "ssl_cert":
-                        sqlalchemy_connect_args["ssl_capath"] = ssl_setting
-                    else:
-                        sqlalchemy_connect_args[key] = ssl_setting
+                if not ssl_setting:
+                    continue
+                if not os.path.isfile(ssl_setting):
+                    logger.warning(
+                        f"Database SSL setting `{key}` is not a file. "
+                    )
+                sqlalchemy_ssl_args[key.lstrip("ssl_")] = ssl_setting
+            if len(sqlalchemy_ssl_args) > 0:
+                sqlalchemy_ssl_args[
+                    "check_hostname"
+                ] = self.ssl_verify_server_cert
+                sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
         else:
             raise NotImplementedError(
                 f"SQL driver `{sql_url.drivername}` is not supported."
@@ -692,7 +701,6 @@ class SqlZenStore(BaseZenStore):
         from ml_metadata.proto.metadata_store_pb2 import (
             MetadataStoreClientConfig,
         )
-        from tfx.orchestration import metadata
 
         # If the gRPC metadata store connection configuration is present,
         # advertise it to the client instead of the direct SQL connection
