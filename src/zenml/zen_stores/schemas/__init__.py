@@ -17,7 +17,6 @@ from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.pipeline_schemas import (
     ArtifactSchema,
-    PipelineRunNameSchema,
     PipelineRunSchema,
     PipelineSchema,
     StepInputArtifactSchema,
@@ -39,7 +38,6 @@ __all__ = [
     "StackComponentSchema",
     "FlavorSchema",
     "PipelineRunSchema",
-    "PipelineRunNameSchema",
     "PipelineSchema",
     "ProjectSchema",
     "StackSchema",
