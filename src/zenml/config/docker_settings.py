@@ -154,7 +154,7 @@ class DockerSettings(BaseSettings):
     target_repository: str = "zenml"
 
     replicate_local_python_environment: Optional[
-        PythonEnvironmentExportMethod
+        Union[List[str], PythonEnvironmentExportMethod]
     ] = None
     requirements: Union[None, str, List[str]] = None
     required_integrations: List[str] = []
