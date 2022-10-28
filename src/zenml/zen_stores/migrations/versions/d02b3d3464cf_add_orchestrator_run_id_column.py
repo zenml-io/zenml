@@ -24,7 +24,7 @@ def upgrade() -> None:
             sa.Column(
                 "orchestrator_run_id",
                 sqlmodel.sql.sqltypes.AutoString(),
-                nullable=False,
+                nullable=True,
             )
         )
 
