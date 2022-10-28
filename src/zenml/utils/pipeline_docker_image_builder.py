@@ -361,7 +361,9 @@ class PipelineDockerImageBuilder:
                     docker_settings.replicate_local_python_environment.command
                 )
             else:
-                command = " ".join(docker_settings.replicate_local_python_environment)
+                command = " ".join(
+                    docker_settings.replicate_local_python_environment
+                )
 
             try:
                 local_requirements = subprocess.check_output(
