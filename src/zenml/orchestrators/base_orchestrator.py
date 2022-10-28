@@ -215,16 +215,13 @@ class BaseOrchestrator(StackComponent, ABC):
 
     @abstractmethod
     def get_orchestrator_run_id(self) -> str:
-        """_summary_
+        """Returns the run id of the active orchestrator run.
 
-        _extended_summary_
-
-        Raises:
-            RuntimeError: _description_
-            KeyError: _description_
+        Important: This needs to be a unique ID and return the same value for
+        all steps of a pipeline run.
 
         Returns:
-            _description_
+            The orchestrator run id.
         """
 
     @abstractmethod
@@ -374,7 +371,7 @@ class BaseOrchestrator(StackComponent, ABC):
             stack.prepare_step_run(info=step_run_info)
             try:
                 execution_info = self._execute_step(component_launcher)
-            except:
+            except:  # noqa: E722
                 self._publish_failed_run(run_name_or_id=run.name)
                 raise
             finally:
@@ -426,13 +423,25 @@ class BaseOrchestrator(StackComponent, ABC):
     def get_run_id_for_orchestrator_run_id(
         self, orchestrator_run_id: str
     ) -> UUID:
-        run_id_seed = f"{self.id}-{orchestrator_run_id}"
+        """Generates a run ID from an orchestrator run id.
 
-        m = hashlib.md5()
-        m.update(run_id_seed.encode("utf-8"))
-        return UUID(hex=m.hexdigest(), version=4)
+        Args:
+            orchestrator_run_id: The orchestrator run id.
+
+        Returns:
+            The run id generated from the orchestrator run id.
+        """
+        run_id_seed = f"{self.id}-{orchestrator_run_id}"
+        hash = hashlib.md5()
+        hash.update(run_id_seed.encode("utf-8"))
+        return UUID(hex=hash.hexdigest(), version=4)
 
     def _create_or_reuse_run(self) -> PipelineRunModel:
+        """Creates a run or reuses an existing one.
+
+        Returns:
+            The created or existing run.
+        """
         assert self._active_deployment
         orchestrator_run_id = self.get_orchestrator_run_id()
 
@@ -451,6 +460,15 @@ class BaseOrchestrator(StackComponent, ABC):
     def _create_run(
         self, run_id: UUID, orchestrator_run_id: str
     ) -> PipelineRunModel:
+        """Creates a run in the ZenStore.
+
+        Args:
+            run_id: The id of the run to create.
+            orchestrator_run_id: The orchestrator id of the run to create.
+
+        Returns:
+            The created run.
+        """
         assert self._active_deployment
 
         date = datetime.now().strftime("%Y_%m_%d")
@@ -477,7 +495,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     @staticmethod
     def _publish_failed_run(run_name_or_id: Union[str, UUID]) -> None:
-        """Set a run to failed if an exception occured during orchestration.
+        """Set run status to failed.
 
         Args:
             run_name_or_id: The name or ID of the run that failed.

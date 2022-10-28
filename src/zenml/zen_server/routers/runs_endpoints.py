@@ -105,7 +105,7 @@ def get_run(
     """Get a specific pipeline run using its ID.
 
     Args:
-        run_id: ID of the pipeline run to get.
+        run_name_or_id: Name or ID of the pipeline run to get.
         hydrated: Defines if stack, user and pipeline will be
                   included by reference (FALSE) or as model (TRUE)
 

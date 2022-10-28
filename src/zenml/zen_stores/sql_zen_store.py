@@ -2665,9 +2665,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
             run = self._get_run_schema(run_name_or_id, session=session)

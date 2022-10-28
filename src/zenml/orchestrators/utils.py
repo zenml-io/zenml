@@ -44,5 +44,16 @@ def get_cache_status(
 
 
 def get_orchestrator_run_name(pipeline_name: str) -> str:
+    """Gets an orchestrator run name.
+
+    This run name is not the same as the ZenML run name but can instead be
+    used to display in the orchestrator UI.
+
+    Args:
+        pipeline_name: Name of the pipeline that will run.
+
+    Returns:
+        The orchestrator run name.
+    """
     user_name = Client().active_user.name
     return f"{pipeline_name}_{user_name}_{random.Random().getrandbits(32):08x}"

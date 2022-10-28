@@ -511,6 +511,15 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             )
 
     def get_orchestrator_run_id(self) -> str:
+        """Returns the active orchestrator run id.
+
+        Raises:
+            RuntimeError: If the environment variable specifying the run id
+                is not set.
+
+        Returns:
+            The orchestrator run id.
+        """
         try:
             return os.environ[ENV_ZENML_VERTEX_RUN_ID]
         except KeyError:

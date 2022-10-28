@@ -145,6 +145,15 @@ class AirflowOrchestrator(BaseOrchestrator):
         }
 
     def get_orchestrator_run_id(self) -> str:
+        """Returns the active orchestrator run id.
+
+        Raises:
+            RuntimeError: If no run id exists. This happens when this method
+                gets called while the orchestrator is not running a pipleline.
+
+        Returns:
+            The orchestrator run id.
+        """
         if not self._orchestrator_run_id:
             raise RuntimeError("No run id set.")
 
