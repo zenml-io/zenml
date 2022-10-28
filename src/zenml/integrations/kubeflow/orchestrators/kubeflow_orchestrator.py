@@ -664,7 +664,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             pipeline_file_path: Path to the pipeline definition file.
         """
         pipeline_name = deployment.pipeline.name
-        run_display_name = get_orchestrator_run_name(
+        orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=pipeline_name
         )
         enable_cache = deployment.pipeline.enable_cache
@@ -712,7 +712,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
                 result = client.create_recurring_run(
                     experiment_id=experiment.id,
-                    job_name=run_display_name,
+                    job_name=orchestrator_run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=enable_cache,
                     cron_expression=deployment.schedule.cron_expression,
@@ -730,7 +730,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 result = client.create_run_from_pipeline_package(
                     pipeline_file_path,
                     arguments={},
-                    run_name=run_display_name,
+                    run_name=orchestrator_run_name,
                     enable_caching=enable_cache,
                     namespace=user_namespace,
                 )

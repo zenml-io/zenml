@@ -296,7 +296,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 stack because it is not a
                 `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
-        run_display_name = get_orchestrator_run_name(
+        orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline.name
         )
         # If the `pipeline_root` has not been defined in the orchestrator
@@ -305,7 +305,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         # `GCPArtifactStore`.
         if not self.config.pipeline_root:
             artifact_store = stack.artifact_store
-            self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{deployment.pipeline.name}/{run_display_name}"
+            self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{deployment.pipeline.name}/{orchestrator_run_name}"
             logger.info(
                 "The attribute `pipeline_root` has not been set in the "
                 "orchestrator configuration. One has been generated "
@@ -385,7 +385,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
             self.pipeline_directory,
-            f"{run_display_name}.json",
+            f"{orchestrator_run_name}.json",
         )
 
         # Compile the pipeline using the Kubeflow SDK V2 compiler that allows
