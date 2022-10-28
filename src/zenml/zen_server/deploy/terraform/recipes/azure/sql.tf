@@ -32,6 +32,13 @@ resource "azurerm_mysql_flexible_server_firewall_rule" "allow_IPs" {
   end_ip_address      = "255.255.255.255"
 }
 
+resource "azurerm_mysql_flexible_server_configuration" "require_ssl" {
+  name                = "require_secure_transport"
+  resource_group_name = azurerm_resource_group.rg.name
+  server_name         = azurerm_mysql_flexible_server.mysql.name
+  value               = "OFF"
+}
+
 resource "random_password" "mysql_password" {
   length  = 12
   special = false
