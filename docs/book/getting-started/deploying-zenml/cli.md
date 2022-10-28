@@ -157,7 +157,7 @@ db_instance_class [db.t3.micro]: Instance class of RDS database to create.
 db_allocated_storage [5]: Allocated storage of RDS database to create.
 ```
 
-The `database_username` and `database_password` from the general config is used to set those variables for the AWS RDS instance as well.
+The `database_username` and `database_password` from the general config is used to set those variables for the AWS RDS instance.
 
 {% endtab %}
 
@@ -174,14 +174,23 @@ db_disk_size [10]: Allocated storage of CloudSQL database, in GB, to create.
 ```
 
 - The `project_id` is required to be set.
-- The username for the database is `admin` irrespective of the value passed to the `database_username` variable.
+- The `database_username` and `database_password` from the general config is used to set those variables for the CloudSQL instance.
 - SSL is disabled by default on the database and option to enable it is coming soon!
 
 {% endtab %}
 
 {% tab title="Azure" %}
 
-Coming Soon!
+```
+resource_group [zenml]: The Azure resource_group to deploy to.
+
+db_instance_name [zenmlserver]: The name of the Flexible MySQL instance to create
+db_name [zenmlserver]: Name of RDS database to create.
+db_version [5.7]: Version of MySQL database to create.
+db_sku_name [B_Standard_B1s]: The sku_name for the database resource.
+db_disk_size [20]: Allocated storage of MySQL database to create.
+```
+The `database_username` and `database_password` from the general config is used to set those variables for the Azure Flexible MySQL server.
 
 {% endtab %}
 {% endtabs %}
