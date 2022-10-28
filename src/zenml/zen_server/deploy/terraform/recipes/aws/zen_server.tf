@@ -13,7 +13,7 @@ resource "helm_release" "zen-server" {
 
 
   set {
-    name = "image.tag"
+    name = "zenml.image.tag"
     value = var.zenmlserver_image_tag
   }
   set {
@@ -39,27 +39,27 @@ resource "helm_release" "zen-server" {
     value = var.ingress_path != ""? "/${var.ingress_path}": ""
   }
   set {
-    name = "ingress.path"
+    name = "zenml.ingress.path"
     value = var.ingress_path != ""? "/${var.ingress_path}/?(.*)": "/"
   }
   set {
-    name = "ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/rewrite-target"
+    name = "zenml.ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/rewrite-target"
     value = var.ingress_path != ""? "/$1": ""
   }
   set {
-    name = "ingress.host"
+    name = "zenml.ingress.host"
     value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.hostname}" : var.ingress_controller_hostname
   }
   set {
-    name = "ingress.tls.enabled"
+    name = "zenml.ingress.tls.enabled"
     value = var.ingress_tls
   }
   set {
-    name = "ingress.tls.generateCerts"
+    name = "zenml.ingress.tls.generateCerts"
     value = var.ingress_tls_generate_certs
   }
   set {
-    name = "ingress.tls.secretName"
+    name = "zenml.ingress.tls.secretName"
     value = "${var.name}-${var.ingress_tls_secret_name}"
   }
 

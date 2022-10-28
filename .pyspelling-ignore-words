@@ -1520,3 +1520,6 @@ zenmldocker
 zenmlregistry
 zenmlserver
 zenserver
+ConnectionConfig
+MetadataStoreClientConfig
+grpc
