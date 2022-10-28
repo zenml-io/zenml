@@ -752,6 +752,7 @@ def assignment() -> None:
     required=False,
 )
 def list_role_assignments(
+    role_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
     team_name_or_id: Optional[str] = None,
     project_name_or_id: Optional[str] = None,
@@ -759,6 +760,7 @@ def list_role_assignments(
     """List all role assignments.
 
     Args:
+        role_name_or_id: Name or ID of a role to list role assignments for.
         user_name_or_id: Name or ID of a user to list role assignments for.
         team_name_or_id: Name or ID of a team to list role assignments for.
         project_name_or_id: Name or ID of a project to list role assignments

@@ -21,6 +21,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, SecretStr, root_validator
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.enums import PermissionType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models.base_models import DomainModel
@@ -286,6 +287,20 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
             return user
 
         return None
+
+    def generate_access_token(self, permissions: Set[PermissionType]) -> str:
+        """Generates an access token.
+
+        Generates an access token and returns it.
+
+        Returns:
+            The generated access token.
+        """
+        return JWTToken(
+            token_type=JWTTokenType.ACCESS_TOKEN,
+            user_id=self.id,
+            permissions=permissions,
+        ).encode()
 
     def get_activation_token(self) -> Optional[str]:
         """Get the activation token.

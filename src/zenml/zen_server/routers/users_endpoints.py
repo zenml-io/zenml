@@ -122,7 +122,7 @@ def create_user(
     # add back the original unhashed activation token, if generated, to
     # send it back to the client
     zen_store().assign_role(
-        role_name_or_id=zen_store()._guest_role.id,
+        role_name_or_id=zen_store()._admin_role.id,
         user_or_team_name_or_id=new_user.id,
         is_user=True,
     )

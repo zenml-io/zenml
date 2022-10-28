@@ -19,7 +19,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.param_functions import Form
 
 from zenml.constants import API, LOGIN, VERSION_1
-from zenml.models.user_management_models import JWTToken, JWTTokenType
 from zenml.zen_server.auth import authenticate_credentials
 from zenml.zen_server.utils import error_response, zen_store
 
@@ -107,12 +106,9 @@ def token(
         *[zen_store().get_role(ra.role).permissions for ra in role_assignments]
     )
 
-    access_token = JWTToken(
-        token_type=JWTTokenType.ACCESS_TOKEN,
-        user_id=auth_context.user.id,
-        permissions=permissions,
-    ).encode()
-
+    access_token = auth_context.user.generate_access_token(
+        permissions=permissions
+    )
     # The response of the token endpoint must be a JSON object with the
     # following fields:
     #

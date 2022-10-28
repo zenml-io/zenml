@@ -117,6 +117,7 @@ def authenticate_credentials(
 
 
 def http_authentication(
+    security_scopes: SecurityScopes,
     credentials: HTTPBasicCredentials = Depends(HTTPBasic()),
 ) -> AuthContext:
     """Authenticates any request to the ZenML Server with basic HTTP authentication.
@@ -194,7 +195,7 @@ def oauth2_password_bearer_authentication(
     return auth_context
 
 
-def no_authentication() -> AuthContext:
+def no_authentication(security_scopes: SecurityScopes) -> AuthContext:
     """Doesn't authenticate requests to the ZenML server.
 
     Raises:
