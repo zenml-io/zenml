@@ -82,7 +82,7 @@ class LocalDockerOrchestrator(BaseOrchestrator):
                 ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name
             )
 
-    def get_run_id(self) -> str:
+    def get_orchestrator_run_id(self) -> str:
         try:
             return os.environ[ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID]
         except KeyError:

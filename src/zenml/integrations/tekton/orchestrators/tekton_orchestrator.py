@@ -325,7 +325,7 @@ class TektonOrchestrator(BaseOrchestrator):
                 f"configured correctly.",
             )
 
-    def get_run_id(self) -> str:
+    def get_orchestrator_run_id(self) -> str:
         try:
             return os.environ[ENV_ZENML_TEKTON_RUN_ID]
         except KeyError:

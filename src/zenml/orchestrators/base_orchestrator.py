@@ -213,7 +213,7 @@ class BaseOrchestrator(StackComponent, ABC):
         return cast(BaseOrchestratorConfig, self._config)
 
     @abstractmethod
-    def get_run_id(self) -> str:
+    def get_orchestrator_run_id(self) -> str:
         """_summary_
 
         _extended_summary_
@@ -433,7 +433,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def _create_or_reuse_run(self) -> PipelineRunModel:
         assert self._active_deployment
-        orchestrator_run_id = self.get_run_id()
+        orchestrator_run_id = self.get_orchestrator_run_id()
 
         run_id = self.get_run_id_for_orchestrator_run_id(orchestrator_run_id)
 

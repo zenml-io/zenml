@@ -510,9 +510,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 "The Vertex AI Pipelines job execution has failed: %s", e
             )
 
-    def get_run_id(self) -> str:
+    def get_orchestrator_run_id(self) -> str:
         try:
-            print(os.environ[ENV_ZENML_VERTEX_RUN_ID])
             return os.environ[ENV_ZENML_VERTEX_RUN_ID]
         except KeyError:
             raise RuntimeError(

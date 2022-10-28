@@ -753,7 +753,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 error,
             )
 
-    def get_run_id(self) -> str:
+    def get_orchestrator_run_id(self) -> str:
         try:
             return os.environ[ENV_KFP_RUN_ID]
         except KeyError:

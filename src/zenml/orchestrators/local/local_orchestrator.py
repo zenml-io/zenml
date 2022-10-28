@@ -89,7 +89,7 @@ class LocalOrchestrator(BaseOrchestrator):
         )
         self._orchestrator_run_id = None
 
-    def get_run_id(self) -> str:
+    def get_orchestrator_run_id(self) -> str:
         if not self._orchestrator_run_id:
             raise RuntimeError("No run id set.")
 
