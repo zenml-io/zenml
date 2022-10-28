@@ -325,6 +325,7 @@ class RestZenStore(BaseZenStore):
             ConnectionConfig,
             MetadataStoreClientConfig,
         )
+
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         body = self.get(f"{METADATA_CONFIG}")

@@ -27,6 +27,7 @@ metadata:
     nginx.ingress.kubernetes.io/auth-tls-secret: {{ .Release.Namespace }}/{{ .Values.grpcMetadata.tls.clientSecretName }}
     # Specify the verification depth in the client certificates chain
     nginx.ingress.kubernetes.io/auth-tls-verify-depth: "1"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
     {{- else }}
     {{- fail "TLS must be enabled for the gRPC metadata service is an ingress is used to expose the service" }}
     {{- end }}
