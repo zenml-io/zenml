@@ -310,7 +310,11 @@ def down() -> None:
     "--provider",
     "-p",
     type=click.Choice(
-        [ServerProviderType.AWS.value, ServerProviderType.GCP.value],
+        [
+            ServerProviderType.AWS.value,
+            ServerProviderType.GCP.value,
+            ServerProviderType.AZURE.value,
+        ],
         case_sensitive=True,
     ),
     default=None,
@@ -414,7 +418,11 @@ def deploy(
         provider = click.prompt(
             "ZenML server provider",
             type=click.Choice(
-                [ServerProviderType.AWS.value, ServerProviderType.GCP.value],
+                [
+                    ServerProviderType.AWS.value,
+                    ServerProviderType.GCP.value,
+                    ServerProviderType.AZURE.value,
+                ],
                 case_sensitive=True,
             ),
             default=ServerProviderType.AWS.value,
