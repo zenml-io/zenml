@@ -108,6 +108,7 @@ class PipelineSchema(SQLModel, table=True):
             updated=self.updated,
         )
 
+
 class PipelineRunSchema(SQLModel, table=True):
     """SQL Model for pipeline runs."""
 

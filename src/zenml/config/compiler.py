@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Class for compiling ZenML pipelines into a serializable format."""
 import copy
+import string
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
 import tfx.orchestration.pipeline as tfx_pipeline
@@ -66,6 +67,8 @@ class Compiler:
             pipeline=pipeline, config=run_configuration
         )
         self._verify_distinct_step_names(pipeline=pipeline)
+        if run_configuration.run_name:
+            self._verify_run_name(run_configuration.run_name)
 
         pipeline.connect(**pipeline.steps)
         pb2_pipeline = self._compile_proto_pipeline(
@@ -169,6 +172,26 @@ class Compiler:
                 )
 
             step_names[step.name] = step_argument_name
+
+    @staticmethod
+    def _verify_run_name(run_name: str) -> None:
+        """Verifies that the run name contains only valid placeholders.
+
+        Args:
+            run_name: The run name to verify.
+
+        Raises:
+            ValueError: If the run name contains invalid placeholders.
+        """
+        valid_placeholder_names = {"date", "time"}
+        placeholders = {
+            v[1] for v in string.Formatter().parse(run_name) if v[1]
+        }
+        if not placeholders.issubset(valid_placeholder_names):
+            raise ValueError(
+                f"Invalid run name {run_name}. Only the placeholders "
+                f"{valid_placeholder_names} are allowed in run names."
+            )
 
     def _filter_and_validate_settings(
         self,
