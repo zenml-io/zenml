@@ -149,7 +149,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         Raises:
             RuntimeError: If no run id exists. This happens when this method
-                gets called while the orchestrator is not running a pipleline.
+                gets called while the orchestrator is not running a pipeline.
 
         Returns:
             The orchestrator run id.
