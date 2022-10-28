@@ -456,7 +456,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             NotImplementedError: If the SQL driver is not supported.
         """
         sql_url = make_url(self.url)
-        sqlalchemy_connect_args = {}
+        sqlalchemy_connect_args: Dict[str, Any] = {}
         engine_args = {}
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             assert self.database is not None
@@ -483,7 +483,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 database=self.database,
             )
 
-            sqlalchemy_ssl_args = {}
+            sqlalchemy_ssl_args: Dict[str, Any] = {}
 
             # Handle SSL params
             for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
