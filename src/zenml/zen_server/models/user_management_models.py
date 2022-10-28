@@ -14,7 +14,7 @@
 """REST API user management models implementation."""
 
 
-from typing import Any, Optional, cast, Set
+from typing import Any, Optional, Set, cast
 
 from pydantic import BaseModel, Field, SecretStr
 

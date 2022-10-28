@@ -88,7 +88,7 @@ class JWTToken(BaseModel):
             raise AuthorizationException(
                 "Invalid JWT token: the subject claim is missing"
             )
-        permissions: list = payload.get("permissions")
+        permissions: List[str] = payload.get("permissions")
         if permissions is None:
             raise AuthorizationException(
                 "Invalid JWT token: the permissions scope is missing"

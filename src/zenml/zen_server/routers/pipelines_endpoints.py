@@ -21,7 +21,7 @@ from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import PipelineModel
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models import UpdatePipelineRequest
 from zenml.zen_server.models.pipeline_models import (
     HydratedPipelineModel,
@@ -39,7 +39,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Union[List[HydratedPipelineModel], List[PipelineModel]],  # type: ignore[arg-type]
+    response_model=Union[List[HydratedPipelineModel], List[PipelineModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -77,7 +77,7 @@ def list_pipelines(
 
 @router.get(
     "/{pipeline_id}",
-    response_model=Union[HydratedPipelineModel, PipelineModel],  # type: ignore[arg-type]
+    response_model=Union[HydratedPipelineModel, PipelineModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -103,7 +103,7 @@ def get_pipeline(
 
 @router.put(
     "/{pipeline_id}",
-    response_model=Union[HydratedPipelineModel, PipelineModel],  # type: ignore[arg-type]
+    response_model=Union[HydratedPipelineModel, PipelineModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -111,7 +111,7 @@ def update_pipeline(
     pipeline_id: UUID,
     pipeline_update: UpdatePipelineRequest,
     hydrated: bool = False,
-    _=Security(authorize, scopes=["write"])
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> Union[HydratedPipelineModel, PipelineModel]:
     """Updates the attribute on a specific pipeline using its unique id.
 
@@ -141,8 +141,7 @@ def update_pipeline(
 )
 @handle_exceptions
 def delete_pipeline(
-    pipeline_id: UUID,
-    _ = Security(authorize, scopes=["write"])
+    pipeline_id: UUID, _: AuthContext = Security(authorize, scopes=["write"])
 ) -> None:
     """Deletes a specific pipeline.
 
@@ -154,7 +153,7 @@ def delete_pipeline(
 
 @router.get(
     "/{pipeline_id}" + RUNS,
-    response_model=Union[  # type: ignore[arg-type]
+    response_model=Union[
         List[HydratedPipelineRunModel], List[PipelineRunModel]
     ],
     responses={401: error_response, 404: error_response, 422: error_response},

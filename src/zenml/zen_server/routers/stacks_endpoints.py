@@ -21,7 +21,7 @@ from fastapi import APIRouter, Security
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.models import StackModel
 from zenml.models.stack_models import HydratedStackModel
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models.stack_models import UpdateStackRequest
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -35,7 +35,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Union[List[HydratedStackModel], List[StackModel]],  # type: ignore[arg-type]
+    response_model=Union[List[HydratedStackModel], List[StackModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -73,13 +73,14 @@ def list_stacks(
 
 @router.get(
     "/{stack_id}",
-    response_model=Union[HydratedStackModel, StackModel],  # type: ignore[arg-type]
+    response_model=Union[HydratedStackModel, StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_stack(
-    stack_id: UUID, hydrated: bool = False,
-    _ = Security(authorize, scopes=["write"])
+    stack_id: UUID,
+    hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> Union[HydratedStackModel, StackModel]:
     """Returns the requested stack.
 
@@ -100,7 +101,7 @@ def get_stack(
 
 @router.put(
     "/{stack_id}",
-    response_model=Union[HydratedStackModel, StackModel],  # type: ignore[arg-type]
+    response_model=Union[HydratedStackModel, StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -108,7 +109,7 @@ def update_stack(
     stack_id: UUID,
     stack_update: UpdateStackRequest,
     hydrated: bool = False,
-    _ = Security(authorize, scopes=["write"])
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> Union[HydratedStackModel, StackModel]:
     """Updates a stack.
 
@@ -137,8 +138,7 @@ def update_stack(
 )
 @handle_exceptions
 def delete_stack(
-    stack_id: UUID,
-    _ = Security(authorize, scopes=["write"])
+    stack_id: UUID, _: AuthContext = Security(authorize, scopes=["write"])
 ) -> None:
     """Deletes a stack.
 

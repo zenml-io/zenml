@@ -20,7 +20,7 @@ from fastapi import APIRouter, Security
 from zenml.constants import API, ROLES, TEAMS, VERSION_1
 from zenml.models import TeamModel
 from zenml.models.user_management_models import RoleAssignmentModel
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models.user_management_models import (
     CreateTeamRequest,
     UpdateTeamRequest,
@@ -58,7 +58,7 @@ def list_teams() -> List[TeamModel]:
 @handle_exceptions
 def create_team(
     team: CreateTeamRequest,
-    _=Security(authorize, scopes=["write"])
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> TeamModel:
     """Creates a team.
 
@@ -100,7 +100,7 @@ def get_team(team_name_or_id: Union[str, UUID]) -> TeamModel:
 def update_team(
     team_name_or_id: Union[str, UUID],
     team_update: UpdateTeamRequest,
-    _ = Security(authorize, scopes=["write"])
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> TeamModel:
     """Updates a team.
 
@@ -124,7 +124,7 @@ def update_team(
 @handle_exceptions
 def delete_team(
     team_name_or_id: Union[str, UUID],
-    _ = Security(authorize, scopes=["write"])
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> None:
     """Deletes a specific team.
 

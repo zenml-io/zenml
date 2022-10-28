@@ -15,7 +15,7 @@
 from typing import Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Security
 
 from zenml.constants import (
     API,
@@ -81,7 +81,7 @@ def list_projects() -> List[ProjectModel]:
 @handle_exceptions
 def create_project(
     project: CreateProjectRequest,
-    _ = Security(authorize, scopes=["write"])
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> ProjectModel:
     """Creates a project based on the requestBody.
 
@@ -125,7 +125,7 @@ def get_project(project_name_or_id: Union[str, UUID]) -> ProjectModel:
 def update_project(
     project_name_or_id: Union[str, UUID],
     project_update: UpdateProjectRequest,
-    _ = Security(authorize, scopes=["write"])
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> ProjectModel:
     """Get a project for given name.
 
@@ -152,7 +152,7 @@ def update_project(
 @handle_exceptions
 def delete_project(
     project_name_or_id: Union[str, UUID],
-    _ = Security(authorize, scopes=["write"])
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> None:
     """Deletes a project.
 
@@ -194,7 +194,7 @@ def get_role_assignments_for_project(
 
 @router.get(
     "/{project_name_or_id}" + STACKS,
-    response_model=Union[List[HydratedStackModel], List[StackModel]],  # type: ignore[arg-type]
+    response_model=Union[List[HydratedStackModel], List[StackModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -237,7 +237,7 @@ def list_project_stacks(
 
 @router.post(
     "/{project_name_or_id}" + STACKS,
-    response_model=Union[HydratedStackModel, StackModel],  # type: ignore[arg-type]
+    response_model=Union[HydratedStackModel, StackModel],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -245,7 +245,7 @@ def create_stack(
     project_name_or_id: Union[str, UUID],
     stack: CreateStackRequest,
     hydrated: bool = False,
-    auth_context: AuthContext = Security(authorize, scopes=["write"])
+    auth_context: AuthContext = Security(authorize, scopes=["write"]),
 ) -> Union[HydratedStackModel, StackModel]:
     """Creates a stack for a particular project.
 
@@ -274,7 +274,7 @@ def create_stack(
 
 @router.get(
     "/{project_name_or_id}" + STACK_COMPONENTS,
-    response_model=Union[List[ComponentModel], List[HydratedComponentModel]],  # type: ignore[arg-type]
+    response_model=Union[List[ComponentModel], List[HydratedComponentModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -320,7 +320,7 @@ def list_project_stack_components(
 
 @router.post(
     "/{project_name_or_id}" + STACK_COMPONENTS,
-    response_model=Union[ComponentModel, HydratedComponentModel],  # type: ignore[arg-type]
+    response_model=Union[ComponentModel, HydratedComponentModel],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -414,7 +414,7 @@ def create_flavor(
     project_name_or_id: Union[str, UUID],
     flavor: FlavorModel,
     hydrated: bool = False,
-    auth_context: AuthContext = Security(authorize, scopes=["write"])
+    auth_context: AuthContext = Security(authorize, scopes=["write"]),
 ) -> FlavorModel:
     """Creates a stack component flavor.
 
@@ -439,7 +439,7 @@ def create_flavor(
 
 @router.get(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=Union[List[HydratedPipelineModel], List[PipelineModel]],  # type: ignore[arg-type]
+    response_model=Union[List[HydratedPipelineModel], List[PipelineModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -479,7 +479,7 @@ def list_project_pipelines(
 
 @router.post(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=Union[HydratedPipelineModel, PipelineModel],  # type: ignore[arg-type]
+    response_model=Union[HydratedPipelineModel, PipelineModel],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -487,7 +487,7 @@ def create_pipeline(
     project_name_or_id: Union[str, UUID],
     pipeline: CreatePipelineRequest,
     hydrated: bool = False,
-    auth_context: AuthContext = Security(authorize, scopes=["write"])
+    auth_context: AuthContext = Security(authorize, scopes=["write"]),
 ) -> Union[HydratedPipelineModel, PipelineModel]:
     """Creates a pipeline.
 

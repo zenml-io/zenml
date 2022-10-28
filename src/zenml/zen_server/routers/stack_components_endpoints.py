@@ -21,7 +21,7 @@ from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
 from zenml.models.component_model import HydratedComponentModel
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models.component_models import UpdateComponentModel
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -42,7 +42,7 @@ types_router = APIRouter(
 
 @router.get(
     "",
-    response_model=Union[List[ComponentModel], List[HydratedComponentModel]],  # type: ignore[arg-type]
+    response_model=Union[List[ComponentModel], List[HydratedComponentModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -86,7 +86,7 @@ def list_stack_components(
 
 @router.get(
     "/{component_id}",
-    response_model=Union[ComponentModel, HydratedComponentModel],  # type: ignore[arg-type]
+    response_model=Union[ComponentModel, HydratedComponentModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -112,7 +112,7 @@ def get_stack_component(
 
 @router.put(
     "/{component_id}",
-    response_model=Union[ComponentModel, HydratedComponentModel],  # type: ignore[arg-type]
+    response_model=Union[ComponentModel, HydratedComponentModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -120,7 +120,7 @@ def update_stack_component(
     component_id: UUID,
     component_update: UpdateComponentModel,
     hydrated: bool = False,
-    _ = Security(authorize, scopes=["write"])
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Updates a stack component.
 
@@ -150,8 +150,7 @@ def update_stack_component(
 )
 @handle_exceptions
 def deregister_stack_component(
-    component_id: UUID,
-    _ = Security(authorize, scopes=["write"])
+    component_id: UUID, _: AuthContext = Security(authorize, scopes=["write"])
 ) -> None:
     """Deletes a stack component.
 

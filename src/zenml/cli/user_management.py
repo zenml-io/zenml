@@ -79,12 +79,12 @@ def list_users() -> None:
     help=("Give the user an initial role."),
     required=False,
     type=str,
-    default="guest",
+    default="admin",
 )
 def create_user(
     user_name: str,
+    initial_role: str = "admin",
     password: Optional[str] = None,
-    initial_role: Optional[str] = "admin",
 ) -> None:
     """Create a new user.
 

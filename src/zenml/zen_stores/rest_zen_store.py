@@ -126,7 +126,8 @@ if TYPE_CHECKING:
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
-AnyModel = TypeVar("AnyModel", bound=DomainModel)
+AnyModel = TypeVar("AnyModel", bound=BaseModel)
+AnyDomainModel = TypeVar("AnyDomainModel", bound=DomainModel)
 AnyProjectScopedModel = TypeVar(
     "AnyProjectScopedModel", bound=ProjectScopedDomainModel
 )
@@ -1875,11 +1876,11 @@ class RestZenStore(BaseZenStore):
 
     def _update_resource(
         self,
-        resource: AnyModel,
+        resource: AnyDomainModel,
         route: str,
-        request_model: Optional[Type[UpdateRequest[AnyModel]]] = None,
-        response_model: Optional[Type[UpdateResponse[AnyModel]]] = None,
-    ) -> AnyModel:
+        request_model: Optional[Type[UpdateRequest[AnyDomainModel]]] = None,
+        response_model: Optional[Type[UpdateResponse[AnyDomainModel]]] = None,
+    ) -> AnyDomainModel:
         """Update an existing resource.
 
         Args:

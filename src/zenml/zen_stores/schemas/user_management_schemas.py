@@ -236,16 +236,19 @@ class RoleSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_create_model(cls, model: RoleModel) -> "RoleSchema":
+    def from_create_model(
+        cls, model: RoleModel, permissions: List[PermissionSchema]
+    ) -> "RoleSchema":
         """Create a `RoleSchema` from a `RoleModel`.
 
         Args:
             model: The `RoleModel` from which to create the schema.
+            permissions: The `permissions` attached to this role
 
         Returns:
             The created `RoleSchema`.
         """
-        return cls(id=model.id, name=model.name, permissions=model.permissions)
+        return cls(id=model.id, name=model.name, permissions=permissions)
 
     def from_update_model(self, model: RoleModel) -> "RoleSchema":
         """Update a `RoleSchema` from a `RoleModel`.

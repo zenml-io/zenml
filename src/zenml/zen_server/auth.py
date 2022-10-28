@@ -34,7 +34,7 @@ from zenml.models.user_management_models import (
     UserModel,
 )
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_server.utils import ROOT_URL_PATH, logger, zen_store
+from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
@@ -170,7 +170,7 @@ def oauth2_password_bearer_authentication(
     if security_scopes.scopes:
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
     else:
-        authenticate_value = f"Bearer"
+        authenticate_value = "Bearer"
     auth_context = authenticate_credentials(access_token=token)
 
     access_token = JWTToken.decode(

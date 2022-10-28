@@ -19,7 +19,7 @@ from fastapi import APIRouter, Security
 
 from zenml.constants import API, ROLES, VERSION_1
 from zenml.models import RoleModel
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models.user_management_models import (
     CreateRoleRequest,
     UpdateRoleRequest,
@@ -57,7 +57,7 @@ def list_roles() -> List[RoleModel]:
 @handle_exceptions
 def create_role(
     role: CreateRoleRequest,
-    _ = Security(authorize, scopes=["write"])
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> RoleModel:
     """Creates a role.
 
@@ -99,7 +99,7 @@ def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
 def update_role(
     role_name_or_id: Union[str, UUID],
     role_update: UpdateRoleRequest,
-    _ = Security(authorize, scopes=["write"])
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> RoleModel:
     """Updates a role.
 
@@ -123,7 +123,7 @@ def update_role(
 @handle_exceptions
 def delete_role(
     role_name_or_id: Union[str, UUID],
-    _ = Security(authorize, scopes=["write"])
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> None:
     """Deletes a specific role.
 

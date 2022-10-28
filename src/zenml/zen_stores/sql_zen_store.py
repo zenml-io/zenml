@@ -1917,10 +1917,11 @@ class SqlZenStore(BaseZenStore):
             attached_permissions = session.exec(
                 select(PermissionSchema).where(or_(*filters))
             ).all()
-            role.permissions = attached_permissions
 
             # Create role
-            role_schema = RoleSchema.from_create_model(role)
+            role_schema = RoleSchema.from_create_model(
+                role, permissions=attached_permissions
+            )
             session.add(role_schema)
             session.commit()
             return role_schema.to_model()
