@@ -906,7 +906,7 @@ def deploy(
                             stack_recipe_service.terraform_client.working_dir
                         ).name in filter and (
                             "enable_mlflow" not in vars
-                            or vars["enable_mlflow"] == False
+                            or vars["enable_mlflow"] is False
                         ):
                             logger.warning(
                                 "This recipe doesn't create a Kubernetes cluster "
@@ -1003,7 +1003,7 @@ def zen_server_exists() -> bool:
     """
     gc = GlobalConfiguration()
 
-    return gc.store and gc.store.type == StoreType.REST
+    return gc.store is not None and gc.store.type == StoreType.REST
 
 
 @stack_recipe.command(
