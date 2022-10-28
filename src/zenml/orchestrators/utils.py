@@ -45,4 +45,4 @@ def get_cache_status(
 
 def get_orchestrator_run_name(pipeline_name: str) -> str:
     user_name = Client().active_user.name
-    return f"{pipeline_name}_{user_name}_{random.getrandbits(32):08x}"
+    return f"{pipeline_name}_{user_name}_{random.Random().getrandbits(32):08x}"
