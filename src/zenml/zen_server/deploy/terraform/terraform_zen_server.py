@@ -120,6 +120,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     password: str
     helm_chart: str = get_helm_chart_path()
     zenmlserver_image_tag: str = "latest"
+    zenmlinit_image_tag: str = "latest"
     namespace: str = "zenmlserver"
     kubectl_config_path: str = os.path.join(str(Path.home()), ".kube", "config")
     ingress_tls: bool = True
@@ -129,7 +130,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     create_ingress_controller: bool = True
     ingress_controller_hostname: str = ""
     create_sql: bool = True
-    database_username: str = "admin"
+    database_username: str = "user"
     database_password: str = ""
     database_url: str = ""
     database_ssl_ca: str = ""
