@@ -172,10 +172,10 @@ class LocalDockerOrchestrator(BaseOrchestrator):
 
         run_duration = time.time() - start_time
         run_id = self.get_run_id_for_orchestrator_run_id(orchestrator_run_id)
-        run = Client().zen_store.get_run(run_id)
+        run_model = Client().zen_store.get_run(run_id)
         logger.info(
             "Pipeline run `%s` has finished in %s.",
-            run.name,
+            run_model.name,
             string_utils.get_human_readable_time(run_duration),
         )
 

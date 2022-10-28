@@ -305,13 +305,13 @@ class BaseOrchestrator(StackComponent, ABC):
         step_name = step.config.name
         pb2_pipeline = self._active_pb2_pipeline
 
-        run = self._create_or_reuse_run()
+        run_model = self._create_or_reuse_run()
 
         # Substitute the runtime parameter to be a concrete run_id, it is
         # important for this to be unique for each run.
         runtime_parameter_utils.substitute_runtime_parameter(
             pb2_pipeline,
-            {PIPELINE_RUN_ID_PARAMETER_NAME: run.name},
+            {PIPELINE_RUN_ID_PARAMETER_NAME: run_model.name},
         )
 
         # Extract the deployment_configs and use it to access the executor and
@@ -338,7 +338,7 @@ class BaseOrchestrator(StackComponent, ABC):
         step_run_info = StepRunInfo(
             config=step.config,
             pipeline=self._active_deployment.pipeline,
-            run_name=run.name,
+            run_name=run_model.name,
         )
 
         # The protobuf node for the current step is loaded here.
@@ -372,7 +372,7 @@ class BaseOrchestrator(StackComponent, ABC):
             try:
                 execution_info = self._execute_step(component_launcher)
             except:  # noqa: E722
-                self._publish_failed_run(run_name_or_id=run.name)
+                self._publish_failed_run(run_name_or_id=run_model.name)
                 raise
             finally:
                 stack.cleanup_step_run(info=step_run_info)
@@ -432,9 +432,9 @@ class BaseOrchestrator(StackComponent, ABC):
             The run id generated from the orchestrator run id.
         """
         run_id_seed = f"{self.id}-{orchestrator_run_id}"
-        hash = hashlib.md5()
-        hash.update(run_id_seed.encode("utf-8"))
-        return UUID(hex=hash.hexdigest(), version=4)
+        hash_ = hashlib.md5()
+        hash_.update(run_id_seed.encode("utf-8"))
+        return UUID(hex=hash_.hexdigest(), version=4)
 
     def _create_or_reuse_run(self) -> PipelineRunModel:
         """Creates a run or reuses an existing one.
@@ -448,14 +448,14 @@ class BaseOrchestrator(StackComponent, ABC):
         run_id = self.get_run_id_for_orchestrator_run_id(orchestrator_run_id)
 
         try:
-            run = Client().zen_store.get_run(run_id)
+            run_model = Client().zen_store.get_run(run_id)
         except KeyError:
-            run = self._create_run(
+            run_model = self._create_run(
                 run_id=run_id,
                 orchestrator_run_id=orchestrator_run_id,
             )
 
-        return run
+        return run_model
 
     def _create_run(
         self, run_id: UUID, orchestrator_run_id: str
@@ -478,7 +478,7 @@ class BaseOrchestrator(StackComponent, ABC):
         logger.debug("Creating run with ID: %s, name: %s", run_id, run_name)
 
         client = Client()
-        run = PipelineRunModel(
+        run_model = PipelineRunModel(
             id=run_id,
             name=run_name,
             orchestrator_run_id=orchestrator_run_id,
@@ -491,7 +491,7 @@ class BaseOrchestrator(StackComponent, ABC):
             num_steps=len(self._active_deployment.steps),
         )
 
-        return client.zen_store.create_run(run)
+        return client.zen_store.create_run(run_model)
 
     @staticmethod
     def _publish_failed_run(run_name_or_id: Union[str, UUID]) -> None:
