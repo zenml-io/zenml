@@ -135,8 +135,7 @@ def create_user(
         cli_utils.error(str(err))
 
     cli_utils.declare(
-        f"Created user '{user_name}' with role "
-        f"'{initial_role}'."
+        f"Created user '{user_name}' with role " f"'{initial_role}'."
     )
     if not user.active and user.activation_token is not None:
         cli_utils.declare(
@@ -571,7 +570,7 @@ def update_role(
 
         if remove_permission in [p.value for p in PermissionType]:
             try:
-                role.permissions.remove(remove_permission)
+                role.permissions.remove(PermissionType(remove_permission))
             except KeyError:
                 cli_utils.error(
                     f"Role {remove_permission} was already not "
@@ -580,7 +579,7 @@ def update_role(
 
         if add_permission in [p.value for p in PermissionType]:
             # Set won't throw an error if the item was already in the set
-            role.permissions.add(add_permission)
+            role.permissions.add(PermissionType(add_permission))
 
         role.name = name or role.name
         Client().zen_store.update_role(role)

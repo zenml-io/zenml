@@ -288,7 +288,7 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
 
         return None
 
-    def generate_access_token(self, permissions: Set[str]) -> str:
+    def generate_access_token(self, permissions: List[str]) -> str:
         """Generates an access token.
 
         Generates an access token and returns it.

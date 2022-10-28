@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Users, Teams, Roles."""
-import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID, uuid4
@@ -187,30 +186,14 @@ class TeamSchema(SQLModel, table=True):
         )
 
 
-class RolePermissionsSchema(SQLModel, table=True):
+class RolePermissionSchema(SQLModel, table=True):
     """SQL Model for team assignments."""
 
-    permission_name: PermissionType = Field(
-        primary_key=True, foreign_key="permissionschema.name"
+    name: PermissionType = Field(
+        primary_key=True,
     )
     role_id: UUID = Field(primary_key=True, foreign_key="roleschema.id")
-
-
-class PermissionSchema(SQLModel, table=True):
-    """SQL Model for roles."""
-
-    name: PermissionType = Field(primary_key=True)
-    roles: List["RoleSchema"] = Relationship(
-        back_populates="permissions", link_model=RolePermissionsSchema
-    )
-
-    def to_enum(self) -> PermissionType:
-        """Convert a `PermissionSchema` to a `PermissionType`.
-
-        Returns:
-            The converted `PermissionModel`.
-        """
-        return PermissionType(self.name)
+    roles: List["RoleSchema"] = Relationship(back_populates="permissions")
 
 
 class RoleSchema(SQLModel, table=True):
@@ -220,8 +203,8 @@ class RoleSchema(SQLModel, table=True):
     name: str
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
-    permissions: List["PermissionSchema"] = Relationship(
-        back_populates="roles", link_model=RolePermissionsSchema
+    permissions: List["RolePermissionSchema"] = Relationship(
+        back_populates="roles",
     )
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="role", sa_relationship_kwargs={"cascade": "delete"}
@@ -232,7 +215,7 @@ class RoleSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(
-        cls, model: RoleModel, permissions: List[PermissionSchema]
+        cls, model: RoleModel, permissions: List[RolePermissionSchema]
     ) -> "RoleSchema":
         """Create a `RoleSchema` from a `RoleModel`.
 
@@ -245,17 +228,20 @@ class RoleSchema(SQLModel, table=True):
         """
         return cls(id=model.id, name=model.name, permissions=permissions)
 
-    def from_update_model(self, model: RoleModel) -> "RoleSchema":
+    def from_update_model(
+        self, model: RoleModel, permissions: List[RolePermissionSchema]
+    ) -> "RoleSchema":
         """Update a `RoleSchema` from a `RoleModel`.
 
         Args:
             model: The `RoleModel` from which to update the schema.
+            permissions: The `permissions` attached to this role
 
         Returns:
             The updated `RoleSchema`.
         """
         self.name = model.name
-        self.permissions = list(model.permissions)
+        self.permissions = permissions
         self.updated = datetime.now()
         return self
 

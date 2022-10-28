@@ -144,6 +144,7 @@ class AnalyticsEventSource(StrEnum):
 
 class PermissionType(Enum):
     """All permission types."""
+
     # ANY CHANGES TO THIS ENUM WILL NEED TO BE DONE TOGETHER WITH A DB MIGRATION
     WRITE = "write"  # allows the user to create, update, delete everything
     READ = "read"  # allows the user to read everything

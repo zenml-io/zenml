@@ -75,7 +75,6 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.server_models import ServerDatabaseType, ServerModel
-from zenml.models.user_management_models import PermissionModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
@@ -103,7 +102,9 @@ from zenml.zen_stores.schemas import (
     UserSchema,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
-from zenml.zen_stores.schemas.user_management_schemas import PermissionSchema
+from zenml.zen_stores.schemas.user_management_schemas import (
+    RolePermissionSchema,
+)
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
@@ -1897,12 +1898,14 @@ class SqlZenStore(BaseZenStore):
             permissions = list()
             for permission in role.permissions:
                 permission_schema = session.exec(
-                    select(PermissionSchema).where(PermissionSchema.name == permission)
+                    select(RolePermissionSchema).where(
+                        RolePermissionSchema.name == permission
+                    )
                 ).one_or_none()
                 if permission_schema:
                     permissions.append(permission_schema)
                 else:
-                    permissions.append(PermissionSchema(name=permission))
+                    permissions.append(RolePermissionSchema(name=permission))
 
             # Create role
             role_schema = RoleSchema.from_create_model(role, permissions)
@@ -1958,19 +1961,21 @@ class SqlZenStore(BaseZenStore):
                     f"'{role.id}': Found no"
                     f"existing roles with this id."
                 )
+
             # Get the Schemas of all permissions mentioned
-            filters = [
-                (PermissionSchema.name == permission)
-                for permission in role.permissions
-            ]
-
-            attached_permissions = session.exec(
-                select(PermissionSchema).where(or_(*filters))
-            ).all()
-            existing_role.permissions = attached_permissions
-
+            permissions = list()
+            for permission in role.permissions:
+                permission_schema = session.exec(
+                    select(RolePermissionSchema).where(
+                        RolePermissionSchema.name == permission
+                    )
+                ).one_or_none()
+                if permission_schema:
+                    permissions.append(permission_schema)
+                else:
+                    permissions.append(RolePermissionSchema(name=permission))
             # Update the role
-            existing_role.from_update_model(role)
+            existing_role.from_update_model(role, permissions)
 
             session.add(existing_role)
             session.commit()

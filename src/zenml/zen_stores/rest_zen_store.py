@@ -45,7 +45,6 @@ from zenml.constants import (
     LOGIN,
     METADATA_CONFIG,
     OUTPUTS,
-    PERMISSIONS,
     PIPELINES,
     PROJECTS,
     ROLES,
