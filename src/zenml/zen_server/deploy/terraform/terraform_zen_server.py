@@ -118,7 +118,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     username: str
     password: str
     helm_chart: str = get_helm_chart_path()
-    zenmlserver_image_tag: str = "latest"
+    zenmlserver_image_tag: str = ""
     namespace: str = "zenmlserver"
     kubectl_config_path: str = os.path.join(str(Path.home()), ".kube", "config")
     ingress_tls: bool = True
