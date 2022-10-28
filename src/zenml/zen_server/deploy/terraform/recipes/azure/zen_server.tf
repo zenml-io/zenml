@@ -12,9 +12,13 @@ resource "helm_release" "zen-server" {
   namespace        = kubernetes_namespace.zen-server.metadata[0].name
 
   set {
-    name = "image.tag"
+    name = "zenml.image.tag"
     value = var.zenmlserver_image_tag
   }
+  set {
+    name = "zenml.initImage.tag"
+    value = var.zenmlinit_image_tag
+  }  
   set {
     name  = "zenml.defaultUsername"
     value = var.username
@@ -65,7 +69,7 @@ resource "helm_release" "zen-server" {
   # set parameters for the mysql database
   set {
     name  = "zenml.database.url"
-    value = var.create_sql? "mysql://admin:${azurerm_mysql_flexible_server.mysql.administrator_password}@${azurerm_mysql_flexible_server.mysql.name}.mysql.database.azure.com:3306/${var.db_name}" : var.database_url
+    value = var.create_sql? "mysql://${var.database_username}:${azurerm_mysql_flexible_server.mysql.administrator_password}@${azurerm_mysql_flexible_server.mysql.name}.mysql.database.azure.com:3306/${var.db_name}" : var.database_url
   }
   set {
     name  = "zenml.database.sslCa"
