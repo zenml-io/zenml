@@ -36,7 +36,7 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_permissions() -> List[RoleModel]:
+def list_permissions() -> List[PermissionModel]:
     """Returns a list of all roles.
 
     Returns:

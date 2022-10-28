@@ -78,7 +78,8 @@ def list_stacks(
 )
 @handle_exceptions
 def get_stack(
-    stack_id: UUID, hydrated: bool = False
+    stack_id: UUID, hydrated: bool = False,
+    _ = Security(authorize, scopes=["write"])
 ) -> Union[HydratedStackModel, StackModel]:
     """Returns the requested stack.
 
@@ -104,7 +105,10 @@ def get_stack(
 )
 @handle_exceptions
 def update_stack(
-    stack_id: UUID, stack_update: UpdateStackRequest, hydrated: bool = False
+    stack_id: UUID,
+    stack_update: UpdateStackRequest,
+    hydrated: bool = False,
+    _ = Security(authorize, scopes=["write"])
 ) -> Union[HydratedStackModel, StackModel]:
     """Updates a stack.
 
@@ -132,7 +136,10 @@ def update_stack(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_stack(stack_id: UUID) -> None:
+def delete_stack(
+    stack_id: UUID,
+    _ = Security(authorize, scopes=["write"])
+) -> None:
     """Deletes a stack.
 
     Args:

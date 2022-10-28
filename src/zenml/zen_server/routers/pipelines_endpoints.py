@@ -111,6 +111,7 @@ def update_pipeline(
     pipeline_id: UUID,
     pipeline_update: UpdatePipelineRequest,
     hydrated: bool = False,
+    _=Security(authorize, scopes=["write"])
 ) -> Union[HydratedPipelineModel, PipelineModel]:
     """Updates the attribute on a specific pipeline using its unique id.
 
@@ -139,7 +140,10 @@ def update_pipeline(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_pipeline(pipeline_id: UUID) -> None:
+def delete_pipeline(
+    pipeline_id: UUID,
+    _ = Security(authorize, scopes=["write"])
+) -> None:
     """Deletes a specific pipeline.
 
     Args:

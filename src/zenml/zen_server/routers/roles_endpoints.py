@@ -55,7 +55,10 @@ def list_roles() -> List[RoleModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_role(role: CreateRoleRequest) -> RoleModel:
+def create_role(
+    role: CreateRoleRequest,
+    _ = Security(authorize, scopes=["write"])
+) -> RoleModel:
     """Creates a role.
 
     # noqa: DAR401
@@ -94,7 +97,9 @@ def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
 )
 @handle_exceptions
 def update_role(
-    role_name_or_id: Union[str, UUID], role_update: UpdateRoleRequest
+    role_name_or_id: Union[str, UUID],
+    role_update: UpdateRoleRequest,
+    _ = Security(authorize, scopes=["write"])
 ) -> RoleModel:
     """Updates a role.
 
@@ -116,7 +121,10 @@ def update_role(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_role(role_name_or_id: Union[str, UUID]) -> None:
+def delete_role(
+    role_name_or_id: Union[str, UUID],
+    _ = Security(authorize, scopes=["write"])
+) -> None:
     """Deletes a specific role.
 
     Args:

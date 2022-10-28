@@ -56,7 +56,10 @@ def list_teams() -> List[TeamModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_team(team: CreateTeamRequest) -> TeamModel:
+def create_team(
+    team: CreateTeamRequest,
+    _=Security(authorize, scopes=["write"])
+) -> TeamModel:
     """Creates a team.
 
     # noqa: DAR401
@@ -95,7 +98,9 @@ def get_team(team_name_or_id: Union[str, UUID]) -> TeamModel:
 )
 @handle_exceptions
 def update_team(
-    team_name_or_id: Union[str, UUID], team_update: UpdateTeamRequest
+    team_name_or_id: Union[str, UUID],
+    team_update: UpdateTeamRequest,
+    _ = Security(authorize, scopes=["write"])
 ) -> TeamModel:
     """Updates a team.
 
@@ -117,7 +122,10 @@ def update_team(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_team(team_name_or_id: Union[str, UUID]) -> None:
+def delete_team(
+    team_name_or_id: Union[str, UUID],
+    _ = Security(authorize, scopes=["write"])
+) -> None:
     """Deletes a specific team.
 
     Args:

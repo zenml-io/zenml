@@ -84,13 +84,14 @@ def list_users() -> None:
 def create_user(
     user_name: str,
     password: Optional[str] = None,
-    initial_role: Optional[str] = "guest",
+    initial_role: Optional[str] = "admin",
 ) -> None:
     """Create a new user.
 
     Args:
         user_name: The name of the user to create.
         password: The password of the user to create.
+        initial_role: Give the user an initial role
     """
     gc = GlobalConfiguration()
     if not password:

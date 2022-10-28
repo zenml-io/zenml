@@ -120,6 +120,7 @@ def update_stack_component(
     component_id: UUID,
     component_update: UpdateComponentModel,
     hydrated: bool = False,
+    _ = Security(authorize, scopes=["write"])
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Updates a stack component.
 
@@ -148,7 +149,10 @@ def update_stack_component(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def deregister_stack_component(component_id: UUID) -> None:
+def deregister_stack_component(
+    component_id: UUID,
+    _ = Security(authorize, scopes=["write"])
+) -> None:
     """Deletes a stack component.
 
     Args:

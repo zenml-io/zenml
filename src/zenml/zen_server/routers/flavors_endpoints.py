@@ -92,10 +92,6 @@ def get_flavor(flavor_id: UUID, hydrated: bool = False) -> FlavorModel:
         The requested stack.
     """
     flavor = zen_store().get_flavor(flavor_id)
-    # if hydrated:
-    #     return flavor.to_hydrated_model()
-    # else:
-    #     return flavor
     return flavor
 
 
@@ -106,7 +102,10 @@ def get_flavor(flavor_id: UUID, hydrated: bool = False) -> FlavorModel:
 )
 @handle_exceptions
 def update_flavor(
-    flavor_id: UUID, flavor: FlavorModel, hydrated: bool = False
+    flavor_id: UUID,
+    flavor: FlavorModel,
+    hydrated: bool = False,
+    _=Security(authorize, scopes=["write"])
 ) -> FlavorModel:
     """Updates a stack.
 
@@ -121,10 +120,6 @@ def update_flavor(
     """
     flavor.id = flavor_id
     updated_flavor = zen_store().update_flavor(flavor=flavor)
-    # if hydrated:
-    #     return updated_flavor.to_hydrated_model()
-    # else:
-    #     return updated_flavor
     return updated_flavor
 
 
@@ -133,7 +128,10 @@ def update_flavor(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_flavor(flavor_id: UUID) -> None:
+def delete_flavor(
+    flavor_id: UUID,
+    _=Security(authorize, scopes=["write"])
+) -> None:
     """Deletes a flavor.
 
     Args:
