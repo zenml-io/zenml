@@ -33,6 +33,7 @@ from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
@@ -220,6 +221,9 @@ class TektonOrchestrator(BaseOrchestrator):
             )
 
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        orchestrator_run_name = get_orchestrator_run_name(
+            pipeline_name=deployment.pipeline.name
+        )
 
         def _construct_kfp_pipeline() -> None:
             """Create a container_op for each step.
@@ -251,7 +255,7 @@ class TektonOrchestrator(BaseOrchestrator):
                 container_op.container.add_env_variable(
                     k8s_client.V1EnvVar(
                         name=ENV_ZENML_TEKTON_RUN_ID,
-                        value="$(context.pipelineRun.uid)",
+                        value="$(context.pipelineRun.name)",
                     )
                 )
 
@@ -275,7 +279,7 @@ class TektonOrchestrator(BaseOrchestrator):
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{deployment.run_name}.yaml"
+            self.pipeline_directory, f"{orchestrator_run_name}.yaml"
         )
 
         # Set the run name, which Tekton reads from this attribute of the
@@ -283,7 +287,7 @@ class TektonOrchestrator(BaseOrchestrator):
         setattr(
             _construct_kfp_pipeline,
             "_component_human_name",
-            deployment.run_name,
+            orchestrator_run_name,
         )
         TektonCompiler().compile(_construct_kfp_pipeline, pipeline_file_path)
 

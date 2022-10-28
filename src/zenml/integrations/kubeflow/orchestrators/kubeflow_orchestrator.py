@@ -72,7 +72,7 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.utils import get_run_display_name
+from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
@@ -664,7 +664,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
             pipeline_file_path: Path to the pipeline definition file.
         """
         pipeline_name = deployment.pipeline.name
-        run_display_name = get_run_display_name(pipeline_name=pipeline_name)
+        run_display_name = get_orchestrator_run_name(
+            pipeline_name=pipeline_name
+        )
         enable_cache = deployment.pipeline.enable_cache
         settings = cast(
             Optional[KubeflowOrchestratorSettings],

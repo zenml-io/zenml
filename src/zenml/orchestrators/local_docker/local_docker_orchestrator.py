@@ -15,9 +15,11 @@
 
 import os
 import sys
+import time
 from typing import TYPE_CHECKING, Any, Type
 from uuid import uuid4
 
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
@@ -31,6 +33,7 @@ from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorFlavor,
 )
 from zenml.stack import Stack
+from zenml.utils import string_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
@@ -121,10 +124,12 @@ class LocalDockerOrchestrator(BaseOrchestrator):
                 "mode": "rw",
             }
         }
+        orchestrator_run_id = str(uuid4())
         environment = {
-            ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID: str(uuid4()),
+            ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID: orchestrator_run_id,
             ENV_ZENML_LOCAL_STORES_PATH: local_stores_path,
         }
+        start_time = time.time()
 
         # Run each step
         for step_name, step in deployment.steps.items():
@@ -155,6 +160,15 @@ class LocalDockerOrchestrator(BaseOrchestrator):
 
             for line in logs:
                 logger.info(line.strip().decode())
+
+        run_duration = time.time() - start_time
+        run_id = self.get_run_id_for_orchestrator_run_id(orchestrator_run_id)
+        run = Client().zen_store.get_run(run_id)
+        logger.info(
+            "Pipeline run `%s` has finished in %s.",
+            run.name,
+            string_utils.get_human_readable_time(run_duration),
+        )
 
 
 class LocalDockerOrchestratorConfig(BaseOrchestratorConfig):

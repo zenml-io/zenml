@@ -422,7 +422,7 @@ class BaseOrchestrator(StackComponent, ABC):
         self._active_deployment = None
         self._active_pb2_pipeline = None
 
-    def _get_run_id_for_orchestrator_run_id(
+    def get_run_id_for_orchestrator_run_id(
         self, orchestrator_run_id: str
     ) -> UUID:
         run_id_seed = f"{self.id}-{orchestrator_run_id}"
@@ -435,7 +435,7 @@ class BaseOrchestrator(StackComponent, ABC):
         assert self._active_deployment
         orchestrator_run_id = self.get_run_id()
 
-        run_id = self._get_run_id_for_orchestrator_run_id(orchestrator_run_id)
+        run_id = self.get_run_id_for_orchestrator_run_id(orchestrator_run_id)
 
         try:
             run = Client().zen_store.get_run(run_id)

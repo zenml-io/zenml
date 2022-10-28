@@ -38,7 +38,6 @@ from google.cloud import aiplatform
 from kfp import dsl
 from kfp.v2 import dsl as dslv2
 from kfp.v2.compiler import Compiler as KFPV2Compiler
-from kubernetes import client as k8s_client
 
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
@@ -56,6 +55,7 @@ from zenml.integrations.gcp.google_credentials_mixin import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils.io_utils import get_global_config_directory
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
@@ -296,13 +296,16 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 stack because it is not a
                 `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
+        run_display_name = get_orchestrator_run_name(
+            pipeline_name=deployment.pipeline.name
+        )
         # If the `pipeline_root` has not been defined in the orchestrator
         # configuration,
         # try to create it from the artifact store if it is a
         # `GCPArtifactStore`.
         if not self.config.pipeline_root:
             artifact_store = stack.artifact_store
-            self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{deployment.pipeline.name}/{deployment.run_name}"
+            self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{deployment.pipeline.name}/{run_display_name}"
             logger.info(
                 "The attribute `pipeline_root` has not been set in the "
                 "orchestrator configuration. One has been generated "
@@ -359,11 +362,9 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                             command: {command + arguments}"""
                 )()
 
-                container_op.container.add_env_variable(
-                    k8s_client.V1EnvVar(
-                        name=ENV_ZENML_VERTEX_RUN_ID,
-                        value=dslv2.PIPELINE_JOB_ID_PLACEHOLDER,
-                    )
+                container_op.set_env_variable(
+                    name=ENV_ZENML_VERTEX_RUN_ID,
+                    value=dslv2.PIPELINE_JOB_NAME_PLACEHOLDER,
                 )
 
                 # Set upstream tasks as a dependency of the current step
@@ -384,7 +385,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
             self.pipeline_directory,
-            f"{deployment.run_name}.json",
+            f"{run_display_name}.json",
         )
 
         # Compile the pipeline using the Kubeflow SDK V2 compiler that allows
@@ -407,7 +408,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         self._upload_and_run_pipeline(
             pipeline_name=deployment.pipeline.name,
             pipeline_file_path=pipeline_file_path,
-            run_name=deployment.run_name,
             enable_cache=deployment.pipeline.enable_cache,
         )
 
@@ -415,7 +415,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         self,
         pipeline_name: str,
         pipeline_file_path: str,
-        run_name: str,
         enable_cache: bool,
     ) -> None:
         """Uploads and run the pipeline on the Vertex AI Pipelines service.
@@ -424,13 +423,14 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             pipeline_name: Name of the pipeline.
             pipeline_file_path: Path of the JSON file containing the compiled
                 Kubeflow pipeline (compiled with Kubeflow SDK v2).
-            run_name: Name of the pipeline run.
             enable_cache: Whether caching is enabled for this pipeline run.
         """
         # We have to replace the hyphens in the pipeline name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
         # requires this format.
-        job_id = _clean_pipeline_name(run_name)
+        job_id = _clean_pipeline_name(
+            get_orchestrator_run_name(pipeline_name=pipeline_name)
+        )
 
         # Get the credentials that would be used to create the Vertex AI
         # Pipelines
@@ -512,6 +512,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
     def get_run_id(self) -> str:
         try:
+            print(os.environ[ENV_ZENML_VERTEX_RUN_ID])
             return os.environ[ENV_ZENML_VERTEX_RUN_ID]
         except KeyError:
             raise RuntimeError(

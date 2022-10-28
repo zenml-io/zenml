@@ -43,6 +43,6 @@ def get_cache_status(
         return False
 
 
-def get_run_display_name(pipeline_name: str) -> str:
+def get_orchestrator_run_name(pipeline_name: str) -> str:
     user_name = Client().active_user.name
     return f"{pipeline_name}_{user_name}_{random.getrandbits(32):08x}"
