@@ -255,3 +255,10 @@ two methods that you need to implement:
   provide
   values for all options defined in the `get_entrypoint_options()` method
   mentioned above.
+
+### Enabling CUDA for GPU-backed hardware
+
+Note that if you wish to use your custom orchestrator to run steps on a GPU, you will
+need to follow [the instructions on this page](../../advanced-guide/pipelines/gpu-hardware.md) to ensure that it works. It
+requires adding some extra settings customization and is essential to enable
+CUDA for the GPU to give its full acceleration.

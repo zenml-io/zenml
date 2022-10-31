@@ -173,7 +173,7 @@ accessing and managing stacks, as shown below.
 {% hint style="info" %}
 To explore all possible operations that can be performed via the
 `Repository`, please consult the API docs section on
-[Repository](https://apidocs.zenml.io/latest/api_docs/repository/#zenml.repository.Repository).
+[Repository](https://apidocs.zenml.io/latest/core_code_docs/core-repository/#zenml.repository.Repository).
 {% endhint %}
 
 ### Accessing the Active Stack

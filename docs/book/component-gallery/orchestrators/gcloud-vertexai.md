@@ -6,6 +6,10 @@ The Vertex orchestrator is an [orchestrator](./orchestrators.md) flavor provided
 with the ZenML `gcp` integration that uses [Vertex AI](https://cloud.google.com/vertex-ai)
 to run your pipelines.
 
+{% hint style="warning" %}
+This component is only meant to be used within the context of [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+{% endhint %}
+
 ## When to use it
 
 You should use the Vertex orchestrator if:
@@ -17,12 +21,16 @@ You should use the Vertex orchestrator if:
 
 ## How to deploy it
 
-Check out our cloud guide [ZenML Cloud Guide](../../popular-stack-guides/gcp/gcp.md)
-for information on how to set up the Vertex orchestrator.
+In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](../../getting-started/deploying-zenml/deploying-zenml.md). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are [connected to the remote ZenML server](../../starter-guide/collaborate/zenml-deployment.md) before using this stack component.
+
+The only other thing necessary to use the ZenML Vertex orchestrator is enabling Vertex relevant APIs on the Google Cloud project.
+
+In order to quickly enable APIs, and create other resources necessary for to use this integration, you can also consider using the [Vertex AI stack recipe](https://github.com/zenml-io/mlops-stacks/tree/main/vertex-ai), which helps you set up the infrastructure with one click.
 
 ## How to use it
 
 To use the Vertex orchestrator, we need:
+
 * The ZenML `gcp` integration installed. If you haven't done so, run 
     ```shell
     zenml integration install gcp
@@ -64,4 +72,11 @@ A concrete example of using the Vertex orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/vertex_ai_orchestration).
 
 For more information and a full list of configurable attributes of the Vertex 
-orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.orchestrators.vertex_orchestrator.VertexOrchestrator).
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.orchestrators.vertex_orchestrator.VertexOrchestrator).
+
+### Enabling CUDA for GPU-backed hardware
+
+Note that if you wish to use this orchestrator to run steps on a GPU, you will
+need to follow [the instructions on this page](../../advanced-guide/pipelines/gpu-hardware.md) to ensure that it works. It
+requires adding some extra settings customization and is essential to enable
+CUDA for the GPU to give its full acceleration.

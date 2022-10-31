@@ -23,6 +23,7 @@ from zenml.constants import (
     PIPELINES,
     PROJECTS,
     ROLES,
+    RUNS,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
@@ -37,12 +38,16 @@ from zenml.models import (
     StackModel,
 )
 from zenml.models.component_model import HydratedComponentModel
+from zenml.models.pipeline_models import PipelineRunModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.models.user_management_models import RoleAssignmentModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models import CreatePipelineRequest
 from zenml.zen_server.models.component_models import CreateComponentModel
-from zenml.zen_server.models.pipeline_models import HydratedPipelineModel
+from zenml.zen_server.models.pipeline_models import (
+    CreatePipelineRunRequest,
+    HydratedPipelineModel,
+)
 from zenml.zen_server.models.projects_models import (
     CreateProjectRequest,
     UpdateProjectRequest,
@@ -507,6 +512,35 @@ def create_pipeline(
         return HydratedPipelineModel.from_model(created_pipeline)
     else:
         return created_pipeline
+
+
+@router.post(
+    "/{project_name_or_id}" + RUNS,
+    response_model=PipelineRunModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_pipeline_run(
+    project_name_or_id: Union[str, UUID],
+    pipeline_run: CreatePipelineRunRequest,
+    auth_context: AuthContext = Depends(authorize),
+) -> PipelineRunModel:
+    """Creates a pipeline run.
+
+    Args:
+        project_name_or_id: Name or ID of the project.
+        pipeline_run: Pipeline run to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created pipeline run.
+    """
+    project = zen_store().get_project(project_name_or_id)
+    pipeline_run_model = pipeline_run.to_model(
+        project=project.id,
+        user=auth_context.user.id,
+    )
+    return zen_store().create_run(pipeline_run=pipeline_run_model)
 
 
 @router.get(

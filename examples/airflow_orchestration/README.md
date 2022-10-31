@@ -33,7 +33,7 @@ Airflow.
 
 ```bash
 # install CLI
-pip install zenml
+pip install "zenml[server]"
 
 # install ZenML integrations
 zenml integration install airflow
@@ -81,7 +81,7 @@ file. The username will always be `admin`.
 - `ORCHESTRATOR_UUID` will be the unique id of the Airflow orchestrator. There will be only one
   folder here, so you can just navigate to the one that is present.
 
-### 📆 Run or schedule the airflow DAG
+### 📆 Run or schedule the Airflow DAG
 
 ```bash
 python run.py
