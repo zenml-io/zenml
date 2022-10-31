@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 """Utility functions for building manifests for k8s pods."""
 
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional
 
 from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
 
 def build_pod_manifest(
@@ -46,6 +47,30 @@ def build_pod_manifest(
     Returns:
         Pod manifest.
     """
+    spec: Dict[str, Any] = {
+        "restartPolicy": "Never",
+        "containers": [
+            {
+                "name": "main",
+                "image": image_name,
+                "command": command,
+                "args": args,
+                "env": [
+                    {
+                        "name": ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
+                        "value": "False",
+                    }
+                ],
+            }
+        ],
+    }
+
+    if service_account_name is not None:
+        spec["serviceAccountName"] = service_account_name
+
+    if settings and settings.pod_settings:
+        spec.update(add_pod_settings(settings.pod_settings))
+
     manifest = {
         "apiVersion": "v1",
         "kind": "Pod",
@@ -56,46 +81,28 @@ def build_pod_manifest(
                 "pipeline": pipeline_name,
             },
         },
-        "spec": {
-            "restartPolicy": "Never",
-            "containers": [
-                {
-                    "name": "main",
-                    "image": image_name,
-                    "command": command,
-                    "args": args,
-                    "env": [
-                        {
-                            "name": ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
-                            "value": "False",
-                        }
-                    ],
-                }
-            ],
-        },
+        "spec": spec,
     }
-    if service_account_name is not None:
-        spec = cast(Dict[str, Any], manifest["spec"])  # mypy stupid
-        spec["serviceAccountName"] = service_account_name
 
-    if settings is not None:
-        spec = cast(Dict[str, Any], manifest["spec"])
-        spec.update(add_pod_settings(settings))
     return manifest
 
 
 def add_pod_settings(
-    settings: KubernetesOrchestratorSettings,
+    settings: KubernetesPodSettings,
 ) -> Dict[str, Any]:
     """Updates `spec` fields in pod if passed in orchestrator settings.
 
     Args:
-        settings: `KubernetesOrchestratorSettings` object
+        settings: Pod settings to apply.
 
     Returns:
         Dictionary with additional fields for the pod
     """
     spec: Dict[str, Any] = {}
+
+    if settings.node_selectors:
+        spec["nodeSelector"] = settings.node_selectors
+
     if settings.affinity:
         spec["affinity"] = settings.affinity
 
