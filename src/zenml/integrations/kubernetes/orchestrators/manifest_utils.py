@@ -86,7 +86,7 @@ def build_pod_manifest(
 
 def add_pod_settings(
     settings: KubernetesOrchestratorSettings,
-) -> Dict[str, Union[Any, List]]:
+) -> Dict[str, Any]:
     """Updates `spec` fields in pod if passed in orchestrator settings.
 
     Args:
@@ -95,7 +95,7 @@ def add_pod_settings(
     Returns:
         Dictionary with additional fields for the pod
     """
-    spec = {}
+    spec: Dict[str, Any] = {}
     if settings.affinity:
         spec["affinity"] = settings.affinity
 
