@@ -1901,22 +1901,16 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to create role '{role.name}': Role already exists."
                 )
 
-            # Get the Schemas of all permissions mentioned
-            permissions = list()
-            for permission in role.permissions:
-                permission_schema = session.exec(
-                    select(RolePermissionSchema).where(
-                        RolePermissionSchema.name == permission
-                    )
-                ).one_or_none()
-                if permission_schema:
-                    permissions.append(permission_schema)
-                else:
-                    permissions.append(RolePermissionSchema(name=permission))
-
             # Create role
-            role_schema = RoleSchema.from_create_model(role, permissions)
+            role_schema = RoleSchema.from_create_model(role)
             session.add(role_schema)
+            session.commit()
+            # Add all permissions
+            for p in role.permissions:
+                session.add(
+                    RolePermissionSchema(name=p, role_id=role_schema.id)
+                )
+
             session.commit()
             return role_schema.to_model()
 
@@ -1968,23 +1962,32 @@ class SqlZenStore(BaseZenStore):
                     f"'{role.id}': Found no"
                     f"existing roles with this id."
                 )
-
-            # Get the Schemas of all permissions mentioned
-            permissions = list()
-            for permission in role.permissions:
-                permission_schema = session.exec(
-                    select(RolePermissionSchema).where(
-                        RolePermissionSchema.name == permission
-                    )
-                ).one_or_none()
-                if permission_schema:
-                    permissions.append(permission_schema)
-                else:
-                    permissions.append(RolePermissionSchema(name=permission))
             # Update the role
-            existing_role.from_update_model(role, permissions)
+            existing_role.from_update_model(role)
 
             session.add(existing_role)
+            session.commit()
+
+            existing_permissions = {p.name for p in existing_role.permissions}
+
+            diff = existing_permissions.symmetric_difference(role.permissions)
+
+            for permission in diff:
+                if permission not in role.permissions:
+                    permission_to_delete = session.exec(
+                        select(RolePermissionSchema)
+                        .where(RolePermissionSchema.name == permission)
+                        .where(RolePermissionSchema.role_id == existing_role.id)
+                    ).one_or_none()
+                    session.delete(permission_to_delete)
+
+                elif permission not in existing_permissions:
+                    session.add(
+                        RolePermissionSchema(
+                            name=permission, role_id=existing_role.id
+                        )
+                    )
+
             session.commit()
 
             # Refresh the Model that was just created

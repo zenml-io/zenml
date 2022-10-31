@@ -189,9 +189,7 @@ class TeamSchema(SQLModel, table=True):
 class RolePermissionSchema(SQLModel, table=True):
     """SQL Model for team assignments."""
 
-    name: PermissionType = Field(
-        primary_key=True,
-    )
+    name: PermissionType = Field(primary_key=True)
     role_id: UUID = Field(primary_key=True, foreign_key="roleschema.id")
     roles: List["RoleSchema"] = Relationship(back_populates="permissions")
 
@@ -204,7 +202,7 @@ class RoleSchema(SQLModel, table=True):
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
     permissions: List["RolePermissionSchema"] = Relationship(
-        back_populates="roles",
+        back_populates="roles", sa_relationship_kwargs={"cascade": "delete"}
     )
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="role", sa_relationship_kwargs={"cascade": "delete"}
@@ -214,23 +212,18 @@ class RoleSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_create_model(
-        cls, model: RoleModel, permissions: List[RolePermissionSchema]
-    ) -> "RoleSchema":
+    def from_create_model(cls, model: RoleModel) -> "RoleSchema":
         """Create a `RoleSchema` from a `RoleModel`.
 
         Args:
             model: The `RoleModel` from which to create the schema.
-            permissions: The `permissions` attached to this role
 
         Returns:
             The created `RoleSchema`.
         """
-        return cls(id=model.id, name=model.name, permissions=permissions)
+        return cls(id=model.id, name=model.name)
 
-    def from_update_model(
-        self, model: RoleModel, permissions: List[RolePermissionSchema]
-    ) -> "RoleSchema":
+    def from_update_model(self, model: RoleModel) -> "RoleSchema":
         """Update a `RoleSchema` from a `RoleModel`.
 
         Args:
@@ -241,7 +234,6 @@ class RoleSchema(SQLModel, table=True):
             The updated `RoleSchema`.
         """
         self.name = model.name
-        self.permissions = permissions
         self.updated = datetime.now()
         return self
 

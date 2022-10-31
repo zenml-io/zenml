@@ -15,7 +15,7 @@
 from typing import Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,

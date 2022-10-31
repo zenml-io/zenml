@@ -500,10 +500,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Raises:
             KeyError: If the default guest role doesn't exist.
         """
-        try:
-            return self.get_role(ADMIN_ROLE)
-        except KeyError:
-            return self._create_admin_role()
+        return self.get_role(ADMIN_ROLE)
 
     @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
     def _create_admin_role(self) -> RoleModel:
@@ -534,10 +531,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Raises:
             KeyError: If the default guest role doesn't exist.
         """
-        try:
-            return self.get_role(GUEST_ROLE)
-        except KeyError:
-            return self._create_guest_role()
+        return self.get_role(GUEST_ROLE)
 
     @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
     def _create_guest_role(self) -> RoleModel:

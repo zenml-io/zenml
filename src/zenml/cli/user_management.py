@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import click
 
@@ -542,6 +542,7 @@ def create_role(role_name: str, write: bool, read: bool, me: bool) -> None:
     type=str,
     required=False,
     help="Name of permission to remove.",
+    multiple=True,
 )
 @click.option(
     "--add-permission",
@@ -549,12 +550,13 @@ def create_role(role_name: str, write: bool, read: bool, me: bool) -> None:
     type=str,
     required=False,
     help="Name of permission to add.",
+    multiple=True,
 )
 def update_role(
     role_name: str,
     name: Optional[str] = None,
-    remove_permission: Optional[str] = None,
-    add_permission: Optional[str] = None,
+    remove_permission: Optional[List[str]] = None,
+    add_permission: Optional[List[str]] = None,
 ) -> None:
     """Update an existing role.
 
@@ -568,18 +570,21 @@ def update_role(
     try:
         role = Client().zen_store.get_role(role_name)
 
-        if remove_permission in [p.value for p in PermissionType]:
-            try:
-                role.permissions.remove(PermissionType(remove_permission))
-            except KeyError:
-                cli_utils.error(
-                    f"Role {remove_permission} was already not "
-                    f"part of the {role} Role."
-                )
-
-        if add_permission in [p.value for p in PermissionType]:
-            # Set won't throw an error if the item was already in the set
-            role.permissions.add(PermissionType(add_permission))
+        if remove_permission:
+            for rm_p in remove_permission:
+                if rm_p in [p.value for p in PermissionType]:
+                    try:
+                        role.permissions.remove(PermissionType(rm_p))
+                    except KeyError:
+                        cli_utils.error(
+                            f"Role {remove_permission} was already not "
+                            f"part of the {role} Role."
+                        )
+        if add_permission:
+            for add_p in add_permission:
+                if add_p in [p.value for p in PermissionType]:
+                    # Set won't throw an error if the item was already in the set
+                    role.permissions.add(PermissionType(add_p))
 
         role.name = name or role.name
         Client().zen_store.update_role(role)
