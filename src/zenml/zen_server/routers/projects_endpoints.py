@@ -199,7 +199,7 @@ def get_role_assignments_for_project(
 
 @router.get(
     "/{project_name_or_id}" + STACKS,
-    response_model=Union[List[HydratedStackModel], List[StackModel]],
+    response_model=Union[List[HydratedStackModel], List[StackModel]],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -242,7 +242,7 @@ def list_project_stacks(
 
 @router.post(
     "/{project_name_or_id}" + STACKS,
-    response_model=Union[HydratedStackModel, StackModel],
+    response_model=Union[HydratedStackModel, StackModel],  # type: ignore[arg-type]
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -279,7 +279,7 @@ def create_stack(
 
 @router.get(
     "/{project_name_or_id}" + STACK_COMPONENTS,
-    response_model=Union[List[ComponentModel], List[HydratedComponentModel]],
+    response_model=Union[List[ComponentModel], List[HydratedComponentModel]],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -325,7 +325,7 @@ def list_project_stack_components(
 
 @router.post(
     "/{project_name_or_id}" + STACK_COMPONENTS,
-    response_model=Union[ComponentModel, HydratedComponentModel],
+    response_model=Union[ComponentModel, HydratedComponentModel],  # type: ignore[arg-type]
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -444,7 +444,7 @@ def create_flavor(
 
 @router.get(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=Union[List[HydratedPipelineModel], List[PipelineModel]],
+    response_model=Union[List[HydratedPipelineModel], List[PipelineModel]],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -484,7 +484,7 @@ def list_project_pipelines(
 
 @router.post(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=Union[HydratedPipelineModel, PipelineModel],
+    response_model=Union[HydratedPipelineModel, PipelineModel],  # type: ignore[arg-type]
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions

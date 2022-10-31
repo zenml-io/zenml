@@ -997,7 +997,7 @@ zenml user delete USER_NAME
 ```
 
 A freshly created user will by default be assigned the admin role. This
-behaviour can be overwritten:
+behavior can be overwritten:
 ```bash
 zenml user create USER_NAME --role guest
 ```

@@ -42,7 +42,7 @@ types_router = APIRouter(
 
 @router.get(
     "",
-    response_model=Union[List[ComponentModel], List[HydratedComponentModel]],
+    response_model=Union[List[ComponentModel], List[HydratedComponentModel]],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -86,7 +86,7 @@ def list_stack_components(
 
 @router.get(
     "/{component_id}",
-    response_model=Union[ComponentModel, HydratedComponentModel],
+    response_model=Union[ComponentModel, HydratedComponentModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -112,7 +112,7 @@ def get_stack_component(
 
 @router.put(
     "/{component_id}",
-    response_model=Union[ComponentModel, HydratedComponentModel],
+    response_model=Union[ComponentModel, HydratedComponentModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

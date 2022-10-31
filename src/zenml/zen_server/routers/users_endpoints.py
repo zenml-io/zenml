@@ -277,7 +277,7 @@ def email_opt_in_response(
     user_response: EmailOptInModel,
     auth_context: AuthContext = Security(authorize, scopes=["me"]),
 ) -> UserModel:
-    """Sets the response of the user to the email prompt
+    """Sets the response of the user to the email prompt.
 
     Args:
         user_name_or_id: Name or ID of the user.
