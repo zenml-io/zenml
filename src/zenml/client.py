@@ -16,19 +16,16 @@
 import os
 from abc import ABCMeta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
-from zenml.enums import StackComponentType, StoreType
-from zenml.environment import Environment
 from zenml.exceptions import (
     AlreadyExistsException,
     IllegalOperationError,
@@ -37,19 +34,24 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, FlavorModel, ProjectModel, StackModel
-from zenml.models.pipeline_models import PipelineModel
-from zenml.stack import Flavor
-from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
-from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME, BaseZenStore
 
 if TYPE_CHECKING:
-    from zenml.models import HydratedStackModel, UserModel
-    from zenml.stack import Stack
-
+    from zenml.config.pipeline_configurations import PipelineSpec
+    from zenml.enums import StackComponentType
+    from zenml.models import (
+        ComponentModel,
+        FlavorModel,
+        HydratedStackModel,
+        PipelineModel,
+        ProjectModel,
+        StackModel,
+        UserModel,
+    )
+    from zenml.stack import Stack, StackComponentConfig
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
@@ -67,9 +69,9 @@ class ClientConfiguration(FileSyncModel):
 
     active_stack_id: Optional[UUID]
     active_project_name: Optional[str]
-    _active_project: Optional[ProjectModel] = None
+    _active_project: Optional["ProjectModel"] = None
 
-    def set_active_project(self, project: ProjectModel) -> None:
+    def set_active_project(self, project: "ProjectModel") -> None:
         """Set the project for the local client.
 
         Args:
@@ -129,32 +131,6 @@ class ClientMetaClass(ABCMeta):
         Returns:
             Client: The global Client instance.
         """
-        from zenml.steps.step_environment import (
-            STEP_ENVIRONMENT_NAME,
-            StepEnvironment,
-        )
-
-        step_env = cast(
-            StepEnvironment, Environment().get_component(STEP_ENVIRONMENT_NAME)
-        )
-
-        # `skip_client_check` is a special kwarg that can be passed to
-        # the Client constructor to silent the message that warns users
-        # about accessing external information in their steps.
-        if not kwargs.pop("skip_client_check", False):
-            if step_env and step_env.cache_enabled:
-                logger.warning(
-                    "You are accessing client information from a step "
-                    "that has caching enabled. Future executions of this step "
-                    "may be cached even though the client information may "
-                    "be different. You should take this into consideration and "
-                    "adjust your step to disable caching if needed. "
-                    "Alternatively, use a `StepContext` inside your step "
-                    "instead, as covered here: "
-                    "https://docs.zenml.io/advanced-guide/pipelines/step-metadata"
-                    "/step-fixtures#step-contexts",
-                )
-
         if args or kwargs:
             return cast("Client", super().__call__(*args, **kwargs))
 
@@ -404,8 +380,8 @@ class Client(metaclass=ClientMetaClass):
                 f"environment variable '{ENV_ZENML_REPOSITORY_PATH}'."
             )
         else:
-            # try to find the repository in the parent directories of the current
-            # working directory
+            # try to find the repository in the parent directories of the
+            # current working directory
             path = Path.cwd()
             search_parent_directories = True
             warning_message = (
@@ -534,7 +510,7 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active project is not set.
         """
-        project: Optional[ProjectModel] = None
+        project: Optional["ProjectModel"] = None
         if self._config:
             project = self._config._active_project
 
@@ -547,6 +523,9 @@ class Client(metaclass=ClientMetaClass):
                 "`zenml project set PROJECT_NAME` to set the active "
                 "project."
             )
+
+        from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
+
         if project.name != DEFAULT_PROJECT_NAME:
             logger.warning(
                 f"You are running with a non-default project "
@@ -569,7 +548,7 @@ class Client(metaclass=ClientMetaClass):
 
     @property
     def stacks(self) -> List["HydratedStackModel"]:
-        """All stack models in the active project, owned by the current user or shared.
+        """All stack models in the active project, owned by the user or shared.
 
         This property is intended as a quick way to get information about the
         components of the registered stacks without loading all installed
@@ -579,18 +558,25 @@ class Client(metaclass=ClientMetaClass):
             A list of all stacks available in the current project and owned by
             the current user.
         """
-        owned_stacks = self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
+        owned_stacks = cast(
+            List["HydratedStackModel"],
+            self.zen_store.list_stacks(
+                project_name_or_id=self.active_project_name,
+                user_name_or_id=self.active_user.id,
+                is_shared=False,
+                hydrated=True,
+            ),
         )
-        shared_stacks = self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name,
-            is_shared=True,
+        shared_stacks = cast(
+            List["HydratedStackModel"],
+            self.zen_store.list_stacks(
+                project_name_or_id=self.active_project_name,
+                is_shared=True,
+                hydrated=True,
+            ),
         )
 
-        return [
-            s.to_hydrated_model() for s in set(owned_stacks + shared_stacks)
-        ]
+        return owned_stacks + shared_stacks
 
     @property
     def active_stack_model(self) -> "HydratedStackModel":
@@ -688,6 +674,8 @@ class Client(metaclass=ClientMetaClass):
             )
 
             # Create and validate the configuration
+            from zenml.stack import Flavor
+
             flavor = Flavor.from_model(flavor_model)
             configuration = flavor.config_class(**component.configuration)
             if configuration.is_local:
@@ -700,7 +688,7 @@ class Client(metaclass=ClientMetaClass):
                 )
 
         if local_components and remote_components:
-            logger.warn(
+            logger.warning(
                 f"You are configuring a stack that is composed of components "
                 f"that are relying on local resources "
                 f"({', '.join(local_components)}) as well as "
@@ -777,29 +765,11 @@ class Client(metaclass=ClientMetaClass):
     # .------------.
     # | COMPONENTS |
     # '------------'
-    @property
-    def stack_components(self) -> List[ComponentModel]:
-        """The list of registered stack components.
-
-        Returns:
-            The list of registered stack components.
-        """
-        owned_stack_components = self.zen_store.list_stack_components(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
-            is_shared=False,
-        )
-        shared_stack_components = self.zen_store.list_stack_components(
-            project_name_or_id=self.active_project_name,
-            is_shared=True,
-        )
-
-        return owned_stack_components + shared_stack_components
 
     def _validate_stack_component_configuration(
         self,
-        component_type: StackComponentType,
-        configuration: StackComponentConfig,
+        component_type: "StackComponentType",
+        configuration: "StackComponentConfig",
     ) -> None:
         """Validates the configuration of a stack component.
 
@@ -807,9 +777,11 @@ class Client(metaclass=ClientMetaClass):
             component_type: The type of the component.
             configuration: The component configuration to validate.
         """
+        from zenml.enums import StackComponentType, StoreType
+
         if configuration.is_remote and self.zen_store.is_local_store():
             if self.zen_store.type == StoreType.REST:
-                logger.warn(
+                logger.warning(
                     "You are configuring a stack component that is running "
                     "remotely while using a local database. The component "
                     "may not be able to reach the local database and will "
@@ -817,7 +789,7 @@ class Client(metaclass=ClientMetaClass):
                     "and/or using a remote ZenML server instead."
                 )
             else:
-                logger.warn(
+                logger.warning(
                     "You are configuring a stack component that is running "
                     "remotely while using a local ZenML server. The component "
                     "may not be able to reach the local ZenML server and will "
@@ -825,18 +797,18 @@ class Client(metaclass=ClientMetaClass):
                     "and/or using a remote ZenML server instead."
                 )
         elif configuration.is_local and not self.zen_store.is_local_store():
-            logger.warn(
+            logger.warning(
                 "You are configuring a stack component that is using "
                 "local resources while connected to a remote ZenML server. The "
-                "stack component may not be usable from other hosts or by other "
-                "users. You should consider using a non-local stack component "
-                "alternative instead."
+                "stack component may not be usable from other hosts or by "
+                "other users. You should consider using a non-local stack "
+                "component alternative instead."
             )
             if component_type in [
                 StackComponentType.ORCHESTRATOR,
                 StackComponentType.STEP_OPERATOR,
             ]:
-                logger.warn(
+                logger.warning(
                     "You are configuring a stack component that is running "
                     "pipeline code on your local host while connected to a "
                     "remote ZenML server. This will significantly affect the "
@@ -864,6 +836,8 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Create and validate the configuration
+        from zenml.stack import Flavor
+
         flavor = Flavor.from_model(flavor_model)
         configuration = flavor.config_class(**component.configuration)
 
@@ -901,6 +875,8 @@ class Client(metaclass=ClientMetaClass):
         )
 
         # Use the flavor class to validate the new configuration
+        from zenml.stack import Flavor
+
         flavor = Flavor.from_model(flavor_model)
         configuration = flavor.config_class(**component.configuration)
 
@@ -914,7 +890,7 @@ class Client(metaclass=ClientMetaClass):
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(component=component)
 
-    def deregister_stack_component(self, component: ComponentModel) -> None:
+    def deregister_stack_component(self, component: "ComponentModel") -> None:
         """Deletes a registered stack component.
 
         Args:
@@ -935,15 +911,7 @@ class Client(metaclass=ClientMetaClass):
                 component.name,
             )
 
-    def get_stack_components(self) -> List[ComponentModel]:
-        """Gets all registered stack components.
-
-        Returns:
-            The list of registered stack components.
-        """
-        return self.stack_components
-
-    def get_stack_component_by_id(self, component_id: UUID) -> ComponentModel:
+    def get_stack_component_by_id(self, component_id: UUID) -> "ComponentModel":
         """Fetches a registered stack component.
 
         Args:
@@ -959,12 +927,12 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.get_stack_component(component_id=component_id)
 
     def list_stack_components_by_type(
-        self, type: StackComponentType, is_shared: bool = False
-    ) -> List[ComponentModel]:
+        self, type_: "StackComponentType", is_shared: bool = False
+    ) -> List["ComponentModel"]:
         """Fetches all registered stack components of a given type.
 
         Args:
-            type: The type of the components to fetch.
+            type_: The type of the components to fetch.
             is_shared: Whether to fetch shared components or not.
 
         Returns:
@@ -973,13 +941,13 @@ class Client(metaclass=ClientMetaClass):
         owned_stack_components = self.zen_store.list_stack_components(
             project_name_or_id=self.active_project_name,
             user_name_or_id=self.active_user.id,
-            type=type,
+            type=type_,
             is_shared=False,
         )
         shared_stack_components = self.zen_store.list_stack_components(
             project_name_or_id=self.active_project_name,
             is_shared=True,
-            type=type,
+            type=type_,
         )
         return owned_stack_components + shared_stack_components
 
@@ -987,7 +955,7 @@ class Client(metaclass=ClientMetaClass):
     # | FLAVORS |
     # '---------'
     @property
-    def flavors(self) -> List[FlavorModel]:
+    def flavors(self) -> List["FlavorModel"]:
         """Fetches all the flavor models.
 
         Returns:
@@ -1020,7 +988,7 @@ class Client(metaclass=ClientMetaClass):
 
         return self.zen_store.create_flavor(flavor=flavor_model)
 
-    def delete_flavor(self, flavor: FlavorModel) -> None:
+    def delete_flavor(self, flavor: "FlavorModel") -> None:
         """Deletes a flavor.
 
         Args:
@@ -1037,7 +1005,7 @@ class Client(metaclass=ClientMetaClass):
                 f"'{flavor.type}': No flavor with this name could be found.",
             )
 
-    def get_flavors(self) -> List[FlavorModel]:
+    def get_flavors(self) -> List["FlavorModel"]:
         """Fetches all the flavor models.
 
         Returns:
@@ -1053,8 +1021,8 @@ class Client(metaclass=ClientMetaClass):
         return zenml_flavors + custom_flavors
 
     def get_flavors_by_type(
-        self, component_type: StackComponentType
-    ) -> List[FlavorModel]:
+        self, component_type: "StackComponentType"
+    ) -> List["FlavorModel"]:
         """Fetches the list of flavor for a stack component type.
 
         Args:
@@ -1079,8 +1047,8 @@ class Client(metaclass=ClientMetaClass):
         return zenml_flavors + custom_flavors
 
     def get_flavor_by_name_and_type(
-        self, name: str, component_type: StackComponentType
-    ) -> FlavorModel:
+        self, name: str, component_type: "StackComponentType"
+    ) -> "FlavorModel":
         """Fetches a registered flavor.
 
         Args:
@@ -1138,7 +1106,11 @@ class Client(metaclass=ClientMetaClass):
                     "exists."
                 )
 
-    def get_pipeline_by_name(self, name: str) -> PipelineModel:
+    # .------------------.
+    # | Pipelines & Runs |
+    # '------------------'
+
+    def get_pipeline_by_name(self, name: str) -> "PipelineModel":
         """Fetches a pipeline by name.
 
         Args:
@@ -1154,7 +1126,7 @@ class Client(metaclass=ClientMetaClass):
     def register_pipeline(
         self,
         pipeline_name: str,
-        pipeline_spec: PipelineSpec,
+        pipeline_spec: "PipelineSpec",
         pipeline_docstring: Optional[str],
     ) -> UUID:
         """Registers a pipeline in the ZenStore within the active project.
@@ -1181,6 +1153,8 @@ class Client(metaclass=ClientMetaClass):
 
         # A) If there is no pipeline with this name, register a new pipeline.
         except KeyError:
+            from zenml.models import PipelineModel
+
             pipeline = PipelineModel(
                 project=self.active_project.id,
                 user=self.active_user.id,
@@ -1203,8 +1177,8 @@ class Client(metaclass=ClientMetaClass):
             "already been registered with a different pipeline "
             "configuration. You have three options to resolve this issue:\n"
             "1) You can register a new pipeline by changing the name "
-            "of your pipeline, e.g., via `@pipeline(name='new_pipeline_name').\n"
-            "2) You can execute the current run without linking it to any "
+            "of your pipeline, e.g., via `@pipeline(name='new_pipeline_name')."
+            "\n2) You can execute the current run without linking it to any "
             "pipeline by setting the 'unlisted' argument to `True`, e.g., "
             "via `my_pipeline_instance.run(unlisted=True)`. "
             "Unlisted runs are not linked to any pipeline, but are still "
@@ -1214,6 +1188,254 @@ class Client(metaclass=ClientMetaClass):
             "change all existing runs of this pipeline to become unlisted."
         )
         raise AlreadyExistsException(error_msg)
+
+    def export_pipeline_runs(self, filename: str) -> None:
+        """Export all pipeline runs to a YAML file.
+
+        Args:
+            filename: The filename to export the pipeline runs to.
+        """
+        import json
+
+        from zenml.utils.yaml_utils import write_yaml
+
+        pipeline_runs = self.zen_store.list_runs(
+            project_name_or_id=self.active_project.id
+        )
+        if not pipeline_runs:
+            logger.warning("No pipeline runs found. Nothing to export.")
+            return
+        yaml_data = []
+        for pipeline_run in pipeline_runs:
+            run_dict = json.loads(pipeline_run.json())
+            run_dict["steps"] = []
+            steps = self.zen_store.list_run_steps(run_id=pipeline_run.id)
+            for step in steps:
+                step_dict = json.loads(step.json())
+                step_dict["output_artifacts"] = []
+                artifacts = self.zen_store.list_artifacts(
+                    parent_step_id=step.id
+                )
+                for artifact in sorted(artifacts, key=lambda x: x.created):
+                    artifact_dict = json.loads(artifact.json())
+                    step_dict["output_artifacts"].append(artifact_dict)
+                run_dict["steps"].append(step_dict)
+            yaml_data.append(run_dict)
+        write_yaml(filename, yaml_data)
+        logger.info(f"Exported {len(yaml_data)} pipeline runs to {filename}.")
+
+    def import_pipeline_runs(self, filename: str) -> None:
+        """Import pipeline runs from a YAML file.
+
+        Args:
+            filename: The filename from which to import the pipeline runs.
+        """
+        from datetime import datetime
+
+        from zenml.models.pipeline_models import (
+            ArtifactModel,
+            PipelineRunModel,
+            StepRunModel,
+        )
+        from zenml.utils.yaml_utils import read_yaml
+
+        step_id_mapping: Dict[str, UUID] = {}
+        artifact_id_mapping: Dict[str, UUID] = {}
+        yaml_data = read_yaml(filename)
+        for pipeline_run_dict in yaml_data:
+            steps = pipeline_run_dict.pop("steps")
+            pipeline_run_dict.pop("id")
+            pipeline_run = PipelineRunModel.parse_obj(pipeline_run_dict)
+            pipeline_run.updated = datetime.now()
+            pipeline_run.user = self.active_user.id
+            pipeline_run.project = self.active_project.id
+            pipeline_run.stack_id = None
+            pipeline_run.pipeline_id = None
+            pipeline_run.mlmd_id = None
+            pipeline_run = self.zen_store.create_run(pipeline_run)
+            for step_dict in steps:
+                artifacts = step_dict.pop("output_artifacts")
+                step_id = step_dict.pop("id")
+                step = StepRunModel.parse_obj(step_dict)
+                step.pipeline_run_id = pipeline_run.id
+                step.parent_step_ids = [
+                    step_id_mapping[str(parent_step_id)]
+                    for parent_step_id in step.parent_step_ids
+                ]
+                step.input_artifacts = {
+                    input_name: artifact_id_mapping[str(artifact_id)]
+                    for input_name, artifact_id in step.input_artifacts.items()
+                }
+                step.updated = datetime.now()
+                step.mlmd_id = None
+                step.mlmd_parent_step_ids = []
+                step = self.zen_store.create_run_step(step)
+                step_id_mapping[str(step_id)] = step.id
+                for artifact_dict in artifacts:
+                    artifact_id = artifact_dict.pop("id")
+                    artifact = ArtifactModel.parse_obj(artifact_dict)
+                    artifact.parent_step_id = step.id
+                    artifact.producer_step_id = step_id_mapping[
+                        str(artifact.producer_step_id)
+                    ]
+                    artifact.updated = datetime.now()
+                    artifact.mlmd_id = None
+                    artifact.mlmd_parent_step_id = None
+                    artifact.mlmd_producer_step_id = None
+                    self.zen_store.create_artifact(artifact)
+                    artifact_id_mapping[str(artifact_id)] = artifact.id
+        logger.info(f"Imported {len(yaml_data)} pipeline runs from {filename}.")
+
+    def migrate_pipeline_runs(
+        self,
+        database: str,
+        database_type: str = "sqlite",
+        mysql_host: Optional[str] = None,
+        mysql_port: int = 3306,
+        mysql_username: Optional[str] = None,
+        mysql_password: Optional[str] = None,
+    ) -> None:
+        """Migrate pipeline runs from a metadata store of ZenML < 0.20.0.
+
+        Args:
+            database: The metadata store database from which to migrate the
+                pipeline runs. Either a path to a SQLite database or a database
+                name for a MySQL database.
+            database_type: The type of the metadata store database
+                ("sqlite" | "mysql"). Defaults to "sqlite".
+            mysql_host: The host of the MySQL database.
+            mysql_port: The port of the MySQL database. Defaults to 3306.
+            mysql_username: The username of the MySQL database.
+            mysql_password: The password of the MySQL database.
+
+        Raises:
+            NotImplementedError: If the database type is not supported.
+            RuntimeError: If no pipeline runs exist.
+            ValueError: If the database type is "mysql" but the MySQL host,
+                username or password are not provided.
+        """
+        from tfx.orchestration import metadata
+
+        from zenml.enums import ExecutionStatus
+        from zenml.models.pipeline_models import (
+            ArtifactModel,
+            PipelineRunModel,
+            StepRunModel,
+        )
+        from zenml.zen_stores.metadata_store import MetadataStore
+
+        # Define MLMD connection config based on the database type.
+        if database_type == "sqlite":
+            mlmd_config = metadata.sqlite_metadata_connection_config(database)
+        elif database_type == "mysql":
+            if not mysql_host or not mysql_username or mysql_password is None:
+                raise ValueError(
+                    "Migration from MySQL requires username, password and host "
+                    "to be set."
+                )
+            mlmd_config = metadata.mysql_metadata_connection_config(
+                database=database,
+                host=mysql_host,
+                port=mysql_port,
+                username=mysql_username,
+                password=mysql_password,
+            )
+        else:
+            raise NotImplementedError(
+                "Migrating pipeline runs is only supported for SQLite and MySQL."
+            )
+
+        metadata_store = MetadataStore(config=mlmd_config)
+
+        # Dicts to keep tracks of MLMD IDs, which we need to resolve later.
+        step_mlmd_id_mapping: Dict[int, UUID] = {}
+        artifact_mlmd_id_mapping: Dict[int, UUID] = {}
+
+        # Get all pipeline runs from the metadata store.
+        pipeline_runs = metadata_store.get_all_runs()
+        if not pipeline_runs:
+            raise RuntimeError("No pipeline runs found in the metadata store.")
+
+        # For each run, first store the pipeline run, then all steps, then all
+        # output artifacts of each step.
+        # Runs, steps, and artifacts need to be sorted chronologically ensure
+        # that the MLMD IDs of producer steps and parent steps can be resolved.
+        for mlmd_run in sorted(pipeline_runs, key=lambda x: x.mlmd_id):
+            steps = metadata_store.get_pipeline_run_steps(
+                mlmd_run.mlmd_id
+            ).values()
+
+            # Mark all steps that haven't finished yet as failed.
+            step_statuses = []
+            for step in steps:
+                status = metadata_store.get_step_status(step.mlmd_id)
+                if status == ExecutionStatus.RUNNING:
+                    status = ExecutionStatus.FAILED
+                step_statuses.append(status)
+
+            num_steps = len(steps)
+            pipeline_run = PipelineRunModel(
+                user=self.active_user.id,  # Old user might not exist.
+                project=self.active_project.id,  # Old project might not exist.
+                name=mlmd_run.name,
+                stack_id=None,  # Stack might not exist in new DB.
+                pipeline_id=None,  # Pipeline might not exist in new DB.
+                status=ExecutionStatus.run_status(step_statuses, num_steps),
+                pipeline_configuration=mlmd_run.pipeline_configuration,
+                num_steps=num_steps,
+                mlmd_id=None,  # Run might not exist in new MLMD.
+            )
+            new_run = self.zen_store.create_run(pipeline_run)
+            for step, step_status in sorted(
+                zip(steps, step_statuses), key=lambda x: x[0].mlmd_id
+            ):
+                parent_step_ids = [
+                    step_mlmd_id_mapping[mlmd_parent_step_id]
+                    for mlmd_parent_step_id in step.mlmd_parent_step_ids
+                ]
+                inputs, outputs = metadata_store.get_step_artifacts(
+                    step_id=step.mlmd_id,
+                    step_parent_step_ids=step.mlmd_parent_step_ids,
+                    step_name=step.name,
+                )
+                input_artifacts = {
+                    input_name: artifact_mlmd_id_mapping[mlmd_artifact.mlmd_id]
+                    for input_name, mlmd_artifact in inputs.items()
+                }
+                step_run = StepRunModel(
+                    name=step.name,
+                    pipeline_run_id=new_run.id,
+                    parent_step_ids=parent_step_ids,
+                    input_artifacts=input_artifacts,
+                    status=step_status,
+                    entrypoint_name=step.entrypoint_name,
+                    parameters=step.parameters,
+                    step_configuration={},
+                    mlmd_parent_step_ids=[],
+                )
+                new_step = self.zen_store.create_run_step(step_run)
+                step_mlmd_id_mapping[step.mlmd_id] = new_step.id
+                for output_name, mlmd_artifact in sorted(
+                    outputs.items(), key=lambda x: x[1].mlmd_id
+                ):
+                    producer_step_id = step_mlmd_id_mapping[
+                        mlmd_artifact.mlmd_producer_step_id
+                    ]
+                    artifact = ArtifactModel(
+                        name=output_name,
+                        parent_step_id=new_step.id,
+                        producer_step_id=producer_step_id,
+                        type=mlmd_artifact.type,
+                        uri=mlmd_artifact.uri,
+                        materializer=mlmd_artifact.materializer,
+                        data_type=mlmd_artifact.data_type,
+                        is_cached=mlmd_artifact.is_cached,
+                    )
+                    new_artifact = self.zen_store.create_artifact(artifact)
+                    artifact_mlmd_id_mapping[
+                        mlmd_artifact.mlmd_id
+                    ] = new_artifact.id
+        logger.info(f"Migrated {len(pipeline_runs)} pipeline runs.")
 
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.

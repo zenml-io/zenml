@@ -17,12 +17,14 @@ import ipaddress
 import os
 from typing import Dict, List, Optional, Tuple, Union, cast
 
+import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
-    DEFAULT_STORE_DIRECTORY_NAME,
     ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_DISABLE_DATABASE_MIGRATION,
+    ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     LOCAL_STORES_DIRECTORY_NAME,
     ZEN_SERVER_ENTRYPOINT,
@@ -43,12 +45,13 @@ from zenml.services.container.container_service import (
 )
 from zenml.utils.io_utils import get_global_config_directory
 from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
-from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
 
 ZEN_SERVER_HEALTHCHECK_URL_PATH = "health"
-DOCKER_ZENML_SERVER_DEFAULT_IMAGE = "zenmldocker/zenml-server"
+DOCKER_ZENML_SERVER_DEFAULT_IMAGE = (
+    f"zenmldocker/zenml-server:{zenml.__version__}"
+)
 DOCKER_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
 
@@ -139,17 +142,10 @@ class DockerZenServer(ContainerService):
         # server configuration path. The store is set to where the default local
         # store is mounted in the docker container unless a custom store
         # configuration is explicitly supplied with the server configuration.
-        store_config = gc.get_default_store()
-        store_config.url = SqlZenStore.get_local_url(
-            os.path.join(
-                SERVICE_CONTAINER_GLOBAL_CONFIG_PATH,
-                LOCAL_STORES_DIRECTORY_NAME,
-                DEFAULT_STORE_DIRECTORY_NAME,
-            )
-        )
         gc.copy_configuration(
             config_path=self._global_config_path,
-            store_config=self.config.server.store or store_config,
+            store_config=self.config.server.store,
+            empty_store=self.config.server.store is None,
         )
 
     @classmethod
@@ -183,12 +179,23 @@ class DockerZenServer(ContainerService):
             Command needed to launch the docker container and the environment
             variables to set, in the formats accepted by subprocess.Popen.
         """
+        GlobalConfiguration()
+
         cmd, env = super()._get_container_cmd()
         env[ENV_ZENML_CONFIG_PATH] = os.path.join(
             SERVICE_CONTAINER_PATH,
             SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
         )
         env[ENV_ZENML_SERVER_DEPLOYMENT_TYPE] = ServerDeploymentType.DOCKER
+        # Set the local stores path to point to where the client's local stores
+        # path is mounted in the container. This ensures that the server's store
+        # configuration is initialized with the same path as the client.
+        env[ENV_ZENML_LOCAL_STORES_PATH] = os.path.join(
+            SERVICE_CONTAINER_GLOBAL_CONFIG_PATH,
+            LOCAL_STORES_DIRECTORY_NAME,
+        )
+        env[ENV_ZENML_DISABLE_DATABASE_MIGRATION] = "True"
+
         return cmd, env
 
     def provision(self) -> None:

@@ -19,9 +19,7 @@ import click
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error
-from zenml.client import Client
 from zenml.enums import StackComponentType
-from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
     from zenml.feature_stores.base_feature_store import BaseFeatureStore
@@ -44,6 +42,9 @@ def register_feature_store_subcommands() -> None:
         Args:
             ctx: The click context.
         """
+        from zenml.client import Client
+        from zenml.stack.stack_component import StackComponent
+
         client = Client()
         feature_store_models = client.active_stack_model.components[
             StackComponentType.FEATURE_STORE

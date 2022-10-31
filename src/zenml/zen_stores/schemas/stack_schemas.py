@@ -20,7 +20,7 @@ from uuid import UUID
 from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.models import StackModel
+from zenml.models import HydratedStackModel, StackModel
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -115,10 +115,10 @@ class StackSchema(SQLModel, table=True):
         return self
 
     def to_model(self) -> "StackModel":
-        """Creates a `ComponentModel` from an instance of a `StackSchema`.
+        """Creates a `StackModel` from an instance of a `StackSchema`.
 
         Returns:
-            a `FullStackModel`
+            a `StackModel`.
         """
         # This needs to be updated once multiple stack components per type are
         #  supported
@@ -129,6 +129,23 @@ class StackSchema(SQLModel, table=True):
             project=self.project_id,
             is_shared=self.is_shared,
             components={c.type: [c.id] for c in self.components},
+            created=self.created,
+            updated=self.updated,
+        )
+
+    def to_hydrated_model(self) -> "HydratedStackModel":
+        """Creates a `HydratedStackModel` from an instance of a 'StackSchema'.
+
+        Returns:
+            a 'HydratedStackModel'.
+        """
+        return HydratedStackModel(
+            id=self.id,
+            name=self.name,
+            user=self.user.to_model(),
+            project=self.project.to_model(),
+            is_shared=self.is_shared,
+            components={c.type: [c.to_model()] for c in self.components},
             created=self.created,
             updated=self.updated,
         )

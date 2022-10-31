@@ -12,12 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from datetime import datetime
 
-from hypothesis import given
-from hypothesis.strategies import datetimes
-
-from zenml.cli.utils import format_date, parse_name_and_extra_arguments
+from zenml.cli.utils import parse_name_and_extra_arguments
 
 SAMPLE_CUSTOM_ARGUMENTS = [
     '--custom_argument="value"',
@@ -25,15 +21,6 @@ SAMPLE_CUSTOM_ARGUMENTS = [
     "axl",
     '--best_cat="aria"',
 ]
-
-
-@given(sample_datetime=datetimes(allow_imaginary=False))
-def test_format_date_formats_a_string_properly(
-    sample_datetime: datetime,
-) -> None:
-    """Check that format_date function formats a string properly"""
-    assert isinstance(format_date(sample_datetime), str)
-    assert format_date(datetime(2020, 1, 1), "%Y") == "2020"
 
 
 def test_parse_name_and_extra_arguments_returns_a_dict_of_known_options() -> None:

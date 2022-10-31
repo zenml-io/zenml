@@ -23,7 +23,10 @@ from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
-from zenml.integrations.seldon.constants import SELDON_DOCKER_IMAGE_KEY
+from zenml.integrations.seldon.constants import (
+    SELDON_CUSTOM_DEPLOYMENT,
+    SELDON_DOCKER_IMAGE_KEY,
+)
 from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
     DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
     SeldonModelDeployer,
@@ -128,7 +131,9 @@ def seldon_model_deployer_step(
     Returns:
         Seldon Core deployment service
     """
-    model_deployer = SeldonModelDeployer.get_active_model_deployer()
+    model_deployer = cast(
+        SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
+    )
 
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
@@ -245,7 +250,7 @@ def seldon_model_deployer_step(
     return service
 
 
-@step(enable_cache=False)
+@step(enable_cache=False, extra={SELDON_CUSTOM_DEPLOYMENT: True})
 def seldon_custom_model_deployer_step(
     deploy_decision: bool,
     params: SeldonDeployerStepParameters,
@@ -277,7 +282,9 @@ def seldon_custom_model_deployer_step(
             "the path of the custom predict function",
         )
     # get the active model deployer
-    model_deployer = SeldonModelDeployer.get_active_model_deployer()
+    model_deployer = cast(
+        SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
+    )
 
     # get pipeline name, step name, run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])

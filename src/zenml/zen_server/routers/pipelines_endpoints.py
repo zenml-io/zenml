@@ -61,7 +61,7 @@ def list_pipelines(
     Returns:
         List of pipeline objects.
     """
-    pipelines_list = zen_store.list_pipelines(
+    pipelines_list = zen_store().list_pipelines(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         name=name,
@@ -94,7 +94,7 @@ def get_pipeline(
     Returns:
         A specific pipeline object.
     """
-    pipeline = zen_store.get_pipeline(pipeline_id=pipeline_id)
+    pipeline = zen_store().get_pipeline(pipeline_id=pipeline_id)
     if hydrated:
         return HydratedPipelineModel.from_model(pipeline)
     else:
@@ -123,9 +123,9 @@ def update_pipeline(
     Returns:
         The updated pipeline object.
     """
-    pipeline_in_db = zen_store.get_pipeline(pipeline_id)
+    pipeline_in_db = zen_store().get_pipeline(pipeline_id)
 
-    updated_pipeline = zen_store.update_pipeline(
+    updated_pipeline = zen_store().update_pipeline(
         pipeline=pipeline_update.apply_to_model(pipeline_in_db)
     )
     if hydrated:
@@ -145,7 +145,7 @@ def delete_pipeline(pipeline_id: UUID) -> None:
     Args:
         pipeline_id: ID of the pipeline to get.
     """
-    zen_store.delete_pipeline(pipeline_id=pipeline_id)
+    zen_store().delete_pipeline(pipeline_id=pipeline_id)
 
 
 @router.get(
@@ -180,7 +180,7 @@ def list_pipeline_runs(
     Returns:
         The pipeline runs according to query filters.
     """
-    runs = zen_store.list_runs(
+    runs = zen_store().list_runs(
         project_name_or_id=project_name_or_id,
         run_name=run_name,
         stack_id=stack_id,
@@ -209,4 +209,4 @@ def get_pipeline_spec(pipeline_id: UUID) -> PipelineSpec:
     Returns:
         The spec of the pipeline.
     """
-    return zen_store.get_pipeline(pipeline_id).spec
+    return zen_store().get_pipeline(pipeline_id).spec

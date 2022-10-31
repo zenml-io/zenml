@@ -52,7 +52,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
         """
         super().__init__(**kwargs)
 
-        client = Client(skip_client_check=True)  # type: ignore[call-arg]
+        client = Client()
         artifact_store = client.active_stack.artifact_store
         self.root_path = os.path.join(artifact_store.path, "great_expectations")
 

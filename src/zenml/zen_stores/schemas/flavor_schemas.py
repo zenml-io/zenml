@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column, ForeignKey, String
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import StackComponentType
@@ -48,7 +48,7 @@ class FlavorSchema(SQLModel, table=True):
     source: str
     name: str
     integration: Optional[str] = Field(default="")
-    config_schema: str
+    config_schema: str = Field(sa_column=Column(String(4096)), nullable=False)
 
     project_id: UUID = Field(
         sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))

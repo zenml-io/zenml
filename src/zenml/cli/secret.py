@@ -29,12 +29,9 @@ from zenml.cli.utils import (
     print_list_items,
     warning,
 )
-from zenml.client import Client
 from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.exceptions import SecretExistsError
-from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
-from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
     from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
@@ -57,10 +54,13 @@ def register_secrets_manager_subcommands() -> None:
         Args:
             ctx: Click context.
         """
+        from zenml.client import Client
+        from zenml.stack.stack_component import StackComponent
+
         client = Client()
-        secrets_manager_models = client.active_stack_model.components[
+        secrets_manager_models = client.active_stack_model.components.get(
             StackComponentType.SECRETS_MANAGER
-        ]
+        )
         if secrets_manager_models is None:
             error(
                 "No active secrets manager found. Please create a secrets "
@@ -79,7 +79,7 @@ def register_secrets_manager_subcommands() -> None:
         "--schema",
         "-s",
         "secret_schema_type",
-        default=ARBITRARY_SECRET_SCHEMA_TYPE,
+        default="arbitrary",  # TODO: Place in a constant outside secret module
         help="DEPRECATED: Register a secret with an optional schema. Secret "
         "schemas will be removed in an upcoming release of ZenML.",
         type=str,
@@ -104,14 +104,14 @@ def register_secrets_manager_subcommands() -> None:
         """Register a secret with the given name and schema.
 
         Use this command to store sensitive information into a ZenML secret. The
-        secret data consists of key-value pairs that can be configured interactively
-        (if the `--interactive` option is set) or via command-line arguments.
-        If a schema is indicated, the secret key-value pairs will be validated
-        against the schema.
+        secret data consists of key-value pairs that can be configured
+        interactively (if the `--interactive` option is set) or via command-line
+        arguments. If a schema is indicated, the secret key-value pairs will be
+        validated against the schema.
 
-        When passed as command line arguments, the secret field values may also be
-        loaded from files instead of being issued inline, by prepending the field
-        name with a `@` sign. For example, the following command line:
+        When passed as command line arguments, the secret field values may also
+        be loaded from files instead of being issued inline, by prepending the
+        field name with a `@` sign. For example, the following command line:
             zenml secrets-manager secret register my_secret --secret_token=@/path/to/file.json
         will load the value for the field `secret_token` from the file
         `/path/to/file.json`.
@@ -133,10 +133,10 @@ def register_secrets_manager_subcommands() -> None:
         integration):
             zenml integration install aws
             zenml secrets-manager secret register secret_three -i --schema=aws
-        - register a secret with the name `secret_four` from command line arguments
-        and conforming to a schema named `aws` (which is defined in the `aws`
-        integration). Also load the value for the field `secret_token` from a
-        local file:
+        - register a secret with the name `secret_four` from command line
+        arguments and conforming to a schema named `aws` (which is defined in
+        the `aws` integration). Also load the value for the field `secret_token`
+        from a local file:
             zenml integration install aws
             zenml secrets-manager secret register secret_four --schema=aws \
                 --aws_access_key_id=1234567890 \
@@ -148,15 +148,14 @@ def register_secrets_manager_subcommands() -> None:
             secrets_manager: The secrets manager to use.
             name: The name of the secret to register.
             secret_schema_type: The schema to use for validation.
-            interactive: Whether to use interactive mode to enter the secret values.
+            interactive: Whether to use interactive mode to enter the secret
+                values.
             args: Command line arguments.
         """
         # flake8: noqa: C901
 
-        # TODO [ENG-871]: Formatting for `zenml secrets-manager secret register --help` currently
-        #  broken.
-        # TODO [ENG-725]: Allow passing in json/dict when registering a secret as an
-        #   additional option for the user on top of the interactive
+        # TODO [ENG-725]: Allow passing in json/dict when registering a secret
+        #  as an additional option for the user on top of the interactive
 
         # Parse the given args
         # name is guaranteed to be set by parse_name_and_extra_arguments
@@ -168,6 +167,8 @@ def register_secrets_manager_subcommands() -> None:
             error("You can't use 'name' as the key for one of your secrets.")
         elif name == "name":
             error("Secret names cannot be named 'name'.")
+
+        from zenml.constants import ARBITRARY_SECRET_SCHEMA_TYPE
 
         if secret_schema_type != ARBITRARY_SECRET_SCHEMA_TYPE:
             warning(
@@ -196,15 +197,15 @@ def register_secrets_manager_subcommands() -> None:
 
             if parsed_args:
                 error(
-                    "Cannot pass secret fields as arguments when using interactive "
-                    "mode."
+                    "Cannot pass secret fields as arguments when using "
+                    "interactive mode."
                 )
 
             if secret_schema_type != ARBITRARY_SECRET_SCHEMA_TYPE:
                 click.echo(
                     "You have supplied a secret schema with predefined keys. "
-                    "You can fill these out sequentially now. Just press ENTER to "
-                    "skip optional secrets that you do not want to set"
+                    "You can fill these out sequentially now. Just press ENTER "
+                    "to skip optional secrets that you do not want to set"
                 )
                 for k in secret_keys:
                     v = getpass.getpass(f"Secret value for {k}:")
@@ -228,14 +229,15 @@ def register_secrets_manager_subcommands() -> None:
                         )
                     else:
                         warning(
-                            f"Key {k} already in this secret. Please restart this "
-                            f"process or use 'zenml secrets-manager secret update {name} --{k}=...' "
-                            f"to update this key after the secret is registered. "
-                            f"Skipping ..."
+                            f"Key {k} already in this secret. Please restart "
+                            f"this process or use 'zenml secrets-manager "
+                            f"secret update {name} --{k}=...' to update this "
+                            f"key after the secret is registered. Skipping ..."
                         )
 
                     if not click.confirm(
-                        "Do you want to add another key-value pair to this secret?"
+                        "Do you want to add another key-value pair to this "
+                        "secret?"
                     ):
                         break
 
@@ -282,8 +284,8 @@ def register_secrets_manager_subcommands() -> None:
             pretty_print_secret(secret, hide_secret=False)
         except KeyError as e:
             error(
-                f"Secret with name `{name}` does not exist or could not be loaded: "
-                f"{str(e)}."
+                f"Secret with name `{name}` does not exist or could not be "
+                f"loaded: {str(e)}."
             )
 
     @secret.command(
@@ -298,6 +300,9 @@ def register_secrets_manager_subcommands() -> None:
         """
         with console.status("Getting secret names..."):
             secret_names = secrets_manager.get_all_secret_keys()
+            if not secret_names:
+                warning("No secrets registered.")
+                return
             print_list_items(
                 list_items=secret_names, column_title="SECRET_NAMES"
             )
@@ -332,15 +337,19 @@ def register_secrets_manager_subcommands() -> None:
         If a schema is associated with the existing secret, the updated secret
         key-value pairs will be validated against the schema.
 
-        When passed as command line arguments, the secret field values may also be
-        loaded from files instead of being issued inline, by prepending the field
-        name with a `@` sign. For example, the following command line:
+        When passed as command line arguments, the secret field values may also
+        be loaded from files instead of being issued inline, by prepending the
+        field name with a `@` sign. For example, the following command line:
+
             zenml secrets-manager secret update my_secret --secret_token=@/path/to/file.json
+
         will load the value for the field `secret_token` from the file
-        `/path/to/file.json`.
-        To use the `@` sign as the first character of a field name without pointing
-        to a file, double the `@` sign. For example, the following command line:
+        `/path/to/file.json`. To use the `@` sign as the first character of a
+        field name without pointing to a file, double the `@` sign. For example,
+        the following command line:
+
             zenml secrets-manager secret update my_secret --username=zenml --password=@@password
+
         will interpret the value of the field `password` as the literal string
         `@password`.
         
@@ -387,8 +396,8 @@ def register_secrets_manager_subcommands() -> None:
         if interactive:
             if parsed_args:
                 error(
-                    "Cannot pass secret fields as arguments when using interactive "
-                    "mode."
+                    "Cannot pass secret fields as arguments when using "
+                    "interactive mode."
                 )
 
             click.echo(
@@ -454,8 +463,8 @@ def register_secrets_manager_subcommands() -> None:
         """
         if not yes:
             confirmation_response = confirmation(
-                f"This will delete all data associated with the `{name}` secret. "
-                "Are you sure you want to proceed?"
+                f"This will delete all data associated with the `{name}` "
+                f"secret. Are you sure you want to proceed?"
             )
             if not confirmation_response:
                 console.print("Aborting secret deletion...")
@@ -503,12 +512,13 @@ def register_secrets_manager_subcommands() -> None:
         """
         if force:
             warning(
-                "The `--force` flag will soon be deprecated. Use `--yes` or `-y` "
-                "instead."
+                "The `--force` flag will soon be deprecated. Use `--yes` or "
+                "`-y` instead."
             )
         if not yes:
             confirmation_response = confirmation(
-                "This will delete all secrets. Are you sure you want to proceed?"
+                "This will delete all secrets. Are you sure you want to "
+                "proceed?"
             )
             if not confirmation_response:
                 console.print("Aborting deletion of all secrets...")

@@ -14,3 +14,4 @@
 """Seldon constants."""
 
 SELDON_DOCKER_IMAGE_KEY = "seldon_docker_image"
+SELDON_CUSTOM_DEPLOYMENT = "seldon_custom_deployment"

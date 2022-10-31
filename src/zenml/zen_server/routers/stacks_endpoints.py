@@ -61,17 +61,14 @@ def list_stacks(
     Returns:
         All stacks.
     """
-    stacks_list = zen_store.list_stacks(
+    return zen_store().list_stacks(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         component_id=component_id,
         is_shared=is_shared,
         name=name,
+        hydrated=hydrated,
     )
-    if hydrated:
-        return [stack.to_hydrated_model() for stack in stacks_list]
-    else:
-        return stacks_list
 
 
 @router.get(
@@ -93,7 +90,7 @@ def get_stack(
     Returns:
         The requested stack.
     """
-    stack = zen_store.get_stack(stack_id)
+    stack = zen_store().get_stack(stack_id)
     if hydrated:
         return stack.to_hydrated_model()
     else:
@@ -120,8 +117,8 @@ def update_stack(
     Returns:
         The updated stack.
     """
-    stack_in_db = zen_store.get_stack(stack_id)
-    updated_stack = zen_store.update_stack(
+    stack_in_db = zen_store().get_stack(stack_id)
+    updated_stack = zen_store().update_stack(
         stack=stack_update.apply_to_model(stack_in_db)
     )
     if hydrated:
@@ -141,4 +138,4 @@ def delete_stack(stack_id: UUID) -> None:
     Args:
         stack_id: Name of the stack.
     """
-    zen_store.delete_stack(stack_id)  # aka 'deregister_stack'
+    zen_store().delete_stack(stack_id)  # aka 'deregister_stack'

@@ -15,7 +15,7 @@ Please note that ZenML currently only supports Python 3.7, 3.8, and 3.9.
 Please adjust your Python environment accordingly.
 {% endhint %}
 
-ZenML comes bundled with a React-based dashboard that lives inside a [sister repository](https://github.com/zenml-io/zenml-dashboard). In order to get access to the dashboard locally, you need to launch the [ZenML Server and Dashboard locally](deploying-zenml/deploying-zenml.md). For this, you need to install the optional dependencies for the ZenML Server:
+ZenML comes bundled with a React-based dashboard that lives inside a [sister repository](https://github.com/zenml-io/zenml-dashboard). In order to get access to the dashboard locally, you need to launch the [ZenML Server and Dashboard locally](../deploying-zenml/deploying-zenml.md). For this, you need to install the optional dependencies for the ZenML Server:
 
 ```shell
 pip install "zenml[server]"
@@ -60,12 +60,10 @@ If you would like to learn more about the current release, please visit our
 
 ## Known installation issues for M1 Mac Users
 
-If you have a M1 Mac machine and you are encountering an error while trying to install ZenML, 
-please try to setup `brew` and `pyenv` with Rosetta 2 and then install ZenML. The issue arises because some of the dependencies 
-aren’t fully compatible with the vanilla ARM64 Architecture. The following links may be helpful (Thank you Reid Falconer!):
-
-- [Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
-- [Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
+Since some of ZenML's dependencies are not compatible with the ARM64
+architecture, you need to install ZenML under Rosetta on M1 Macs.
+See the [Installation on M1 Macs](./m1-mac-installation.md) page for detailed 
+instructions.
 
 ## Running with Docker
 
@@ -109,13 +107,13 @@ pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 
 ### Using develop with Remote Orchestrators
 
-Remote orchestrators like [Kubeflow](../mlops-stacks/orchestrators/kubeflow.md)
-require [Docker Images](../developer-guide/advanced-usage/docker.md) to set up the
+Remote orchestrators like [Kubeflow](../../component-gallery/orchestrators/kubeflow.md)
+require [Docker Images](../../getting-started/deploying-zenml/docker.md) to set up the
 environments of each step. By default, they use the official ZenML docker image
 that we provide with each release. However, if you install from develop, this
 image will be outdated, so you need to build a custom image instead, and
 specify it in the configuration of your orchestrator accordingly (see the 
-[MLOps Stacks Orchestrator](../mlops-stacks/orchestrators/orchestrators.md) 
+[MLOps Stacks Orchestrator](../../component-gallery/orchestrators/orchestrators.md) 
 page of your specific orchestrator flavor for more details on how this can be 
 done).
 

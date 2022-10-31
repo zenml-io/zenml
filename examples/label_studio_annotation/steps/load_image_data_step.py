@@ -24,7 +24,7 @@ from zenml.steps.step_context import StepContext
 
 
 class LoadImageDataParameters(BaseParameters):
-    base_path = Path(__file__).parent.absolute().parent.absolute() / "data"
+    base_path = str(Path(__file__).parent.absolute().parent.absolute() / "data")
     dir_name = "batch_1"
 
 

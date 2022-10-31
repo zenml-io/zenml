@@ -120,10 +120,11 @@ class DockerSettings(BaseSettings):
             be installed inside the Docker image.
         install_stack_requirements: If `True`, ZenML will automatically detect
             if components of your active stack are part of a ZenML integration
-            and install the corresponding requirements. If you set this to
-            `False` or use custom components in your stack, you need to make
-            sure these get installed by specifying them in the `requirements`
-            attribute.
+            and install the corresponding requirements and apt packages.
+            If you set this to `False` or use custom components in your stack,
+            you need to make sure these get installed by specifying them in
+            the `requirements` and `apt_packages` attributes.
+        apt_packages: APT packages to install inside the Docker image.
         environment: Dictionary of environment variables to set inside the
             Docker image.
         dockerignore: Path to a dockerignore file to use when building the
@@ -137,10 +138,9 @@ class DockerSettings(BaseSettings):
             image. If this is set to `False`, ZenML will not copy this
             configuration and you're responsible for making sure ZenML can
             access the ZenStore in the Docker image.
-        user: If not `None`, will use the USER instruction to set the username and
-            run the commands of the dockerfile as `user` instead of root.
-            Specifically,  the specified user is used for RUN instructions
-            and at runtime, runs the relevant ENTRYPOINT and CMD commands.
+        user: If not `None`, will set the user, make it owner of the `/app`
+            directory which contains all the user code and run the container
+            entrypoint as this user.
     """
 
     LEVEL = ConfigurationLevel.PIPELINE
@@ -153,11 +153,13 @@ class DockerSettings(BaseSettings):
     target_repository: str = "zenml"
 
     replicate_local_python_environment: Optional[
-        PythonEnvironmentExportMethod
+        Union[List[str], PythonEnvironmentExportMethod]
     ] = None
     requirements: Union[None, str, List[str]] = None
     required_integrations: List[str] = []
     install_stack_requirements: bool = True
+
+    apt_packages: List[str] = []
 
     environment: Dict[str, Any] = {}
     dockerignore: Optional[str] = None

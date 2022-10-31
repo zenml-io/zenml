@@ -68,7 +68,7 @@ class BaseStepOperatorFlavor(Flavor):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
-and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/api_docs/step_operators/#zenml.step_operators.base_step_operator.BaseStepOperator).
+and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/core_code_docs/core-step_operators/#zenml.step_operators.base_step_operator.BaseStepOperator).
 {% endhint %}
 
 ## Build your own custom step operator
@@ -131,3 +131,10 @@ in our local setting (assuming the `CustomStepOperatorFlavor` and the
 `CustomStepOperatorConfig` are implemented in a different module/path than
 the actual `CustomStepOperator`).
 {% endhint %}
+
+### Enabling CUDA for GPU-backed hardware
+
+Note that if you wish to use your custom step operator to run steps on a GPU, you will
+need to follow [the instructions on this page](../../advanced-guide/pipelines/gpu-hardware.md) to ensure that it works. It
+requires adding some extra settings customization and is essential to enable
+CUDA for the GPU to give its full acceleration.

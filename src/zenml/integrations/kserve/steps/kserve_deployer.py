@@ -22,7 +22,10 @@ from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
-from zenml.integrations.kserve.constants import KSERVE_DOCKER_IMAGE_KEY
+from zenml.integrations.kserve.constants import (
+    KSERVE_CUSTOM_DEPLOYMENT,
+    KSERVE_DOCKER_IMAGE_KEY,
+)
 from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
     DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
     KServeModelDeployer,
@@ -239,7 +242,9 @@ def kserve_model_deployer_step(
     Returns:
         KServe deployment service
     """
-    model_deployer = KServeModelDeployer.get_active_model_deployer()
+    model_deployer = cast(
+        KServeModelDeployer, KServeModelDeployer.get_active_model_deployer()
+    )
 
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
@@ -321,7 +326,7 @@ def kserve_model_deployer_step(
     return service
 
 
-@step(enable_cache=False)
+@step(enable_cache=False, extra={KSERVE_CUSTOM_DEPLOYMENT: True})
 def kserve_custom_model_deployer_step(
     deploy_decision: bool,
     params: KServeDeployerStepParameters,
@@ -355,7 +360,9 @@ def kserve_custom_model_deployer_step(
         )
 
     # get the active model deployer
-    model_deployer = KServeModelDeployer.get_active_model_deployer()
+    model_deployer = cast(
+        KServeModelDeployer, KServeModelDeployer.get_active_model_deployer()
+    )
 
     # get pipeline name, step name, run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
