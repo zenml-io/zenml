@@ -15,9 +15,16 @@
 from typing import List, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
-from zenml.constants import API, ROLES, VERSION_1
+from zenml.constants import (
+    API,
+    LIMIT_DEFAULT,
+    LIMIT_MAX,
+    OFFSET,
+    ROLES,
+    VERSION_1,
+)
 from zenml.models import RoleModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.user_management_models import (
@@ -40,13 +47,20 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_roles() -> List[RoleModel]:
+def list_roles(
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
+) -> List[RoleModel]:
     """Returns a list of all roles.
+
+    Args:
+        offset: Offset to use for pagination
+        limit: Limit to set for pagination
 
     Returns:
         List of all roles.
     """
-    return zen_store().list_roles()
+    return zen_store().list_roles(offset=offset, limit=limit)
 
 
 @router.post(

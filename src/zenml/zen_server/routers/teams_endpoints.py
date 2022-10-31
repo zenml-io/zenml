@@ -15,9 +15,17 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
-from zenml.constants import API, ROLES, TEAMS, VERSION_1
+from zenml.constants import (
+    API,
+    LIMIT_DEFAULT,
+    LIMIT_MAX,
+    OFFSET,
+    ROLES,
+    TEAMS,
+    VERSION_1,
+)
 from zenml.models import TeamModel
 from zenml.models.user_management_models import RoleAssignmentModel
 from zenml.zen_server.auth import authorize
@@ -41,13 +49,20 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_teams() -> List[TeamModel]:
+def list_teams(
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
+) -> List[TeamModel]:
     """Returns a list of all teams.
+
+    Args:
+        offset: Offset to use for pagination
+        limit: Limit to set for pagination
 
     Returns:
         List of all teams.
     """
-    return zen_store().list_teams()
+    return zen_store().list_teams(offset=offset, limit=limit)
 
 
 @router.post(
@@ -135,6 +150,8 @@ def delete_team(team_name_or_id: Union[str, UUID]) -> None:
 def get_role_assignments_for_team(
     team_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a team.
 
@@ -142,6 +159,8 @@ def get_role_assignments_for_team(
         team_name_or_id: Name or ID of the team.
         project_name_or_id: If provided, only list roles that are limited to
             the given project.
+        offset: Offset to use for pagination
+        limit: Limit to set for pagination
 
     Returns:
         A list of all roles that are assigned to a team.
@@ -149,4 +168,6 @@ def get_role_assignments_for_team(
     return zen_store().list_role_assignments(
         team_name_or_id=team_name_or_id,
         project_name_or_id=project_name_or_id,
+        offset=offset,
+        limit=limit,
     )

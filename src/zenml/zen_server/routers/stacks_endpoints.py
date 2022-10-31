@@ -16,9 +16,16 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
-from zenml.constants import API, STACKS, VERSION_1
+from zenml.constants import (
+    API,
+    LIMIT_DEFAULT,
+    LIMIT_MAX,
+    OFFSET,
+    STACKS,
+    VERSION_1,
+)
 from zenml.models import StackModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.zen_server.auth import authorize
@@ -46,6 +53,8 @@ def list_stacks(
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
 ) -> Union[List[HydratedStackModel], List[StackModel]]:
     """Returns all stacks.
 
@@ -57,6 +66,8 @@ def list_stacks(
         is_shared: Optionally filter by shared status of the stack
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
+        offset: Offset to use for pagination
+        limit: Limit to set for pagination
 
     Returns:
         All stacks.
@@ -68,6 +79,8 @@ def list_stacks(
         is_shared=is_shared,
         name=name,
         hydrated=hydrated,
+        offset=offset,
+        limit=limit,
     )
 
 

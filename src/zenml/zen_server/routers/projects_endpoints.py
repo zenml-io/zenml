@@ -15,11 +15,14 @@
 from typing import Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from zenml.constants import (
     API,
     FLAVORS,
+    LIMIT_DEFAULT,
+    LIMIT_MAX,
+    OFFSET,
     PIPELINES,
     PROJECTS,
     ROLES,
@@ -69,13 +72,16 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_projects() -> List[ProjectModel]:
+def list_projects(
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
+) -> List[ProjectModel]:
     """Lists all projects in the organization.
 
     Returns:
         A list of projects.
     """
-    return zen_store().list_projects()
+    return zen_store().list_projects(offset=offset, limit=limit)
 
 
 @router.post(
@@ -169,6 +175,8 @@ def get_role_assignments_for_project(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     team_name_or_id: Optional[Union[str, UUID]] = None,
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a team.
 
@@ -178,6 +186,8 @@ def get_role_assignments_for_project(
             given user.
         team_name_or_id: If provided, only list roles that are assigned to the
             given team.
+        offset: Offset to use for pagination
+        limit: Limit to set for pagination
 
     Returns:
         A list of all roles that are assigned to a team.
@@ -186,6 +196,8 @@ def get_role_assignments_for_project(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         team_name_or_id=team_name_or_id,
+        offset=offset,
+        limit=limit,
     )
 
 
@@ -202,6 +214,8 @@ def list_project_stacks(
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
 ) -> Union[List[HydratedStackModel], List[StackModel]]:
     """Get stacks that are part of a specific project.
 
@@ -215,6 +229,8 @@ def list_project_stacks(
         is_shared: Optionally filter by shared status of the stack
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
+        offset: Offset to use for pagination
+        limit: Limit to set for pagination
 
     Returns:
         All stacks part of the specified project.
@@ -225,6 +241,8 @@ def list_project_stacks(
         component_id=component_id,
         is_shared=is_shared,
         name=stack_name,
+        offset=offset,
+        limit=limit,
     )
     if hydrated:
         return [stack.to_hydrated_model() for stack in stacks_list]
@@ -283,6 +301,8 @@ def list_project_stack_components(
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
 ) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
     """List stack components that are part of a specific project.
 
@@ -297,6 +317,8 @@ def list_project_stack_components(
         is_shared: Optionally filter by shared status of the component
         hydrated: Defines if users and projects will be
             included by reference (FALSE) or as model (TRUE)
+        offset: Offset to use for pagination
+        limit: Limit to set for pagination
 
     Returns:
         All stack components part of the specified project.
@@ -308,6 +330,8 @@ def list_project_stack_components(
         is_shared=is_shared,
         name=name,
         flavor_name=flavor_name,
+        offset=offset,
+        limit=limit,
     )
     if hydrated:
         return [comp.to_hydrated_model() for comp in components_list]
@@ -369,7 +393,8 @@ def list_project_flavors(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = False,
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
 ) -> List[FlavorModel]:
     """List stack components flavors of a certain type that are part of a project.
 
@@ -383,6 +408,9 @@ def list_project_flavors(
         is_shared: Optionally filter by shared status of the flavor.
         hydrated: Defines if users and projects will be
             included by reference (FALSE) or as model (TRUE)
+        offset: Offset to use for pagination
+        limit: Limit to set for pagination
+
 
     Returns:
         All stack components of a certain type that are part of a project.
@@ -393,11 +421,9 @@ def list_project_flavors(
         user_name_or_id=user_name_or_id,
         is_shared=is_shared,
         name=name,
+        offset=offset,
+        limit=limit,
     )
-    # if hydrated:
-    #     return [flavor.to_hydrated_model() for flavor in flavors_list]
-    # else:
-    #     return flavors_list
     return flavors_list
 
 
@@ -449,6 +475,8 @@ def list_project_pipelines(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     hydrated: bool = False,
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
 ) -> Union[List[HydratedPipelineModel], List[PipelineModel]]:
     """Gets pipelines defined for a specific project.
 
@@ -460,6 +488,8 @@ def list_project_pipelines(
         name: Optionally filter by pipeline name
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
+        offset: Offset to use for pagination
+        limit: Limit to set for pagination
 
     Returns:
         All pipelines within the project.
@@ -468,6 +498,8 @@ def list_project_pipelines(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         name=name,
+        offset=offset,
+        limit=limit,
     )
     if hydrated:
         return [
@@ -565,6 +597,7 @@ def get_project_statistics(
     # TODO: [server] instead of actually querying all the rows, we should
     #  use zen_store methods that just return counts
     zen_store().list_runs()
+    # TODO: with pagination, this won't work anymore
     return {
         "stacks": len(
             zen_store().list_stacks(project_name_or_id=project_name_or_id)

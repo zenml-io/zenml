@@ -45,6 +45,8 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+    LIMIT_DEFAULT,
+    OFFSET,
 )
 from zenml.enums import (
     ExecutionStatus,
@@ -774,6 +776,8 @@ class SqlZenStore(BaseZenStore):
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
         hydrated: bool = False,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> Union[List[StackModel], List[HydratedStackModel]]:
         """List all stacks matching the given filter criteria.
 
@@ -786,6 +790,8 @@ class SqlZenStore(BaseZenStore):
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
             hydrated: Flag to decide whether to return hydrated models.
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all stacks matching the filter criteria.
@@ -811,7 +817,9 @@ class SqlZenStore(BaseZenStore):
             if is_shared is not None:
                 query = query.where(StackSchema.is_shared == is_shared)
 
-            stacks = session.exec(query.order_by(StackSchema.name)).all()
+            stacks = session.exec(
+                query.order_by(StackSchema.name).offset(offset).limit(limit)
+            ).all()
 
             if hydrated:
                 return [stack.to_hydrated_model() for stack in stacks]
@@ -1086,6 +1094,8 @@ class SqlZenStore(BaseZenStore):
         flavor_name: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> List[ComponentModel]:
         """List all stack components matching the given filter criteria.
 
@@ -1098,6 +1108,8 @@ class SqlZenStore(BaseZenStore):
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by whether they are
                 shared or not
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all stack components matching the filter criteria.
@@ -1124,7 +1136,9 @@ class SqlZenStore(BaseZenStore):
             if is_shared is not None:
                 query = query.where(StackComponentSchema.is_shared == is_shared)
 
-            list_of_stack_components_in_db = session.exec(query).all()
+            list_of_stack_components_in_db = session.exec(
+                query.offset(offset).limit(limit)
+            ).all()
 
         return [comp.to_model() for comp in list_of_stack_components_in_db]
 
@@ -1423,6 +1437,8 @@ class SqlZenStore(BaseZenStore):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> List[FlavorModel]:
         """List all stack component flavors matching the given filter criteria.
 
@@ -1435,6 +1451,8 @@ class SqlZenStore(BaseZenStore):
             name: Optionally filter flavors by name
             is_shared: Optionally filter out flavors by whether they are
                 shared or not
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             List of all the stack component flavors matching the given criteria
@@ -1454,7 +1472,9 @@ class SqlZenStore(BaseZenStore):
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(FlavorSchema.user_id == user.id)
 
-            list_of_flavors_in_db = session.exec(query).all()
+            list_of_flavors_in_db = session.exec(
+                query.offset(offset).limit(limit)
+            ).all()
 
         return [flavor.to_model() for flavor in list_of_flavors_in_db]
 
@@ -1583,14 +1603,22 @@ class SqlZenStore(BaseZenStore):
             user = self._get_user_schema(user_name_or_id, session=session)
         return user.to_model()
 
-    def list_users(self) -> List[UserModel]:
+    def list_users(
+        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
+    ) -> List[UserModel]:
         """List all users.
+
+        Args:
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all users.
         """
         with Session(self.engine) as session:
-            users = session.exec(select(UserSchema)).all()
+            users = session.exec(
+                select(UserSchema).offset(offset).limit(limit)
+            ).all()
 
         return [user.to_model() for user in users]
 
@@ -1716,14 +1744,22 @@ class SqlZenStore(BaseZenStore):
             team = self._get_team_schema(team_name_or_id, session=session)
         return team.to_model()
 
-    def list_teams(self) -> List[TeamModel]:
+    def list_teams(
+        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
+    ) -> List[TeamModel]:
         """List all teams.
+
+        Args:
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all teams.
         """
         with Session(self.engine) as session:
-            teams = session.exec(select(TeamSchema)).all()
+            teams = session.exec(
+                select(TeamSchema).offset(offset).limit(limit)
+            ).all()
             return [team.to_model() for team in teams]
 
     @track(AnalyticsEvent.UPDATED_TEAM)
@@ -1917,14 +1953,22 @@ class SqlZenStore(BaseZenStore):
             role = self._get_role_schema(role_name_or_id, session=session)
             return role.to_model()
 
-    def list_roles(self) -> List[RoleModel]:
+    def list_roles(
+        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
+    ) -> List[RoleModel]:
         """List all roles.
+
+        Args:
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all roles.
         """
         with Session(self.engine) as session:
-            roles = session.exec(select(RoleSchema)).all()
+            roles = session.exec(
+                select(RoleSchema).offset(offset).limit(limit)
+            ).all()
 
             return [role.to_model() for role in roles]
 
@@ -2013,6 +2057,8 @@ class SqlZenStore(BaseZenStore):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> List[RoleAssignmentModel]:
         """List all user role assignments.
 
@@ -2020,6 +2066,8 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: If provided, only return role assignments for
                 this project.
             user_name_or_id: If provided, only list assignments for this user.
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of user role assignments.
@@ -2036,13 +2084,15 @@ class SqlZenStore(BaseZenStore):
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(UserRoleAssignmentSchema.user_id == user.id)
-            assignments = session.exec(query).all()
+            assignments = session.exec(query.offset(offset).limit(limit)).all()
             return [assignment.to_model() for assignment in assignments]
 
     def _list_team_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> List[RoleAssignmentModel]:
         """List all team role assignments.
 
@@ -2050,6 +2100,8 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: If provided, only return role assignments for
                 this project.
             team_name_or_id: If provided, only list assignments for this team.
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of team role assignments.
@@ -2066,7 +2118,7 @@ class SqlZenStore(BaseZenStore):
             if team_name_or_id is not None:
                 team = self._get_team_schema(team_name_or_id, session=session)
                 query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
-            assignments = session.exec(query).all()
+            assignments = session.exec(query.offset(offset).limit(limit)).all()
             return [assignment.to_model() for assignment in assignments]
 
     def list_role_assignments(
@@ -2074,6 +2126,8 @@ class SqlZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> List[RoleAssignmentModel]:
         """List all role assignments.
 
@@ -2082,17 +2136,24 @@ class SqlZenStore(BaseZenStore):
                 this project.
             team_name_or_id: If provided, only list assignments for this team.
             user_name_or_id: If provided, only list assignments for this user.
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all role assignments.
         """
+        # TODO - this current solution will return twice the pagination limit
         user_role_assignments = self._list_user_role_assignments(
             project_name_or_id=project_name_or_id,
             user_name_or_id=user_name_or_id,
+            offset=offset,
+            limit=limit,
         )
         team_role_assignments = self._list_team_role_assignments(
             project_name_or_id=project_name_or_id,
             team_name_or_id=team_name_or_id,
+            offset=offset,
+            limit=limit,
         )
         return user_role_assignments + team_role_assignments
 
@@ -2361,14 +2422,22 @@ class SqlZenStore(BaseZenStore):
             )
         return project.to_model()
 
-    def list_projects(self) -> List[ProjectModel]:
+    def list_projects(
+        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
+    ) -> List[ProjectModel]:
         """List all projects.
+
+        Args:
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all projects.
         """
         with Session(self.engine) as session:
-            projects = session.exec(select(ProjectSchema)).all()
+            projects = session.exec(
+                select(ProjectSchema).offset(offset).limit(limit)
+            ).all()
             return [project.to_model() for project in projects]
 
     @track(AnalyticsEvent.UPDATED_PROJECT)
@@ -2505,6 +2574,8 @@ class SqlZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
@@ -2513,6 +2584,8 @@ class SqlZenStore(BaseZenStore):
                 project.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of pipelines.
@@ -2534,7 +2607,7 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(PipelineSchema.name == name)
 
             # Get all pipelines in the project
-            pipelines = session.exec(query).all()
+            pipelines = session.exec(query.offset(offset).limit(limit)).all()
             return [pipeline.to_model() for pipeline in pipelines]
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
@@ -2733,6 +2806,8 @@ class SqlZenStore(BaseZenStore):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> List[PipelineRunModel]:
         """Gets all pipeline runs.
 
@@ -2746,6 +2821,8 @@ class SqlZenStore(BaseZenStore):
             pipeline_id: If provided, only return runs for this pipeline.
             unlisted: If True, only return unlisted runs that are not
                 associated with any pipeline (filter by pipeline_id==None).
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all pipeline runs.
@@ -2778,7 +2855,7 @@ class SqlZenStore(BaseZenStore):
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(PipelineRunSchema.user_id == user.id)
                 query = query.order_by(PipelineRunSchema.created)
-            runs = session.exec(query).all()
+            runs = session.exec(query.offset(offset).limit(limit)).all()
             run_models = [run.to_model() for run in runs]
             for run_model in run_models:
                 self._update_run_status(run_model)

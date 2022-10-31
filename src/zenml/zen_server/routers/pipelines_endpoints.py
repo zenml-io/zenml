@@ -15,10 +15,19 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
+from zenml.constants import (
+    API,
+    LIMIT_DEFAULT,
+    LIMIT_MAX,
+    OFFSET,
+    PIPELINE_SPEC,
+    PIPELINES,
+    RUNS,
+    VERSION_1,
+)
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import PipelineModel
 from zenml.zen_server.auth import authorize
@@ -48,6 +57,8 @@ def list_pipelines(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     hydrated: bool = False,
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
 ) -> Union[List[HydratedPipelineModel], List[PipelineModel]]:
     """Gets a list of pipelines.
 
@@ -57,6 +68,8 @@ def list_pipelines(
         name: Optionally filter by pipeline name
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
+        offset: Offset to use for pagination
+        limit: Limit to set for pagination
 
     Returns:
         List of pipeline objects.
@@ -65,6 +78,8 @@ def list_pipelines(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         name=name,
+        offset=offset,
+        limit=limit,
     )
     if hydrated:
         return [

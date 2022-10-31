@@ -15,9 +15,17 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
-from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
+from zenml.constants import (
+    API,
+    COMPONENT_TYPES,
+    LIMIT_DEFAULT,
+    LIMIT_MAX,
+    OFFSET,
+    STACK_COMPONENTS,
+    VERSION_1,
+)
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
 from zenml.models.component_model import HydratedComponentModel
@@ -54,6 +62,8 @@ def list_stack_components(
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
 ) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
     """Get a list of all stack components for a specific type.
 
@@ -66,6 +76,8 @@ def list_stack_components(
         is_shared: Optionally filter by shared status of the component
         hydrated: Defines if users and projects will be
                   included by reference (FALSE) or as model (TRUE)
+        offset: Offset to use for pagination
+        limit: Limit to set for pagination
 
     Returns:
         List of stack components for a specific type.
@@ -77,6 +89,8 @@ def list_stack_components(
         name=name,
         flavor_name=flavor_name,
         is_shared=is_shared,
+        offset=offset,
+        limit=limit,
     )
     if hydrated:
         return [comp.to_hydrated_model() for comp in components_list]

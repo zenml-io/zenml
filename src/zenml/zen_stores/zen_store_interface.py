@@ -16,6 +16,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
+from zenml.constants import LIMIT_DEFAULT, OFFSET
 from zenml.enums import StackComponentType
 from zenml.models import (
     ArtifactModel,
@@ -185,6 +186,8 @@ class ZenStoreInterface(ABC):
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
         hydrated: bool = False,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> Union[List[StackModel], List[HydratedStackModel]]:
         """List all stacks matching the given filter criteria.
 
@@ -197,6 +200,8 @@ class ZenStoreInterface(ABC):
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
             hydrated: Flag to decide whether to return hydrated models
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
 
         Returns:
@@ -265,6 +270,8 @@ class ZenStoreInterface(ABC):
         flavor_name: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> List[ComponentModel]:
         """List all stack components matching the given filter criteria.
 
@@ -277,6 +284,8 @@ class ZenStoreInterface(ABC):
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by whether they are
                 shared or not
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all stack components matching the filter criteria.
@@ -389,6 +398,8 @@ class ZenStoreInterface(ABC):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> List[FlavorModel]:
         """List all stack component flavors matching the given filter criteria.
 
@@ -400,6 +411,8 @@ class ZenStoreInterface(ABC):
             name: Optionally filter flavors by name
             is_shared: Optionally filter out flavors by whether they are
                 shared or not
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             List of all the stack component flavors matching the given criteria.
@@ -476,8 +489,14 @@ class ZenStoreInterface(ABC):
 
     # TODO: [ALEX] add filtering param(s)
     @abstractmethod
-    def list_users(self) -> List[UserModel]:
+    def list_users(
+        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
+    ) -> List[UserModel]:
         """List all users.
+
+        Args:
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all users.
@@ -560,8 +579,14 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_teams(self) -> List[TeamModel]:
+    def list_teams(
+        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
+    ) -> List[TeamModel]:
         """List all teams.
+
+        Args:
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all teams.
@@ -697,8 +722,14 @@ class ZenStoreInterface(ABC):
 
     # TODO: [ALEX] add filtering param(s)
     @abstractmethod
-    def list_roles(self) -> List[RoleModel]:
+    def list_roles(
+        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
+    ) -> List[RoleModel]:
         """List all roles.
+
+        Args:
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all roles.
@@ -739,6 +770,8 @@ class ZenStoreInterface(ABC):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> List[RoleAssignmentModel]:
         """List all role assignments.
 
@@ -749,6 +782,8 @@ class ZenStoreInterface(ABC):
                 team
             user_name_or_id: If provided, only list assignments for the given
                 user
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all role assignments.
@@ -834,8 +869,14 @@ class ZenStoreInterface(ABC):
 
     # TODO: [ALEX] add filtering param(s)
     @abstractmethod
-    def list_projects(self) -> List[ProjectModel]:
+    def list_projects(
+        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
+    ) -> List[ProjectModel]:
         """List all projects.
+
+        Args:
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all projects.
@@ -907,6 +948,8 @@ class ZenStoreInterface(ABC):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
@@ -914,6 +957,8 @@ class ZenStoreInterface(ABC):
             project_name_or_id: If provided, only list pipelines in this project.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of pipelines.
@@ -990,6 +1035,8 @@ class ZenStoreInterface(ABC):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
+        offset: int = OFFSET,
+        limit: int = LIMIT_DEFAULT,
     ) -> List[PipelineRunModel]:
         """Gets all pipeline runs.
 
@@ -1003,6 +1050,8 @@ class ZenStoreInterface(ABC):
             pipeline_id: If provided, only return runs for this pipeline.
             unlisted: If True, only return unlisted runs that are not
                 associated with any pipeline (filter by `pipeline_id==None`).
+            offset: Offset to use for pagination
+            limit: Limit to set for pagination
 
         Returns:
             A list of all pipeline runs.

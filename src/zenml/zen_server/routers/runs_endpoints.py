@@ -15,12 +15,15 @@
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from zenml.constants import (
     API,
     COMPONENT_SIDE_EFFECTS,
     GRAPH,
+    LIMIT_DEFAULT,
+    LIMIT_MAX,
+    OFFSET,
     PIPELINE_CONFIGURATION,
     RUNS,
     STATUS,
@@ -59,6 +62,8 @@ def list_runs(
     pipeline_id: Optional[UUID] = None,
     unlisted: bool = False,
     hydrated: bool = False,
+    offset: int = OFFSET,
+    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
 ) -> Union[List[HydratedPipelineRunModel], List[PipelineRunModel]]:
     """Get pipeline runs according to query filters.
 
@@ -73,6 +78,8 @@ def list_runs(
             associated with any pipeline.
         hydrated: Defines if stack, user and pipeline will be
                   included by reference (FALSE) or as model (TRUE)
+        offset: Offset to use for pagination
+        limit: Limit to set for pagination
 
     Returns:
         The pipeline runs according to query filters.
@@ -85,6 +92,8 @@ def list_runs(
         user_name_or_id=user_name_or_id,
         pipeline_id=pipeline_id,
         unlisted=unlisted,
+        offset=offset,
+        limit=limit,
     )
     if hydrated:
         return [HydratedPipelineRunModel.from_model(run) for run in runs]

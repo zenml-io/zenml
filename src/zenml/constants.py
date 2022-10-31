@@ -202,3 +202,8 @@ DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE = ".zenml_deployment_config.yaml"
 
 # Secret constants
 ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"
+
+# Pagination defaults
+OFFSET = 0
+LIMIT_DEFAULT = 2
+LIMIT_MAX = 500
