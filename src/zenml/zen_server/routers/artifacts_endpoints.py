@@ -14,6 +14,7 @@
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
 from typing import List, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Security
 
@@ -36,15 +37,40 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_runs(
+def list_artifacts(
     artifact_uri: Optional[str] = None,
+    parent_step_id: Optional[UUID] = None,
 ) -> List[ArtifactModel]:
     """Get artifacts according to query filters.
 
     Args:
-        artifact_uri: The URI of the artifact by which to filter.
+        artifact_uri: If specified, only artifacts with the given URI will
+            be returned.
+        parent_step_id: If specified, only artifacts for the given step run
+            will be returned.
 
     Returns:
         The artifacts according to query filters.
     """
-    return zen_store().list_artifacts(artifact_uri=artifact_uri)
+    return zen_store().list_artifacts(
+        artifact_uri=artifact_uri,
+        parent_step_id=parent_step_id,
+    )
+
+
+@router.post(
+    "",
+    response_model=ArtifactModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_artifact(artifact: ArtifactModel) -> ArtifactModel:
+    """Create a new artifact.
+
+    Args:
+        artifact: The artifact to create.
+
+    Returns:
+        The created artifact.
+    """
+    return zen_store().create_artifact(artifact)

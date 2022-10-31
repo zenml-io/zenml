@@ -119,6 +119,27 @@ def get_run(
         return run
 
 
+@router.put(
+    "/{run_id}",
+    response_model=PipelineRunModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def update_run(run_id: UUID, run_model: PipelineRunModel) -> PipelineRunModel:
+    """Updates a run.
+
+    Args:
+        run_id: ID of the run.
+        run_model: Run model to use for the update.
+
+    Returns:
+        The updated run model.
+    """
+    run_model.id = run_id
+    updated_run = zen_store().update_run(run=run_model)
+    return updated_run
+
+
 @router.get(
     "/{run_id}" + GRAPH,
     response_model=LineageGraph,
@@ -220,4 +241,4 @@ def get_run_status(run_id: UUID) -> ExecutionStatus:
     Returns:
         The status of the pipeline run.
     """
-    return zen_store().get_run_status(run_id)
+    return zen_store().get_run(run_id).status

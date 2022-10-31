@@ -989,18 +989,10 @@ def test_get_run_step_outputs_succeeds(
 ):
     """Tests getting run step outputs."""
     pipeline_step = sql_store_with_run["step"]
-    run_step_outputs = sql_store_with_run["store"].get_run_step_outputs(
-        step_id=pipeline_step.id
+    run_step_outputs = sql_store_with_run["store"].list_artifacts(
+        parent_step_id=pipeline_step.id
     )
     assert len(run_step_outputs) == 1
-
-
-def test_get_run_step_outputs_fails_when_step_does_not_exist(
-    sql_store: BaseZenStore,
-):
-    """Tests getting run step outputs fails when step does not exist."""
-    with pytest.raises(KeyError):
-        sql_store["store"].get_run_step_outputs(step_id=uuid.uuid4())
 
 
 def test_get_run_step_inputs_succeeds(
@@ -1027,8 +1019,10 @@ def test_get_run_step_status_succeeds(
 ):
     """Tests getting run step status."""
     pipeline_step = sql_store_with_run["step"]
-    run_step_status = sql_store_with_run["store"].get_run_step_status(
-        step_id=pipeline_step.id
+    run_step_status = (
+        sql_store_with_run["store"]
+        .get_run_step(step_id=pipeline_step.id)
+        .status
     )
     assert run_step_status is not None
     assert isinstance(run_step_status, ExecutionStatus)
