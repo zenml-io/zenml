@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for building manifests for k8s pods."""
 
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, cast
 
 from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
