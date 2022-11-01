@@ -19,7 +19,7 @@ import pytest
 from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.enums import ExecutionStatus, StackComponentType, PermissionType
+from zenml.enums import ExecutionStatus, PermissionType, StackComponentType
 from zenml.exceptions import (
     EntityExistsError,
     StackComponentExistsError,
@@ -366,19 +366,25 @@ def test_creating_role(sql_store: BaseZenStore):
     assert len(sql_store["store"].roles) == 2
     roles_before = len(sql_store["store"].roles)
 
-    new_role = RoleModel(name="admin",
-                         permissions={PermissionType.ME,
-                                      PermissionType.READ,
-                                      PermissionType.WRITE}
-                         )
+    new_role = RoleModel(
+        name="admin",
+        permissions={
+            PermissionType.ME,
+            PermissionType.READ,
+            PermissionType.WRITE,
+        },
+    )
     with pytest.raises(EntityExistsError):
         sql_store["store"].create_role(new_role)
 
-    new_role = RoleModel(name="cat",
-                         permissions={PermissionType.ME,
-                                      PermissionType.READ,
-                                      PermissionType.WRITE}
-                         )
+    new_role = RoleModel(
+        name="cat",
+        permissions={
+            PermissionType.ME,
+            PermissionType.READ,
+            PermissionType.WRITE,
+        },
+    )
     sql_store["store"].create_role(new_role)
     assert len(sql_store["store"].roles) == roles_before + 1
     assert sql_store["store"].get_role("admin") is not None
@@ -389,9 +395,7 @@ def test_creating_role_with_empty_permissions_succeeds(sql_store: BaseZenStore):
     assert len(sql_store["store"].roles) == 2
     roles_before = len(sql_store["store"].roles)
 
-    new_role = RoleModel(name="cat",
-                         permissions={}
-                         )
+    new_role = RoleModel(name="cat", permissions=set())
     sql_store["store"].create_role(new_role)
     assert len(sql_store["store"].roles) == roles_before + 1
     assert sql_store["store"].get_role("admin") is not None
@@ -399,11 +403,14 @@ def test_creating_role_with_empty_permissions_succeeds(sql_store: BaseZenStore):
 
 def test_creating_role_with_existing_name_fails(sql_store: BaseZenStore):
     """Tests creating a role that already exists."""
-    new_role = RoleModel(name="admin",
-                         permissions={PermissionType.ME,
-                                      PermissionType.READ,
-                                      PermissionType.WRITE}
-                         )
+    new_role = RoleModel(
+        name="admin",
+        permissions={
+            PermissionType.ME,
+            PermissionType.READ,
+            PermissionType.WRITE,
+        },
+    )
     with pytest.raises(EntityExistsError):
         sql_store["store"].create_role(new_role)
 
@@ -411,10 +418,14 @@ def test_creating_role_with_existing_name_fails(sql_store: BaseZenStore):
 def test_creating_existing_role_fails(sql_store: BaseZenStore):
     """Tests creating an existing role fails."""
     roles_before = len(sql_store["store"].roles)
-    new_role = RoleModel(name="admin",
-                         permissions={PermissionType.ME,
-                                      PermissionType.READ,
-                                      PermissionType.WRITE})
+    new_role = RoleModel(
+        name="admin",
+        permissions={
+            PermissionType.ME,
+            PermissionType.READ,
+            PermissionType.WRITE,
+        },
+    )
     with pytest.raises(EntityExistsError):
         sql_store["store"].create_role(new_role)
     assert len(sql_store["store"].roles) == roles_before
@@ -422,10 +433,14 @@ def test_creating_existing_role_fails(sql_store: BaseZenStore):
 
 def test_getting_role_succeeds(sql_store: BaseZenStore):
     """Tests getting a role."""
-    new_role = RoleModel(name="cat_feeder",
-                         permissions={PermissionType.ME,
-                                      PermissionType.READ,
-                                      PermissionType.WRITE})
+    new_role = RoleModel(
+        name="cat_feeder",
+        permissions={
+            PermissionType.ME,
+            PermissionType.READ,
+            PermissionType.WRITE,
+        },
+    )
 
     sql_store["store"].create_role(new_role)
     assert sql_store["store"].get_role("cat_feeder") is not None
@@ -441,8 +456,7 @@ def test_deleting_role_succeeds(sql_store: BaseZenStore):
     """Tests deleting a role."""
     roles_before = len(sql_store["store"].roles)
 
-    new_role = RoleModel(name="cat_feeder",
-                         permissions={PermissionType.ME})
+    new_role = RoleModel(name="cat_feeder", permissions={PermissionType.ME})
     sql_store["store"].create_role(new_role)
     assert len(sql_store["store"].roles) == roles_before + 1
     new_role_id = str(sql_store["store"].get_role("cat_feeder").id)
@@ -470,8 +484,7 @@ def test_assigning_role_to_user_succeeds(
     roles_before = len(sql_store_with_team["store"].roles)
     role_assignments_before = len(sql_store_with_team["store"].role_assignments)
 
-    new_role = RoleModel(name="aria_feeder",
-                         permissions={PermissionType.ME})
+    new_role = RoleModel(name="aria_feeder", permissions={PermissionType.ME})
     current_user_id = sql_store_with_team["active_user"].id
 
     sql_store_with_team["store"].create_role(new_role)
@@ -479,8 +492,10 @@ def test_assigning_role_to_user_succeeds(
     sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
 
     assert len(sql_store_with_team["store"].roles) == roles_before + 1
-    assert (len(sql_store_with_team["store"].role_assignments)
-            == role_assignments_before + 1)
+    assert (
+        len(sql_store_with_team["store"].role_assignments)
+        == role_assignments_before + 1
+    )
 
 
 def test_assigning_role_to_team_succeeds(
@@ -499,8 +514,10 @@ def test_assigning_role_to_team_succeeds(
     )
 
     assert len(sql_store_with_team["store"].roles) == roles_before + 1
-    assert (len(sql_store_with_team["store"].role_assignments)
-            == role_assignments_before + 1)
+    assert (
+        len(sql_store_with_team["store"].role_assignments)
+        == role_assignments_before + 1
+    )
     assert (
         len(
             sql_store_with_team["store"].list_role_assignments(
@@ -518,10 +535,14 @@ def test_assigning_role_if_assignment_already_exists(
     roles_before = len(sql_store_with_team["store"].roles)
     role_assignments_before = len(sql_store_with_team["store"].role_assignments)
 
-    new_role = RoleModel(name="aria_feeder",
-                         permissions={PermissionType.ME,
-                                      PermissionType.READ,
-                                      PermissionType.WRITE})
+    new_role = RoleModel(
+        name="aria_feeder",
+        permissions={
+            PermissionType.ME,
+            PermissionType.READ,
+            PermissionType.WRITE,
+        },
+    )
     current_user_id = sql_store_with_team["active_user"].id
     sql_store_with_team["store"].create_role(new_role)
     new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
@@ -530,8 +551,10 @@ def test_assigning_role_if_assignment_already_exists(
         sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
 
     assert len(sql_store_with_team["store"].roles) == roles_before + 1
-    assert (len(sql_store_with_team["store"].role_assignments)
-            == role_assignments_before + 1)
+    assert (
+        len(sql_store_with_team["store"].role_assignments)
+        == role_assignments_before + 1
+    )
 
 
 def test_revoking_role_for_user_succeeds(
@@ -541,8 +564,7 @@ def test_revoking_role_for_user_succeeds(
     roles_before = len(sql_store_with_team["store"].roles)
     role_assignments_before = len(sql_store_with_team["store"].role_assignments)
 
-    new_role = RoleModel(name="aria_feeder",
-                         permissions={PermissionType.ME})
+    new_role = RoleModel(name="aria_feeder", permissions={PermissionType.ME})
     current_user_id = sql_store_with_team["active_user"].id
     sql_store_with_team["store"].create_role(new_role)
     new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
@@ -550,8 +572,10 @@ def test_revoking_role_for_user_succeeds(
     sql_store_with_team["store"].revoke_role(new_role_id, current_user_id)
 
     assert len(sql_store_with_team["store"].roles) == roles_before + 1
-    assert (len(sql_store_with_team["store"].role_assignments)
-            == role_assignments_before)
+    assert (
+        len(sql_store_with_team["store"].role_assignments)
+        == role_assignments_before
+    )
 
 
 def test_revoking_role_for_team_succeeds(
@@ -562,8 +586,7 @@ def test_revoking_role_for_team_succeeds(
     role_assignments_before = len(sql_store_with_team["store"].role_assignments)
 
     team_id = sql_store_with_team["default_team"].id
-    new_role = RoleModel(name="blupus_friend",
-                         permissions={PermissionType.ME})
+    new_role = RoleModel(name="blupus_friend", permissions={PermissionType.ME})
     sql_store_with_team["store"].create_role(new_role)
     new_role_id = str(sql_store_with_team["store"].get_role("blupus_friend").id)
     sql_store_with_team["store"].assign_role(
@@ -574,8 +597,10 @@ def test_revoking_role_for_team_succeeds(
     )
 
     assert len(sql_store_with_team["store"].roles) == roles_before + 1
-    assert (len(sql_store_with_team["store"].role_assignments)
-            == role_assignments_before)
+    assert (
+        len(sql_store_with_team["store"].role_assignments)
+        == role_assignments_before
+    )
 
 
 def test_revoking_nonexistent_role_fails(
@@ -591,8 +616,7 @@ def test_revoking_role_for_nonexistent_user_fails(
     sql_store_with_team: BaseZenStore,
 ):
     """Tests revoking a role for a nonexistent user fails."""
-    new_role = RoleModel(name="aria_feeder",
-                         permissions={PermissionType.ME})
+    new_role = RoleModel(name="aria_feeder", permissions={PermissionType.ME})
     sql_store_with_team["store"].create_role(new_role)
     new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
     current_user_id = sql_store_with_team["active_user"].id

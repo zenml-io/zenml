@@ -282,9 +282,14 @@ def email_opt_in_response(
     Args:
         user_name_or_id: Name or ID of the user.
         user_response: User Response to email prompt
+        auth_context: The authentication context of the user
 
     Returns:
         The updated user.
+
+    Raises:
+        NotAuthorizedError if the user does not have the required
+            permissions
     """
     if str(auth_context.user.id) == str(user_name_or_id):
         return zen_store().user_email_opt_in(

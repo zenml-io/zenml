@@ -228,7 +228,6 @@ class RoleSchema(SQLModel, table=True):
 
         Args:
             model: The `RoleModel` from which to update the schema.
-            permissions: The `permissions` attached to this role
 
         Returns:
             The updated `RoleSchema`.

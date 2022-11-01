@@ -293,6 +293,9 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
 
         Generates an access token and returns it.
 
+        Args:
+            permissions: Permissions to add to the token
+
         Returns:
             The generated access token.
         """

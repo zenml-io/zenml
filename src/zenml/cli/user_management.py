@@ -791,5 +791,7 @@ def permission() -> None:
 def list_permissions() -> None:
     """List all role assignments."""
     cli_utils.print_active_config()
-    permissions = Client().zen_store.list_permissions()
-    cli_utils.print_pydantic_models(permissions)
+    permissions = [i.value for i in PermissionType]
+    cli_utils.declare(
+        f"The following permissions are currently supported: " f"{permissions}"
+    )

@@ -33,7 +33,6 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.server_models import ServerModel
-from zenml.models.user_management_models import PermissionModel
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
@@ -660,17 +659,6 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If the team or user does not exist.
-        """
-
-    # -----
-    # Permission
-    # -----
-
-    def list_permissions(self) -> List[PermissionModel]:
-        """List all roles.
-
-        Returns:
-            A list of all roles.
         """
 
     # -----

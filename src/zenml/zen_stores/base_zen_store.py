@@ -496,9 +496,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         Returns:
             The default admin role.
-
-        Raises:
-            KeyError: If the default guest role doesn't exist.
         """
         return self.get_role(ADMIN_ROLE)
 
@@ -527,9 +524,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         Returns:
             The guest role.
-
-        Raises:
-            KeyError: If the default guest role doesn't exist.
         """
         return self.get_role(GUEST_ROLE)
 

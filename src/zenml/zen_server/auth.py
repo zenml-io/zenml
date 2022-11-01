@@ -123,6 +123,7 @@ def http_authentication(
     """Authenticates any request to the ZenML Server with basic HTTP authentication.
 
     Args:
+        security_scopes: Security scope will be ignored for http_auth
         credentials: HTTP basic auth credentials passed to the request.
 
     Returns:
@@ -199,6 +200,7 @@ def no_authentication(security_scopes: SecurityScopes) -> AuthContext:
     """Doesn't authenticate requests to the ZenML server.
 
     Raises:
+        security_scopes: Security scope will be ignored for http_auth
         HTTPException: If the default user is not available.
 
     Returns:
