@@ -42,7 +42,7 @@ ZenML repository:
 
 ```bash
 # Install python dependencies
-pip install zenml
+pip install "zenml[server]"
 pip install notebook  # if you want to run the example on the notebook
 
 # Install ZenML integrations
