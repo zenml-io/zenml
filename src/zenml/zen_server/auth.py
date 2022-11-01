@@ -199,12 +199,14 @@ def oauth2_password_bearer_authentication(
 def no_authentication(security_scopes: SecurityScopes) -> AuthContext:
     """Doesn't authenticate requests to the ZenML server.
 
-    Raises:
+    Args:
         security_scopes: Security scope will be ignored for http_auth
-        HTTPException: If the default user is not available.
 
     Returns:
         The authentication context reflecting the default user.
+
+    Raises:
+        HTTPException: If the default user is not available.
     """
     auth_context = authenticate_credentials(user_name_or_id=DEFAULT_USERNAME)
 

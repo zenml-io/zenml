@@ -288,7 +288,7 @@ def email_opt_in_response(
         The updated user.
 
     Raises:
-        NotAuthorizedError if the user does not have the required
+        NotAuthorizedError: if the user does not have the required
             permissions
     """
     if str(auth_context.user.id) == str(user_name_or_id):
