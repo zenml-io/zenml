@@ -36,7 +36,7 @@ In order to run this example, you need to install and initialize ZenML and Label
 Studio.
 
 ```shell
-pip install zenml
+pip install "zenml[server]"
 
 # pull example
 zenml example pull label_studio_annotation
