@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""KServe integration flavors."""
+"""BentoML integration flavors."""
 
-from zenml.integrations.kserve.flavors.kserve_model_deployer_flavor import (
-    KServeModelDeployerConfig,
-    KServeModelDeployerFlavor,
+from zenml.integrations.bentoml.flavors.bentoml_model_deployer_flavor import (
+    BentoMLModelDeployerConfig,
+    BentoMLModelDeployerFlavor,
 )
 
 __all__ = [
-    "KServeModelDeployerFlavor",
-    "KServeModelDeployerConfig",
+    "BentoMLModelDeployerFlavor",
+    "BentoMLModelDeployerConfig",
 ]

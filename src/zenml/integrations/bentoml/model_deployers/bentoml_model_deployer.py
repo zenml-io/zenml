@@ -14,18 +14,16 @@
 """Implementation of the BentoML Model Deployer."""
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast, ClassVar, Type
 from uuid import UUID
-
-from bentoml import BentoMLClient, V1beta1InferenceService, constants, utils
-from kubernetes import client
 
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.integrations.bentoml import KSERVE_MODEL_DEPLOYER_FLAVOR
-from zenml.integrations.bentoml.constants import KSERVE_DOCKER_IMAGE_KEY
+from zenml.integrations.bentoml import BENTOML_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.bentoml.constants import BENTOML_DOCKER_IMAGE_KEY
 from zenml.integrations.bentoml.flavors.bentoml_model_deployer_flavor import (
     BentoMLModelDeployerConfig,
+    BentoMLModelDeployerFlavor,
 )
 from zenml.integrations.bentoml.services.bentoml_deployment import (
     BentoMLDeploymentConfig,
@@ -33,11 +31,12 @@ from zenml.integrations.bentoml.services.bentoml_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.model_deployers.base_model_deployer import BaseModelDeployer
+from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
@@ -45,13 +44,13 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
-
-
 class BentoMLModelDeployer(BaseModelDeployer):
     """BentoML model deployer stack component implementation."""
 
-    _client: Optional[BentoMLClient] = None
+    NAME: ClassVar[str] = "BentoML"
+    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = BentoMLModelDeployerFlavor
+
+    _service_path: Optional[str] = None
 
     @property
     def config(self) -> BentoMLModelDeployerConfig:
@@ -61,6 +60,51 @@ class BentoMLModelDeployer(BaseModelDeployer):
             The configuration.
         """
         return cast(BentoMLModelDeployerConfig, self._config)
+
+    @staticmethod
+    def get_service_path(id_: UUID) -> str:
+        """Get the path where local MLflow service information is stored.
+
+        This includes the deployment service configuration, PID and log files
+        are stored.
+
+        Args:
+            id_: The ID of the MLflow model deployer.
+
+        Returns:
+            The service path.
+        """
+        service_path = os.path.join(
+            GlobalConfiguration().local_stores_path,
+            str(id_),
+        )
+        create_dir_recursive_if_not_exists(service_path)
+        return service_path
+
+    @property
+    def local_path(self) -> str:
+        """Returns the path to the root directory.
+
+        This is where all configurations for MLflow deployment daemon processes
+        are stored.
+
+        If the service path is not set in the config by the user, the path is
+        set to a local default path according to the component ID.
+
+        Returns:
+            The path to the local service root directory.
+        """
+        if self._service_path is not None:
+            return self._service_path
+
+        if self.config.service_path:
+            self._service_path = self.config.service_path
+        else:
+            self._service_path = self.get_service_path(self.id)
+
+        create_dir_recursive_if_not_exists(self._service_path)
+        return self._service_path
+
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
@@ -76,10 +120,10 @@ class BentoMLModelDeployer(BaseModelDeployer):
         """
         return {
             "PREDICTION_URL": service_instance.prediction_url,
-            "PREDICTION_HOSTNAME": service_instance.prediction_hostname,
+            "BENTO": service_instance.config.bento,
             "MODEL_URI": service_instance.config.model_uri,
-            "MODEL_NAME": service_instance.config.model_name,
-            "KSERVE_INFERENCE_SERVICE": service_instance.crd_name,
+            "SERVICE_PATH": service_instance.status.runtime_path,
+            "DAEMON_PID": str(service_instance.status.pid),
         }
 
     @staticmethod
