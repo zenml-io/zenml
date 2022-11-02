@@ -122,7 +122,7 @@ replace all the <PLACEHOLDERS> with the correct values from your GCP project.
 
 ```bash
 # install CLI
-pip install zenml
+pip install "zenml[server]"
 
 # install ZenML integrations
 zenml integration install gcp

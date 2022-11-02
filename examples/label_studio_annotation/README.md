@@ -36,7 +36,7 @@ In order to run this example, you need to install and initialize ZenML and Label
 Studio.
 
 ```shell
-pip install zenml
+pip install "zenml[server]"
 
 # pull example
 zenml example pull label_studio_annotation
@@ -61,6 +61,13 @@ You should install the relevant integrations:
 
 ```shell
 zenml integration install label_studio pytorch azure
+```
+
+For this example we also need to upgrade the `torchvision` dependency, so please
+run:
+
+```shell
+pip install "torchvision==0.13.1"
 ```
 
 Some setup for your stack is required. This assumes you have a cloud secrets
@@ -241,10 +248,10 @@ Use the credentials output from the command to get your
 
 ```shell
 # this secret must be named 'aws_label_studio'
-zenml secrets-manager secret register aws_label_studio --schema=aws_label_studio --aws_access_key_id="<LABEL_STUDIO_ACCESS_KEY_ID>" --aws_secret_access_key="<LABEL_STUDIO_SECRET_ACCESS_KEY>" --aws_session_token="<LABEL_STUDIO_AWS_SESSION_TOKEN>"
+zenml secrets-manager secret register aws_label_studio --schema=aws --aws_access_key_id="<LABEL_STUDIO_ACCESS_KEY_ID>" --aws_secret_access_key="<LABEL_STUDIO_SECRET_ACCESS_KEY>" --aws_session_token="<LABEL_STUDIO_AWS_SESSION_TOKEN>"
 
 # use your standard access key id and secret access key from ~/.aws/credentials here
-zenml secrets-manager secret register <YOUR_AWS_SECRET_NAME> --schema=aws_label_studio--aws_access_key_id="<YOUR_ACCESS_KEY_ID>" --aws_secret_access_key="<YOUR_SECRET_ACCESS_KEY>"
+zenml secrets-manager secret register <YOUR_AWS_SECRET_NAME> --schema=aws --aws_access_key_id="<YOUR_ACCESS_KEY_ID>" --aws_secret_access_key="<YOUR_SECRET_ACCESS_KEY>"
 
 zenml artifact-store register <YOUR_CLOUD_ARTIFACT_STORE> --flavor=s3 --path=s3://<YOUR_S3_BUCKET_NAME> --authentication_secret="<YOUR_AWS_SECRET_NAME>"
 
@@ -265,7 +272,8 @@ running on a default port of 8093.
 
 ### ▶️ Run the Code
 
-There are several parts to running the pipeline. Start with:
+There are several parts to running the pipeline. Start with (remembering to
+substitute `azure` or `gcp` if you're not running this on an AWS stack):
 
 ```shell
 python run.py aws --train

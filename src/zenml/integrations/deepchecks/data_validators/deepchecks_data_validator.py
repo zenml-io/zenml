@@ -40,8 +40,11 @@ from sklearn.base import ClassifierMixin
 from torch.nn import Module  # type: ignore[attr-defined]
 from torch.utils.data.dataloader import DataLoader
 
-from zenml.data_validators import BaseDataValidator
+from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
 from zenml.environment import Environment
+from zenml.integrations.deepchecks.flavors.deepchecks_data_validator_flavor import (
+    DeepchecksDataValidatorFlavor,
+)
 from zenml.integrations.deepchecks.validation_checks import (
     DeepchecksDataDriftCheck,
     DeepchecksDataIntegrityCheck,
@@ -60,6 +63,9 @@ class DeepchecksDataValidator(BaseDataValidator):
     """Deepchecks data validator stack component."""
 
     NAME: ClassVar[str] = "Deepchecks"
+    FLAVOR: ClassVar[
+        Type[BaseDataValidatorFlavor]
+    ] = DeepchecksDataValidatorFlavor
 
     @staticmethod
     def _split_checks(

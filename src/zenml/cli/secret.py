@@ -154,8 +154,6 @@ def register_secrets_manager_subcommands() -> None:
         """
         # flake8: noqa: C901
 
-        # TODO [ENG-871]: Formatting for `zenml secrets-manager secret register
-        #  --help` currently broken.
         # TODO [ENG-725]: Allow passing in json/dict when registering a secret
         #  as an additional option for the user on top of the interactive
 
@@ -302,6 +300,9 @@ def register_secrets_manager_subcommands() -> None:
         """
         with console.status("Getting secret names..."):
             secret_names = secrets_manager.get_all_secret_keys()
+            if not secret_names:
+                warning("No secrets registered.")
+                return
             print_list_items(
                 list_items=secret_names, column_title="SECRET_NAMES"
             )

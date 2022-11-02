@@ -15,7 +15,7 @@
 import textwrap
 from abc import ABC
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Extra, root_validator
@@ -443,6 +443,18 @@ class StackComponent:
         from zenml.integrations.utils import get_requirements_for_module
 
         return set(get_requirements_for_module(self.__module__))
+
+    @property
+    def apt_packages(self) -> List[str]:
+        """List of APT package requirements for the component.
+
+        Returns:
+            A list of APT package requirements for the component.
+        """
+        from zenml.integrations.utils import get_integration_for_module
+
+        integration = get_integration_for_module(self.__module__)
+        return integration.APT_PACKAGES if integration else []
 
     @property
     def local_path(self) -> Optional[str]:

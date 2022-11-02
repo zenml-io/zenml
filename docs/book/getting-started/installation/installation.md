@@ -15,7 +15,7 @@ Please note that ZenML currently only supports Python 3.7, 3.8, and 3.9.
 Please adjust your Python environment accordingly.
 {% endhint %}
 
-ZenML comes bundled with a React-based dashboard that lives inside a [sister repository](https://github.com/zenml-io/zenml-dashboard). In order to get access to the dashboard locally, you need to launch the [ZenML Server and Dashboard locally](deploying-zenml/deploying-zenml.md). For this, you need to install the optional dependencies for the ZenML Server:
+ZenML comes bundled with a React-based dashboard that lives inside a [sister repository](https://github.com/zenml-io/zenml-dashboard). In order to get access to the dashboard locally, you need to launch the [ZenML Server and Dashboard locally](../deploying-zenml/deploying-zenml.md). For this, you need to install the optional dependencies for the ZenML Server:
 
 ```shell
 pip install "zenml[server]"
@@ -107,13 +107,13 @@ pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 
 ### Using develop with Remote Orchestrators
 
-Remote orchestrators like [Kubeflow](../mlops-stacks/orchestrators/kubeflow.md)
-require [Docker Images](../developer-guide/advanced-usage/docker.md) to set up the
+Remote orchestrators like [Kubeflow](../../component-gallery/orchestrators/kubeflow.md)
+require [Docker Images](../../getting-started/deploying-zenml/docker.md) to set up the
 environments of each step. By default, they use the official ZenML docker image
 that we provide with each release. However, if you install from develop, this
 image will be outdated, so you need to build a custom image instead, and
 specify it in the configuration of your orchestrator accordingly (see the 
-[MLOps Stacks Orchestrator](../mlops-stacks/orchestrators/orchestrators.md) 
+[MLOps Stacks Orchestrator](../../component-gallery/orchestrators/orchestrators.md) 
 page of your specific orchestrator flavor for more details on how this can be 
 done).
 

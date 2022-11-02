@@ -352,7 +352,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 global configuration path is used.
         """
         config_file = self._config_file(config_path)
-        yaml_dict = json.loads(self.json())
+        yaml_dict = json.loads(self.json(exclude_none=True))
         logger.debug(f"Writing config to {config_file}")
 
         if not fileio.exists(config_file):

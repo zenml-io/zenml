@@ -6,6 +6,10 @@ The Kubernetes orchestrator is an [orchestrator](./orchestrators.md) flavor
 provided with the ZenML `kubernetes` integration that runs your pipelines on a 
 [Kubernetes](https://kubernetes.io/) cluster.
 
+{% hint style="warning" %}
+This component is only meant to be used within the context of [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+{% endhint %}
+
 ## When to use it
 
 You should use the Kubernetes orchestrator if:
@@ -20,8 +24,9 @@ on your Kubernetes cluster.
 The Kubernetes orchestrator requires a Kubernetes cluster in order to run.
 There are many ways to deploy a Kubernetes cluster using different cloud providers
 or on your custom infrastructure, and we can't possibly cover all of them, 
-but you can check out our cloud guide [ZenML Cloud Guide](../../stack-deployment-guide/overview.md)
-for some complete stack deployments which use the Kubernetes orchestrator.
+but you can check out our cloud guide 
+
+If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](../../getting-started/deploying-zenml/deploying-zenml.md).
 
 ## How to use it
 
@@ -63,8 +68,60 @@ You can now run any ZenML pipeline using the Kubernetes orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+For additional configuration of the Kubernetes orchestrator, you can pass
+`KubernetesOrchestratorSettings` which allows you to configure the following attributes:
+
+* `affinity`: Affinity constraints (`spec.affinity`) that can be defined to a pod.
+* `tolerations`: Toleration (`spec.tolerations`) so the pod can be scheduled.
+
+```python
+from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
+
+kubernetes_settings = KubernetesOrchestratorSettings(
+    affinity={
+        "nodeAffinity": {
+            "requiredDuringSchedulingIgnoredDuringExecution": {
+                "nodeSelectorTerms": [
+                    {
+                        "matchExpressions": [
+                            {
+                                "key": "node.kubernetes.io/name",
+                                "operator": "In",
+                                "values": ["my_powerful_node_group"],
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    tolerations=[
+        {
+            "key": "node.kubernetes.io/name",
+            "operator": "Exists",
+            "value": "",
+            "effect": "NoSchedule",
+        }
+    ],
+)
+
+@pipeline(
+    settings={
+        "orchestrator.kubernetes": kubernetes_settings
+    }
+)
+  ...
+```
+
 A concrete example of using the Kubernetes orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubernetes_orchestration).
 
 For more information and a full list of configurable attributes of the 
-Kubernetes orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator).
+Kubernetes orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator).
+
+### Enabling CUDA for GPU-backed hardware
+
+Note that if you wish to use this orchestrator to run steps on a GPU, you will
+need to follow [the instructions on this page](../../advanced-guide/pipelines/gpu-hardware.md) to ensure that it works. It
+requires adding some extra settings customization and is essential to enable
+CUDA for the GPU to give its full acceleration.

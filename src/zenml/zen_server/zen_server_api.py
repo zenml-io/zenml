@@ -25,7 +25,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
 import zenml
-from zenml.constants import API, HEALTH
+from zenml.constants import API, ENV_ZENML_SERVER_METADATA_SYNC_PERIOD, HEALTH
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
@@ -155,11 +155,17 @@ app.include_router(users_endpoints.activation_router)
 
 
 @app.on_event("startup")
-@repeat_every(seconds=3, wait_first=True)
+@repeat_every(
+    seconds=float(os.getenv(ENV_ZENML_SERVER_METADATA_SYNC_PERIOD, 10)),
+    wait_first=True,
+)
 def sync_pipeline_runs() -> None:
     """Sync pipeline runs."""
     logger.info("Syncing pipeline runs...")
-    zen_store()._sync_runs()
+    try:
+        zen_store()._sync_runs()
+    except Exception:
+        logger.exception("Failed to sync pipeline runs.")
 
 
 def get_root_static_files() -> List[str]:

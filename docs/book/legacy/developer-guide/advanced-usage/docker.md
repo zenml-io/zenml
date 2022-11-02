@@ -34,7 +34,7 @@ This section covers all the different ways in which you can hook into the Docker
 process to customize the resulting image to your needs.
 
 For a full list of configuration options, check out
-[our API Docs](https://apidocs.zenml.io/latest/api_docs/config/#zenml.config.docker_configuration.DockerConfiguration).
+[our API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_configuration.DockerConfiguration).
 
 For the configuration examples described below, you'll need to import the `DockerConfiguration` module:
 ```python
@@ -111,6 +111,21 @@ package manager to get a list of your local packages):
     docker_config = DockerConfiguration(replicate_local_python_environment="pip_freeze")
 
     @pipeline(docker_configuration=docker_config)
+    def my_pipeline(...):
+        ...
+    ```
+    If required, a custom command can be provided. This command has to output a list of requirements
+    following the format of the [requirements file](https://pip.pypa.io/en/stable/reference/requirements-file-format/):
+
+    ```python
+    docker_settings = DockerSettings(replicate_local_python_environment=[
+        "poetry",
+        "export",
+        "--extras=train",
+        "--format=requirements.txt"
+    ])
+
+    @pipeline(settings={"docker": docker_settings})
     def my_pipeline(...):
         ...
     ```

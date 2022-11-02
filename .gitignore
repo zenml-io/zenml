@@ -69,7 +69,8 @@ instance/
 .scrapy
 
 # mkdocs documentation
-docs/mkdocs/api_docs
+docs/mkdocs/integration_code_docs
+docs/mkdocs/core_code_docs
 docs/mkdocs/index.md
 
 # PyBuilder
@@ -183,3 +184,6 @@ zenml_examples/
 
 # stack recipes
 test_terraform/
+
+# feast registry database
+examples/feast_feature_store/feast_feature_repo/data/registry.db

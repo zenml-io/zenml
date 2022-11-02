@@ -30,7 +30,7 @@ necessary integrations:
 
 ```shell
 # install CLI
-pip install zenml
+pip install "zenml[server]"
 
 # install ZenML integrations
 zenml integration install sklearn

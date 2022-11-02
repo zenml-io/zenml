@@ -15,7 +15,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
 import yaml
@@ -25,13 +25,15 @@ from zenml.utils import io_utils
 
 
 def write_yaml(
-    file_path: str, contents: Dict[Any, Any], sort_keys: bool = True
+    file_path: str,
+    contents: Union[Dict[Any, Any], List[Any]],
+    sort_keys: bool = True,
 ) -> None:
     """Write contents as YAML format to file_path.
 
     Args:
         file_path: Path to YAML file.
-        contents: Contents of YAML file as dict.
+        contents: Contents of YAML file as dict or list.
         sort_keys: If `True`, keys are sorted alphabetically. If `False`,
             the order in which the keys were inserted into the dict will
             be preserved.

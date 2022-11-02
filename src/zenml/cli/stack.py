@@ -15,7 +15,7 @@
 
 import getpass
 import json
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
 import click
@@ -31,6 +31,25 @@ from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
+
+if TYPE_CHECKING:
+    from zenml.models.stack_models import StackModel
+
+
+def _set_active_stack(stack: "StackModel") -> None:
+    """Sets the active stack.
+
+    Args:
+        stack: The stack to activate
+    """
+    client = Client()
+    scope = " repository" if client.root else " global"
+
+    with console.status(
+        f"Setting the{scope} active stack to " f"'{stack.name}'..."
+    ):
+        client.activate_stack(stack)
+        cli_utils.declare(f"Active{scope} stack set to: " f"'{stack.name}'")
 
 
 # Stacks
@@ -232,7 +251,7 @@ def register_stack(
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
     if set_stack:
-        client.activate_stack(stack=created_stack)
+        _set_active_stack(created_stack)
 
 
 @stack.command(
@@ -685,12 +704,21 @@ def rename_stack(
 
 
 @stack.command("list")
-def list_stacks() -> None:
-    """List all available stacks."""
+@click.option("--just-mine", "-m", is_flag=True, required=False)
+def list_stacks(just_mine: bool = False) -> None:
+    """List all available stacks.
+
+    Args:
+        just_mine: To list only the stacks that the current user has created.
+    """
     cli_utils.print_active_config()
 
     client = Client()
     stacks = client.stacks
+    if just_mine:
+        stacks = [
+            stack for stack in stacks if stack.user.id == client.active_user.id
+        ]
     print_stacks_table(client, stacks)
 
 
@@ -798,7 +826,6 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
         stack_name_or_id: Name of the stack to set as active.
     """
     cli_utils.print_active_config()
-    scope = " repository" if Client().root else " global"
     client = Client()
 
     try:
@@ -808,14 +835,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
     except KeyError as e:
         cli_utils.error(str(e))
     else:
-        with console.status(
-            f"Setting the{scope} active stack to "
-            f"'{stack_to_set_active.name}'..."
-        ):
-            client.activate_stack(stack_to_set_active)
-            cli_utils.declare(
-                f"Active{scope} stack set to: " f"'{stack_to_set_active.name}'"
-            )
+        _set_active_stack(stack_to_set_active)
 
 
 @stack.command("get")
