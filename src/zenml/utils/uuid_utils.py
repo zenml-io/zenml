@@ -74,7 +74,7 @@ def parse_optional_name_or_uuid(
 
 
 def generate_uuid_from_string(value: str) -> UUID:
-    """Determinstically generates a UUID from a string seed.
+    """Deterministically generates a UUID from a string seed.
 
     Args:
         value: The string from which to generate the UUID.
