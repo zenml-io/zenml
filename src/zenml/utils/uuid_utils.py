@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for handling UUIDs."""
 
+import hashlib
 from typing import Any, Optional, Union
 from uuid import UUID
 
@@ -70,3 +71,17 @@ def parse_optional_name_or_uuid(
     if name_or_id is None:
         return None
     return parse_name_or_uuid(name_or_id)
+
+
+def generate_uuid_from_string(value: str) -> UUID:
+    """Determinstically generates a UUID from a string seed.
+
+    Args:
+        value: The string from which to generate the UUID.
+
+    Returns:
+        The generated UUID.
+    """
+    hash_ = hashlib.md5()
+    hash_.update(value.encode("utf-8"))
+    return UUID(hex=hash_.hexdigest(), version=4)

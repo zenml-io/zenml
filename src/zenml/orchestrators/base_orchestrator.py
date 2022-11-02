@@ -29,7 +29,6 @@
 # The `run_step()` method of this file is a modified version of the local dag
 # runner implementation of tfx
 """Base orchestrator class."""
-import hashlib
 import os
 import time
 import types
@@ -80,7 +79,7 @@ from zenml.logger import get_logger
 from zenml.models import PipelineRunModel
 from zenml.orchestrators.utils import get_cache_status
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
-from zenml.utils import proto_utils, source_utils, string_utils
+from zenml.utils import proto_utils, source_utils, string_utils, uuid_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -432,9 +431,7 @@ class BaseOrchestrator(StackComponent, ABC):
             The run id generated from the orchestrator run id.
         """
         run_id_seed = f"{self.id}-{orchestrator_run_id}"
-        hash_ = hashlib.md5()
-        hash_.update(run_id_seed.encode("utf-8"))
-        return UUID(hex=hash_.hexdigest(), version=4)
+        return uuid_utils.generate_uuid_from_string(run_id_seed)
 
     def _create_or_reuse_run(self) -> PipelineRunModel:
         """Creates a run or reuses an existing one.
