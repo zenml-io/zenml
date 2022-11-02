@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation for the BentoML inference service."""
 
-from ipaddress import ip_address
 import json
 import os
 import re

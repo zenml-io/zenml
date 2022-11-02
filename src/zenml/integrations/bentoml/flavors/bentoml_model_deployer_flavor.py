@@ -29,7 +29,7 @@ class BentoMLModelDeployerConfig(BaseModelDeployerConfig):
     """Configuration for the BentoMLModelDeployer.
 
     """
-
+    service_path: str = ""
 
 class BentoMLModelDeployerFlavor(BaseModelDeployerFlavor):
     """Flavor for the BentoML model deployer."""
