@@ -12,8 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the BentoML Model Deployer."""
-import re
+import os
 from pathlib import Path
+import shutil
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast, ClassVar, Type
 from uuid import UUID
 
@@ -21,6 +22,7 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.bentoml import BENTOML_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.bentoml.constants import BENTOML_DOCKER_IMAGE_KEY
+from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.integrations.bentoml.flavors.bentoml_model_deployer_flavor import (
     BentoMLModelDeployerConfig,
     BentoMLModelDeployerFlavor,
@@ -29,18 +31,12 @@ from zenml.integrations.bentoml.services.bentoml_deployment import (
     BentoMLDeploymentConfig,
     BentoMLDeploymentService,
 )
-from zenml.io import fileio
+from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
+from zenml.services import ServiceRegistry
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
-from zenml.stack.stack import Stack
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
-
-if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
 
@@ -126,297 +122,136 @@ class BentoMLModelDeployer(BaseModelDeployer):
             "DAEMON_PID": str(service_instance.status.pid),
         }
 
-    @staticmethod
-    def get_active_model_deployer() -> "BentoMLModelDeployer":
-        """Get the BentoML model deployer registered in the active stack.
-
-        Returns:
-            The BentoML model deployer registered in the active stack.
-
-        Raises:
-            TypeError: if the BentoML model deployer is not available.
-        """
-        model_deployer = Client(  # type: ignore [call-arg]
-            skip_client_check=True
-        ).active_stack.model_deployer
-        if not model_deployer or not isinstance(
-            model_deployer, BentoMLModelDeployer
-        ):
-            raise TypeError(
-                f"The active stack needs to have a BentoML model deployer "
-                f"component registered to be able to deploy models with BentoML "
-                f"You can create a new stack with a BentoML model "
-                f"deployer component or update your existing stack to add this "
-                f"component, e.g.:\n\n"
-                f"  'zenml model-deployer register BentoML --flavor={KSERVE_MODEL_DEPLOYER_FLAVOR} "
-                f"--kubernetes_context=context-name --kubernetes_namespace="
-                f"namespace-name --base_url=https://ingress.cluster.kubernetes'\n"
-                f"  'zenml stack create stack-name -d BentoML ...'\n"
-            )
-        return model_deployer
-
-    @property
-    def BentoML_client(self) -> BentoMLClient:
-        """Get the BentoML client associated with this model deployer.
-
-        Returns:
-            The BentoMLclient.
-        """
-        if not self._client:
-            self._client = BentoMLClient(
-                context=self.config.kubernetes_context,
-            )
-        return self._client
-
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_and_push_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(KSERVE_DOCKER_IMAGE_KEY, repo_digest)
-
-    def _set_credentials(self) -> None:
-        """Set the credentials for the given service instance.
-
-        Raises:
-            RuntimeError: if the credentials are not available.
-        """
-        secret = self._get_BentoML_secret()
-        if secret:
-            secret_folder = Path(
-                GlobalConfiguration().config_directory,
-                "BentoML-storage",
-                str(self.id),
-            )
-            BentoML_credentials = {}
-            # Handle the secrets attributes
-            for key in secret.content.keys():
-                content = getattr(secret, key)
-                if key == "credentials" and content:
-                    fileio.makedirs(str(secret_folder))
-                    file_path = Path(secret_folder, f"{key}.json")
-                    BentoML_credentials["credentials_file"] = str(file_path)
-                    with open(file_path, "w") as f:
-                        f.write(content)
-                    file_path.chmod(0o600)
-                # Handle additional params
-                else:
-                    BentoML_credentials[key] = content
-
-            # We need to add the namespace to the BentoML_credentials
-            BentoML_credentials["namespace"] = (
-                self.config.kubernetes_namespace
-                or utils.get_default_target_namespace()
-            )
-
-            try:
-                self.BentoML_client.set_credentials(**BentoML_credentials)
-            except Exception as e:
-                raise RuntimeError(
-                    f"Failed to set credentials for BentoML model deployer: {e}"
-                )
-            finally:
-                if file_path.exists():
-                    file_path.unlink()
-
     def deploy_model(
         self,
         config: ServiceConfig,
         replace: bool = False,
-        timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
+        timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
     ) -> BaseService:
-        """Create a new BentoML deployment or update an existing one.
+        """Create a new MLflow deployment service or update an existing one.
+
+        This should serve the supplied model and deployment configuration.
 
         This method has two modes of operation, depending on the `replace`
         argument value:
 
-          * if `replace` is False, calling this method will create a new BentoML
+          * if `replace` is False, calling this method will create a new MLflow
             deployment server to reflect the model and other configuration
-            parameters specified in the supplied BentoML deployment `config`.
+            parameters specified in the supplied MLflow service `config`.
 
           * if `replace` is True, this method will first attempt to find an
-            existing BentoML deployment that is *equivalent* to the supplied
-            configuration parameters. Two or more BentoML deployments are
-            considered equivalent if they have the same `pipeline_name`,
-            `pipeline_step_name` and `model_name` configuration parameters. To
-            put it differently, two BentoML deployments are equivalent if
-            they serve versions of the same model deployed by the same pipeline
-            step. If an equivalent BentoML deployment is found, it will be
-            updated in place to reflect the new configuration parameters. This
-            allows an existing BentoML deployment to retain its prediction
-            URL while performing a rolling update to serve a new model version.
+            existing MLflow deployment service that is *equivalent* to the
+            supplied configuration parameters. Two or more MLflow deployment
+            services are considered equivalent if they have the same
+            `pipeline_name`, `pipeline_step_name` and `model_name` configuration
+            parameters. To put it differently, two MLflow deployment services
+            are equivalent if they serve versions of the same model deployed by
+            the same pipeline step. If an equivalent MLflow deployment is found,
+            it will be updated in place to reflect the new configuration
+            parameters.
 
         Callers should set `replace` to True if they want a continuous model
-        deployment workflow that doesn't spin up a new BentoML deployment
-        server for each new model version. If multiple equivalent BentoML
-        deployments are found, the most recently created deployment is selected
-        to be updated and the others are deleted.
+        deployment workflow that doesn't spin up a new MLflow deployment
+        server for each new model version. If multiple equivalent MLflow
+        deployment servers are found, one is selected at random to be updated
+        and the others are deleted.
 
         Args:
-            config: the configuration of the model to be deployed with BentoML.
+            config: the configuration of the model to be deployed with MLflow.
             replace: set this flag to True to find and update an equivalent
-                BentoMLDeployment server with the new model instead of
-                starting a new deployment server.
-            timeout: the timeout in seconds to wait for the BentoML server
+                MLflow deployment server with the new model instead of
+                creating and starting a new deployment server.
+            timeout: the timeout in seconds to wait for the MLflow server
                 to be provisioned and successfully started or updated. If set
-                to 0, the method will return immediately after the BentoML
+                to 0, the method will return immediately after the MLflow
                 server is provisioned, without waiting for it to fully start.
 
         Returns:
-            The ZenML BentoML deployment service object that can be used to
-            interact with the remote BentoML server.
-
-        Raises:
-            RuntimeError: if the BentoML deployment server could not be stopped.
+            The ZenML MLflow deployment service object that can be used to
+            interact with the MLflow model server.
         """
         config = cast(BentoMLDeploymentConfig, config)
         service = None
 
-        # if the secret is passed in the config, use it to set the credentials
-        if config.secret_name:
-            self.config.secret = config.secret_name or self.config.secret
-        self._set_credentials()
-
-        # if replace is True, find equivalent BentoML deployments
+        # if replace is True, remove all existing services
         if replace is True:
-            equivalent_services = self.find_model_server(
-                running=False,
+            existing_services = self.find_model_server(
                 pipeline_name=config.pipeline_name,
                 pipeline_step_name=config.pipeline_step_name,
                 model_name=config.model_name,
             )
 
-            for equivalent_service in equivalent_services:
+            for existing_service in existing_services:
                 if service is None:
                     # keep the most recently created service
-                    service = equivalent_service
-                else:
-                    try:
-                        # delete the older services and don't wait for them to
-                        # be deprovisioned
-                        service.stop()
-                    except RuntimeError as e:
-                        raise RuntimeError(
-                            "Failed to stop the BentoML deployment server:\n",
-                            f"{e}\n",
-                            "Please stop it manually and try again.",
-                        )
+                    service = cast(BentoMLDeploymentService, existing_service)
+                try:
+                    # delete the older services and don't wait for them to
+                    # be deprovisioned
+                    self._clean_up_existing_service(
+                        existing_service=cast(
+                            BentoMLDeploymentService, existing_service
+                        ),
+                        timeout=timeout,
+                        force=True,
+                    )
+                except RuntimeError:
+                    # ignore errors encountered while stopping old services
+                    pass
         if service:
-            # update an equivalent service in place
-            service.update(config)
             logger.info(
-                f"Updating an existing BentoML deployment service: {service}"
+                f"Updating an existing MLflow deployment service: {service}"
             )
-        else:
-            # create a new service
-            service = BentoMLDeploymentService(config=config)
-            logger.info(f"Creating a new BentoML deployment service: {service}")
 
-        # start the service which in turn provisions the BentoML
-        # deployment server and waits for it to reach a ready state
+            # set the root runtime path with the stack component's UUID
+            config.root_runtime_path = self.local_path
+            service.stop(timeout=timeout, force=True)
+            service.update(config)
+            service.start(timeout=timeout)
+        else:
+            # create a new MLFlowDeploymentService instance
+            service = self._create_new_service(timeout, config)
+            logger.info(f"Created a new MLflow deployment service: {service}")
+
+        return cast(BaseService, service)
+
+    def _clean_up_existing_service(
+        self,
+        timeout: int,
+        force: bool,
+        existing_service: BentoMLDeploymentService,
+    ) -> None:
+        # stop the older service
+        existing_service.stop(timeout=timeout, force=force)
+
+        # delete the old configuration file
+        service_directory_path = existing_service.status.runtime_path or ""
+        shutil.rmtree(service_directory_path)
+
+    # the step will receive a config from the user that mentions the number
+    # of workers etc.the step implementation will create a new config using
+    # all values from the user and add values like pipeline name, model_uri
+    def _create_new_service(
+        self, timeout: int, config: BentoMLDeploymentConfig
+    ) -> BentoMLDeploymentService:
+        """Creates a new MLFlowDeploymentService.
+
+        Args:
+            timeout: the timeout in seconds to wait for the MLflow server
+                to be provisioned and successfully started or updated.
+            config: the configuration of the model to be deployed with MLflow.
+
+        Returns:
+            The MLFlowDeploymentService object that can be used to interact
+            with the MLflow model server.
+        """
+        # set the root runtime path with the stack component's UUID
+        config.root_runtime_path = self.local_path
+        # create a new service for the new model
+        service = BentoMLDeploymentService(config)
         service.start(timeout=timeout)
 
-        # Add telemetry with metadata that gets the stack metadata and
-        # differentiates between pure model and custom code deployments
-        stack = Client().active_stack
-        stack_metadata = {
-            component_type.value: component.flavor
-            for component_type, component in stack.components.items()
-        }
-        metadata = {
-            "store_type": Client().zen_store.type.value,
-            **stack_metadata,
-            "is_custom_code_deployment": config.container is not None,
-        }
-        track_event(AnalyticsEvent.MODEL_DEPLOYED, metadata=metadata)
-
         return service
-
-    def get_BentoML_deployments(
-        self, labels: Dict[str, str]
-    ) -> List[V1beta1InferenceService]:
-        """Get a list of BentoML deployments that match the supplied labels.
-
-        Args:
-            labels: a dictionary of labels to match against BentoML deployments.
-
-        Returns:
-            A list of BentoML deployments that match the supplied labels.
-
-        Raises:
-            RuntimeError: if an operational failure is encountered while
-        """
-        label_selector = (
-            ",".join(f"{k}={v}" for k, v in labels.items()) if labels else None
-        )
-
-        namespace = (
-            self.config.kubernetes_namespace
-            or utils.get_default_target_namespace()
-        )
-
-        try:
-            response = (
-                self.BentoML_client.api_instance.list_namespaced_custom_object(
-                    constants.KSERVE_GROUP,
-                    constants.KSERVE_V1BETA1_VERSION,
-                    namespace,
-                    constants.KSERVE_PLURAL,
-                    label_selector=label_selector,
-                )
-            )
-        except client.rest.ApiException as e:
-            raise RuntimeError(
-                "Exception when retrieving BentoML inference services\
-                %s\n"
-                % e
-            )
-
-        # TODO[CRITICAL]: de-serialize each item into a complete
-        #   V1beta1InferenceService object recursively using the OpenApi
-        #   schema (this doesn't work right now)
-        inference_services: List[V1beta1InferenceService] = []
-        for item in response.get("items", []):
-            snake_case_item = self._camel_to_snake(item)
-            inference_service = V1beta1InferenceService(**snake_case_item)
-            inference_services.append(inference_service)
-        return inference_services
-
-    def _camel_to_snake(self, obj: Dict[str, Any]) -> Dict[str, Any]:
-        """Convert a camelCase dictionary to snake_case.
-
-        Args:
-            obj: a dictionary with camelCase keys
-
-        Returns:
-            a dictionary with snake_case keys
-        """
-        if isinstance(obj, (str, int, float)):
-            return obj
-        if isinstance(obj, dict):
-            assert obj is not None
-            new = obj.__class__()
-            for k, v in obj.items():
-                new[self._convert_to_snake(k)] = self._camel_to_snake(v)
-        elif isinstance(obj, (list, set, tuple)):
-            assert obj is not None
-            new = obj.__class__(self._camel_to_snake(v) for v in obj)
-        else:
-            return obj
-        return new
-
-    def _convert_to_snake(self, k: str) -> str:
-        return re.sub(r"(?<!^)(?=[A-Z])", "_", k).lower()
 
     def find_model_server(
         self,
@@ -425,154 +260,177 @@ class BentoMLModelDeployer(BaseModelDeployer):
         pipeline_name: Optional[str] = None,
         pipeline_run_id: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
-        model_name: Optional[str] = None,
+        bento: Optional[str] = None,
         model_uri: Optional[str] = None,
-        predictor: Optional[str] = None,
+        model_type: Optional[str] = None,
     ) -> List[BaseService]:
-        """Find one or more BentoML model services that match the given criteria.
+        """Finds one or more model servers that match the given criteria.
 
         Args:
             running: If true, only running services will be returned.
             service_uuid: The UUID of the service that was originally used
                 to deploy the model.
-            pipeline_name: name of the pipeline that the deployed model was part
+            pipeline_name: Name of the pipeline that the deployed model was part
                 of.
-            pipeline_run_id: ID of the pipeline run which the deployed model was
-                part of.
-            pipeline_step_name: the name of the pipeline model deployment step
+            pipeline_run_id: ID of the pipeline run which the deployed model
+                was part of.
+            pipeline_step_name: The name of the pipeline model deployment step
                 that deployed the model.
-            model_name: the name of the deployed model.
+            model_name: Name of the deployed model.
             model_uri: URI of the deployed model.
-            predictor: the name of the predictor that was used to deploy the model.
+            model_type: Type/format of the deployed model. Not used in this
+                MLflow case.
 
         Returns:
             One or more Service objects representing model servers that match
             the input search criteria.
+
+        Raises:
+            TypeError: if any of the input arguments are of an invalid type.
         """
+        services = []
         config = BentoMLDeploymentConfig(
+            bento=bento or "",
+            model_uri=model_uri or "",
             pipeline_name=pipeline_name or "",
             pipeline_run_id=pipeline_run_id or "",
             pipeline_step_name=pipeline_step_name or "",
-            model_uri=model_uri or "",
-            model_name=model_name or "",
-            predictor=predictor or "",
-            resources={},
         )
-        labels = config.get_kubernetes_labels()
 
-        if service_uuid:
-            labels["zenml.service_uuid"] = str(service_uuid)
-
-        deployments = self.get_BentoML_deployments(labels=labels)
-
-        services: List[BaseService] = []
-        for deployment in deployments:
-            # recreate the BentoML deployment service object from the BentoML
-            # deployment resource
-            service = BentoMLDeploymentService.create_from_deployment(
-                deployment=deployment
-            )
-            if running and not service.is_running:
-                # skip non-running services
+        # find all services that match the input criteria
+        for root, _, files in os.walk(self.local_path):
+            if service_uuid and Path(root).name != str(service_uuid):
                 continue
-            services.append(service)
+            for file in files:
+                if file == SERVICE_DAEMON_CONFIG_FILE_NAME:
+                    service_config_path = os.path.join(root, file)
+                    logger.debug(
+                        "Loading service daemon configuration from %s",
+                        service_config_path,
+                    )
+                    existing_service_config = None
+                    with open(service_config_path, "r") as f:
+                        existing_service_config = f.read()
+                    existing_service = ServiceRegistry().load_service_from_json(
+                        existing_service_config
+                    )
+                    if not isinstance(
+                        existing_service, BentoMLDeploymentService
+                    ):
+                        raise TypeError(
+                            f"Expected service type MLFlowDeploymentService but got "
+                            f"{type(existing_service)} instead"
+                        )
+                    existing_service.update_status()
+                    if self._matches_search_criteria(existing_service, config):
+                        if not running or existing_service.is_running:
+                            services.append(cast(BaseService, existing_service))
 
         return services
+
+    def _matches_search_criteria(
+        self,
+        existing_service: BentoMLDeploymentService,
+        config: BentoMLDeploymentConfig,
+    ) -> bool:
+        """Returns true if a service matches the input criteria.
+
+        If any of the values in the input criteria are None, they are ignored.
+        This allows listing services just by common pipeline names or step
+        names, etc.
+
+        Args:
+            existing_service: The materialized Service instance derived from
+                the config of the older (existing) service
+            config: The MLFlowDeploymentConfig object passed to the
+                deploy_model function holding parameters of the new service
+                to be created.
+
+        Returns:
+            True if the service matches the input criteria.
+        """
+        existing_service_config = existing_service.config
+
+        # check if the existing service matches the input criteria
+        if (
+            (
+                not config.pipeline_name
+                or existing_service_config.pipeline_name == config.pipeline_name
+            )
+            and (
+                not config.model_name
+                or existing_service_config.model_name == config.model_name
+            )
+            and (
+                not config.pipeline_step_name
+                or existing_service_config.pipeline_step_name
+                == config.pipeline_step_name
+            )
+            and (
+                not config.pipeline_run_id
+                or existing_service_config.pipeline_run_id
+                == config.pipeline_run_id
+            )
+        ):
+            return True
+
+        return False
 
     def stop_model_server(
         self,
         uuid: UUID,
-        timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
+        timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
         force: bool = False,
     ) -> None:
-        """Stop a BentoML model server.
+        """Method to stop a model server.
 
         Args:
             uuid: UUID of the model server to stop.
-            timeout: timeout in seconds to wait for the service to stop.
-            force: if True, force the service to stop.
-
-        Raises:
-            NotImplementedError: stopping on BentoML model servers is not
-                supported.
+            timeout: Timeout in seconds to wait for the service to stop.
+            force: If True, force the service to stop.
         """
-        raise NotImplementedError(
-            "Stopping BentoML model servers is not implemented. Try "
-            "deleting the BentoML model server instead."
-        )
+        # get list of all services
+        existing_services = self.find_model_server(service_uuid=uuid)
+
+        # if the service exists, stop it
+        if existing_services:
+            existing_services[0].stop(timeout=timeout, force=force)
 
     def start_model_server(
-        self,
-        uuid: UUID,
-        timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
+        self, uuid: UUID, timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
     ) -> None:
-        """Start a BentoML model deployment server.
+        """Method to start a model server.
 
         Args:
             uuid: UUID of the model server to start.
-            timeout: timeout in seconds to wait for the service to become
-                active. . If set to 0, the method will return immediately after
-                provisioning the service, without waiting for it to become
-                active.
-
-        Raises:
-            NotImplementedError: since we don't support starting BentoML
-                model servers
+            timeout: Timeout in seconds to wait for the service to start.
         """
-        raise NotImplementedError(
-            "Starting BentoML model servers is not implemented"
-        )
+        # get list of all services
+        existing_services = self.find_model_server(service_uuid=uuid)
+
+        # if the service exists, start it
+        if existing_services:
+            existing_services[0].start(timeout=timeout)
 
     def delete_model_server(
         self,
         uuid: UUID,
-        timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
+        timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
         force: bool = False,
     ) -> None:
-        """Delete a BentoML model deployment server.
+        """Method to delete all configuration of a model server.
 
         Args:
             uuid: UUID of the model server to delete.
-            timeout: timeout in seconds to wait for the service to stop. If
-                set to 0, the method will return immediately after
-                deprovisioning the service, without waiting for it to stop.
-            force: if True, force the service to stop.
+            timeout: Timeout in seconds to wait for the service to stop.
+            force: If True, force the service to stop.
         """
-        services = self.find_model_server(service_uuid=uuid)
-        if len(services) == 0:
-            return
-        services[0].stop(timeout=timeout, force=force)
+        # get list of all services
+        existing_services = self.find_model_server(service_uuid=uuid)
 
-    def _get_BentoML_secret(self) -> Any:
-        """Get the secret object for the BentoML deployment.
-
-        Returns:
-            The secret object for the BentoML deployment.
-
-        Raises:
-            RuntimeError: if the secret object is not found or secrets_manager is not set.
-        """
-        if self.config.secret:
-
-            secret_manager = Client(  # type: ignore [call-arg]
-                skip_client_check=True
-            ).active_stack.secrets_manager
-
-            if not secret_manager or not isinstance(
-                secret_manager, BaseSecretsManager
-            ):
-                raise RuntimeError(
-                    f"The active stack doesn't have a secret manager component. "
-                    f"The ZenML secret specified in the BentoML Model "
-                    f"Deployer configuration cannot be fetched: {self.config.secret}."
-                )
-            try:
-                secret = secret_manager.get_secret(self.config.secret)
-                return secret
-            except KeyError:
-                raise RuntimeError(
-                    f"The secret `{self.config.secret}` used for your BentoML Model"
-                    f"Deployer configuration does not exist in your secrets "
-                    f"manager `{secret_manager.name}`."
-                )
-        return None
+        # if the service exists, clean it up
+        if existing_services:
+            service = cast(BentoMLDeploymentService, existing_services[0])
+            self._clean_up_existing_service(
+                existing_service=service, timeout=timeout, force=force
+            )

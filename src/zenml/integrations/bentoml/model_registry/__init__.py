@@ -11,10 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the BentoML standard interface steps."""
+"""Initialization of the BentoML model registry utils functionality."""
 
-from zenml.integrations.bentoml.steps.bentoml_deployer import (
-    BentoMLDeployerParameters,
-    bentoml_deployer_step,
-    bentoml_model_deployer_step,
+from zenml.integrations.bentoml.model_registry.bentoml_model_registry import (
+    
 )

@@ -15,6 +15,7 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+from zenml.artifacts.model_artifact import ModelArtifact
 
 from zenml.steps import step
 
@@ -23,8 +24,9 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 @step
-def evaluator(test_dataloader: DataLoader, model: nn.Module) -> float:
+def evaluator(test_dataloader: DataLoader, model: ModelArtifact,) -> float:
     """Evaluates on the model."""
+    breakpoint()
     loss_fn = nn.CrossEntropyLoss()
 
     size = len(test_dataloader.dataset)

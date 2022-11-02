@@ -19,7 +19,7 @@ platform to implement continuous model deployment.
 from typing import List, Type
 
 from zenml.enums import StackComponentType
-from zenml.integrations.constants import KSERVE
+from zenml.integrations.constants import BENTOML
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
 from zenml.stack import Flavor
@@ -28,17 +28,16 @@ BENTOML_MODEL_DEPLOYER_FLAVOR = "bentoml"
 
 
 class BentoMLIntegration(Integration):
-    """Definition of KServe integration for ZenML."""
+    """Definition of BentoML integration for ZenML."""
 
-    NAME = KSERVE
+    NAME = BENTOML
     REQUIREMENTS = [
-        "bentoml==0.9.0",
-        "torch-model-archiver",
+        "bentoml==1.0.8",
     ]
 
     @classmethod
     def activate(cls) -> None:
-        """Activate the Seldon Core integration."""
+        """Activate the BentoML integration."""
         from zenml.integrations.bentoml import model_deployers  # noqa
         from zenml.integrations.bentoml import services  # noqa
         from zenml.integrations.bentoml import steps  # noqa
@@ -50,9 +49,9 @@ class BentoMLIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.bentoml.flavors import KServeModelDeployerFlavor
+        from zenml.integrations.bentoml.flavors import BentoMLModelDeployerFlavor
 
-        return [KServeModelDeployerFlavor]
+        return [BentoMLModelDeployerFlavor]
 
 
 BentoMLIntegration.check_installation()
