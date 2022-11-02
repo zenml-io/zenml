@@ -1,138 +1,171 @@
 import datetime
-import glob
+import importlib
 import os
-from typing import Any, Dict, Optional
+import zipfile
+from typing import Any, Dict, List, Optional, Type, Union
 
 import airflow
-from airflow.providers.docker.operators.docker import DockerOperator
+from pydantic import BaseModel
 
-from zenml.config.pipeline_deployment import PipelineDeployment
-from zenml.constants import (
-    ENV_ZENML_LOCAL_STORES_PATH,
-    ORCHESTRATOR_DOCKER_IMAGE_KEY,
-)
-from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
-    ENV_AIRFLOW_RUN_NAME,
-    REQUIRES_LOCAL_STORES,
-    AirflowEntrypointConfiguration,
-    AirflowOrchestratorFlavor,
-    AirflowOrchestratorSettings,
-)
-from zenml.pipelines import Schedule
-from zenml.utils import settings_utils, yaml_utils
+ENV_ZENML_AIRFLOW_RUN_ID = "ZENML_AIRFLOW_RUN_ID"
+ENV_ZENML_LOCAL_STORES_PATH = "ZENML_LOCAL_STORES_PATH"
+DAG_CONFIG_FILENAME = "config.json"
 
 
-def _translate_schedule(
-    schedule: Optional[Schedule] = None,
-) -> Dict[str, Any]:
-    """Convert ZenML schedule into Airflow schedule.
+class TaskConfiguration(BaseModel):
+    id: str
+    zenml_step_name: str
+    upstream_steps: List[str]
 
-    The Airflow schedule uses slightly different naming and needs some
-    default entries for execution without a schedule.
+    command: List[str]
+    arguments: List[str]
+
+    operator_source: str
+    operator_kwargs: Dict[str, Any] = {}
+
+
+class DagConfiguration(BaseModel):
+    id: str
+    docker_image: str
+    tasks: List[TaskConfiguration]
+
+    local_stores_path: Optional[str] = None
+
+    schedule_interval: Union[str, datetime.timedelta]
+    start_date: datetime.datetime
+    end_date: Optional[datetime.datetime] = None
+    catchup: bool = False
+
+    tags: List[str] = []
+    dag_kwargs: Dict[str, Any] = {}
+
+
+def import_class_by_path(class_path: str) -> Type[Any]:
+    """Imports a class based on a given path.
 
     Args:
-        schedule: Containing the interval, start and end date and
-            a boolean flag that defines if past runs should be caught up
-            on
+        class_path: str, class_source e.g. this.module.Class
 
     Returns:
-        Airflow configuration dict.
+        the given class
     """
-    if schedule:
-        if schedule.cron_expression:
-            start_time = schedule.start_time or (
-                datetime.datetime.now() - datetime.timedelta(7)
-            )
-            return {
-                "schedule_interval": schedule.cron_expression,
-                "start_date": start_time,
-                "end_date": schedule.end_time,
-                "catchup": schedule.catchup,
-            }
-        else:
-            return {
-                "schedule_interval": schedule.interval_second,
-                "start_date": schedule.start_time,
-                "end_date": schedule.end_time,
-                "catchup": schedule.catchup,
-            }
+    module_name, class_name = class_path.rsplit(".", 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name)
 
+
+def get_operator_init_kwargs(
+    operator_class: Type[Any],
+    dag_config: DagConfiguration,
+    task_config: TaskConfiguration,
+) -> Dict[str, Any]:
+    init_kwargs = {"task_id": task_config.id}
+
+    try:
+        from airflow.providers.docker.operators.docker import DockerOperator
+
+        if issubclass(operator_class, DockerOperator):
+            init_kwargs.update(
+                get_docker_operator_init_kwargs(
+                    dag_config=dag_config, task_config=task_config
+                )
+            )
+    except ImportError:
+        pass
+
+    try:
+        from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import (
+            KubernetesPodOperator,
+        )
+
+        if issubclass(operator_class, KubernetesPodOperator):
+            init_kwargs.update(
+                get_kubernetes_pod_operator_init_kwargs(
+                    dag_config=dag_config, task_config=task_config
+                )
+            )
+    except ImportError:
+        pass
+
+    init_kwargs.update(task_config.operator_kwargs)
+    return init_kwargs
+
+
+def get_docker_operator_init_kwargs(
+    dag_config: DagConfiguration, task_config: TaskConfiguration
+) -> Dict[str, Any]:
+    mounts = []
+    environment = {ENV_ZENML_AIRFLOW_RUN_ID: "{{run_id}}"}
+
+    if dag_config.local_stores_path:
+        from docker.types import Mount
+
+        environment[ENV_ZENML_LOCAL_STORES_PATH] = dag_config.local_stores_path
+        mounts = [
+            Mount(
+                target=dag_config.local_stores_path,
+                source=dag_config.local_stores_path,
+                type="bind",
+            )
+        ]
     return {
-        "schedule_interval": "@once",
-        # set the a start time in the past and disable catchup so airflow runs the dag immediately
-        "start_date": datetime.datetime.now() - datetime.timedelta(7),
-        "catchup": False,
+        "image": dag_config.docker_image,
+        "command": task_config.command + task_config.arguments,
+        "mounts": mounts,
+        "environment": environment,
     }
 
 
-dag_configs_pattern = os.path.join(os.path.dirname(__file__), "zenml", "*.yaml")
-for dag_config_file in glob.glob(dag_configs_pattern):
-    deployment_dict = yaml_utils.read_yaml(dag_config_file)
-    deployment = PipelineDeployment.parse_obj(deployment_dict)
+def get_kubernetes_pod_operator_init_kwargs(
+    dag_config: DagConfiguration, task_config: TaskConfiguration
+) -> Dict[str, Any]:
+    from kubernetes.client.models import V1EnvVar
 
-    settings_key = settings_utils.get_flavor_setting_key(
-        AirflowOrchestratorFlavor
-    )
-    potential_settings = deployment.pipeline.settings.get(settings_key)
-    if potential_settings:
-        settings = AirflowOrchestratorSettings.parse_obj(potential_settings)
-        tags = settings.tags
-        # TODO
-        # operator = settings.operator
-    else:
-        tags = []
-    operator = DockerOperator
+    return {
+        "name": f"{dag_config.id}_{task_config.id}",
+        "namespace": "default",
+        "image": dag_config.docker_image,
+        "cmds": task_config.command,
+        "arguments": task_config.arguments,
+        "env_vars": [
+            V1EnvVar(name=ENV_ZENML_AIRFLOW_RUN_ID, value="{{run_id}}")
+        ],
+    }
 
-    airflow_schedule = _translate_schedule(schedule=deployment.schedule)
-    dag = airflow.DAG(
-        dag_id=deployment.pipeline.name,
-        is_paused_upon_creation=False,
-        tags=tags,
-        **airflow_schedule
-    )
 
-    image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+try:
+    archive = zipfile.ZipFile(os.path.dirname(__file__), "r")
+except IsADirectoryError:
+    # Not inside a zip, this happens if we import this file outside of an
+    # airflow dag zip
+    pass
+else:
+    config_str = archive.read(DAG_CONFIG_FILENAME)
+    dag_config = DagConfiguration.parse_raw(config_str)
+
     step_name_to_airflow_operator = {}
-    base_command = AirflowEntrypointConfiguration.get_entrypoint_command()
 
-    mounts = []
-    environment = {ENV_AIRFLOW_RUN_NAME: "{{run_id}}"}
-
-    requires_local_mounts = deployment.pipeline.extra.get(
-        REQUIRES_LOCAL_STORES, False
-    )
-    if requires_local_mounts:
-        from docker.types import Mount
-
-        from zenml.config.global_config import GlobalConfiguration
-
-        local_stores_path = os.path.expanduser(
-            GlobalConfiguration().local_stores_path
-        )
-
-        environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
-        mounts = [
-            Mount(
-                target=local_stores_path, source=local_stores_path, type="bind"
+    with airflow.DAG(
+        dag_id=dag_config.id,
+        is_paused_upon_creation=False,
+        tags=dag_config.tags,
+        schedule_interval=dag_config.schedule_interval,
+        start_date=dag_config.start_date,
+        end_date=dag_config.end_date,
+        catchup=dag_config.catchup,
+        **dag_config.dag_kwargs
+    ) as dag:
+        for task in dag_config.tasks:
+            operator_class = import_class_by_path(task.operator_source)
+            init_kwargs = get_operator_init_kwargs(
+                operator_class=operator_class,
+                dag_config=dag_config,
+                task_config=task,
             )
-        ]
+            operator = operator_class(**init_kwargs)
 
-    for step_name, step in deployment.steps.items():
-        arguments = AirflowEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=step_name
-        )
-
-        operator = DockerOperator(
-            dag=dag,
-            task_id=step_name,
-            image=image_name,
-            command=base_command + arguments,
-            mounts=mounts,
-            environment=environment,
-        )
-
-        step_name_to_airflow_operator[step.config.name] = operator
-        for upstream_step in step.spec.upstream_steps:
-            operator.set_upstream(step_name_to_airflow_operator[upstream_step])
-
-    globals()[deployment.pipeline.name] = dag
+            step_name_to_airflow_operator[task.zenml_step_name] = operator
+            for upstream_step in task.upstream_steps:
+                operator.set_upstream(
+                    step_name_to_airflow_operator[upstream_step]
+                )

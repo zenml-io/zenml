@@ -13,31 +13,58 @@
 #  permissions and limitations under the License.
 """Airflow orchestrator flavor."""
 
-import os
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+
+from pydantic import validator
 
 from zenml.config.base_settings import BaseSettings
-from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
     from zenml.integrations.airflow.orchestrators import AirflowOrchestrator
 
+from enum import Enum
 
-ENV_AIRFLOW_RUN_NAME = "AIRFLOW_RUN_NAME"
-REQUIRES_LOCAL_STORES = "requires_local_stores"
+
+class OperatorType(Enum):
+    DOCKER = "docker"
+    KUBERNETES = "kubernetes"
+    GKE_START_POD = "gke_start_pod"
+
+    @property
+    def source(self) -> str:
+        return {
+            OperatorType.DOCKER: "airflow.providers.docker.operators.docker.DockerOperator",
+            OperatorType.KUBERNETES: "airflow.providers.cncf.kubernetes.operators.kubernetes_pod.KubernetesPodOperator",
+            OperatorType.GKE_START_POD: "airflow.providers.google.cloud.operators.kubernetes_engine.GKEStartPodOperator",
+        }[self]
 
 
 class AirflowOrchestratorSettings(BaseSettings):
-    operator: Optional[str] = None
-    tags: List[str] = []
+    dag_id: Optional[str] = None
+    dag_tags: List[str] = []
+    dag_kwargs: Dict[str, Any] = {}
 
-    # def get_operator_class(self) -> Type["BaseOperator"]:
-    #     if self.operator:
-    #         return source_utils.load_and_validate_class(self.operator, expected_class=)
-    #     else:
-    #         ...
+    operator: str = OperatorType.DOCKER.source
+    operator_kwargs: Dict[str, Any] = {}
+
+    @validator("operator", always=True)
+    def _convert_operator(
+        cls, value: Optional[Union[str, OperatorType]]
+    ) -> Optional[str]:
+        """Converts operator types to source strings.
+
+        Args:
+            value: The operator type value.
+
+        Returns:
+            The operator source.
+        """
+        try:
+            return OperatorType(value).source
+        except ValueError:
+            return value
 
 
 class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
@@ -62,8 +89,3 @@ class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
         from zenml.integrations.airflow.orchestrators import AirflowOrchestrator
 
         return AirflowOrchestrator
-
-
-class AirflowEntrypointConfiguration(StepEntrypointConfiguration):
-    def get_run_name(self, pipeline_name: str) -> Optional[str]:
-        return os.environ[ENV_AIRFLOW_RUN_NAME]
