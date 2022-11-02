@@ -36,8 +36,10 @@ spec:
           imagePullPolicy: {{ .Values.zenml.initImage.pullPolicy }}
           command: ['zenml', 'init']
           env:
-            - name: ZENML_DEBUG
-              value: {{ .Values.zenml.debug | quote }}
+            {{- if .Values.zenml.debug }}
+            - name: ZENML_LOGGING_VERBOSITY
+              value: "DEBUG"
+            {{- end }}
             - name: ANALYTICS_OPT_IN
               value: "False"
             - name: ZENML_DEFAULT_PROJECT_NAME
@@ -60,8 +62,10 @@ spec:
           image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
           env:
-            - name: ZENML_DEBUG
-              value: {{ .Values.zenml.debug | quote }}
+            {{- if .Values.zenml.debug }}
+            - name: ZENML_LOGGING_VERBOSITY
+              value: "DEBUG"
+            {{- end }}
             - name: ANALYTICS_OPT_IN
               value: "False"
             - name: ZENML_AUTH_TYPE
@@ -84,8 +88,6 @@ spec:
             {{- end }}
             - name: ZENML_SERVER_DEPLOYMENT_TYPE
               value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
-            - name: ZENML_SERVER_METADATA_SYNC_PERIOD
-              value: {{ .Values.zenml.metadataSyncPeriod | default 10 | quote }}
 
             {{- if and .Values.grpcMetadata.enabled .Values.zenml.database.url }}
 

@@ -39,15 +39,6 @@ zenml:
   # HTTP_BASIC - HTTP Basic authentication
   # OAUTH2_PASSWORD_BEARER - OAuth2 password bearer with JWT tokens
   authType: OAUTH2_PASSWORD_BEARER
-
-  # The ZenML server periodically syncs metadata information from the MLMD
-  # database into the SQL ZenML store database. This is the frequency of the
-  # sync in seconds. This determines how much time it takes for the status of a
-  # pipeline run to be available in the CLI and UI after it has been recorded in
-  # the MLMD database. If you're planning on having a huge number of pipeline
-  # runs, you may want to increase this value to reduce the load on the ZenML
-  # server.
-  metadataSyncPeriod: 5
   
   # The secret key used to sign JWT tokens. Only relevant if the
   # OAUTH2_PASSWORD_BEARER authentication scheme is used. This should be set to

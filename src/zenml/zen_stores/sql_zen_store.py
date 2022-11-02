@@ -2750,7 +2750,7 @@ class SqlZenStore(BaseZenStore):
         ):
             return run_model
 
-        steps = self.list_run_steps(run_id=run_model.id)
+        steps = self._list_run_steps_without_sync(run_id=run_model.id)
 
         # For legacy runs, we have no `num_steps`. Therefore, we cannot
         # determine the status of the run correctly. Instead, we need to
@@ -2796,8 +2796,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()  # Sync with MLMD
+        self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
             query = select(PipelineRunSchema)
             if project_name_or_id is not None:
@@ -3154,6 +3153,24 @@ class SqlZenStore(BaseZenStore):
             self.update_run_step(step_model)
         return step_model
 
+    def _list_run_steps_without_sync(
+        self, run_id: Optional[UUID] = None
+    ) -> List[StepRunModel]:
+        """Get all run steps without synchronizing the runs.
+
+        Args:
+            run_id: If provided, only return steps for this pipeline run.
+
+        Returns:
+            A list of all run steps.
+        """
+        query = select(StepRunSchema)
+        if run_id is not None:
+            query = query.where(StepRunSchema.pipeline_run_id == run_id)
+        with Session(self.engine) as session:
+            steps = session.exec(query).all()
+            return [self.get_run_step(step.id) for step in steps]
+
     def list_run_steps(
         self, run_id: Optional[UUID] = None
     ) -> List[StepRunModel]:
@@ -3165,16 +3182,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all run steps.
         """
-        query = select(StepRunSchema)
-        if run_id is not None:
-            query = query.where(StepRunSchema.pipeline_run_id == run_id)
-            if not self.runs_inside_server:
-                self._sync_run_steps(run_id)
-        elif not self.runs_inside_server:
-            self._sync_runs()
-        with Session(self.engine) as session:
-            steps = session.exec(query).all()
-            return [self.get_run_step(step.id) for step in steps]
+        self._sync_runs()
+        return self._list_run_steps_without_sync(run_id)
 
     def update_run_step(self, step: StepRunModel) -> StepRunModel:
         """Updates a step.
@@ -3293,8 +3302,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all artifacts.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
+        self._sync_runs()
         with Session(self.engine) as session:
             query = select(ArtifactSchema)
             if artifact_uri is not None:
@@ -3557,22 +3565,43 @@ class SqlZenStore(BaseZenStore):
         This queries all runs from MLMD, checks for each whether it already
         exists in the database, and if not, creates it.
         """
-        # Find all runs that already have an MLMD ID. These are already synced
-        # and connected to MLMD, so we don't need to query them from MLMD again.
-        with Session(self.engine) as session:
-            synced_mlmd_ids = session.exec(
-                select(PipelineRunSchema.mlmd_id).where(
-                    isnot(PipelineRunSchema.mlmd_id, None)
-                )
-            ).all()
+        from zenml.zen_stores.migrations.alembic import AlembicVersion
 
-        # Find all runs that have no MLMD ID. These might need to be connected.
-        with Session(self.engine) as session:
-            runs_without_mlmd_id = session.exec(
-                select(PipelineRunSchema).where(
-                    is_(PipelineRunSchema.mlmd_id, None)
-                )
-            ).all()
+        try:
+            with Session(self.engine) as session:
+                # We use the alembic version table as a shared resource that we
+                # can lock to prevent multiple processes from syncing runs at
+                # the same time.
+                session.query(AlembicVersion).with_for_update().all()
+                self._sync_runs_with_lock(session)
+        except Exception:
+            logger.exception("Failed to sync pipeline runs.")
+
+    def _sync_runs_with_lock(self, session: Session) -> None:
+        """Sync runs from MLMD into the database while the DB is locked.
+
+        This queries all runs from MLMD, checks for each whether it already
+        exists in the database, and if not, creates it.
+
+        Args:
+            session: The database session to use.
+        """
+        # Find all runs that already have an MLMD ID. These are already
+        # synced and connected to MLMD, so we don't need to query them from
+        # MLMD again.
+        synced_mlmd_ids = session.exec(
+            select(PipelineRunSchema.mlmd_id).where(
+                isnot(PipelineRunSchema.mlmd_id, None)
+            )
+        ).all()
+
+        # Find all runs that have no MLMD ID. These might need to be
+        # connected.
+        runs_without_mlmd_id = session.exec(
+            select(PipelineRunSchema).where(
+                is_(PipelineRunSchema.mlmd_id, None)
+            )
+        ).all()
         runs_without_mlmd_id_dict = {
             run_.name: run_ for run_ in runs_without_mlmd_id
         }
@@ -3602,12 +3631,11 @@ class SqlZenStore(BaseZenStore):
                     continue
 
         # Sync steps and status of all unfinished runs.
-        with Session(self.engine) as session:
-            unfinished_runs = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.status == ExecutionStatus.RUNNING
-                )
-            ).all()
+        unfinished_runs = session.exec(
+            select(PipelineRunSchema).where(
+                PipelineRunSchema.status == ExecutionStatus.RUNNING
+            )
+        ).all()
         for run_ in unfinished_runs:
             self._sync_run_steps(run_.id)
             self._update_run_status(run_.to_model())
@@ -3617,13 +3645,12 @@ class SqlZenStore(BaseZenStore):
         # run status was updated after all steps of a run have completed but
         # before the last artifact was written to MLMD.
         if self.runs_inside_server:
-            with Session(self.engine) as session:
-                recently_updated_runs = session.exec(
-                    select(PipelineRunSchema).where(
-                        PipelineRunSchema.updated
-                        >= datetime.now() - timedelta(minutes=1)
-                    )
-                ).all()
+            recently_updated_runs = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.updated
+                    >= datetime.now() - timedelta(minutes=1)
+                )
+            ).all()
             for run_ in recently_updated_runs:
                 if run_ not in unfinished_runs:
                     self._sync_run_steps(run_.id)
