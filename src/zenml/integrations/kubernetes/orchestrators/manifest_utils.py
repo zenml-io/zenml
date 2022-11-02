@@ -16,6 +16,7 @@
 from typing import Any, Dict, List, Optional, cast
 
 from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
+from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
 
 
 def build_pod_manifest(
@@ -27,6 +28,7 @@ def build_pod_manifest(
     args: List[str],
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
+    settings: Optional[KubernetesOrchestratorSettings] = None,
 ) -> Dict[str, Any]:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -41,6 +43,7 @@ def build_pod_manifest(
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
         env: Environment variables to set.
+        settings: `KubernetesOrchestratorSettings` object
 
     Returns:
         Pod manifest.
@@ -77,7 +80,32 @@ def build_pod_manifest(
     if service_account_name is not None:
         spec = cast(Dict[str, Any], manifest["spec"])  # mypy stupid
         spec["serviceAccountName"] = service_account_name
+
+    if settings is not None:
+        spec = cast(Dict[str, Any], manifest["spec"])
+        spec.update(add_pod_settings(settings))
     return manifest
+
+
+def add_pod_settings(
+    settings: KubernetesOrchestratorSettings,
+) -> Dict[str, Any]:
+    """Updates `spec` fields in pod if passed in orchestrator settings.
+
+    Args:
+        settings: `KubernetesOrchestratorSettings` object
+
+    Returns:
+        Dictionary with additional fields for the pod
+    """
+    spec: Dict[str, Any] = {}
+    if settings.affinity:
+        spec["affinity"] = settings.affinity
+
+    if settings.tolerations:
+        spec["tolerations"] = settings.tolerations
+
+    return spec
 
 
 def build_cron_job_manifest(
@@ -89,6 +117,7 @@ def build_cron_job_manifest(
     command: List[str],
     args: List[str],
     service_account_name: Optional[str] = None,
+    settings: Optional[KubernetesOrchestratorSettings] = None,
 ) -> Dict[str, Any]:
     """Create a manifest for launching a pod as scheduled CRON job.
 
@@ -103,6 +132,7 @@ def build_cron_job_manifest(
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
+        settings: `KubernetesOrchestratorSettings` object
 
     Returns:
         CRON job manifest.
@@ -115,6 +145,7 @@ def build_cron_job_manifest(
         command=command,
         args=args,
         service_account_name=service_account_name,
+        settings=settings,
     )
     return {
         "apiVersion": "batch/v1beta1",

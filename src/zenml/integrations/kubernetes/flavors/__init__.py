@@ -16,9 +16,11 @@
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
     KubernetesOrchestratorFlavor,
+    KubernetesOrchestratorSettings,
 )
 
 __all__ = [
     "KubernetesOrchestratorFlavor",
     "KubernetesOrchestratorConfig",
+    "KubernetesOrchestratorSettings",
 ]

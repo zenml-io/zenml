@@ -68,6 +68,51 @@ You can now run any ZenML pipeline using the Kubernetes orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+For additional configuration of the Kubernetes orchestrator, you can pass
+`KubernetesOrchestratorSettings` which allows you to configure the following attributes:
+
+* `affinity`: Affinity constraints (`spec.affinity`) that can be defined to a pod.
+* `tolerations`: Toleration (`spec.tolerations`) so the pod can be scheduled.
+
+```python
+from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
+
+kubernetes_settings = KubernetesOrchestratorSettings(
+    affinity={
+        "nodeAffinity": {
+            "requiredDuringSchedulingIgnoredDuringExecution": {
+                "nodeSelectorTerms": [
+                    {
+                        "matchExpressions": [
+                            {
+                                "key": "node.kubernetes.io/name",
+                                "operator": "In",
+                                "values": ["my_powerful_node_group"],
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    tolerations=[
+        {
+            "key": "node.kubernetes.io/name",
+            "operator": "Exists",
+            "value": "",
+            "effect": "NoSchedule",
+        }
+    ],
+)
+
+@pipeline(
+    settings={
+        "orchestrator.kubernetes": kubernetes_settings
+    }
+)
+  ...
+```
+
 A concrete example of using the Kubernetes orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubernetes_orchestration).
 

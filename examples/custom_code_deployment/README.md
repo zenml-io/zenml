@@ -76,7 +76,7 @@ Once we have a ready deployment environment, we can start the example.
 
 ```shell
 # install CLI
-pip install zenml
+pip install "zenml[server]"
 
 # pull example
 zenml example pull custom_code_deployment

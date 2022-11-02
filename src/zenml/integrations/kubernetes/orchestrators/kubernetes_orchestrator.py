@@ -31,16 +31,18 @@
 """Kubernetes-native orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
+from zenml.config.base_settings import BaseSettings
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
+    KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
@@ -99,6 +101,15 @@ class KubernetesOrchestrator(BaseOrchestrator):
             The configuration.
         """
         return cast(KubernetesOrchestratorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Kubernetes orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return KubernetesOrchestratorSettings
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
@@ -275,6 +286,11 @@ class KubernetesOrchestrator(BaseOrchestrator):
             kubernetes_namespace=self.config.kubernetes_namespace,
         )
 
+        settings = cast(
+            Optional[KubernetesOrchestratorSettings],
+            self.get_settings(deployment),
+        )
+
         # Authorize pod to run Kubernetes commands inside the cluster.
         service_account_name = "zenml-service-account"
         kube_utils.create_edit_service_account(
@@ -302,6 +318,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 command=command,
                 args=args,
                 service_account_name=service_account_name,
+                settings=settings,
             )
             self._k8s_batch_api.create_namespaced_cron_job(
                 body=cron_job_manifest,
@@ -322,6 +339,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
             command=command,
             args=args,
             service_account_name=service_account_name,
+            settings=settings,
         )
         self._k8s_core_api.create_namespaced_pod(
             namespace=self.config.kubernetes_namespace,

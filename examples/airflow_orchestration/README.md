@@ -33,7 +33,7 @@ Airflow.
 
 ```bash
 # install CLI
-pip install zenml
+pip install "zenml[server]"
 
 # install ZenML integrations
 zenml integration install airflow
