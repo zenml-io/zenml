@@ -22,8 +22,8 @@ from typing import Optional
 import click
 
 from zenml import __version__ as zenml_version
-from zenml.cli.server import down
 from zenml.cli.cli import cli
+from zenml.cli.server import down
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
@@ -132,11 +132,7 @@ def _delete_local_files(force_delete: bool = False) -> None:
     help="Delete local files relating to the active stack.",
 )
 @click.pass_context
-def clean(
-    ctx: click.Context,
-    yes: bool = False,
-    local: bool = False
-) -> None:
+def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
     """Delete all ZenML metadata, artifacts and stacks.
 
     This is a destructive operation, primarily intended for use in development.
