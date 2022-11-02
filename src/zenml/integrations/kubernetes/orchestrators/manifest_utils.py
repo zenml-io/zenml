@@ -28,6 +28,7 @@ def build_pod_manifest(
     command: List[str],
     args: List[str],
     service_account_name: Optional[str] = None,
+    env: Optional[Dict[str, str]] = None,
     settings: Optional[KubernetesOrchestratorSettings] = None,
 ) -> Dict[str, Any]:
     """Build a Kubernetes pod manifest for a ZenML run or step.
@@ -42,11 +43,15 @@ def build_pod_manifest(
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
+        env: Environment variables to set.
         settings: `KubernetesOrchestratorSettings` object
 
     Returns:
         Pod manifest.
     """
+    env = env.copy() if env else {}
+    env.setdefault(ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, "False")
+
     spec: Dict[str, Any] = {
         "restartPolicy": "Never",
         "containers": [
@@ -56,10 +61,8 @@ def build_pod_manifest(
                 "command": command,
                 "args": args,
                 "env": [
-                    {
-                        "name": ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
-                        "value": "False",
-                    }
+                    {"name": name, "value": value}
+                    for name, value in env.items()
                 ],
             }
         ],

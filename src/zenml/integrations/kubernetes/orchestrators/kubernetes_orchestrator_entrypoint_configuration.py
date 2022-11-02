@@ -15,10 +15,7 @@
 
 from typing import List, Set
 
-from zenml.integrations.kubernetes.orchestrators.kubernetes_step_entrypoint_configuration import (
-    RUN_NAME_OPTION,
-)
-
+RUN_NAME_OPTION = "run_name"
 IMAGE_NAME_OPTION = "image_name"
 NAMESPACE_OPTION = "kubernetes_namespace"
 

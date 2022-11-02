@@ -19,9 +19,11 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from kfp import dsl
 from kfp_tekton.compiler import TektonCompiler
+from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.kubeflow.utils import apply_pod_settings
@@ -30,12 +32,10 @@ from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
     TektonOrchestratorConfig,
     TektonOrchestratorSettings,
 )
-from zenml.integrations.tekton.orchestrators.tekton_entrypoint_configuration import (
-    TektonEntrypointConfiguration,
-)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
@@ -48,6 +48,8 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
+
+ENV_ZENML_TEKTON_RUN_ID = "ZENML_TEKTON_RUN_ID"
 
 
 class TektonOrchestrator(BaseOrchestrator):
@@ -231,6 +233,9 @@ class TektonOrchestrator(BaseOrchestrator):
             )
 
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        orchestrator_run_name = get_orchestrator_run_name(
+            pipeline_name=deployment.pipeline.name
+        )
 
         def _construct_kfp_pipeline() -> None:
             """Create a container_op for each step.
@@ -245,9 +250,9 @@ class TektonOrchestrator(BaseOrchestrator):
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.steps.items():
-                command = TektonEntrypointConfiguration.get_entrypoint_command()
+                command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
-                    TektonEntrypointConfiguration.get_entrypoint_arguments(
+                    StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,
                     )
                 )
@@ -269,6 +274,13 @@ class TektonOrchestrator(BaseOrchestrator):
                         settings=settings.pod_settings,
                     )
 
+                container_op.container.add_env_variable(
+                    k8s_client.V1EnvVar(
+                        name=ENV_ZENML_TEKTON_RUN_ID,
+                        value="$(context.pipelineRun.name)",
+                    )
+                )
+
                 if self.requires_resources_in_orchestration_environment(step):
                     self._configure_container_resources(
                         container_op=container_op,
@@ -289,7 +301,7 @@ class TektonOrchestrator(BaseOrchestrator):
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{deployment.run_name}.yaml"
+            self.pipeline_directory, f"{orchestrator_run_name}.yaml"
         )
 
         # Set the run name, which Tekton reads from this attribute of the
@@ -297,7 +309,7 @@ class TektonOrchestrator(BaseOrchestrator):
         setattr(
             _construct_kfp_pipeline,
             "_component_human_name",
-            deployment.run_name,
+            orchestrator_run_name,
         )
         TektonCompiler().compile(_construct_kfp_pipeline, pipeline_file_path)
 
@@ -333,6 +345,24 @@ class TektonOrchestrator(BaseOrchestrator):
                 f"Please make sure your kubernetes config is present and the "
                 f"{self.config.kubernetes_context} kubernetes context is "
                 f"configured correctly.",
+            )
+
+    def get_orchestrator_run_id(self) -> str:
+        """Returns the active orchestrator run id.
+
+        Raises:
+            RuntimeError: If the environment variable specifying the run id
+                is not set.
+
+        Returns:
+            The orchestrator run id.
+        """
+        try:
+            return os.environ[ENV_ZENML_TEKTON_RUN_ID]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to read run id from environment variable "
+                f"{ENV_ZENML_TEKTON_RUN_ID}."
             )
 
     @property
