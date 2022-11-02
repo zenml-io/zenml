@@ -6,6 +6,10 @@ The Kubeflow orchestrator is an [orchestrator](./orchestrators.md) flavor
 provided with the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/)
 to run your pipelines.
 
+{% hint style="warning" %}
+This component is only meant to be used within the context of [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+{% endhint %}
+
 ## When to use it
 
 You should use the Kubeflow orchestrator if:
@@ -150,6 +154,7 @@ zenml stack update -o <NAME>
 
 When using the Kubeflow orchestrator with a remote cluster, you'll additionally 
 need:
+* A remote ZenML server deployed to the cloud. See the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md) for more information.
 * Kubeflow pipelines deployed on a remote cluster. See the [deployment section](#how-to-deploy-it) 
 for more information.
 * The name of your Kubernetes context which points to your remote cluster. 
@@ -214,6 +219,14 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 )
   ...
 ```
+
+### Enabling CUDA for GPU-backed hardware
+
+Note that if you wish to use this orchestrator to run steps on a GPU, you will
+need to follow [the instructions on this page](../../advanced-guide/pipelines/gpu-hardware.md) to ensure that it works. It
+requires adding some extra settings customization and is essential to enable
+CUDA for the GPU to give its full acceleration.
+
 
 ## Important Note for Multi-Tenancy Deployments
 
@@ -315,4 +328,4 @@ A concrete example of using the Kubeflow orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).
 
 For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out the
-[API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator).
+[API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-kubeflow/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator).

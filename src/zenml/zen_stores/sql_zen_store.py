@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
+import logging
 import os
 import re
+from datetime import datetime, timedelta
 from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
@@ -34,14 +36,22 @@ from pydantic import root_validator
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
-from sqlalchemy.sql.operators import is_
+from sqlalchemy.sql.operators import is_, isnot
 from sqlmodel import Session, SQLModel, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
-from zenml.constants import ENV_ZENML_SERVER_DEPLOYMENT_TYPE
-from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.constants import (
+    ENV_ZENML_DISABLE_DATABASE_MIGRATION,
+    ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+)
+from zenml.enums import (
+    ExecutionStatus,
+    LoggingLevels,
+    StackComponentType,
+    StoreType,
+)
 from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
@@ -49,7 +59,7 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.io import fileio
-from zenml.logger import get_logger
+from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
     ArtifactModel,
     ComponentModel,
@@ -70,6 +80,10 @@ from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.migrations.alembic import (
+    ZENML_ALEMBIC_START_REVISION,
+    Alembic,
+)
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     FlavorSchema,
@@ -93,7 +107,12 @@ from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
-    from zenml.zen_stores.metadata_store import MetadataStore
+    from zenml.zen_stores.metadata_store import (
+        MetadataStore,
+        MLMDArtifactModel,
+        MLMDPipelineRunModel,
+        MLMDStepRunModel,
+    )
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -474,6 +493,7 @@ class SqlZenStore(BaseZenStore):
 
     Attributes:
         config: The configuration of the SQL ZenML store.
+        skip_migrations: Whether to skip migrations when initializing the store.
         TYPE: The type of the store.
         CONFIG_TYPE: The type of the store configuration.
         _engine: The SQLAlchemy engine.
@@ -481,11 +501,14 @@ class SqlZenStore(BaseZenStore):
     """
 
     config: SqlZenStoreConfiguration
+    skip_migrations: bool = False
     TYPE: ClassVar[StoreType] = StoreType.SQL
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
     _engine: Optional[Engine] = None
     _metadata_store: Optional["MetadataStore"] = None
+    _highest_synced_run_mlmd_id: int = 0
+    _alembic: Optional[Alembic] = None
 
     @property
     def engine(self) -> Engine:
@@ -526,6 +549,20 @@ class SqlZenStore(BaseZenStore):
             return True
         return False
 
+    @property
+    def alembic(self) -> Alembic:
+        """The Alembic wrapper.
+
+        Returns:
+            The Alembic wrapper.
+
+        Raises:
+            ValueError: If the store is not initialized.
+        """
+        if not self._alembic:
+            raise ValueError("Store not initialized")
+        return self._alembic
+
     # ====================================
     # ZenML Store interface implementation
     # ====================================
@@ -547,7 +584,62 @@ class SqlZenStore(BaseZenStore):
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
         )
-        SQLModel.metadata.create_all(self._engine)
+        self._alembic = Alembic(self.engine)
+        if (
+            not self.skip_migrations
+            and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
+        ):
+            self.migrate_database()
+
+    def migrate_database(self) -> None:
+        """Migrate the database to the head as defined by the current python package."""
+        alembic_logger = logging.getLogger("alembic")
+
+        # remove all existing handlers
+        while len(alembic_logger.handlers):
+            alembic_logger.removeHandler(alembic_logger.handlers[0])
+
+        logging_level = get_logging_level()
+
+        # suppress alembic info logging if the zenml logging level is not debug
+        if logging_level == LoggingLevels.DEBUG:
+            alembic_logger.setLevel(logging.DEBUG)
+        else:
+            alembic_logger.setLevel(logging.WARNING)
+
+        alembic_logger.addHandler(get_console_handler())
+
+        # We need to account for 3 distinct cases here:
+        # 1. the database is completely empty (not initialized)
+        # 2. the database is not empty, but has never been migrated with alembic
+        #   before (i.e. was created with SQLModel back when alembic wasn't
+        #   used)
+        # 3. the database is not empty and has been migrated with alembic before
+
+        revisions = self.alembic.current_revisions()
+        if len(revisions) >= 1:
+            if len(revisions) > 1:
+                logger.warning(
+                    "The ZenML database has more than one migration head "
+                    "revision. This is not expected and might indicate a "
+                    "database migration problem. Please raise an issue on "
+                    "GitHub if you encounter this."
+                )
+            # Case 3: the database has been migrated with alembic before. Just
+            # upgrade to the latest revision.
+            self.alembic.upgrade()
+        else:
+            if self.alembic.db_is_empty():
+                # Case 1: the database is empty. We can just create the
+                # tables from scratch with alembic.
+                self.alembic.upgrade()
+            else:
+                # Case 2: the database is not empty, but has never been
+                # migrated with alembic before. We need to create the alembic
+                # version table, initialize it with the first revision where we
+                # introduced alembic and then upgrade to the latest revision.
+                self.alembic.stamp(ZENML_ALEMBIC_START_REVISION)
+                self.alembic.upgrade()
 
     def get_store_info(self) -> ServerModel:
         """Get information about the store.
@@ -2502,20 +2594,68 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     # --------------
-    # Pipeline steps
-    # --------------
-
-    def list_steps(self, pipeline_id: UUID) -> List[StepRunModel]:
-        """List all steps.
-
-        Args:
-            pipeline_id: The ID of the pipeline to list steps for.
-        """
-        pass  # TODO
-
-    # --------------
     # Pipeline runs
     # --------------
+
+    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            EntityExistsError: If an identical pipeline run already exists.
+            KeyError: If the pipeline does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline run already exists
+            existing_domain_run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.name == pipeline_run.name
+                )
+            ).first()
+            if existing_domain_run is not None:
+                raise EntityExistsError(
+                    f"Unable to create pipeline run {pipeline_run.name}: "
+                    f"A pipeline run with this name already exists."
+                )
+            existing_id_run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.id == pipeline_run.id
+                )
+            ).first()
+            if existing_id_run is not None:
+                raise EntityExistsError(
+                    f"Unable to create pipeline run {pipeline_run.id}: "
+                    f"A pipeline run with this id already exists."
+                )
+
+            # Query pipeline
+            if pipeline_run.pipeline_id is not None:
+                pipeline = session.exec(
+                    select(PipelineSchema).where(
+                        PipelineSchema.id == pipeline_run.pipeline_id
+                    )
+                ).first()
+                if pipeline is None:
+                    raise KeyError(
+                        f"Unable to create pipeline run: {pipeline_run.name}: "
+                        f"No pipeline with ID {pipeline_run.pipeline_id} found."
+                    )
+                new_run = PipelineRunSchema.from_create_model(
+                    run=pipeline_run, pipeline=pipeline
+                )
+            else:
+                new_run = PipelineRunSchema.from_create_model(run=pipeline_run)
+
+            # Create the pipeline run
+            session.add(new_run)
+            session.commit()
+
+            return new_run.to_model()
 
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
@@ -2529,10 +2669,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
-            # Check if pipeline run with the given ID exists
             run = session.exec(
                 select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
             ).first()
@@ -2541,22 +2678,51 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get pipeline run with ID {run_id}: "
                     f"No pipeline run with this ID found."
                 )
+            run_model = run.to_model()
+            run_model = self._update_run_status(run_model)
+            return run_model
 
-            return run.to_model()
+    def _update_run_status(
+        self, run_model: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Updates the status of a pipeline run model.
 
-    def get_run_component_side_effects(
-        self,
-        run_id: UUID,
-        component_id: Optional[UUID] = None,
-    ) -> Dict[str, Any]:
-        """Gets the side effects for a component in a pipeline run.
+        In contrast to other update methods, this does not use the status of the
+        model to overwrite the DB. Instead, the status is computed based on the
+        status of each step, and if that is different from the status in the DB,
+        the DB and model are both updated.
 
         Args:
-            run_id: The ID of the pipeline run to get.
-            component_id: The ID of the component to get.
+            run_model: The pipeline run model to update.
+
+        Returns:
+            The pipeline run model with updated status.
         """
-        # TODO: raise KeyError if run doesn't exist
-        pass  # TODO
+        # Update status only if the run is running and fully synced.
+        if run_model.status != ExecutionStatus.RUNNING or self._sync_run_steps(
+            run_model.id, check=True
+        ):
+            return run_model
+
+        steps = self.list_run_steps(run_id=run_model.id)
+
+        # For legacy runs, we have no `num_steps`. Therefore, we cannot
+        # determine the status of the run correctly. Instead, we need to
+        # load all steps from MLMD and compute `status` and `num_steps`
+        # from that.
+        if run_model.num_steps > 0:
+            num_steps = run_model.num_steps
+        else:
+            num_steps = len(steps)
+
+        status = ExecutionStatus.run_status(
+            step_statuses=[step.status for step in steps],
+            num_steps=num_steps,
+        )
+        if run_model.status != status:
+            run_model.status = status
+            self.update_run(run_model)
+        return run_model
 
     def list_runs(
         self,
@@ -2592,10 +2758,7 @@ class SqlZenStore(BaseZenStore):
                 project = self._get_project_schema(
                     project_name_or_id, session=session
                 )
-                query = query.where(StackSchema.project_id == project.id)
-                query = query.where(
-                    PipelineRunSchema.stack_id == StackSchema.id
-                )
+                query = query.where(PipelineRunSchema.project_id == project.id)
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
             if component_id:
@@ -2616,37 +2779,239 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(PipelineRunSchema.user_id == user.id)
                 query = query.order_by(PipelineRunSchema.created)
             runs = session.exec(query).all()
-            return [run.to_model() for run in runs]
+            run_models = [run.to_model() for run in runs]
+            for run_model in run_models:
+                self._update_run_status(run_model)
+            return run_models
 
-    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a pipeline run.
+    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
+        """Updates a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to get the status for.
+            run: The pipeline run to use for the update.
 
         Returns:
-            The status of the pipeline run.
+            The updated pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
         """
-        steps = self.list_run_steps(run_id)
+        with Session(self.engine) as session:
+            # Check if pipeline run with the given ID exists
+            existing_run = session.exec(
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run.id)
+            ).first()
+            if existing_run is None:
+                raise KeyError(
+                    f"Unable to update pipeline run with ID {run.id}: "
+                    f"No pipeline run with this ID found."
+                )
 
-        # If any step is failed or running, return that status respectively
-        for step in steps:
-            step_status = self.get_run_step_status(step.id)
-            if step_status == ExecutionStatus.FAILED:
-                return ExecutionStatus.FAILED
-            if step_status == ExecutionStatus.RUNNING:
-                return ExecutionStatus.RUNNING
+            # Update the pipeline run
+            existing_run.from_update_model(run)
+            session.add(existing_run)
+            session.commit()
 
-        # If not all steps have started yet, return running
-        if len(steps) < self.get_run(run_id).num_steps:
-            return ExecutionStatus.RUNNING
+            session.refresh(existing_run)
+            return existing_run.to_model()
 
-        # Otherwise, return succeeded
-        return ExecutionStatus.COMPLETED
+    def get_run_component_side_effects(
+        self,
+        run_id: UUID,
+        component_id: Optional[UUID] = None,
+    ) -> Dict[str, Any]:
+        """Gets the side effects for a component in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+            component_id: The ID of the component to get.
+        """
+        # TODO: raise KeyError if run doesn't exist
+        pass  # TODO
 
     # ------------------
     # Pipeline run steps
     # ------------------
+
+    def create_run_step(self, step: StepRunModel) -> StepRunModel:
+        """Creates a step.
+
+        Args:
+            step: The step to create.
+
+        Returns:
+            The created step.
+
+        Raises:
+            EntityExistsError: if the step already exists.
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+
+            # Check if the step already exists
+            if step.mlmd_id is not None:
+                existing_step = session.exec(
+                    select(StepRunSchema).where(
+                        StepRunSchema.mlmd_id == step.mlmd_id
+                    )
+                ).first()
+                if existing_step is not None:
+                    raise EntityExistsError(
+                        f"Unable to create step '{step.name}': A step with "
+                        f"MLMD ID '{step.mlmd_id}' already exists."
+                    )
+
+            # Check if the pipeline run exists
+            run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.id == step.pipeline_run_id
+                )
+            ).first()
+            if run is None:
+                raise KeyError(
+                    f"Unable to create step '{step.name}': No pipeline run "
+                    f"with ID '{step.pipeline_run_id}' found."
+                )
+
+            # Check if the step name already exists in the pipeline run
+            existing_step = session.exec(
+                select(StepRunSchema)
+                .where(StepRunSchema.name == step.name)
+                .where(StepRunSchema.pipeline_run_id == step.pipeline_run_id)
+            ).first()
+            if existing_step is not None:
+                raise EntityExistsError(
+                    f"Unable to create step '{step.name}': A step with this "
+                    f"name already exists in the pipeline run with ID "
+                    f"'{step.pipeline_run_id}'."
+                )
+
+            # Create the step
+            step_schema = StepRunSchema.from_create_model(step)
+            session.add(step_schema)
+            session.commit()
+
+            # Save parent step IDs into the database.
+            for parent_step_id in step.parent_step_ids:
+                self._set_run_step_parent_step(
+                    child_id=step.id, parent_id=parent_step_id
+                )
+
+            # Save input artifact IDs into the database.
+            for input_name, artifact_id in step.input_artifacts.items():
+                self._set_run_step_input_artifact(
+                    step_id=step.id,
+                    artifact_id=artifact_id,
+                    name=input_name,
+                )
+
+            return step_schema.to_model(
+                parent_step_ids=step.parent_step_ids,
+                mlmd_parent_step_ids=step.mlmd_parent_step_ids,
+                input_artifacts=step.input_artifacts,
+            )
+
+    def _set_run_step_parent_step(
+        self, child_id: UUID, parent_id: UUID
+    ) -> None:
+        """Sets the parent step for a step.
+
+        Args:
+            child_id: The ID of the child step to set the parent for.
+            parent_id: The ID of the parent step to set a child for.
+
+        Raises:
+            KeyError: if the child step or parent step doesn't exist.
+        """
+        with Session(self.engine) as session:
+
+            # Check if the child step exists.
+            child_step = session.exec(
+                select(StepRunSchema).where(StepRunSchema.id == child_id)
+            ).first()
+            if child_step is None:
+                raise KeyError(
+                    f"Unable to set parent step for step with ID "
+                    f"{child_id}: No step with this ID found."
+                )
+
+            # Check if the parent step exists.
+            parent_step = session.exec(
+                select(StepRunSchema).where(StepRunSchema.id == parent_id)
+            ).first()
+            if parent_step is None:
+                raise KeyError(
+                    f"Unable to set parent step for step with ID "
+                    f"{child_id}: No parent step with ID {parent_id} "
+                    "found."
+                )
+
+            # Check if the parent step is already set.
+            assignment = session.exec(
+                select(StepRunOrderSchema)
+                .where(StepRunOrderSchema.child_id == child_id)
+                .where(StepRunOrderSchema.parent_id == parent_id)
+            ).first()
+            if assignment is not None:
+                return
+
+            # Save the parent step assignment in the database.
+            assignment = StepRunOrderSchema(
+                child_id=child_id, parent_id=parent_id
+            )
+            session.add(assignment)
+            session.commit()
+
+    def _set_run_step_input_artifact(
+        self, step_id: UUID, artifact_id: UUID, name: str
+    ) -> None:
+        """Sets an artifact as an input of a step.
+
+        Args:
+            step_id: The ID of the step.
+            artifact_id: The ID of the artifact.
+            name: The name of the input in the step.
+
+        Raises:
+            KeyError: if the step or artifact doesn't exist.
+        """
+        with Session(self.engine) as session:
+
+            # Check if the step exists.
+            step = session.exec(
+                select(StepRunSchema).where(StepRunSchema.id == step_id)
+            ).first()
+            if step is None:
+                raise KeyError(
+                    f"Unable to set input artifact: No step with ID "
+                    f"'{step_id}' found."
+                )
+
+            # Check if the artifact exists.
+            artifact = session.exec(
+                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+            ).first()
+            if artifact is None:
+                raise KeyError(
+                    f"Unable to set input artifact: No artifact with ID "
+                    f"'{artifact_id}' found."
+                )
+
+            # Check if the input is already set.
+            assignment = session.exec(
+                select(StepInputArtifactSchema)
+                .where(StepInputArtifactSchema.step_id == step_id)
+                .where(StepInputArtifactSchema.artifact_id == artifact_id)
+            ).first()
+            if assignment is not None:
+                return
+
+            # Save the input assignment in the database.
+            assignment = StepInputArtifactSchema(
+                step_id=step_id, artifact_id=artifact_id, name=name
+            )
+            session.add(assignment)
+            session.commit()
 
     def get_run_step(self, step_id: UUID) -> StepRunModel:
         """Get a step by ID.
@@ -2669,6 +3034,23 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get step with ID {step_id}: No step with this "
                     "ID found."
                 )
+
+            step_model = self._run_step_schema_to_model(step)
+            step_model = self._update_run_step_status(step_model)
+            return step_model
+
+    def _run_step_schema_to_model(self, step: StepRunSchema) -> StepRunModel:
+        """Converts a run step schema to a step model.
+
+        Args:
+            step: The run step schema to convert.
+
+        Returns:
+            The run step model.
+        """
+        with Session(self.engine) as session:
+
+            # Get parent steps.
             parent_steps = session.exec(
                 select(StepRunSchema)
                 .where(StepRunOrderSchema.child_id == step.id)
@@ -2676,40 +3058,112 @@ class SqlZenStore(BaseZenStore):
             ).all()
             parent_step_ids = [parent_step.id for parent_step in parent_steps]
             mlmd_parent_step_ids = [
-                parent_step.mlmd_id for parent_step in parent_steps
+                parent_step.mlmd_id
+                for parent_step in parent_steps
+                if parent_step.mlmd_id is not None
             ]
-            step_model = step.to_model(parent_step_ids, mlmd_parent_step_ids)
-            return step_model
 
-    def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
-        """Get the outputs for a specific step.
+            # Get input artifacts.
+            input_artifact_list = session.exec(
+                select(
+                    StepInputArtifactSchema.artifact_id,
+                    StepInputArtifactSchema.name,
+                ).where(StepInputArtifactSchema.step_id == step.id)
+            ).all()
+            input_artifacts = {
+                input_artifact[1]: input_artifact[0]
+                for input_artifact in input_artifact_list
+            }
+
+            # Convert to model.
+            return step.to_model(
+                parent_step_ids=parent_step_ids,
+                mlmd_parent_step_ids=mlmd_parent_step_ids,
+                input_artifacts=input_artifacts,
+            )
+
+    def _update_run_step_status(self, step_model: StepRunModel) -> StepRunModel:
+        """Updates the status of a step run model.
+
+        In contrast to other update methods, this does not use the status of the
+        model to overwrite the DB. Instead, the status is queried from MLMD.
 
         Args:
-            step_id: The id of the step to get outputs for.
+            step_model: The step run model to update.
 
         Returns:
-            A dict mapping artifact names to the output artifacts for the step.
+            The step run model with updated status.
+        """
+        # Update status only if the step is running and fully synced.
+        if (
+            step_model.status != ExecutionStatus.RUNNING
+            or step_model.mlmd_id is None
+            or self._sync_run_step_artifacts(step_model, check=True)
+        ):
+            return step_model
+
+        status = self.metadata_store.get_step_status(step_model.mlmd_id)
+        if step_model.status != status:
+            step_model.status = status
+            self.update_run_step(step_model)
+        return step_model
+
+    def list_run_steps(
+        self, run_id: Optional[UUID] = None
+    ) -> List[StepRunModel]:
+        """Get all run steps.
+
+        Args:
+            run_id: If provided, only return steps for this pipeline run.
+
+        Returns:
+            A list of all run steps.
+        """
+        query = select(StepRunSchema)
+        if run_id is not None:
+            query = query.where(StepRunSchema.pipeline_run_id == run_id)
+            if not self.runs_inside_server:
+                self._sync_run_steps(run_id)
+        elif not self.runs_inside_server:
+            self._sync_runs()
+        with Session(self.engine) as session:
+            steps = session.exec(query).all()
+            return [self.get_run_step(step.id) for step in steps]
+
+    def update_run_step(self, step: StepRunModel) -> StepRunModel:
+        """Updates a step.
+
+        Args:
+            step: The step to update.
+
+        Returns:
+            The updated step.
 
         Raises:
             KeyError: if the step doesn't exist.
         """
         with Session(self.engine) as session:
-            step = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_id)
+            # Check if the step exists
+            existing_step = session.exec(
+                select(StepRunSchema).where(StepRunSchema.id == step.id)
             ).first()
-            if step is None:
+            if existing_step is None:
                 raise KeyError(
-                    f"Unable to get output artifacts for step with ID "
-                    f"{step_id}: No step with this ID found."
+                    f"Unable to update step with ID {step.id}: "
+                    f"No step with this ID found."
                 )
-            artifacts = session.exec(
-                select(ArtifactSchema).where(
-                    ArtifactSchema.parent_step_id == step_id
-                )
-            ).all()
-            return {
-                artifact.name: artifact.to_model() for artifact in artifacts
-            }
+
+            # Update the step
+            existing_step.from_update_model(step)
+            session.add(existing_step)
+            session.commit()
+
+            session.refresh(existing_step)
+            return existing_step.to_model(
+                parent_step_ids=step.parent_step_ids,
+                mlmd_parent_step_ids=step.mlmd_parent_step_ids,
+                input_artifacts=step.input_artifacts,
+            )
 
     def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
         """Get the inputs for a specific step.
@@ -2742,45 +3196,53 @@ class SqlZenStore(BaseZenStore):
                 for artifact, step_input_artifact in query_result
             }
 
-    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a single step.
+    # ---------
+    # Artifacts
+    # ---------
+
+    def create_artifact(self, artifact: ArtifactModel) -> ArtifactModel:
+        """Creates an artifact.
 
         Args:
-            step_id: The ID of the step to get the status for.
+            artifact: The artifact to create.
 
         Returns:
-            ExecutionStatus: The status of the step.
+            The created artifact.
+
+        Raises:
+            KeyError: if the parent step doesn't exist.
         """
-        step = self.get_run_step(step_id)
-        return self.metadata_store.get_step_status(step.mlmd_id)
-
-    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
-        """Gets all steps in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run for which to list runs.
-
-        Returns:
-            A mapping from step names to step models for all steps in the run.
-        """
-        if not self.runs_inside_server:
-            self._sync_run_steps(run_id)
         with Session(self.engine) as session:
-            steps = session.exec(
+            # Check if the step exists
+            step = session.exec(
                 select(StepRunSchema).where(
-                    StepRunSchema.pipeline_run_id == run_id
+                    StepRunSchema.id == artifact.parent_step_id
                 )
-            ).all()
-            return [self.get_run_step(step.id) for step in steps]
+            ).first()
+            if step is None:
+                raise KeyError(
+                    f"Unable to create artifact: Could not find parent step "
+                    f"with ID '{artifact.parent_step_id}'."
+                )
+
+            # Create the artifact
+            artifact_schema = ArtifactSchema.from_create_model(artifact)
+            session.add(artifact_schema)
+            session.commit()
+            return artifact_schema.to_model()
 
     def list_artifacts(
-        self, artifact_uri: Optional[str] = None
+        self,
+        artifact_uri: Optional[str] = None,
+        parent_step_id: Optional[UUID] = None,
     ) -> List[ArtifactModel]:
         """Lists all artifacts.
 
         Args:
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
+            parent_step_id: If specified, only artifacts for the given step run
+                will be returned.
 
         Returns:
             A list of all artifacts.
@@ -2791,6 +3253,10 @@ class SqlZenStore(BaseZenStore):
             query = select(ArtifactSchema)
             if artifact_uri is not None:
                 query = query.where(ArtifactSchema.uri == artifact_uri)
+            if parent_step_id is not None:
+                query = query.where(
+                    ArtifactSchema.parent_step_id == parent_step_id
+                )
             artifacts = session.exec(query).all()
             return [artifact.to_model() for artifact in artifacts]
 
@@ -3018,36 +3484,77 @@ class SqlZenStore(BaseZenStore):
         This queries all runs from MLMD, checks for each whether it already
         exists in the database, and if not, creates it.
         """
-        # Get all runs from ZenML.
-        with Session(self.engine) as session:
-            zenml_runs_list = session.exec(select(PipelineRunSchema)).all()
-        zenml_runs = {run.name: run.to_model() for run in zenml_runs_list}
-
-        # Get all runs from MLMD.
-        mlmd_runs = self.metadata_store.get_all_runs()
-
         # Sync all MLMD runs that don't exist in ZenML.
-        for run_name, mlmd_run in mlmd_runs.items():
-
-            # If the run is in MLMD but not in ZenML, we create it
-            if run_name not in zenml_runs:
-                new_run = PipelineRunModel(
-                    name=run_name,
-                    mlmd_id=mlmd_run.mlmd_id,
-                    project=mlmd_run.project,
-                    user=mlmd_run.user,
-                    stack_id=mlmd_run.stack_id,
-                    pipeline_id=mlmd_run.pipeline_id,
-                    pipeline_configuration=mlmd_run.pipeline_configuration,
-                    num_steps=mlmd_run.num_steps,
+        # For performance reasons, we determine this by explicitly ignoring runs
+        # that already exist in ZenML when querying MLMD.
+        with Session(self.engine) as session:
+            synced_mlmd_ids = session.exec(
+                select(PipelineRunSchema.mlmd_id).where(
+                    isnot(PipelineRunSchema.mlmd_id, None)
                 )
-                new_run = self._create_run(new_run)
-                zenml_runs[run_name] = new_run
+            ).all()
+        unsynced_mlmd_runs = self.metadata_store.get_all_runs(
+            ignored_ids=[id_ for id_ in synced_mlmd_ids if id_ is not None]
+        )
+        for mlmd_run in unsynced_mlmd_runs:
+            try:
+                self._sync_run(mlmd_run)
+            except (KeyError, EntityExistsError) as err:
+                logger.warning(
+                    f"Syncing run '{mlmd_run.name}' failed: {str(err)}"
+                )
+                continue
 
-        for run_ in zenml_runs.values():
+        # Sync steps and status of all unfinished runs.
+        with Session(self.engine) as session:
+            unfinished_runs = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.status == ExecutionStatus.RUNNING
+                )
+            ).all()
+        for run_ in unfinished_runs:
             self._sync_run_steps(run_.id)
+            self._update_run_status(run_.to_model())
 
-    def _sync_run_steps(self, run_id: UUID) -> None:
+        # Sync steps of all recently updated runs when running in a server.
+        # This is done to prevent missing output artifacts of steps in case the
+        # run status was updated after all steps of a run have completed but
+        # before the last artifact was written to MLMD.
+        if self.runs_inside_server:
+            with Session(self.engine) as session:
+                recently_updated_runs = session.exec(
+                    select(PipelineRunSchema).where(
+                        PipelineRunSchema.updated
+                        >= datetime.now() - timedelta(minutes=1)
+                    )
+                ).all()
+            for run_ in recently_updated_runs:
+                if run_ not in unfinished_runs:
+                    self._sync_run_steps(run_.id)
+
+    def _sync_run(self, mlmd_run: "MLMDPipelineRunModel") -> PipelineRunModel:
+        """Sync a single run from MLMD into the database.
+
+        Args:
+            mlmd_run: The MLMD run model to sync.
+
+        Returns:
+            The synced run model.
+        """
+        new_run = PipelineRunModel(
+            name=mlmd_run.name,
+            mlmd_id=mlmd_run.mlmd_id,
+            project=mlmd_run.project or self._default_project.id,  # For legacy
+            user=mlmd_run.user or self._default_user.id,  # For legacy
+            stack_id=mlmd_run.stack_id,
+            pipeline_id=mlmd_run.pipeline_id,
+            pipeline_configuration=mlmd_run.pipeline_configuration,
+            num_steps=mlmd_run.num_steps or -1,  # For legacy
+            status=ExecutionStatus.RUNNING,  # Update later.
+        )
+        return self.create_run(new_run)
+
+    def _sync_run_steps(self, run_id: UUID, check: bool = False) -> bool:
         """Sync run steps from MLMD into the database.
 
         Since we do not allow to create steps in the database directly, this is
@@ -3055,80 +3562,146 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to sync steps for.
+            check: If set to True, only check whether steps need to be synced
+                and do not sync them if they are not.
+
+        Returns:
+            True if check is True and steps need to be synced, else False.
 
         Raises:
             KeyError: if the run couldn't be found.
         """
-        # Get all steps from ZenML.
         with Session(self.engine) as session:
             run = session.exec(
                 select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
             ).first()
+
+            # If the run doesn't exist, raise an error.
             if run is None:
                 raise KeyError(
                     f"Unable to sync run steps for run with ID {run_id}: "
                     f"No run with this ID found."
                 )
-            zenml_steps_list = session.exec(
+
+            # If the run didn't come from MLMD, we can't sync artifacts.
+            if run.mlmd_id is None:
+                return False
+
+            # Get all steps that already exist in the database.
+            zenml_steps = session.exec(
                 select(StepRunSchema).where(
                     StepRunSchema.pipeline_run_id == run_id
                 )
             ).all()
-        zenml_steps = {
-            step.name: self.get_run_step(step.id) for step in zenml_steps_list
-        }
+            zenml_step_dict = {step.name: step for step in zenml_steps}
 
         # Get all steps from MLMD.
         mlmd_steps = self.metadata_store.get_pipeline_run_steps(run.mlmd_id)
 
         # For each step in MLMD, sync it into ZenML if it doesn't exist yet.
         for step_name, mlmd_step in mlmd_steps.items():
-            if step_name not in zenml_steps:
-                docstring = mlmd_step.step_configuration["config"]["docstring"]
-                new_step = StepRunModel(
-                    name=step_name,
-                    mlmd_id=mlmd_step.mlmd_id,
-                    mlmd_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
-                    entrypoint_name=mlmd_step.entrypoint_name,
-                    parameters=mlmd_step.parameters,
-                    step_configuration=mlmd_step.step_configuration,
-                    docstring=docstring,
-                    pipeline_run_id=run_id,
-                    parent_step_ids=[
-                        self._resolve_mlmd_step_id(parent_step_id)
-                        for parent_step_id in mlmd_step.mlmd_parent_step_ids
-                    ],
-                )
-                new_step = self._create_run_step(new_step)
-                zenml_steps[step_name] = new_step
+            if step_name not in zenml_step_dict:
+                if check:
+                    return True
+                try:
+                    step_model = self._sync_run_step(
+                        run_id, step_name, mlmd_step
+                    )
+                except (KeyError, EntityExistsError) as err:
+                    logger.warning(
+                        f"Syncing run step '{step_name}' failed: {str(err)}"
+                    )
+                    continue
 
-        # Save parent step IDs into the database.
-        for step in zenml_steps.values():
-            for parent_step_id in step.parent_step_ids:
-                self._set_parent_step(
-                    child_id=step.id, parent_id=parent_step_id
-                )
+            elif check:
+                continue
 
-        # Sync Artifacts.
-        for step in zenml_steps.values():
-            self._sync_run_step_artifacts(step.id)
+            else:
+                step_schema = zenml_step_dict[step_name]
+                step_model = self._run_step_schema_to_model(step_schema)
 
-    def _sync_run_step_artifacts(self, run_step_id: UUID) -> None:
+            # Sync artifacts and status of all steps.
+            self._sync_run_step_artifacts(step_model)
+            self._update_run_step_status(step_model)
+
+        return False
+
+    def _sync_run_step(
+        self, run_id: UUID, step_name: str, mlmd_step: "MLMDStepRunModel"
+    ) -> StepRunModel:
+        """Sync a single run step from MLMD into the database.
+
+        Args:
+            run_id: The ID of the pipeline run to sync the step for.
+            step_name: The name of the step to sync.
+            mlmd_step: The MLMD step model to sync.
+
+        Returns:
+            The synced run step model.
+        """
+        # Build dict of input artifacts.
+        mlmd_inputs, _ = self.metadata_store.get_step_artifacts(
+            step_id=mlmd_step.mlmd_id,
+            step_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
+            step_name=mlmd_step.entrypoint_name,
+        )
+        input_artifacts = {}
+        for input_name, mlmd_artifact in mlmd_inputs.items():
+            artifact_id = self._resolve_mlmd_artifact_id(
+                mlmd_id=mlmd_artifact.mlmd_id,
+                mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
+            )
+            input_artifacts[input_name] = artifact_id
+
+        # Create step.
+        new_step = StepRunModel(
+            name=step_name,
+            mlmd_id=mlmd_step.mlmd_id,
+            mlmd_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
+            entrypoint_name=mlmd_step.entrypoint_name,
+            parameters=mlmd_step.parameters,
+            step_configuration=mlmd_step.step_configuration,
+            docstring=mlmd_step.docstring,
+            pipeline_run_id=run_id,
+            parent_step_ids=[
+                self._resolve_mlmd_step_id(parent_step_id)
+                for parent_step_id in mlmd_step.mlmd_parent_step_ids
+            ],
+            input_artifacts=input_artifacts,
+            status=ExecutionStatus.RUNNING,  # Update later.
+        )
+        return self.create_run_step(new_step)
+
+    def _sync_run_step_artifacts(
+        self, step_model: StepRunModel, check: bool = False
+    ) -> bool:
         """Sync run step artifacts from MLMD into the database.
 
         Since we do not allow to create artifacts in the database directly, this
         is a one-way sync from MLMD to the database.
 
         Args:
-            run_step_id: The ID of the step run to sync artifacts for.
-        """
-        # Get all ZenML artifacts.
-        zenml_inputs = self.get_run_step_inputs(run_step_id)
-        zenml_outputs = self.get_run_step_outputs(run_step_id)
+            step_model: The model of the step run to sync artifacts for.
+            check: If set to True, only check whether artifacts need to be
+                synced and do not sync them if they are not.
 
-        # Get all MLMD artifacts.
-        step_model = self.get_run_step(run_step_id)
-        mlmd_inputs, mlmd_outputs = self.metadata_store.get_step_artifacts(
+        Returns:
+            True if check is True and artifacts need to be synced, else False.
+        """
+        # If the step didn't come from MLMD, we can't sync artifacts.
+        if step_model.mlmd_id is None:
+            return False
+
+        # Get the names of all outputs that are already in ZenML.
+        with Session(self.engine) as session:
+            zenml_output_names = session.exec(
+                select(ArtifactSchema.name).where(
+                    ArtifactSchema.parent_step_id == step_model.id
+                )
+            ).all()
+
+        # Get all MLMD output artifacts.
+        _, mlmd_outputs = self.metadata_store.get_step_artifacts(
             step_id=step_model.mlmd_id,
             step_parent_step_ids=step_model.mlmd_parent_step_ids,
             step_name=step_model.entrypoint_name,
@@ -3136,316 +3709,46 @@ class SqlZenStore(BaseZenStore):
 
         # For each output in MLMD, sync it into ZenML if it doesn't exist yet.
         for output_name, mlmd_artifact in mlmd_outputs.items():
-            if output_name not in zenml_outputs:
-                new_artifact = ArtifactModel(
-                    name=output_name,
-                    mlmd_id=mlmd_artifact.mlmd_id,
-                    type=mlmd_artifact.type,
-                    uri=mlmd_artifact.uri,
-                    materializer=mlmd_artifact.materializer,
-                    data_type=mlmd_artifact.data_type,
-                    mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
-                    mlmd_producer_step_id=mlmd_artifact.mlmd_producer_step_id,
-                    is_cached=mlmd_artifact.is_cached,
-                    parent_step_id=self._resolve_mlmd_step_id(
-                        mlmd_artifact.mlmd_parent_step_id
-                    ),
-                    producer_step_id=self._resolve_mlmd_step_id(
-                        mlmd_artifact.mlmd_producer_step_id
-                    ),
-                )
-                self._create_run_step_artifact(new_artifact)
-
-        # For each input in MLMD, sync it into ZenML if it doesn't exist yet.
-        for input_name, mlmd_artifact in mlmd_inputs.items():
-            if input_name not in zenml_inputs:
-                artifact_id = self._resolve_mlmd_artifact_id(
-                    mlmd_id=mlmd_artifact.mlmd_id,
-                    mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
-                )
-                self._set_run_step_input_artifact(
-                    step_id=run_step_id,
-                    artifact_id=artifact_id,
-                    name=input_name,
-                )
-
-    def _create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
-        """Creates a pipeline run.
-
-        Args:
-            pipeline_run: The pipeline run to create.
-
-        Returns:
-            The created pipeline run.
-
-        Raises:
-            EntityExistsError: If an identical pipeline run already exists.
-            KeyError: If the pipeline does not exist.
-        """
-        # TODO: fix for when creating without associating to a project
-        with Session(self.engine) as session:
-            # Check if pipeline run already exists
-            existing_domain_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.name == pipeline_run.name
-                )
-            ).first()
-            if existing_domain_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run {pipeline_run.name}: "
-                    f"A pipeline run with this name already exists."
-                )
-            existing_id_run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.id == pipeline_run.id
-                )
-            ).first()
-            if existing_id_run is not None:
-                raise EntityExistsError(
-                    f"Unable to create pipeline run {pipeline_run.id}: "
-                    f"A pipeline run with this id already exists."
-                )
-
-            # Query pipeline
-            if pipeline_run.pipeline_id is not None:
-                pipeline = session.exec(
-                    select(PipelineSchema).where(
-                        PipelineSchema.id == pipeline_run.pipeline_id
+            if output_name not in zenml_output_names:
+                if check:
+                    return True
+                try:
+                    self._sync_run_step_artifact(output_name, mlmd_artifact)
+                except KeyError as err:
+                    logger.warning(
+                        f"Syncing artifact '{output_name}' failed: {str(err)}"
                     )
-                ).first()
-                if pipeline is None:
-                    raise KeyError(
-                        f"Unable to create pipeline run: {pipeline_run.name}: "
-                        f"No pipeline with ID {pipeline_run.pipeline_id} found."
-                    )
-                new_run = PipelineRunSchema.from_create_model(
-                    run=pipeline_run, pipeline=pipeline
-                )
-            else:
-                new_run = PipelineRunSchema.from_create_model(run=pipeline_run)
+                    continue
 
-            # Create the pipeline run
-            session.add(new_run)
-            session.commit()
+        return False
 
-            return new_run.to_model()
-
-    def _update_run(self, run: PipelineRunModel) -> PipelineRunModel:
-        """Updates a pipeline run.
-
-        Args:
-            run: The pipeline run to use for the update.
-
-        Returns:
-            The updated pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if pipeline run with the given ID exists
-            existing_run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run.id)
-            ).first()
-            if existing_run is None:
-                raise KeyError(
-                    f"Unable to update pipeline run with ID {run.id}: "
-                    f"No pipeline run with this ID found."
-                )
-
-            # Update the pipeline run
-            existing_run.from_update_model(run)
-            session.add(existing_run)
-            session.commit()
-
-            session.refresh(existing_run)
-            return existing_run.to_model()
-
-    def _create_run_step(self, step: StepRunModel) -> StepRunModel:
-        """Creates a step.
-
-        Args:
-            step: The step to create.
-
-        Returns:
-            The created step.
-
-        Raises:
-            EntityExistsError: if the step already exists.
-            KeyError: if the pipeline run doesn't exist.
-        """
-        with Session(self.engine) as session:
-
-            # Check if the step already exists
-            existing_step = session.exec(
-                select(StepRunSchema).where(
-                    StepRunSchema.mlmd_id == step.mlmd_id
-                )
-            ).first()
-            if existing_step is not None:
-                raise EntityExistsError(
-                    f"Unable to create step '{step.name}': A step with MLMD ID "
-                    f"'{step.mlmd_id}' already exists."
-                )
-
-            # Check if the pipeline run exists
-            run = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.id == step.pipeline_run_id
-                )
-            ).first()
-            if run is None:
-                raise KeyError(
-                    f"Unable to create step '{step.name}': No pipeline run "
-                    f"with ID '{step.pipeline_run_id}' found."
-                )
-
-            # Check if the step name already exists in the pipeline run
-            existing_step = session.exec(
-                select(StepRunSchema)
-                .where(StepRunSchema.name == step.name)
-                .where(StepRunSchema.pipeline_run_id == step.pipeline_run_id)
-            ).first()
-            if existing_step is not None:
-                raise EntityExistsError(
-                    f"Unable to create step '{step.name}': A step with this "
-                    f"name already exists in the pipeline run with ID "
-                    f"'{step.pipeline_run_id}'."
-                )
-
-            # Create the step
-            step_schema = StepRunSchema.from_create_model(step)
-            session.add(step_schema)
-            session.commit()
-
-            assert step.parent_step_ids is not None
-            return step_schema.to_model(
-                parent_step_ids=step.parent_step_ids,
-                mlmd_parent_step_ids=step.mlmd_parent_step_ids,
-            )
-
-    def _set_parent_step(self, child_id: UUID, parent_id: UUID) -> None:
-        """Sets the parent step for a step.
-
-        Args:
-            child_id: The ID of the child step to set the parent for.
-            parent_id: The ID of the parent step to set a child for.
-
-        Raises:
-            KeyError: if the child step or parent step doesn't exist.
-        """
-        with Session(self.engine) as session:
-
-            # Check if the child step exists.
-            child_step = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == child_id)
-            ).first()
-            if child_step is None:
-                raise KeyError(
-                    f"Unable to set parent step for step with ID "
-                    f"{child_id}: No step with this ID found."
-                )
-
-            # Check if the parent step exists.
-            parent_step = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == parent_id)
-            ).first()
-            if parent_step is None:
-                raise KeyError(
-                    f"Unable to set parent step for step with ID "
-                    f"{child_id}: No parent step with ID {parent_id} "
-                    "found."
-                )
-
-            # Check if the parent step is already set.
-            assignment = session.exec(
-                select(StepRunOrderSchema)
-                .where(StepRunOrderSchema.child_id == child_id)
-                .where(StepRunOrderSchema.parent_id == parent_id)
-            ).first()
-            if assignment is not None:
-                return
-
-            # Save the parent step assignment in the database.
-            assignment = StepRunOrderSchema(
-                child_id=child_id, parent_id=parent_id
-            )
-            session.add(assignment)
-            session.commit()
-
-    def _create_run_step_artifact(
-        self, artifact: ArtifactModel
+    def _sync_run_step_artifact(
+        self, output_name: str, mlmd_artifact: "MLMDArtifactModel"
     ) -> ArtifactModel:
-        """Creates an artifact of a step.
+        """Sync a single run step artifact from MLMD into the database.
 
         Args:
-            artifact: The artifact to create.
+            output_name: The name of the output artifact.
+            mlmd_artifact: The MLMD artifact model to sync.
 
         Returns:
-            The created artifact.
-
-        Raises:
-            KeyError: if the step doesn't exist.
+            The synced artifact model.
         """
-        with Session(self.engine) as session:
-            # Check if the step exists
-            step = session.exec(
-                select(StepRunSchema).where(
-                    StepRunSchema.id == artifact.parent_step_id
-                )
-            ).first()
-            if step is None:
-                raise KeyError(
-                    f"Unable to create artifact: Could not find parent step "
-                    f"with ID '{artifact.parent_step_id}'."
-                )
-
-            # Create the artifact
-            artifact_schema = ArtifactSchema.from_create_model(artifact)
-            session.add(artifact_schema)
-            session.commit()
-            return artifact_schema.to_model()
-
-    def _set_run_step_input_artifact(
-        self, step_id: UUID, artifact_id: UUID, name: str
-    ) -> None:
-        """Sets an artifact as an input of a step.
-
-        Args:
-            step_id: The ID of the step.
-            artifact_id: The ID of the artifact.
-            name: The name of the input in the step.
-
-        Raises:
-            KeyError: if the step or artifact doesn't exist.
-        """
-        with Session(self.engine) as session:
-
-            # Check if the step exists.
-            step = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_id)
-            ).first()
-            if step is None:
-                raise KeyError(
-                    f"Unable to set input artifact: No step with ID "
-                    f"'{step_id}' found."
-                )
-
-            # Check if the artifact exists.
-            artifact = session.exec(
-                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
-            ).first()
-            if artifact is None:
-                raise KeyError(
-                    f"Unable to set input artifact: No artifact with ID "
-                    f"'{artifact_id}' found."
-                )
-
-            # Save the input artifact assignment in the database.
-            step_input = StepInputArtifactSchema(
-                step_id=step_id,
-                artifact_id=artifact_id,
-                name=name,
-            )
-            session.add(step_input)
-            session.commit()
+        new_artifact = ArtifactModel(
+            name=output_name,
+            mlmd_id=mlmd_artifact.mlmd_id,
+            type=mlmd_artifact.type,
+            uri=mlmd_artifact.uri,
+            materializer=mlmd_artifact.materializer,
+            data_type=mlmd_artifact.data_type,
+            mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
+            mlmd_producer_step_id=mlmd_artifact.mlmd_producer_step_id,
+            is_cached=mlmd_artifact.is_cached,
+            parent_step_id=self._resolve_mlmd_step_id(
+                mlmd_artifact.mlmd_parent_step_id
+            ),
+            producer_step_id=self._resolve_mlmd_step_id(
+                mlmd_artifact.mlmd_producer_step_id
+            ),
+        )
+        return self.create_artifact(new_artifact)

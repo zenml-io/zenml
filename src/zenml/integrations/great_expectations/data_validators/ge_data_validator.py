@@ -292,7 +292,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
             if self.config.configure_local_docs:
 
-                client = Client(skip_client_check=True)  # type: ignore[call-arg]
+                client = Client()
                 artifact_store = client.active_stack.artifact_store
                 if artifact_store.flavor != "local":
                     self._context.config.data_docs_sites[

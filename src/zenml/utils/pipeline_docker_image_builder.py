@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Iterator, List, Optional, Sequence, Tuple
 
 import zenml
 from zenml.config import DockerSettings
+from zenml.config.docker_settings import PythonEnvironmentExportMethod
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE,
@@ -352,10 +353,21 @@ class PipelineDockerImageBuilder:
 
         # Generate requirements file for the local environment if configured
         if docker_settings.replicate_local_python_environment:
+            if isinstance(
+                docker_settings.replicate_local_python_environment,
+                PythonEnvironmentExportMethod,
+            ):
+                command = (
+                    docker_settings.replicate_local_python_environment.command
+                )
+            else:
+                command = " ".join(
+                    docker_settings.replicate_local_python_environment
+                )
+
             try:
                 local_requirements = subprocess.check_output(
-                    docker_settings.replicate_local_python_environment.command,
-                    shell=True,
+                    command, shell=True
                 ).decode()
             except subprocess.CalledProcessError as e:
                 raise RuntimeError(
@@ -444,9 +456,6 @@ class PipelineDockerImageBuilder:
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
-        if docker_settings.user:
-            lines.append(f"USER {docker_settings.user}")
-
         if docker_settings.copy_global_config:
             lines.append(
                 f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
@@ -473,6 +482,10 @@ class PipelineDockerImageBuilder:
             lines.append(f"COPY {DOCKER_IMAGE_ZENML_CONFIG_DIR} .")
 
         lines.append("RUN chmod -R a+rw .")
+
+        if docker_settings.user:
+            lines.append(f"USER {docker_settings.user}")
+            lines.append(f"RUN chown -R {docker_settings.user} .")
 
         if entrypoint:
             lines.append(f"ENTRYPOINT {entrypoint}")

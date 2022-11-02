@@ -138,10 +138,9 @@ class DockerSettings(BaseSettings):
             image. If this is set to `False`, ZenML will not copy this
             configuration and you're responsible for making sure ZenML can
             access the ZenStore in the Docker image.
-        user: If not `None`, will use the USER instruction to set the username and
-            run the commands of the dockerfile as `user` instead of root.
-            Specifically,  the specified user is used for RUN instructions
-            and at runtime, runs the relevant ENTRYPOINT and CMD commands.
+        user: If not `None`, will set the user, make it owner of the `/app`
+            directory which contains all the user code and run the container
+            entrypoint as this user.
     """
 
     LEVEL = ConfigurationLevel.PIPELINE
@@ -154,7 +153,7 @@ class DockerSettings(BaseSettings):
     target_repository: str = "zenml"
 
     replicate_local_python_environment: Optional[
-        PythonEnvironmentExportMethod
+        Union[List[str], PythonEnvironmentExportMethod]
     ] = None
     requirements: Union[None, str, List[str]] = None
     required_integrations: List[str] = []

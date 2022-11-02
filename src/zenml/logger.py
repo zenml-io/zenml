@@ -224,7 +224,9 @@ def disable_logging(log_level: int) -> Iterator[None]:
         logging.disable(old_level)
 
 
-def get_apidocs_link(docs_section: str, caller_path: str) -> str:
+def get_apidocs_link(
+    docs_section: str, caller_path: str, core: bool = True
+) -> str:
     """Get link to api_docs of the caller.
 
     Args:
@@ -232,11 +234,13 @@ def get_apidocs_link(docs_section: str, caller_path: str) -> str:
             part of.
         caller_path: Path to the class, method or function to which the api
             doc-link should point.
+        core: Boolean to toggle which submenu of the apidocs to link to
 
     Returns:
         Link to the api docs for the given caller_path
     """
+    submenu = "core_code_docs" if core else "integration_code_docs"
     return (
-        f"https://apidocs.zenml.io/{zenml.__version__}/api_docs/"
+        f"https://apidocs.zenml.io/{zenml.__version__}/{submenu}/"
         f"{docs_section}/#{caller_path}"
     )

@@ -13,7 +13,7 @@ implementation.
 
 The Artifact Store establishes one of the main components in every ZenML stack.
 Now, let us take a deeper dive into the fundamentals behind its abstraction,
-namely [the `BaseArtifactStore` class](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore):
+namely [the `BaseArtifactStore` class](https://apidocs.zenml.io/latest/core_code_docs/core-artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore):
 
 1. As ZenML only supports filesystem-based artifact stores, it features a 
 configuration parameter called `path`, which will indicate the root path of 
@@ -142,7 +142,7 @@ class BaseArtifactStoreFlavor(Flavor):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
-and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore).
+and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/core_code_docs/core-artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore).
 {% endhint %}
 
 #### The effect on the `zenml.io.fileio`
@@ -161,7 +161,7 @@ that you defined within your artifact store.
 If you want to implement your own custom Artifact Store, you can 
 follow the following steps:
 
-1. Create a class which inherits from [the `BaseArtifactStore` class](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore)
+1. Create a class which inherits from [the `BaseArtifactStore` class](https://apidocs.zenml.io/latest/core_code_docs/core-artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore)
 and implement the abstract methods.
 2. Create a class which inherits from [the `BaseArtifactStoreConfig` class]() 
 and fill in the `SUPPORTED_SCHEMES` based on your file system.
