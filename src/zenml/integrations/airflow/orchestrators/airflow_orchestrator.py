@@ -88,6 +88,8 @@ def set_environment_variable(key: str, value: str) -> Iterator[None]:
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
+    _orchestrator_run_id: Optional[str] = None
+
     def __init__(self, **values: Any):
         """Sets environment variables to configure airflow.
 

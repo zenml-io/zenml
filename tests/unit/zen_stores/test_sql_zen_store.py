@@ -911,7 +911,7 @@ def test_getting_run_succeeds(
     """Tests getting run."""
     run_id = sql_store_with_run["pipeline_run"].id
     with does_not_raise():
-        run = sql_store_with_run["store"].get_run(run_id=run_id)
+        run = sql_store_with_run["store"].get_run(run_id)
         assert run is not None
         assert run.name == sql_store_with_run["pipeline_run"].name
 

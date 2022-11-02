@@ -201,6 +201,7 @@ DeleteObject
 Deprovision
 Deprovisions
 Deregisters
+Deterministically
 DevOps
 DockerConfiguration
 DockerHub
