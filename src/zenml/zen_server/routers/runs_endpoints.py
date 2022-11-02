@@ -93,26 +93,26 @@ def list_runs(
 
 
 @router.get(
-    "/{run_id}",
+    "/{run_name_or_id}",
     response_model=Union[HydratedPipelineRunModel, PipelineRunModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_run(
-    run_id: UUID,
+    run_name_or_id: Union[str, UUID],
     hydrated: bool = False,
 ) -> Union[HydratedPipelineRunModel, PipelineRunModel]:
     """Get a specific pipeline run using its ID.
 
     Args:
-        run_id: ID of the pipeline run to get.
+        run_name_or_id: Name or ID of the pipeline run to get.
         hydrated: Defines if stack, user and pipeline will be
                   included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The pipeline run.
     """
-    run = zen_store().get_run(run_id=run_id)
+    run = zen_store().get_run(run_name_or_id=run_name_or_id)
     if hydrated:
         return HydratedPipelineRunModel.from_model(run)
     else:
@@ -159,7 +159,7 @@ def get_run_dag(
     """
     from zenml.post_execution.pipeline_run import PipelineRunView
 
-    run = zen_store().get_run(run_id=run_id)
+    run = zen_store().get_run(run_name_or_id=run_id)
     graph = LineageGraph()
     graph.generate_run_nodes_and_edges(PipelineRunView(run))
     return graph
@@ -223,7 +223,7 @@ def get_pipeline_configuration(run_id: UUID) -> Dict[str, Any]:
     Returns:
         The pipeline configuration of the pipeline run.
     """
-    return zen_store().get_run(run_id=run_id).pipeline_configuration
+    return zen_store().get_run(run_name_or_id=run_id).pipeline_configuration
 
 
 @router.get(
