@@ -776,7 +776,7 @@ def deploy(
         skip_check: Skip the checking of locals.tf file before executing the recipe.
         no_server: Don't deploy ZenML even if there's no active cloud deployment.
     """
-    import python_terraform
+    import python_terraform   # type: ignore
 
     cli_utils.warning(ALPHA_MESSAGE)
     stack_recipes_dir = Path(os.getcwd()) / path
