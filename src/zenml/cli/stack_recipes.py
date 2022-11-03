@@ -28,7 +28,6 @@ from zenml.cli import server
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
 from zenml.config.global_config import GlobalConfiguration
-from zenml.enums import StoreType
 from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -1001,9 +1000,8 @@ def zen_server_exists() -> bool:
     Returns:
         True if active, false otherwise.
     """
-    gc = GlobalConfiguration()
 
-    return gc.store is not None and gc.store.type == StoreType.REST
+    return not GlobalConfiguration().zen_store.is_local_store()
 
 
 @stack_recipe.command(

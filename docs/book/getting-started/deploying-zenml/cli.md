@@ -122,7 +122,7 @@ ingress_controller_hostname: The ingress controller hostname to use for
     the ingress self-signed certificate and to compute the ZenML server
     URL.
 
-create_sql [true]: Whether to create a SQL database as part of the recipe.
+deploy_db [true]: Whether to create a SQL database service as part of the recipe.
 database_username [admin]: The username for the database.
 database_password: The password for the database.
 database_url: The URL of the database to use for the ZenML server.
