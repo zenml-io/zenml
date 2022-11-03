@@ -68,7 +68,9 @@ guide](../artifact-stores/amazon-s3.md#advanced-configuration), for example in
 the case of AWS.
 
 You will next need to obtain your Label Studio API key. This will give you
-access to the web annotation interface.
+access to the web annotation interface. (The following steps apply to a local
+instance of Label Studio, but feel free to obtain your API key directly from
+your deployed instance if that's what you are using.)
 
 ```shell
 # choose a username and password for your label-studio account
@@ -95,6 +97,9 @@ Then register your annotator with ZenML:
 
 ```shell
 zenml annotator register label_studio --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
+
+# for deployed instances of Label Studio, you can also pass in the URL as follows:
+# zenml annotator register label_studio --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>" --instance_url="<your_label_studio_url>"
 ```
 
 Finally, add all these components to a stack and set it as your active stack.
@@ -120,14 +125,14 @@ ZenML assumes that users have registered a cloud artifact store, a secrets
 manager and an annotator as described above. ZenML currently only supports this
 setup, but we will add in the fully local stack option in the future.
 
-ZenML supports access to your data and annotations via the `zenml annotator...`
+ZenML supports access to your data and annotations via the `zenml annotator ...`
 CLI command.
 
 You can access information about the datasets you're using with the `zenml
 annotator dataset list`. To work on annotation for a particular dataset, you can
 run `zenml annotator dataset annotate <dataset_name>`.
 
-[Our full continuous annotation / training example](#coming-soon) is the best
+[Our full continuous annotation / training example](https://github.com/zenml-io/zenml/tree/develop/examples/label_studio_annotation) is the best
 place to see how all the pieces of making this integration work fit together.
 What follows is an overview of some key components to the Label Studio 
 integration and how it can be used.
@@ -145,7 +150,7 @@ register your datasets, export any annotations for use in separate steps as well
 as to start the annotator daemon process. (Label Studio requires a server to be
 running in order to use the web interface, and ZenML handles the provisioning of
 this server locally using the details you passed in when registering the
-component.)
+component, unless you've specified that you want to use a deployed instance.)
 
 ### Standard Steps
 
