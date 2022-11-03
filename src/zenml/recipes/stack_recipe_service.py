@@ -215,7 +215,7 @@ class StackRecipeService(TerraformService):
             "provider": f"{provider}",
             "username": "default",
             "password": "zenml",
-            "create_sql": True,
+            "deploy_db": True,
             "create_ingress_controller": False,
             "ingress_controller_hostname": self.terraform_client.output(
                 INGRESS_CONTROLLER_HOST_OUTPUT, full_value=True
