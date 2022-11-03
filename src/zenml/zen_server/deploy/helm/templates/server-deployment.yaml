@@ -6,15 +6,16 @@ metadata:
     {{- include "zenml.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.zenml.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
       {{- include "zenml.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/server-secret.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
@@ -49,8 +50,6 @@ spec:
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
             {{- end }}
-            - name: ZENML_SERVER_DEPLOYMENT_TYPE
-              value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}
@@ -87,6 +86,49 @@ spec:
               value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
             - name: ZENML_SERVER_METADATA_SYNC_PERIOD
               value: {{ .Values.zenml.metadataSyncPeriod | default 10 | quote }}
+
+            {{- if and .Values.grpcMetadata.enabled .Values.zenml.database.url }}
+
+            {{-   if and .Values.grpcMetadata.ingress.enabled }}
+
+            - name: ZENML_STORE_GRPC_METADATA_HOST
+            {{-     if .Values.grpcMetadata.ingress.host }}
+              value: {{ .Values.grpcMetadata.ingress.host }}
+            {{-     else }}
+              value: {{ .Values.grpcMetadata.externalHostname }}
+            {{-     end }}
+            - name: ZENML_STORE_GRPC_METADATA_PORT
+              value: "443"
+
+            {{-   else }}
+
+            - name: ZENML_STORE_GRPC_METADATA_HOST
+              value: {{ .Values.grpcMetadata.externalHostname }}
+            - name: ZENML_STORE_GRPC_METADATA_PORT
+              value: {{ .Values.grpcMetadata.service.port | quote }}
+
+            {{-   end }}
+
+            {{-   if .Values.grpcMetadata.tls.enabled }}
+            - name: ZENML_STORE_GRPC_METADATA_SSL_CA
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.grpcMetadata.tls.clientSecretName }}
+                  key: ca.crt
+            - name: ZENML_STORE_GRPC_METADATA_SSL_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.grpcMetadata.tls.clientSecretName }}
+                  key: tls.crt
+            - name: ZENML_STORE_GRPC_METADATA_SSL_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.grpcMetadata.tls.clientSecretName }}
+                  key: tls.key
+            {{-   end }}
+
+
+            {{- end }}
 
           envFrom:
           - secretRef:

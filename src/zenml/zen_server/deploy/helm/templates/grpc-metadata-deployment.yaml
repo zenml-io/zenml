@@ -1,0 +1,118 @@
+{{- if and .Values.grpcMetadata.enabled .Values.zenml.database.url }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zenml.fullname" . }}-grpc-metadata
+  labels:
+    {{- include "zenml.metadataLabels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.grpcMetadata.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "zenml.metadataSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/grpc-metadata-secret.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "zenml.metadataSelectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "zenml.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-grpc-metadata
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.grpcMetadata.image.repository }}:{{ .Values.grpcMetadata.image.tag }}"
+          imagePullPolicy: {{ .Values.grpcMetadata.image.pullPolicy }}
+          args:
+          - --grpc_port=80
+          - --metadata_store_server_config_file=/config/metadata-store-config.pb
+          command:
+          - /bin/metadata_store_server
+          volumeMounts:
+          - name: config
+            mountPath: "/config"
+          {{- if or .Values.zenml.database.sslCa .Values.zenml.database.sslCert .Values.zenml.database.sslKey }}
+          - name: certs
+            mountPath: "/certs"
+          {{- end }}
+          {{- if (not .Values.grpcMetadata.ingress.enabled) }}
+          - name: grpc-certs
+            mountPath: "/grpc-certs"
+          {{- end }}
+          ports:
+            - name: grpc-api
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            successThreshold: 1
+            tcpSocket:
+              port: grpc-api
+            timeoutSeconds: 2
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            successThreshold: 1
+            tcpSocket:
+              port: grpc-api
+            timeoutSeconds: 2
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config
+          secret:
+            secretName: {{ include "zenml.fullname" . }}-grpc-metadata
+        {{- if or .Values.zenml.database.sslCa .Values.zenml.database.sslCert .Values.zenml.database.sslKey }}
+        - name: certs
+          secret:
+            secretName: {{ include "zenml.fullname" . }}
+            items:
+            {{- if .Values.zenml.database.sslCa }}
+            - key: ZENML_STORE_SSL_CA
+              path: server-ca.pem
+            {{- end }}
+            {{- if .Values.zenml.database.sslCert }}
+            - key: ZENML_STORE_SSL_CERT
+              path: client-cert.pem
+            {{- end }}
+            {{- if .Values.zenml.database.sslKey }}
+            - key: ZENML_STORE_SSL_KEY
+              path: client-key.pem
+            {{- end }}
+        {{- end }}
+
+        {{- if (not .Values.grpcMetadata.ingress.enabled) }}
+        - name: grpc-certs
+          secret:
+            secretName: {{ .Values.grpcMetadata.tls.secretName }}
+        {{- end }}
+
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
