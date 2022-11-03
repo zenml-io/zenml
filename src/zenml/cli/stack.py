@@ -225,13 +225,22 @@ def register_stack(
 
         for c_type, name in type_component_mapping.items():
             if name:
-                stack_components[c_type] = [
-                    cli_utils.get_component_by_id_or_name_or_prefix(
-                        client=client,
-                        component_type=c_type,
-                        id_or_name_or_prefix=name,
-                    ).id
-                ]
+                component = cli_utils.get_component_by_id_or_name_or_prefix(
+                    client=client,
+                    component_type=c_type,
+                    id_or_name_or_prefix=name,
+                )
+                stack_components[c_type] = [component.id]
+                if share:
+                    if not component.is_shared:
+                        cli_utils.error(
+                            "You attempted to create a shared stack containing "
+                            f"a private component {c_type}: {name}. This "
+                            f"is not supported. Set the {c_type} to "
+                            f"shared like this to create a stack: "
+                            f"zenml {c_type.replace('_', '-')} share "
+                            f"{component.id}"
+                        )
 
         # click<8.0.0 gives flags a default of None
         if share is None:
@@ -425,10 +434,11 @@ def update_stack(
                 if stack_to_update.is_shared and not component.is_shared:
                     cli_utils.error(
                         "You attempted to add a private component"
-                        f"{c_type}:{name} to a shared stack. This"
+                        f"{c_type}:{name} to a shared stack. This "
                         f"is not supported. Set the {c_type} to"
-                        f"shared and in order to add it to this"
-                        f"stack."
+                        f"shared shared like this to create a stack: "
+                        f"zenml {c_type.replace('_', '-')} share "
+                        f"{component.id}"
                     )
                 else:
                     stack_components[c_type] = [component.id]
@@ -447,13 +457,21 @@ def update_stack(
     help="Share a stack and all its components.",
 )
 @click.argument("stack_name_or_id", type=str, required=False)
+@click.option(
+    "--recursive",
+    "-r",
+    "recursive",
+    is_flag=True,
+    help="Recursively also share all stack components if they are private.",
+)
 def share_stack(
-    stack_name_or_id: Optional[str],
+    stack_name_or_id: Optional[str], recursive: bool = False
 ) -> None:
     """Share a stack with your team.
 
     Args:
         stack_name_or_id: Name or id of the stack to share.
+        recursive: Recursively also share all components
     """
     cli_utils.print_active_config()
 
@@ -475,18 +493,22 @@ def share_stack(
     else:
         for c_t, c in stack_to_share.to_hydrated_model().components.items():
             only_component = c[0]  # For future compatibility
-            # with console.status(
-            #     f"Sharing component `{only_component.name}`" f"...\n"
-            # ):
-            cli_utils.declare(
-                f"A Stack can only be shared when all its "
-                f"components are also shared. Component "
-                f"'{only_component.name}' is also set to "
-                f"shared."
-            )
 
-            only_component.is_shared = True
-            client.update_stack_component(component=only_component)
+            if not only_component.is_shared and not recursive:
+                cli_utils.error(
+                    f"A Stack can only be shared when all its "
+                    f"components are also shared. Component "
+                    f"{c_t}:{only_component.name} is not shared. Set the "
+                    f"{c_t} to shared like this to share this stack: "
+                    f"zenml {c_t.replace('_', '-')} share "
+                    f"{only_component.id}"
+                )
+            else:
+                with console.status(
+                    f"Sharing component `{only_component.name}`" f"...\n"
+                ):
+                    only_component.is_shared = True
+                    client.update_stack_component(component=only_component)
 
         with console.status(f"Sharing stack `{stack_to_share.name}` ...\n"):
 

@@ -31,7 +31,7 @@ from zenml.cli.stack import (
     remove_stack_component,
     rename_stack,
     share_stack,
-    update_stack,
+    update_stack, register_stack,
 )
 from zenml.client import Client
 from zenml.enums import StackComponentType
@@ -88,6 +88,7 @@ def _create_local_secrets_manager(repo: Client):
         type=StackComponentType.SECRETS_MANAGER,
         user=repo.active_user.id,
         project=repo.active_project.id,
+        share_stack=False,
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -292,6 +293,41 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
     #  user might not be authorized to update other_users stack
     clean_client.update_stack_component(other_user_default_orchestrator)
 
+    result = runner.invoke(share_stack, ["default"])
+    assert result.exit_code == 1
+
+
+def test_create_shared_stack_when_component_is_private_fails(
+    clean_client: Client,
+) -> None:
+    """When sharing a stack all the components should also be shared, so if a
+    component is not shared this should fail."""
+    runner = CliRunner()
+    result = runner.invoke(register_stack, ["default2", "-o", "default",
+                                            "-a", "default", "--share"])
+    assert result.exit_code == 1
+
+
+def test_add_private_component_to_shared_stack_fails(
+    clean_client: Client,
+) -> None:
+    """When sharing a stack all the components are also shared, so if a
+    component with the same name is already shared this should fail."""
+    runner = CliRunner()
+    local_secrets_manager = _create_local_secrets_manager(clean_client)
+    clean_client.register_stack_component(local_secrets_manager.to_model())
+    result = runner.invoke(share_stack, ["default", '-r'])
+    assert result.exit_code == 0
+    result = runner.invoke(update_stack, ["default", "-x", "arias_secrets_manager"])
+    assert result.exit_code == 1
+
+
+def test_share_stack_when_component_is_private_fails(
+    clean_client: Client,
+) -> None:
+    """When sharing a stack all the components are also shared, so if a
+    component with the same name is already shared this should fail."""
+    runner = CliRunner()
     result = runner.invoke(share_stack, ["default"])
     assert result.exit_code == 1
 
