@@ -131,7 +131,7 @@ AnyProjectScopedModel = TypeVar(
 )
 
 
-DEFAULT_HTTP_TIMEOUT = 5
+DEFAULT_HTTP_TIMEOUT = 30
 
 
 class RestZenStoreConfiguration(StoreConfiguration):
