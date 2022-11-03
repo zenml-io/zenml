@@ -16,7 +16,8 @@
 
 from typing import TYPE_CHECKING
 
-import zenml.integrations.kubernetes.pod_settings as kubernetes_utils
+from zenml.integrations.kubernetes import serialization_utils
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
 if TYPE_CHECKING:
     from kfp.dsl import ContainerOp
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
 
 def apply_pod_settings(
     container_op: "ContainerOp",
-    settings: kubernetes_utils.KubernetesPodSettings,
+    settings: KubernetesPodSettings,
 ) -> None:
     """Applies Kubernetes Pod settings to a KFP container.
 
@@ -38,14 +39,14 @@ def apply_pod_settings(
         container_op.add_node_selector_constraint(label_name=key, value=value)
 
     if settings.affinity:
-        affinity: V1Affinity = kubernetes_utils.deserialize_kubernetes_model(
+        affinity: V1Affinity = serialization_utils.deserialize_kubernetes_model(
             settings.affinity, "V1Affinity"
         )
         container_op.add_affinity(affinity)
 
     for toleration_dict in settings.tolerations:
         toleration: V1Toleration = (
-            kubernetes_utils.deserialize_kubernetes_model(
+            serialization_utils.deserialize_kubernetes_model(
                 toleration_dict, "V1Toleration"
             )
         )
