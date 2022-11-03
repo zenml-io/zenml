@@ -2730,27 +2730,17 @@ class SqlZenStore(BaseZenStore):
 
             return new_run.to_model()
 
-    def get_run(self, run_id: UUID) -> PipelineRunModel:
+    def get_run(self, run_name_or_id: Union[str, UUID]) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to get.
+            run_name_or_id: The name or ID of the pipeline run to get.
 
         Returns:
             The pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
-            run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
-            ).first()
-            if run is None:
-                raise KeyError(
-                    f"Unable to get pipeline run with ID {run_id}: "
-                    f"No pipeline run with this ID found."
-                )
+            run = self._get_run_schema(run_name_or_id, session=session)
             run_model = run.to_model()
             run_model = self._update_run_status(run_model)
             return run_model
@@ -3497,6 +3487,33 @@ class SqlZenStore(BaseZenStore):
             ),
         )
 
+    def _get_run_schema(
+        self,
+        run_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> PipelineRunSchema:
+        """Gets a run schema by name or ID.
+
+        This is a helper method that is used in various places to find a run
+        by its name or ID.
+
+        Args:
+            run_name_or_id: The name or ID of the run to get.
+            session: The database session to use.
+
+        Returns:
+            The run schema.
+        """
+        return cast(
+            PipelineRunSchema,
+            self._get_schema_by_name_or_id(
+                object_name_or_id=run_name_or_id,
+                schema_class=PipelineRunSchema,
+                schema_name="run",
+                session=session,
+            ),
+        )
+
     # MLMD Stuff
 
     def _resolve_mlmd_step_id(self, mlmd_id: int) -> UUID:
@@ -3561,26 +3578,49 @@ class SqlZenStore(BaseZenStore):
         This queries all runs from MLMD, checks for each whether it already
         exists in the database, and if not, creates it.
         """
-        # Sync all MLMD runs that don't exist in ZenML.
-        # For performance reasons, we determine this by explicitly ignoring runs
-        # that already exist in ZenML when querying MLMD.
+        # Find all runs that already have an MLMD ID. These are already synced
+        # and connected to MLMD, so we don't need to query them from MLMD again.
         with Session(self.engine) as session:
             synced_mlmd_ids = session.exec(
                 select(PipelineRunSchema.mlmd_id).where(
                     isnot(PipelineRunSchema.mlmd_id, None)
                 )
             ).all()
+
+        # Find all runs that have no MLMD ID. These might need to be connected.
+        with Session(self.engine) as session:
+            runs_without_mlmd_id = session.exec(
+                select(PipelineRunSchema).where(
+                    is_(PipelineRunSchema.mlmd_id, None)
+                )
+            ).all()
+        runs_without_mlmd_id_dict = {
+            run_.name: run_ for run_ in runs_without_mlmd_id
+        }
+
+        # Sync all MLMD runs that don't exist in ZenML. For performance reasons,
+        # we determine this by explicitly ignoring runs that are already synced.
         unsynced_mlmd_runs = self.metadata_store.get_all_runs(
             ignored_ids=[id_ for id_ in synced_mlmd_ids if id_ is not None]
         )
         for mlmd_run in unsynced_mlmd_runs:
-            try:
-                self._sync_run(mlmd_run)
-            except (KeyError, EntityExistsError) as err:
-                logger.warning(
-                    f"Syncing run '{mlmd_run.name}' failed: {str(err)}"
-                )
-                continue
+
+            # If a run is written in both ZenML and MLMD but doesn't have an
+            # MLMD ID set in the DB, we need to set it to connect the two.
+            if mlmd_run.name in runs_without_mlmd_id_dict:
+                run_model = runs_without_mlmd_id_dict[mlmd_run.name].to_model()
+                run_model.mlmd_id = mlmd_run.mlmd_id
+                self.update_run(run_model)
+
+            # Create runs that are in MLMD but not in the DB.
+            else:
+                try:
+                    self._sync_run(mlmd_run)
+                except (KeyError, EntityExistsError) as err:
+                    logger.warning(
+                        f"Syncing run '{mlmd_run.name}' failed: {str(err)}"
+                    )
+                    continue
 
         # Sync steps and status of all unfinished runs.
         with Session(self.engine) as session:

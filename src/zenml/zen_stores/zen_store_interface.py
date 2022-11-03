@@ -1012,11 +1012,11 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run(self, run_id: UUID) -> PipelineRunModel:
+    def get_run(self, run_name_or_id: Union[str, UUID]) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to get.
+            run_name_or_id: The name or ID of the pipeline run to get.
 
         Returns:
             The pipeline run.
