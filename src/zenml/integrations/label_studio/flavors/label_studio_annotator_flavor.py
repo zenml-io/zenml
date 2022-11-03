@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from zenml.integrations.label_studio.annotators import LabelStudioAnnotator
 
 
-DEFAULT_LOCAL_INSTANCE_URL = "https://localhost"
+DEFAULT_LOCAL_INSTANCE_URL = "http://localhost"
 DEFAULT_LOCAL_LABEL_STUDIO_PORT = 8093
 
 
