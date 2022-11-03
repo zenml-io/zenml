@@ -15,15 +15,26 @@
 
 import os
 import subprocess
-from typing import ClassVar, Optional, cast
+from typing import Any, ClassVar, Dict, Optional, cast
 
-from zenml.cli.stack_recipes import STACK_FILE_NAME, logger
+import yaml
+
+import zenml
+from zenml.cli.stack_recipes import logger
 from zenml.services import ServiceType
 from zenml.services.terraform.terraform_service import (
     SERVICE_CONFIG_FILE_NAME,
     TerraformService,
 )
-from zenml.utils import io_utils
+from zenml.utils import io_utils, yaml_utils
+
+STACK_FILE_NAME_OUTPUT = "stack-yaml-path"
+DATABASE_HOST_OUTPUT = "metadata-db-host"
+DATABASE_USERNAME_OUTPUT = "metadata-db-username"
+DATABASE_PASSWORD_OUTPUT = "metadata-db-password"
+INGRESS_CONTROLLER_HOST_OUTPUT = "ingress-controller-host"
+PROJECT_ID_OUTPUT = "project-id"
+ZENML_VERSION_VARIABLE = "zenml-version"
 
 
 class StackRecipeService(TerraformService):
@@ -40,6 +51,8 @@ class StackRecipeService(TerraformService):
         io_utils.get_global_config_directory(),
         "stack_recipes",
     )
+
+    create_zen_server: bool = False
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.
@@ -61,8 +74,8 @@ class StackRecipeService(TerraformService):
         if not self._is_helm_installed():
             raise RuntimeError(
                 "Helm is not installed on your machine or not available on  "
-                "your $PATH. It is required for stack recipes to create "
-                "releases on Kubernetes. Please visit "
+                "your $PATH. It is required for stack recipes to create releases "
+                "on Kubernetes. Please visit "
                 "https://helm.sh/docs/intro/install/ "
                 "to install it."
             )
@@ -123,7 +136,7 @@ class StackRecipeService(TerraformService):
         """
         # return the path of the stack yaml file
         stack_file_path = self.terraform_client.output(
-            STACK_FILE_NAME, full_value=True
+            STACK_FILE_NAME_OUTPUT, full_value=True
         )
         return str(stack_file_path)
 
@@ -166,3 +179,52 @@ class StackRecipeService(TerraformService):
             return None
         except FileNotFoundError:
             return None
+
+    def get_vars(self) -> Dict[str, Any]:
+        """Get variables as a dictionary.
+
+        Returns:
+            A dictionary of variables to use for the stack recipes
+            derived from the tfvars.json file.
+
+        Raises:
+            FileNotFoundError: if the values.tfvars.json file is not
+                found in the stack recipe.
+            TypeError: if the file doesn't contain a dictionary of variables.
+        """
+        vars = super().get_vars()
+        # update zenml version to current version
+        vars[ZENML_VERSION_VARIABLE] = zenml.__version__
+        return vars
+
+    def get_deployment_info(self) -> str:
+        """Return deployment details as a YAML document.
+
+        Returns:
+            A YAML document that can be passed as config to
+            the server deploy function.
+        """
+        provider = yaml_utils.read_yaml(
+            file_path=os.path.join(
+                self.terraform_client.working_dir, "metadata.yaml"
+            )
+        )["Cloud"]
+
+        config = {
+            "name": f"{provider}",
+            "provider": f"{provider}",
+            "username": "default",
+            "password": "zenml",
+            "deploy_db": True,
+            "create_ingress_controller": False,
+            "ingress_controller_hostname": self.terraform_client.output(
+                INGRESS_CONTROLLER_HOST_OUTPUT, full_value=True
+            ),
+        }
+
+        if provider == "gcp":
+            config["project_id"] = self.terraform_client.output(
+                PROJECT_ID_OUTPUT, full_value=True
+            )
+
+        return yaml.dump(config)

@@ -422,11 +422,12 @@ def deploy(
     config_dict["provider"] = provider
 
     if provider == ServerProviderType.GCP.value:
-        if not gcp_project_id:
-            gcp_project_id = click.prompt(
-                "GCP project ID",
-            )
-        config_dict["project_id"] = gcp_project_id
+        if "project_id" not in config_dict:
+            if not gcp_project_id:
+                gcp_project_id = click.prompt(
+                    "GCP project ID",
+                )
+            config_dict["project_id"] = gcp_project_id
 
     if not username:
         username = click.prompt(

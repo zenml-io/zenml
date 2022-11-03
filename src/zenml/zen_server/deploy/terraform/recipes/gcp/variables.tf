@@ -63,11 +63,11 @@ variable "database_password" {
   type        = string
 }
 
-# if you enable the create_cloudsql option, the recipe will
+# if you enable the deploy_db option, the recipe will
 # create a new CloudSQL MySQL instance and then use it for this
 # ZenServer. If disabled, you have to supply connection details
 # in the section below.
-variable "create_cloudsql" {
+variable "deploy_db" {
   description = "Should the recipe create an CloudSQL instance?"
   default     = true
   type        = bool
@@ -95,7 +95,7 @@ variable "db_disk_size" {
   type        = number
 }
 
-# If you haven't enabled the create_rds option, provide
+# If you haven't enabled the deploy_db option, provide
 # the following value in addition to setting the username and
 # password in the values.tfvars.json file.
 variable "database_url" {

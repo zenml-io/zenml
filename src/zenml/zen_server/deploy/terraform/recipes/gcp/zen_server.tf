@@ -50,8 +50,8 @@ resource "helm_release" "zen-server" {
     value = var.ingress_path != ""? "/$1": ""
   }
   set {
-    name = "zenml.ingress.host"
-    value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.ip}.nip.io" : var.ingress_controller_hostname
+    name = "ingress.host"
+    value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.ip}.nip.io" : "${var.ingress_controller_hostname}.nip.io"
   }
   set {
     name = "zenml.ingress.tls.enabled"
@@ -69,23 +69,23 @@ resource "helm_release" "zen-server" {
   # set parameters for the mysql database
   set {
     name  = "zenml.database.url"
-    value = var.create_cloudsql? "mysql://admin:${module.metadata_store[0].generated_user_password}@${module.metadata_store[0].instance_first_ip_address}:3306/${var.db_name}" : var.database_url
+    value = var.deploy_db? "mysql://admin:${module.metadata_store[0].generated_user_password}@${module.metadata_store[0].instance_first_ip_address}:3306/${var.db_name}" : var.database_url
   }
   set {
     name  = "zenml.database.sslCa"
-    value = var.create_cloudsql? "" : var.database_ssl_ca
+    value = var.deploy_db? "" : var.database_ssl_ca
   }
   set {
     name  = "zenml.database.sslCert"
-    value = var.create_cloudsql? "" : var.database_ssl_cert
+    value = var.deploy_db? "" : var.database_ssl_cert
   }
   set {
     name  = "zenml.database.sslKey"
-    value = var.create_cloudsql? "" : var.database_ssl_key
+    value = var.deploy_db? "" : var.database_ssl_key
   }
   set {
     name  = "zenml.database.sslVerifyServerCert"
-    value = var.create_cloudsql? false : var.database_ssl_verify_server_cert
+    value = var.deploy_db? false : var.database_ssl_verify_server_cert
   }
   depends_on = [
     resource.kubernetes_namespace.zen-server

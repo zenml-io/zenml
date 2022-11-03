@@ -24,8 +24,10 @@ import click
 from rich.text import Text
 
 import zenml
+from zenml.cli import server
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
+from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -38,7 +40,6 @@ EXCLUDED_RECIPE_DIRS = [""]
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 VARIABLES_FILE = "values.tfvars.json"
-STACK_FILE_NAME = "stack-yaml-path"
 ALPHA_MESSAGE = (
     "The stack recipes CLI is in alpha and actively being developed. "
     "Please avoid running mission-critical workloads on resources deployed "
@@ -323,7 +324,7 @@ class GitStackRecipesHandler(object):
 
         Returns:
             Whether the supplied stack_recipe_name corresponds to a
-            stack_recipe.
+            stack recipe.
         """
         stack_recipe_dict = {
             recipe.name: recipe for recipe in self.stack_recipes
@@ -400,9 +401,8 @@ class GitStackRecipesHandler(object):
             branch=self.stack_recipe_repo.latest_release_branch, force=True
         )
 
-    @staticmethod
     def copy_stack_recipe(
-        stack_recipe: StackRecipe, destination_dir: str
+        self, stack_recipe_instance: StackRecipe, destination_dir: str
     ) -> None:
         """Copies a stack recipe to the destination_dir.
 
@@ -412,7 +412,9 @@ class GitStackRecipesHandler(object):
         """
         io_utils.create_dir_if_not_exists(destination_dir)
         io_utils.copy_dir(
-            str(stack_recipe.path_in_repo), destination_dir, overwrite=True
+            str(stack_recipe_instance.path_in_repo),
+            destination_dir,
+            overwrite=True,
         )
 
     @staticmethod
@@ -596,8 +598,8 @@ def version(
     "-y",
     "force",
     is_flag=True,
-    help="Force the redownload of the stack_recipes folder to the ZenML "
-    "config folder.",
+    help="Force the redownload of the stack_recipes folder to the ZenML config "
+    "folder.",
 )
 @click.option(
     "--path",
@@ -621,8 +623,8 @@ def pull(
     Args:
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
         stack_recipe_name: The name of the stack_recipe.
-        force: Force the redownload of the stack_recipes folder to the ZenML
-            config folder.
+        force: Force the redownload of the stack_recipes folder to the ZenML config
+            folder.
         path: The path at which you want to install the stack_recipe(s).
     """
     cli_utils.warning(ALPHA_MESSAGE)
@@ -657,7 +659,7 @@ def pull(
                 else:
                     cli_utils.warning(
                         f"Stack recipe {stack_recipe_instance.name} not "
-                        f"overwritten."
+                        "overwritten."
                     )
                     continue
 
@@ -674,7 +676,7 @@ def pull(
             )
             cli_utils.declare(
                 "\n Please edit the configuration values as you see fit, "
-                f"in the file: {os.path.join(destination_dir, 'locals.tf')}"
+                f"in the file: {os.path.join(destination_dir, 'locals.tf')} "
                 "before you run the deploy command."
             )
             track_event(
@@ -709,9 +711,9 @@ def pull(
     "-n",
     type=click.STRING,
     required=False,
-    help="Set a name for the ZenML stack that will be imported from the "
-    "YAML configuration file which gets generated after deploying the stack"
-    "recipe. Defaults to the name of the stack recipe being deployed.",
+    help="Set a name for the ZenML stack that will be imported from the YAML "
+    "configuration file which gets generated after deploying the stack recipe. "
+    "Defaults to the name of the stack recipe being deployed.",
 )
 @click.option(
     "--import",
@@ -724,8 +726,8 @@ def pull(
     type=click.Choice(
         ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"], case_sensitive=False
     ),
-    help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case "
-    "insensitive) as log level for the deploy operation.",
+    help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive) as "
+    "log level for the deploy operation.",
     default="ERROR",
 )
 @click.option(
@@ -733,6 +735,11 @@ def pull(
     "-s",
     is_flag=True,
     help="Skip the checking of locals.tf file before executing the recipe.",
+)
+@click.option(
+    "--no-server",
+    is_flag=True,
+    help="Don't deploy ZenML even if there's no active cloud deployment.",
 )
 @pass_git_stack_recipes_handler
 @click.pass_context
@@ -745,12 +752,13 @@ def deploy(
     import_stack_flag: bool,
     log_level: str,
     skip_check: bool,
+    no_server: bool,
     stack_name: Optional[str],
 ) -> None:
     """Run the stack_recipe at the specified relative path.
 
-    `zenml stack_recipe pull <STACK_RECIPE_NAME>` has to be called with the
-    same relative path before the `deploy` command.
+    `zenml stack_recipe pull <STACK_RECIPE_NAME>` has to be called with the same relative
+    path before the deploy command.
 
     Args:
         ctx: The click context.
@@ -758,15 +766,15 @@ def deploy(
         stack_recipe_name: The name of the stack_recipe.
         path: The path at which you want to install the stack_recipe(s).
         force: Force pull the stack recipe, overwriting any existing files.
-        stack_name: A name for the ZenML stack that gets imported as a
-            result of the recipe deployment.
-        import_stack_flag: Import the stack automatically after the recipe
-            is deployed. The stack configuration file is always generated
-            and can be imported manually otherwise.
-        log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case
-            insensitive) as log level for the deploy operation.
-        skip_check: Skip the checking of locals.tf file before executing
-            the recipe.
+        stack_name: A name for the ZenML stack that gets imported as a result
+            of the recipe deployment.
+        import_stack_flag: Import the stack automatically after the recipe is
+            deployed. The stack configuration file is always generated and
+            can be imported manually otherwise.
+        log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
+            as log level for the deploy operation.
+        skip_check: Skip the checking of locals.tf file before executing the recipe.
+        no_server: Don't deploy ZenML even if there's no active cloud deployment.
     """
     import python_terraform
 
@@ -778,8 +786,8 @@ def deploy(
             "If you are running stack_recipes on Windows, make sure that "
             "you have an associated application with executing .sh files. "
             "If you don't have any and you see a pop-up during 'zenml "
-            "stack_recipe run', we suggest to use the Git "
-            "BASH: https://gitforwindows.org/"
+            "stack_recipe run', we suggest to use the Git BASH: "
+            "https://gitforwindows.org/"
         )
 
     try:
@@ -811,17 +819,16 @@ def deploy(
                 "\n\n Are all of these conditions met?"
             ):
                 cli_utils.warning(
-                    "Prerequisites are not installed. Please make sure they"
+                    "Prerequisites are not installed. Please make sure they "
                     "are met and run deploy again."
                 )
                 return
 
             if not skip_check:
                 logger.info(
-                    "The following values are selected for the "
-                    "configuration of your cloud resources. You can change "
-                    "it by modifying the contents of the locals.tf file "
-                    f"here: "
+                    "The following values are selected for the configuration "
+                    "of your cloud resources. You can change it by modifying "
+                    "the contents of the locals.tf file here: "
                     f"{os.path.join(local_stack_recipe.path, 'locals.tf')}\n"
                 )
 
@@ -843,7 +850,6 @@ def deploy(
                     AnalyticsEvent.RUN_STACK_RECIPE,
                     {"stack_recipe_name": stack_recipe_name},
                 )
-
                 terraform_config = TerraformServiceConfig(
                     root_runtime_path=str(
                         StackRecipeService.STACK_RECIPES_CONFIG_PATH
@@ -867,8 +873,58 @@ def deploy(
                     stack_recipe_service = StackRecipeService(
                         config=terraform_config
                     )
+
                 # start the service (the init and apply operation)
                 stack_recipe_service.start()
+
+                # invoke server deploy
+                if no_server:
+                    logger.info(
+                        "The --no-server flag was passed. "
+                        "Skipping the remote deployment of ZenML. "
+                        "Please note that if you wish to use the stack "
+                        "that you created through this recipe, you will "
+                        "need to deploy ZenML on the cloud."
+                    )
+                else:
+                    if zen_server_exists():
+                        logger.info(
+                            "A ZenML deployment exists already with URL: "
+                            f"{GlobalConfiguration().store.url}. The recipe will "
+                            "not create a new installation."
+                        )
+                    else:
+                        logger.info("No remote deployment of ZenML detected. ")
+                        vars = stack_recipe_service.get_vars()
+                        filter = [
+                            "aws-stores-minimal",
+                            "azureml-minimal",
+                            "vertex-ai",
+                        ]
+                        if Path(
+                            stack_recipe_service.terraform_client.working_dir
+                        ).name in filter and (
+                            "enable_mlflow" not in vars
+                            or vars["enable_mlflow"] is False
+                        ):
+                            logger.warning(
+                                "This recipe doesn't create a Kubernetes cluster "
+                                "and as of now, an existing cluster is required "
+                                "for ZenML deployment. Please take a look at the "
+                                "guide for steps on how to proceed: "
+                                "https://docs.zenml.io/getting-started/deploying-zenml/cli#option-1-starting-from-scratch"
+                            )
+                            logger.info(
+                                "Not attempting to import the generated YAML file "
+                                "since there isn't any active ZenML deployment."
+                            )
+                            return
+                        else:
+                            ctx.invoke(
+                                server.deploy,
+                                config=stack_recipe_service.get_deployment_info(),
+                                connect=True,
+                            )
 
                 # get the stack yaml path
                 stack_yaml_file = os.path.join(
@@ -877,23 +933,21 @@ def deploy(
                 )
 
                 logger.info(
-                    "\nA stack configuration YAML file has been generated "
-                    f"as part of the deployment of the {stack_recipe_name} "
-                    f"recipe. Find it at {stack_yaml_file}."
+                    "\nA stack configuration YAML file has been generated as "
+                    f"part of the deployment of the {stack_recipe_name} recipe. "
+                    f"Find it at {stack_yaml_file}."
                 )
 
                 if import_stack_flag:
                     logger.info(
                         "\nThe flag `--import` is set. Proceeding "
-                        "to import a new ZenML stack from the created "
-                        "resources."
+                        "to import a new ZenML stack from the created resources."
                     )
                     import_stack_name = (
                         stack_name if stack_name else stack_recipe_name
                     )
                     cli_utils.declare(
-                        f"Importing a new stack with the name "
-                        f"{import_stack_name}."
+                        f"Importing a new stack with the name {import_stack_name}."
                     )
 
                     # import deployed resources as ZenML stack
@@ -905,18 +959,16 @@ def deploy(
                     )
 
                     cli_utils.declare(
-                        "Please consider creating any secrets that your "
-                        "stack components like the metadata store might "
-                        "need. You can inspect the fields of a stack "
-                        "component by running a describe command on them."
+                        "Please consider creating any secrets that your stack "
+                        "components like the metadata store might need. "
+                        "You can inspect the fields of a stack component by "
+                        "running a describe command on them."
                     )
                     cli_utils.declare(
-                        "\n Run 'terraform output' in the recipe's "
-                        f"directory at {local_stack_recipe.path} to get a "
-                        f"list of outputs. To now retrieve sensitive "
-                        f"outputs, for example, the metadata-db-password "
-                        "use the command 'terraform output "
-                        "metadata-db-password' to get the "
+                        "\n Run 'terraform output' in the recipe's directory at "
+                        f"{local_stack_recipe.path} to get a list of outputs. To now "
+                        "retrieve sensitive outputs, for example, the metadata-db-password "
+                        "use the command 'terraform output metadata-db-password' to get the "
                         "value in the command-line."
                     )
 
@@ -924,24 +976,32 @@ def deploy(
             cli_utils.error(
                 f"Error running recipe {stack_recipe_name}: {str(e)} "
                 "\nPlease look at the error message to figure out why the "
-                "command failed. If the error is due some wrong "
-                "configuration, please consider checking the locals.tf "
-                "file to verify if the inputs are correct. Most commonly, "
-                "the command can fail due to a timeout error. In that "
-                "case, please run zenml stack recipe deploy "
-                f"{stack_recipe_name} again"
+                "command failed. If the error is due some wrong configuration, "
+                "please consider checking the locals.tf file to verify if the "
+                "inputs are correct. Most commonly, the command can fail due "
+                "to a timeout error. In that case, please"
+                f"run zenml stack recipe deploy {stack_recipe_name} again"
             )
         except python_terraform.TerraformCommandError as e:
             cli_utils.error(
                 f"Error running recipe {stack_recipe_name}: {str(e.err)} "
                 "\nPlease look at the error message to figure out why the "
-                "command failed. If the error is due some wrong "
-                "configuration, please consider checking the locals.tf "
-                "file to verify if the inputs are correct. Most commonly, "
-                "the command can fail due to a timeout error. In that "
-                "case, please run zenml stack recipe deploy "
-                f"{stack_recipe_name} again"
+                "command failed. If the error is due some wrong configuration, "
+                "please consider checking the locals.tf file to verify if the "
+                "inputs are correct. Most commonly, the command can fail due "
+                "to a timeout error. In that case, please"
+                f"run zenml stack recipe deploy {stack_recipe_name} again"
             )
+
+
+def zen_server_exists() -> bool:
+    """Check if a remote ZenServer is active.
+
+    Returns:
+        True if active, false otherwise.
+    """
+
+    return not GlobalConfiguration().zen_store.is_local_store()
 
 
 @stack_recipe.command(
@@ -957,20 +1017,21 @@ def deploy(
     help="Relative path at which you want to install the stack_recipe(s)",
 )
 @pass_git_stack_recipes_handler
+@click.pass_context
 def destroy(
     git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
     path: str,
 ) -> None:
-    """Destroy all resources from the recipe at the given relative path.
+    """Destroy all resources from the stack_recipe at the specified relative path.
 
-    `zenml stack_recipe deploy stack_recipe_name` has to be called with the
-    same relative path before the destroy command.
+    `zenml stack_recipe deploy stack_recipe_name` has to be called with the same relative
+    path before the destroy command.
 
     Args:
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
         stack_recipe_name: The name of the stack_recipe.
-        path: The path at which you want to install the stack_recipe(s).
+        path: The path of the stack recipe you want to destroy.
 
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
@@ -1015,7 +1076,7 @@ def destroy(
                 AnalyticsEvent.DESTROY_STACK_RECIPE,
                 {"stack_recipe_name": stack_recipe_name},
             )
-            # use the recipe directory path to find the service instance
+            # use the stack recipe directory path to find the service instance
             from zenml.recipes import StackRecipeService
 
             stack_recipe_service = StackRecipeService.get_service(
@@ -1045,26 +1106,23 @@ def destroy(
             if stack_recipe_name == "aws_minimal":
                 force_message = (
                     "If there are Kubernetes resources that aren't"
-                    "getting deleted, run 'kubectl delete node -all' to "
-                    "delete the nodes and consequently all Kubernetes "
-                    "resources. Run the destroy again after that, to "
-                    "remove any other remaining resources."
+                    "getting deleted, run 'kubectl delete node -all' to delete the "
+                    "nodes and consequently all Kubernetes resources. Run the destroy "
+                    "again after that, to remove any other remaining resources."
                 )
             cli_utils.error(
                 f"Error destroying recipe {stack_recipe_name}: {str(e.err)}"
-                "\nMost commonly, the error occurs if there's some "
-                "resource that can't be deleted instantly, for example, "
-                "MySQL stores with backups. In such cases, please try "
-                "again after around 30 minutes. If the issue persists, "
-                "kindly raise an issue at "
-                f"{STACK_RECIPES_GITHUB_REPO}. \n{force_message}"
+                "\nMost commonly, the error occurs if there's some resource "
+                "that can't be deleted instantly, for example, MySQL stores "
+                "with backups. In such cases, please try again after "
+                "around 30 minutes. If the issue persists, kindly raise an "
+                f"issue at {STACK_RECIPES_GITHUB_REPO}. \n{force_message}"
             )
         except subprocess.CalledProcessError as e:
             cli_utils.warning(
                 f"Error destroying recipe {stack_recipe_name}: {str(e)}"
-                "\nThe kubernetes cluster couldn't be removed due to the "
-                "error above. Please verify if the cluster has already "
-                "been deleted by running kubectl get nodes to check if "
-                "there's any active nodes.Ignore this warning if there "
-                "are no active nodes."
+                "\nThe kubernetes cluster couldn't be removed due to the error "
+                "above. Please verify if the cluster has already been deleted by "
+                "running kubectl get nodes to check if there's any active nodes."
+                "Ignore this warning if there are no active nodes."
             )
