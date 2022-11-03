@@ -69,23 +69,23 @@ resource "helm_release" "zen-server" {
   # set parameters for the mysql database
   set {
     name  = "zenml.database.url"
-    value = var.create_sql? "mysql://${var.database_username}:${azurerm_mysql_flexible_server.mysql.administrator_password}@${azurerm_mysql_flexible_server.mysql.name}.mysql.database.azure.com:3306/${var.db_name}" : var.database_url
+    value = var.deploy_db? "mysql://${var.database_username}:${azurerm_mysql_flexible_server.mysql[0].administrator_password}@${azurerm_mysql_flexible_server.mysql[0].name}.mysql.database.azure.com:3306/${var.db_name}" : var.database_url
   }
   set {
     name  = "zenml.database.sslCa"
-    value = var.create_sql? "" : var.database_ssl_ca
+    value = var.deploy_db? "" : var.database_ssl_ca
   }
   set {
     name  = "zenml.database.sslCert"
-    value = var.create_sql? "" : var.database_ssl_cert
+    value = var.deploy_db? "" : var.database_ssl_cert
   }
   set {
     name  = "zenml.database.sslKey"
-    value = var.create_sql? "" : var.database_ssl_key
+    value = var.deploy_db? "" : var.database_ssl_key
   }
   set {
     name  = "zenml.database.sslVerifyServerCert"
-    value = var.create_sql? false : var.database_ssl_verify_server_cert
+    value = var.deploy_db? false : var.database_ssl_verify_server_cert
   }
   depends_on = [
     resource.kubernetes_namespace.zen-server
