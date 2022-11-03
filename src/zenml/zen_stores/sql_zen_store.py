@@ -3572,8 +3572,10 @@ class SqlZenStore(BaseZenStore):
                 # We use the alembic version table as a shared resource that we
                 # can lock to prevent multiple processes from syncing runs at
                 # the same time.
+                logger.debug("Syncing pipeline runs...")
                 session.query(AlembicVersion).with_for_update().all()
                 self._sync_runs_with_lock(session)
+                logger.debug("Pipeline runs sync complete")
         except Exception:
             logger.exception("Failed to sync pipeline runs.")
 
@@ -3594,6 +3596,7 @@ class SqlZenStore(BaseZenStore):
                 isnot(PipelineRunSchema.mlmd_id, None)
             )
         ).all()
+        logger.debug(f"Found {len(synced_mlmd_ids)} pipeline runs with MLMD ID")
 
         # Find all runs that have no MLMD ID. These might need to be
         # connected.
@@ -3602,6 +3605,9 @@ class SqlZenStore(BaseZenStore):
                 is_(PipelineRunSchema.mlmd_id, None)
             )
         ).all()
+        logger.debug(
+            f"Found {len(runs_without_mlmd_id)} pipeline runs without MLMD ID"
+        )
         runs_without_mlmd_id_dict = {
             run_.name: run_ for run_ in runs_without_mlmd_id
         }
@@ -3610,6 +3616,9 @@ class SqlZenStore(BaseZenStore):
         # we determine this by explicitly ignoring runs that are already synced.
         unsynced_mlmd_runs = self.metadata_store.get_all_runs(
             ignored_ids=[id_ for id_ in synced_mlmd_ids if id_ is not None]
+        )
+        logger.debug(
+            f"Adding {len(unsynced_mlmd_runs)} new pipeline runs from MLMD"
         )
         for mlmd_run in unsynced_mlmd_runs:
 
@@ -3636,6 +3645,10 @@ class SqlZenStore(BaseZenStore):
                 PipelineRunSchema.status == ExecutionStatus.RUNNING
             )
         ).all()
+        logger.debug(
+            f"Updating {len(unfinished_runs)} unfinished pipeline runs from "
+            "MLMD"
+        )
         for run_ in unfinished_runs:
             self._sync_run_steps(run_.id)
             self._update_run_status(run_.to_model())
@@ -3651,6 +3664,10 @@ class SqlZenStore(BaseZenStore):
                     >= datetime.now() - timedelta(minutes=1)
                 )
             ).all()
+            logger.debug(
+                f"Updating {len(recently_updated_runs)} recently updated "
+                "pipeline runs from MLMD"
+            )
             for run_ in recently_updated_runs:
                 if run_ not in unfinished_runs:
                     self._sync_run_steps(run_.id)
