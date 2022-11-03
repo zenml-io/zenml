@@ -20,15 +20,15 @@ variable "name" {
   type        = string
 }
 
-variable "project_id" {
-  description = "The project ID in GCP that you want to deploy ZenML to"
-  default     = ""
+variable "resource_group" {
+  description = "The resource group in Azure that you want to deploy ZenML to"
+  default     = "zenml"
   type        = string
 }
 
-variable "region" {
-  description = "The region for your GCP resources"
-  default     = "europe-west3"
+variable "location" {
+  description = "The location for your Azure resources"
+  default     = "uksouth"
   type        = string
 }
 
@@ -50,11 +50,11 @@ variable "kubectl_config_path" {
   type        = string
 }
 
-# If you want a new CloudSQL, choose a name and a password. If you already
+# If you want a new Flexible Server, choose a name and a password. If you already
 # have an instance, provide the name and the password here too.
 variable "database_username" {
   description = "The username for the CloudSQL store"
-  default     = "admin"
+  default     = "user"
   type        = string
 }
 variable "database_password" {
@@ -64,16 +64,16 @@ variable "database_password" {
 }
 
 # if you enable the deploy_db option, the recipe will
-# create a new CloudSQL MySQL instance and then use it for this
+# create a new Flexible MySQL instance and then use it for this
 # ZenServer. If disabled, you have to supply connection details
 # in the section below.
 variable "deploy_db" {
-  description = "Should the recipe create an CloudSQL instance?"
+  description = "Should the recipe create a Flexible MySQL instance?"
   default     = true
   type        = bool
 }
-variable "cloudsql_name" {
-  description = "The name for the CloudSQL store"
+variable "db_instance_name" {
+  description = "The name for the Flexible MySQL store"
   default     = "zenmlserver"
   type        = string
 }
@@ -82,16 +82,18 @@ variable "db_name" {
   default     = "zenmlserver"
   type        = string
 }
-
-variable "db_instance_tier" {
-  description = "The instance class to use for the database"
-  default     = "db-n1-standard-1"
+variable "db_version" {
+  description = "The version of MySQL to use"
+  default     = "5.7"
+}
+variable "db_sku_name" {
+  description = "The sku_name for the database resource"
+  default     = "B_Standard_B1s"
   type        = string
 }
-
 variable "db_disk_size" {
   description = "The allocated storage in gigabytes"
-  default     = 10
+  default     = 20
   type        = number
 }
 
@@ -99,22 +101,22 @@ variable "db_disk_size" {
 # the following value in addition to setting the username and
 # password in the values.tfvars.json file.
 variable "database_url" {
-  description = "The URL for the AWS RDS instance"
+  description = "The URL for the Flexible MySQL instance"
   default     = ""
   type        = string
 }
 variable "database_ssl_ca" {
-  description = "The server ca for the AWS RDS instance"
+  description = "The server ca for the Flexible MySQL instance"
   default     = ""
   type        = string
 }
 variable "database_ssl_cert" {
-  description = "The client cert for the AWS RDS instance"
+  description = "The client cert for the Flexible MySQL instance"
   default     = ""
   type        = string
 }
 variable "database_ssl_key" {
-  description = "The client key for the AWS RDS instance"
+  description = "The client key for the Flexible MySQL instance"
   default     = ""
   type        = string
 }

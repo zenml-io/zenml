@@ -107,7 +107,10 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
 if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+    from ml_metadata.proto.metadata_store_pb2 import (
+        ConnectionConfig,
+        MetadataStoreClientConfig,
+    )
 
     from zenml.zen_stores.metadata_store import (
         MetadataStore,
@@ -152,6 +155,18 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             enabled if client certificates are used.
         ssl_verify_server_cert: set to verify the identity of the server
             against the provided server certificate.
+        pool_size: The maximum number of connections to keep in the SQLAlchemy
+            pool.
+        pool_recycle: The number of seconds after which a connection should be
+            recycled.
+        grpc_metadata_host: The host to use for the gRPC metadata server.
+        grpc_metadata_port: The port to use for the gRPC metadata server.
+        grpc_metadata_ssl_ca: The certificate authority certificate to use for
+            the gRPC metadata server connection.
+        grpc_metadata_ssl_cert: The client certificate to use for the gRPC
+            metadata server connection.
+        grpc_metadata_ssl_key: The client certificate private key to use for
+            the gRPC metadata server connection.
     """
 
     type: StoreType = StoreType.SQL
@@ -166,6 +181,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     ssl_verify_server_cert: bool = False
     pool_size: int = 20
     max_overflow: int = 20
+
+    grpc_metadata_host: Optional[str] = None
+    grpc_metadata_port: Optional[int] = None
+    grpc_metadata_ssl_ca: Optional[str] = None
+    grpc_metadata_ssl_key: Optional[str] = None
+    grpc_metadata_ssl_cert: Optional[str] = None
 
     @root_validator
     def _validate_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -437,7 +458,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             NotImplementedError: If the SQL driver is not supported.
         """
         sql_url = make_url(self.url)
-        sqlalchemy_connect_args = {}
+        sqlalchemy_connect_args: Dict[str, Any] = {}
         engine_args = {}
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             assert self.database is not None
@@ -464,14 +485,23 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 database=self.database,
             )
 
-            # Handle certificate params
+            sqlalchemy_ssl_args: Dict[str, Any] = {}
+
+            # Handle SSL params
             for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
                 ssl_setting = getattr(self, key)
-                if ssl_setting and os.path.isfile(ssl_setting):
-                    if key == "ssl_cert":
-                        sqlalchemy_connect_args["ssl_capath"] = ssl_setting
-                    else:
-                        sqlalchemy_connect_args[key] = ssl_setting
+                if not ssl_setting:
+                    continue
+                if not os.path.isfile(ssl_setting):
+                    logger.warning(
+                        f"Database SSL setting `{key}` is not a file. "
+                    )
+                sqlalchemy_ssl_args[key.lstrip("ssl_")] = ssl_setting
+            if len(sqlalchemy_ssl_args) > 0:
+                sqlalchemy_ssl_args[
+                    "check_hostname"
+                ] = self.ssl_verify_server_cert
+                sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
         else:
             raise NotImplementedError(
                 f"SQL driver `{sql_url.drivername}` is not supported."
@@ -660,7 +690,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> "ConnectionConfig":
+    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
         """Get the TFX metadata config of this ZenStore.
 
         Args:
@@ -670,6 +700,32 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The TFX metadata config of this ZenStore.
         """
+        from ml_metadata.proto.metadata_store_pb2 import (
+            MetadataStoreClientConfig,
+        )
+
+        # If the gRPC metadata store connection configuration is present,
+        # advertise it to the client instead of the direct SQL connection
+        # config.
+        if self.config.grpc_metadata_host:
+            mlmd_config = MetadataStoreClientConfig()
+            mlmd_config.host = self.config.grpc_metadata_host
+            mlmd_config.port = self.config.grpc_metadata_port
+            if self.config.grpc_metadata_ssl_ca:
+                mlmd_config.ssl_config.custom_ca = (
+                    self.config.grpc_metadata_ssl_ca
+                )
+            if self.config.grpc_metadata_ssl_cert:
+                mlmd_config.ssl_config.server_cert = (
+                    self.config.grpc_metadata_ssl_cert
+                )
+            if self.config.grpc_metadata_ssl_key:
+                mlmd_config.ssl_config.client_key = (
+                    self.config.grpc_metadata_ssl_key
+                )
+
+            return mlmd_config
+
         return self.config.get_metadata_config(expand_certs=expand_certs)
 
     # ------
@@ -1472,9 +1528,7 @@ class SqlZenStore(BaseZenStore):
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(FlavorSchema.user_id == user.id)
 
-            list_of_flavors_in_db = session.exec(
-                query.offset(offset).limit(limit)
-            ).all()
+            list_of_flavors_in_db = session.exec(query).all()
 
         return [flavor.to_model() for flavor in list_of_flavors_in_db]
 
@@ -2767,7 +2821,7 @@ class SqlZenStore(BaseZenStore):
         ):
             return run_model
 
-        steps = self.list_run_steps(run_id=run_model.id)
+        steps = self._list_run_steps_without_sync(run_id=run_model.id)
 
         # For legacy runs, we have no `num_steps`. Therefore, we cannot
         # determine the status of the run correctly. Instead, we need to
@@ -2817,8 +2871,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()  # Sync with MLMD
+        self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
             query = select(PipelineRunSchema)
             if project_name_or_id is not None:
@@ -2844,7 +2897,7 @@ class SqlZenStore(BaseZenStore):
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(PipelineRunSchema.user_id == user.id)
-                query = query.order_by(PipelineRunSchema.created)
+            query = query.order_by(PipelineRunSchema.created)
             runs = session.exec(query.offset(offset).limit(limit)).all()
             run_models = [run.to_model() for run in runs]
             for run_model in run_models:
@@ -3175,6 +3228,24 @@ class SqlZenStore(BaseZenStore):
             self.update_run_step(step_model)
         return step_model
 
+    def _list_run_steps_without_sync(
+        self, run_id: Optional[UUID] = None
+    ) -> List[StepRunModel]:
+        """Get all run steps without synchronizing the runs.
+
+        Args:
+            run_id: If provided, only return steps for this pipeline run.
+
+        Returns:
+            A list of all run steps.
+        """
+        query = select(StepRunSchema)
+        if run_id is not None:
+            query = query.where(StepRunSchema.pipeline_run_id == run_id)
+        with Session(self.engine) as session:
+            steps = session.exec(query).all()
+            return [self.get_run_step(step.id) for step in steps]
+
     def list_run_steps(
         self, run_id: Optional[UUID] = None
     ) -> List[StepRunModel]:
@@ -3186,16 +3257,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all run steps.
         """
-        query = select(StepRunSchema)
-        if run_id is not None:
-            query = query.where(StepRunSchema.pipeline_run_id == run_id)
-            if not self.runs_inside_server:
-                self._sync_run_steps(run_id)
-        elif not self.runs_inside_server:
-            self._sync_runs()
-        with Session(self.engine) as session:
-            steps = session.exec(query).all()
-            return [self.get_run_step(step.id) for step in steps]
+        self._sync_runs()
+        return self._list_run_steps_without_sync(run_id)
 
     def update_run_step(self, step: StepRunModel) -> StepRunModel:
         """Updates a step.
@@ -3314,8 +3377,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all artifacts.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
+        self._sync_runs()
         with Session(self.engine) as session:
             query = select(ArtifactSchema)
             if artifact_uri is not None:
@@ -3578,22 +3640,49 @@ class SqlZenStore(BaseZenStore):
         This queries all runs from MLMD, checks for each whether it already
         exists in the database, and if not, creates it.
         """
-        # Find all runs that already have an MLMD ID. These are already synced
-        # and connected to MLMD, so we don't need to query them from MLMD again.
-        with Session(self.engine) as session:
-            synced_mlmd_ids = session.exec(
-                select(PipelineRunSchema.mlmd_id).where(
-                    isnot(PipelineRunSchema.mlmd_id, None)
-                )
-            ).all()
+        from zenml.zen_stores.migrations.alembic import AlembicVersion
 
-        # Find all runs that have no MLMD ID. These might need to be connected.
-        with Session(self.engine) as session:
-            runs_without_mlmd_id = session.exec(
-                select(PipelineRunSchema).where(
-                    is_(PipelineRunSchema.mlmd_id, None)
-                )
-            ).all()
+        try:
+            with Session(self.engine) as session:
+                # We use the alembic version table as a shared resource that we
+                # can lock to prevent multiple processes from syncing runs at
+                # the same time.
+                logger.debug("Syncing pipeline runs...")
+                session.query(AlembicVersion).with_for_update().all()
+                self._sync_runs_with_lock(session)
+                logger.debug("Pipeline runs sync complete")
+        except Exception:
+            logger.exception("Failed to sync pipeline runs.")
+
+    def _sync_runs_with_lock(self, session: Session) -> None:
+        """Sync runs from MLMD into the database while the DB is locked.
+
+        This queries all runs from MLMD, checks for each whether it already
+        exists in the database, and if not, creates it.
+
+        Args:
+            session: The database session to use.
+        """
+        # Find all runs that already have an MLMD ID. These are already
+        # synced and connected to MLMD, so we don't need to query them from
+        # MLMD again.
+        synced_mlmd_ids = session.exec(
+            select(PipelineRunSchema.mlmd_id).where(
+                isnot(PipelineRunSchema.mlmd_id, None)
+            )
+        ).all()
+        logger.debug(f"Found {len(synced_mlmd_ids)} pipeline runs with MLMD ID")
+
+        # Find all runs that have no MLMD ID. These might need to be
+        # connected.
+        runs_without_mlmd_id = session.exec(
+            select(PipelineRunSchema).where(
+                is_(PipelineRunSchema.mlmd_id, None)
+            )
+        ).all()
+        logger.debug(
+            f"Found {len(runs_without_mlmd_id)} pipeline runs without MLMD ID"
+        )
         runs_without_mlmd_id_dict = {
             run_.name: run_ for run_ in runs_without_mlmd_id
         }
@@ -3602,6 +3691,9 @@ class SqlZenStore(BaseZenStore):
         # we determine this by explicitly ignoring runs that are already synced.
         unsynced_mlmd_runs = self.metadata_store.get_all_runs(
             ignored_ids=[id_ for id_ in synced_mlmd_ids if id_ is not None]
+        )
+        logger.debug(
+            f"Adding {len(unsynced_mlmd_runs)} new pipeline runs from MLMD"
         )
         for mlmd_run in unsynced_mlmd_runs:
 
@@ -3623,14 +3715,19 @@ class SqlZenStore(BaseZenStore):
                     continue
 
         # Sync steps and status of all unfinished runs.
-        with Session(self.engine) as session:
-            unfinished_runs = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.status == ExecutionStatus.RUNNING
-                )
-            ).all()
+        unfinished_runs = session.exec(
+            select(PipelineRunSchema).where(
+                PipelineRunSchema.status == ExecutionStatus.RUNNING
+            )
+        ).all()
+        logger.debug(
+            f"Updating {len(unfinished_runs)} unfinished pipeline runs from "
+            "MLMD"
+        )
         for run_ in unfinished_runs:
+            logger.debug(f"Syncing run steps for pipeline run '{run_.id}'")
             self._sync_run_steps(run_.id)
+            logger.debug(f"Updating run status for pipeline run '{run_.id}'")
             self._update_run_status(run_.to_model())
 
         # Sync steps of all recently updated runs when running in a server.
@@ -3638,15 +3735,21 @@ class SqlZenStore(BaseZenStore):
         # run status was updated after all steps of a run have completed but
         # before the last artifact was written to MLMD.
         if self.runs_inside_server:
-            with Session(self.engine) as session:
-                recently_updated_runs = session.exec(
-                    select(PipelineRunSchema).where(
-                        PipelineRunSchema.updated
-                        >= datetime.now() - timedelta(minutes=1)
-                    )
-                ).all()
+            recently_updated_runs = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.updated
+                    >= datetime.now() - timedelta(minutes=1)
+                )
+            ).all()
+            logger.debug(
+                f"Updating {len(recently_updated_runs)} recently updated "
+                "pipeline runs from MLMD"
+            )
             for run_ in recently_updated_runs:
                 if run_ not in unfinished_runs:
+                    logger.debug(
+                        f"Syncing run steps for recent pipeline run '{run_.id}'"
+                    )
                     self._sync_run_steps(run_.id)
 
     def _sync_run(self, mlmd_run: "MLMDPipelineRunModel") -> PipelineRunModel:

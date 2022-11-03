@@ -18,6 +18,10 @@ from zenml.zen_server.deploy.terraform.providers.aws_provider import (
     AWSServerDeploymentConfig,
     AWSServerProvider,
 )
+from zenml.zen_server.deploy.terraform.providers.azure_provider import (
+    AzureServerDeploymentConfig,
+    AzureServerProvider,
+)
 from zenml.zen_server.deploy.terraform.providers.gcp_provider import (
     GCPServerDeploymentConfig,
     GCPServerProvider,
@@ -32,4 +36,6 @@ __all__ = [
     "AWSServerDeploymentConfig",
     "GCPServerProvider",
     "GCPServerDeploymentConfig",
+    "AzureServerProvider",
+    "AzureServerDeploymentConfig",
 ]

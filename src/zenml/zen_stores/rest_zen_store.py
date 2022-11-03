@@ -118,7 +118,10 @@ from zenml.zen_stores.base_zen_store import BaseZenStore
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+    from ml_metadata.proto.metadata_store_pb2 import (
+        ConnectionConfig,
+        MetadataStoreClientConfig,
+    )
 
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
@@ -130,7 +133,7 @@ AnyProjectScopedModel = TypeVar(
 )
 
 
-DEFAULT_HTTP_TIMEOUT = 5
+DEFAULT_HTTP_TIMEOUT = 30
 
 
 class RestZenStoreConfiguration(StoreConfiguration):
@@ -306,7 +309,7 @@ class RestZenStore(BaseZenStore):
 
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> "ConnectionConfig":
+    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
         """Get the TFX metadata config of this ZenStore.
 
         Args:
@@ -319,8 +322,11 @@ class RestZenStore(BaseZenStore):
         Returns:
             The TFX metadata config of this ZenStore.
         """
-        from google.protobuf.json_format import Parse
-        from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+        from google.protobuf.json_format import Parse, ParseError
+        from ml_metadata.proto.metadata_store_pb2 import (
+            ConnectionConfig,
+            MetadataStoreClientConfig,
+        )
 
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
@@ -329,7 +335,13 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Invalid response from server: {body}. Expected string."
             )
-        metadata_config_pb = Parse(body, ConnectionConfig())
+
+        # First try to parse the response as a ConnectionConfig, then as a
+        # MetadataStoreClientConfig.
+        try:
+            metadata_config_pb = Parse(body, ConnectionConfig())
+        except ParseError:
+            return Parse(body, MetadataStoreClientConfig())
 
         # if the server returns a SQLite connection config, but the file is not
         # available locally, we need to replace the path with the local path of
