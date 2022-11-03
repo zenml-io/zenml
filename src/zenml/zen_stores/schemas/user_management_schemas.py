@@ -36,12 +36,16 @@ if TYPE_CHECKING:
 class TeamAssignmentSchema(SQLModel, table=True):
     """SQL Model for team assignments."""
 
-    user_id: UUID = Field(primary_key=True, foreign_key="userschema.id")
-    team_id: UUID = Field(primary_key=True, foreign_key="teamschema.id")
+    __tablename__ = "team_assignment"
+
+    user_id: UUID = Field(primary_key=True, foreign_key="user.id")
+    team_id: UUID = Field(primary_key=True, foreign_key="team.id")
 
 
 class UserSchema(SQLModel, table=True):
     """SQL Model for users."""
+
+    __tablename__ = "user"
 
     id: UUID = Field(primary_key=True)
     name: str
@@ -136,6 +140,8 @@ class UserSchema(SQLModel, table=True):
 class TeamSchema(SQLModel, table=True):
     """SQL Model for teams."""
 
+    __tablename__ = "team"
+
     id: UUID = Field(primary_key=True)
     name: str
     created: datetime = Field(default_factory=datetime.now)
@@ -189,6 +195,8 @@ class TeamSchema(SQLModel, table=True):
 
 class RoleSchema(SQLModel, table=True):
     """SQL Model for roles."""
+
+    __tablename__ = "role"
 
     id: UUID = Field(primary_key=True)
     name: str
@@ -244,12 +252,12 @@ class RoleSchema(SQLModel, table=True):
 class UserRoleAssignmentSchema(SQLModel, table=True):
     """SQL Model for assigning roles to users for a given project."""
 
+    __tablename__ = "user_role_assignment"
+
     id: UUID = Field(primary_key=True, default_factory=uuid4)
-    role_id: UUID = Field(foreign_key="roleschema.id")
-    user_id: UUID = Field(foreign_key="userschema.id")
-    project_id: Optional[UUID] = Field(
-        foreign_key="projectschema.id", nullable=True
-    )
+    role_id: UUID = Field(foreign_key="role.id")
+    user_id: UUID = Field(foreign_key="user.id")
+    project_id: Optional[UUID] = Field(foreign_key="project.id", nullable=True)
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
 
@@ -278,12 +286,12 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
 class TeamRoleAssignmentSchema(SQLModel, table=True):
     """SQL Model for assigning roles to teams for a given project."""
 
+    __tablename__ = "team_role_assignment"
+
     id: UUID = Field(primary_key=True, default_factory=uuid4)
-    role_id: UUID = Field(foreign_key="roleschema.id")
-    team_id: UUID = Field(foreign_key="teamschema.id")
-    project_id: Optional[UUID] = Field(
-        foreign_key="projectschema.id", nullable=True
-    )
+    role_id: UUID = Field(foreign_key="role.id")
+    team_id: UUID = Field(foreign_key="team.id")
+    project_id: Optional[UUID] = Field(foreign_key="project.id", nullable=True)
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
 

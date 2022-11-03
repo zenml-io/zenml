@@ -93,8 +93,8 @@ from zenml.zen_stores.schemas import (
     RoleSchema,
     StackComponentSchema,
     StackSchema,
-    StepInputArtifactSchema,
-    StepRunOrderSchema,
+    StepRunArtifactSchema,
+    StepRunParentsSchema,
     StepRunSchema,
     TeamAssignmentSchema,
     TeamRoleAssignmentSchema,
@@ -2993,15 +2993,15 @@ class SqlZenStore(BaseZenStore):
 
             # Check if the parent step is already set.
             assignment = session.exec(
-                select(StepRunOrderSchema)
-                .where(StepRunOrderSchema.child_id == child_id)
-                .where(StepRunOrderSchema.parent_id == parent_id)
+                select(StepRunParentsSchema)
+                .where(StepRunParentsSchema.child_id == child_id)
+                .where(StepRunParentsSchema.parent_id == parent_id)
             ).first()
             if assignment is not None:
                 return
 
             # Save the parent step assignment in the database.
-            assignment = StepRunOrderSchema(
+            assignment = StepRunParentsSchema(
                 child_id=child_id, parent_id=parent_id
             )
             session.add(assignment)
@@ -3044,15 +3044,15 @@ class SqlZenStore(BaseZenStore):
 
             # Check if the input is already set.
             assignment = session.exec(
-                select(StepInputArtifactSchema)
-                .where(StepInputArtifactSchema.step_id == step_id)
-                .where(StepInputArtifactSchema.artifact_id == artifact_id)
+                select(StepRunArtifactSchema)
+                .where(StepRunArtifactSchema.step_id == step_id)
+                .where(StepRunArtifactSchema.artifact_id == artifact_id)
             ).first()
             if assignment is not None:
                 return
 
             # Save the input assignment in the database.
-            assignment = StepInputArtifactSchema(
+            assignment = StepRunArtifactSchema(
                 step_id=step_id, artifact_id=artifact_id, name=name
             )
             session.add(assignment)
@@ -3098,8 +3098,8 @@ class SqlZenStore(BaseZenStore):
             # Get parent steps.
             parent_steps = session.exec(
                 select(StepRunSchema)
-                .where(StepRunOrderSchema.child_id == step.id)
-                .where(StepRunOrderSchema.parent_id == StepRunSchema.id)
+                .where(StepRunParentsSchema.child_id == step.id)
+                .where(StepRunParentsSchema.parent_id == StepRunSchema.id)
             ).all()
             parent_step_ids = [parent_step.id for parent_step in parent_steps]
             mlmd_parent_step_ids = [
@@ -3111,9 +3111,9 @@ class SqlZenStore(BaseZenStore):
             # Get input artifacts.
             input_artifact_list = session.exec(
                 select(
-                    StepInputArtifactSchema.artifact_id,
-                    StepInputArtifactSchema.name,
-                ).where(StepInputArtifactSchema.step_id == step.id)
+                    StepRunArtifactSchema.artifact_id,
+                    StepRunArtifactSchema.name,
+                ).where(StepRunArtifactSchema.step_id == step.id)
             ).all()
             input_artifacts = {
                 input_artifact[1]: input_artifact[0]
@@ -3242,9 +3242,9 @@ class SqlZenStore(BaseZenStore):
                     f"{step_id}: No step with this ID found."
                 )
             query_result = session.exec(
-                select(ArtifactSchema, StepInputArtifactSchema)
-                .where(ArtifactSchema.id == StepInputArtifactSchema.artifact_id)
-                .where(StepInputArtifactSchema.step_id == step_id)
+                select(ArtifactSchema, StepRunArtifactSchema)
+                .where(ArtifactSchema.id == StepRunArtifactSchema.artifact_id)
+                .where(StepRunArtifactSchema.step_id == step_id)
             ).all()
             return {
                 step_input_artifact.name: artifact.to_model()

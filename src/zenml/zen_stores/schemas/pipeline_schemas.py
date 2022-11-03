@@ -33,17 +33,19 @@ if TYPE_CHECKING:
 class PipelineSchema(SQLModel, table=True):
     """SQL Model for pipelines."""
 
+    __tablename__ = "pipeline"
+
     id: UUID = Field(primary_key=True)
 
     name: str
 
     project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+        sa_column=Column(ForeignKey("project.id", ondelete="CASCADE"))
     )
     project: "ProjectSchema" = Relationship(back_populates="pipelines")
 
     user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+        sa_column=Column(ForeignKey("user.id", ondelete="SET NULL"))
     )
     user: "UserSchema" = Relationship(back_populates="pipelines")
 
@@ -112,29 +114,31 @@ class PipelineSchema(SQLModel, table=True):
 class PipelineRunSchema(SQLModel, table=True):
     """SQL Model for pipeline runs."""
 
+    __tablename__ = "pipeline_run"
+
     id: UUID = Field(primary_key=True)
     name: str
 
     project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+        sa_column=Column(ForeignKey("project.id", ondelete="CASCADE"))
     )
     project: "ProjectSchema" = Relationship(back_populates="runs")
 
     user_id: UUID = Field(
         nullable=False,
-        sa_column=Column(ForeignKey("userschema.id", ondelete="CASCADE")),
+        sa_column=Column(ForeignKey("user.id", ondelete="CASCADE")),
     )
     user: "UserSchema" = Relationship(back_populates="runs")
 
     stack_id: Optional[UUID] = Field(
         nullable=True,
-        sa_column=Column(ForeignKey("stackschema.id", ondelete="SET NULL")),
+        sa_column=Column(ForeignKey("stack.id", ondelete="SET NULL")),
     )
     stack: "StackSchema" = Relationship(back_populates="runs")
 
     pipeline_id: Optional[UUID] = Field(
         nullable=True,
-        sa_column=Column(ForeignKey("pipelineschema.id", ondelete="SET NULL")),
+        sa_column=Column(ForeignKey("pipeline.id", ondelete="SET NULL")),
     )
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
@@ -225,10 +229,12 @@ class PipelineRunSchema(SQLModel, table=True):
 class StepRunSchema(SQLModel, table=True):
     """SQL Model for steps of pipeline runs."""
 
+    __tablename__ = "step_run"
+
     id: UUID = Field(primary_key=True)
     name: str
 
-    pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
+    pipeline_run_id: UUID = Field(foreign_key="pipeline_run.id")
 
     status: ExecutionStatus
     entrypoint_name: str
@@ -311,21 +317,25 @@ class StepRunSchema(SQLModel, table=True):
         )
 
 
-class StepRunOrderSchema(SQLModel, table=True):
+class StepRunParentsSchema(SQLModel, table=True):
     """SQL Model that defines the order of steps."""
 
-    parent_id: UUID = Field(foreign_key="steprunschema.id", primary_key=True)
-    child_id: UUID = Field(foreign_key="steprunschema.id", primary_key=True)
+    __tablename__ = "step_run_parents"
+
+    parent_id: UUID = Field(foreign_key="step_run.id", primary_key=True)
+    child_id: UUID = Field(foreign_key="step_run.id", primary_key=True)
 
 
 class ArtifactSchema(SQLModel, table=True):
     """SQL Model for artifacts of steps."""
 
+    __tablename__ = "artifact"
+
     id: UUID = Field(primary_key=True)
     name: str  # Name of the output in the parent step
 
-    parent_step_id: UUID = Field(foreign_key="steprunschema.id")
-    producer_step_id: UUID = Field(foreign_key="steprunschema.id")
+    parent_step_id: UUID = Field(foreign_key="step_run.id")
+    producer_step_id: UUID = Field(foreign_key="step_run.id")
 
     type: ArtifactType
     uri: str
@@ -389,9 +399,11 @@ class ArtifactSchema(SQLModel, table=True):
         )
 
 
-class StepInputArtifactSchema(SQLModel, table=True):
+class StepRunArtifactSchema(SQLModel, table=True):
     """SQL Model that defines which artifacts are inputs to which step."""
 
-    step_id: UUID = Field(foreign_key="steprunschema.id", primary_key=True)
-    artifact_id: UUID = Field(foreign_key="artifactschema.id", primary_key=True)
+    __tablename__ = "step_run_artifact"
+
+    step_id: UUID = Field(foreign_key="step_run.id", primary_key=True)
+    artifact_id: UUID = Field(foreign_key="artifact.id", primary_key=True)
     name: str  # Name of the input in the step

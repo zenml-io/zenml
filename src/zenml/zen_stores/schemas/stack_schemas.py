@@ -37,14 +37,18 @@ class StackCompositionSchema(SQLModel, table=True):
     Join table between Stacks and StackComponents.
     """
 
-    stack_id: UUID = Field(primary_key=True, foreign_key="stackschema.id")
+    __tablename__ = "stack_composition"
+
+    stack_id: UUID = Field(primary_key=True, foreign_key="stack.id")
     component_id: UUID = Field(
-        primary_key=True, foreign_key="stackcomponentschema.id"
+        primary_key=True, foreign_key="stack_component.id"
     )
 
 
 class StackSchema(SQLModel, table=True):
     """SQL Model for stacks."""
+
+    __tablename__ = "stack"
 
     id: UUID = Field(primary_key=True)
     created: datetime = Field(default_factory=datetime.now)
@@ -54,12 +58,12 @@ class StackSchema(SQLModel, table=True):
     is_shared: bool
 
     project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+        sa_column=Column(ForeignKey("project.id", ondelete="CASCADE"))
     )
     project: "ProjectSchema" = Relationship(back_populates="stacks")
 
     user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+        sa_column=Column(ForeignKey("user.id", ondelete="SET NULL"))
     )
     user: "UserSchema" = Relationship(back_populates="stacks")
 

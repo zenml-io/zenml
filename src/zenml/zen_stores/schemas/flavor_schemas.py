@@ -43,6 +43,8 @@ class FlavorSchema(SQLModel, table=True):
         updated: The last update time of the flavor.
     """
 
+    __tablename__ = "flavor"
+
     id: UUID = Field(primary_key=True)
     type: StackComponentType
     source: str
@@ -51,12 +53,12 @@ class FlavorSchema(SQLModel, table=True):
     config_schema: str = Field(sa_column=Column(String(4096)), nullable=False)
 
     project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+        sa_column=Column(ForeignKey("project.id", ondelete="CASCADE"))
     )
     project: "ProjectSchema" = Relationship(back_populates="flavors")
 
     user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+        sa_column=Column(ForeignKey("user.id", ondelete="SET NULL"))
     )
     user: "UserSchema" = Relationship(back_populates="flavors")
 

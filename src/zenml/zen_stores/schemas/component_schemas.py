@@ -34,6 +34,8 @@ if TYPE_CHECKING:
 class StackComponentSchema(SQLModel, table=True):
     """SQL Model for stack components."""
 
+    __tablename__ = "stack_component"
+
     id: UUID = Field(primary_key=True)
 
     name: str
@@ -43,12 +45,12 @@ class StackComponentSchema(SQLModel, table=True):
     flavor: str
 
     project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+        sa_column=Column(ForeignKey("project.id", ondelete="CASCADE"))
     )
     project: "ProjectSchema" = Relationship(back_populates="components")
 
     user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+        sa_column=Column(ForeignKey("user.id", ondelete="SET NULL"))
     )
     user: "UserSchema" = Relationship(back_populates="components")
 
