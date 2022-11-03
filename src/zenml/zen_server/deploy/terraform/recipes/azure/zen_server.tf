@@ -18,7 +18,7 @@ resource "helm_release" "zen-server" {
   set {
     name = "zenml.initImage.tag"
     value = var.zenmlinit_image_tag
-  } 
+  }  
   set {
     name  = "zenml.defaultUsername"
     value = var.username
@@ -29,7 +29,7 @@ resource "helm_release" "zen-server" {
   }
   set {
     name  = "zenml.deploymentType"
-    value = "gcp"
+    value = "azure"
   }
   set {
     name  = "zenml.serverId"
@@ -42,11 +42,11 @@ resource "helm_release" "zen-server" {
     value = var.ingress_path != ""? "/${var.ingress_path}": ""
   }
   set {
-    name = "zenml.ingress.path"
+    name = "ingress.path"
     value = var.ingress_path != ""? "/${var.ingress_path}/?(.*)": "/"
   }
   set {
-    name = "zenml.ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/rewrite-target"
+    name = "ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/rewrite-target"
     value = var.ingress_path != ""? "/$1": ""
   }
   set {
@@ -54,22 +54,22 @@ resource "helm_release" "zen-server" {
     value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.ip}.nip.io" : "${var.ingress_controller_hostname}.nip.io"
   }
   set {
-    name = "zenml.ingress.tls.enabled"
+    name = "ingress.tls.enabled"
     value = var.ingress_tls
   }
   set {
-    name = "zenml.ingress.tls.generateCerts"
+    name = "ingress.tls.generateCerts"
     value = var.ingress_tls_generate_certs
   }
   set {
-    name = "zenml.ingress.tls.secretName"
+    name = "ingress.tls.secretName"
     value = "${var.name}-${var.ingress_tls_secret_name}"
   }
 
   # set parameters for the mysql database
   set {
     name  = "zenml.database.url"
-    value = var.deploy_db? "mysql://${var.database_username}:${module.metadata_store[0].generated_user_password}@${module.metadata_store[0].instance_first_ip_address}:3306/${var.db_name}" : var.database_url
+    value = var.deploy_db? "mysql://${var.database_username}:${azurerm_mysql_flexible_server.mysql[0].administrator_password}@${azurerm_mysql_flexible_server.mysql[0].name}.mysql.database.azure.com:3306/${var.db_name}" : var.database_url
   }
   set {
     name  = "zenml.database.sslCa"
