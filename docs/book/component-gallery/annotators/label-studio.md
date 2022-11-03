@@ -98,9 +98,13 @@ Then register your annotator with ZenML:
 ```shell
 zenml annotator register label_studio --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
 
-# for deployed instances of Label Studio, you can also pass in the URL as follows:
-# zenml annotator register label_studio --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>" --instance_url="<your_label_studio_url>"
+# for deployed instances of Label Studio, you can also pass in the URL as follows, for example:
+# zenml annotator register label_studio --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>" --instance_url="<your_label_studio_url>" --port=80
 ```
+
+When using a deployed instance of Label Studio, the instance URL must be
+specified without any trailing `/` at the end. You should specify the port, for
+example port 80 for a standard http connection.
 
 Finally, add all these components to a stack and set it as your active stack.
 For example:
