@@ -3650,7 +3650,9 @@ class SqlZenStore(BaseZenStore):
             "MLMD"
         )
         for run_ in unfinished_runs:
+            logger.debug(f"Syncing run steps for pipeline run '{run_.id}'")
             self._sync_run_steps(run_.id)
+            logger.debug(f"Updating run status for pipeline run '{run_.id}'")
             self._update_run_status(run_.to_model())
 
         # Sync steps of all recently updated runs when running in a server.
@@ -3670,6 +3672,9 @@ class SqlZenStore(BaseZenStore):
             )
             for run_ in recently_updated_runs:
                 if run_ not in unfinished_runs:
+                    logger.debug(
+                        f"Syncing run steps for recent pipeline run '{run_.id}'"
+                    )
                     self._sync_run_steps(run_.id)
 
     def _sync_run(self, mlmd_run: "MLMDPipelineRunModel") -> PipelineRunModel:
