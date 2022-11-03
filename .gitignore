@@ -184,8 +184,5 @@ zenml_examples/
 # stack recipes
 test_terraform/
 
-# dashboard build files
-src/zenml/zen_server/dashboard/
-
 # feast registry database
 examples/feast_feature_store/feast_feature_repo/data/registry.db
