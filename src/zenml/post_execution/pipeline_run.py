@@ -183,7 +183,9 @@ class PipelineRunView:
         Returns:
             The current status of the pipeline run.
         """
-        return Client().zen_store.get_run_status(self.id)
+        # Query the run again since the status might have changed since this
+        # object was created.
+        return Client().zen_store.get_run(self.id).status
 
     @property
     def steps(self) -> List[StepView]:

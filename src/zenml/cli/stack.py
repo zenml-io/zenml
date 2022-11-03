@@ -15,7 +15,7 @@
 
 import getpass
 import json
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
 import click
@@ -31,6 +31,25 @@ from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
+
+if TYPE_CHECKING:
+    from zenml.models.stack_models import StackModel
+
+
+def _set_active_stack(stack: "StackModel") -> None:
+    """Sets the active stack.
+
+    Args:
+        stack: The stack to activate
+    """
+    client = Client()
+    scope = " repository" if client.root else " global"
+
+    with console.status(
+        f"Setting the{scope} active stack to " f"'{stack.name}'..."
+    ):
+        client.activate_stack(stack)
+        cli_utils.declare(f"Active{scope} stack set to: " f"'{stack.name}'")
 
 
 # Stacks
@@ -232,7 +251,7 @@ def register_stack(
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
     if set_stack:
-        client.activate_stack(stack=created_stack)
+        _set_active_stack(created_stack)
 
 
 @stack.command(
@@ -448,18 +467,18 @@ def share_stack(
     else:
         for c_t, c in stack_to_share.to_hydrated_model().components.items():
             only_component = c[0]  # For future compatibility
-            # with console.status(
-            #     f"Sharing component `{only_component.name}`" f"...\n"
-            # ):
-            cli_utils.declare(
-                f"A Stack can only be shared when all its "
-                f"components are also shared. Component "
-                f"'{only_component.name}' is also set to "
-                f"shared."
-            )
+            with console.status(
+                f"Sharing component `{only_component.name}`" f"...\n"
+            ):
+                cli_utils.declare(
+                    f"A Stack can only be shared when all its "
+                    f"components are also shared. Component "
+                    f"'{only_component.name}' is also set to "
+                    f"shared."
+                )
 
-            only_component.is_shared = True
-            client.update_stack_component(component=only_component)
+                only_component.is_shared = True
+                client.update_stack_component(component=only_component)
 
         with console.status(f"Sharing stack `{stack_to_share.name}` ...\n"):
 
@@ -807,7 +826,6 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
         stack_name_or_id: Name of the stack to set as active.
     """
     cli_utils.print_active_config()
-    scope = " repository" if Client().root else " global"
     client = Client()
 
     try:
@@ -817,14 +835,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
     except KeyError as e:
         cli_utils.error(str(e))
     else:
-        with console.status(
-            f"Setting the{scope} active stack to "
-            f"'{stack_to_set_active.name}'..."
-        ):
-            client.activate_stack(stack_to_set_active)
-            cli_utils.declare(
-                f"Active{scope} stack set to: " f"'{stack_to_set_active.name}'"
-            )
+        _set_active_stack(stack_to_set_active)
 
 
 @stack.command("get")

@@ -19,13 +19,12 @@ from typing import Any, List
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi_utils.tasks import repeat_every
 from genericpath import isfile
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
 import zenml
-from zenml.constants import API, ENV_ZENML_SERVER_METADATA_SYNC_PERIOD, HEALTH
+from zenml.constants import API, HEALTH
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
@@ -42,11 +41,7 @@ from zenml.zen_server.routers import (
     teams_endpoints,
     users_endpoints,
 )
-from zenml.zen_server.utils import (
-    ROOT_URL_PATH,
-    initialize_zen_store,
-    zen_store,
-)
+from zenml.zen_server.utils import ROOT_URL_PATH, initialize_zen_store
 
 DASHBOARD_DIRECTORY = "dashboard"
 
@@ -84,7 +79,6 @@ def initialize() -> None:
     # IMPORTANT: this needs to be done before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
-    sync_pipeline_runs()
 
 
 app.mount(
@@ -152,17 +146,6 @@ app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(users_endpoints.activation_router)
-
-
-@app.on_event("startup")
-@repeat_every(
-    seconds=float(os.getenv(ENV_ZENML_SERVER_METADATA_SYNC_PERIOD, 10)),
-    wait_first=True,
-)
-def sync_pipeline_runs() -> None:
-    """Sync pipeline runs."""
-    logger.info("Syncing pipeline runs...")
-    zen_store()._sync_runs()
 
 
 def get_root_static_files() -> List[str]:

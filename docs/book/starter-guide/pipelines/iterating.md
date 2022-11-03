@@ -78,7 +78,7 @@ when you [fetch pipeline runs](./fetching-pipelines.md), to compare various runs
 When you tweaked the `gamma` variable above, you must have noticed that the 
 `digits_data_loader` step does not re-execute for each subsequent run.  This is because ZenML 
 understands that nothing has changed between subsequent runs, so it re-uses the output of the last 
-run (the outputs are persisted in the [artifact store](../../component-gallery/artifact-stores/)). 
+run (the outputs are persisted in the [artifact store](../../component-gallery/artifact-stores/artifact-stores.md). 
 This behavior is known as **caching**.
 
 Prototyping is often a fast and iterative process that

@@ -55,6 +55,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
+from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
@@ -80,7 +81,6 @@ if TYPE_CHECKING:
     from tfx.dsl.component.experimental.decorators import _SimpleComponent
 
     from zenml.config.base_settings import SettingsOrDict
-    from zenml.steps.base_parameters import BaseParameters
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
@@ -840,6 +840,9 @@ class BaseStep(metaclass=BaseStepMeta):
 
                 source = _resolve_if_necessary(artifact)
                 outputs[output_name]["artifact_source"] = source
+
+        if isinstance(parameters, BaseParameters):
+            parameters = parameters.dict()
 
         values = dict_utils.remove_none_values(
             {

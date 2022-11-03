@@ -32,6 +32,7 @@
   * [Containerization (Docker)](./advanced-guide/pipelines/containerization.md)
   * [Passing Custom Data Types through Steps (Materializers)](./advanced-guide/pipelines/materializers.md)
   * [Specifying Step Resources](./advanced-guide/pipelines/step-resources.md)
+  * [Enabling GPU-backed hardware](./advanced-guide/pipelines/gpu-hardware.md)
   * [Accessing Metadata within Steps](./advanced-guide/pipelines/step-metadata.md)
   * [Controlling the Step Execution Order](./advanced-guide/pipelines/step-order.md)
 * [Extending Stacks](./advanced-guide/stacks/stacks.md)

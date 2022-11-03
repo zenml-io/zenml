@@ -6,6 +6,8 @@ ENV PYTHONFAULTHANDLER=1 \
     PYTHONHASHSEED=random \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    ZENML_DEBUG=1 \
+    ZENML_LOGGING_VERBOSITY=INFO \
     ZENML_CONTAINER=1
 
 
@@ -16,15 +18,5 @@ COPY README.md pyproject.toml ./
 # copying our source files which would invalidate caching
 COPY src/zenml/__init__.py ./src/zenml/
 
-RUN pip install -e .[server]
+RUN pip install -e .
 COPY src src
-
-RUN mkdir -p .zenconfig/local_stores/default_zen_store
-COPY zenml.db .zenconfig/local_stores/default_zen_store
-
-ENV ZENML_CONFIG_PATH=/zenml/.zenconfig \
-    ZENML_DEBUG=true \
-    ZENML_ANALYTICS_OPT_IN=false
-
-ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug"]
-CMD ["--port", "80", "--host",  "0.0.0.0"]

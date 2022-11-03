@@ -68,3 +68,10 @@ def my_step(...) -> ...:
 
 If some of your steps require additional hardware resources, you can specify 
 them on your steps as described [here](../../advanced-guide/pipelines/step-resources.md).
+
+### Enabling CUDA for GPU-backed hardware
+
+Note that if you wish to use step operators to run steps on a GPU, you will
+need to follow [the instructions on this page](../../advanced-guide/pipelines/gpu-hardware.md) to ensure that it works. It
+requires adding some extra settings customization and is essential to enable
+CUDA for the GPU to give its full acceleration.
