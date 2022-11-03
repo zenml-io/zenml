@@ -27,7 +27,6 @@ from zenml.exceptions import ProvisioningError
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.label_studio.flavors.label_studio_annotator_flavor import (
-    DEFAULT_LOCAL_INSTANCE_URL,
     LabelStudioAnnotatorConfig,
 )
 from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
@@ -88,10 +87,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             The URL of the annotation interface.
         """
-        if self.config.instance_url == DEFAULT_LOCAL_INSTANCE_URL:
-            return f"{self.config.instance_url}:{self.config.port}"
-        else:
-            return self.config.instance_url
+        return f"{self.config.instance_url}:{self.config.port}"
 
     def get_url_for_dataset(self, dataset_name: str) -> str:
         """Gets the URL of the annotation interface for the given dataset.
