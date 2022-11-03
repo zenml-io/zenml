@@ -329,7 +329,7 @@ class StepRunParentsSchema(SQLModel, table=True):
 class ArtifactSchema(SQLModel, table=True):
     """SQL Model for artifacts of steps."""
 
-    __tablename__ = "artifact"
+    __tablename__ = "artifacts"
 
     id: UUID = Field(primary_key=True)
     name: str  # Name of the output in the parent step
@@ -405,5 +405,5 @@ class StepRunArtifactSchema(SQLModel, table=True):
     __tablename__ = "step_run_artifact"
 
     step_id: UUID = Field(foreign_key="step_run.id", primary_key=True)
-    artifact_id: UUID = Field(foreign_key="artifact.id", primary_key=True)
+    artifact_id: UUID = Field(foreign_key="artifacts.id", primary_key=True)
     name: str  # Name of the input in the step

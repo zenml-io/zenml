@@ -21,7 +21,7 @@ def upgrade() -> None:
     op.rename_table("userroleassignmentschema", "user_role_assignment")
     op.rename_table("steprunorderschema", "step_run_parents")
     op.rename_table("teamschema", "team")
-    op.rename_table("artifactschema", "artifact")
+    op.rename_table("artifactschema", "artifacts")
     op.rename_table("pipelinerunschema", "pipeline_run")
     op.rename_table("steprunschema", "step_run")
     op.rename_table("teamassignmentschema", "team_assignment")
@@ -39,7 +39,7 @@ def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
     op.rename_table("step_run_artifact", "stepinputartifactschema")
     op.rename_table("step_run_parents", "steprunorderschema")
-    op.rename_table("artifact", "artifactschema")
+    op.rename_table("artifacts", "artifactschema")
     op.rename_table("step_run", "steprunschema")
     op.rename_table("stack_composition", "stackcompositionschema")
     op.rename_table("pipeline_run", "pipelinerunschema")
