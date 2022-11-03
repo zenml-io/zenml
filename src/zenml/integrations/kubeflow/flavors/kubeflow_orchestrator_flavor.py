@@ -70,7 +70,7 @@ class KubeflowOrchestratorSettings(BaseSettings):
                 "Got Kubeflow pod settings using both the deprecated "
                 "attributes `node_selectors` and `node_affinity` as well as "
                 "the new attribute `pod_settings`. Please specify Kubeflow "
-                "pod settings only using the new`pod_settings` attribute."
+                "pod settings only using the new `pod_settings` attribute."
             )
         elif has_old_settings:
             from kubernetes import client as k8s_client
