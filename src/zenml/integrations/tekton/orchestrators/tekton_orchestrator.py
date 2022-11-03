@@ -15,7 +15,7 @@
 import os
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from kfp import dsl
 from kfp_tekton.compiler import TektonCompiler
@@ -26,9 +26,11 @@ from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
+from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
     DEFAULT_TEKTON_UI_PORT,
     TektonOrchestratorConfig,
+    TektonOrchestratorSettings,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -39,6 +41,7 @@ from zenml.utils import io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
@@ -60,6 +63,15 @@ class TektonOrchestrator(BaseOrchestrator):
             The configuration.
         """
         return cast(TektonOrchestratorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Tekton orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return TektonOrchestratorSettings
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:
         """Get the list of configured Kubernetes contexts and the active context.
@@ -251,6 +263,16 @@ class TektonOrchestrator(BaseOrchestrator):
                     command=command,
                     arguments=arguments,
                 )
+
+                settings = cast(
+                    Optional[TektonOrchestratorSettings],
+                    self.get_settings(step),
+                )
+                if settings and settings.pod_settings:
+                    apply_pod_settings(
+                        container_op=container_op,
+                        settings=settings.pod_settings,
+                    )
 
                 container_op.container.add_env_variable(
                     k8s_client.V1EnvVar(
