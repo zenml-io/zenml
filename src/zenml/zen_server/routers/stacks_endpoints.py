@@ -13,24 +13,18 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for stacks."""
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 
-from zenml.constants import (
-    API,
-    LIMIT_DEFAULT,
-    LIMIT_MAX,
-    OFFSET,
-    STACKS,
-    VERSION_1,
-)
+from zenml.constants import API, STACKS, VERSION_1
 from zenml.models import StackModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.stack_models import UpdateStackRequest
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.models.page_model import Page, Params
 
 router = APIRouter(
     prefix=API + VERSION_1 + STACKS,
@@ -42,7 +36,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Union[List[HydratedStackModel], List[StackModel]],  # type: ignore[arg-type]
+    response_model=Page[StackModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -53,9 +47,8 @@ def list_stacks(
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> Union[List[HydratedStackModel], List[StackModel]]:
+    params: Params = Depends(),
+) -> Page[StackModel]:
     """Returns all stacks.
 
     Args:
@@ -66,8 +59,7 @@ def list_stacks(
         is_shared: Optionally filter by shared status of the stack
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
+        params: Parameters for pagination (page and size)
 
     Returns:
         All stacks.
@@ -79,8 +71,7 @@ def list_stacks(
         is_shared=is_shared,
         name=name,
         hydrated=hydrated,
-        offset=offset,
-        limit=limit,
+        params=params,
     )
 
 

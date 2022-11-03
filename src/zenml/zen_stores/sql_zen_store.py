@@ -66,7 +66,6 @@ from zenml.models import (
     ArtifactModel,
     ComponentModel,
     FlavorModel,
-    HydratedStackModel,
     PipelineModel,
     PipelineRunModel,
     ProjectModel,
@@ -105,6 +104,7 @@ from zenml.zen_stores.schemas import (
     UserSchema,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
+from zenml.models.page_model import Page, Params
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import (
@@ -826,18 +826,18 @@ class SqlZenStore(BaseZenStore):
 
     def list_stacks(
         self,
+        params: Params = Params(page=1, size=100),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
         hydrated: bool = False,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> Union[List[StackModel], List[HydratedStackModel]]:
+    ) -> Page[StackModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
+            params: Parameters for pagination (page and size)
             project_name_or_id: Id or name of the Project containing the stack
             user_name_or_id: Optionally filter stacks by their owner
             component_id: Optionally filter for stacks that contain the
@@ -846,8 +846,6 @@ class SqlZenStore(BaseZenStore):
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
             hydrated: Flag to decide whether to return hydrated models.
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
 
         Returns:
             A list of all stacks matching the filter criteria.
@@ -873,14 +871,21 @@ class SqlZenStore(BaseZenStore):
             if is_shared is not None:
                 query = query.where(StackSchema.is_shared == is_shared)
 
-            stacks = session.exec(
-                query.order_by(StackSchema.name).offset(offset).limit(limit)
-            ).all()
+            query = query.order_by(StackSchema.name)
+            # paged_stacks: AbstractPage[StackSchema] = paginate(
+            paged_stacks = Page.paginate(session=session,
+                                         query=query,
+                                         params=params)
 
-            if hydrated:
-                return [stack.to_hydrated_model() for stack in stacks]
-            else:
-                return [stack.to_model() for stack in stacks]
+            # items = [i.to_model() for i in paged_stacks.items]
+            # paged_stacks.items = items
+            # paged_stacks: Page[StackModel]
+
+            return paged_stacks
+            # if hydrated:
+            #     return [stack.to_hydrated_model() for stack in stacks]
+            # else:
+            #     return [stack.to_model() for stack in stacks]
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(self, stack: StackModel) -> StackModel:

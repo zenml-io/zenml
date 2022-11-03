@@ -204,6 +204,7 @@ ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"
 
 # Pagination defaults
 OFFSET = 0
-LIMIT_DEFAULT: int = handle_int_env_var(ENV_ZENML_PAGINATION_DEFAULT_LIMIT,
-                                        default=100)
+LIMIT_DEFAULT: int = handle_int_env_var(
+    ENV_ZENML_PAGINATION_DEFAULT_LIMIT, default=100
+)
 LIMIT_MAX = 500

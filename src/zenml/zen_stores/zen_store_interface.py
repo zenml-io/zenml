@@ -22,7 +22,6 @@ from zenml.models import (
     ArtifactModel,
     ComponentModel,
     FlavorModel,
-    HydratedStackModel,
     PipelineModel,
     PipelineRunModel,
     ProjectModel,
@@ -34,6 +33,7 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.server_models import ServerModel
+from zenml.models.page_model import Page, Params
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import (
@@ -183,15 +183,14 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stacks(
         self,
+        params: Params = Params(page=1, size=100),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
         hydrated: bool = False,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> Union[List[StackModel], List[HydratedStackModel]]:
+    ) -> Page[StackModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -203,8 +202,8 @@ class ZenStoreInterface(ABC):
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
             hydrated: Flag to decide whether to return hydrated models
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
+
 
 
         Returns:
