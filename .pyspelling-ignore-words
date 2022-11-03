@@ -201,6 +201,7 @@ DeleteObject
 Deprovision
 Deprovisions
 Deregisters
+Deterministically
 DevOps
 DockerConfiguration
 DockerHub
@@ -1521,3 +1522,6 @@ zenmldocker
 zenmlregistry
 zenmlserver
 zenserver
+ConnectionConfig
+MetadataStoreClientConfig
+grpc

@@ -40,7 +40,7 @@ class AzureIntegration(Integration):
         "adlfs==2021.10.0",
         "azure-keyvault-keys",
         "azure-keyvault-secrets",
-        "azure-identity",
+        "azure-identity==1.10.0",
         "azureml-core==1.42.0.post1",
     ]
 

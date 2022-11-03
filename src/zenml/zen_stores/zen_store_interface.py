@@ -35,7 +35,10 @@ from zenml.models import (
 from zenml.models.server_models import ServerModel
 
 if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+    from ml_metadata.proto.metadata_store_pb2 import (
+        ConnectionConfig,
+        MetadataStoreClientConfig,
+    )
 
 
 class ZenStoreInterface(ABC):
@@ -129,7 +132,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> "ConnectionConfig":
+    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
         """Get the TFX metadata config of this ZenStore.
 
         Args:
@@ -967,11 +970,11 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run(self, run_id: UUID) -> PipelineRunModel:
+    def get_run(self, run_name_or_id: Union[str, UUID]) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to get.
+            run_name_or_id: The name or ID of the pipeline run to get.
 
         Returns:
             The pipeline run.
