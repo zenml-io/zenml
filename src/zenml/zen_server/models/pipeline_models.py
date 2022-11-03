@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Project Models for the API endpoint definitions."""
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from pydantic import Field
 
@@ -98,7 +99,9 @@ class HydratedPipelineModel(PipelineModel):
         last_x_runs = runs[:num_runs]
         status_last_x_runs = []
         for run in last_x_runs:
-            status_last_x_runs.append(zen_store.get_run_status(run_id=run.id))
+            status_last_x_runs.append(
+                zen_store.get_run(run_name_or_id=run.id).status
+            )
 
         return cls(
             id=pipeline_model.id,
@@ -112,6 +115,25 @@ class HydratedPipelineModel(PipelineModel):
             created=pipeline_model.created,
             updated=pipeline_model.updated,
         )
+
+
+class CreatePipelineRunRequest(ProjectScopedCreateRequest[PipelineRunModel]):
+    """Pipeline run model for create requests."""
+
+    _MODEL_TYPE = PipelineRunModel
+
+    id: Optional[UUID]
+    name: str = Field(
+        title="The name of the pipeline run.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    orchestrator_run_id: Optional[str]
+    stack_id: Optional[UUID]
+    pipeline_id: Optional[UUID]
+    status: ExecutionStatus
+    pipeline_configuration: Dict[str, Any]
+    num_steps: int
+    mlmd_id: Optional[int]
 
 
 class HydratedPipelineRunModel(PipelineRunModel):
@@ -143,7 +165,7 @@ class HydratedPipelineRunModel(PipelineRunModel):
         """
         zen_store = GlobalConfiguration().zen_store
 
-        status = zen_store.get_run_status(run_id=run_model.id)
+        status = zen_store.get_run(run_name_or_id=run_model.id).status
 
         pipeline = None
         stack = None
@@ -157,7 +179,7 @@ class HydratedPipelineRunModel(PipelineRunModel):
             user = zen_store.get_user(run_model.user)
 
         return cls(
-            **run_model.dict(exclude={"user", "pipeline", "stack"}),
+            **run_model.dict(exclude={"user", "pipeline", "stack", "status"}),
             pipeline=pipeline,
             stack=stack,
             user=user,

@@ -911,7 +911,7 @@ def test_getting_run_succeeds(
     """Tests getting run."""
     run_id = sql_store_with_run["pipeline_run"].id
     with does_not_raise():
-        run = sql_store_with_run["store"].get_run(run_id=run_id)
+        run = sql_store_with_run["store"].get_run(run_id)
         assert run is not None
         assert run.name == sql_store_with_run["pipeline_run"].name
 
@@ -958,6 +958,15 @@ def test_list_runs_returns_nothing_when_no_runs_exist(
     assert len(false_pipeline_runs) == 0
 
 
+def test_list_runs_is_ordered(sql_store_with_runs):
+    """Tests listing runs returns ordered runs."""
+    runs = sql_store_with_runs["store"].list_runs()
+    assert len(runs) == 10
+    assert all(
+        runs[i].created <= runs[i + 1].created for i in range(len(runs) - 1)
+    )
+
+
 # ------------------
 # Pipeline run steps
 # ------------------
@@ -989,18 +998,10 @@ def test_get_run_step_outputs_succeeds(
 ):
     """Tests getting run step outputs."""
     pipeline_step = sql_store_with_run["step"]
-    run_step_outputs = sql_store_with_run["store"].get_run_step_outputs(
-        step_id=pipeline_step.id
+    run_step_outputs = sql_store_with_run["store"].list_artifacts(
+        parent_step_id=pipeline_step.id
     )
     assert len(run_step_outputs) == 1
-
-
-def test_get_run_step_outputs_fails_when_step_does_not_exist(
-    sql_store: BaseZenStore,
-):
-    """Tests getting run step outputs fails when step does not exist."""
-    with pytest.raises(KeyError):
-        sql_store["store"].get_run_step_outputs(step_id=uuid.uuid4())
 
 
 def test_get_run_step_inputs_succeeds(
@@ -1027,8 +1028,10 @@ def test_get_run_step_status_succeeds(
 ):
     """Tests getting run step status."""
     pipeline_step = sql_store_with_run["step"]
-    run_step_status = sql_store_with_run["store"].get_run_step_status(
-        step_id=pipeline_step.id
+    run_step_status = (
+        sql_store_with_run["store"]
+        .get_run_step(step_id=pipeline_step.id)
+        .status
     )
     assert run_step_status is not None
     assert isinstance(run_step_status, ExecutionStatus)
