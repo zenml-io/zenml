@@ -249,7 +249,7 @@ pipeline = data_validation_pipeline(
 pipeline.run()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStepConfig),
+As can be seen from the [step definition](https://apidocs.zenml.io/0.20.5/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStepParameters),
 the step takes in a dataset and it returns a Deepchecks `SuiteResult` object
 that contains the test results:
 
@@ -290,7 +290,7 @@ data_validator = deepchecks_data_integrity_check_step(
 You should consult [the official Deepchecks documentation](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html)
 for more information on what each test is useful for.
 
-For more customization, the `DeepchecksDataIntegrityCheckStepConfig` step
+For more customization, the `DeepchecksDataIntegrityCheckStepParams` step
 configuration also allows for additional keyword arguments to be supplied to be
 passed transparently to the Deepchecks library:
 
@@ -404,7 +404,7 @@ check.add_condition_number_of_outliers_less_or_equal(
 suite.run(train_dataset=train_dataset)
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStepConfig) in the API
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/0.20.5/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStepParameters) in the API
 docs.
 
 You can also check out our examples pages for working examples that use the
