@@ -21,8 +21,7 @@ from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import HydratedStackModel, StackModel
-from zenml.zen_stores.schemas.base_schemas import NamedSchemaMixin, \
-    SharableSchemaMixin
+from zenml.zen_stores.schemas.base_schemas import SharableSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -45,7 +44,7 @@ class StackCompositionSchema(SQLModel, table=True):
     )
 
 
-class StackSchema(SQLModel, SharableSchemaMixin, table=True):
+class StackSchema(SharableSchema, table=True):
     """SQL Model for stacks."""
 
     project_id: UUID = Field(

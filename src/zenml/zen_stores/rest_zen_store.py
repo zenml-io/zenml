@@ -83,6 +83,7 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
+from zenml.models.page_model import Params, Page
 from zenml.models.server_models import ServerModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_server.models.base_models import (
@@ -547,18 +548,18 @@ class RestZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> List[ComponentModel]:
+    ) -> Page[ComponentModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
+            params: Parameters for pagination (page and size)
             project_name_or_id: The ID or name of the Project to which the stack
                 components belong
             type: Optionally filter by type of stack component

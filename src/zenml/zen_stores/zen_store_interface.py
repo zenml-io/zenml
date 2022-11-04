@@ -266,18 +266,18 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stack_components(
         self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> List[ComponentModel]:
+    ) -> Page[ComponentModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
+            params: Parameters for pagination (page and size)
             project_name_or_id: The ID or name of the Project to which the stack
                 components belong
             user_name_or_id: Optionally filter stack components by the owner
@@ -286,8 +286,6 @@ class ZenStoreInterface(ABC):
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by whether they are
                 shared or not
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
 
         Returns:
             A list of all stack components matching the filter criteria.

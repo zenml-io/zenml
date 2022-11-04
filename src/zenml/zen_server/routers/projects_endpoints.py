@@ -41,6 +41,7 @@ from zenml.models import (
     StackModel,
 )
 from zenml.models.component_model import HydratedComponentModel
+from zenml.models.page_model import Params, Page
 from zenml.models.pipeline_models import PipelineRunModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.models.user_management_models import RoleAssignmentModel
@@ -203,34 +204,29 @@ def get_role_assignments_for_project(
 
 @router.get(
     "/{project_name_or_id}" + STACKS,
-    response_model=Union[List[HydratedStackModel], List[StackModel]],  # type: ignore[arg-type]
+    response_model=Page[StackModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_project_stacks(
     project_name_or_id: Union[str, UUID],
+    params: Params = Params(page=1, size=LIMIT_DEFAULT),
     user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[UUID] = None,
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = False,
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> Union[List[HydratedStackModel], List[StackModel]]:
+) -> Page[StackModel]:
     """Get stacks that are part of a specific project.
 
     # noqa: DAR401
 
     Args:
         project_name_or_id: Name or ID of the project.
+        params: Parameters for pagination (page and size)
         user_name_or_id: Optionally filter by name or ID of the user.
         component_id: Optionally filter by component that is part of the stack.
         stack_name: Optionally filter by stack name
         is_shared: Optionally filter by shared status of the stack
-        hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
 
     Returns:
         All stacks part of the specified project.
@@ -241,13 +237,9 @@ def list_project_stacks(
         component_id=component_id,
         is_shared=is_shared,
         name=stack_name,
-        offset=offset,
-        limit=limit,
+        params=params,
     )
-    if hydrated:
-        return [stack.to_hydrated_model() for stack in stacks_list]
-    else:
-        return stacks_list
+    return stacks_list
 
 
 @router.post(
@@ -289,27 +281,26 @@ def create_stack(
 
 @router.get(
     "/{project_name_or_id}" + STACK_COMPONENTS,
-    response_model=Union[List[ComponentModel], List[HydratedComponentModel]],  # type: ignore[arg-type]
+    response_model=Page[ComponentModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_project_stack_components(
     project_name_or_id: Union[str, UUID],
+    params: Params = Params(page=1, size=LIMIT_DEFAULT),
     user_name_or_id: Optional[Union[str, UUID]] = None,
     type: Optional[str] = None,
     name: Optional[str] = None,
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = False,
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
+) -> Page[ComponentModel]:
     """List stack components that are part of a specific project.
 
     # noqa: DAR401
 
     Args:
         project_name_or_id: Name or ID of the project.
+        params: Parameters for pagination (page and size)
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by component name
         type: Optionally filter by component type
@@ -317,8 +308,6 @@ def list_project_stack_components(
         is_shared: Optionally filter by shared status of the component
         hydrated: Defines if users and projects will be
             included by reference (FALSE) or as model (TRUE)
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
 
     Returns:
         All stack components part of the specified project.
@@ -330,13 +319,9 @@ def list_project_stack_components(
         is_shared=is_shared,
         name=name,
         flavor_name=flavor_name,
-        offset=offset,
-        limit=limit,
+        params=params,
     )
-    if hydrated:
-        return [comp.to_hydrated_model() for comp in components_list]
-    else:
-        return components_list
+    return components_list
 
 
 @router.post(
@@ -599,14 +584,10 @@ def get_project_statistics(
     zen_store().list_runs()
     # TODO: with pagination, this won't work anymore
     return {
-        "stacks": len(
-            zen_store().list_stacks(project_name_or_id=project_name_or_id)
-        ),
-        "components": len(
-            zen_store().list_stack_components(
+        "stacks": zen_store().list_stacks(project_name_or_id=project_name_or_id).total,
+        "components": zen_store().list_stack_components(
                 project_name_or_id=project_name_or_id
-            )
-        ),
+            ).total,
         "pipelines": len(
             zen_store().list_pipelines(project_name_or_id=project_name_or_id)
         ),

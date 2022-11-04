@@ -17,17 +17,17 @@ from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from sqlalchemy import Column, ForeignKey, String
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
 from zenml.models import FlavorModel
-from zenml.zen_stores.schemas.base_schemas import NamedSchemaMixin
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import ProjectSchema, UserSchema
 
 
-class FlavorSchema(SQLModel, NamedSchemaMixin, table=True):
+class FlavorSchema(NamedSchema, table=True):
     """SQL Model for flavors.
 
     Attributes:

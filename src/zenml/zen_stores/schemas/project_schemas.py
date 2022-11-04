@@ -16,10 +16,10 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, List
 
-from sqlmodel import Relationship, SQLModel
+from sqlmodel import Relationship
 
 from zenml.models import ProjectModel
-from zenml.zen_stores.schemas.base_schemas import NamedSchemaMixin
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     )
 
 
-class ProjectSchema(SQLModel, NamedSchemaMixin, table=True):
+class ProjectSchema(NamedSchema, table=True):
     """SQL Model for projects."""
 
     description: str

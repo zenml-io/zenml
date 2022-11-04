@@ -51,11 +51,14 @@ from pydantic import BaseModel
 from pydantic.generics import GenericModel
 from pydantic.types import conint
 from sqlalchemy.orm import noload
-from sqlmodel import Session, SQLModel, func, select
+from sqlmodel import Session, func, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
-T = TypeVar("T", bound=SQLModel)
-B = TypeVar("B", bound=BaseModel)
+from zenml.models.base_models import DomainModel
+from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+T = TypeVar("T", bound=BaseSchema)
+B = TypeVar("B", bound=DomainModel)
 
 
 @dataclass

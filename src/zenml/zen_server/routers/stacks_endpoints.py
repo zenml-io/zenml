@@ -46,7 +46,6 @@ def list_stacks(
     component_id: Optional[UUID] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = False,
     params: Params = Depends(),
 ) -> Page[StackModel]:
     """Returns all stacks.
@@ -70,7 +69,6 @@ def list_stacks(
         component_id=component_id,
         is_shared=is_shared,
         name=name,
-        hydrated=hydrated,
         params=params,
     )
 

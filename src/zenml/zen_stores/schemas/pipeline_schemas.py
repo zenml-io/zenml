@@ -25,13 +25,13 @@ from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
-from zenml.zen_stores.schemas.base_schemas import NamedSchemaMixin
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import ProjectSchema, StackSchema, UserSchema
 
 
-class PipelineSchema(SQLModel, NamedSchemaMixin, table=True):
+class PipelineSchema(NamedSchema, table=True):
     """SQL Model for pipelines."""
 
     project_id: UUID = Field(
@@ -103,7 +103,7 @@ class PipelineSchema(SQLModel, NamedSchemaMixin, table=True):
         )
 
 
-class PipelineRunSchema(SQLModel, NamedSchemaMixin, table=True):
+class PipelineRunSchema(NamedSchema, table=True):
     """SQL Model for pipeline runs."""
 
     project_id: UUID = Field(
@@ -184,33 +184,33 @@ class PipelineRunSchema(SQLModel, NamedSchemaMixin, table=True):
         self.status = model.status
         self.updated = datetime.now()
         return self
-    #
-    # def to_model(self) -> PipelineRunModel:
-    #     """Convert a `PipelineRunSchema` to a `PipelineRunModel`.
-    #
-    #     Returns:
-    #         The created `PipelineRunModel`.
-    #     """
-    #     return PipelineRunModel(
-    #         id=self.id,
-    #         name=self.name,
-    #         orchestrator_run_id=self.orchestrator_run_id,
-    #         stack_id=self.stack_id,
-    #         project=self.project_id,
-    #         user=self.user_id,
-    #         pipeline_id=self.pipeline_id,
-    #         status=self.status,
-    #         pipeline_configuration=json.loads(self.pipeline_configuration),
-    #         num_steps=self.num_steps,
-    #         git_sha=self.git_sha,
-    #         zenml_version=self.zenml_version,
-    #         mlmd_id=self.mlmd_id,
-    #         created=self.created,
-    #         updated=self.updated,
-    #     )
+
+    def to_model(self) -> PipelineRunModel:
+        """Convert a `PipelineRunSchema` to a `PipelineRunModel`.
+
+        Returns:
+            The created `PipelineRunModel`.
+        """
+        return PipelineRunModel(
+            id=self.id,
+            name=self.name,
+            orchestrator_run_id=self.orchestrator_run_id,
+            stack_id=self.stack_id,
+            project=self.project_id,
+            user=self.user_id,
+            pipeline_id=self.pipeline_id,
+            status=self.status,
+            pipeline_configuration=json.loads(self.pipeline_configuration),
+            num_steps=self.num_steps,
+            git_sha=self.git_sha,
+            zenml_version=self.zenml_version,
+            mlmd_id=self.mlmd_id,
+            created=self.created,
+            updated=self.updated,
+        )
 
 
-class StepRunSchema(SQLModel, NamedSchemaMixin, table=True):
+class StepRunSchema(NamedSchema, table=True):
     """SQL Model for steps of pipeline runs."""
 
     pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")

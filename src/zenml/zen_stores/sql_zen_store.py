@@ -826,7 +826,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_stacks(
         self,
-        params: Params = Params(page=1, size=100),
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[UUID] = None,
@@ -871,21 +871,12 @@ class SqlZenStore(BaseZenStore):
             if is_shared is not None:
                 query = query.where(StackSchema.is_shared == is_shared)
 
-            query = query.order_by(StackSchema.name)
-            # paged_stacks: AbstractPage[StackSchema] = paginate(
+            query = query.order_by(StackSchema.created)
             paged_stacks = Page.paginate(
                 session=session, query=query, params=params
             )
 
-            # items = [i.to_model() for i in paged_stacks.items]
-            # paged_stacks.items = items
-            # paged_stacks: Page[StackModel]
-
             return paged_stacks
-            # if hydrated:
-            #     return [stack.to_hydrated_model() for stack in stacks]
-            # else:
-            #     return [stack.to_model() for stack in stacks]
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(self, stack: StackModel) -> StackModel:
@@ -1149,18 +1140,18 @@ class SqlZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> List[ComponentModel]:
+    ) -> Page[ComponentModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
+            params: Parameters for pagination (page and size)
             project_name_or_id: The ID or name of the Project to which the stack
                 components belong
             user_name_or_id: Optionally filter stack components by the owner
@@ -1169,8 +1160,6 @@ class SqlZenStore(BaseZenStore):
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by whether they are
                 shared or not
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
 
         Returns:
             A list of all stack components matching the filter criteria.
@@ -1197,11 +1186,12 @@ class SqlZenStore(BaseZenStore):
             if is_shared is not None:
                 query = query.where(StackComponentSchema.is_shared == is_shared)
 
-            list_of_stack_components_in_db = session.exec(
-                query.offset(offset).limit(limit)
-            ).all()
+            query = query.order_by(StackComponentSchema.created)
+            paged_components = Page.paginate(
+                session=session, query=query, params=params
+            )
 
-        return [comp.to_model() for comp in list_of_stack_components_in_db]
+        return paged_components
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(

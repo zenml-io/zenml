@@ -21,7 +21,7 @@ from uuid import UUID
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import RoleAssignmentModel, RoleModel, TeamModel, UserModel
-from zenml.zen_stores.schemas.base_schemas import BaseSchemaMixin, NamedSchemaMixin
+from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -41,7 +41,7 @@ class TeamAssignmentSchema(SQLModel, table=True):
     team_id: UUID = Field(primary_key=True, foreign_key="teamschema.id")
 
 
-class UserSchema(SQLModel, NamedSchemaMixin, table=True):
+class UserSchema(NamedSchema, table=True):
     """SQL Model for users."""
 
     full_name: str
@@ -130,7 +130,7 @@ class UserSchema(SQLModel, NamedSchemaMixin, table=True):
         )
 
 
-class TeamSchema(SQLModel, NamedSchemaMixin, table=True):
+class TeamSchema(NamedSchema, table=True):
     """SQL Model for teams."""
 
     users: List["UserSchema"] = Relationship(
@@ -179,7 +179,7 @@ class TeamSchema(SQLModel, NamedSchemaMixin, table=True):
         )
 
 
-class RoleSchema(SQLModel, BaseSchemaMixin, table=True):
+class RoleSchema(BaseSchema, table=True):
     """SQL Model for roles."""
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
@@ -228,7 +228,7 @@ class RoleSchema(SQLModel, BaseSchemaMixin, table=True):
         )
 
 
-class UserRoleAssignmentSchema(SQLModel, BaseSchemaMixin, table=True):
+class UserRoleAssignmentSchema(BaseSchema, table=True):
     """SQL Model for assigning roles to users for a given project."""
 
     role_id: UUID = Field(foreign_key="roleschema.id")
@@ -259,7 +259,7 @@ class UserRoleAssignmentSchema(SQLModel, BaseSchemaMixin, table=True):
         )
 
 
-class TeamRoleAssignmentSchema(SQLModel, BaseSchemaMixin, table=True):
+class TeamRoleAssignmentSchema(BaseSchema, table=True):
     """SQL Model for assigning roles to teams for a given project."""
 
     role_id: UUID = Field(foreign_key="roleschema.id")

@@ -19,11 +19,11 @@ from typing import TYPE_CHECKING, List
 from uuid import UUID
 
 from sqlalchemy import Column, ForeignKey
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
-from zenml.zen_stores.schemas.base_schemas import SharableSchemaMixin
+from zenml.zen_stores.schemas.base_schemas import SharableSchema
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.stack_schemas import StackSchema
 
 
-class StackComponentSchema(SQLModel, SharableSchemaMixin, table=True):
+class StackComponentSchema(SharableSchema, table=True):
     """SQL Model for stack components."""
 
     type: StackComponentType

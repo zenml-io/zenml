@@ -29,6 +29,7 @@ from zenml.constants import (
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
 from zenml.models.component_model import HydratedComponentModel
+from zenml.models.page_model import Params, Page
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.component_models import UpdateComponentModel
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -50,7 +51,7 @@ types_router = APIRouter(
 
 @router.get(
     "",
-    response_model=Union[List[ComponentModel], List[HydratedComponentModel]],  # type: ignore[arg-type]
+    response_model=Union[Page[ComponentModel], Page[HydratedComponentModel]],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -62,9 +63,8 @@ def list_stack_components(
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
+    params: Params = Depends(),
+) -> Union[Page[ComponentModel], Page[HydratedComponentModel]]:
     """Get a list of all stack components for a specific type.
 
     Args:
@@ -76,8 +76,7 @@ def list_stack_components(
         is_shared: Optionally filter by shared status of the component
         hydrated: Defines if users and projects will be
                   included by reference (FALSE) or as model (TRUE)
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
+        params: Parameters for pagination (page and size)
 
     Returns:
         List of stack components for a specific type.
@@ -89,13 +88,9 @@ def list_stack_components(
         name=name,
         flavor_name=flavor_name,
         is_shared=is_shared,
-        offset=offset,
-        limit=limit,
+        params=params,
     )
-    if hydrated:
-        return [comp.to_hydrated_model() for comp in components_list]
-    else:
-        return components_list
+    return components_list
 
 
 @router.get(
