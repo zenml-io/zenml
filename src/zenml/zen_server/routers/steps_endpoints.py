@@ -28,7 +28,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+from zenml.new_models import ArtifactModel, StepRunModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 

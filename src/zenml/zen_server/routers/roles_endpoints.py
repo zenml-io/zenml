@@ -18,12 +18,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from zenml.constants import API, ROLES, VERSION_1
-from zenml.models import RoleModel
+from zenml.new_models import RoleModel, RoleRequestModel
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.models.user_management_models import (
-    CreateRoleRequest,
-    UpdateRoleRequest,
-)
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -55,7 +51,7 @@ def list_roles() -> List[RoleModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_role(role: CreateRoleRequest) -> RoleModel:
+def create_role(role: RoleRequestModel) -> RoleModel:
     """Creates a role.
 
     # noqa: DAR401
@@ -66,7 +62,7 @@ def create_role(role: CreateRoleRequest) -> RoleModel:
     Returns:
         The created role.
     """
-    return zen_store().create_role(role=role.to_model())
+    return zen_store().create_role(role=role)
 
 
 @router.get(
@@ -94,7 +90,7 @@ def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
 )
 @handle_exceptions
 def update_role(
-    role_name_or_id: Union[str, UUID], role_update: UpdateRoleRequest
+    role_name_or_id: Union[str, UUID], role_update: RoleRequestModel
 ) -> RoleModel:
     """Updates a role.
 
@@ -107,8 +103,9 @@ def update_role(
     Returns:
         The created role.
     """
-    role_in_db = zen_store().get_role(role_name_or_id)
-    return zen_store().update_role(role=role_update.apply_to_model(role_in_db))
+    return zen_store().update_role(
+        role_id=role_name_or_id, role_update=role_update
+    )
 
 
 @router.delete(

@@ -19,10 +19,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from zenml.constants import API, STACKS, VERSION_1
-from zenml.models import StackModel
-from zenml.models.stack_models import HydratedStackModel
+from zenml.new_models import StackModel, StackRequestModel
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.models.stack_models import UpdateStackRequest
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -35,7 +33,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Union[List[HydratedStackModel], List[StackModel]],  # type: ignore[arg-type]
+    response_model=List[StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -45,8 +43,7 @@ def list_stacks(
     component_id: Optional[UUID] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = False,
-) -> Union[List[HydratedStackModel], List[StackModel]]:
+) -> List[StackModel]:
     """Returns all stacks.
 
     Args:
@@ -55,8 +52,6 @@ def list_stacks(
         component_id: Optionally filter by component that is part of the stack.
         name: Optionally filter by stack name
         is_shared: Optionally filter by shared status of the stack
-        hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         All stacks.
@@ -67,64 +62,47 @@ def list_stacks(
         component_id=component_id,
         is_shared=is_shared,
         name=name,
-        hydrated=hydrated,
     )
 
 
 @router.get(
     "/{stack_id}",
-    response_model=Union[HydratedStackModel, StackModel],  # type: ignore[arg-type]
+    response_model=StackModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_stack(
-    stack_id: UUID, hydrated: bool = False
-) -> Union[HydratedStackModel, StackModel]:
+def get_stack(stack_id: UUID) -> StackModel:
     """Returns the requested stack.
 
     Args:
         stack_id: ID of the stack.
-        hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The requested stack.
     """
-    stack = zen_store().get_stack(stack_id)
-    if hydrated:
-        return stack.to_hydrated_model()
-    else:
-        return stack
+    return zen_store().get_stack(stack_id)
 
 
 @router.put(
     "/{stack_id}",
-    response_model=Union[HydratedStackModel, StackModel],  # type: ignore[arg-type]
+    response_model=StackModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def update_stack(
-    stack_id: UUID, stack_update: UpdateStackRequest, hydrated: bool = False
-) -> Union[HydratedStackModel, StackModel]:
+def update_stack(stack_id: UUID, stack_update: StackRequestModel) -> StackModel:
     """Updates a stack.
 
     Args:
         stack_id: Name of the stack.
         stack_update: Stack to use for the update.
-        hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The updated stack.
     """
-    stack_in_db = zen_store().get_stack(stack_id)
-    updated_stack = zen_store().update_stack(
-        stack=stack_update.apply_to_model(stack_in_db)
+    return zen_store().update_stack(
+        stack_id=stack_id,
+        stack_update=stack_update,
     )
-    if hydrated:
-        return updated_stack.to_hydrated_model()
-    else:
-        return updated_stack
 
 
 @router.delete(

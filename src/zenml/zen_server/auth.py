@@ -69,8 +69,8 @@ def authenticate_credentials(
 ) -> Optional[AuthContext]:
     """Verify if user authentication credentials are valid.
 
-    This function can be used to validate all of the supplied
-    user credentials to cover a range of possibilities:
+    This function can be used to validate all supplied user credentials to
+    cover a range of possibilities:
 
      * username+password
      * access token (with embedded user id)
