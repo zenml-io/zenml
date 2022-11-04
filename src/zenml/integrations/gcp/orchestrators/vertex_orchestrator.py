@@ -356,7 +356,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.steps.items():
-
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,

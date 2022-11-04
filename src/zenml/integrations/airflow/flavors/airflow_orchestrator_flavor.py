@@ -28,12 +28,19 @@ from enum import Enum
 
 
 class OperatorType(Enum):
+    """Airflow operator types."""
+
     DOCKER = "docker"
     KUBERNETES = "kubernetes"
     GKE_START_POD = "gke_start_pod"
 
     @property
     def source(self) -> str:
+        """Operator source.
+
+        Returns:
+            The operator source.
+        """
         return {
             OperatorType.DOCKER: "airflow.providers.docker.operators.docker.DockerOperator",
             OperatorType.KUBERNETES: "airflow.providers.cncf.kubernetes.operators.kubernetes_pod.KubernetesPodOperator",
@@ -42,6 +49,26 @@ class OperatorType(Enum):
 
 
 class AirflowOrchestratorSettings(BaseSettings):
+    """Settings for the Airflow orchestrator.
+
+    Attributes:
+        dag_id: Optional ID of the Airflow DAG to create. This value is only
+            applied if the settings are defined on a ZenML pipeline and
+            ignored if defined on a step.
+        dag_tags: Tags to add to the Airflow DAG. This value is only
+            applied if the settings are defined on a ZenML pipeline and
+            ignored if defined on a step.
+        dag_kwargs: Keyword arguments for initializing the Airflow DAG. This
+            value is only applied if the settings are defined on a ZenML
+            pipeline and ignored if defined on a step.
+        operator: The operator to use for one or all steps. This can either be
+            a `zenml.integrations.airflow.flavors.airflow_orchestrator_flavor.OperatorType`
+            or a string representing the source of the operator class to use
+            (e.g. `airflow.providers.docker.operators.docker.DockerOperator`)
+        operator_kwargs: Keyword arguments for initializing the Airflow
+            operator.
+    """
+
     dag_id: Optional[str] = None
     dag_tags: List[str] = []
     dag_kwargs: Dict[str, Any] = {}
