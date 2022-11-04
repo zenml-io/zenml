@@ -483,7 +483,7 @@ class RestZenStore(BaseZenStore):
     @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
     def create_stack_component(
         self,
-        component: ComponentModel,
+        component: ComponentRequestModel,
     ) -> ComponentModel:
         """Create a stack component.
 

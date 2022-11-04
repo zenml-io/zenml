@@ -54,16 +54,22 @@ def generate_stack_component_get_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        active_stack = Client().active_stack_model
-        components = active_stack.components.get(component_type, None)
+        client = Client()
         display_name = _component_display_name(component_type)
-        if components:
-            cli_utils.declare(f"Active {display_name}: '{components[0].name}'")
-        else:
-            cli_utils.warning(
-                f"No {display_name} set for active stack "
-                f"('{active_stack.name}')."
-            )
+
+        with console.status(f"Getting the active `{display_name}`...\n"):
+            active_stack = client.active_stack_model
+            components = active_stack.components.get(component_type, None)
+
+            if components:
+                cli_utils.declare(
+                    f"Active {display_name}: '{components[0].name}'"
+                )
+            else:
+                cli_utils.warning(
+                    f"No {display_name} set for active stack "
+                    f"('{active_stack.name}')."
+                )
 
     return get_stack_component_command
 
@@ -81,23 +87,26 @@ def generate_stack_component_describe_command(
     """
 
     @click.argument(
-        "name_or_id",
+        "name_id_or_prefix",
         type=str,
         required=False,
     )
-    def describe_stack_component_command(name_or_id: str) -> None:
+    def describe_stack_component_command(name_id_or_prefix: str) -> None:
         """Prints details about the active/specified component.
 
         Args:
-            name_or_id: Name or id of the component to describe.
+            name_id_or_prefix: Name or id of the component to describe.
         """
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
         client = Client()
 
-        with console.status(f"Describing stack component '{name_or_id}'..."):
-            component_ = client.get_stack_component(component_id=name_or_id)
+        with console.status(f"Describing component '{name_id_or_prefix}'..."):
+            component_ = client.get_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+            )
 
             active_components = client.active_stack_model.components.get(
                 component_type, None
@@ -133,7 +142,7 @@ def generate_stack_component_list_command(
         client = Client()
 
         with console.status(f"Listing {component_type.plural}..."):
-            components = client.list_stack_components_by_type(component_type)
+            components = client.list_stack_components(component_type)
 
             cli_utils.print_components_table(
                 client=client,
@@ -237,40 +246,41 @@ def generate_stack_component_update_command(
     display_name = _component_display_name(component_type)
 
     @click.argument(
-        "name_or_id",
+        "name_id_or_prefix",
         type=str,
         required=False,
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def update_stack_component_command(
-        name_or_id: Optional[str], args: List[str]
+        name_id_or_prefix: Optional[str], args: List[str]
     ) -> None:
         """Updates a stack component.
 
         Args:
-            name_or_id: The name or id of the stack component to update.
+            name_id_or_prefix: The name or id of the stack component to update.
             args: Additional arguments to pass to the update command.
         """
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        args = list(args)
-        if name_or_id:
-            args.append(name_or_id)
+        client = Client()
+
         # Parse the given args
+        args = list(args)
+        if name_id_or_prefix:
+            args.append(name_id_or_prefix)
+
         name_or_id, parsed_args = cli_utils.parse_name_and_extra_arguments(
             args,
             expand_args=True,
             name_mandatory=False,
         )
 
-        client = Client()
-
         with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
-            # Update the component
             client.update_stack_component(
-                component_name_or_id=name_or_id,
-                args=parsed_args,
+                name_id_or_prefix=name_or_id,
+                component_type=component_type,
+                configuration=parsed_args,
             )
 
             cli_utils.declare(
@@ -294,31 +304,34 @@ def generate_stack_component_share_command(
     display_name = _component_display_name(component_type)
 
     @click.argument(
-        "name_or_id",
+        "name_id_or_prefix",
         type=str,
         required=False,
     )
     def share_stack_component_command(
-        name_or_id: str,
+        name_id_or_prefix: str,
     ) -> None:
         """Shares a stack component.
 
         Args:
-            name_or_id: The name or id of the stack component to update.
+            name_id_or_prefix: The name or id of the stack component to update.
         """
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
         client = Client()
 
-        with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
+        with console.status(
+                f"Updating {display_name} '{name_id_or_prefix}'...\n"
+        ):
             client.update_stack_component(
-                component_name_or_id=name_or_id,
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
                 is_shared=True,
             )
 
             cli_utils.declare(
-                f"Successfully shared {display_name} " f"`{name_or_id}`."
+                f"Successfully shared {display_name} " f"`{name_id_or_prefix}`."
             )
 
     return share_stack_component_command
@@ -338,18 +351,18 @@ def generate_stack_component_remove_attribute_command(
     display_name = _component_display_name(component_type)
 
     @click.argument(
-        "name_or_id",
+        "name_id_or_prefix",
         type=str,
         required=True,
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def remove_attribute_stack_component_command(
-        name_or_id: str, args: List[str]
+        name_id_or_prefix: str, args: List[str]
     ) -> None:
         """Removes one or more attributes from a stack component.
 
         Args:
-            name_or_id: The name of the stack component to remove the
+            name_id_or_prefix: The name of the stack component to remove the
                 attribute from.
             args: Additional arguments to pass to the remove_attribute command.
         """
@@ -358,15 +371,15 @@ def generate_stack_component_remove_attribute_command(
 
         client = Client()
 
-        with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
-            # Update the stack component
+        with console.status(f"Updating {display_name} '{name_id_or_prefix}'...\n"):
             client.update_stack_component(
-                component_name_or_id=name_or_id,
-                args={k: None for k in args},
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+                configuration={k: None for k in args},
             )
 
             cli_utils.declare(
-                f"Successfully updated {display_name} `{name_or_id}`."
+                f"Successfully updated {display_name} `{name_id_or_prefix}`."
             )
 
     return remove_attribute_stack_component_command
@@ -386,7 +399,7 @@ def generate_stack_component_rename_command(
     display_name = _component_display_name(component_type)
 
     @click.argument(
-        "name_or_id",
+        "name_id_or_prefix",
         type=str,
         required=True,
     )
@@ -395,11 +408,11 @@ def generate_stack_component_rename_command(
         type=str,
         required=True,
     )
-    def rename_stack_component_command(name_or_id: str, new_name: str) -> None:
+    def rename_stack_component_command(name_id_or_prefix: str, new_name: str) -> None:
         """Rename a stack component.
 
         Args:
-            name_or_id: The name of the stack component to rename.
+            name_id_or_prefix: The name of the stack component to rename.
             new_name: The new name of the stack component.
         """
         cli_utils.print_active_config()
@@ -407,15 +420,17 @@ def generate_stack_component_rename_command(
 
         client = Client()
 
-        with console.status(f"Renaming {display_name} '{name_or_id}'...\n"):
-            # Rename and update the existing component
+        with console.status(
+                f"Renaming {display_name} '{name_id_or_prefix}'...\n"
+        ):
             client.update_stack_component(
-                component_name_or_id=name_or_id,
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
                 name=new_name,
             )
 
             cli_utils.declare(
-                f"Successfully renamed {display_name} `{name_or_id}` to"
+                f"Successfully renamed {display_name} `{name_id_or_prefix}` to"
                 f" `{new_name}`."
             )
 
@@ -435,21 +450,26 @@ def generate_stack_component_delete_command(
     """
     display_name = _component_display_name(component_type)
 
-    @click.argument("name_or_id", type=str)
-    def delete_stack_component_command(name_or_id: str) -> None:
+    @click.argument("name_id_or_prefix", type=str)
+    def delete_stack_component_command(name_id_or_prefix: str) -> None:
         """Deletes a stack component.
 
         Args:
-            name_or_id: The name of the stack component to delete.
+            name_id_or_prefix: The name of the stack component to delete.
         """
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
         client = Client()
 
-        with console.status(f"Deleting {display_name} '{name_or_id}'...\n"):
-            client.deregister_stack_component(name_or_id)
-            cli_utils.declare(f"Deleted {display_name}: {name_or_id}")
+        with console.status(
+                f"Deleting {display_name} '{name_id_or_prefix}'...\n"
+        ):
+            client.deregister_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+            )
+            cli_utils.declare(f"Deleted {display_name}: {name_id_or_prefix}")
 
     return delete_stack_component_command
 
@@ -467,16 +487,16 @@ def generate_stack_component_copy_command(
     """
     display_name = _component_display_name(component_type)
 
-    @click.argument("source_component_name_or_id", type=str, required=True)
+    @click.argument("source_component_name_id_or_prefix", type=str, required=True)
     @click.argument("target_component", type=str, required=True)
     def copy_stack_component_command(
-        source_component_name_or_id: str,
+        source_component_name_id_or_prefix: str,
         target_component: str,
     ) -> None:
         """Copies a stack component.
 
         Args:
-            source_component_name_or_id: Name or id prefix of the
+            source_component_name_id_or_prefix: Name or id prefix of the
                                          component to copy.
             target_component: Name of the copied component.
         """
@@ -488,16 +508,18 @@ def generate_stack_component_copy_command(
         client = Client()
 
         with console.status(
-            f"Copying {display_name} " f"`{source_component_name_or_id}`..\n"
+            f"Copying {display_name} " 
+            f"`{source_component_name_id_or_prefix}`..\n"
         ):
             component_to_copy = client.get_stack_component(
-                component_name_or_id=source_component_name_or_id,
+                name_id_or_prefix=source_component_name_id_or_prefix,
+                component_type=component_type,
             )
 
-            component = client.register_stack_component(
+            client.register_stack_component(
                 name=target_component,
                 flavor=component_to_copy.flavor,
-                type=component_to_copy.type,
+                component_type=component_to_copy.type,
                 configuration=component_to_copy.configuration,
                 is_shared=component_to_copy.is_shared,
             )
@@ -517,12 +539,12 @@ def generate_stack_component_up_command(
         A function that can be used as a `click` command.
     """
 
-    @click.argument("name_or_id", type=str, required=False)
-    def up_stack_component_command(name_or_id: str) -> None:
+    @click.argument("name_id_or_prefix", type=str, required=False)
+    def up_stack_component_command(name_id_or_prefix: str) -> None:
         """Deploys a stack component locally.
 
         Args:
-            name_or_id: The name or_id of the stack component to deploy.
+            name_id_or_prefix: The name or_id of the stack component to deploy.
         """
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
@@ -530,8 +552,8 @@ def generate_stack_component_up_command(
         client = Client()
 
         component_model = client.get_stack_component(
+            name_id_or_prefix=name_id_or_prefix,
             component_type=component_type,
-            id_or_name_or_prefix=name_or_id,
         )
 
         from zenml.stack import StackComponent
@@ -582,7 +604,7 @@ def generate_stack_component_down_command(
         A function that can be used as a `click` command.
     """
 
-    @click.argument("name_or_id", type=str, required=False)
+    @click.argument("name_id_or_prefix", type=str, required=False)
     @click.option(
         "--force",
         "-f",
@@ -599,14 +621,14 @@ def generate_stack_component_down_command(
         "them. Use `-f/--force` instead.",
     )
     def down_stack_component_command(
-        name_or_id: str,
+        name_id_or_prefix: str,
         force: bool = False,
         old_force: bool = False,
     ) -> None:
         """Stops/Tears down the local deployment of a stack component.
 
         Args:
-            name_or_id: The name or id of the component to stop/deprovision.
+            name_id_or_prefix: The name or id of the component to stop/deprovision.
             force: Deprovision local resources instead of suspending them.
             old_force: DEPRECATED: Deprovision local resources instead of
                 suspending them. Use `-f/--force` instead.
@@ -623,8 +645,8 @@ def generate_stack_component_down_command(
         client = Client()
 
         component_model = client.get_stack_component(
+            name_id_or_prefix=name_id_or_prefix,
             component_type=component_type,
-            id_or_name_or_prefix=name_or_id,
         )
 
         from zenml.stack import StackComponent
@@ -681,7 +703,7 @@ def generate_stack_component_logs_command(
         A function that can be used as a `click` command.
     """
 
-    @click.argument("name_or_id", type=str, required=False)
+    @click.argument("name_id_or_prefix", type=str, required=False)
     @click.option(
         "--follow",
         "-f",
@@ -689,12 +711,13 @@ def generate_stack_component_logs_command(
         help="Follow the log file instead of just displaying the current logs.",
     )
     def stack_component_logs_command(
-        name_or_id: str, follow: bool = False
+        name_id_or_prefix: str, follow: bool = False
     ) -> None:
         """Displays stack component logs.
 
         Args:
-            name_or_id: The name of the stack component to display logs for.
+            name_id_or_prefix: The name of the stack component to display logs
+                for.
             follow: Follow the log file instead of just displaying the current
                 logs.
         """
@@ -704,9 +727,8 @@ def generate_stack_component_logs_command(
         client = Client()
 
         component_model = client.get_stack_component(
-            client=client,
+            name_id_or_prefix=name_id_or_prefix,
             component_type=component_type,
-            id_or_name_or_prefix=name_or_id,
         )
 
         from zenml.stack import StackComponent
@@ -742,7 +764,7 @@ def generate_stack_component_logs_command(
             with open(log_file, "r") as f:
                 click.echo(f.read())
 
-        return stack_component_logs_command
+    return stack_component_logs_command
 
 
 def generate_stack_component_explain_command(

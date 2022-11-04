@@ -816,11 +816,21 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_stack(stack_id=stack.id)
         logger.info("Deregistered stack with name '%s'.", stack.name)
 
-    def list_stacks(self) -> List["StackModel"]:
+    def list_stacks(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        component_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+    ) -> List["StackModel"]:
         """"""
         return self.zen_store.list_stacks(
             project_name_or_id=self.active_project.id,
             user_name_or_id=self.active_user.id,
+            component_id=component_id,
+            name=name,
+            is_shared=is_shared,
         )
 
     @track(event=AnalyticsEvent.SET_STACK)
@@ -851,7 +861,10 @@ class Client(metaclass=ClientMetaClass):
             # a local configuration
             GlobalConfiguration().active_stack_id = stack.id
 
-    def _validate_stack_configuration(self, stack: "StackRequestModel") -> None:
+    def _validate_stack_configuration(
+            self,
+            stack: "StackRequestModel"
+    ) -> None:
         """Validates the configuration of a stack.
 
         Args:
@@ -932,54 +945,29 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The registered stack component.
         """
-
-        if name_id_or_prefix is None:
-            component = self.active_stack_model.components.get(
-                component_type, None
-            )
-            if component:
-                return component[0]
-            else:
-                raise ValueError()
-
-        else:
-            stacks = self.zen_store.list_stack_components(
-                name_id_or_prefix=name_id_or_prefix,
-                project_name_or_id=self.active_project.id,
-                user_name_or_id=self.active_user.id,
-            )
-
-            if len(stacks) == 0:
-                raise KeyError()
-
-            elif len(stacks) == 1:
-                return stacks[0]
-
-            else:
-                raise ValueError()
-
-        logger.debug(
-            "Fetching stack component with id '%s'.",
-            id,
-        )
-        return self.get_component_by_id_or_name_or_prefix(
-            id_or_name_or_prefix=component_name_id_or_prefix,
+        return self._get_component_by_id_or_name_or_prefix(
+            name_id_or_prefix=name_id_or_prefix,
             component_type=component_type,
         )
 
     def list_stack_components(
         self,
-        component_type: "StackComponentType",
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        component_type: Optional[str] = None,
+        flavor_name: Optional[str] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
     ) -> List["ComponentModel"]:
-        """Fetches all registered stack components of a given type.
-
-        Args:
-            component_type: The type of the components to fetch.
-
-        Returns:
-            The registered stack components.
-        """
-        return self.zen_store.list_stack_components(type=component_type)
+        """"""
+        return self.zen_store.list_stack_components(
+            project_name_or_id=project_name_or_id,
+            user_name_or_id=user_name_or_id,
+            type=component_type,
+            flavor_name=flavor_name,
+            name=name,
+            is_shared=is_shared,
+        )
 
     def register_stack_component(
         self,
@@ -1100,17 +1088,17 @@ class Client(metaclass=ClientMetaClass):
 
     def deregister_stack_component(
         self,
-        component_name_id_or_prefix: str,
+        name_id_or_prefix: str,
         component_type: StackComponentType,
     ) -> None:
         """Deletes a registered stack component.
 
         Args:
-            component_name_id_or_prefix: The model of the component to delete.
+            name_id_or_prefix: The model of the component to delete.
             component_type: The type of the component to delete.
         """
-        component = self.get_component_by_id_or_name_or_prefix(
-            id_or_name_or_prefix=component_name_id_or_prefix,
+        component = self.get_stack_component(
+            name_id_or_prefix=name_id_or_prefix,
             component_type=component_type,
         )
 

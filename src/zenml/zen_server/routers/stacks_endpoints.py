@@ -56,6 +56,7 @@ def list_stacks(
     Returns:
         All stacks.
     """
+    # TODO: Implement a sensible filtering mechanism
     return zen_store().list_stacks(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,

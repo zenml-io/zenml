@@ -187,7 +187,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
 
 @cli.command("go")
 def go() -> None:
-    """Quickly explore ZenML with this walkthrough.
+    """Quickly explore ZenML with this walk-through.
 
     Raises:
         GitNotFoundError: If git is not installed.

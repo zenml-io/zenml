@@ -18,7 +18,7 @@ from typing import Optional, Type, cast
 from uuid import UUID
 
 from zenml.enums import StackComponentType
-from zenml.models import FlavorModel
+from zenml.new_models import FlavorModel
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.utils.source_utils import load_source_path_class, resolve_class
 
