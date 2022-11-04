@@ -65,6 +65,7 @@ def list_stack_components(
     Returns:
         List of stack components for a specific type.
     """
+    # TODO: Implement a sensible filtering mechanism
     return zen_store().list_stack_components(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
