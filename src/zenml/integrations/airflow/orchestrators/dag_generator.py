@@ -9,10 +9,12 @@ from pydantic import BaseModel
 
 ENV_ZENML_AIRFLOW_RUN_ID = "ZENML_AIRFLOW_RUN_ID"
 ENV_ZENML_LOCAL_STORES_PATH = "ZENML_LOCAL_STORES_PATH"
-DAG_CONFIG_FILENAME = "config.json"
+CONFIG_FILENAME = "config.json"
 
 
 class TaskConfiguration(BaseModel):
+    """Airflow task configuration."""
+
     id: str
     zenml_step_name: str
     upstream_steps: List[str]
@@ -25,6 +27,8 @@ class TaskConfiguration(BaseModel):
 
 
 class DagConfiguration(BaseModel):
+    """Airflow DAG configuration."""
+
     id: str
     docker_image: str
     tasks: List[TaskConfiguration]
@@ -59,6 +63,16 @@ def get_operator_init_kwargs(
     dag_config: DagConfiguration,
     task_config: TaskConfiguration,
 ) -> Dict[str, Any]:
+    """Gets keyword arguments to pass to the operator init method.
+
+    Args:
+        operator_class: The operator class for which to get the kwargs.
+        dag_config: The configuration of the DAG.
+        task_config: The configuration of the task.
+
+    Returns:
+        The init keyword arguments.
+    """
     init_kwargs = {"task_id": task_config.id}
 
     try:
@@ -94,6 +108,15 @@ def get_operator_init_kwargs(
 def get_docker_operator_init_kwargs(
     dag_config: DagConfiguration, task_config: TaskConfiguration
 ) -> Dict[str, Any]:
+    """Gets keyword arguments to pass to the DockerOperator.
+
+    Args:
+        dag_config: The configuration of the DAG.
+        task_config: The configuration of the task.
+
+    Returns:
+        The init keyword arguments.
+    """
     mounts = []
     environment = {ENV_ZENML_AIRFLOW_RUN_ID: "{{run_id}}"}
 
@@ -119,6 +142,15 @@ def get_docker_operator_init_kwargs(
 def get_kubernetes_pod_operator_init_kwargs(
     dag_config: DagConfiguration, task_config: TaskConfiguration
 ) -> Dict[str, Any]:
+    """Gets keyword arguments to pass to the KubernetesPodOperator.
+
+    Args:
+        dag_config: The configuration of the DAG.
+        task_config: The configuration of the task.
+
+    Returns:
+        The init keyword arguments.
+    """
     from kubernetes.client.models import V1EnvVar
 
     return {
@@ -140,7 +172,7 @@ except IsADirectoryError:
     # airflow dag zip
     pass
 else:
-    config_str = archive.read(DAG_CONFIG_FILENAME)
+    config_str = archive.read(CONFIG_FILENAME)
     dag_config = DagConfiguration.parse_raw(config_str)
 
     step_name_to_airflow_operator = {}
@@ -153,7 +185,7 @@ else:
         start_date=dag_config.start_date,
         end_date=dag_config.end_date,
         catchup=dag_config.catchup,
-        **dag_config.dag_kwargs
+        **dag_config.dag_kwargs,
     ) as dag:
         for task in dag_config.tasks:
             operator_class = import_class_by_path(task.operator_source)

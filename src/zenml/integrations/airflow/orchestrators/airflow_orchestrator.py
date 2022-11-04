@@ -40,19 +40,25 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
+from zenml.enums import StackComponentType
 from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
+    AirflowOrchestratorConfig,
     AirflowOrchestratorSettings,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
+from zenml.stack import StackValidator
 from zenml.utils import daemon, io_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.integrations.airflow.orchestrators.dag_generator import (
+        DagConfiguration,
+    )
     from zenml.pipelines import Schedule
     from zenml.stack import Stack
 
@@ -79,6 +85,15 @@ class AirflowOrchestrator(BaseOrchestrator):
         self._set_env()
 
     @property
+    def config(self) -> AirflowOrchestratorConfig:
+        """Returns the orchestrator config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(AirflowOrchestratorConfig, self._config)
+
+    @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the Kubeflow orchestrator.
 
@@ -96,40 +111,30 @@ class AirflowOrchestrator(BaseOrchestrator):
         """
         return os.path.join(self.airflow_home, "dags")
 
-    @property
-    def pid_file(self) -> str:
-        """Returns path to the daemon PID file.
-
-        Returns:
-            Path to the daemon PID file.
-        """
-        return os.path.join(self.airflow_home, "airflow_daemon.pid")
-
-    @property
-    def log_file(self) -> str:
-        """Returns path to the airflow log file.
-
-        Returns:
-            str: Path to the airflow log file.
-        """
-        return os.path.join(self.airflow_home, "airflow_orchestrator.log")
-
-    @property
-    def password_file(self) -> str:
-        """Returns path to the webserver password file.
-
-        Returns:
-            Path to the webserver password file.
-        """
-        return os.path.join(self.airflow_home, "standalone_admin_password.txt")
-
     def _set_env(self) -> None:
         """Sets environment variables to configure airflow."""
         os.environ["AIRFLOW_HOME"] = self.airflow_home
-        os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_directory
-        os.environ["AIRFLOW__CORE__LOAD_EXAMPLES"] = "false"
-        # check the DAG folder every 10 seconds for new files
-        os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
+
+        if self.config.local:
+            os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_directory
+            os.environ["AIRFLOW__CORE__LOAD_EXAMPLES"] = "false"
+            # check the DAG folder every 10 seconds for new files
+            os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
+
+    @property
+    def validator(self) -> Optional["StackValidator"]:
+        """Validates that the stack contains a container registry.
+
+        Returns:
+            A `StackValidator` instance.
+        """
+        if self.config.local:
+            # No container registry required if just running locally.
+            return None
+        else:
+            return StackValidator(
+                required_components={StackComponentType.CONTAINER_REGISTRY},
+            )
 
     def prepare_pipeline_deployment(
         self,
@@ -146,13 +151,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             RuntimeError: If Airflow is not running or no DAG filepath runtime
                           option is provided.
         """
-        if not self.is_running:
-            raise RuntimeError(
-                "Airflow orchestrator is currently not running. Run `zenml "
-                "stack up` to provision resources for the active stack."
-            )
-
-        if self.is_local:
+        if self.config.local:
             stack.check_local_paths()
 
         docker_image_builder = PipelineDockerImageBuilder()
@@ -175,15 +174,17 @@ class AirflowOrchestrator(BaseOrchestrator):
                 ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name
             )
 
-    @property
-    def is_local(self) -> bool:
-        return True
-
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> Any:
+        """Creates and writes an Airflow DAG zip file.
+
+        Args:
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
+        """
         from zenml.integrations.airflow.orchestrators import dag_generator
 
         command = StepEntrypointConfiguration.get_entrypoint_command()
@@ -210,7 +211,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         local_stores_path = (
             os.path.expanduser(GlobalConfiguration().local_stores_path)
-            if self.is_local
+            if self.config.local
             else None
         )
         docker_image = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
@@ -231,20 +232,43 @@ class AirflowOrchestrator(BaseOrchestrator):
             **self._translate_schedule(deployment.schedule),
         )
 
-        io_utils.create_dir_recursive_if_not_exists(self.dags_directory)
+        self._write_dag(dag_config)
 
-        dag_basename = os.path.join(self.dags_directory, f"{dag_id}")
+    def _write_dag(self, dag_config: "DagConfiguration") -> None:
+        """Writes an Airflow DAG to disk.
+
+        Args:
+            dag_config: Configuration of the DAG to write.
+        """
+        from zenml.integrations.airflow.orchestrators import dag_generator
+
+        output_dir = self.config.dag_output_dir or self.dags_directory
+        io_utils.create_dir_recursive_if_not_exists(output_dir)
+
+        if self.config.local and output_dir != self.dags_directory:
+            logger.warning(
+                "You're using a local Airflow orchestrator but specified a "
+                "custom DAG output directory `%s`. This DAG will not be found "
+                "by the local Airflow server until you copy it in the DAGs "
+                "directory `%s`.",
+                output_dir,
+                self.dags_directory,
+            )
+
+        dag_basename = os.path.join(output_dir, dag_config.id)
         with tempfile.TemporaryDirectory() as tmp_dir:
-            with open(
-                os.path.join(tmp_dir, dag_generator.DAG_CONFIG_FILENAME), "w"
-            ) as f:
+            config_path = os.path.join(tmp_dir, dag_generator.CONFIG_FILENAME)
+            dag_generator_path = os.path.join(tmp_dir, "dag.py")
+
+            with open(config_path, "w") as f:
                 f.write(dag_config.json())
-            fileio.copy(dag_generator.__file__, os.path.join(tmp_dir, "dag.py"))
+
+            fileio.copy(dag_generator.__file__, dag_generator_path)
             dag_path = shutil.make_archive(
                 dag_basename, format="zip", root_dir=tmp_dir
             )
 
-        logger.info("Airflow DAG definition written to `%s`.", dag_path)
+        logger.info("Writing DAG definition to `%s`.", dag_path)
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
@@ -312,16 +336,53 @@ class AirflowOrchestrator(BaseOrchestrator):
             "catchup": False,
         }
 
+    #####################
+    #   Local Airflow   #
+    #####################
+
     @property
-    def is_running(self) -> bool:
-        """Returns whether the airflow daemon is currently running.
+    def pid_file(self) -> str:
+        """Returns path to the daemon PID file.
 
         Returns:
-            True if the daemon is running, False otherwise.
+            Path to the daemon PID file.
+        """
+        return os.path.join(self.airflow_home, "airflow_daemon.pid")
+
+    @property
+    def log_file(self) -> str:
+        """Returns path to the airflow log file.
+
+        Returns:
+            str: Path to the airflow log file.
+        """
+        return os.path.join(self.airflow_home, "airflow_orchestrator.log")
+
+    @property
+    def password_file(self) -> str:
+        """Returns path to the webserver password file.
+
+        Returns:
+            Path to the webserver password file.
+        """
+        return os.path.join(self.airflow_home, "standalone_admin_password.txt")
+
+    @property
+    def is_running(self) -> bool:
+        """Returns whether the orchestrator is "running".
+
+        In the non-local case, this is always True. Otherwise checks if the
+        local Airflow server is running.
+
+        Returns:
+            If the orchestrator is running.
 
         Raises:
             RuntimeError: If port 8080 is occupied.
         """
+        if not self.config.local:
+            return True
+
         from airflow.cli.commands.standalone_command import StandaloneCommand
         from airflow.jobs.triggerer_job import TriggererJob
 
@@ -361,6 +422,9 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     def provision(self) -> None:
         """Ensures that Airflow is running."""
+        if not self.config.local:
+            return
+
         if self.is_running:
             logger.info("Airflow is already running.")
             self._log_webserver_credentials()
@@ -394,6 +458,9 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     def deprovision(self) -> None:
         """Stops the airflow daemon if necessary and tears down resources."""
+        if not self.config.local:
+            return
+
         if self.is_running:
             daemon.stop_daemon(self.pid_file)
 

@@ -19,7 +19,7 @@ from pydantic import validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
-from zenml.orchestrators import BaseOrchestratorFlavor
+from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
     from zenml.integrations.airflow.orchestrators import AirflowOrchestrator
@@ -65,6 +65,19 @@ class AirflowOrchestratorSettings(BaseSettings):
             return OperatorType(value).source
         except ValueError:
             return value
+
+
+class AirflowOrchestratorConfig(BaseOrchestratorConfig):
+    """Configuration for the Airflow orchestrator.
+
+    Attributes:
+        local: If the orchestrator is local or not. If this is True, will spin
+            up a local Airflow server to run pipelines.
+        dag_output_dir: Output directory in which to write the Airflow DAGs.
+    """
+
+    local: bool = True
+    dag_output_dir: Optional[str] = None
 
 
 class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
