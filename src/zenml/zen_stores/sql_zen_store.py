@@ -3586,12 +3586,14 @@ class SqlZenStore(BaseZenStore):
         exists in the database, and if not, creates it.
         """
         from zenml.zen_stores.migrations.alembic import AlembicVersion
+        from zenml.zen_stores.rest_zen_store import DEFAULT_HTTP_TIMEOUT
 
         try:
             # This is to synchronize the locally running threads so that only
-            # one thread attempts to sync the runs at any given time. The
-            # timeout is to ensure that we don't block the threads for too long.
-            if self.sync_lock.acquire(timeout=30):
+            # one thread attempts to sync the runs at any given time.
+            # The timeout is set to be shorter than the default REST client
+            # timeout, so that we don't block the client for too long.
+            if self.sync_lock.acquire(timeout=DEFAULT_HTTP_TIMEOUT - 10):
                 with Session(self.engine) as session:
                     logger.debug("Syncing pipeline runs...")
                     if self.config.driver != SQLDatabaseDriver.SQLITE:
@@ -3605,8 +3607,8 @@ class SqlZenStore(BaseZenStore):
                     logger.debug("Pipeline runs sync complete")
             else:
                 logger.warning(
-                    "Failed to acquire pipeline run sync lock. Skipping the "
-                    "sync this time around."
+                    "Timed out waiting to acquire pipeline run sync lock. "
+                    "Skipping the sync this time around."
                 )
         except Exception:
             logger.exception("Failed to sync pipeline runs.")
