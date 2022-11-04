@@ -18,7 +18,7 @@ import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path, PurePath
-from threading import Lock
+from threading import Lock, get_ident
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -3588,28 +3588,31 @@ class SqlZenStore(BaseZenStore):
         from zenml.zen_stores.migrations.alembic import AlembicVersion
         from zenml.zen_stores.rest_zen_store import DEFAULT_HTTP_TIMEOUT
 
+        # This is to synchronize the locally running threads so that only
+        # one thread attempts to sync the runs at any given time.
+        # The timeout is set to be shorter than the default REST client
+        # timeout, so that we don't block the client for too long.
+        logger.debug(f"[{get_ident()}] Trying to acquire sync lock...")
+        if not self.sync_lock.acquire(timeout=DEFAULT_HTTP_TIMEOUT - 10):
+            logger.warning(
+                f"[{get_ident()}] Timed out waiting to acquire pipeline "
+                f"run sync lock. Skipping the sync this time around."
+            )
+            return
+
+        logger.debug(f"[{get_ident()}] Pipeline run sync lock acquired.")
         try:
-            # This is to synchronize the locally running threads so that only
-            # one thread attempts to sync the runs at any given time.
-            # The timeout is set to be shorter than the default REST client
-            # timeout, so that we don't block the client for too long.
-            if self.sync_lock.acquire(timeout=DEFAULT_HTTP_TIMEOUT - 10):
-                with Session(self.engine) as session:
-                    logger.debug("Syncing pipeline runs...")
-                    if self.config.driver != SQLDatabaseDriver.SQLITE:
-                        # This is to synchronize all server processes trying to
-                        # sync the pipeline runs at the same time. We use the
-                        # alembic version table as a shared resource that we can
-                        # lock to prevent multiple processes from syncing runs
-                        # at the same time.
-                        session.query(AlembicVersion).with_for_update().all()
-                    self._sync_runs_with_lock(session)
-                    logger.debug("Pipeline runs sync complete")
-            else:
-                logger.warning(
-                    "Timed out waiting to acquire pipeline run sync lock. "
-                    "Skipping the sync this time around."
-                )
+            with Session(self.engine) as session:
+                logger.debug("Syncing pipeline runs...")
+                if self.config.driver != SQLDatabaseDriver.SQLITE:
+                    # This is to synchronize all server processes trying to
+                    # sync the pipeline runs at the same time. We use the
+                    # alembic version table as a shared resource that we can
+                    # lock to prevent multiple processes from syncing runs
+                    # at the same time.
+                    session.query(AlembicVersion).with_for_update().all()
+                self._sync_runs_with_lock(session)
+                logger.debug("Pipeline runs sync complete")
         except Exception:
             logger.exception("Failed to sync pipeline runs.")
         finally:

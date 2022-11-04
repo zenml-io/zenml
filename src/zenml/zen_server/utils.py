@@ -63,6 +63,8 @@ def initialize_zen_store() -> None:
         ValueError: If the ZenML Store is using a REST back-end.
     """
     global _zen_store
+
+    logger.debug("Initializing ZenML Store for FastAPI...")
     _zen_store = GlobalConfiguration().zen_store
 
     # We override track_analytics=False because we do not
