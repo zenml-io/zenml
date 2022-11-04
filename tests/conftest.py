@@ -265,6 +265,48 @@ def sql_store_with_run() -> BaseZenStore:
 
 
 @pytest.fixture
+def sql_store_with_runs() -> BaseZenStore:
+    temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
+
+    GlobalConfiguration().set_store(
+        config=SqlZenStoreConfiguration(
+            url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
+        ),
+    )
+    store = GlobalConfiguration().zen_store
+
+    default_project = store.list_projects()[0]
+    default_stack = store.list_stacks()[0]
+    active_user = store.list_users()[0]
+
+    @step
+    def step_one() -> int:
+        return TEST_STEP_INPUT_INT
+
+    @step
+    def step_two(input: int) -> int:
+        return input + 1
+
+    @pipeline
+    def test_pipeline(step_one, step_two):
+        value = step_one()
+        step_two(value)
+
+    for _ in range(10):
+        test_pipeline(step_one=step_one(), step_two=step_two()).run()
+
+    pipeline_runs = store.list_runs()
+
+    yield {
+        "store": store,
+        "default_project": default_project,
+        "default_stack": default_stack,
+        "active_user": active_user,
+        "pipeline_runs": pipeline_runs,
+    }
+
+
+@pytest.fixture
 def sql_store_with_team() -> BaseZenStore:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
     store = SqlZenStore(

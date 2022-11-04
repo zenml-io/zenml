@@ -73,13 +73,6 @@ def main() -> None:
     config_dict = yaml_utils.read_yaml(DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE)
     deployment_config = PipelineDeployment.parse_obj(config_dict)
 
-    settings = cast(
-        Optional[KubernetesOrchestratorSettings],
-        KubernetesOrchestratorSettings.parse_obj(
-            deployment_config.pipeline.settings.get("orchestrator.kubernetes")
-        ),
-    )
-
     pipeline_dag = {}
     step_name_to_pipeline_step_name = {}
     for name_in_pipeline, step in deployment_config.steps.items():
@@ -102,6 +95,16 @@ def main() -> None:
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=pipeline_step_name
         )
+
+        settings = cast(
+            Optional[KubernetesOrchestratorSettings],
+            KubernetesOrchestratorSettings.parse_obj(
+                deployment_config.steps[pipeline_step_name].config.settings.get(
+                    "orchestrator.kubernetes", {}
+                )
+            ),
+        )
+
         # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,

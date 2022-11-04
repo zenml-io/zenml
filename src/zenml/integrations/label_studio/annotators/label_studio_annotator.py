@@ -87,7 +87,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             The URL of the annotation interface.
         """
-        return f"http://localhost:{self.config.port}"
+        return f"{self.config.instance_url}:{self.config.port}"
 
     def get_url_for_dataset(self, dataset_name: str) -> str:
         """Gets the URL of the annotation interface for the given dataset.

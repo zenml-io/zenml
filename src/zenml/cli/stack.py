@@ -467,18 +467,18 @@ def share_stack(
     else:
         for c_t, c in stack_to_share.to_hydrated_model().components.items():
             only_component = c[0]  # For future compatibility
-            # with console.status(
-            #     f"Sharing component `{only_component.name}`" f"...\n"
-            # ):
-            cli_utils.declare(
-                f"A Stack can only be shared when all its "
-                f"components are also shared. Component "
-                f"'{only_component.name}' is also set to "
-                f"shared."
-            )
+            with console.status(
+                f"Sharing component `{only_component.name}`" f"...\n"
+            ):
+                cli_utils.declare(
+                    f"A Stack can only be shared when all its "
+                    f"components are also shared. Component "
+                    f"'{only_component.name}' is also set to "
+                    f"shared."
+                )
 
-            only_component.is_shared = True
-            client.update_stack_component(component=only_component)
+                only_component.is_shared = True
+                client.update_stack_component(component=only_component)
 
         with console.status(f"Sharing stack `{stack_to_share.name}` ...\n"):
 
