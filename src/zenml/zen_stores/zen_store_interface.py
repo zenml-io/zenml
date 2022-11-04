@@ -13,20 +13,23 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 from uuid import UUID
 
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.models.server_models import ServerModel
 from zenml.new_models import (
     ProjectModel,
     ProjectRequestModel,
+    RoleAssignmentModel,
+    RoleAssignmentRequestModel,
     RoleModel,
     RoleRequestModel,
     TeamModel,
     TeamRequestModel,
     UserModel,
     UserRequestModel,
+    UserUpdateModel,
 )
 from zenml.new_models.artifact_models import ArtifactResponseModel
 from zenml.new_models.component_models import (
@@ -461,12 +464,12 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_user(
-        self, user_id: UUID, user_update: UserRequestModel
+        self, user_name_or_id: UUID, user_update: UserUpdateModel
     ) -> UserModel:
         """Updates an existing user.
 
         Args:
-            user_id: The id of the user to update.
+            user_name_or_id: The id of the user to update.
             user_update: The update to be applied to the user.
 
         Returns:
@@ -485,29 +488,6 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no user with the given ID exists.
-        """
-
-    # TODO: MOVE
-    @abstractmethod
-    def user_email_opt_in(
-        self,
-        user_name_or_id: Union[str, UUID],
-        user_opt_in_response: bool,
-        email: Optional[str] = None,
-    ) -> UserModel:
-        """Persist user response to the email prompt.
-
-        Args:
-            user_name_or_id: The name or the ID of the user.
-            user_opt_in_response: Whether this email should be associated
-                with the user id in the telemetry
-            email: The users email
-
-        Returns:
-            The updated user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
 
     # -----
@@ -549,12 +529,12 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_team(
-        self, team_id: UUID, team_update: TeamRequestModel
+        self, team_name_or_id: UUID, team_update: TeamRequestModel
     ) -> TeamModel:
         """Update an existing team.
 
         Args:
-            team_id: The ID of the team to be updated.
+            team_name_or_id: The ID or the of the team to be updated.
             team_update: The update to be applied to the team.
 
         Returns:
@@ -573,78 +553,6 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no team with the given ID exists.
-        """
-
-    # ---------------
-    # Team membership
-    # ---------------
-    # TODO: MOVE
-    @abstractmethod
-    def get_users_for_team(
-        self, team_name_or_id: Union[str, UUID]
-    ) -> List[UserModel]:
-        """Fetches all users of a team.
-
-        Args:
-            team_name_or_id: The name or ID of the team for which to get users.
-
-        Returns:
-            A list of all users that are part of the team.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
-        """
-
-    # TODO: MOVE
-    @abstractmethod
-    def get_teams_for_user(
-        self, user_name_or_id: Union[str, UUID]
-    ) -> List[TeamModel]:
-        """Fetches all teams for a user.
-
-        Args:
-            user_name_or_id: The name or ID of the user for which to get all
-                teams.
-
-        Returns:
-            A list of all teams that the user is part of.
-
-        Raises:
-            KeyError: If no user with the given ID exists.
-        """
-
-    # TODO: MOVE
-    @abstractmethod
-    def add_user_to_team(
-        self,
-        user_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Adds a user to a team.
-
-        Args:
-            user_name_or_id: Name or ID of the user to add to the team.
-            team_name_or_id: Name or ID of the team to which to add the user to.
-
-        Raises:
-            KeyError: If the team or user does not exist.
-        """
-
-    # TODO: MOVE
-    @abstractmethod
-    def remove_user_from_team(
-        self,
-        user_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Removes a user from a team.
-
-        Args:
-            user_name_or_id: Name or ID of the user to remove from the team.
-            team_name_or_id: Name or ID of the team from which to remove the user.
-
-        Raises:
-            KeyError: If the team or user does not exist.
         """
 
     # -----
@@ -718,7 +626,22 @@ class ZenStoreInterface(ABC):
     # ----------------
     # Role assignments
     # ----------------
-    # TODO: ?
+    @abstractmethod
+    def create_role_assignment(
+        self, role_assignment: RoleAssignmentRequestModel
+    ) -> RoleAssignmentModel:
+        """"""
+
+    @abstractmethod
+    def get_role_assignment(
+        self, role_assignment_id: UUID
+    ) -> RoleAssignmentModel:
+        """"""
+
+    @abstractmethod
+    def delete_role_assignment(self, role_assignment_id: UUID) -> UUID:
+        """"""
+
     @abstractmethod
     def list_role_assignments(
         self,
@@ -738,54 +661,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A list of all role assignments.
-        """
-
-    # TODO: ?
-    @abstractmethod
-    def assign_role(
-        self,
-        role_name_or_id: Union[str, UUID],
-        user_or_team_name_or_id: Union[str, UUID],
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        is_user: bool = True,
-    ) -> None:
-        """Assigns a role to a user or team, scoped to a specific project.
-
-        Args:
-            role_name_or_id: Name or ID of the role to assign.
-            user_or_team_name_or_id: Name or ID of the user or team to which to
-                assign the role.
-            is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_name_or_id: Optional Name or ID of a project in which to
-                assign the role. If this is not provided, the role will be
-                assigned globally.
-
-        Raises:
-            EntityExistsError: If the role assignment already exists.
-        """
-
-    # TODO: ?
-    @abstractmethod
-    def revoke_role(
-        self,
-        role_name_or_id: Union[str, UUID],
-        user_or_team_name_or_id: Union[str, UUID],
-        is_user: bool = True,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> None:
-        """Revokes a role from a user or team for a given project.
-
-        Args:
-            role_name_or_id: ID of the role to revoke.
-            user_or_team_name_or_id: Name or ID of the user or team from which
-                to revoke the role.
-            is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_name_or_id: Optional ID of a project in which to revoke
-                the role. If this is not provided, the role will be revoked
-                globally.
-
-        Raises:
-            KeyError: If the role, user, team, or project does not exist.
         """
 
     # --------
@@ -986,39 +861,6 @@ class ZenStoreInterface(ABC):
             A list of all pipeline runs.
         """
 
-    # TODO: Should move to the base zen store
-    @abstractmethod
-    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get the status for.
-
-        Returns:
-            The status of the pipeline run.
-        """
-
-    # TODO: Should move to the base zen store
-    # TODO: Figure out what exactly gets returned from this
-    @abstractmethod
-    def get_run_component_side_effects(
-        self,
-        run_id: UUID,
-        component_id: Optional[UUID] = None,
-    ) -> Dict[str, Any]:
-        """Gets the side effects for a component in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-            component_id: The ID of the component to get.
-
-        Returns:
-            The side effects for the component in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
     # ------------------
     # Pipeline run steps
     # ------------------
@@ -1037,46 +879,6 @@ class ZenStoreInterface(ABC):
             KeyError: if the step doesn't exist.
         """
 
-    # TODO: Should move to the base zen store
-    @abstractmethod
-    def get_run_step_outputs(
-        self, step_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get a list of outputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get outputs for.
-
-        Returns:
-            A dict mapping artifact names to the output artifacts for the step.
-        """
-
-    # TODO: Should move to the base zen store
-    @abstractmethod
-    def get_run_step_inputs(
-        self, step_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get a list of inputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get inputs for.
-
-        Returns:
-            A dict mapping artifact names to the input artifacts for the step.
-        """
-
-    # TODO: Should move to the base zen store
-    @abstractmethod
-    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a single step.
-
-        Args:
-            step_id: The ID of the step to get the status for.
-
-        Returns:
-            ExecutionStatus: The status of the step.
-        """
-
     @abstractmethod
     def list_run_steps(self, run_id: UUID) -> List[StepRunResponseModel]:
         """Gets all steps in a pipeline run.
@@ -1087,6 +889,10 @@ class ZenStoreInterface(ABC):
         Returns:
             A mapping from step names to step models for all steps in the run.
         """
+
+    # ---------
+    # Artifacts
+    # ---------
 
     @abstractmethod
     def list_artifacts(
@@ -1102,6 +908,9 @@ class ZenStoreInterface(ABC):
             A list of all artifacts.
         """
 
+    # ------------------------
+    # Internal utility methods
+    # ------------------------
     @abstractmethod
     def _sync_runs(self) -> None:
         """Syncs runs from MLMD."""

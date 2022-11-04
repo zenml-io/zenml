@@ -27,8 +27,8 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    TypeVar,
     Union,
-    cast,
 )
 from uuid import UUID
 
@@ -66,6 +66,7 @@ from zenml.new_models import (
     PipelineRunRequestModel,
     ProjectModel,
     ProjectRequestModel,
+    RoleAssignmentModel,
     RoleModel,
     RoleRequestModel,
     StackModel,
@@ -98,12 +99,16 @@ from zenml.zen_stores.schemas import (
     UserRoleAssignmentSchema,
     UserSchema,
 )
+from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
     from zenml.zen_stores.metadata_store import MetadataStore
+
+
+AnyBaseSchema = TypeVar("AnyBaseSchema", bound=BaseSchema)
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -1446,42 +1451,6 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
 
-    def user_email_opt_in(
-        self,
-        user_name_or_id: Union[str, UUID],
-        user_opt_in_response: bool,
-        email: Optional[str] = None,
-    ) -> UserModel:
-        """Persist user response to the email prompt.
-
-        Args:
-            user_name_or_id: The name or the ID of the user.
-            user_opt_in_response: Whether this email should be associated
-                with the user id in the telemetry
-            email: The users email
-
-        Returns:
-            The updated user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                user = self._get_user_schema(user_name_or_id, session=session)
-            except NoResultFound as error:
-                raise KeyError from error
-            else:
-                # TODO: In the future we might want to validate that the email
-                #  is non-empty and valid at this point if user_opt_in_response
-                #  is True
-                user.email = email
-                user.email_opted_in = user_opt_in_response
-                session.add(user)
-                session.commit()
-
-            return user.to_model()
-
     # -----
     # Teams
     # -----
@@ -2620,14 +2589,13 @@ class SqlZenStore(BaseZenStore):
     # =======================
     # Internal helper methods
     # =======================
-
+    @staticmethod
     def _get_schema_by_name_or_id(
-        self,
         object_name_or_id: Union[str, UUID],
-        schema_class: Type[SQLModel],
+        schema_class: Type[AnyBaseSchema],
         schema_name: str,
         session: Session,
-    ) -> SQLModel:
+    ) -> AnyBaseSchema:
         """Query a schema by its 'name' or 'id' field.
 
         Args:
@@ -2650,20 +2618,20 @@ class SqlZenStore(BaseZenStore):
                 "provided."
             )
         if uuid_utils.is_valid_uuid(object_name_or_id):
-            filter = schema_class.id == object_name_or_id  # type: ignore[attr-defined]
+            filter_params = schema_class.id == object_name_or_id
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': No {schema_name} with this ID found."
             )
         else:
-            filter = schema_class.name == object_name_or_id  # type: ignore[attr-defined]
+            filter_params = schema_class.name == object_name_or_id
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': '{object_name_or_id}' is not a valid "
                 f" UUID and no {schema_name} with this name exists."
             )
 
-        schema = session.exec(select(schema_class).where(filter)).first()
+        schema = session.exec(select(schema_class).where(filter_params)).first()
 
         if schema is None:
             raise KeyError(error_msg)
@@ -2686,14 +2654,11 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The project schema.
         """
-        return cast(
-            ProjectSchema,
-            self._get_schema_by_name_or_id(
-                object_name_or_id=project_name_or_id,
-                schema_class=ProjectSchema,
-                schema_name="project",
-                session=session,
-            ),
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=project_name_or_id,
+            schema_class=ProjectSchema,
+            schema_name="project",
+            session=session,
         )
 
     def _get_user_schema(
@@ -2713,14 +2678,11 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The user schema.
         """
-        return cast(
-            UserSchema,
-            self._get_schema_by_name_or_id(
-                object_name_or_id=user_name_or_id,
-                schema_class=UserSchema,
-                schema_name="user",
-                session=session,
-            ),
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=user_name_or_id,
+            schema_class=UserSchema,
+            schema_name="user",
+            session=session,
         )
 
     def _get_team_schema(
@@ -2740,14 +2702,11 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The team schema.
         """
-        return cast(
-            TeamSchema,
-            self._get_schema_by_name_or_id(
-                object_name_or_id=team_name_or_id,
-                schema_class=TeamSchema,
-                schema_name="team",
-                session=session,
-            ),
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=team_name_or_id,
+            schema_class=TeamSchema,
+            schema_name="team",
+            session=session,
         )
 
     def _get_role_schema(
@@ -2767,14 +2726,11 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The role schema.
         """
-        return cast(
-            RoleSchema,
-            self._get_schema_by_name_or_id(
-                object_name_or_id=role_name_or_id,
-                schema_class=RoleSchema,
-                schema_name="role",
-                session=session,
-            ),
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=role_name_or_id,
+            schema_class=RoleSchema,
+            schema_name="role",
+            session=session,
         )
 
     # MLMD Stuff

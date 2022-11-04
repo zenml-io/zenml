@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
 import os
+from abc import ABC
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
@@ -40,6 +41,7 @@ from zenml.new_models import (
     PipelineModel,
     ProjectModel,
     ProjectRequestModel,
+    RoleAssignmentModel,
     RoleModel,
     StackModel,
     StackRequestModel,
@@ -63,7 +65,7 @@ DEFAULT_PROJECT_NAME = "default"
 DEFAULT_STACK_NAME = "default"
 
 
-class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
+class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     """Base class for accessing and persisting ZenML core objects.
 
     Attributes:
@@ -272,19 +274,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         active_stack: StackModel
 
-        # Create a default stack in the active project for the active user if
-        # one is not yet created.
-        try:
-            default_stack = self._get_default_stack(
-                project_name_or_id=active_project.id,
-                user_name_or_id=self.active_user.id,
-            )
-        except KeyError:
-            default_stack = self._create_default_stack(
-                project_name_or_id=active_project.id,
-                user_name_or_id=self.active_user.id,
-            )
-
+        # TODO: To behaviour here is to always create a default stack if
+        #   something goes wrong. Should we change that?
         # Sanitize the active stack
         if active_stack_id:
             # Ensure that the active stack is still valid
@@ -296,7 +287,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                     "Resetting the active stack to default.",
                     config_name,
                 )
-                active_stack = default_stack
+                active_stack = self._get_or_create_default_stack(active_project)
             else:
                 if active_stack.project != active_project.id:
                     logger.warning(
@@ -304,7 +295,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                         "project. Resetting the active stack to default.",
                         config_name,
                     )
-                    active_stack = default_stack
+                    active_stack = self._get_or_create_default_stack(
+                        active_project
+                    )
                 elif (
                     not active_stack.is_shared
                     and active_stack.user != self.active_user.id
@@ -315,13 +308,15 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                         "Resetting the active stack to default.",
                         config_name,
                     )
-                    active_stack = default_stack
+                    active_stack = self._get_or_create_default_stack(
+                        active_project
+                    )
         else:
             logger.warning(
                 "Setting the %s active stack to default.",
                 config_name,
             )
-            active_stack = default_stack
+            active_stack = self._get_or_create_default_stack(active_project)
 
         return active_project, active_stack
 
@@ -347,6 +342,20 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             True if the store is local, False otherwise.
         """
         return self.get_store_info().is_local()
+
+    def _get_or_create_default_stack(
+        self, project: "ProjectModel"
+    ) -> "StackModel":
+        try:
+            return self._get_default_stack(
+                project_name_or_id=project.id,
+                user_name_or_id=self.active_user.id,
+            )
+        except KeyError:
+            return self._create_default_stack(
+                project_name_or_id=project.id,
+                user_name_or_id=self.active_user.id,
+            )
 
     # ------
     # Stacks
@@ -529,6 +538,42 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             )
         )
 
+    def user_email_opt_in(
+        self,
+        user_name_or_id: Union[str, UUID],
+        user_opt_in_response: bool,
+        email: Optional[str] = None,
+    ) -> UserModel:
+        """Persist user response to the email prompt.
+
+        Args:
+            user_name_or_id: The name or the ID of the user.
+            user_opt_in_response: Whether this email should be associated
+                with the user id in the telemetry
+            email: The users email
+
+        Returns:
+            The updated user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+
+        return self.update_user(
+            user_name_or_id=user_name_or_id,
+            user_update=UserUpdateModel(
+                email=email,
+                email_opted_in=user_opt_in_response,
+            ),
+        )
+
+    def get_teams_for_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> List[TeamModel]:
+        """"""
+        user = self.get_user(user_name_or_id=user_name_or_id)
+        return user.teams
+
     # -----
     # Teams
     # -----
@@ -541,6 +586,55 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             A list of all teams.
         """
         return self.list_teams()
+
+    def get_users_for_team(
+        self, team_name_or_id: Union[str, UUID]
+    ) -> List[UserModel]:
+        """"""
+        team = self.get_team(team_name_or_id=team_name_or_id)
+        return team.users
+
+    def add_user_to_team(
+        self,
+        user_name_or_id: Union[str, UUID],
+        team_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Adds a user to a team.
+        Args:
+            user_name_or_id: Name or ID of the user to add to the team.
+            team_name_or_id: Name or ID of the team to which to add the user to.
+        Raises:
+            EntityExistsError: If the user is already a member of the team.
+        """
+
+        team = self.get_team(team_name_or_id=team_name_or_id)
+        user = self.get_user(user_name_or_id=user_name_or_id)
+
+        update_model = TeamUpdateModel(
+            users=[u.id for u in team.users] + [user.id]
+        )
+        return self.update_team(
+            team_name_or_id=team.id,
+            team_update=update_model,
+        )
+
+    def remove_user_from_team(
+        self,
+        user_name_or_id: Union[str, UUID],
+        team_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Removes a user from a team.
+        Args:
+            user_name_or_id: Name or ID of the user to remove from the team.
+            team_name_or_id: Name or ID of the team from which to remove the
+                user.
+        """
+        team = self.get_team(team_name_or_id=team_name_or_id)
+        user = self.get_user(user_name_or_id=user_name_or_id)
+
+        update_model = TeamUpdateModel(
+            users=[u.id for u in team.users] + [user.id]
+        )
 
     # -----
     # Roles
@@ -600,47 +694,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         )
         logger.info(f"Creating default project '{project_name}' ...")
         return self.create_project(ProjectRequestModel(name=project_name))
-
-    # ------------
-    # Repositories
-    # ------------
-
-    # ---------
-    # Pipelines
-    # ---------
-
-    def get_pipeline_in_project(
-        self, pipeline_name: str, project_name_or_id: Union[str, UUID]
-    ) -> PipelineModel:
-        """Get a pipeline with a given name in a project.
-
-        Args:
-            pipeline_name: Name of the pipeline.
-            project_name_or_id: ID of the project.
-
-        Returns:
-            The pipeline.
-
-        Raises:
-            KeyError: if the pipeline does not exist.
-        """
-        pipelines = self.list_pipelines(
-            project_name_or_id=project_name_or_id, name=pipeline_name
-        )
-        if len(pipelines) == 0:
-            raise KeyError(
-                f"No pipeline found with name {pipeline_name} in project "
-                f"{project_name_or_id}"
-            )
-        return pipelines[0]
-
-    # -------------
-    # Pipeline runs
-    # -------------
-
-    # ------------------
-    # Pipeline run steps
-    # ------------------
 
     # ---------
     # Analytics
