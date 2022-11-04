@@ -32,6 +32,10 @@ from zenml.new_models.pipeline_run_models import (
 )
 from zenml.new_models.project_models import ProjectRequestModel
 from zenml.new_models.project_models import ProjectResponseModel as ProjectModel
+from zenml.new_models.role_assignment_models import RoleAssignmentRequestModel
+from zenml.new_models.role_assignment_models import (
+    RoleAssignmentResponseModel as RoleAssignmentModel,
+)
 from zenml.new_models.role_models import RoleRequestModel
 from zenml.new_models.role_models import RoleResponseModel as RoleModel
 from zenml.new_models.stack_models import StackRequestModel

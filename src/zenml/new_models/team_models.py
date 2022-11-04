@@ -12,11 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import TYPE_CHECKING, List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
+
+if TYPE_CHECKING:
+    from zenml.new_models import UserModel
 
 # ---- #
 # BASE #
@@ -40,6 +45,10 @@ class TeamBaseModel(BaseModel):
 class TeamResponseModel(TeamBaseModel, BaseResponseModel):
     """"""
 
+    users: Optional[List["UserModel"]] = Field(
+        title="The list of users within this team."
+    )
+
 
 # ------- #
 # REQUEST #
@@ -48,3 +57,7 @@ class TeamResponseModel(TeamBaseModel, BaseResponseModel):
 
 class TeamRequestModel(TeamBaseModel, BaseRequestModel):
     """"""
+
+    users: Optional[List[UUID]] = Field(
+        title="The list of users within this team."
+    )

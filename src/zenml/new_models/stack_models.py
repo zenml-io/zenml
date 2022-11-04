@@ -1,4 +1,5 @@
-from typing import Dict, List
+import json
+from typing import Any, Dict, List
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -46,6 +47,42 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
         "instances of components of this type."
     )
 
+    @property
+    def is_valid(self) -> bool:
+        """Check if the stack is valid.
+        Returns:
+            True if the stack is valid, False otherwise.
+        """
+        if (
+            StackComponentType.ARTIFACT_STORE
+            and StackComponentType.ORCHESTRATOR in self.components.keys()
+        ):
+            return True
+        else:
+            return False
+
+    def to_yaml(self) -> Dict[str, Any]:
+        """Create yaml representation of the Stack Model.
+
+        Returns:
+            The yaml representation of the Stack Model.
+        """
+        component_data = {}
+        for component_type, components_list in self.components.items():
+            component_dict = json.loads(components_list[0].json())
+            component_dict.pop("project")  # Not needed in the yaml repr
+            component_dict.pop("created")  # Not needed in the yaml repr
+            component_dict.pop("updated")  # Not needed in the yaml repr
+            component_data[component_type.value] = component_dict
+
+        # write zenml version and stack dict to YAML
+        yaml_data = {
+            "stack_name": self.name,
+            "components": component_data,
+        }
+
+        return yaml_data
+
 
 # ------- #
 # REQUEST #
@@ -57,3 +94,17 @@ class StackRequestModel(StackBaseModel, ShareableRequestModel):
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )
+
+    @property
+    def is_valid(self) -> bool:
+        """Check if the stack is valid.
+        Returns:
+            True if the stack is valid, False otherwise.
+        """
+        if (
+            StackComponentType.ARTIFACT_STORE
+            and StackComponentType.ORCHESTRATOR in self.components.keys()
+        ):
+            return True
+        else:
+            return False

@@ -12,12 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base domain model definitions."""
-
 from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.models.project_models import ProjectModel
 from zenml.models.user_management_models import UserModel
@@ -28,8 +27,7 @@ from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 # --------------- #
 
 
-class BaseResponseModel(BaseModel, AnalyticsTrackedModelMixin):
-
+class BaseResponseModel(AnalyticsTrackedModelMixin):
     """Base domain model.
 
     Used as a base class for all domain models that have the following common
@@ -38,6 +36,11 @@ class BaseResponseModel(BaseModel, AnalyticsTrackedModelMixin):
       * are uniquely identified by a UUID
       * have a creation timestamp and a last modified timestamp
     """
+
+    id: UUID = Field(title="The unique resource id.")
+
+    created: datetime = Field(title="Time when this resource was created.")
+    updated: datetime = Field(title="Time when this resource was last updated.")
 
     def __hash__(self) -> int:
         """Implementation of hash magic method.
@@ -61,13 +64,8 @@ class BaseResponseModel(BaseModel, AnalyticsTrackedModelMixin):
         else:
             return False
 
-    id: UUID = Field(title="The unique resource id.")
 
-    created: datetime = Field(title="Time when this resource was created.")
-    updated: datetime = Field(title="Time when this resource was last updated.")
-
-
-class UserOwnedResponseModel(BaseResponseModel, AnalyticsTrackedModelMixin):
+class UserOwnedResponseModel(BaseResponseModel):
     """Base user-owned domain model.
 
     Used as a base class for all domain models that are "owned" by a user.
@@ -105,7 +103,7 @@ class ShareableResponseModel(ProjectScopedResponseModel):
 # -------------- #
 
 
-class BaseRequestModel(BaseModel):
+class BaseRequestModel(AnalyticsTrackedModelMixin):
     """ """
 
 
@@ -141,3 +139,29 @@ class ShareableRequestModel(ProjectScopedRequestModel):
             "the same project."
         ),
     )
+
+
+# # ------------ #
+# # UPDATE MODEL #
+# # ------------ #
+#
+# NON_UPDATABLE_FIELDS = ["user", "project"]
+#
+#
+# def update_model(*fields):
+#     def dec(_cls):
+#         for field in fields:
+#             if field not in NON_UPDATABLE_FIELDS:
+#                 _cls.__fields__[field].required = False
+#         return _cls
+#
+#     if (
+#         fields
+#         and inspect.isclass(fields[0])
+#         and issubclass(fields[0], BaseModel)
+#     ):
+#         cls = fields[0]
+#         fields = cls.__fields__
+#         return dec(cls)
+#
+#     return dec
