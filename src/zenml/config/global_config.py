@@ -45,8 +45,8 @@ from zenml.utils.analytics_utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models.project_models import ProjectModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
+    from zenml.new_models import ProjectModel
 
 logger = get_logger(__name__)
 
@@ -153,7 +153,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
     ) -> None:
-        """Initializes a GlobalConfiguration object using values from the config file.
+        """Initializes a GlobalConfiguration using values from the config file.
 
         GlobalConfiguration is a singleton class: only one instance can exist.
         Calling this constructor multiple times will always yield the same
@@ -235,7 +235,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         return v
 
     def __setattr__(self, key: str, value: Any) -> None:
-        """Sets an attribute on the config and persists the new value in the global configuration.
+        """Sets an attribute and persists it in the global configuration.
 
         Args:
             key: The attribute name.
@@ -308,8 +308,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     config_version,
                     curr_version,
                 )
-                # TODO [ENG-899]: Give more detailed instruction on how to resolve
-                #  version mismatch.
+                # TODO [ENG-899]: Give more detailed instruction on how to
+                #  resolve version mismatch.
                 return
 
             if config_version == curr_version:
@@ -348,8 +348,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """Writes the global configuration options to disk.
 
         Args:
-            config_path: custom config file path. When not specified, the default
-                global configuration path is used.
+            config_path: custom config file path. When not specified, the
+                default global configuration path is used.
         """
         config_file = self._config_file(config_path)
         yaml_dict = json.loads(self.json())
@@ -448,7 +448,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         store_config: Optional[StoreConfiguration] = None,
         empty_store: bool = False,
     ) -> "GlobalConfiguration":
-        """Create a copy of the global config using a different configuration path.
+        """Create a copy of the global config using a different config path.
 
         This method is used to copy the global configuration and store it in a
         different configuration path, where it can be loaded in the context of a
@@ -541,7 +541,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             if v == "":
                 continue
             if k.startswith(ENV_ZENML_STORE_PREFIX):
-                env_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
+                env_config[k[len(ENV_ZENML_STORE_PREFIX):].lower()] = v
         if len(env_config):
             logger.debug(
                 "Using environment variables to configure the default store"
