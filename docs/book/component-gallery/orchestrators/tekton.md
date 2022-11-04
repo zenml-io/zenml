@@ -135,6 +135,57 @@ You can now run any ZenML pipeline using the Tekton orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+### Additional configuration
+
+For additional configuration of the Tekton orchestrator, you can pass
+`TektonOrchestratorSettings` which allows you to configure the following attributes:
+
+* `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
+your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
+
+```python
+from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import TektonOrchestratorSettings
+from kubernetes.client.models import V1Toleration
+
+
+tekton_settings = TektonOrchestratorSettings(
+    pod_settings={
+        "affinity": {
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchExpressions": [
+                                {
+                                    "key": "node.kubernetes.io/name",
+                                    "operator": "In",
+                                    "values": ["my_powerful_node_group"],
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "tolerations": [
+            V1Toleration(
+                key="node.kubernetes.io/name",
+                operator="Equal",
+                value="",
+                effect="NoSchedule"
+            )
+        ]
+    }
+)
+
+@pipeline(
+    settings={
+        "orchestrator.tekton": tekton_settings
+    }
+)
+  ...
+```
+
 A concrete example of using the Tekton orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/tekton_pipelines_orchestration).
 

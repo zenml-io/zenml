@@ -201,6 +201,7 @@ DeleteObject
 Deprovision
 Deprovisions
 Deregisters
+Deserializes
 Deterministically
 DevOps
 DockerConfiguration
@@ -691,6 +692,7 @@ Terraform
 TheMatrix
 Tokenize
 Tokenizer
+Tolerations
 TorchServe
 TorchServe's
 TorchServeParameters
@@ -1368,6 +1370,7 @@ signum
 signup
 sklearn
 sklearnserver
+sku
 sm
 sourcery
 splitext

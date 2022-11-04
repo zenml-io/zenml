@@ -68,41 +68,47 @@ You can now run any ZenML pipeline using the Kubernetes orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+### Additional configuration
+
 For additional configuration of the Kubernetes orchestrator, you can pass
 `KubernetesOrchestratorSettings` which allows you to configure the following attributes:
 
-* `affinity`: Affinity constraints (`spec.affinity`) that can be defined to a pod.
-* `tolerations`: Toleration (`spec.tolerations`) so the pod can be scheduled.
+* `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
+your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
-from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
+from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings
+from kubernetes.client.models import V1Toleration
+
 
 kubernetes_settings = KubernetesOrchestratorSettings(
-    affinity={
-        "nodeAffinity": {
-            "requiredDuringSchedulingIgnoredDuringExecution": {
-                "nodeSelectorTerms": [
-                    {
-                        "matchExpressions": [
-                            {
-                                "key": "node.kubernetes.io/name",
-                                "operator": "In",
-                                "values": ["my_powerful_node_group"],
-                            }
-                        ]
-                    }
-                ]
+    pod_settings={
+        "affinity": {
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchExpressions": [
+                                {
+                                    "key": "node.kubernetes.io/name",
+                                    "operator": "In",
+                                    "values": ["my_powerful_node_group"],
+                                }
+                            ]
+                        }
+                    ]
+                }
             }
-        }
-    },
-    tolerations=[
-        {
-            "key": "node.kubernetes.io/name",
-            "operator": "Exists",
-            "value": "",
-            "effect": "NoSchedule",
-        }
-    ],
+        },
+        "tolerations": [
+            V1Toleration(
+                key="node.kubernetes.io/name",
+                operator="Equal",
+                value="",
+                effect="NoSchedule"
+            )
+        ]
+    }
 )
 
 @pipeline(
