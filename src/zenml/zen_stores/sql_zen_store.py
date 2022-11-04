@@ -1048,14 +1048,10 @@ class SqlZenStore(BaseZenStore):
             .where(StackSchema.is_shared == stack.is_shared)
         ).first()
         if existing_shared_stack is not None:
-            owner_of_shared = self._get_user_schema(
-                existing_shared_stack.user_id, session=session
-            )
-
             raise StackExistsError(
                 f"Unable to share stack with name '{stack.name}': Found an "
-                f"existing stack with the same name in project "
-                f"'{project.name}' shared by '{owner_of_shared.name}'."
+                f"existing shared stack with the same name in project "
+                f"'{project.name}'."
             )
 
     # ----------------
@@ -1393,16 +1389,11 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.type == component.type)
         ).first()
         if existing_shared_component is not None:
-            owner_of_shared = self._get_user_schema(
-                existing_shared_component.user_id, session=session
-            )
-
             raise StackComponentExistsError(
                 f"Unable to shared component of type '{component.type.value}' "
-                f"with name '{component.name}': Found an "
-                f"existing component with the same name and type in project "
-                f"'{project.name}' shared by "
-                f"'{owner_of_shared.name}'."
+                f"with name '{component.name}': Found an existing shared "
+                f"component with the same name and type in project "
+                f"'{project.name}'."
             )
 
     # -----------------------

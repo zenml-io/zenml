@@ -18,16 +18,18 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.user_management_schemas import UserSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, StackSchema, UserSchema
+    from zenml.zen_stores.schemas.stack_schemas import StackSchema
 
 
 class PipelineSchema(SQLModel, table=True):
@@ -39,13 +41,22 @@ class PipelineSchema(SQLModel, table=True):
 
     name: str
 
-    project_id: UUID = Field(
-        sa_column=Column(ForeignKey("project.id", ondelete="CASCADE"))
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
     )
     project: "ProjectSchema" = Relationship(back_populates="pipelines")
 
-    user_id: UUID = Field(
-        sa_column=Column(ForeignKey("user.id", ondelete="SET NULL"))
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
     )
     user: "UserSchema" = Relationship(back_populates="pipelines")
 
@@ -119,26 +130,42 @@ class PipelineRunSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     name: str
 
-    project_id: UUID = Field(
-        sa_column=Column(ForeignKey("project.id", ondelete="CASCADE"))
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
     )
     project: "ProjectSchema" = Relationship(back_populates="runs")
 
-    user_id: UUID = Field(
-        nullable=False,
-        sa_column=Column(ForeignKey("user.id", ondelete="CASCADE")),
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
     )
     user: "UserSchema" = Relationship(back_populates="runs")
 
-    stack_id: Optional[UUID] = Field(
+    stack_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target="stack",  # TODO: how to reference `StackSchema.__tablename__`?
+        source_column="stack_id",
+        target_column="id",
+        ondelete="SET NULL",
         nullable=True,
-        sa_column=Column(ForeignKey("stack.id", ondelete="SET NULL")),
     )
     stack: "StackSchema" = Relationship(back_populates="runs")
 
-    pipeline_id: Optional[UUID] = Field(
+    pipeline_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineSchema.__tablename__,
+        source_column="pipeline_id",
+        target_column="id",
+        ondelete="SET NULL",
         nullable=True,
-        sa_column=Column(ForeignKey("pipeline.id", ondelete="SET NULL")),
     )
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
@@ -234,7 +261,13 @@ class StepRunSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     name: str
 
-    pipeline_run_id: UUID = Field(foreign_key="pipeline_run.id")
+    pipeline_run_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineRunSchema.__tablename__,
+        source_column="pipeline_run_id",
+        target_column="id",
+        ondelete="CASCADE",
+    )
 
     status: ExecutionStatus
     entrypoint_name: str
@@ -322,8 +355,22 @@ class StepRunParentsSchema(SQLModel, table=True):
 
     __tablename__ = "step_run_parents"
 
-    parent_id: UUID = Field(foreign_key="step_run.id", primary_key=True)
-    child_id: UUID = Field(foreign_key="step_run.id", primary_key=True)
+    parent_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="parent_id",
+        target_column="id",
+        ondelete="CASCADE",
+        primary_key=True,
+    )
+    child_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="child_id",
+        target_column="id",
+        ondelete="CASCADE",
+        primary_key=True,
+    )
 
 
 class ArtifactSchema(SQLModel, table=True):
@@ -334,8 +381,20 @@ class ArtifactSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     name: str  # Name of the output in the parent step
 
-    parent_step_id: UUID = Field(foreign_key="step_run.id")
-    producer_step_id: UUID = Field(foreign_key="step_run.id")
+    parent_step_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="parent_step_id",
+        target_column="id",
+        ondelete="CASCADE",
+    )
+    producer_step_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="producer_step_id",
+        target_column="id",
+        ondelete="CASCADE",
+    )
 
     type: ArtifactType
     uri: str
@@ -404,6 +463,20 @@ class StepRunArtifactSchema(SQLModel, table=True):
 
     __tablename__ = "step_run_artifact"
 
-    step_id: UUID = Field(foreign_key="step_run.id", primary_key=True)
-    artifact_id: UUID = Field(foreign_key="artifacts.id", primary_key=True)
+    step_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="step_id",
+        target_column="id",
+        ondelete="CASCADE",
+        primary_key=True,
+    )
+    artifact_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ArtifactSchema.__tablename__,
+        source_column="artifact_id",
+        target_column="id",
+        ondelete="CASCADE",
+        primary_key=True,
+    )
     name: str  # Name of the input in the step

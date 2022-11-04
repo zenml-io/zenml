@@ -21,13 +21,14 @@ from uuid import UUID, uuid4
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import RoleAssignmentModel, RoleModel, TeamModel, UserModel
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         FlavorSchema,
         PipelineRunSchema,
         PipelineSchema,
-        ProjectSchema,
         StackComponentSchema,
         StackSchema,
     )
@@ -38,8 +39,22 @@ class TeamAssignmentSchema(SQLModel, table=True):
 
     __tablename__ = "team_assignment"
 
-    user_id: UUID = Field(primary_key=True, foreign_key="user.id")
-    team_id: UUID = Field(primary_key=True, foreign_key="team.id")
+    user_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="user",  # TODO: how to reference `UserSchema.__tablename__`?
+        source_column="user_id",
+        target_column="id",
+        ondelete="CASCADE",
+        primary_key=True,
+    )
+    team_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="team",  # TODO: how to reference `TeamSchema.__tablename__`?
+        source_column="team_id",
+        target_column="id",
+        ondelete="CASCADE",
+        primary_key=True,
+    )
 
 
 class UserSchema(SQLModel, table=True):
@@ -255,9 +270,28 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
     __tablename__ = "user_role_assignment"
 
     id: UUID = Field(primary_key=True, default_factory=uuid4)
-    role_id: UUID = Field(foreign_key="role.id")
-    user_id: UUID = Field(foreign_key="user.id")
-    project_id: Optional[UUID] = Field(foreign_key="project.id", nullable=True)
+    role_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=RoleSchema.__tablename__,
+        source_column="role_id",
+        target_column="id",
+        ondelete="CASCADE",
+    )
+    user_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="CASCADE",
+    )
+    project_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
+    )
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
 
@@ -289,9 +323,28 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
     __tablename__ = "team_role_assignment"
 
     id: UUID = Field(primary_key=True, default_factory=uuid4)
-    role_id: UUID = Field(foreign_key="role.id")
-    team_id: UUID = Field(foreign_key="team.id")
-    project_id: Optional[UUID] = Field(foreign_key="project.id", nullable=True)
+    role_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=RoleSchema.__tablename__,
+        source_column="role_id",
+        target_column="id",
+        ondelete="CASCADE",
+    )
+    team_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=TeamSchema.__tablename__,
+        source_column="team_id",
+        target_column="id",
+        ondelete="CASCADE",
+    )
+    project_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
+    )
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
 
