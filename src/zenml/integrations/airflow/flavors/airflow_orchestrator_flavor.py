@@ -120,6 +120,15 @@ class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
         return AIRFLOW_ORCHESTRATOR_FLAVOR
 
     @property
+    def config_class(self) -> Type[AirflowOrchestratorConfig]:
+        """Returns `AirflowOrchestratorConfig` config class.
+
+        Returns:
+            The config class.
+        """
+        return AirflowOrchestratorConfig
+
+    @property
     def implementation_class(self) -> Type["AirflowOrchestrator"]:
         """Implementation class.
 
