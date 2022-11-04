@@ -97,9 +97,7 @@ def generate_stack_component_describe_command(
         client = Client()
 
         with console.status(f"Describing stack component '{name_or_id}'..."):
-            component_ = client.get_stack_component(
-                component_id=name_or_id
-            )
+            component_ = client.get_stack_component(component_id=name_or_id)
 
             active_components = client.active_stack_model.components.get(
                 component_type, None
@@ -109,7 +107,7 @@ def generate_stack_component_describe_command(
 
             cli_utils.print_stack_component_configuration(
                 component=component_,
-                active_status=component_.id==active_component_id,
+                active_status=component_.id == active_component_id,
             )
 
     return describe_stack_component_command
@@ -720,9 +718,9 @@ def generate_stack_component_logs_command(
 
         if not log_file or not fileio.exists(log_file):
             cli_utils.warning(
-                    f"Unable to find log file for {display_name} "
-                    f"'{component.name}'."
-                )
+                f"Unable to find log file for {display_name} "
+                f"'{component.name}'."
+            )
             return
 
         if follow:
@@ -882,8 +880,7 @@ def generate_stack_component_flavor_describe_command(
 
         with console.status(f"Describing {display_name} flavor: {name}`...\n"):
             flavor_model = client.get_flavor_by_name_and_type(
-                name=name,
-                component_type=component_type
+                name=name, component_type=component_type
             )
 
             cli_utils.describe_pydantic_object(flavor_model.config_schema)
@@ -925,9 +922,7 @@ def generate_stack_component_flavor_delete_command(
         ):
             client.delete_flavor(name_or_id)
 
-            cli_utils.declare(
-                f"Successfully deleted flavor '{name_or_id}'."
-            )
+            cli_utils.declare(f"Successfully deleted flavor '{name_or_id}'.")
 
     return delete_stack_component_flavor_command
 

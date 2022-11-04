@@ -959,9 +959,7 @@ def print_pipeline_runs_table(
         if pipeline_run.pipeline_id is None:
             pipeline_name = "unlisted"
         else:
-            pipeline_name = client.zen_store.get_pipeline(
-                pipeline_run.pipeline_id
-            ).name
+            pipeline_name = client.get_pipeline(pipeline_run.pipeline_id).name
         if pipeline_run.stack_id is None:
             stack_name = "[DELETED]"
         else:

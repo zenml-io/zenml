@@ -604,9 +604,7 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
     client = Client()
 
     with console.status(f"Describing stack '{stack_name_or_id}'...\n"):
-        stack_ = client.get_stack(
-            name_id_or_prefix=stack_name_or_id
-        )
+        stack_ = client.get_stack(name_id_or_prefix=stack_name_or_id)
 
         cli_utils.print_stack_configuration(
             stack=stack_,

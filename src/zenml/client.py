@@ -16,16 +16,7 @@
 import os
 from abc import ABCMeta
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    List,
-    Optional,
-    Union,
-    cast,
-)
-
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
@@ -45,11 +36,12 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.new_models import (
-    StackRequestModel,
     ComponentRequestModel,
     FlavorRequestModel,
     PipelineRequestModel,
+    StackRequestModel,
 )
+from zenml.new_models.pipeline_models import PipelineResponseModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -58,11 +50,11 @@ if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
     from zenml.enums import StackComponentType
     from zenml.new_models import (
-        StackModel,
         ComponentModel,
         FlavorModel,
         PipelineModel,
         ProjectModel,
+        StackModel,
         UserModel,
     )
     from zenml.stack import Stack, StackComponentConfig
@@ -662,8 +654,7 @@ class Client(metaclass=ClientMetaClass):
         return self._config.active_stack
 
     def get_stack(
-            self,
-            name_id_or_prefix: Optional[str] = None
+        self, name_id_or_prefix: Optional[str] = None
     ) -> "StackModel":
         """"""
         return self._get_stack_by_id_or_name_or_prefix(
@@ -745,7 +736,8 @@ class Client(metaclass=ClientMetaClass):
                         self.get_stack_component(
                             name_id_or_prefix=c,
                             component_type=c_type,
-                        ).id for c in c_list
+                        ).id
+                        for c in c_list
                     ]
 
         # Name
@@ -828,13 +820,11 @@ class Client(metaclass=ClientMetaClass):
         """"""
         return self.zen_store.list_stacks(
             project_name_or_id=self.active_project.id,
-            user_name_or_id=self.active_user.id
+            user_name_or_id=self.active_user.id,
         )
 
     @track(event=AnalyticsEvent.SET_STACK)
-    def activate_stack(
-        self, stack_name_id_or_prefix: Union[str, UUID]
-    ) -> None:
+    def activate_stack(self, stack_name_id_or_prefix: Union[str, UUID]) -> None:
         """Sets the stack as active.
 
         Args:
@@ -845,9 +835,7 @@ class Client(metaclass=ClientMetaClass):
         """
         # Make sure the stack is registered
         try:
-            stack = self.get_stack(
-                name_id_or_prefix=stack_name_id_or_prefix
-            )
+            stack = self.get_stack(name_id_or_prefix=stack_name_id_or_prefix)
 
         except KeyError:
             raise KeyError(
@@ -889,8 +877,7 @@ class Client(metaclass=ClientMetaClass):
                     )
             # Get the flavor model
             flavor_model = self.get_flavor_by_name_and_type(
-                name=component.flavor,
-                component_type=component.type
+                name=component.flavor, component_type=component.type
             )
 
             # Create and validate the configuration
@@ -1048,8 +1035,8 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: str,
         component_type: StackComponentType,
         name: Optional[str] = None,
-        configuration:Optional[Dict[str, str]] = None,
-        is_shared:Optional[bool] = None,
+        configuration: Optional[Dict[str, str]] = None,
+        is_shared: Optional[bool] = None,
     ) -> "ComponentModel":
         """Updates a stack component.
 
@@ -1092,8 +1079,7 @@ class Client(metaclass=ClientMetaClass):
             configuration_obj = flavor.config_class(**configuration_update)
 
             self._validate_stack_component_configuration(
-                component_to_update.type,
-                configuration=configuration_obj
+                component_to_update.type, configuration=configuration_obj
             )
 
         share_update = component_to_update.is_shared
@@ -1103,7 +1089,7 @@ class Client(metaclass=ClientMetaClass):
         update_request_model = ComponentRequestModel(
             name=name_update,
             configuration=configuration_update,
-            is_shared=share_update
+            is_shared=share_update,
         )
 
         # Send the updated component to the ZenStore
@@ -1134,8 +1120,6 @@ class Client(metaclass=ClientMetaClass):
             component.type,
             component.name,
         )
-
-
 
     def _validate_stack_component_configuration(
         self,
@@ -1195,8 +1179,8 @@ class Client(metaclass=ClientMetaClass):
 
     def create_flavor(
         self,
-        source:str,
-        component_type:StackComponentType,
+        source: str,
+        component_type: StackComponentType,
     ) -> "FlavorModel":
         """Creates a new flavor.
 
@@ -1209,11 +1193,12 @@ class Client(metaclass=ClientMetaClass):
         from zenml.utils.source_utils import validate_flavor_source
 
         flavor = validate_flavor_source(
-            source=source,            component_type=component_type,
+            source=source,
+            component_type=component_type,
         )()
 
         create_flavor_request = FlavorRequestModel(
-            source= source,
+            source=source,
             type=flavor.type,
             name=flavor.name,
             config_schema=flavor.config_schema,
@@ -1227,17 +1212,13 @@ class Client(metaclass=ClientMetaClass):
         Args:
             flavor: The flavor to delete.
         """
-        self.zen_store.list_flavors(
-
-        )
+        self.zen_store.list_flavors()
         self.zen_store.delete_flavor(flavor_id=flavor_id)
 
         logger.info(f"Deleted flavor '{flavor.name}' of type '{flavor.type}'.")
 
-
     def list_flavors(
         self,
-
     ) -> List["FlavorModel"]:
         """Fetches all the flavor models.
 
@@ -1387,10 +1368,11 @@ class Client(metaclass=ClientMetaClass):
         else:
             if len(existing_pipelines) == 1:
                 existing_pipeline = existing_pipelines[0]
-                # B) If a pipeline exists with the same config, use it.
+                # B) If a pipeline exists that has the same config, use that
+                # pipeline.
                 if pipeline_spec == existing_pipeline.spec:
                     logger.debug(
-                        "Did not register pipeline since it already exists."
+                        "Did not register pipeline since it already " "exists."
                     )
                     return existing_pipeline.id
 
@@ -1411,6 +1393,60 @@ class Client(metaclass=ClientMetaClass):
             "change all existing runs of this pipeline to become unlisted."
         )
         raise AlreadyExistsException(error_msg)
+
+    def list_pipelines(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        name: Optional[str] = None,
+    ) -> List[PipelineResponseModel]:
+        """List pipelines.
+
+        Args:
+            project_name_or_id: If provided, only list pipelines in this project.
+            user_name_or_id: If provided, only list pipelines from this user.
+            name: If provided, only list pipelines with this name.
+
+        Raises:
+            KeyError: If the name_id_or_prefix does not uniquely identify one
+                pipeline
+        """
+
+        return self.zen_store.list_pipelines(
+            project_name_or_id=project_name_or_id,
+            user_name_or_id=user_name_or_id,
+            name=name,
+        )
+
+    def get_pipeline(self, pipeline_id: UUID) -> PipelineResponseModel:
+        """List pipelines.
+
+        Args:
+            pipeline_id: ID of the pipeline.
+
+        Raises:
+            KeyError: If the name_id_or_prefix does not uniquely identify one
+                pipeline
+        """
+
+        return self.zen_store.get_pipeline(pipeline_id=pipeline_id)
+
+    def delete_pipeline(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        """Delete a pipeline.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix id of the pipeline
+                to delete.
+
+        Raises:
+            KeyError: If the name_id_or_prefix does not uniquely identify one
+                pipeline
+        """
+
+        pipeline = self._get_pipeline_by_id_or_name_or_prefix(
+            name_id_or_prefix=name_id_or_prefix
+        )
+        self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
     # ---- utility prefix matching get functions -----
 
@@ -1442,16 +1478,16 @@ class Client(metaclass=ClientMetaClass):
             pass
 
         user_only_stacks = self.zen_store.list_stacks(
-                name=name_id_or_prefix,
-                project_name_or_id=self.active_project.id,
-                user_name_or_id=self.active_user.id,
-                is_shared=False,
-            )
+            name=name_id_or_prefix,
+            project_name_or_id=self.active_project.id,
+            user_name_or_id=self.active_user.id,
+            is_shared=False,
+        )
 
         shared_stacks = self.zen_store.list_stacks(
-                name=name_id_or_prefix,
-                project_name_or_id=self.active_project.id,
-                is_shared=True,
+            name=name_id_or_prefix,
+            project_name_or_id=self.active_project.id,
+            is_shared=True,
         )
 
         named_stacks = user_only_stacks + shared_stacks
@@ -1472,14 +1508,14 @@ class Client(metaclass=ClientMetaClass):
             )
 
             user_only_stacks = self.zen_store.list_stacks(
-                    project_name_or_id=self.active_project.name,
-                    user_name_or_id=self.active_user.name,
-                    is_shared=False,
+                project_name_or_id=self.active_project.name,
+                user_name_or_id=self.active_user.name,
+                is_shared=False,
             )
 
             shared_stacks = self.zen_store.list_stacks(
-                    project_name_or_id=self.active_project.name,
-                    is_shared=True,
+                project_name_or_id=self.active_project.name,
+                is_shared=True,
             )
 
             all_stacks = user_only_stacks + shared_stacks
@@ -1504,9 +1540,9 @@ class Client(metaclass=ClientMetaClass):
                 )
 
     def _get_component_by_id_or_name_or_prefix(
-            self,
-            name_id_or_prefix: str,
-            component_type: StackComponentType,
+        self,
+        name_id_or_prefix: str,
+        component_type: StackComponentType,
     ) -> "ComponentModel":
         """Fetches a component of given type using the name, id or partial id.
 
@@ -1593,5 +1629,74 @@ class Client(metaclass=ClientMetaClass):
             else:
                 raise KeyError(
                     f"No component of type `{component_type}` with name or id "
+                    f"prefix '{name_id_or_prefix}' exists."
+                )
+
+    def _get_pipeline_by_id_or_name_or_prefix(
+        self,
+        name_id_or_prefix: str,
+    ) -> "PipelineModel":
+        """Fetches a pipeline of given type using the name, id or partial id.
+
+        Args:
+            name_id_or_prefix: The id, name or partial id of the component to
+                fetch.
+
+        Returns:
+            The pipeline with the given name.
+
+        Raises:
+            KeyError: If no stack with the given name exists.
+        """
+        # First interpret as full UUID
+        try:
+            pipeline_id = UUID(name_id_or_prefix)
+            return self.zen_store.get_pipeline(pipeline_id=pipeline_id)
+        except ValueError:
+            pass
+
+        pipelines = self.zen_store.list_pipelines(
+            name=name_id_or_prefix,
+            project_name_or_id=self.active_project.id,
+        )
+
+        if len(pipelines) > 1:
+            raise KeyError(
+                f"Multiple pipelines have been found "
+                f"for name '{name_id_or_prefix}'. The pipelines listed "
+                f"above all share this name. Please specify the component by "
+                f"full or partial id."
+            )
+        elif len(pipelines) == 1:
+            return pipelines[0]
+        else:
+            logger.debug(
+                f"No pipeline with name '{name_id_or_prefix}' "
+                f"exists. Trying to resolve as partial_id"
+            )
+
+            pipelines = self.zen_store.list_pipelines(
+                name=name_id_or_prefix,
+                project_name_or_id=self.active_project.id,
+            )
+
+            filtered_pipes = [
+                pipeline
+                for pipeline in pipelines
+                if str(pipeline.id).startswith(name_id_or_prefix)
+            ]
+            if len(filtered_pipes) > 1:
+                raise KeyError(
+                    f"The pipelines listed above all share the provided "
+                    f"prefix '{name_id_or_prefix}' on their ids. Please "
+                    f"provide more characters to uniquely identify only one "
+                    f"pipeline."
+                )
+
+            elif len(filtered_pipes) == 1:
+                return filtered_pipes[0]
+            else:
+                raise KeyError(
+                    f"No pipeline with name or id "
                     f"prefix '{name_id_or_prefix}' exists."
                 )

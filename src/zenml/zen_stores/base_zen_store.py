@@ -38,7 +38,6 @@ from zenml.models.server_models import (
 )
 from zenml.new_models import (
     ComponentRequestModel,
-    PipelineModel,
     ProjectModel,
     ProjectRequestModel,
     RoleAssignmentModel,

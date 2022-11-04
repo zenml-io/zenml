@@ -45,8 +45,8 @@ from zenml.utils.analytics_utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.base_zen_store import BaseZenStore
     from zenml.new_models import ProjectModel
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
@@ -541,7 +541,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             if v == "":
                 continue
             if k.startswith(ENV_ZENML_STORE_PREFIX):
-                env_config[k[len(ENV_ZENML_STORE_PREFIX):].lower()] = v
+                env_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
         if len(env_config):
             logger.debug(
                 "Using environment variables to configure the default store"

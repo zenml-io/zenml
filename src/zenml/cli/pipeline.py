@@ -14,8 +14,6 @@
 """CLI functionality to interact with pipelines."""
 
 
-from uuid import UUID
-
 import click
 
 from zenml.cli import utils as cli_utils
@@ -23,7 +21,6 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.utils.uuid_utils import is_valid_uuid
 
 logger = get_logger(__name__)
 
@@ -58,9 +55,8 @@ def cli_pipeline_run(python_file: str, config_path: str) -> None:
 def list_pipelines() -> None:
     """List all registered pipelines."""
     cli_utils.print_active_config()
-    pipelines = Client().zen_store.list_pipelines(
-        project_name_or_id=Client().active_project.id
-    )
+    pipelines = Client().list_pipelines()
+
     if not pipelines:
         cli_utils.declare("No piplines registered.")
         return
@@ -80,19 +76,6 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
         pipeline_name_or_id: The name or ID of the pipeline to delete.
     """
     cli_utils.print_active_config()
-    active_project_id = Client().active_project.id
-    assert active_project_id is not None
-    try:
-        client = Client()
-        if is_valid_uuid(pipeline_name_or_id):
-            pipeline = client.zen_store.get_pipeline(UUID(pipeline_name_or_id))
-        else:
-            pipeline = client.zen_store.get_pipeline_in_project(
-                pipeline_name=pipeline_name_or_id,
-                project_name_or_id=active_project_id,
-            )
-    except KeyError as err:
-        cli_utils.error(str(err))
     confirmation = cli_utils.confirmation(
         f"Are you sure you want to delete pipeline `{pipeline_name_or_id}`? "
         "This will change all existing runs of this pipeline to become "
@@ -101,9 +84,12 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
     if not confirmation:
         cli_utils.declare("Pipeline deletion canceled.")
         return
-    assert pipeline.id is not None
-    Client().zen_store.delete_pipeline(pipeline_id=pipeline.id)
-    cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
+    else:
+        try:
+            Client().delete_pipeline(name_id_or_prefix=pipeline_name_or_id)
+            cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
+        except KeyError as e:
+            cli_utils.error(str(e))
 
 
 @pipeline.group()
