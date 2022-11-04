@@ -363,7 +363,7 @@ def update_stack(
         }
 
         client.update_stack(
-            stack_name_id_or_prefix=stack_name_or_id,
+            name_id_or_prefix=stack_name_or_id,
             components=component_mapping,
         )
 
@@ -392,7 +392,7 @@ def share_stack(
 
     with console.status(f"Sharing stack `{stack_name_or_id}` ...\n"):
         client.update_stack(
-            stack_name_id_or_prefix=stack_name_or_id,
+            name_id_or_prefix=stack_name_or_id,
             is_shared=True,
         )
         cli_utils.declare(f"Stack `{stack_name_or_id}` successfully shared!")
@@ -538,36 +538,36 @@ def remove_stack_component(
             stack_component_update[StackComponentType.DATA_VALIDATOR] = []
 
         client.update_stack(
-            stack_name_id_or_prefix=stack_name_or_id,
+            name_id_or_prefix=stack_name_or_id,
             components=stack_component_update,
         )
         cli_utils.declare(f"Stack `{stack_name_or_id}` successfully updated!")
 
 
 @stack.command("rename", help="Rename a stack.")
-@click.argument("current_stack_name_or_id", type=str, required=True)
+@click.argument("stack_name_or_id", type=str, required=True)
 @click.argument("new_stack_name", type=str, required=True)
 def rename_stack(
-    current_stack_name_or_id: str,
+    stack_name_or_id: str,
     new_stack_name: str,
 ) -> None:
     """Rename a stack.
 
     Args:
-        current_stack_name_or_id: Name of the stack to rename.
+        stack_name_or_id: Name of the stack to rename.
         new_stack_name: New name of the stack.
     """
     cli_utils.print_active_config()
 
     client = Client()
 
-    with console.status(f"Renaming stack `{current_stack_name_or_id}`...\n"):
+    with console.status(f"Renaming stack `{stack_name_or_id}`...\n"):
         client.update_stack(
-            stack_name_id_or_prefix=current_stack_name_or_id,
+            name_id_or_prefix=stack_name_or_id,
             name=new_stack_name,
         )
         cli_utils.declare(
-            f"Stack `{current_stack_name_or_id}` successfully renamed to `"
+            f"Stack `{stack_name_or_id}` successfully renamed to `"
             f"{new_stack_name}`!"
         )
 
@@ -580,7 +580,7 @@ def list_stacks() -> None:
     client = Client()
 
     with console.status(f"Listing stacks...\n"):
-        stacks = client.stacks
+        stacks = client.list_stacks()
         print_stacks_table(client, stacks)
 
 
@@ -604,7 +604,9 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
     client = Client()
 
     with console.status(f"Describing stack '{stack_name_or_id}'...\n"):
-        stack_ = client.get_stack(stack_name_id_or_prefix=stack_name_or_id)
+        stack_ = client.get_stack(
+            name_id_or_prefix=stack_name_or_id
+        )
 
         cli_utils.print_stack_configuration(
             stack=stack_,
@@ -654,7 +656,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
     with console.status(
         f"Setting the{scope} active stack to '{stack_name_or_id}'..."
     ):
-        client.activate_stack(stack_name_or_id)
+        client.activate_stack(stack_name_or_id=stack_name_or_id)
         cli_utils.declare(
             f"Active{scope} stack set to: "
             f"'{client.active_stack_model.name}'"
@@ -743,17 +745,19 @@ def export_stack(
     # Get configuration of given stack
     client = Client()
 
-    stack = client.get_stack_by_id_or_name_or_prefix(stack_name_or_id)
+    stack_to_export = client.get_stack(name_id_or_prefix=stack_name_or_id)
 
     # write zenml version and stack dict to YAML
-    yaml_data = stack.to_yaml()
+    yaml_data = stack_to_export.to_yaml()
     yaml_data["zenml_version"] = zenml.__version__
 
     if filename is None:
-        filename = stack.name + ".yaml"
+        filename = stack_to_export.name + ".yaml"
     write_yaml(filename, yaml_data)
 
-    cli_utils.declare(f"Exported stack '{stack.name}' to file '{filename}'.")
+    cli_utils.declare(
+        f"Exported stack '{stack_to_export.name}' to file '{filename}'."
+    )
 
 
 def _import_stack_component(
@@ -785,8 +789,9 @@ def _import_stack_component(
         return other_component.id
 
     try:
-        component = client.get_component_by_id_or_name_or_prefix(
-            id_or_name_or_prefix=component_name
+        component = client.get_stack_component(
+            name_id_or_prefix=component_name,
+            component_type=component_type,
         )
         if component:
             # component with same name
@@ -891,7 +896,7 @@ def import_stack(
 
     # ask user for a new stack_name if current one already exists
     client = Client()
-    if stack_name in [s.name for s in client.stacks]:
+    if stack_name in [s.name for s in client.list_stacks()]:
         stack_name = click.prompt(
             f"Stack `{stack_name}` already exists. "
             f"Please choose a different name.",
@@ -933,8 +938,8 @@ def copy_stack(
     client = Client()
 
     with console.status(f"Copying stack `{source_stack_name_or_id}`...\n"):
-        stack_to_copy = client.get_stack_by_id_or_name_or_prefix(
-            source_stack_name_or_id
+        stack_to_copy = client.get_stack(
+            name_id_or_prefix=source_stack_name_or_id
         )
 
         component_mapping: Dict[StackComponentType, Optional[str]] = {}
@@ -981,7 +986,7 @@ def register_secrets(
 
     client = Client()
 
-    stack_model = client.get_stack_by_id_or_name_or_prefix(stack_name_or_id)
+    stack_model = client.get_stack(name_id_or_prefix=stack_name_or_id)
 
     stack_ = Stack.from_model(stack_model)
     required_secrets = stack_.required_secrets

@@ -75,7 +75,10 @@ class ClientConfiguration(FileSyncModel):
     """Pydantic object used for serializing client configuration options."""
 
     _active_stack: Optional["StackModel"] = None
+    active_stack_id: Optional[UUID]
+
     _active_project: Optional["ProjectModel"] = None
+    active_project_id: Optional[UUID]
 
     def set_active_project(self, project: "ProjectModel") -> None:
         """Set the project for the local client.
@@ -84,6 +87,7 @@ class ClientConfiguration(FileSyncModel):
             project: The project to set active.
         """
         self._active_project = project
+        self.active_project_id = project.id
 
     def set_active_stack(self, stack: "StackModel") -> None:
         """Set the stack for the local client.
@@ -92,6 +96,17 @@ class ClientConfiguration(FileSyncModel):
             stack: The stack to set active.
         """
         self._active_stack = stack
+        self.active_stack_id = stack.id
+
+    @property
+    def active_project(self):
+        """"""
+        return self._active_project
+
+    @property
+    def active_stack(self):
+        """"""
+        return self._active_stack
 
     class Config:
         """Pydantic configuration class."""
@@ -524,6 +539,40 @@ class Client(metaclass=ClientMetaClass):
             GlobalConfiguration().set_active_project(project)
         return project
 
+    # ---- #
+    # USER #
+    # ---- #
+
+    @property
+    def active_user(self) -> "UserModel":
+        """Get the user that is currently in use.
+
+        Returns:
+            The active user.
+        """
+        return self.zen_store.active_user
+
+    def delete_user(self, user_name_or_id: str) -> None:
+        """Delete a user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to delete.
+
+        Raises:
+            IllegalOperationError: If the user to delete is the active user.
+        """
+        user = self.zen_store.get_user(user_name_or_id)
+        if self.zen_store.active_user_name == user.name:
+            raise IllegalOperationError(
+                "You cannot delete yourself. If you wish to delete your active "
+                "user account, please contact your ZenML administrator."
+            )
+        Client().zen_store.delete_user(user_name_or_id=user.name)
+
+    # ------- #
+    # PROJECT #
+    # ------- #
+
     @property
     def active_project(self) -> "ProjectModel":
         """Get the currently active project of the local client.
@@ -539,7 +588,7 @@ class Client(metaclass=ClientMetaClass):
         """
         project: Optional["ProjectModel"] = None
         if self._config:
-            project = self._config._active_project
+            project = self._config.active_project
 
         if not project:
             project = GlobalConfiguration().active_project
@@ -564,32 +613,38 @@ class Client(metaclass=ClientMetaClass):
             )
         return project
 
+    def delete_project(self, project_name_or_id: str) -> None:
+        """Delete a project.
+
+        Args:
+            project_name_or_id: The name or ID of the project to delete.
+
+        Raises:
+            IllegalOperationError: If the project to delete is the active
+                project.
+        """
+        project = self.zen_store.get_project(project_name_or_id)
+        if self.active_project.id == project.id:
+            raise IllegalOperationError(
+                f"Project '{project_name_or_id}' cannot be deleted since it is "
+                "currently active. Please set another project as active first."
+            )
+        Client().zen_store.delete_project(project_name_or_id=project_name_or_id)
+
+    # ------ #
+    # STACKS #
+    # ------ #
+
     @property
-    def active_user(self) -> "UserModel":
-        """Get the user that is currently in use.
+    def active_stack(self) -> "Stack":
+        """The active stack for this client.
 
         Returns:
-            The active user.
+            The active stack for this client.
         """
-        return self.zen_store.active_user
+        from zenml.stack.stack import Stack
 
-    # .--------.
-    # | STACKS |
-    # '--------'
-
-    @property
-    def stacks(self) -> List["StackModel"]:
-        """All stack models in the active project, owned by the user or shared.
-
-        This property is intended as a quick way to get information about the
-        components of the registered stacks without loading all installed
-        integrations.
-
-        Returns:
-            A list of all stacks available in the current project and owned by
-            the current user.
-        """
-        return self.zen_store.list_stacks()
+        return Stack.from_model(self.active_stack_model)
 
     @property
     def active_stack_model(self) -> "StackModel":
@@ -604,54 +659,15 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active stack is not set.
         """
-        return self._config._active_stack
+        return self._config.active_stack
 
-    @property
-    def active_stack(self) -> "Stack":
-        """The active stack for this client.
-
-        Returns:
-            The active stack for this client.
-        """
-        from zenml.stack.stack import Stack
-
-        return Stack.from_model(self.active_stack_model)
-
-    @track(event=AnalyticsEvent.SET_STACK)
-    def activate_stack(
-        self, stack_name_id_or_prefix: Union[str, UUID]
-    ) -> None:
-        """Sets the stack as active.
-
-        Args:
-            stack_name_id_or_prefix: Model of the stack to activate.
-
-        Raises:
-            KeyError: If the stack is not registered.
-        """
-        # Make sure the stack is registered
-        try:
-            stack = self.get_stack_by_id_or_name_or_prefix(
-                id_or_name_or_prefix=stack_name_id_or_prefix
-            )
-
-        except KeyError:
-            raise KeyError(
-                f"Stack '{stack_name_id_or_prefix}' cannot be activated since "
-                f"it is not registered yet. Please register it first."
-            )
-
-        if self._config:
-            self._config.active_stack_id = stack.id
-
-        else:
-            # set the active stack globally only if the client doesn't use
-            # a local configuration
-            GlobalConfiguration().active_stack_id = stack.id
-
-    def get_stack(self, stack_name_id_or_prefix: Optional[str] = None):
-        return self.get_stack_by_id_or_name_or_prefix(
-            id_or_name_or_prefix=stack_name_id_or_prefix
+    def get_stack(
+            self,
+            name_id_or_prefix: Optional[str] = None
+    ) -> "StackModel":
+        """"""
+        return self._get_stack_by_id_or_name_or_prefix(
+            name_id_or_prefix=name_id_or_prefix
         )
 
     def register_stack(
@@ -676,9 +692,9 @@ class Client(metaclass=ClientMetaClass):
         for c_type, c_name in components.items():
             if name:
                 stack_components[c_type] = [
-                    self.get_component_by_id_or_name_or_prefix(
+                    self.get_stack_component(
+                        name_id_or_prefix=c_name,
                         component_type=c_type,
-                        id_or_name_or_prefix=c_name,
                     ).id
                 ]
 
@@ -696,7 +712,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_stack(
         self,
-        stack_name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
         description: Optional[str] = None,
@@ -707,7 +723,7 @@ class Client(metaclass=ClientMetaClass):
         """Updates a stack and its components.
 
         Args:
-            stack_name_id_or_prefix: The name, id or the id prefix of the
+            name_id_or_prefix: The name, id or the id prefix of the
                 stack which is getting updated.
             name: the updated name of the stack
             is_shared: the updated shared status of the stack
@@ -715,21 +731,21 @@ class Client(metaclass=ClientMetaClass):
             components: dictionary which maps stack component types to
                 updated list of names.
         """
-        stack_to_update = self.get_stack_by_id_or_name_or_prefix(
-            id_or_name_or_prefix=stack_name_id_or_prefix,
-        )
+        stack_to_update = self.get_stack(name_id_or_prefix=name_id_or_prefix)
 
         # Components
-        stack_components_update = stack_to_update.components
+        stack_components_update = {
+            c_type: [c.id for c in c_list]
+            for c_type, c_list in stack_to_update.components.items()
+        }
         if components:
             for c_type, c_list in components.items():
                 if c_list is not None:
                     stack_components_update[c_type] = [
-                        self.get_component_by_id_or_name_or_prefix(
+                        self.get_stack_component(
+                            name_id_or_prefix=c,
                             component_type=c_type,
-                            id_or_name_or_prefix=c,
-                        ).id
-                        for c in c_list
+                        ).id for c in c_list
                     ]
 
         # Name
@@ -756,8 +772,8 @@ class Client(metaclass=ClientMetaClass):
                 )
 
                 only_component.is_shared = True
-                self.update_component(
-                    component_id=only_component.id,
+                self.update_stack_component(
+                    name_id_or_prefix=only_component.id,
                     is_shared=True,
                 )
 
@@ -776,20 +792,18 @@ class Client(metaclass=ClientMetaClass):
             stack_update=stack_update,
         )
 
-    def deregister_stack(
-        self, stack_name_id_or_prefix: Union[str, UUID]
-    ) -> None:
+    def deregister_stack(self, name_id_or_prefix: Union[str, UUID]) -> None:
         """Deregisters a stack.
 
         Args:
-            stack_name_id_or_prefix: The name, id or prefix id of the stack
+            name_id_or_prefix: The name, id or prefix id of the stack
                 to deregister.
 
         Raises:
             ValueError: If the stack is the currently active stack for this
                 client.
         """
-        stack = self.get_stack_by_id_or_name_or_prefix(stack_name_id_or_prefix)
+        stack = self.get_stack(name_id_or_prefix=name_id_or_prefix)
 
         if stack.id == self.active_stack_model.id:
             raise ValueError(
@@ -810,8 +824,44 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_stack(stack_id=stack.id)
         logger.info("Deregistered stack with name '%s'.", stack.name)
 
-    def list_stacks(self)->List["StackModel"]:
-        return self.zen_store.list_stacks()
+    def list_stacks(self) -> List["StackModel"]:
+        """"""
+        return self.zen_store.list_stacks(
+            project_name_or_id=self.active_project.id,
+            user_name_or_id=self.active_user.id
+        )
+
+    @track(event=AnalyticsEvent.SET_STACK)
+    def activate_stack(
+        self, stack_name_id_or_prefix: Union[str, UUID]
+    ) -> None:
+        """Sets the stack as active.
+
+        Args:
+            stack_name_id_or_prefix: Model of the stack to activate.
+
+        Raises:
+            KeyError: If the stack is not registered.
+        """
+        # Make sure the stack is registered
+        try:
+            stack = self.get_stack(
+                name_id_or_prefix=stack_name_id_or_prefix
+            )
+
+        except KeyError:
+            raise KeyError(
+                f"Stack '{stack_name_id_or_prefix}' cannot be activated since "
+                f"it is not registered yet. Please register it first."
+            )
+
+        if self._config:
+            self._config.set_active_stack(stack=stack)
+
+        else:
+            # set the active stack globally only if the client doesn't use
+            # a local configuration
+            GlobalConfiguration().active_stack_id = stack.id
 
     def _validate_stack_configuration(self, stack: "StackRequestModel") -> None:
         """Validates the configuration of a stack.
@@ -828,8 +878,8 @@ class Client(metaclass=ClientMetaClass):
         for component_type, component_ids in stack.components.items():
             for component_id in component_ids:
                 try:
-                    component = self.get_stack_component_by_id(
-                        component_id=component_id
+                    component = self.get_stack_component(
+                        name_id_or_prefix=component_id
                     )
                 except KeyError:
                     raise KeyError(
@@ -839,7 +889,8 @@ class Client(metaclass=ClientMetaClass):
                     )
             # Get the flavor model
             flavor_model = self.get_flavor_by_name_and_type(
-                name=component.flavor, component_type=component.type
+                name=component.flavor,
+                component_type=component.type
             )
 
             # Create and validate the configuration
@@ -880,10 +931,72 @@ class Client(metaclass=ClientMetaClass):
     # .------------.
     # | COMPONENTS |
     # '------------'
+    def get_stack_component(
+        self,
+        name_id_or_prefix: str,
+        component_type: StackComponentType,
+    ) -> "ComponentModel":
+        """Fetches a registered stack component.
+
+        Args:
+            name_id_or_prefix: The id of the component to fetch.
+            component_type:
+
+        Returns:
+            The registered stack component.
+        """
+
+        if name_id_or_prefix is None:
+            component = self.active_stack_model.components.get(
+                component_type, None
+            )
+            if component:
+                return component[0]
+            else:
+                raise ValueError()
+
+        else:
+            stacks = self.zen_store.list_stack_components(
+                name_id_or_prefix=name_id_or_prefix,
+                project_name_or_id=self.active_project.id,
+                user_name_or_id=self.active_user.id,
+            )
+
+            if len(stacks) == 0:
+                raise KeyError()
+
+            elif len(stacks) == 1:
+                return stacks[0]
+
+            else:
+                raise ValueError()
+
+        logger.debug(
+            "Fetching stack component with id '%s'.",
+            id,
+        )
+        return self.get_component_by_id_or_name_or_prefix(
+            id_or_name_or_prefix=component_name_id_or_prefix,
+            component_type=component_type,
+        )
+
+    def list_stack_components(
+        self,
+        component_type: "StackComponentType",
+    ) -> List["ComponentModel"]:
+        """Fetches all registered stack components of a given type.
+
+        Args:
+            component_type: The type of the components to fetch.
+
+        Returns:
+            The registered stack components.
+        """
+        return self.zen_store.list_stack_components(type=component_type)
 
     def register_stack_component(
         self,
-        name:str,
+        name: str,
         flavor: str,
         component_type: StackComponentType,
         configuration: Dict[str, str],
@@ -892,7 +1005,11 @@ class Client(metaclass=ClientMetaClass):
         """Registers a stack component.
 
         Args:
-            component: The component to register.
+            name:
+            flavor:
+            component_type:
+            configuration:
+            is_shared:
 
         Returns:
             The model of the registered component.
@@ -928,23 +1045,27 @@ class Client(metaclass=ClientMetaClass):
 
     def update_stack_component(
         self,
-        component_name_id_or_prefix: str,
+        name_id_or_prefix: str,
         component_type: StackComponentType,
-        name:Optional[str]=None,
-        configuration:Optional[Dict[str,str]]=None,
-        is_shared:Optional[bool]=None,
+        name: Optional[str] = None,
+        configuration:Optional[Dict[str, str]] = None,
+        is_shared:Optional[bool] = None,
     ) -> "ComponentModel":
         """Updates a stack component.
 
         Args:
-            component: The new component to update with.
+            name_id_or_prefix:
+            component_type:
+            name:
+            configuration:
+            is_shared:
 
         Returns:
             The updated component.
         """
         # Get the existing component model
-        component_to_update = self.get_component_by_id_or_name_or_prefix(
-            id_or_name_or_prefix=component_name_id_or_prefix,
+        component_to_update = self.get_stack_component(
+            name_id_or_prefix=name_id_or_prefix,
             component_type=component_type,
         )
 
@@ -1014,41 +1135,7 @@ class Client(metaclass=ClientMetaClass):
             component.name,
         )
 
-    def get_stack_component(
-        self,
-        component_name_id_or_prefix: str,
-        component_type: StackComponentType,
-    ) -> "ComponentModel":
-        """Fetches a registered stack component.
 
-        Args:
-            component_id: The id of the component to fetch.
-
-        Returns:
-            The registered stack component.
-        """
-        logger.debug(
-            "Fetching stack component with id '%s'.",
-            id,
-        )
-        return self.get_component_by_id_or_name_or_prefix(
-            id_or_name_or_prefix=component_name_id_or_prefix,
-            component_type=component_type,
-        )
-
-    def list_stack_components_by_type(
-        self, component_type: "StackComponentType"
-    ) -> List["ComponentModel"]:
-        """Fetches all registered stack components of a given type.
-
-        Args:
-            type_: The type of the components to fetch.
-            is_shared: Whether to fetch shared components or not.
-
-        Returns:
-            The registered stack components.
-        """
-        return self.zen_store.list_stack_components(type=component_type)
 
     def _validate_stack_component_configuration(
         self,
@@ -1299,10 +1386,12 @@ class Client(metaclass=ClientMetaClass):
 
         else:
             if len(existing_pipelines) == 1:
-                existing_pipeline
-                # B) If a pipeline exists that has the same config, use that pipeline.
+                existing_pipeline = existing_pipelines[0]
+                # B) If a pipeline exists with the same config, use it.
                 if pipeline_spec == existing_pipeline.spec:
-                    logger.debug("Did not register pipeline since it already exists.")
+                    logger.debug(
+                        "Did not register pipeline since it already exists."
+                    )
                     return existing_pipeline.id
 
         # C) If a pipeline with different config exists, raise an error.
@@ -1323,45 +1412,186 @@ class Client(metaclass=ClientMetaClass):
         )
         raise AlreadyExistsException(error_msg)
 
-    # ---- #
-    # USER #
-    # ---- #
-    def delete_user(self, user_name_or_id: str) -> None:
-        """Delete a user.
+    # ---- utility prefix matching get functions -----
+
+    # TODO: This prefix matching functionality should be moved to the
+    #   corresponding SQL ZenStore list methods
+
+    def _get_stack_by_id_or_name_or_prefix(
+        self,
+        name_id_or_prefix: str,
+    ) -> "StackModel":
+        """Fetches a stack using the name, id or partial id.
 
         Args:
-            user_name_or_id: The name or ID of the user to delete.
+            name_id_or_prefix: The id, name or partial id of the stack to
+                fetch.
+
+        Returns:
+            The stack with the given name.
 
         Raises:
-            IllegalOperationError: If the user to delete is the active user.
+            KeyError: If no stack with the given name exists.
         """
-        user = self.zen_store.get_user(user_name_or_id)
-        if self.zen_store.active_user_name == user.name:
-            raise IllegalOperationError(
-                "You cannot delete yourself. If you wish to delete your active "
-                "user account, please contact your ZenML administrator."
-            )
-        Client().zen_store.delete_user(user_name_or_id=user.name)
 
-    # ------- #
-    # PROJECT #
-    # ------- #
-    def delete_project(self, project_name_or_id: str) -> None:
-        """Delete a project.
+        # First interpret as full UUID
+        try:
+            stack_id = UUID(name_id_or_prefix)
+            return self.zen_store.get_stack(stack_id)
+        except ValueError:
+            pass
+
+        user_only_stacks = self.zen_store.list_stacks(
+                name=name_id_or_prefix,
+                project_name_or_id=self.active_project.id,
+                user_name_or_id=self.active_user.id,
+                is_shared=False,
+            )
+
+        shared_stacks = self.zen_store.list_stacks(
+                name=name_id_or_prefix,
+                project_name_or_id=self.active_project.id,
+                is_shared=True,
+        )
+
+        named_stacks = user_only_stacks + shared_stacks
+
+        if len(named_stacks) > 1:
+            raise KeyError(
+                f"Multiple stacks have been found for name "
+                f"'{name_id_or_prefix}'. The stacks listed above all share "
+                f"this name. Please specify the stack by full or partial id."
+            )
+
+        elif len(named_stacks) == 1:
+            return named_stacks[0]
+        else:
+            logger.debug(
+                f"No stack with name '{name_id_or_prefix}' "
+                f"exists. Trying to resolve as partial_id"
+            )
+
+            user_only_stacks = self.zen_store.list_stacks(
+                    project_name_or_id=self.active_project.name,
+                    user_name_or_id=self.active_user.name,
+                    is_shared=False,
+            )
+
+            shared_stacks = self.zen_store.list_stacks(
+                    project_name_or_id=self.active_project.name,
+                    is_shared=True,
+            )
+
+            all_stacks = user_only_stacks + shared_stacks
+
+            filtered_stacks = [
+                stack
+                for stack in all_stacks
+                if str(stack.id).startswith(name_id_or_prefix)
+            ]
+            if len(filtered_stacks) > 1:
+                raise KeyError(
+                    f"The stacks listed above all share the provided prefix "
+                    f"'{name_id_or_prefix}' on their ids. Please provide "
+                    f"more characters to uniquely identify only one stack."
+                )
+            elif len(filtered_stacks) == 1:
+                return filtered_stacks[0]
+            else:
+                raise KeyError(
+                    f"No stack with name or id prefix "
+                    f"'{name_id_or_prefix}' exists."
+                )
+
+    def _get_component_by_id_or_name_or_prefix(
+            self,
+            name_id_or_prefix: str,
+            component_type: StackComponentType,
+    ) -> "ComponentModel":
+        """Fetches a component of given type using the name, id or partial id.
 
         Args:
-            project_name_or_id: The name or ID of the project to delete.
+            name_id_or_prefix: The id, name or partial id of the component to
+                fetch.
+            component_type: The type of the component to fetch.
+
+        Returns:
+            The component with the given name.
 
         Raises:
-            IllegalOperationError: If the project to delete is the active
-                project.
+            KeyError: If no stack with the given name exists.
         """
-        project = self.zen_store.get_project(project_name_or_id)
-        if self.active_project.id == project.id:
-            raise IllegalOperationError(
-                f"Project '{project_name_or_id}' cannot be deleted since it is "
-                "currently active. Please set another project as active first."
+        # First interpret as full UUID
+        try:
+            component_id = UUID(name_id_or_prefix)
+            return self.zen_store.get_stack_component(component_id)
+        except ValueError:
+            pass
+
+        user_only_components = self.zen_store.list_stack_components(
+            name=name_id_or_prefix,
+            user_name_or_id=self.active_user.id,
+            project_name_or_id=self.active_project.id,
+            type=component_type,
+            is_shared=False,
+        )
+
+        shared_components = self.zen_store.list_stack_components(
+            project_name_or_id=self.active_project.id,
+            name=name_id_or_prefix,
+            type=component_type,
+            is_shared=True,
+        )
+
+        named_components = user_only_components + shared_components
+
+        if len(named_components) > 1:
+            raise KeyError(
+                f"Multiple {component_type.value} components have been found "
+                f"for name '{name_id_or_prefix}'. The components listed "
+                f"above all share this name. Please specify the component by "
+                f"full or partial id."
             )
-        Client().zen_store.delete_project(project_name_or_id=project_name_or_id)
+        elif len(named_components) == 1:
+            return named_components[0]
+        else:
+            logger.debug(
+                f"No component with name '{name_id_or_prefix}' "
+                f"exists. Trying to resolve as partial_id"
+            )
 
+            user_only_components = self.zen_store.list_stack_components(
+                project_name_or_id=self.active_project.id,
+                user_name_or_id=self.active_user.id,
+                type=component_type,
+                is_shared=False,
+            )
 
+            shared_components = self.zen_store.list_stack_components(
+                project_name_or_id=self.active_project.name,
+                type=component_type,
+                is_shared=True,
+            )
+
+            all_components = user_only_components + shared_components
+
+            filtered_comps = [
+                component
+                for component in all_components
+                if str(component.id).startswith(name_id_or_prefix)
+            ]
+            if len(filtered_comps) > 1:
+                raise KeyError(
+                    f"The components listed above all share the provided "
+                    f"prefix '{name_id_or_prefix}' on their ids. Please "
+                    f"provide more characters to uniquely identify only one "
+                    f"component."
+                )
+
+            elif len(filtered_comps) == 1:
+                return filtered_comps[0]
+            else:
+                raise KeyError(
+                    f"No component of type `{component_type}` with name or id "
+                    f"prefix '{name_id_or_prefix}' exists."
+                )
