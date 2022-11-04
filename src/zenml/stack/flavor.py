@@ -38,7 +38,7 @@ class Flavor:
     @property
     @abstractmethod
     def type(self) -> StackComponentType:
-        """The The stack component type.
+        """The stack component type.
 
         Returns:
             The stack component type.
@@ -59,7 +59,7 @@ class Flavor:
         """Returns `StackComponentConfig` config class.
 
         Returns:
-                The config class.
+            The config class.
         """
 
     @property

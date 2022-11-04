@@ -26,8 +26,8 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
-from zenml.models import ComponentModel
 from zenml.utils import secret_utils, settings_utils
+from zenml.new_models import ComponentModel
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -339,8 +339,8 @@ class StackComponent:
         configuration = flavor.config_class(**component_model.configuration)
 
         return flavor.implementation_class(
-            user=component_model.user,
-            project=component_model.project,
+            user=component_model.user.id,
+            project=component_model.project.id,
             name=component_model.name,
             id=component_model.id,
             config=configuration,
