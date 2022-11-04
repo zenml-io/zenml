@@ -16,7 +16,16 @@
 import os
 from abc import ABCMeta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Union,
+    cast,
+)
+
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
@@ -35,6 +44,12 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.new_models import (
+    StackRequestModel,
+    ComponentRequestModel,
+    FlavorRequestModel,
+    PipelineRequestModel,
+)
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -42,13 +57,12 @@ from zenml.utils.filesync_model import FileSyncModel
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
     from zenml.enums import StackComponentType
-    from zenml.models import (
+    from zenml.new_models import (
+        StackModel,
         ComponentModel,
         FlavorModel,
-        HydratedStackModel,
         PipelineModel,
         ProjectModel,
-        StackModel,
         UserModel,
     )
     from zenml.stack import Stack, StackComponentConfig
@@ -56,20 +70,11 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-# TODO: [server] this is defined in two places now, should be fixed
-DEFAULT_STACK_NAME = "default"
-
 
 class ClientConfiguration(FileSyncModel):
-    """Pydantic object used for serializing client configuration options.
+    """Pydantic object used for serializing client configuration options."""
 
-    Attributes:
-        active_stack_id: Optional name of the active stack.
-        active_project_name: Optional name of the active project.
-    """
-
-    active_stack_id: Optional[UUID]
-    active_project_name: Optional[str]
+    _active_stack: Optional["StackModel"] = None
     _active_project: Optional["ProjectModel"] = None
 
     def set_active_project(self, project: "ProjectModel") -> None:
@@ -78,8 +83,15 @@ class ClientConfiguration(FileSyncModel):
         Args:
             project: The project to set active.
         """
-        self.active_project_name = project.name
         self._active_project = project
+
+    def set_active_stack(self, stack: "StackModel") -> None:
+        """Set the stack for the local client.
+
+        Args:
+            stack: The stack to set active.
+        """
+        self._active_stack = stack
 
     class Config:
         """Pydantic configuration class."""
@@ -286,11 +298,11 @@ class Client(metaclass=ClientMetaClass):
             return
 
         active_project, active_stack = self.zen_store.validate_active_config(
-            self._config.active_project_name,
-            self._config.active_stack_id,
+            self._config.active_project,
+            self._config.active_stack,
             config_name="repo",
         )
-        self._config.active_stack_id = active_stack.id
+        self._config.set_active_stack(active_stack)
         self._config.set_active_project(active_project)
 
     def _load_config(self) -> Optional[ClientConfiguration]:
@@ -513,18 +525,6 @@ class Client(metaclass=ClientMetaClass):
         return project
 
     @property
-    def active_project_name(self) -> str:
-        """The name of the active project for this client.
-
-        If no active project is configured locally for the client, the
-        active project in the global configuration is used instead.
-
-        Returns:
-            The name of the active project.
-        """
-        return self.active_project.name
-
-    @property
     def active_project(self) -> "ProjectModel":
         """Get the currently active project of the local client.
 
@@ -573,8 +573,12 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.zen_store.active_user
 
+    # .--------.
+    # | STACKS |
+    # '--------'
+
     @property
-    def stacks(self) -> List["HydratedStackModel"]:
+    def stacks(self) -> List["StackModel"]:
         """All stack models in the active project, owned by the user or shared.
 
         This property is intended as a quick way to get information about the
@@ -585,22 +589,10 @@ class Client(metaclass=ClientMetaClass):
             A list of all stacks available in the current project and owned by
             the current user.
         """
-        owned_stacks = self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
-            is_shared=False,
-            hydrated=True,
-        )
-        shared_stacks = self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name,
-            is_shared=True,
-            hydrated=True,
-        )
-
-        return owned_stacks + shared_stacks  # type: ignore[operator, return-value]
+        return self.zen_store.list_stacks()
 
     @property
-    def active_stack_model(self) -> "HydratedStackModel":
+    def active_stack_model(self) -> "StackModel":
         """The model of the active stack for this client.
 
         If no active stack is configured locally for the client, the active
@@ -612,20 +604,7 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active stack is not set.
         """
-        stack_id = None
-        if self._config:
-            stack_id = self._config.active_stack_id
-
-        if not stack_id:
-            stack_id = GlobalConfiguration().active_stack_id
-
-        if not stack_id:
-            raise RuntimeError(
-                "No active stack is configured. Run "
-                "`zenml stack set STACK_NAME` to set the active stack."
-            )
-
-        return self.zen_store.get_stack(stack_id=stack_id).to_hydrated_model()
+        return self._config._active_stack
 
     @property
     def active_stack(self) -> "Stack":
@@ -639,22 +618,27 @@ class Client(metaclass=ClientMetaClass):
         return Stack.from_model(self.active_stack_model)
 
     @track(event=AnalyticsEvent.SET_STACK)
-    def activate_stack(self, stack: "StackModel") -> None:
+    def activate_stack(
+        self, stack_name_id_or_prefix: Union[str, UUID]
+    ) -> None:
         """Sets the stack as active.
 
         Args:
-            stack: Model of the stack to activate.
+            stack_name_id_or_prefix: Model of the stack to activate.
 
         Raises:
             KeyError: If the stack is not registered.
         """
         # Make sure the stack is registered
         try:
-            self.zen_store.get_stack(stack_id=stack.id)
+            stack = self.get_stack_by_id_or_name_or_prefix(
+                id_or_name_or_prefix=stack_name_id_or_prefix
+            )
+
         except KeyError:
             raise KeyError(
-                f"Stack '{stack.name}' cannot be activated since it is "
-                "not registered yet. Please register it first."
+                f"Stack '{stack_name_id_or_prefix}' cannot be activated since "
+                f"it is not registered yet. Please register it first."
             )
 
         if self._config:
@@ -665,7 +649,171 @@ class Client(metaclass=ClientMetaClass):
             # a local configuration
             GlobalConfiguration().active_stack_id = stack.id
 
-    def _validate_stack_configuration(self, stack: "StackModel") -> None:
+    def get_stack(self, stack_name_id_or_prefix: Optional[str] = None):
+        return self.get_stack_by_id_or_name_or_prefix(
+            id_or_name_or_prefix=stack_name_id_or_prefix
+        )
+
+    def register_stack(
+        self,
+        name: str,
+        components: Dict[StackComponentType, Optional[str]],
+        is_shared: bool = False,
+    ) -> "StackModel":
+        """Registers a stack and its components.
+
+        Args:
+            name: The name of the stack to register.
+            components: dictionary which maps component types to component names
+            is_shared: boolean to decide whether the stack is shared
+
+        Returns:
+            The model of the registered stack.
+        """
+
+        stack_components = dict()
+
+        for c_type, c_name in components.items():
+            if name:
+                stack_components[c_type] = [
+                    self.get_component_by_id_or_name_or_prefix(
+                        component_type=c_type,
+                        id_or_name_or_prefix=c_name,
+                    ).id
+                ]
+
+        stack = StackRequestModel(
+            name=name,
+            components=stack_components,
+            is_shared=is_shared,
+            project=self.active_project.id,
+            user=self.active_user.id,
+        )
+
+        self._validate_stack_configuration(stack=stack)
+
+        return self.zen_store.create_stack(stack=stack)
+
+    def update_stack(
+        self,
+        stack_name_id_or_prefix: Union[str, UUID],
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+        description: Optional[str] = None,
+        components: Optional[
+            Dict[StackComponentType, List[Optional[str]]]
+        ] = None,
+    ) -> "StackModel":
+        """Updates a stack and its components.
+
+        Args:
+            stack_name_id_or_prefix: The name, id or the id prefix of the
+                stack which is getting updated.
+            name: the updated name of the stack
+            is_shared: the updated shared status of the stack
+            description: the updated description of the stack
+            components: dictionary which maps stack component types to
+                updated list of names.
+        """
+        stack_to_update = self.get_stack_by_id_or_name_or_prefix(
+            id_or_name_or_prefix=stack_name_id_or_prefix,
+        )
+
+        # Components
+        stack_components_update = stack_to_update.components
+        if components:
+            for c_type, c_list in components.items():
+                if c_list is not None:
+                    stack_components_update[c_type] = [
+                        self.get_component_by_id_or_name_or_prefix(
+                            component_type=c_type,
+                            id_or_name_or_prefix=c,
+                        ).id
+                        for c in c_list
+                    ]
+
+        # Name
+        name_update = stack_to_update.name
+        if name:
+            name_update = name
+
+        # Description
+        description_update = stack_to_update.description
+        if description:
+            description_update = description
+
+        # Share
+        share_update = stack_to_update.is_shared
+        if is_shared:
+            share_update = True
+
+            for c_type, components in stack_to_update.components.items():
+                only_component = components[0]  # For future compatibility
+                logger.info(
+                    f"A Stack can only be shared when all its components are "
+                    f"also shared. Component '{only_component.name}' is also "
+                    f"set to shared."
+                )
+
+                only_component.is_shared = True
+                self.update_component(
+                    component_id=only_component.id,
+                    is_shared=True,
+                )
+
+        # Final Update
+        stack_update = StackRequestModel(
+            name=name_update,
+            description=description_update,
+            components=stack_components_update,
+            is_shared=share_update,
+        )
+
+        self._validate_stack_configuration(stack=stack_update)
+
+        return self.zen_store.update_stack(
+            stack_id=stack_to_update.id,
+            stack_update=stack_update,
+        )
+
+    def deregister_stack(
+        self, stack_name_id_or_prefix: Union[str, UUID]
+    ) -> None:
+        """Deregisters a stack.
+
+        Args:
+            stack_name_id_or_prefix: The name, id or prefix id of the stack
+                to deregister.
+
+        Raises:
+            ValueError: If the stack is the currently active stack for this
+                client.
+        """
+        stack = self.get_stack_by_id_or_name_or_prefix(stack_name_id_or_prefix)
+
+        if stack.id == self.active_stack_model.id:
+            raise ValueError(
+                f"Unable to deregister active stack '{stack.name}'. Make "
+                f"sure to designate a new active stack before deleting this "
+                f"one."
+            )
+
+        cfg = GlobalConfiguration()
+        if stack.id == cfg.active_stack_id:
+            raise ValueError(
+                f"Unable to deregister '{stack.name}' as it is the active "
+                f"stack within your global configuration. Make "
+                f"sure to designate a new active stack before deleting this "
+                f"one."
+            )
+
+        self.zen_store.delete_stack(stack_id=stack.id)
+        logger.info("Deregistered stack with name '%s'.", stack.name)
+
+    def list_stacks(self)->List["StackModel"]:
+        return self.zen_store.list_stacks()
+
+    def _validate_stack_configuration(self, stack: "StackRequestModel") -> None:
         """Validates the configuration of a stack.
 
         Args:
@@ -729,63 +877,178 @@ class Client(metaclass=ClientMetaClass):
                 "an Orchestrator."
             )
 
-    def register_stack(self, stack: "StackModel") -> "StackModel":
-        """Registers a stack and its components.
-
-        Args:
-            stack: The stack to register.
-
-        Returns:
-            The model of the registered stack.
-        """
-        self._validate_stack_configuration(stack=stack)
-
-        created_stack = self.zen_store.create_stack(
-            stack=stack,
-        )
-        return created_stack
-
-    def update_stack(self, stack: "StackModel") -> None:
-        """Updates a stack and its components.
-
-        Args:
-            stack: The new stack to use as the updated version.
-        """
-        self._validate_stack_configuration(stack=stack)
-
-        self.zen_store.update_stack(stack=stack)
-
-    def deregister_stack(self, stack: "StackModel") -> None:
-        """Deregisters a stack.
-
-        Args:
-            stack: The model of the stack to deregister.
-
-        Raises:
-            ValueError: If the stack is the currently active stack for this
-                client.
-        """
-        if stack.id == self.active_stack_model.id:
-            raise ValueError(
-                f"Unable to deregister active stack "
-                f"'{stack.name}'. Make "
-                f"sure to designate a new active stack before deleting this "
-                f"one."
-            )
-
-        try:
-            self.zen_store.delete_stack(stack_id=stack.id)
-            logger.info("Deregistered stack with name '%s'.", stack.name)
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack with name '%s': No stack  "
-                "with this name could be found.",
-                stack.name,
-            )
-
     # .------------.
     # | COMPONENTS |
     # '------------'
+
+    def register_stack_component(
+        self,
+        name:str,
+        flavor: str,
+        component_type: StackComponentType,
+        configuration: Dict[str, str],
+        is_shared: bool,
+    ) -> "ComponentModel":
+        """Registers a stack component.
+
+        Args:
+            component: The component to register.
+
+        Returns:
+            The model of the registered component.
+        """
+        # Get the flavor model
+        flavor_model = self.get_flavor_by_name_and_type(
+            name=flavor,
+            component_type=component_type,
+        )
+
+        # Create and validate the configuration
+        from zenml.stack import Flavor
+
+        flavor = Flavor.from_model(flavor_model)
+        configuration = flavor.config_class(**configuration)
+
+        self._validate_stack_component_configuration(
+            component_type, configuration=configuration
+        )
+
+        create_component_model = ComponentRequestModel(
+            name=name,
+            type=component_type,
+            flavor=flavor,
+            configuration=configuration,
+            is_shared=is_shared,
+        )
+
+        # Register the new model
+        return self.zen_store.create_stack_component(
+            component=create_component_model
+        )
+
+    def update_stack_component(
+        self,
+        component_name_id_or_prefix: str,
+        component_type: StackComponentType,
+        name:Optional[str]=None,
+        configuration:Optional[Dict[str,str]]=None,
+        is_shared:Optional[bool]=None,
+    ) -> "ComponentModel":
+        """Updates a stack component.
+
+        Args:
+            component: The new component to update with.
+
+        Returns:
+            The updated component.
+        """
+        # Get the existing component model
+        component_to_update = self.get_component_by_id_or_name_or_prefix(
+            id_or_name_or_prefix=component_name_id_or_prefix,
+            component_type=component_type,
+        )
+
+        name_update = component_to_update.name
+        if name:
+            name_update = name
+
+        configuration_update = component_to_update.configuration
+        if configuration:
+            # Get the flavor model of the existing component
+            flavor_model = self.get_flavor_by_name_and_type(
+                name=component_to_update.flavor,
+                component_type=component_to_update.type,
+            )
+
+            # Use the flavor class to validate the new configuration
+            from zenml.stack import Flavor
+
+            flavor = Flavor.from_model(flavor_model)
+
+            configuration_update = component_to_update.configuration
+            configuration_update.update(configuration)
+
+            configuration_obj = flavor.config_class(**configuration_update)
+
+            self._validate_stack_component_configuration(
+                component_to_update.type,
+                configuration=configuration_obj
+            )
+
+        share_update = component_to_update.is_shared
+        if is_shared:
+            share_update = True
+
+        update_request_model = ComponentRequestModel(
+            name=name_update,
+            configuration=configuration_update,
+            is_shared=share_update
+        )
+
+        # Send the updated component to the ZenStore
+        return self.zen_store.update_stack_component(
+            component_id=component_to_update.id,
+            component_update=update_request_model,
+        )
+
+    def deregister_stack_component(
+        self,
+        component_name_id_or_prefix: str,
+        component_type: StackComponentType,
+    ) -> None:
+        """Deletes a registered stack component.
+
+        Args:
+            component_name_id_or_prefix: The model of the component to delete.
+            component_type: The type of the component to delete.
+        """
+        component = self.get_component_by_id_or_name_or_prefix(
+            id_or_name_or_prefix=component_name_id_or_prefix,
+            component_type=component_type,
+        )
+
+        self.zen_store.delete_stack_component(component_id=component.id)
+        logger.info(
+            "Deregistered stack component (type: %s) with name '%s'.",
+            component.type,
+            component.name,
+        )
+
+    def get_stack_component(
+        self,
+        component_name_id_or_prefix: str,
+        component_type: StackComponentType,
+    ) -> "ComponentModel":
+        """Fetches a registered stack component.
+
+        Args:
+            component_id: The id of the component to fetch.
+
+        Returns:
+            The registered stack component.
+        """
+        logger.debug(
+            "Fetching stack component with id '%s'.",
+            id,
+        )
+        return self.get_component_by_id_or_name_or_prefix(
+            id_or_name_or_prefix=component_name_id_or_prefix,
+            component_type=component_type,
+        )
+
+    def list_stack_components_by_type(
+        self, component_type: "StackComponentType"
+    ) -> List["ComponentModel"]:
+        """Fetches all registered stack components of a given type.
+
+        Args:
+            type_: The type of the components to fetch.
+            is_shared: Whether to fetch shared components or not.
+
+        Returns:
+            The registered stack components.
+        """
+        return self.zen_store.list_stack_components(type=component_type)
 
     def _validate_stack_component_configuration(
         self,
@@ -839,152 +1102,15 @@ class Client(metaclass=ClientMetaClass):
                     "instead."
                 )
 
-    def register_stack_component(
-        self,
-        component: "ComponentModel",
-    ) -> "ComponentModel":
-        """Registers a stack component.
-
-        Args:
-            component: The component to register.
-
-        Returns:
-            The model of the registered component.
-        """
-        # Get the flavor model
-        flavor_model = self.get_flavor_by_name_and_type(
-            name=component.flavor, component_type=component.type
-        )
-
-        # Create and validate the configuration
-        from zenml.stack import Flavor
-
-        flavor = Flavor.from_model(flavor_model)
-        configuration = flavor.config_class(**component.configuration)
-
-        # Update the configuration in the model
-        component.configuration = configuration.dict()
-
-        self._validate_stack_component_configuration(
-            component.type, configuration=configuration
-        )
-
-        # Register the new model
-        return self.zen_store.create_stack_component(component=component)
-
-    def update_stack_component(
-        self,
-        component: "ComponentModel",
-    ) -> "ComponentModel":
-        """Updates a stack component.
-
-        Args:
-            component: The new component to update with.
-
-        Returns:
-            The updated component.
-        """
-        # Get the existing component model
-        existing_component_model = self.get_stack_component_by_id(
-            component.id,
-        )
-
-        # Get the flavor model of the existing component
-        flavor_model = self.get_flavor_by_name_and_type(
-            name=existing_component_model.flavor,
-            component_type=existing_component_model.type,
-        )
-
-        # Use the flavor class to validate the new configuration
-        from zenml.stack import Flavor
-
-        flavor = Flavor.from_model(flavor_model)
-        configuration = flavor.config_class(**component.configuration)
-
-        # Update the configuration in the model
-        component.configuration = configuration.dict()
-
-        self._validate_stack_component_configuration(
-            component.type, configuration=configuration
-        )
-
-        # Send the updated component to the ZenStore
-        return self.zen_store.update_stack_component(component=component)
-
-    def deregister_stack_component(self, component: "ComponentModel") -> None:
-        """Deletes a registered stack component.
-
-        Args:
-            component: The model of the component to delete.
-        """
-        try:
-            self.zen_store.delete_stack_component(component_id=component.id)
-            logger.info(
-                "Deregistered stack component (type: %s) with name '%s'.",
-                component.type,
-                component.name,
-            )
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack component (type: %s) with name "
-                "'%s': No stack component with this name could be found.",
-                component.type,
-                component.name,
-            )
-
-    def get_stack_component_by_id(self, component_id: UUID) -> "ComponentModel":
-        """Fetches a registered stack component.
-
-        Args:
-            component_id: The id of the component to fetch.
-
-        Returns:
-            The registered stack component.
-        """
-        logger.debug(
-            "Fetching stack component with id '%s'.",
-            id,
-        )
-        return self.zen_store.get_stack_component(component_id=component_id)
-
-    def list_stack_components_by_type(
-        self, type_: "StackComponentType", is_shared: bool = False
-    ) -> List["ComponentModel"]:
-        """Fetches all registered stack components of a given type.
-
-        Args:
-            type_: The type of the components to fetch.
-            is_shared: Whether to fetch shared components or not.
-
-        Returns:
-            The registered stack components.
-        """
-        owned_stack_components = self.zen_store.list_stack_components(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
-            type=type_,
-            is_shared=False,
-        )
-        shared_stack_components = self.zen_store.list_stack_components(
-            project_name_or_id=self.active_project_name,
-            is_shared=True,
-            type=type_,
-        )
-        return owned_stack_components + shared_stack_components
-
     # .---------.
     # | FLAVORS |
     # '---------'
-    @property
-    def flavors(self) -> List["FlavorModel"]:
-        """Fetches all the flavor models.
 
-        Returns:
-            The list of flavor models.
-        """
-        return self.get_flavors()
-
-    def create_flavor(self, flavor: "FlavorModel") -> "FlavorModel":
+    def create_flavor(
+        self,
+        source:str,
+        component_type:StackComponentType,
+    ) -> "FlavorModel":
         """Creates a new flavor.
 
         Args:
@@ -995,38 +1121,37 @@ class Client(metaclass=ClientMetaClass):
         """
         from zenml.utils.source_utils import validate_flavor_source
 
-        flavor_class = validate_flavor_source(
-            source=flavor.source,
-            component_type=flavor.type,
+        flavor = validate_flavor_source(
+            source=source,            component_type=component_type,
+        )()
+
+        create_flavor_request = FlavorRequestModel(
+            source= source,
+            type=flavor.type,
+            name=flavor.name,
+            config_schema=flavor.config_schema,
         )
 
-        flavor_model = flavor_class().to_model()
+        return self.zen_store.create_flavor(flavor=create_flavor_request)
 
-        flavor_model.project = self.active_project.id
-        flavor_model.user = self.active_user.id
-        flavor_model.name = flavor_class().name
-        flavor_model.config_schema = flavor_class().config_schema
-
-        return self.zen_store.create_flavor(flavor=flavor_model)
-
-    def delete_flavor(self, flavor: "FlavorModel") -> None:
+    def delete_flavor(self, flavor_id: str) -> None:
         """Deletes a flavor.
 
         Args:
             flavor: The flavor to delete.
         """
-        try:
-            self.zen_store.delete_flavor(flavor_id=flavor.id)
-            logger.info(
-                f"Deleted flavor '{flavor.name}' of type '{flavor.type}'.",
-            )
-        except KeyError:
-            logger.warning(
-                f"Unable to delete flavor '{flavor.name}' of type "
-                f"'{flavor.type}': No flavor with this name could be found.",
-            )
+        self.zen_store.list_flavors(
 
-    def get_flavors(self) -> List["FlavorModel"]:
+        )
+        self.zen_store.delete_flavor(flavor_id=flavor_id)
+
+        logger.info(f"Deleted flavor '{flavor.name}' of type '{flavor.type}'.")
+
+
+    def list_flavors(
+        self,
+
+    ) -> List["FlavorModel"]:
         """Fetches all the flavor models.
 
         Returns:
@@ -1035,10 +1160,7 @@ class Client(metaclass=ClientMetaClass):
         from zenml.stack.flavor_registry import flavor_registry
 
         zenml_flavors = flavor_registry.flavors
-        custom_flavors = self.zen_store.list_flavors(
-            user_name_or_id=self.active_user.id,
-            project_name_or_id=self.active_project.id,
-        )
+        custom_flavors = self.zen_store.list_flavors()
         return zenml_flavors + custom_flavors
 
     def get_flavors_by_type(
@@ -1127,19 +1249,9 @@ class Client(metaclass=ClientMetaClass):
                     "exists."
                 )
 
-    def get_pipeline_by_name(self, name: str) -> "PipelineModel":
-        """Fetches a pipeline by name.
-
-        Args:
-            name: The name of the pipeline to fetch.
-
-        Returns:
-            The pipeline model.
-        """
-        return self.zen_store.get_pipeline_in_project(
-            pipeline_name=name, project_name_or_id=self.active_project_name
-        )
-
+    # -------------
+    # - PIPELINES -
+    # -------------
     def register_pipeline(
         self,
         pipeline_name: str,
@@ -1165,28 +1277,33 @@ class Client(metaclass=ClientMetaClass):
             AlreadyExistsException: If there is an existing pipeline in the
                 project with the same name but a different configuration.
         """
-        try:
-            existing_pipeline = self.get_pipeline_by_name(pipeline_name)
+
+        existing_pipelines = self.zen_store.list_pipelines(
+            name=pipeline_name,
+        )
 
         # A) If there is no pipeline with this name, register a new pipeline.
-        except KeyError:
-            from zenml.models import PipelineModel
-
-            pipeline = PipelineModel(
+        if len(existing_pipelines) == 0:
+            create_pipeline_request = PipelineRequestModel(
                 project=self.active_project.id,
                 user=self.active_user.id,
                 name=pipeline_name,
                 spec=pipeline_spec,
                 docstring=pipeline_docstring,
             )
-            pipeline = self.zen_store.create_pipeline(pipeline=pipeline)
+            pipeline = self.zen_store.create_pipeline(
+                pipeline=create_pipeline_request
+            )
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
             return pipeline.id
 
-        # B) If a pipeline exists that has the same config, use that pipeline.
-        if pipeline_spec == existing_pipeline.spec:
-            logger.debug("Did not register pipeline since it already exists.")
-            return existing_pipeline.id
+        else:
+            if len(existing_pipelines) == 1:
+                existing_pipeline
+                # B) If a pipeline exists that has the same config, use that pipeline.
+                if pipeline_spec == existing_pipeline.spec:
+                    logger.debug("Did not register pipeline since it already exists.")
+                    return existing_pipeline.id
 
         # C) If a pipeline with different config exists, raise an error.
         error_msg = (
@@ -1206,6 +1323,9 @@ class Client(metaclass=ClientMetaClass):
         )
         raise AlreadyExistsException(error_msg)
 
+    # ---- #
+    # USER #
+    # ---- #
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.
 
@@ -1223,6 +1343,9 @@ class Client(metaclass=ClientMetaClass):
             )
         Client().zen_store.delete_user(user_name_or_id=user.name)
 
+    # ------- #
+    # PROJECT #
+    # ------- #
     def delete_project(self, project_name_or_id: str) -> None:
         """Delete a project.
 
@@ -1234,9 +1357,11 @@ class Client(metaclass=ClientMetaClass):
                 project.
         """
         project = self.zen_store.get_project(project_name_or_id)
-        if self.active_project_name == project.name:
+        if self.active_project.id == project.id:
             raise IllegalOperationError(
                 f"Project '{project_name_or_id}' cannot be deleted since it is "
                 "currently active. Please set another project as active first."
             )
         Client().zen_store.delete_project(project_name_or_id=project_name_or_id)
+
+

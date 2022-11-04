@@ -31,7 +31,6 @@ from typing import (
     TypeVar,
     Union,
 )
-from uuid import UUID
 
 import click
 from pydantic import BaseModel
@@ -55,14 +54,7 @@ if TYPE_CHECKING:
     from zenml.enums import ExecutionStatus
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
-    from zenml.models import (
-        ComponentModel,
-        FlavorModel,
-        HydratedComponentModel,
-        HydratedStackModel,
-        PipelineRunModel,
-        StackModel,
-    )
+    from zenml.new_models import StackModel
     from zenml.secret import BaseSecretSchema
     from zenml.services import BaseService, ServiceState
     from zenml.zen_server.deploy.deployment import ServerDeployment
@@ -827,98 +819,6 @@ def describe_pydantic_object(schema_json: str) -> None:
                 declare(f"  {prop_schema['description']}", width=80)
 
 
-def get_stack_by_id_or_name_or_prefix(
-    client: "Client",
-    id_or_name_or_prefix: str,
-) -> "StackModel":
-    """Fetches a stack within active project using the name, id or partial id.
-
-    Args:
-        client: Instance of the Repository singleton
-        id_or_name_or_prefix: The id, name or partial id of the stack to
-                              fetch.
-
-    Returns:
-        The stack with the given name.
-
-    Raises:
-        KeyError: If no stack with the given name exists.
-    """
-    # First interpret as full UUID
-    try:
-        stack_id = UUID(id_or_name_or_prefix)
-        return client.zen_store.get_stack(stack_id)
-    except ValueError:
-        pass
-
-    user_only_stacks = client.zen_store.list_stacks(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        user_name_or_id=client.active_user.name,
-        is_shared=False,
-    )
-
-    shared_stacks = client.zen_store.list_stacks(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        is_shared=True,
-    )
-
-    named_stacks = user_only_stacks + shared_stacks  # type: ignore[operator]
-
-    if len(named_stacks) > 1:
-        hydrated_name_stacks = [s.to_hydrated_model() for s in named_stacks]
-        print_stacks_table(client=client, stacks=hydrated_name_stacks)
-        error(
-            f"Multiple stacks have been found for name "
-            f"'{id_or_name_or_prefix}'. The stacks listed above all share "
-            f"this name. Please specify the stack by full or partial id."
-        )
-
-    elif len(named_stacks) == 1:
-        return named_stacks[0]
-    else:
-        logger.debug(
-            f"No stack with name '{id_or_name_or_prefix}' "
-            f"exists. Trying to resolve as partial_id"
-        )
-
-        user_only_stacks = client.zen_store.list_stacks(
-            project_name_or_id=client.active_project.name,
-            user_name_or_id=client.active_user.name,
-            is_shared=False,
-        )
-
-        shared_stacks = client.zen_store.list_stacks(
-            project_name_or_id=client.active_project.name,
-            is_shared=True,
-        )
-
-        all_stacks = user_only_stacks + shared_stacks  # type: ignore[operator]
-
-        filtered_stacks = [
-            stack
-            for stack in all_stacks
-            if str(stack.id).startswith(id_or_name_or_prefix)
-        ]
-        if len(filtered_stacks) > 1:
-            hydrated_all_stacks = [s.to_hydrated_model() for s in all_stacks]
-            print_stacks_table(client=client, stacks=hydrated_all_stacks)
-            error(
-                f"The stacks listed above all share the provided prefix "
-                f"'{id_or_name_or_prefix}' on their ids. Please provide more "
-                f"characters to uniquely identify only one stack."
-            )
-
-        elif len(filtered_stacks) == 1:
-            return filtered_stacks[0]
-        else:
-            raise KeyError(
-                f"No stack with name or id prefix "
-                f"'{id_or_name_or_prefix}' exists."
-            )
-
-
 def get_shared_emoji(is_shared: bool) -> str:
     """Returns the emoji for whether a stack is shared or not.
 
@@ -931,9 +831,7 @@ def get_shared_emoji(is_shared: bool) -> str:
     return ":white_heavy_check_mark:" if is_shared else ":heavy_minus_sign:"
 
 
-def print_stacks_table(
-    client: "Client", stacks: List["HydratedStackModel"]
-) -> None:
+def print_stacks_table(client: "Client", stacks: List["StackModel"]) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
     Args:
@@ -1020,115 +918,6 @@ def _component_display_name(
     """
     name = component_type.plural if plural else component_type.value
     return name.replace("_", " ")
-
-
-def get_component_by_id_or_name_or_prefix(
-    client: "Client",
-    id_or_name_or_prefix: str,
-    component_type: StackComponentType,
-) -> "ComponentModel":
-    """Fetches a component of given type within active project using the name, id or partial id.
-
-    Args:
-        client: Instance of the Client singleton
-        id_or_name_or_prefix: The id, name or partial id of the component to
-                              fetch.
-        component_type: The type of the component to fetch.
-
-    Returns:
-        The component with the given name.
-
-    Raises:
-        KeyError: If no stack with the given name exists.
-    """
-    # First interpret as full UUID
-    try:
-        component_id = UUID(id_or_name_or_prefix)
-        return client.zen_store.get_stack_component(component_id)
-    except ValueError:
-        pass
-
-    user_only_components = client.zen_store.list_stack_components(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        type=component_type,
-        user_name_or_id=client.active_user.id,
-        is_shared=False,
-    )
-
-    shared_components = client.zen_store.list_stack_components(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        type=component_type,
-        is_shared=True,
-    )
-
-    named_components = user_only_components + shared_components
-
-    if len(named_components) > 1:
-        hydrated_components = [c.to_hydrated_model() for c in named_components]
-        print_components_table(
-            client=client,
-            component_type=component_type,
-            components=hydrated_components,
-        )
-        error(
-            f"Multiple components have been found for name "
-            f"'{id_or_name_or_prefix}'. The components listed above all share "
-            f"this name. Please specify the component by full or partial id."
-        )
-
-    elif len(named_components) == 1:
-        return named_components[0]
-    else:
-        logger.debug(
-            f"No component with name '{id_or_name_or_prefix}' "
-            f"exists. Trying to resolve as partial_id"
-        )
-
-        user_only_components = client.zen_store.list_stack_components(
-            project_name_or_id=client.active_project.name,
-            user_name_or_id=client.active_user.id,
-            type=component_type,
-            is_shared=False,
-        )
-
-        shared_components = client.zen_store.list_stack_components(
-            project_name_or_id=client.active_project.name,
-            type=component_type,
-            is_shared=True,
-        )
-
-        all_components = user_only_components + shared_components
-
-        filtered_comps = [
-            component
-            for component in all_components
-            if str(component.id).startswith(id_or_name_or_prefix)
-        ]
-        if len(filtered_comps) > 1:
-            hydrated_components = [
-                c.to_hydrated_model() for c in all_components
-            ]
-
-            print_components_table(
-                client=client,
-                component_type=component_type,
-                components=hydrated_components,
-            )
-            error(
-                f"The components listed above all share the provided prefix "
-                f"'{id_or_name_or_prefix}' on their ids. Please provide more "
-                f"characters to uniquely identify only one component."
-            )
-
-        elif len(filtered_comps) == 1:
-            return filtered_comps[0]
-        else:
-            raise KeyError(
-                f"No component of type `{component_type}` with name or id "
-                f"prefix '{id_or_name_or_prefix}' exists."
-            )
 
 
 def get_execution_status_emoji(status: "ExecutionStatus") -> str:
