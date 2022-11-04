@@ -199,10 +199,12 @@ class LocalZenServer(LocalDaemonService):
             super().start(timeout)
         else:
             self._copy_global_configuration()
+            local_stores_path = GlobalConfiguration().local_stores_path
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
             config_path = os.environ.get(ENV_ZENML_CONFIG_PATH)
             os.environ[ENV_ZENML_CONFIG_PATH] = self._global_config_path
+            os.environ[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
             try:
                 self.run()
             finally:
@@ -210,6 +212,7 @@ class LocalZenServer(LocalDaemonService):
                     os.environ[ENV_ZENML_CONFIG_PATH] = config_path
                 else:
                     del os.environ[ENV_ZENML_CONFIG_PATH]
+                del os.environ[ENV_ZENML_LOCAL_STORES_PATH]
                 GlobalConfiguration._reset_instance()
                 Client._reset_instance()
 
