@@ -44,14 +44,7 @@ from __future__ import annotations
 import math
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import (
-    Generic,
-    List,
-    Optional,
-    Sequence,
-    TypeVar,
-    Union,
-)
+from typing import Generic, List, Optional, Sequence, TypeVar, Union
 
 from fastapi import Query
 from pydantic import BaseModel
@@ -156,7 +149,9 @@ class Page(GenericModel, Generic[B]):
         total_pages = math.ceil(total / raw_params.limit)
 
         items: List[T] = (
-            session.exec(query.limit(raw_params.limit).offset(raw_params.offset))
+            session.exec(
+                query.limit(raw_params.limit).offset(raw_params.offset)
+            )
             .unique()
             .all()
         )

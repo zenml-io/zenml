@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Flavors."""
 
-from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
@@ -22,12 +21,13 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import StackComponentType
 from zenml.models import FlavorModel
+from zenml.zen_stores.schemas.base_schemas import NamedSchemaMixin
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import ProjectSchema, UserSchema
 
 
-class FlavorSchema(SQLModel, table=True):
+class FlavorSchema(SQLModel, NamedSchemaMixin, table=True):
     """SQL Model for flavors.
 
     Attributes:
@@ -43,10 +43,9 @@ class FlavorSchema(SQLModel, table=True):
         updated: The last update time of the flavor.
     """
 
-    id: UUID = Field(primary_key=True)
     type: StackComponentType
     source: str
-    name: str
+
     integration: Optional[str] = Field(default="")
     config_schema: str = Field(sa_column=Column(String(4096)), nullable=False)
 
@@ -59,9 +58,6 @@ class FlavorSchema(SQLModel, table=True):
         sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
     )
     user: "UserSchema" = Relationship(back_populates="flavors")
-
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     @classmethod
     def from_create_model(cls, flavor: FlavorModel) -> "FlavorSchema":

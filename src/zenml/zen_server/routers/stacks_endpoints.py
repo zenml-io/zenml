@@ -20,11 +20,11 @@ from fastapi import APIRouter, Depends
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.models import StackModel
+from zenml.models.page_model import Page, Params
 from zenml.models.stack_models import HydratedStackModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.stack_models import UpdateStackRequest
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
-from zenml.models.page_model import Page, Params
 
 router = APIRouter(
     prefix=API + VERSION_1 + STACKS,

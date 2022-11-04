@@ -16,11 +16,12 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import RoleAssignmentModel, RoleModel, TeamModel, UserModel
+from zenml.zen_stores.schemas.base_schemas import BaseSchemaMixin, NamedSchemaMixin
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -40,18 +41,14 @@ class TeamAssignmentSchema(SQLModel, table=True):
     team_id: UUID = Field(primary_key=True, foreign_key="teamschema.id")
 
 
-class UserSchema(SQLModel, table=True):
+class UserSchema(SQLModel, NamedSchemaMixin, table=True):
     """SQL Model for users."""
 
-    id: UUID = Field(primary_key=True)
-    name: str
     full_name: str
     email: Optional[str] = Field(nullable=True)
     active: bool
     password: Optional[str] = Field(nullable=True)
     activation_token: Optional[str] = Field(nullable=True)
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     email_opted_in: Optional[bool] = Field(nullable=True)
 
@@ -133,13 +130,8 @@ class UserSchema(SQLModel, table=True):
         )
 
 
-class TeamSchema(SQLModel, table=True):
+class TeamSchema(SQLModel, NamedSchemaMixin, table=True):
     """SQL Model for teams."""
-
-    id: UUID = Field(primary_key=True)
-    name: str
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     users: List["UserSchema"] = Relationship(
         back_populates="teams", link_model=TeamAssignmentSchema
@@ -187,13 +179,8 @@ class TeamSchema(SQLModel, table=True):
         )
 
 
-class RoleSchema(SQLModel, table=True):
+class RoleSchema(SQLModel, BaseSchemaMixin, table=True):
     """SQL Model for roles."""
-
-    id: UUID = Field(primary_key=True)
-    name: str
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="role", sa_relationship_kwargs={"cascade": "delete"}
@@ -241,17 +228,14 @@ class RoleSchema(SQLModel, table=True):
         )
 
 
-class UserRoleAssignmentSchema(SQLModel, table=True):
+class UserRoleAssignmentSchema(SQLModel, BaseSchemaMixin, table=True):
     """SQL Model for assigning roles to users for a given project."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
     role_id: UUID = Field(foreign_key="roleschema.id")
     user_id: UUID = Field(foreign_key="userschema.id")
     project_id: Optional[UUID] = Field(
         foreign_key="projectschema.id", nullable=True
     )
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     role: RoleSchema = Relationship(back_populates="user_role_assignments")
     user: UserSchema = Relationship(back_populates="assigned_roles")
@@ -275,17 +259,14 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
         )
 
 
-class TeamRoleAssignmentSchema(SQLModel, table=True):
+class TeamRoleAssignmentSchema(SQLModel, BaseSchemaMixin, table=True):
     """SQL Model for assigning roles to teams for a given project."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
     role_id: UUID = Field(foreign_key="roleschema.id")
     team_id: UUID = Field(foreign_key="teamschema.id")
     project_id: Optional[UUID] = Field(
         foreign_key="projectschema.id", nullable=True
     )
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     role: RoleSchema = Relationship(back_populates="team_role_assignments")
     team: TeamSchema = Relationship(back_populates="assigned_roles")

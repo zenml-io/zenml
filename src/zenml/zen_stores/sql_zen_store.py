@@ -76,6 +76,7 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
+from zenml.models.page_model import Page, Params
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -104,7 +105,6 @@ from zenml.zen_stores.schemas import (
     UserSchema,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
-from zenml.models.page_model import Page, Params
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import (
@@ -873,9 +873,9 @@ class SqlZenStore(BaseZenStore):
 
             query = query.order_by(StackSchema.name)
             # paged_stacks: AbstractPage[StackSchema] = paginate(
-            paged_stacks = Page.paginate(session=session,
-                                         query=query,
-                                         params=params)
+            paged_stacks = Page.paginate(
+                session=session, query=query, params=params
+            )
 
             # items = [i.to_model() for i in paged_stacks.items]
             # paged_stacks.items = items

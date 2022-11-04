@@ -15,7 +15,6 @@
 
 import base64
 import json
-from datetime import datetime
 from typing import TYPE_CHECKING, List
 from uuid import UUID
 
@@ -24,6 +23,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
+from zenml.zen_stores.schemas.base_schemas import SharableSchemaMixin
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
 if TYPE_CHECKING:
@@ -31,13 +31,8 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.stack_schemas import StackSchema
 
 
-class StackComponentSchema(SQLModel, table=True):
+class StackComponentSchema(SQLModel, SharableSchemaMixin, table=True):
     """SQL Model for stack components."""
-
-    id: UUID = Field(primary_key=True)
-
-    name: str
-    is_shared: bool
 
     type: StackComponentType
     flavor: str
@@ -53,9 +48,6 @@ class StackComponentSchema(SQLModel, table=True):
     user: "UserSchema" = Relationship(back_populates="components")
 
     configuration: bytes
-
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema

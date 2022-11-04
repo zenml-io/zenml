@@ -15,11 +15,11 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, List
-from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Relationship, SQLModel
 
 from zenml.models import ProjectModel
+from zenml.zen_stores.schemas.base_schemas import NamedSchemaMixin
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -33,14 +33,10 @@ if TYPE_CHECKING:
     )
 
 
-class ProjectSchema(SQLModel, table=True):
+class ProjectSchema(SQLModel, NamedSchemaMixin, table=True):
     """SQL Model for projects."""
 
-    id: UUID = Field(primary_key=True)
-    name: str
     description: str
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}

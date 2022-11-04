@@ -32,8 +32,8 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
-from zenml.models.server_models import ServerModel
 from zenml.models.page_model import Page, Params
+from zenml.models.server_models import ServerModel
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import (

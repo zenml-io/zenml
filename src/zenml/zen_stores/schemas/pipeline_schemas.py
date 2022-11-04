@@ -25,17 +25,14 @@ from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+from zenml.zen_stores.schemas.base_schemas import NamedSchemaMixin
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import ProjectSchema, StackSchema, UserSchema
 
 
-class PipelineSchema(SQLModel, table=True):
+class PipelineSchema(SQLModel, NamedSchemaMixin, table=True):
     """SQL Model for pipelines."""
-
-    id: UUID = Field(primary_key=True)
-
-    name: str
 
     project_id: UUID = Field(
         sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
@@ -49,9 +46,6 @@ class PipelineSchema(SQLModel, table=True):
 
     docstring: Optional[str] = Field(max_length=4096, nullable=True)
     spec: str = Field(max_length=4096)
-
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
@@ -109,11 +103,8 @@ class PipelineSchema(SQLModel, table=True):
         )
 
 
-class PipelineRunSchema(SQLModel, table=True):
+class PipelineRunSchema(SQLModel, NamedSchemaMixin, table=True):
     """SQL Model for pipeline runs."""
-
-    id: UUID = Field(primary_key=True)
-    name: str
 
     project_id: UUID = Field(
         sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
@@ -145,9 +136,6 @@ class PipelineRunSchema(SQLModel, table=True):
     num_steps: int
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
-
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     mlmd_id: Optional[int] = Field(default=None, nullable=True)
 
@@ -196,37 +184,34 @@ class PipelineRunSchema(SQLModel, table=True):
         self.status = model.status
         self.updated = datetime.now()
         return self
+    #
+    # def to_model(self) -> PipelineRunModel:
+    #     """Convert a `PipelineRunSchema` to a `PipelineRunModel`.
+    #
+    #     Returns:
+    #         The created `PipelineRunModel`.
+    #     """
+    #     return PipelineRunModel(
+    #         id=self.id,
+    #         name=self.name,
+    #         orchestrator_run_id=self.orchestrator_run_id,
+    #         stack_id=self.stack_id,
+    #         project=self.project_id,
+    #         user=self.user_id,
+    #         pipeline_id=self.pipeline_id,
+    #         status=self.status,
+    #         pipeline_configuration=json.loads(self.pipeline_configuration),
+    #         num_steps=self.num_steps,
+    #         git_sha=self.git_sha,
+    #         zenml_version=self.zenml_version,
+    #         mlmd_id=self.mlmd_id,
+    #         created=self.created,
+    #         updated=self.updated,
+    #     )
 
-    def to_model(self) -> PipelineRunModel:
-        """Convert a `PipelineRunSchema` to a `PipelineRunModel`.
 
-        Returns:
-            The created `PipelineRunModel`.
-        """
-        return PipelineRunModel(
-            id=self.id,
-            name=self.name,
-            orchestrator_run_id=self.orchestrator_run_id,
-            stack_id=self.stack_id,
-            project=self.project_id,
-            user=self.user_id,
-            pipeline_id=self.pipeline_id,
-            status=self.status,
-            pipeline_configuration=json.loads(self.pipeline_configuration),
-            num_steps=self.num_steps,
-            git_sha=self.git_sha,
-            zenml_version=self.zenml_version,
-            mlmd_id=self.mlmd_id,
-            created=self.created,
-            updated=self.updated,
-        )
-
-
-class StepRunSchema(SQLModel, table=True):
+class StepRunSchema(SQLModel, NamedSchemaMixin, table=True):
     """SQL Model for steps of pipeline runs."""
-
-    id: UUID = Field(primary_key=True)
-    name: str
 
     pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
 
@@ -237,9 +222,6 @@ class StepRunSchema(SQLModel, table=True):
     docstring: Optional[str] = Field(max_length=4096, nullable=True)
 
     mlmd_id: Optional[int] = Field(default=None, nullable=True)
-
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     @classmethod
     def from_create_model(cls, model: StepRunModel) -> "StepRunSchema":
