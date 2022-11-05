@@ -197,19 +197,51 @@ You can now run any ZenML pipeline using the Kubeflow orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+### Additional configuration
 
 For additional configuration of the Kubeflow orchestrator, you can pass
 `KubeflowOrchestratorSettings` which allows you to configure the following attributes:
 
 * `client_args`: Arguments to pass when initializing the KFP client.
 * `user_namespace`: The user namespace to use when creating experiments and runs.
+* `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
+your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import KubeflowOrchestratorSettings
+from kubernetes.client.models import V1Toleration
+
 
 kubeflow_settings = KubeflowOrchestratorSettings(
-  client_args={},
-  user_namespace="my_namespace"
+    client_args={},
+    user_namespace="my_namespace",
+    pod_settings={
+        "affinity": {
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchExpressions": [
+                                {
+                                    "key": "node.kubernetes.io/name",
+                                    "operator": "In",
+                                    "values": ["my_powerful_node_group"],
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "tolerations": [
+            V1Toleration(
+                key="node.kubernetes.io/name",
+                operator="Equal",
+                value="",
+                effect="NoSchedule"
+            )
+        ]
+    }
 )
 
 @pipeline(
@@ -217,7 +249,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
         "orchestrator.kubeflow": kubeflow_settings
     }
 )
-  ...
+    ...
 ```
 
 ### Enabling CUDA for GPU-backed hardware
