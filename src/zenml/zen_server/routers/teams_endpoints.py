@@ -27,6 +27,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.models import TeamModel
+from zenml.models.page_model import Params, Page
 from zenml.models.user_management_models import RoleAssignmentModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.user_management_models import (
@@ -45,24 +46,22 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[TeamModel],
+    response_model=Page[TeamModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_teams(
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> List[TeamModel]:
+    params: Params = Depends(),
+) -> Page[TeamModel]:
     """Returns a list of all teams.
 
     Args:
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
+        params: Parameters for pagination (page and size)
 
     Returns:
         List of all teams.
     """
-    return zen_store().list_teams(offset=offset, limit=limit)
+    return zen_store().list_teams(params)
 
 
 @router.post(
@@ -143,24 +142,22 @@ def delete_team(team_name_or_id: Union[str, UUID]) -> None:
 
 @router.get(
     "/{team_name_or_id}" + ROLES,
-    response_model=List[RoleAssignmentModel],
+    response_model=Page[RoleAssignmentModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_role_assignments_for_team(
     team_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> List[RoleAssignmentModel]:
+    params: Params = Depends(),
+) -> Page[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a team.
 
     Args:
         team_name_or_id: Name or ID of the team.
         project_name_or_id: If provided, only list roles that are limited to
             the given project.
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
+        params: Parameters for pagination (page and size)
 
     Returns:
         A list of all roles that are assigned to a team.
@@ -168,6 +165,5 @@ def get_role_assignments_for_team(
     return zen_store().list_role_assignments(
         team_name_or_id=team_name_or_id,
         project_name_or_id=project_name_or_id,
-        offset=offset,
-        limit=limit,
+        params=params
     )

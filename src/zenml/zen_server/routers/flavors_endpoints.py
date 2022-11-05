@@ -16,18 +16,12 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 
-from zenml.constants import (
-    API,
-    FLAVORS,
-    LIMIT_DEFAULT,
-    LIMIT_MAX,
-    OFFSET,
-    VERSION_1,
-)
+from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import FlavorModel
+from zenml.models.page_model import Params, Page
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -41,7 +35,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[FlavorModel],
+    response_model=Page[FlavorModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -51,9 +45,8 @@ def list_flavors(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> List[FlavorModel]:
+    params: Params = Depends(),
+) -> Page[FlavorModel]:
     """Returns all flavors.
 
     Args:
@@ -64,8 +57,7 @@ def list_flavors(
         is_shared: Optionally filter by shared status of the flavor.
         hydrated: Defines if users and projects will be
                   included by reference (FALSE) or as model (TRUE)
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
+        params: Parameters for pagination (page and size)
 
     Returns:
         All flavors.
@@ -76,8 +68,7 @@ def list_flavors(
         user_name_or_id=user_name_or_id,
         is_shared=is_shared,
         name=name,
-        offset=offset,
-        limit=limit,
+        params=params
     )
     return flavors_list
 

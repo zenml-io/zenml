@@ -15,7 +15,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import (
@@ -29,6 +29,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.models import PipelineRunModel
+from zenml.models.page_model import Params
 from zenml.models.pipeline_models import PipelineModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models import UpdatePipelineRequest
@@ -48,7 +49,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Union[List[HydratedPipelineModel], List[PipelineModel]],  # type: ignore[arg-type]
+    response_model=Page[PipelineModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -57,9 +58,8 @@ def list_pipelines(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     hydrated: bool = False,
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> Union[List[HydratedPipelineModel], List[PipelineModel]]:
+    params: Params = Depends(),
+) -> Page[PipelineModel]:
     """Gets a list of pipelines.
 
     Args:
@@ -68,8 +68,7 @@ def list_pipelines(
         name: Optionally filter by pipeline name
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
+        params: Parameters for pagination (page and size)
 
     Returns:
         List of pipeline objects.
@@ -78,8 +77,7 @@ def list_pipelines(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         name=name,
-        offset=offset,
-        limit=limit,
+        params=params
     )
     if hydrated:
         return [

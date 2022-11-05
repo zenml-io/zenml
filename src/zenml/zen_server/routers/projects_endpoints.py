@@ -69,20 +69,22 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[ProjectModel],
+    response_model=Page[ProjectModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_projects(
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> List[ProjectModel]:
+    params: Params = Depends(),
+) -> Page[ProjectModel]:
     """Lists all projects in the organization.
+
+    Args:
+        params: Parameters for pagination (page and size)
 
     Returns:
         A list of projects.
     """
-    return zen_store().list_projects(offset=offset, limit=limit)
+    return zen_store().list_projects(params=params)
 
 
 @router.post(
@@ -168,7 +170,7 @@ def delete_project(project_name_or_id: Union[str, UUID]) -> None:
 
 @router.get(
     "/{project_name_or_id}" + ROLES,
-    response_model=List[RoleAssignmentModel],
+    response_model=Page[RoleAssignmentModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -176,9 +178,8 @@ def get_role_assignments_for_project(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     team_name_or_id: Optional[Union[str, UUID]] = None,
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> List[RoleAssignmentModel]:
+    params: Params = Depends(),
+) -> Page[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a team.
 
     Args:
@@ -187,8 +188,7 @@ def get_role_assignments_for_project(
             given user.
         team_name_or_id: If provided, only list roles that are assigned to the
             given team.
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
+        params: Parameters for pagination (page and size)
 
     Returns:
         A list of all roles that are assigned to a team.
@@ -197,8 +197,7 @@ def get_role_assignments_for_project(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         team_name_or_id=team_name_or_id,
-        offset=offset,
-        limit=limit,
+        params=params
     )
 
 
@@ -368,7 +367,7 @@ def create_stack_component(
 
 @router.get(
     "/{project_name_or_id}" + FLAVORS,
-    response_model=List[FlavorModel],
+    response_model=Page[FlavorModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -378,9 +377,8 @@ def list_project_flavors(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> List[FlavorModel]:
+    params: Params = Depends(),
+) -> Page[FlavorModel]:
     """List stack components flavors of a certain type that are part of a project.
 
     # noqa: DAR401
@@ -391,10 +389,7 @@ def list_project_flavors(
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by flavor name.
         is_shared: Optionally filter by shared status of the flavor.
-        hydrated: Defines if users and projects will be
-            included by reference (FALSE) or as model (TRUE)
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
+        params: Parameters for pagination (page and size)
 
 
     Returns:
@@ -406,8 +401,7 @@ def list_project_flavors(
         user_name_or_id=user_name_or_id,
         is_shared=is_shared,
         name=name,
-        offset=offset,
-        limit=limit,
+        params=params
     )
     return flavors_list
 
@@ -451,7 +445,7 @@ def create_flavor(
 
 @router.get(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=Union[List[HydratedPipelineModel], List[PipelineModel]],  # type: ignore[arg-type]
+    response_model=Page[PipelineModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -460,9 +454,8 @@ def list_project_pipelines(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     hydrated: bool = False,
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> Union[List[HydratedPipelineModel], List[PipelineModel]]:
+    params: Params = Depends(),
+) -> Page[PipelineModel]:
     """Gets pipelines defined for a specific project.
 
     # noqa: DAR401
@@ -473,8 +466,7 @@ def list_project_pipelines(
         name: Optionally filter by pipeline name
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
+        params: Parameters for pagination (page and size)
 
     Returns:
         All pipelines within the project.
@@ -483,16 +475,9 @@ def list_project_pipelines(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         name=name,
-        offset=offset,
-        limit=limit,
+        params=params
     )
-    if hydrated:
-        return [
-            HydratedPipelineModel.from_model(pipeline)
-            for pipeline in pipelines_list
-        ]
-    else:
-        return pipelines_list
+    return pipelines_list
 
 
 @router.post(
@@ -584,14 +569,16 @@ def get_project_statistics(
     zen_store().list_runs()
     # TODO: with pagination, this won't work anymore
     return {
-        "stacks": zen_store().list_stacks(project_name_or_id=project_name_or_id).total,
+        "stacks": zen_store().list_stacks(
+            project_name_or_id=project_name_or_id
+        ).total,
         "components": zen_store().list_stack_components(
                 project_name_or_id=project_name_or_id
             ).total,
-        "pipelines": len(
-            zen_store().list_pipelines(project_name_or_id=project_name_or_id)
-        ),
-        "runs": len(
-            zen_store().list_runs(project_name_or_id=project_name_or_id)
-        ),
+        "pipelines": zen_store().list_pipelines(
+            project_name_or_id=project_name_or_id
+        ).total,
+        "runs": zen_store().list_runs(
+            project_name_or_id=project_name_or_id
+        ).total,
     }

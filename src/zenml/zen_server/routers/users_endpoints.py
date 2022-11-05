@@ -34,6 +34,7 @@ from zenml.constants import (
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel, UserModel
+from zenml.models.page_model import Params, Page
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
@@ -76,24 +77,22 @@ current_user_router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[UserModel],
+    response_model=Page[UserModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_users(
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> List[UserModel]:
+    params: Params = Depends(),
+) -> Page[UserModel]:
     """Returns a list of all users.
 
     Args:
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
+        params: Parameters for pagination (page and size)
 
     Returns:
         A list of all users.
     """
-    return zen_store().list_users(offset=offset, limit=limit)
+    return zen_store().list_users(params=params)
 
 
 @router.post(
@@ -290,24 +289,22 @@ def email_opt_in_response(
 
 @router.get(
     "/{user_name_or_id}" + ROLES,
-    response_model=List[RoleAssignmentModel],
+    response_model=Page[RoleAssignmentModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_role_assignments_for_user(
     user_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> List[RoleAssignmentModel]:
+    params: Params = Depends(),
+) -> Page[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a user.
 
     Args:
         user_name_or_id: Name or ID of the user.
         project_name_or_id: If provided, only list roles that are limited to
             the given project.
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
+        params: Parameters for pagination (page and size)
 
     Returns:
         A list of all roles that are assigned to a user.
@@ -315,8 +312,7 @@ def list_role_assignments_for_user(
     return zen_store().list_role_assignments(
         user_name_or_id=user_name_or_id,
         project_name_or_id=project_name_or_id,
-        offset=offset,
-        limit=limit,
+        params=params
     )
 
 

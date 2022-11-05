@@ -15,15 +15,12 @@
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 
 from zenml.constants import (
     API,
     COMPONENT_SIDE_EFFECTS,
     GRAPH,
-    LIMIT_DEFAULT,
-    LIMIT_MAX,
-    OFFSET,
     PIPELINE_CONFIGURATION,
     RUNS,
     STATUS,
@@ -31,6 +28,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
+from zenml.models.page_model import Params, Page
 from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
 from zenml.zen_server.auth import authorize
@@ -47,9 +45,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Union[  # type: ignore[arg-type]
-        List[HydratedPipelineRunModel], List[PipelineRunModel]
-    ],
+    response_model=Page[PipelineRunModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -61,10 +57,8 @@ def list_runs(
     component_id: Optional[UUID] = None,
     pipeline_id: Optional[UUID] = None,
     unlisted: bool = False,
-    hydrated: bool = False,
-    offset: int = OFFSET,
-    limit: int = Query(default=LIMIT_DEFAULT, lte=LIMIT_MAX),
-) -> Union[List[HydratedPipelineRunModel], List[PipelineRunModel]]:
+    params: Params = Depends(),
+) -> Page[PipelineRunModel]:
     """Get pipeline runs according to query filters.
 
     Args:
@@ -76,10 +70,7 @@ def list_runs(
         pipeline_id: ID of the pipeline for which to filter runs.
         unlisted: If True, only return unlisted runs that are not
             associated with any pipeline.
-        hydrated: Defines if stack, user and pipeline will be
-                  included by reference (FALSE) or as model (TRUE)
-        offset: Offset to use for pagination
-        limit: Limit to set for pagination
+        params: Parameters for pagination (page and size)
 
     Returns:
         The pipeline runs according to query filters.
@@ -92,13 +83,9 @@ def list_runs(
         user_name_or_id=user_name_or_id,
         pipeline_id=pipeline_id,
         unlisted=unlisted,
-        offset=offset,
-        limit=limit,
+        params=params
     )
-    if hydrated:
-        return [HydratedPipelineRunModel.from_model(run) for run in runs]
-    else:
-        return runs
+    return runs
 
 
 @router.get(

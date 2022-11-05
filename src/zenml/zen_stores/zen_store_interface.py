@@ -183,7 +183,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stacks(
         self,
-        params: Params = Params(page=1, size=100),
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[UUID] = None,
@@ -398,9 +398,8 @@ class ZenStoreInterface(ABC):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> List[FlavorModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[FlavorModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
@@ -411,8 +410,7 @@ class ZenStoreInterface(ABC):
             name: Optionally filter flavors by name
             is_shared: Optionally filter out flavors by whether they are
                 shared or not
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             List of all the stack component flavors matching the given criteria.
@@ -490,13 +488,13 @@ class ZenStoreInterface(ABC):
     # TODO: [ALEX] add filtering param(s)
     @abstractmethod
     def list_users(
-        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
-    ) -> List[UserModel]:
+        self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[UserModel]:
         """List all users.
 
         Args:
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all users.
@@ -580,13 +578,13 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_teams(
-        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
-    ) -> List[TeamModel]:
+        self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[TeamModel]:
         """List all teams.
 
         Args:
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all teams.
@@ -723,13 +721,13 @@ class ZenStoreInterface(ABC):
     # TODO: [ALEX] add filtering param(s)
     @abstractmethod
     def list_roles(
-        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
-    ) -> List[RoleModel]:
+        self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[RoleModel]:
         """List all roles.
 
         Args:
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all roles.
@@ -770,9 +768,8 @@ class ZenStoreInterface(ABC):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> List[RoleAssignmentModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[RoleAssignmentModel]:
         """List all role assignments.
 
         Args:
@@ -782,8 +779,7 @@ class ZenStoreInterface(ABC):
                 team
             user_name_or_id: If provided, only list assignments for the given
                 user
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all role assignments.
@@ -870,13 +866,13 @@ class ZenStoreInterface(ABC):
     # TODO: [ALEX] add filtering param(s)
     @abstractmethod
     def list_projects(
-        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
-    ) -> List[ProjectModel]:
+        self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[ProjectModel]:
         """List all projects.
 
         Args:
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all projects.
@@ -948,17 +944,15 @@ class ZenStoreInterface(ABC):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> List[PipelineModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[PipelineModel]:
         """List all pipelines in the project.
 
         Args:
             project_name_or_id: If provided, only list pipelines in this project.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of pipelines.
@@ -1035,9 +1029,8 @@ class ZenStoreInterface(ABC):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> List[PipelineRunModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[PipelineRunModel]:
         """Gets all pipeline runs.
 
         Args:
@@ -1050,8 +1043,7 @@ class ZenStoreInterface(ABC):
             pipeline_id: If provided, only return runs for this pipeline.
             unlisted: If True, only return unlisted runs that are not
                 associated with any pipeline (filter by `pipeline_id==None`).
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all pipeline runs.
