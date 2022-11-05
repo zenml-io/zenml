@@ -13,19 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation for the BentoML inference service."""
 
-import json
 import os
-import re
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple, Union
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
-import requests
-from pydantic import Field, ValidationError
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
-from bentoml.serve import serve_http_production
-from bentoml._internal.configuration.containers import BentoMLContainer
-
-from zenml import __version__
 from zenml.logger import get_logger
 from zenml.services import (
     HTTPEndpointHealthMonitor,
@@ -38,10 +29,9 @@ from zenml.services import (
     ServiceType,
 )
 
-from bentoml.steps import constants
 if TYPE_CHECKING:
 
-    from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
+    from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (  # noqa
         BentoMLModelDeployer,
     )
 
@@ -49,7 +39,9 @@ logger = get_logger(__name__)
 
 
 BENTOML_DEFAULT_PORT = 3000
-BENTOML_HEALTHCHECK_URL_PATH = "readyz"
+BENTOML_HEALTHCHECK_URL_PATH = "healthz"
+BENTOML_PREDICTION_URL_PATH = ""
+
 
 class BentoMLDeploymentEndpointConfig(LocalDaemonServiceEndpointConfig):
     """BentoML deployment service configuration.
@@ -58,10 +50,11 @@ class BentoMLDeploymentEndpointConfig(LocalDaemonServiceEndpointConfig):
         prediction_url_path: URI subpath for prediction requests
     """
 
+    prediction_url_path: str
 
 
 class BentoMLDeploymentEndpoint(LocalDaemonServiceEndpoint):
-    """A service endpoint exposed by the MLflow deployment daemon.
+    """A service endpoint exposed by the BentoML deployment daemon.
 
     Attributes:
         config: service endpoint configuration
@@ -80,35 +73,41 @@ class BentoMLDeploymentEndpoint(LocalDaemonServiceEndpoint):
         uri = self.status.uri
         if not uri:
             return None
-        return os.path.join(uri)
+        return os.path.join(uri, self.config.prediction_url_path)
+
 
 class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
-    """MLflow model deployment configuration.
+    """BentoML model deployment configuration.
 
     Attributes:
-        model_uri: URI of the MLflow model to serve
-        model_name: the name of the model
-        workers: number of workers to use for the prediction service
-        mlserver: set to True to use the MLflow MLServer backend (see
-            https://github.com/SeldonIO/MLServer). If False, the
-            MLflow built-in scoring server will be used.
+        model_name: name of the model to deploy
+        model_uri: URI of the model to deploy
+        port: port to expose the service on
+        bento: Bento package to deploy
+        workers: number of workers to use
+        backlog: number of requests to queue
+        prduction: whether to run in production mode
+        working_dir: working directory for the service
+        host: host to expose the service on
     """
 
-    bento: str
+    model_name: str
     model_uri: str
-    workers: int = BentoMLContainer.api_server_workers.get()
-    port: int = BentoMLContainer.http.port.get()
-    backlog: int = BentoMLContainer.api_server_config.backlog.get()
+    bento: str
+    workers: int = None
+    port: int = None
+    backlog: int = None
     production: bool = False
-    work_dir: str = None
-    host: str = BentoMLContainer.http.host.get()
+    working_dir: str
+    host: str = None
+
 
 class BentoMLDeploymentService(LocalDaemonService):
-    """BentoML deployment service used to start a local prediction server for MLflow models.
+    """BentoML deployment service used to start a local prediction server for BentoML models.
 
     Attributes:
         SERVICE_TYPE: a service type descriptor with information describing
-            the MLflow deployment service class
+            the BentoML deployment service class
         config: service configuration
         endpoint: optional service endpoint
     """
@@ -128,25 +127,26 @@ class BentoMLDeploymentService(LocalDaemonService):
         config: Union[BentoMLDeploymentConfig, Dict[str, Any]],
         **attrs: Any,
     ) -> None:
-        """Initialize the MLflow deployment service.
+        """Initialize the BentoML deployment service.
 
         Args:
             config: service configuration
             attrs: additional attributes to set on the service
         """
         # ensure that the endpoint is created before the service is initialized
-        # TODO [ENG-700]: implement a service factory or builder for MLflow
+        # TODO [ENG-700]: implement a service factory or builder for BentoML
         #   deployment services
         if (
             isinstance(config, BentoMLDeploymentConfig)
             and "endpoint" not in attrs
         ):
-            
+
             endpoint = BentoMLDeploymentEndpoint(
                 config=BentoMLDeploymentEndpointConfig(
                     protocol=ServiceEndpointProtocol.HTTP,
                     port=config.port,
-                    ip_address=config.host,
+                    ip_address=config.host or DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+                    prediction_url_path=BENTOML_PREDICTION_URL_PATH,
                 ),
                 monitor=HTTPEndpointHealthMonitor(
                     config=HTTPEndpointHealthMonitorConfig(
@@ -160,39 +160,43 @@ class BentoMLDeploymentService(LocalDaemonService):
     def run(self) -> None:
         """Start the service."""
         logger.info(
-            "Starting MLflow prediction service as blocking "
+            "Starting BentoML prediction service as blocking "
             "process... press CTRL+C once to stop it."
         )
 
         self.endpoint.prepare_for_start()
-        try:
-            if self.config.production:
-            
-                from bentoml.serve import serve_http_production
 
+        if self.config.production:
+            logger.info("Running in production mode.")
+            from bentoml.serve import serve_http_production
+
+            try:
                 serve_http_production(
                     self.config.bento,
-                    port= self.config.port,
-                    workers=self.config.api_workers,
+                    port=self.endpoint.status.port,
+                    api_workers=self.config.workers,
                     backlog=self.config.backlog,
-                    work_dir=self.config.work_dir,
-                    host = self.config.host,
+                    host=self.endpoint.status.hostname,
+                    working_dir=self.config.working_dir,
                 )
-            else:
-                from bentoml.serve import serve_http_development
+            except KeyboardInterrupt:
+                logger.info(
+                    "BentoML prediction service stopped. Resuming normal execution."
+                )
+        else:
+            from bentoml.serve import serve_http_development
 
+            try:
                 serve_http_development(
                     self.config.bento,
-                    port=self.config.port,
-                    workers=self.config.api_workers,
-                    work_dir=self.config.work_dir,
-                    host=self.config.host,
+                    port=self.endpoint.status.port,
+                    working_dir=self.config.working_dir,
+                    host=self.endpoint.status.hostname,
                 )
-           
-        except KeyboardInterrupt:
-            logger.info(
-                "MLflow prediction service stopped. Resuming normal execution."
-            )
+            except KeyboardInterrupt:
+                logger.info(
+                    "BentoML prediction service stopped. Resuming normal execution."
+                )
 
     @property
     def prediction_url(self) -> Optional[str]:
@@ -205,4 +209,5 @@ class BentoMLDeploymentService(LocalDaemonService):
         if not self.is_running:
             return None
         return self.endpoint.prediction_url
+
 

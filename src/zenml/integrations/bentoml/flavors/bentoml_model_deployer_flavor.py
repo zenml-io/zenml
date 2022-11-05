@@ -26,10 +26,10 @@ if TYPE_CHECKING:
 
 
 class BentoMLModelDeployerConfig(BaseModelDeployerConfig):
-    """Configuration for the BentoMLModelDeployer.
+    """Configuration for the BentoMLModelDeployer."""
 
-    """
     service_path: str = ""
+
 
 class BentoMLModelDeployerFlavor(BaseModelDeployerFlavor):
     """Flavor for the BentoML model deployer."""
@@ -59,7 +59,7 @@ class BentoMLModelDeployerFlavor(BaseModelDeployerFlavor):
         Returns:
             The implementation class.
         """
-        from zenml.integrations.kserve.model_deployers import (
+        from zenml.integrations.bentoml.model_deployers import (
             BentoMLModelDeployer,
         )
 

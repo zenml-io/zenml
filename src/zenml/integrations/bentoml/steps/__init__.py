@@ -14,7 +14,13 @@
 """Initialization of the BentoML standard interface steps."""
 
 from zenml.integrations.bentoml.steps.bentoml_deployer import (
-    BentoMLDeployerParameters,
+    BentoMLBuilderParameters,
     bentoml_deployer_step,
     bentoml_model_deployer_step,
 )
+
+__all__ = [
+    "BentoMLBuilderParameters",
+    "bentoml_deployer_step",
+    "bentoml_model_deployer_step",
+]

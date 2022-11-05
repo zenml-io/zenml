@@ -13,15 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the BentoML Model Deployer."""
 import os
-from pathlib import Path
 import shutil
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast, ClassVar, Type
+from pathlib import Path
+from typing import ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
-from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.integrations.bentoml import BENTOML_MODEL_DEPLOYER_FLAVOR
-from zenml.integrations.bentoml.constants import BENTOML_DOCKER_IMAGE_KEY
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.integrations.bentoml.flavors.bentoml_model_deployer_flavor import (
     BentoMLModelDeployerConfig,
@@ -31,14 +28,17 @@ from zenml.integrations.bentoml.services.bentoml_deployment import (
     BentoMLDeploymentConfig,
     BentoMLDeploymentService,
 )
-from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
-from zenml.services import ServiceRegistry
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
+from zenml.services import ServiceRegistry
+from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 
 logger = get_logger(__name__)
+
+DEFAULT_BENTOML_PORT = 3000
+
 
 class BentoMLModelDeployer(BaseModelDeployer):
     """BentoML model deployer stack component implementation."""
@@ -59,13 +59,13 @@ class BentoMLModelDeployer(BaseModelDeployer):
 
     @staticmethod
     def get_service_path(id_: UUID) -> str:
-        """Get the path where local MLflow service information is stored.
+        """Get the path where local BentoML service information is stored.
 
         This includes the deployment service configuration, PID and log files
         are stored.
 
         Args:
-            id_: The ID of the MLflow model deployer.
+            id_: The ID of the BentoML model deployer.
 
         Returns:
             The service path.
@@ -81,7 +81,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
     def local_path(self) -> str:
         """Returns the path to the root directory.
 
-        This is where all configurations for MLflow deployment daemon processes
+        This is where all configurations for BentoML deployment daemon processes
         are stored.
 
         If the service path is not set in the config by the user, the path is
@@ -101,7 +101,6 @@ class BentoMLModelDeployer(BaseModelDeployer):
         create_dir_recursive_if_not_exists(self._service_path)
         return self._service_path
 
-
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
         service_instance: "BentoMLDeploymentService",
@@ -116,7 +115,8 @@ class BentoMLModelDeployer(BaseModelDeployer):
         """
         return {
             "PREDICTION_URL": service_instance.prediction_url,
-            "BENTO": service_instance.config.bento,
+            "BENTO_TAG": service_instance.config.bento,
+            "MODEL_NAME": service_instance.config.model_name,
             "MODEL_URI": service_instance.config.model_uri,
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
@@ -128,47 +128,47 @@ class BentoMLModelDeployer(BaseModelDeployer):
         replace: bool = False,
         timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
     ) -> BaseService:
-        """Create a new MLflow deployment service or update an existing one.
+        """Create a new BentoML deployment service or update an existing one.
 
         This should serve the supplied model and deployment configuration.
 
         This method has two modes of operation, depending on the `replace`
         argument value:
 
-          * if `replace` is False, calling this method will create a new MLflow
+          * if `replace` is False, calling this method will create a new BentoML
             deployment server to reflect the model and other configuration
-            parameters specified in the supplied MLflow service `config`.
+            parameters specified in the supplied BentoML service `config`.
 
           * if `replace` is True, this method will first attempt to find an
-            existing MLflow deployment service that is *equivalent* to the
-            supplied configuration parameters. Two or more MLflow deployment
+            existing BentoML deployment service that is *equivalent* to the
+            supplied configuration parameters. Two or more BentoML deployment
             services are considered equivalent if they have the same
             `pipeline_name`, `pipeline_step_name` and `model_name` configuration
-            parameters. To put it differently, two MLflow deployment services
+            parameters. To put it differently, two BentoML deployment services
             are equivalent if they serve versions of the same model deployed by
-            the same pipeline step. If an equivalent MLflow deployment is found,
+            the same pipeline step. If an equivalent BentoML deployment is found,
             it will be updated in place to reflect the new configuration
             parameters.
 
         Callers should set `replace` to True if they want a continuous model
-        deployment workflow that doesn't spin up a new MLflow deployment
-        server for each new model version. If multiple equivalent MLflow
+        deployment workflow that doesn't spin up a new BentoML deployment
+        server for each new model version. If multiple equivalent BentoML
         deployment servers are found, one is selected at random to be updated
         and the others are deleted.
 
         Args:
-            config: the configuration of the model to be deployed with MLflow.
+            config: the configuration of the model to be deployed with BentoML.
             replace: set this flag to True to find and update an equivalent
-                MLflow deployment server with the new model instead of
+                BentoML deployment server with the new model instead of
                 creating and starting a new deployment server.
-            timeout: the timeout in seconds to wait for the MLflow server
+            timeout: the timeout in seconds to wait for the BentoML server
                 to be provisioned and successfully started or updated. If set
-                to 0, the method will return immediately after the MLflow
+                to 0, the method will return immediately after the BentoML
                 server is provisioned, without waiting for it to fully start.
 
         Returns:
-            The ZenML MLflow deployment service object that can be used to
-            interact with the MLflow model server.
+            The ZenML BentoML deployment service object that can be used to
+            interact with the BentoML model http server.
         """
         config = cast(BentoMLDeploymentConfig, config)
         service = None
@@ -200,7 +200,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
                     pass
         if service:
             logger.info(
-                f"Updating an existing MLflow deployment service: {service}"
+                f"Updating an existing BentoML deployment service: {service}"
             )
 
             # set the root runtime path with the stack component's UUID
@@ -209,9 +209,9 @@ class BentoMLModelDeployer(BaseModelDeployer):
             service.update(config)
             service.start(timeout=timeout)
         else:
-            # create a new MLFlowDeploymentService instance
+            # create a new BentoMLDeploymentService instance
             service = self._create_new_service(timeout, config)
-            logger.info(f"Created a new MLflow deployment service: {service}")
+            logger.info(f"Created a new BentoML deployment service: {service}")
 
         return cast(BaseService, service)
 
@@ -234,16 +234,16 @@ class BentoMLModelDeployer(BaseModelDeployer):
     def _create_new_service(
         self, timeout: int, config: BentoMLDeploymentConfig
     ) -> BentoMLDeploymentService:
-        """Creates a new MLFlowDeploymentService.
+        """Creates a new BentoMLDeploymentService.
 
         Args:
-            timeout: the timeout in seconds to wait for the MLflow server
+            timeout: the timeout in seconds to wait for the BentoML http server
                 to be provisioned and successfully started or updated.
-            config: the configuration of the model to be deployed with MLflow.
+            config: the configuration of the model to be deployed with BentoML.
 
         Returns:
-            The MLFlowDeploymentService object that can be used to interact
-            with the MLflow model server.
+            The BentoMLDeploymentService object that can be used to interact
+            with the BentoML model server.
         """
         # set the root runtime path with the stack component's UUID
         config.root_runtime_path = self.local_path
@@ -260,7 +260,10 @@ class BentoMLModelDeployer(BaseModelDeployer):
         pipeline_name: Optional[str] = None,
         pipeline_run_id: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
+        model_name: Optional[str] = None,
         bento: Optional[str] = None,
+        port: Optional[int] = None,
+        working_dir: Optional[str] = None,
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
     ) -> List[BaseService]:
@@ -277,9 +280,11 @@ class BentoMLModelDeployer(BaseModelDeployer):
             pipeline_step_name: The name of the pipeline model deployment step
                 that deployed the model.
             model_name: Name of the deployed model.
+            bento: tag of the Bento package that was used to deploy the model.
             model_uri: URI of the deployed model.
             model_type: Type/format of the deployed model. Not used in this
-                MLflow case.
+                BentoML case.
+            port: The port on which the model server is listening.
 
         Returns:
             One or more Service objects representing model servers that match
@@ -290,8 +295,11 @@ class BentoMLModelDeployer(BaseModelDeployer):
         """
         services = []
         config = BentoMLDeploymentConfig(
+            model_name=model_name or "",
             bento=bento or "",
+            port=port or DEFAULT_BENTOML_PORT,
             model_uri=model_uri or "",
+            working_dir=working_dir or "",
             pipeline_name=pipeline_name or "",
             pipeline_run_id=pipeline_run_id or "",
             pipeline_step_name=pipeline_step_name or "",
@@ -318,7 +326,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
                         existing_service, BentoMLDeploymentService
                     ):
                         raise TypeError(
-                            f"Expected service type MLFlowDeploymentService but got "
+                            f"Expected service type BentoMLDeploymentService but got "
                             f"{type(existing_service)} instead"
                         )
                     existing_service.update_status()
@@ -342,7 +350,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
         Args:
             existing_service: The materialized Service instance derived from
                 the config of the older (existing) service
-            config: The MLFlowDeploymentConfig object passed to the
+            config: The BentoMlDeploymentConfig object passed to the
                 deploy_model function holding parameters of the new service
                 to be created.
 

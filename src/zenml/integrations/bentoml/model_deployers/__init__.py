@@ -11,10 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the KServe Model Deployer."""
+"""Initialization of the BentoML Model Deployer."""
 
-from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
-    KServeModelDeployer,
+from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (  # noqa
+    BentoMLModelDeployer,
 )
 
-__all__ = ["KServeModelDeployer"]
+__all__ = ["BentoMLModelDeployer"]

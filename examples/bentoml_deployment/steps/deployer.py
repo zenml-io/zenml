@@ -12,12 +12,24 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from .prediction_service_loader import (
-    PredectionServiceLoaderStepParameters,
-    prediction_service_loader,
+from zenml.integrations.bentoml.steps import (
+    BentoMLBuilderParameters,
+    bentoml_model_deployer_step,
 )
 
-__all__ = [
-    "prediction_service_loader",
-    "PredectionServiceLoaderStepParameters",
-]
+MODEL_NAME = "pytorch_mnist"
+
+bentoml_model_deployer = bentoml_model_deployer_step(
+    params=BentoMLBuilderParameters(
+        model_name=MODEL_NAME,
+        model_type="pytorch",
+        service="service.py:svc",
+        port=3001,
+        production=False,
+        labels={
+            "framework": "pytorch",
+            "dataset": "mnist",
+            "zenml_version": "0.21.0",
+        },
+    )
+)
