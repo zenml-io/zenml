@@ -440,10 +440,9 @@ class RestZenStore(BaseZenStore):
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
         hydrated: bool = False,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> Union[List[StackModel], List[HydratedStackModel]]:
+    ) -> Page[StackModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -455,8 +454,7 @@ class RestZenStore(BaseZenStore):
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
             hydrated: Flag to decide whether to return hydrated models.
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all stacks matching the filter criteria.
@@ -464,13 +462,13 @@ class RestZenStore(BaseZenStore):
         filters = locals()
         filters.pop("self")
         if hydrated:
-            return self._list_resources(
+            return self._list_paginated_resources(
                 route=STACKS,
                 resource_model=HydratedStackModel,
                 **filters,
             )
         else:
-            return self._list_resources(
+            return self._list_paginated_resources(
                 route=STACKS,
                 resource_model=StackModel,
                 **filters,
@@ -568,15 +566,14 @@ class RestZenStore(BaseZenStore):
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by whether they are
                 shared or not
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all stack components matching the filter criteria.
         """
         filters = locals()
         filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=STACK_COMPONENTS,
             resource_model=ComponentModel,
             **filters,
@@ -676,9 +673,8 @@ class RestZenStore(BaseZenStore):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> List[FlavorModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[FlavorModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
@@ -689,15 +685,14 @@ class RestZenStore(BaseZenStore):
             name: Optionally filter flavors by name
             is_shared: Optionally filter out flavors by whether they are
                 shared or not
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             List of all the stack component flavors matching the given criteria.
         """
         filters = locals()
         filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=FLAVORS,
             resource_model=FlavorModel,
             **filters,
@@ -779,8 +774,9 @@ class RestZenStore(BaseZenStore):
 
     # TODO: [ALEX] add filtering param(s)
     def list_users(
-        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
-    ) -> List[UserModel]:
+        self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[UserModel]:
         """List all users.
 
         Returns:
@@ -788,7 +784,7 @@ class RestZenStore(BaseZenStore):
         """
         filters = locals()
         filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=USERS,
             resource_model=UserModel,
             **filters,
@@ -884,20 +880,20 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_teams(
-        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
-    ) -> List[TeamModel]:
+        self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[TeamModel]:
         """List all teams.
 
         Args:
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all teams.
         """
         filters = locals()
         filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=TEAMS,
             resource_model=TeamModel,
             **filters,
@@ -1016,20 +1012,20 @@ class RestZenStore(BaseZenStore):
 
     # TODO: [ALEX] add filtering param(s)
     def list_roles(
-        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
-    ) -> List[RoleModel]:
+        self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[RoleModel]:
         """List all roles.
 
         Args:
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all roles.
         """
         filters = locals()
         filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=ROLES,
             resource_model=RoleModel,
             **filters,
@@ -1072,9 +1068,8 @@ class RestZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-        offset: int = 0,
-        limit: int = 100,
-    ) -> List[RoleAssignmentModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[RoleAssignmentModel]:
         """List all role assignments.
 
         Args:
@@ -1084,8 +1079,7 @@ class RestZenStore(BaseZenStore):
                 team
             user_name_or_id: If provided, only list assignments for the given
                 user
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all role assignments.
@@ -1093,7 +1087,7 @@ class RestZenStore(BaseZenStore):
         roles: List[RoleAssignmentModel] = []
         if user_name_or_id:
             roles.extend(
-                self._list_resources(
+                self._list_paginated_resources(
                     route=f"{USERS}/{user_name_or_id}{ROLES}",
                     resource_model=RoleAssignmentModel,
                     project_name_or_id=project_name_or_id,
@@ -1101,7 +1095,7 @@ class RestZenStore(BaseZenStore):
             )
         if team_name_or_id:
             roles.extend(
-                self._list_resources(
+                self._list_paginated_resources(
                     route=f"{TEAMS}/{team_name_or_id}{ROLES}",
                     resource_model=RoleAssignmentModel,
                     project_name_or_id=project_name_or_id,
@@ -1184,20 +1178,20 @@ class RestZenStore(BaseZenStore):
 
     # TODO: [ALEX] add filtering param(s)
     def list_projects(
-        self, offset: int = OFFSET, limit: int = LIMIT_DEFAULT
-    ) -> List[ProjectModel]:
+        self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[ProjectModel]:
         """List all projects.
 
         Args:
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all projects.
         """
         filters = locals()
         filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=PROJECTS,
             resource_model=ProjectModel,
             **filters,
@@ -1271,24 +1265,22 @@ class RestZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> List[PipelineModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[PipelineModel]:
         """List all pipelines in the project.
 
         Args:
             project_name_or_id: If provided, only list pipelines in this project.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of pipelines.
         """
         filters = locals()
         filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=PIPELINES,
             resource_model=PipelineModel,
             **filters,
@@ -1364,9 +1356,8 @@ class RestZenStore(BaseZenStore):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-        offset: int = OFFSET,
-        limit: int = LIMIT_DEFAULT,
-    ) -> List[PipelineRunModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[PipelineRunModel]:
         """Gets all pipeline runs.
 
         Args:
@@ -1379,15 +1370,14 @@ class RestZenStore(BaseZenStore):
             pipeline_id: If provided, only return runs for this pipeline.
             unlisted: If True, only return unlisted runs that are not
                 associated with any pipeline (filter by `pipeline_id==None`).
-            offset: Offset to use for pagination
-            limit: Limit to set for pagination
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all pipeline runs.
         """
         filters = locals()
         filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=RUNS,
             resource_model=PipelineRunModel,
             **filters,
@@ -1905,6 +1895,33 @@ class RestZenStore(BaseZenStore):
         body = self.get(f"{route}/{str(resource_id)}")
         return resource_model.parse_obj(body)
 
+    def _list_paginated_resources(
+        self,
+        route: str,
+        **filters: Any,
+    ) -> Page[AnyModel]:
+        """Retrieve a list of resources filtered by some criteria.
+
+        Args:
+            route: The resource REST API route to use.
+            resource_model: Model to use to serialize the response body.
+            filters: Filter parameters to use in the query.
+
+        Returns:
+            List of retrieved resources matching the filter criteria.
+
+        Raises:
+            ValueError: If the value returned by the server is not a list.
+        """
+        # leave out filter params that are not supplied
+        params = dict(filter(lambda x: x[1] is not None, filters.items()))
+        body = self.get(f"{route}", params=params)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return Page.parse_obj(body)
+
     def _list_resources(
         self,
         route: str,
@@ -1932,6 +1949,7 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected list, got {type(body)}"
             )
         return [resource_model.parse_obj(entry) for entry in body]
+
 
     def _update_resource(
         self,
