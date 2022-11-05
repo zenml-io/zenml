@@ -762,7 +762,7 @@ def test_get_pipeline_succeeds(
     )
     sql_store["store"].create_pipeline(pipeline=new_pipeline)
     pipeline_id = sql_store["store"].list_pipelines()[0].id
-    pipeline = sql_store["store"].get_pipeline(pipeline_id=pipeline_id)
+    pipeline = sql_store["store"].get_pipeline(name_id_or_prefix=pipeline_id)
     assert pipeline is not None
     assert pipeline.name == "arias_pipeline"
 

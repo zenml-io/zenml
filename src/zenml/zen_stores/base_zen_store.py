@@ -45,6 +45,7 @@ from zenml.new_models import (
     StackModel,
     StackRequestModel,
     TeamModel,
+    TeamRequestModel,
     UserModel,
     UserRequestModel,
 )
@@ -609,13 +610,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         team = self.get_team(team_name_or_id=team_name_or_id)
         user = self.get_user(user_name_or_id=user_name_or_id)
 
-        update_model = TeamUpdateModel(
+        update_model = TeamRequestModel(
             users=[u.id for u in team.users] + [user.id]
         )
-        return self.update_team(
-            team_name_or_id=team.id,
-            team_update=update_model,
-        )
+        self.update_team(team_name_or_id=team.id, team_update=update_model)
 
     def remove_user_from_team(
         self,
@@ -631,9 +629,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         team = self.get_team(team_name_or_id=team_name_or_id)
         user = self.get_user(user_name_or_id=user_name_or_id)
 
-        update_model = TeamUpdateModel(
-            users=[u.id for u in team.users] + [user.id]
+        update_model = TeamRequestModel(
+            users=[u.id for u in team.users if u.id == user.id]
         )
+        self.update_team(team_name_or_id=team.id, team_update=update_model)
 
     # -----
     # Roles

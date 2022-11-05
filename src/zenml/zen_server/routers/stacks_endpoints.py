@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.new_models import StackModel, StackRequestModel
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -43,6 +43,7 @@ def list_stacks(
     component_id: Optional[UUID] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
+    auth_context: AuthContext = Depends(authorize),
 ) -> List[StackModel]:
     """Returns all stacks.
 
@@ -52,18 +53,30 @@ def list_stacks(
         component_id: Optionally filter by component that is part of the stack.
         name: Optionally filter by stack name
         is_shared: Optionally filter by shared status of the stack
+        auth_context: Authentication Context
 
     Returns:
         All stacks.
     """
-    # TODO: Implement a sensible filtering mechanism
-    return zen_store().list_stacks(
+    stacks = zen_store().list_stacks(
         project_name_or_id=project_name_or_id,
-        user_name_or_id=user_name_or_id,
+        user_name_or_id=user_name_or_id or auth_context.user.id,
         component_id=component_id,
-        is_shared=is_shared,
+        is_shared=False,
         name=name,
     )
+    # In case the user didn't explicitly filter for is shared == False
+    if is_shared is None or is_shared:
+        shared_stacks = zen_store().list_stacks(
+            project_name_or_id=project_name_or_id,
+            user_name_or_id=user_name_or_id,
+            component_id=component_id,
+            is_shared=True,
+            name=name,
+        )
+        stacks += shared_stacks
+
+    return stacks
 
 
 @router.get(

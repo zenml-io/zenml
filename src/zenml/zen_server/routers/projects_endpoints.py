@@ -187,8 +187,9 @@ def list_project_stacks(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[UUID] = None,
-    stack_name: Optional[str] = None,
+    name: Optional[str] = None,
     is_shared: Optional[bool] = None,
+    auth_context: AuthContext = Depends(authorize),
 ) -> List[StackModel]:
     """Get stacks that are part of a specific project.
 
@@ -198,19 +199,32 @@ def list_project_stacks(
         project_name_or_id: Name or ID of the project.
         user_name_or_id: Optionally filter by name or ID of the user.
         component_id: Optionally filter by component that is part of the stack.
-        stack_name: Optionally filter by stack name
+        name: Optionally filter by stack name
         is_shared: Optionally filter by shared status of the stack
+        auth_context: Authentication Context
 
     Returns:
         All stacks part of the specified project.
     """
-    return zen_store().list_stacks(
+    stacks = zen_store().list_stacks(
         project_name_or_id=project_name_or_id,
-        user_name_or_id=user_name_or_id,
+        user_name_or_id=user_name_or_id or auth_context.user.id,
         component_id=component_id,
-        is_shared=is_shared,
-        name=stack_name,
+        is_shared=False,
+        name=name,
     )
+    # In case the user didn't explicitly filter for is shared == False
+    if is_shared is None or is_shared:
+        shared_stacks = zen_store().list_stacks(
+            project_name_or_id=project_name_or_id,
+            user_name_or_id=user_name_or_id or auth_context.user.id,
+            component_id=component_id,
+            is_shared=True,
+            name=name,
+        )
+        stacks += shared_stacks
+
+    return stacks
 
 
 @router.post(
@@ -256,6 +270,7 @@ def list_project_stack_components(
     name: Optional[str] = None,
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
+    auth_context: AuthContext = Depends(authorize),
 ) -> List[ComponentModel]:
     """List stack components that are part of a specific project.
 
@@ -268,18 +283,32 @@ def list_project_stack_components(
         type: Optionally filter by component type
         flavor_name: Optionally filter by flavor name
         is_shared: Optionally filter by shared status of the component
+        auth_context: Authentication Context
 
     Returns:
         All stack components part of the specified project.
     """
-    return zen_store().list_stack_components(
-        project_name_or_id=project_name_or_id,
-        user_name_or_id=user_name_or_id,
-        type=type,
-        is_shared=is_shared,
+    components = zen_store().list_stack_components(
         name=name,
+        user_name_or_id=user_name_or_id or auth_context.user.id,
+        project_name_or_id=project_name_or_id,
         flavor_name=flavor_name,
+        type=type,
+        is_shared=False,
     )
+    # In case the user didn't explicitly filter for is shared == False
+    if is_shared is None or is_shared:
+        shared_components = zen_store().list_stack_components(
+            project_name_or_id=project_name_or_id,
+            user_name_or_id=user_name_or_id,
+            flavor_name=flavor_name,
+            name=name,
+            type=type,
+            is_shared=True,
+        )
+
+        components += shared_components
+    return components
 
 
 @router.post(

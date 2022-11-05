@@ -119,26 +119,24 @@ def list_pipeline_runs(
         stack_id, pipeline_id, user_id = None, None, None
         client = Client()
         if stack:
-            stack_id = cli_utils.get_stack_by_id_or_name_or_prefix(
-                client=client, id_or_name_or_prefix=stack
-            ).id
+            stack_id = client.get_stack(stack).id
         if pipeline:
-            pipeline_id = client.get_pipeline_by_name(pipeline).id
+            pipeline_id = client.get_pipeline(pipeline).id
         if user:
-            user_id = client.zen_store.get_user(user).id
-        pipeline_runs = Client().zen_store.list_runs(
-            project_name_or_id=Client().active_project.id,
-            user_name_or_id=user_id,
+            client.get_user(user).id
+        pipeline_runs = client.list_runs(
             pipeline_id=pipeline_id,
             stack_id=stack_id,
+            user_name_or_id=user,
             unlisted=unlisted,
         )
     except KeyError as err:
         cli_utils.error(str(err))
-    if not pipeline_runs:
-        cli_utils.declare("No pipeline runs registered.")
-        return
+    else:
+        if not pipeline_runs:
+            cli_utils.declare("No pipeline runs registered.")
+            return
 
-    cli_utils.print_pipeline_runs_table(
-        client=client, pipeline_runs=pipeline_runs
-    )
+        cli_utils.print_pipeline_runs_table(
+            client=client, pipeline_runs=pipeline_runs
+        )

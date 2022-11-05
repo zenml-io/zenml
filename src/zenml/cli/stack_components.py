@@ -322,7 +322,7 @@ def generate_stack_component_share_command(
         client = Client()
 
         with console.status(
-                f"Updating {display_name} '{name_id_or_prefix}'...\n"
+            f"Updating {display_name} '{name_id_or_prefix}'...\n"
         ):
             client.update_stack_component(
                 name_id_or_prefix=name_id_or_prefix,
@@ -371,7 +371,9 @@ def generate_stack_component_remove_attribute_command(
 
         client = Client()
 
-        with console.status(f"Updating {display_name} '{name_id_or_prefix}'...\n"):
+        with console.status(
+            f"Updating {display_name} '{name_id_or_prefix}'...\n"
+        ):
             client.update_stack_component(
                 name_id_or_prefix=name_id_or_prefix,
                 component_type=component_type,
@@ -408,7 +410,9 @@ def generate_stack_component_rename_command(
         type=str,
         required=True,
     )
-    def rename_stack_component_command(name_id_or_prefix: str, new_name: str) -> None:
+    def rename_stack_component_command(
+        name_id_or_prefix: str, new_name: str
+    ) -> None:
         """Rename a stack component.
 
         Args:
@@ -421,7 +425,7 @@ def generate_stack_component_rename_command(
         client = Client()
 
         with console.status(
-                f"Renaming {display_name} '{name_id_or_prefix}'...\n"
+            f"Renaming {display_name} '{name_id_or_prefix}'...\n"
         ):
             client.update_stack_component(
                 name_id_or_prefix=name_id_or_prefix,
@@ -463,7 +467,7 @@ def generate_stack_component_delete_command(
         client = Client()
 
         with console.status(
-                f"Deleting {display_name} '{name_id_or_prefix}'...\n"
+            f"Deleting {display_name} '{name_id_or_prefix}'...\n"
         ):
             client.deregister_stack_component(
                 name_id_or_prefix=name_id_or_prefix,
@@ -487,7 +491,9 @@ def generate_stack_component_copy_command(
     """
     display_name = _component_display_name(component_type)
 
-    @click.argument("source_component_name_id_or_prefix", type=str, required=True)
+    @click.argument(
+        "source_component_name_id_or_prefix", type=str, required=True
+    )
     @click.argument("target_component", type=str, required=True)
     def copy_stack_component_command(
         source_component_name_id_or_prefix: str,
@@ -508,7 +514,7 @@ def generate_stack_component_copy_command(
         client = Client()
 
         with console.status(
-            f"Copying {display_name} " 
+            f"Copying {display_name} "
             f"`{source_component_name_id_or_prefix}`..\n"
         ):
             component_to_copy = client.get_stack_component(

@@ -67,13 +67,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import (
-    ProjectModel,
-    RoleAssignmentModel,
-    RoleModel,
-    TeamModel,
-    UserModel,
-)
+from zenml.models import RoleAssignmentModel
 from zenml.models.server_models import ServerModel
 from zenml.new_models import (
     ArtifactModel,
@@ -102,6 +96,7 @@ from zenml.new_models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
+from zenml.new_models.team_models import TeamResponseModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -826,7 +821,7 @@ class RestZenStore(BaseZenStore):
     @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
         self, team_id: UUID, team_update: TeamRequestModel
-    ) -> TeamModel:
+    ) -> TeamResponseModel:
         """Update an existing team.
 
         Args:

@@ -47,6 +47,7 @@ from zenml.new_models.pipeline_models import (
 from zenml.new_models.pipeline_run_models import PipelineRunResponseModel
 from zenml.new_models.stack_models import StackRequestModel, StackResponseModel
 from zenml.new_models.step_run_models import StepRunResponseModel
+from zenml.new_models.team_models import TeamResponseModel
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
@@ -366,7 +367,8 @@ class ZenStoreInterface(ABC):
         """Get a stack component flavor by ID.
 
         Args:
-            flavor_id: The ID of the stack component flavor to get.
+            name_id_or_prefix: The name, ID or prefix to the id of the flavor
+                to get.
 
         Returns:
             The stack component flavor.
@@ -530,7 +532,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_team(
         self, team_name_or_id: UUID, team_update: TeamRequestModel
-    ) -> TeamModel:
+    ) -> TeamResponseModel:
         """Update an existing team.
 
         Args:

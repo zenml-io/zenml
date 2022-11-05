@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.new_models import ComponentModel, ComponentRequestModel
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -51,6 +51,7 @@ def list_stack_components(
     name: Optional[str] = None,
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
+    auth_context: AuthContext = Depends(authorize),
 ) -> List[ComponentModel]:
     """Get a list of all stack components for a specific type.
 
@@ -61,19 +62,34 @@ def list_stack_components(
         type: Optionally filter by component type
         flavor_name: Optionally filter by flavor
         is_shared: Optionally filter by shared status of the component
+        auth_context: Authentication Context
 
     Returns:
         List of stack components for a specific type.
     """
     # TODO: Implement a sensible filtering mechanism
-    return zen_store().list_stack_components(
-        project_name_or_id=project_name_or_id,
-        user_name_or_id=user_name_or_id,
-        type=type,
+
+    components = zen_store().list_stack_components(
         name=name,
+        user_name_or_id=user_name_or_id or auth_context.user.id,
+        project_name_or_id=project_name_or_id,
         flavor_name=flavor_name,
-        is_shared=is_shared,
+        type=type,
+        is_shared=False,
     )
+    # In case the user didn't explicitly filter for is shared == False
+    if is_shared is None or is_shared:
+        shared_components = zen_store().list_stack_components(
+            project_name_or_id=project_name_or_id,
+            user_name_or_id=user_name_or_id,
+            flavor_name=flavor_name,
+            name=name,
+            type=type,
+            is_shared=True,
+        )
+
+        components += shared_components
+    return components
 
 
 @router.get(

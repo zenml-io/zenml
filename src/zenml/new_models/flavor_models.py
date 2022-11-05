@@ -14,6 +14,8 @@ from zenml.new_models.base_models import (
 # ---- #
 # BASE #
 # ---- #
+
+
 class FlavorBaseModel(BaseModel):
     name: str = Field(
         title="The name of the Flavor.",

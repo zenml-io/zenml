@@ -579,7 +579,7 @@ def list_stacks() -> None:
 
     client = Client()
 
-    with console.status(f"Listing stacks...\n"):
+    with console.status("Listing stacks...\n"):
         stacks = client.list_stacks()
         print_stacks_table(client, stacks)
 

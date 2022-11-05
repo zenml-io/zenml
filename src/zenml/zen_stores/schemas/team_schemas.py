@@ -16,7 +16,6 @@ from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.models import TeamModel
 from zenml.new_models import TeamModel, TeamRequestModel
 from zenml.zen_stores.schemas import TeamRoleAssignmentSchema, UserSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema

@@ -78,6 +78,7 @@ from zenml.new_models import (
     UserModel,
     UserRequestModel,
 )
+from zenml.new_models.team_models import TeamResponseModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
@@ -1512,7 +1513,7 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
         self, team_id: UUID, team_update: TeamRequestModel
-    ) -> TeamModel:
+    ) -> TeamResponseModel:
         """Update an existing team.
 
         Args:
