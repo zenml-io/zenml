@@ -12,11 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the MLflow model deployer pipeline step."""
+import os
+import tempfile
+from typing import Dict, List, Optional, Type, cast
 
-from typing import Optional, Type, cast
+import bentoml
+import torch
+from bentoml import bentos
 
 from zenml.artifacts.model_artifact import ModelArtifact
-from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.environment import Environment
 from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (
@@ -26,6 +30,7 @@ from zenml.integrations.bentoml.services.bentoml_deployment import (
     BentoMLDeploymentConfig,
     BentoMLDeploymentService,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
@@ -34,11 +39,12 @@ from zenml.steps import (
     StepEnvironment,
     step,
 )
+from zenml.steps.step_context import StepContext
 
 logger = get_logger(__name__)
 
 
-class BentoMLDeployerParameters(BaseParameters):
+class BentoMLBuilderParameters(BaseParameters):
     """Model deployer step parameters for MLflow.
 
     Attributes:
@@ -54,15 +60,107 @@ class BentoMLDeployerParameters(BaseParameters):
         timeout: the number of seconds to wait for the service to start/stop.
     """
 
-    model_parameters: BentoMLModelRegistryParameters
-    timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
+    service: str
+    model_name: str
+    model_type: str
+    version: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    description: Optional[str] = None
+    include: Optional[List[str]] = None
+    exclude: Optional[List[str]] = None
+    python: Optional[Dict[str, str]] = None
+    docker: Optional[Dict[str, str]] = None
+    port: int
+    workers: int = None
+    backlog: int = None
+    production: bool = False
+    working_dir: str = None
+    host: str = None
+    timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT * 2
+
+
+def bento_deployer(
+    model: ModelArtifact,
+    params: BentoMLBuilderParameters,
+    context: StepContext,
+) -> None:
+    """Build a bentoML Model and Bneto and save it"""
+
+    if params.model_type == "tensorflow":
+        bento_model = bentoml.tensorflow.save_model(
+            params.model_name,
+            model,
+            signatures={"__call__": {"batchable": True, "batch_dim": 0}},
+            labels=params.labels,
+        )
+    elif params.model_type == "sklearn":
+        bento_model = bentoml.sklearn.save_model(
+            params.model_name,
+            model,
+            signatures={"predict": {"batchable": True, "batch_dim": 0}},
+        )
+    elif params.model_type == "pytorch":
+        with fileio.open(os.path.join(model.uri, "entire_model.pt"), "rb") as f:
+            model = torch.load(f)
+        bento_model = bentoml.pytorch.save_model(
+            params.model_name,
+            model,
+            signatures={"__call__": {"batchable": True, "batchdim": 0}},
+        )
+    elif params.model_type == "transformers":
+        bento_model = bentoml.transformers.save_model(
+            params.model_name,
+            model,
+            signatures={"__call__": {"batchable": True, "batchdim": 0}},
+        )
+    elif params.model_type == "xgboost":
+        bento_model = bentoml.xgboost.save_model(
+            params.model_name,
+            model,
+        )
+    else:
+        bento_model = bentoml.picklable_model.save_model(
+            params.model_name,
+            model,
+            signatures={"batchable": True, "batch_dim": 0},
+        )
+
+    logger.info(
+        f"model saved {bento_model}",
+    )
+    
+    bento = bentos.build(
+        service=params.service,
+        version=params.version,
+        labels=params.labels,
+        description=params.description,
+        include=params.include,
+        exclude=params.exclude,
+        python=params.python,
+        docker=params.docker,
+        build_ctx=params.working_dir,
+    )
+
+    temp_dir = tempfile.TemporaryDirectory()
+
+    exported = bentos.export_bento(bento.tag, temp_dir.name)
+
+    exported_bento_uri = os.path.join(
+        context.get_output_artifact_uri(), "bentos"
+    )
+    fileio.makedirs(exported_bento_uri)
+
+    fileio.copy(exported, os.path.join(exported_bento_uri, str(bento.tag)))
+
+    return (str(bento.tag), os.path.join(exported_bento_uri, str(bento.tag)))
 
 
 @step(enable_cache=False)
 def bentoml_model_deployer_step(
     deploy_decision: bool,
     model: ModelArtifact,
-    params: BentoMLDeployerParameters,
+    params: BentoMLBuilderParameters,
+    context: StepContext,
 ) -> BentoMLDeploymentService:
     """Model deployer pipeline step for BentoML.
 
@@ -76,16 +174,27 @@ def bentoml_model_deployer_step(
     Returns:
         BentoML deployment service
     """
+
+    from zenml.client import Client
+
+    repo_path = Client.find_repository()
+    if not repo_path:
+        raise ValueError("No ZenML repository found.")
+
+    if params.working_dir is None:
+        params.working_dir = str(repo_path)
+
     model_deployer = cast(
         BentoMLModelDeployer, BentoMLModelDeployer.get_active_model_deployer()
     )
-
 
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
     run_id = step_env.pipeline_run_id
     step_name = step_env.step_name
+
+    bento, bento_uri = bento_deployer(model, params, context=context)
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
@@ -96,51 +205,22 @@ def bentoml_model_deployer_step(
 
     # create a config for the new model service
     predictor_cfg = BentoMLDeploymentConfig(
-        model_name=params.model_name or "",
-        model_uri=model_uri,
+        model_name=params.model_name,
+        bento=bento,
+        model_uri=bento_uri,
         workers=params.workers,
-        mlserver=params.mlserver,
+        working_dir=params.working_dir,
+        port=params.port,
         pipeline_name=pipeline_name,
         pipeline_run_id=run_id,
         pipeline_step_name=step_name,
     )
 
     # Creating a new service with inactive state and status by default
-    service = MLFlowDeploymentService(predictor_cfg)
+    service = BentoMLDeploymentService(predictor_cfg)
     if existing_services:
-        service = cast(MLFlowDeploymentService, existing_services[0])
+        service = cast(BentoMLDeploymentService, existing_services[0])
 
-    # check for conditions to deploy the model
-    if not model_uri:
-        # an MLflow model was not trained in the current run, so we simply reuse
-        # the currently running service created for the same model, if any
-        if not existing_services:
-            logger.warning(
-                f"An MLflow model with name `{params.model_name}` was not "
-                f"logged in the current pipeline run and no running MLflow "
-                f"model server was found. Please ensure that your pipeline "
-                f"includes a step with a MLflow experiment configured that "
-                "trains a model and logs it to MLflow. This could also happen "
-                "if the current pipeline run did not log an MLflow model  "
-                f"because the training step was cached."
-            )
-            # return an inactive service just because we have to return
-            # something
-            return service
-        logger.info(
-            f"An MLflow model with name `{params.model_name}` was not "
-            f"trained in the current pipeline run. Reusing the existing "
-            f"MLflow model server."
-        )
-        if not service.is_running:
-            service.start(params.timeout)
-
-        # return the existing service
-        return service
-
-    # even when the deploy decision is negative, if an existing model server
-    # is not running for this pipeline/step, we still have to serve the
-    # current model, to ensure that a model server is available at all times
     if not deploy_decision and existing_services:
         logger.info(
             f"Skipping model deployment because the model quality does not "
@@ -148,16 +228,13 @@ def bentoml_model_deployer_step(
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
             f"'{params.model_name}'..."
         )
-        # even when the deploy decision is negative, we still need to start
-        # the previous model server if it is no longer running, to ensure
-        # that a model server is available at all times
         if not service.is_running:
-            service.start(params.timeout)
+            service.start(timeout=params.timeout)
         return service
 
     # create a new model deployment and replace an old one if it exists
     new_service = cast(
-        MLFlowDeploymentService,
+        BentoMLDeploymentService,
         model_deployer.deploy_model(
             replace=True,
             config=predictor_cfg,
@@ -166,14 +243,14 @@ def bentoml_model_deployer_step(
     )
 
     logger.info(
-        f"MLflow deployment service started and reachable at:\n"
+        f"BentoML deployment service started and reachable at:\n"
         f"    {new_service.prediction_url}\n"
     )
 
     return new_service
 
 
-def mlflow_deployer_step(
+def bentoml_deployer_step(
     enable_cache: bool = True,
     name: Optional[str] = None,
 ) -> Type[BaseStep]:
@@ -194,4 +271,4 @@ def mlflow_deployer_step(
         "The `mlflow_deployer_step` function is deprecated. Please "
         "use the built-in `mlflow_model_deployer_step` step instead."
     )
-    return mlflow_model_deployer_step
+    return bentoml_model_deployer_step

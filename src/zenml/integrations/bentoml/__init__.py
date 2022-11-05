@@ -11,10 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the KServe integration for ZenML.
+"""Initialization of the BentoML integration for ZenML.
 
-The KServe integration allows you to use the KServe model serving
-platform to implement continuous model deployment.
+The BentoML integration allows you to use the BentoML model serving
+to implement continuous model deployment.
 """
 from typing import List, Type
 
@@ -32,7 +32,7 @@ class BentoMLIntegration(Integration):
 
     NAME = BENTOML
     REQUIREMENTS = [
-        "bentoml==1.0.8",
+        "bentoml>=1.0.8",
     ]
 
     @classmethod
@@ -49,7 +49,9 @@ class BentoMLIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.bentoml.flavors import BentoMLModelDeployerFlavor
+        from zenml.integrations.bentoml.flavors import (
+            BentoMLModelDeployerFlavor,
+        )
 
         return [BentoMLModelDeployerFlavor]
 

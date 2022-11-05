@@ -1,8 +1,0 @@
-service: "service:svc"
-include:
-- "*.py"
-python:
-  packages:
-    - numpy
-    - torch
-    - Pillow
