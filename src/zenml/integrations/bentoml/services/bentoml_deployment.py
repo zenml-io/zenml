@@ -209,5 +209,3 @@ class BentoMLDeploymentService(LocalDaemonService):
         if not self.is_running:
             return None
         return self.endpoint.prediction_url
-
-

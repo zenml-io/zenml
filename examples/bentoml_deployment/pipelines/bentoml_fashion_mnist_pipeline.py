@@ -13,18 +13,19 @@
 #  permissions and limitations under the License.
 
 from zenml.config import DockerSettings
-from zenml.integrations.constants import PYTORCH
+from zenml.integrations.constants import PYTORCH, BENTOML
 from zenml.pipelines import pipeline
 
-docker_settings = DockerSettings(required_integrations=[PYTORCH])
+docker_settings = DockerSettings(required_integrations=[PYTORCH, BENTOML])
 
 
 @pipeline(settings={"docker": docker_settings})
-def fashion_mnist_pipeline(
+def bentoml_fashion_mnist_pipeline(
     importer,
     trainer,
     evaluator,
     deployment_trigger,
+    bento_builder,
     deployer,
 ):
     """Link all the steps and artifacts together"""
@@ -32,4 +33,5 @@ def fashion_mnist_pipeline(
     model = trainer(train_dataloader)
     accuracy = evaluator(test_dataloader=test_dataloader, model=model)
     decision = deployment_trigger(accuracy=accuracy)
-    deployer(deploy_decision=decision, model=model)
+    bento = bento_builder(model=model)
+    deployer(deploy_decision=decision, bento=bento)
