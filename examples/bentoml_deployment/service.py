@@ -8,8 +8,6 @@ import numpy as np
 from bentoml.io import Image, NumpyNdarray
 from PIL.Image import Image as PILImage
 
-from steps.deployer import MODEL_NAME
-
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 

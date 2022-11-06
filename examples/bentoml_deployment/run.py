@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines.fashion_mnist_pipeline import fashion_mnist_pipeline
+from pipelines.bentoml_fashion_mnist_pipeline import bentoml_fashion_mnist_pipeline
+from steps.bento_builder import bento_builder
 from steps.deployer import bentoml_model_deployer
 from steps.deployment_trigger_step import (
     DeploymentTriggerParameters,
@@ -22,8 +23,10 @@ from steps.evaluators import evaluator
 from steps.importers import importer_mnist
 from steps.trainers import trainer
 
+MODEL_NAME = "pytorch_mnist"
+
 if __name__ == "__main__":
-    fashion_mnist_pipeline(
+    bentoml_fashion_mnist_pipeline(
         importer=importer_mnist(),
         trainer=trainer(),
         evaluator=evaluator(),
@@ -32,5 +35,6 @@ if __name__ == "__main__":
                 min_accuracy=0.80,
             )
         ),
+        bento_builder=bento_builder,
         deployer=bentoml_model_deployer,
     ).run()

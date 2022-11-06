@@ -11,22 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the BentoML standard interface steps."""
+"""Initialization of the BentoML Bento Materializer."""
 
-from zenml.integrations.bentoml.steps.bento_builder import (
-    BentoMLBuilderParameters,
-    bento_builder_step,
+from zenml.integrations.bentoml.materializers.bentoml_bento_materializer import (  # noqa
+    BentoMaterializer,
 )
-from zenml.integrations.bentoml.steps.bentoml_deployer import (
-    BentoMLDeployerParameters,
-    bentoml_deployer_step,
-    bentoml_model_deployer_step,
-)
-
-__all__ = [
-    "BentoMLBuilderParameters",
-    "bento_builder_step",
-    "BentoMLDeployerParameters",
-    "bentoml_model_deployer_step",
-    "bentoml_deployer_step",
-]

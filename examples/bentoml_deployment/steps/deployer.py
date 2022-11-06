@@ -13,23 +13,16 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.bentoml.steps import (
-    BentoMLBuilderParameters,
+    BentoMLDeployerParameters,
     bentoml_model_deployer_step,
 )
 
 MODEL_NAME = "pytorch_mnist"
 
 bentoml_model_deployer = bentoml_model_deployer_step(
-    params=BentoMLBuilderParameters(
+    params=BentoMLDeployerParameters(
         model_name=MODEL_NAME,
-        model_type="pytorch",
-        service="service.py:svc",
         port=3001,
         production=False,
-        labels={
-            "framework": "pytorch",
-            "dataset": "mnist",
-            "zenml_version": "0.21.0",
-        },
     )
 )
