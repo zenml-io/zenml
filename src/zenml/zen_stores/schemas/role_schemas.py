@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 from uuid import UUID
 
 from sqlmodel import Field, Relationship
@@ -22,9 +22,12 @@ from zenml.new_models import (
     RoleModel,
     RoleRequestModel,
 )
-from zenml.zen_stores.schemas import ProjectSchema, TeamSchema, UserSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+    from zenml.zen_stores.schemas.team_schemas import TeamSchema
+    from zenml.zen_stores.schemas.team_schemas import UserSchema
 
 class RoleSchema(BaseSchema, table=True):
     """SQL Model for roles."""
@@ -74,7 +77,7 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
     )
 
     role: RoleSchema = Relationship(back_populates="user_role_assignments")
-    user: UserSchema = Relationship(back_populates="assigned_roles")
+    user: "UserSchema" = Relationship(back_populates="assigned_roles")
     project: Optional["ProjectSchema"] = Relationship(
         back_populates="user_role_assignments"
     )
@@ -115,7 +118,7 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
         foreign_key="projectschema.id", nullable=True
     )
     role: RoleSchema = Relationship(back_populates="team_role_assignments")
-    team: TeamSchema = Relationship(back_populates="assigned_roles")
+    team: "TeamSchema" = Relationship(back_populates="assigned_roles")
     project: Optional["ProjectSchema"] = Relationship(
         back_populates="team_role_assignments"
     )

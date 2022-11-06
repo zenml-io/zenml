@@ -63,10 +63,10 @@ from zenml.new_models.user_models import UserResponseModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
+from zenml.enums import StackComponentType
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
-    from zenml.enums import StackComponentType
     from zenml.new_models import (
         ComponentModel,
         FlavorModel,

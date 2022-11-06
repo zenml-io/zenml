@@ -11,14 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List
+from typing import List, TYPE_CHECKING
 from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.new_models import TeamModel, TeamRequestModel
-from zenml.zen_stores.schemas import TeamRoleAssignmentSchema, UserSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.user_schemas import UserSchema
+    from zenml.zen_stores.schemas.role_schemas import TeamRoleAssignmentSchema
 
 
 class TeamAssignmentSchema(SQLModel, table=True):

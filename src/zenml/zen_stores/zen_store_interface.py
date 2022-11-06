@@ -28,8 +28,7 @@ from zenml.new_models import (
     TeamModel,
     TeamRequestModel,
     UserModel,
-    UserRequestModel,
-    UserUpdateModel,
+    UserRequestModel
 )
 from zenml.new_models.artifact_models import ArtifactResponseModel
 from zenml.new_models.component_models import (
@@ -466,7 +465,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_user(
-        self, user_name_or_id: UUID, user_update: UserUpdateModel
+        self, user_name_or_id: UUID, user_update: UserRequestModel
     ) -> UserModel:
         """Updates an existing user.
 
