@@ -632,6 +632,9 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             True if the component is running locally, False otherwise.
         """
+        if not self.is_local_instance:
+            return True
+
         if sys.platform != "win32":
             from zenml.utils.daemon import check_if_daemon_is_running
 
