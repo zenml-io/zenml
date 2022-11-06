@@ -20,6 +20,7 @@ from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
+from zenml.integrations.bentoml.constants import BENTOML_DEFAULT_PORT
 from zenml.integrations.bentoml.flavors.bentoml_model_deployer_flavor import (
     BentoMLModelDeployerConfig,
     BentoMLModelDeployerFlavor,
@@ -36,9 +37,6 @@ from zenml.services.service import BaseService, ServiceConfig
 from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 
 logger = get_logger(__name__)
-
-DEFAULT_BENTOML_PORT = 3000
-
 
 class BentoMLModelDeployer(BaseModelDeployer):
     """BentoML model deployer stack component implementation."""
@@ -118,8 +116,10 @@ class BentoMLModelDeployer(BaseModelDeployer):
             "BENTO_TAG": service_instance.config.bento,
             "MODEL_NAME": service_instance.config.model_name,
             "MODEL_URI": service_instance.config.model_uri,
+            "BENTO_URI": service_instance.config.bento_uri,
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
+            "PREDICITON_APIS_URLS": "  ".join(service_instance.prediction_apis_urls),
         }
 
     def deploy_model(
@@ -297,7 +297,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
         config = BentoMLDeploymentConfig(
             model_name=model_name or "",
             bento=bento or "",
-            port=port or DEFAULT_BENTOML_PORT,
+            port=port or BENTOML_DEFAULT_PORT,
             model_uri=model_uri or "",
             working_dir=working_dir or "",
             pipeline_name=pipeline_name or "",

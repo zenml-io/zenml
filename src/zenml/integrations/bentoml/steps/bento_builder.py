@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the BentoML bento builder step."""
+import os
 from typing import Dict, List, Optional
 
 import bentoml
@@ -20,8 +21,10 @@ from bentoml._internal.bento import bento
 
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.client import Client
+from zenml.integrations.bentoml.constants import DEFAULT_BENTO_FILENAME
 from zenml.logger import get_logger
 from zenml.steps import BaseParameters, step
+from zenml.steps.step_context import StepContext
 from zenml.utils.materializer_utils import model_from_model_artifact
 
 logger = get_logger(__name__)
@@ -60,6 +63,7 @@ class BentoMLBuilderParameters(BaseParameters):
 def bento_builder_step(
     model: ModelArtifact,
     params: BentoMLBuilderParameters,
+    context: StepContext,
 ) -> bento.Bento:
     """Build a bentoML Model and Bneto and save it"""
 
@@ -68,8 +72,9 @@ def bento_builder_step(
     if not repo_path:
         raise ValueError("No ZenML repository found.")
 
-    # save the model uri as part of the bento lables
+    # save the model and bento uri as part of the bento lables
     params.labels["model_uri"] = model.uri
+    params.labels["bento_uri"] = os.path.join(context.get_output_artifact_uri(),DEFAULT_BENTO_FILENAME)
 
     # Load the model from the model artifact
     model = model_from_model_artifact(model)

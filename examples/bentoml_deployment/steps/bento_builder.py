@@ -11,12 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from constants import MODEL_NAME
 from zenml.integrations.bentoml.steps import (
     BentoMLBuilderParameters,
     bento_builder_step,
 )
-
-MODEL_NAME = "pytorch_mnist"
 
 bento_builder = bento_builder_step(
     params=BentoMLBuilderParameters(
@@ -28,5 +27,6 @@ bento_builder = bento_builder_step(
             "dataset": "mnist",
             "zenml_version": "0.21.1",
         },
+       exclude=["data"], 
     )
 )

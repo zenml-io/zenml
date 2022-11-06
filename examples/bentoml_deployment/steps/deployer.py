@@ -12,12 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from constants import MODEL_NAME
 from zenml.integrations.bentoml.steps import (
     BentoMLDeployerParameters,
     bentoml_model_deployer_step,
 )
-
-MODEL_NAME = "pytorch_mnist"
 
 bentoml_model_deployer = bentoml_model_deployer_step(
     params=BentoMLDeployerParameters(

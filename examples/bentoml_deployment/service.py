@@ -8,17 +8,18 @@ import numpy as np
 from bentoml.io import Image, NumpyNdarray
 from PIL.Image import Image as PILImage
 
+from constants import MODEL_NAME, SERVICE_NAME
+
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-mnist_runner = bentoml.pytorch.get("pytorch_mnist").to_runner()
+mnist_runner = bentoml.pytorch.get(MODEL_NAME).to_runner()
 
-svc = bentoml.Service(name="pytorch_mnist_demo", runners=[mnist_runner])
+svc = bentoml.Service(name=SERVICE_NAME, runners=[mnist_runner])
 
 
 def to_numpy(tensor):
     return tensor.detach().cpu().numpy()
-
 
 @svc.api(
     input=NumpyNdarray(dtype="float32", enforce_dtype=True),

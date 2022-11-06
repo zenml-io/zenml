@@ -11,9 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""BentoML constants."""
+"""BentoML Example constants."""
 
-DEFAULT_BENTO_FILENAME = "zenml_exported.bento"
-BENTOML_DEFAULT_PORT = 3000
-BENTOML_HEALTHCHECK_URL_PATH = "healthz"
-BENTOML_PREDICTION_URL_PATH = ""
+MODEL_NAME = "pytorch_mnist"
+SERVICE_NAME = "pytorch_mnist_service"

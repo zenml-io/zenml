@@ -23,8 +23,6 @@ from steps.evaluators import evaluator
 from steps.importers import importer_mnist
 from steps.trainers import trainer
 
-MODEL_NAME = "pytorch_mnist"
-
 if __name__ == "__main__":
     bentoml_fashion_mnist_pipeline(
         importer=importer_mnist(),

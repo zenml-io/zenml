@@ -15,6 +15,7 @@
 from typing import Optional, Type, cast
 
 from bentoml._internal.bento import bento
+import bentoml
 
 from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
@@ -103,11 +104,22 @@ def bentoml_model_deployer_step(
         model_name=params.model_name,
     )
 
+    # Return the apis endopoints of the defined service to use in the predict.
+    # This is a workaround to get the endpoints of the service defined as functions 
+    # from the user code in the BentoML service.
+    def service_apis(bento_tag:str):
+        service = bentoml.load(bento_tag)
+        apis = service.apis
+        apis_paths = list(apis.keys())
+        return apis_paths
+
     # create a config for the new model service
     predictor_cfg = BentoMLDeploymentConfig(
         model_name=params.model_name,
         bento=str(bento.tag),
         model_uri=bento.info.labels.get("model_uri"),
+        bento_uri= bento.info.labels.get("bento_uri"),
+        apis=service_apis(str(bento.tag)),
         workers=params.workers,
         working_dir=params.working_dir or str(repo_path),
         port=params.port,

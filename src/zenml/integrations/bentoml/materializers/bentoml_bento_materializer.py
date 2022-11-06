@@ -22,15 +22,13 @@ from bentoml._internal.bento import Bento, bento
 from bentoml.exceptions import BentoMLException
 
 from zenml.artifacts import DataArtifact
+from zenml.integrations.bentoml.constants import DEFAULT_BENTO_FILENAME
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
 logger = get_logger(__name__)
-
-DEFAULT_BENTO_FILENAME = "zenml_exported.bento"
-
 
 class BentoMaterializer(BaseMaterializer):
     """Materializer for Bentoml Bento objects."""

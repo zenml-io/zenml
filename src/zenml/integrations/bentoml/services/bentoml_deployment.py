@@ -14,9 +14,10 @@
 """Implementation for the BentoML inference service."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
+from zenml.integrations.bentoml.constants import BENTOML_HEALTHCHECK_URL_PATH, BENTOML_PREDICTION_URL_PATH
 from zenml.logger import get_logger
 from zenml.services import (
     HTTPEndpointHealthMonitor,
@@ -36,11 +37,6 @@ if TYPE_CHECKING:
     )
 
 logger = get_logger(__name__)
-
-
-BENTOML_DEFAULT_PORT = 3000
-BENTOML_HEALTHCHECK_URL_PATH = "healthz"
-BENTOML_PREDICTION_URL_PATH = ""
 
 
 class BentoMLDeploymentEndpointConfig(LocalDaemonServiceEndpointConfig):
@@ -94,6 +90,8 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
     model_name: str
     model_uri: str
     bento: str
+    bento_uri: Optional[str] = None
+    apis: Optional[List[str]] = None
     workers: int = None
     port: int = None
     backlog: int = None
@@ -200,12 +198,24 @@ class BentoMLDeploymentService(LocalDaemonService):
 
     @property
     def prediction_url(self) -> Optional[str]:
-        """Get the URI where the prediction service is answering requests.
+        """Get the URI where the http server is running.
 
         Returns:
-            The URI where the prediction service can be contacted to process
-            HTTP/REST inference requests, or None, if the service isn't running.
+            The URI where the http service can be accessed to get more information
+            about the service and to make predictions.
         """
         if not self.is_running:
             return None
         return self.endpoint.prediction_url
+
+    @property
+    def prediction_apis_urls(self) -> Optional[List[str]]:
+        """Get the URI where the prediction api services is answering requests.
+
+        Returns:
+            The URI where the prediction service apis can be contacted to process
+            HTTP/REST inference requests, or None, if the service isn't running.
+        """
+        if not self.is_running:
+            return None
+        return [self.prediction_url + api for api in self.config.apis]
