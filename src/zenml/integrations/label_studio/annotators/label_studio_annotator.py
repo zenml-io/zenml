@@ -27,6 +27,7 @@ from zenml.exceptions import ProvisioningError
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.label_studio.flavors.label_studio_annotator_flavor import (
+    DEFAULT_LOCAL_INSTANCE_URL,
     LabelStudioAnnotatorConfig,
 )
 from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
@@ -644,6 +645,15 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
         return True
 
+    @property
+    def is_local_instance(self) -> bool:
+        """Determines if the Label Studio instance is running locally.
+
+        Returns:
+            True if the component is running locally, False otherwise.
+        """
+        return self.config.instance_url == DEFAULT_LOCAL_INSTANCE_URL
+
     def provision(self) -> None:
         """Spins up the annotation server backend."""
         fileio.makedirs(self.root_directory)
@@ -659,7 +669,8 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             logger.info("Local kubeflow pipelines deployment already running.")
             return
 
-        self.start_annotator_daemon()
+        if self.is_local_instance:
+            self.start_annotator_daemon()
 
     def suspend(self) -> None:
         """Suspends the annotation interface."""
@@ -667,7 +678,8 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             logger.info("Local annotation server is not running.")
             return
 
-        self.stop_annotator_daemon()
+        if self.is_local_instance:
+            self.stop_annotator_daemon()
 
     def start_annotator_daemon(self) -> None:
         """Starts the annotation server backend.
