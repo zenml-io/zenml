@@ -14,29 +14,36 @@
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
 from typing import TYPE_CHECKING, List, Optional
+from uuid import UUID
 
+from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.new_models.pipeline_models import PipelineResponseModel
-from zenml.zen_stores.schemas.base_schemas import ProjectScopedSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
+    from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+    from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+    from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
-class PipelineSchema(ProjectScopedSchema, table=True):
+class PipelineSchema(NamedSchema, table=True):
     """SQL Model for pipelines."""
 
-    name: str
     docstring: Optional[str] = Field(max_length=4096, nullable=True)
     spec: str = Field(max_length=4096)
 
+    user_id: UUID = Field(
+        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    )
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    )
     user: "UserSchema" = Relationship(back_populates="pipelines")
     project: "ProjectSchema" = Relationship(back_populates="pipelines")
-    versions: List["PipelineVersionSchema"] = Relationship(
-        back_populates="pipeline"
-    )
+
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
     )

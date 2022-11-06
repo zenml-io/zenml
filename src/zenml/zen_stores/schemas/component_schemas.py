@@ -16,8 +16,10 @@
 import base64
 import json
 from typing import TYPE_CHECKING, List
+from uuid import UUID
 
-from sqlmodel import Relationship
+from sqlalchemy import Column, ForeignKey
+from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
 from zenml.new_models.component_models import ComponentResponseModel
@@ -32,11 +34,16 @@ if TYPE_CHECKING:
 class StackComponentSchema(ShareableSchema, table=True):
     """SQL Model for stack components."""
 
-    name: str
     type: StackComponentType
     flavor: str
     configuration: bytes
 
+    user_id: UUID = Field(
+        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    )
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    )
     project: "ProjectSchema" = Relationship(back_populates="components")
     user: "UserSchema" = Relationship(back_populates="components")
     stacks: List["StackSchema"] = Relationship(

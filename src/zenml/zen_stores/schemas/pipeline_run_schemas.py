@@ -6,7 +6,7 @@ from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.new_models import PipelineRunModel
-from zenml.zen_stores.schemas.base_schemas import ProjectScopedSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -17,10 +17,9 @@ if TYPE_CHECKING:
     )
 
 
-class PipelineRunSchema(ProjectScopedSchema, table=True):
+class PipelineRunSchema(NamedSchema, table=True):
     """SQL Model for pipeline runs."""
 
-    name: str
     pipeline_configuration: str = Field(max_length=4096)
     num_steps: int
     zenml_version: str
@@ -34,7 +33,12 @@ class PipelineRunSchema(ProjectScopedSchema, table=True):
         nullable=True,
         sa_column=Column(ForeignKey("pipelineschema.id", ondelete="SET NULL")),
     )
-
+    user_id: UUID = Field(
+        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    )
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    )
     project: "ProjectSchema" = Relationship(back_populates="runs")
     user: "UserSchema" = Relationship(back_populates="runs")
     stack: "StackSchema" = Relationship(back_populates="runs")

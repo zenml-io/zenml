@@ -37,6 +37,7 @@ from zenml.constants import (
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
+from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import (
     AlreadyExistsException,
@@ -63,7 +64,6 @@ from zenml.new_models.user_models import UserResponseModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
-from zenml.enums import StackComponentType
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec

@@ -67,6 +67,7 @@ from zenml.new_models import (
     ProjectModel,
     ProjectRequestModel,
     RoleAssignmentModel,
+    RoleAssignmentRequestModel,
     RoleModel,
     RoleRequestModel,
     StackModel,
@@ -76,7 +77,7 @@ from zenml.new_models import (
     TeamModel,
     TeamRequestModel,
     UserModel,
-    UserRequestModel, RoleAssignmentRequestModel,
+    UserRequestModel,
 )
 from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.new_models.team_models import TeamResponseModel
@@ -1923,12 +1924,9 @@ class SqlZenStore(BaseZenStore):
             return role_assignment.to_model()
 
     def create_role_assignment(
-        self,
-        role_assignment: RoleAssignmentRequestModel
+        self, role_assignment: RoleAssignmentRequestModel
     ) -> RoleAssignmentResponseModel:
-        """Assigns a role to a user or team, scoped to a specific project.
-
-        """
+        """Assigns a role to a user or team, scoped to a specific project."""
         if role_assignment.user:
             return self._assign_role_to_user(
                 role_name_or_id=role_assignment.role,
@@ -1948,47 +1946,55 @@ class SqlZenStore(BaseZenStore):
         """"""
         with Session(self.engine) as session:
             user_role = session.exec(
-                select(UserRoleAssignmentSchema)
-                .where(UserRoleAssignmentSchema.id == role_assignment_id)
+                select(UserRoleAssignmentSchema).where(
+                    UserRoleAssignmentSchema.id == role_assignment_id
+                )
             ).one_or_none()
 
             if user_role:
                 return user_role.to_model()
 
             team_role = session.exec(
-                select(TeamRoleAssignmentSchema)
-                .where(TeamRoleAssignmentSchema.id == role_assignment_id)
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.id == role_assignment_id
+                )
             ).one_or_none()
 
             if team_role:
                 return team_role.to_model()
 
             if user_role is None and team_role is None:
-                raise KeyError(f"RoleAssignment with ID {role_assignment_id} "
-                               f"not found.")
+                raise KeyError(
+                    f"RoleAssignment with ID {role_assignment_id} "
+                    f"not found."
+                )
 
     def delete_role_assignment(self, role_assignment_id: UUID) -> UUID:
         """"""
         with Session(self.engine) as session:
             user_role = session.exec(
-                select(UserRoleAssignmentSchema)
-                .where(UserRoleAssignmentSchema.id == role_assignment_id)
+                select(UserRoleAssignmentSchema).where(
+                    UserRoleAssignmentSchema.id == role_assignment_id
+                )
             ).one_or_none()
 
             if user_role:
                 session.delete(user_role)
 
             team_role = session.exec(
-                select(TeamRoleAssignmentSchema)
-                .where(TeamRoleAssignmentSchema.id == role_assignment_id)
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.id == role_assignment_id
+                )
             ).one_or_none()
 
             if team_role:
                 session.delete(team_role)
 
             if user_role is None and team_role is None:
-                raise KeyError(f"RoleAssignment with ID {role_assignment_id} "
-                               f"not found.")
+                raise KeyError(
+                    f"RoleAssignment with ID {role_assignment_id} "
+                    f"not found."
+                )
 
     def revoke_role(
         self,

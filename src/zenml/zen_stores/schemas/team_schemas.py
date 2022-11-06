@@ -11,17 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.new_models import TeamModel, TeamRequestModel
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.user_schemas import UserSchema
     from zenml.zen_stores.schemas.role_schemas import TeamRoleAssignmentSchema
+    from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class TeamAssignmentSchema(SQLModel, table=True):
@@ -31,10 +31,8 @@ class TeamAssignmentSchema(SQLModel, table=True):
     team_id: UUID = Field(primary_key=True, foreign_key="teamschema.id")
 
 
-class TeamSchema(BaseSchema, table=True):
+class TeamSchema(NamedSchema, table=True):
     """SQL Model for teams."""
-
-    name: str
 
     users: List["UserSchema"] = Relationship(
         back_populates="teams", link_model=TeamAssignmentSchema

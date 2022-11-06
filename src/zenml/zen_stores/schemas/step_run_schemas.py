@@ -8,7 +8,7 @@ from zenml.new_models.step_run_models import (
     StepRunRequestModel,
     StepRunResponseModel,
 )
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     pass
@@ -29,10 +29,8 @@ class StepInputArtifactSchema(SQLModel, table=True):
     name: str  # Name of the input in the step
 
 
-class StepRunSchema(BaseSchema, table=True):
+class StepRunSchema(NamedSchema, table=True):
     """SQL Model for steps of pipeline runs."""
-
-    name: str
 
     pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
 

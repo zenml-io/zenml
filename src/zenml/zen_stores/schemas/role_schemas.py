@@ -11,29 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlmodel import Field, Relationship
 
 from zenml.new_models import (
-    RoleAssignmentModel,
     RoleAssignmentRequestModel,
     RoleModel,
     RoleRequestModel,
 )
 from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-    from zenml.zen_stores.schemas.team_schemas import TeamSchema
-    from zenml.zen_stores.schemas.team_schemas import UserSchema
+    from zenml.zen_stores.schemas.team_schemas import TeamSchema, UserSchema
 
-class RoleSchema(BaseSchema, table=True):
+
+class RoleSchema(NamedSchema, table=True):
     """SQL Model for roles."""
-
-    name: str
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="role", sa_relationship_kwargs={"cascade": "delete"}

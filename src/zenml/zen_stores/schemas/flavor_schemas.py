@@ -14,18 +14,20 @@
 """SQL Model Implementations for Flavors."""
 
 from typing import TYPE_CHECKING, Optional
+from uuid import UUID
 
+from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
 from zenml.new_models.flavor_models import FlavorResponseModel
-from zenml.zen_stores.schemas.base_schemas import ProjectScopedSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import ProjectSchema, UserSchema
 
 
-class FlavorSchema(ProjectScopedSchema, table=True):
+class FlavorSchema(NamedSchema, table=True):
     """SQL Model for flavors.
 
     Attributes:
@@ -36,12 +38,17 @@ class FlavorSchema(ProjectScopedSchema, table=True):
         integration: The integration associated with the flavor.
     """
 
-    name: str
     type: StackComponentType
     source: str
     config_schema: str
     integration: Optional[str] = Field(default="")
 
+    user_id: UUID = Field(
+        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    )
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    )
     project: "ProjectSchema" = Relationship(back_populates="flavors")
     user: "UserSchema" = Relationship(back_populates="flavors")
 

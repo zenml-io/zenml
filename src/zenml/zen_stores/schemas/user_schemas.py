@@ -27,13 +27,12 @@ from zenml.zen_stores.schemas import (
     TeamSchema,
     UserRoleAssignmentSchema,
 )
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 
-class UserSchema(BaseSchema, table=True):
+class UserSchema(NamedSchema, table=True):
     """SQL Model for users."""
 
-    name: str
     full_name: str
     email: Optional[str] = Field(nullable=True)
     active: bool

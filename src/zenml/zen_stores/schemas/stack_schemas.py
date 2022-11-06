@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, List
 from uuid import UUID
 
+from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.new_models.stack_models import StackResponseModel
@@ -45,10 +46,15 @@ class StackCompositionSchema(SQLModel, table=True):
 class StackSchema(ShareableSchema, table=True):
     """SQL Model for stacks."""
 
-    name: str
-
+    user_id: UUID = Field(
+        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    )
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    )
     project: "ProjectSchema" = Relationship(back_populates="stacks")
     user: "UserSchema" = Relationship(back_populates="stacks")
+
     components: List["StackComponentSchema"] = Relationship(
         back_populates="stacks",
         link_model=StackCompositionSchema,

@@ -15,7 +15,6 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, SQLModel
 
 
@@ -27,23 +26,13 @@ class BaseSchema(SQLModel):
     updated: datetime = Field(default_factory=datetime.now)
 
 
-class UserOwnedSchema(BaseSchema):
-    """Base user-owned SQL model."""
+class NamedSchema(BaseSchema):
+    """Base Named SQL Model"""
 
-    user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
-    )
+    name: str
 
 
-class ProjectScopedSchema(UserOwnedSchema):
-    """Base project-scoped SQL Model."""
-
-    project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
-    )
-
-
-class ShareableSchema(ProjectScopedSchema):
+class ShareableSchema(NamedSchema):
     """Base shareable SQL Model."""
 
     is_shared: bool

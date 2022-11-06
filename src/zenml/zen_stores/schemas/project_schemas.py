@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, List
 from sqlmodel import Relationship
 
 from zenml.new_models import ProjectModel, ProjectRequestModel
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -32,10 +32,9 @@ if TYPE_CHECKING:
     )
 
 
-class ProjectSchema(BaseSchema, table=True):
+class ProjectSchema(NamedSchema, table=True):
     """SQL Model for projects."""
 
-    name: str
     description: str
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(

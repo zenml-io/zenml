@@ -28,7 +28,7 @@ from zenml.new_models import (
     TeamModel,
     TeamRequestModel,
     UserModel,
-    UserRequestModel
+    UserRequestModel,
 )
 from zenml.new_models.artifact_models import ArtifactResponseModel
 from zenml.new_models.component_models import (
