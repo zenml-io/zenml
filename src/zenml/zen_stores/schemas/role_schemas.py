@@ -22,6 +22,7 @@ from zenml.new_models import (
     RoleModel,
     RoleRequestModel,
 )
+from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 if TYPE_CHECKING:
@@ -93,13 +94,13 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
             project_id=role_assignment.project,
         )
 
-    def to_model(self) -> RoleAssignmentModel:
+    def to_model(self) -> RoleAssignmentResponseModel:
         """Convert a `UserRoleAssignmentSchema` to a `RoleAssignmentModel`.
 
         Returns:
             The converted `RoleAssignmentModel`.
         """
-        return RoleAssignmentModel(
+        return RoleAssignmentResponseModel(
             id=self.id,
             role=self.role_id,
             user=self.user_id,
@@ -134,13 +135,13 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
             project_id=role_assignment.project,
         )
 
-    def to_model(self) -> RoleAssignmentModel:
+    def to_model(self) -> RoleAssignmentResponseModel:
         """Convert a `TeamRoleAssignmentSchema` to a `RoleAssignmentModel`.
 
         Returns:
             The converted `RoleAssignmentModel`.
         """
-        return RoleAssignmentModel(
+        return RoleAssignmentResponseModel(
             id=self.id,
             role=self.role_id,
             team=self.team_id,

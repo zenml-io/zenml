@@ -19,7 +19,7 @@ from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, SQLModel
 
 
-class BaseSchema(SQLModel, table=False):
+class BaseSchema(SQLModel):
     """Base SQL Model for ZenML entities."""
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -27,7 +27,7 @@ class BaseSchema(SQLModel, table=False):
     updated: datetime = Field(default_factory=datetime.now)
 
 
-class UserOwnedSchema(BaseSchema, table=False):
+class UserOwnedSchema(BaseSchema):
     """Base user-owned SQL model."""
 
     user_id: UUID = Field(
@@ -35,7 +35,7 @@ class UserOwnedSchema(BaseSchema, table=False):
     )
 
 
-class ProjectScopedSchema(UserOwnedSchema, table=False):
+class ProjectScopedSchema(UserOwnedSchema):
     """Base project-scoped SQL Model."""
 
     project_id: UUID = Field(
@@ -43,7 +43,7 @@ class ProjectScopedSchema(UserOwnedSchema, table=False):
     )
 
 
-class ShareableSchema(ProjectScopedSchema, table=False):
+class ShareableSchema(ProjectScopedSchema):
     """Base shareable SQL Model."""
 
     is_shared: bool

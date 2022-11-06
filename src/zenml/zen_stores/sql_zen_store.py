@@ -76,8 +76,9 @@ from zenml.new_models import (
     TeamModel,
     TeamRequestModel,
     UserModel,
-    UserRequestModel,
+    UserRequestModel, RoleAssignmentRequestModel,
 )
+from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.new_models.team_models import TeamResponseModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -1821,7 +1822,7 @@ class SqlZenStore(BaseZenStore):
         role_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
         project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> None:
+    ) -> RoleAssignmentResponseModel:
         """Assigns a role to a user, potentially scoped to a specific project.
 
         Args:
@@ -1866,13 +1867,14 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(role_assignment)
             session.commit()
+            return role_assignment.to_model()
 
     def _assign_role_to_team(
         self,
         role_name_or_id: Union[str, UUID],
         team_name_or_id: Union[str, UUID],
         project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> None:
+    ) -> RoleAssignmentResponseModel:
         """Assigns a role to a team, potentially scoped to a specific project.
 
         Args:
@@ -1918,37 +1920,75 @@ class SqlZenStore(BaseZenStore):
             session.add(role_assignment)
             session.commit()
 
-    def assign_role(
+            return role_assignment.to_model()
+
+    def create_role_assignment(
         self,
-        role_name_or_id: Union[str, UUID],
-        user_or_team_name_or_id: Union[str, UUID],
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        is_user: bool = True,
-    ) -> None:
+        role_assignment: RoleAssignmentRequestModel
+    ) -> RoleAssignmentResponseModel:
         """Assigns a role to a user or team, scoped to a specific project.
 
-        Args:
-            project_name_or_id: Optional ID of a project in which to assign the
-                role. If this is not provided, the role will be assigned
-                globally.
-            role_name_or_id: Name or ID of the role to assign.
-            user_or_team_name_or_id: Name or ID of the user or team to which to
-                assign the role.
-            is_user: Whether `user_or_team_name_or_id` refers to a user or a
-                team.
         """
-        if is_user:
-            self._assign_role_to_user(
-                role_name_or_id=role_name_or_id,
-                user_name_or_id=user_or_team_name_or_id,
-                project_name_or_id=project_name_or_id,
+        if role_assignment.user:
+            return self._assign_role_to_user(
+                role_name_or_id=role_assignment.role,
+                user_name_or_id=role_assignment.user,
+                project_name_or_id=role_assignment.project,
             )
-        else:
-            self._assign_role_to_team(
-                role_name_or_id=role_name_or_id,
-                team_name_or_id=user_or_team_name_or_id,
-                project_name_or_id=project_name_or_id,
+        elif role_assignment.team:
+            return self._assign_role_to_team(
+                role_name_or_id=role_assignment.role,
+                team_name_or_id=role_assignment.team,
+                project_name_or_id=role_assignment.project,
             )
+
+    def get_role_assignment(
+        self, role_assignment_id: UUID
+    ) -> RoleAssignmentResponseModel:
+        """"""
+        with Session(self.engine) as session:
+            user_role = session.exec(
+                select(UserRoleAssignmentSchema)
+                .where(UserRoleAssignmentSchema.id == role_assignment_id)
+            ).one_or_none()
+
+            if user_role:
+                return user_role.to_model()
+
+            team_role = session.exec(
+                select(TeamRoleAssignmentSchema)
+                .where(TeamRoleAssignmentSchema.id == role_assignment_id)
+            ).one_or_none()
+
+            if team_role:
+                return team_role.to_model()
+
+            if user_role is None and team_role is None:
+                raise KeyError(f"RoleAssignment with ID {role_assignment_id} "
+                               f"not found.")
+
+    def delete_role_assignment(self, role_assignment_id: UUID) -> UUID:
+        """"""
+        with Session(self.engine) as session:
+            user_role = session.exec(
+                select(UserRoleAssignmentSchema)
+                .where(UserRoleAssignmentSchema.id == role_assignment_id)
+            ).one_or_none()
+
+            if user_role:
+                session.delete(user_role)
+
+            team_role = session.exec(
+                select(TeamRoleAssignmentSchema)
+                .where(TeamRoleAssignmentSchema.id == role_assignment_id)
+            ).one_or_none()
+
+            if team_role:
+                session.delete(team_role)
+
+            if user_role is None and team_role is None:
+                raise KeyError(f"RoleAssignment with ID {role_assignment_id} "
+                               f"not found.")
 
     def revoke_role(
         self,
