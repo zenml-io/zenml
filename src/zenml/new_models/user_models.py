@@ -368,12 +368,6 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
 class UserRequestModel(UserBaseModel, BaseRequestModel):
     """"""
 
-    password: Optional[str] = Field(
-        default=None,
-        title="Account password.",
-        max_length=USER_PASSWORD_MAX_LENGTH,
-    )
-
     class Config:
         """Pydantic configuration class."""
 

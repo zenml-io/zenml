@@ -65,7 +65,6 @@ class UserSchema(NamedSchema, table=True):
         Returns:
             The created `UserSchema`.
         """
-        breakpoint()
         return cls(
             name=model.name,
             full_name=model.full_name,

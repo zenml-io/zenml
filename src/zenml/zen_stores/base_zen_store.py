@@ -85,9 +85,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     # ---------------------------------
 
     def __init__(
-        self,
-        skip_default_registrations: bool = False,
-        **kwargs: Any,
+            self,
+            skip_default_registrations: bool = False,
+            **kwargs: Any,
     ) -> None:
         """Create and initialize a store.
 
@@ -145,9 +145,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
     @staticmethod
     def create_store(
-        config: StoreConfiguration,
-        skip_default_registrations: bool = False,
-        **kwargs: Any,
+            config: StoreConfiguration,
+            skip_default_registrations: bool = False,
+            **kwargs: Any,
     ) -> "BaseZenStore":
         """Create and initialize a store from a store configuration.
 
@@ -228,10 +228,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.TYPE
 
     def validate_active_config(
-        self,
-        active_project_name_or_id: Optional[Union[str, UUID]] = None,
-        active_stack_id: Optional[UUID] = None,
-        config_name: str = "",
+            self,
+            active_project_name_or_id: Optional[Union[str, UUID]] = None,
+            active_stack_id: Optional[UUID] = None,
+            config_name: str = "",
     ) -> Tuple[ProjectResponseModel, StackResponseModel]:
         """Validate the active configuration.
 
@@ -299,8 +299,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                         active_project
                     )
                 elif (
-                    not active_stack.is_shared
-                    and active_stack.user != self.active_user.id
+                        not active_stack.is_shared
+                        and active_stack.user != self.active_user.id
                 ):
                     logger.warning(
                         "The current %s active stack is not shared and not "
@@ -336,7 +336,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         )
 
     def is_local_store(self) -> bool:
-        """Check if the store is a local store or connected to a locally deployed ZenML server.
+        """Check if the store is a local store or connected to a locally
+        deployed ZenML server.
 
         Returns:
             True if the store is local, False otherwise.
@@ -344,7 +345,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.get_store_info().is_local()
 
     def _get_or_create_default_stack(
-        self, project: "ProjectResponseModel"
+            self, project: "ProjectResponseModel"
     ) -> "StackResponseModel":
         try:
             return self._get_default_stack(
@@ -363,9 +364,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
     @track(AnalyticsEvent.REGISTERED_DEFAULT_STACK)
     def _create_default_stack(
-        self,
-        project_name_or_id: Union[str, UUID],
-        user_name_or_id: Union[str, UUID],
+            self,
+            project_name_or_id: Union[str, UUID],
+            user_name_or_id: Union[str, UUID],
     ) -> StackResponseModel:
         """Create the default stack components and stack.
 
@@ -440,9 +441,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.create_stack(stack=stack)
 
     def _get_default_stack(
-        self,
-        project_name_or_id: Union[str, UUID],
-        user_name_or_id: Union[str, UUID],
+            self,
+            project_name_or_id: Union[str, UUID],
+            user_name_or_id: Union[str, UUID],
     ) -> StackResponseModel:
         """Get the default stack for a user in a project.
 
@@ -539,10 +540,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         )
 
     def user_email_opt_in(
-        self,
-        user_name_or_id: Union[str, UUID],
-        user_opt_in_response: bool,
-        email: Optional[str] = None,
+            self,
+            user_name_or_id: Union[str, UUID],
+            user_opt_in_response: bool,
+            email: Optional[str] = None,
     ) -> UserResponseModel:
         """Persist user response to the email prompt.
 
@@ -558,17 +559,17 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Raises:
             KeyError: If no user with the given name exists.
         """
+        user = self.get_user(user_name_or_id=user_name_or_id)
 
+        user.email = email
+        user.email_opted_in = user_opt_in_response
         return self.update_user(
             user_name_or_id=user_name_or_id,
-            user_update=UserRequestModel(
-                email=email,
-                email_opted_in=user_opt_in_response,
-            ),
+            user_update=user,
         )
 
     def get_teams_for_user(
-        self, user_name_or_id: Union[str, UUID]
+            self, user_name_or_id: Union[str, UUID]
     ) -> List[TeamResponseModel]:
         """"""
         user = self.get_user(user_name_or_id=user_name_or_id)
@@ -588,16 +589,16 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.list_teams()
 
     def get_users_for_team(
-        self, team_name_or_id: Union[str, UUID]
+            self, team_name_or_id: Union[str, UUID]
     ) -> List[UserResponseModel]:
         """"""
         team = self.get_team(team_name_or_id=team_name_or_id)
         return team.users
 
     def add_user_to_team(
-        self,
-        user_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
+            self,
+            user_name_or_id: Union[str, UUID],
+            team_name_or_id: Union[str, UUID],
     ) -> None:
         """Adds a user to a team.
         Args:
@@ -616,9 +617,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         self.update_team(team_name_or_id=team.id, team_update=update_model)
 
     def remove_user_from_team(
-        self,
-        user_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
+            self,
+            user_name_or_id: Union[str, UUID],
+            team_name_or_id: Union[str, UUID],
     ) -> None:
         """Removes a user from a team.
         Args:
@@ -698,9 +699,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     # ---------
 
     def track_event(
-        self,
-        event: Union[str, AnalyticsEvent],
-        metadata: Optional[Dict[str, Any]] = None,
+            self,
+            event: Union[str, AnalyticsEvent],
+            metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Track an analytics event.
 
