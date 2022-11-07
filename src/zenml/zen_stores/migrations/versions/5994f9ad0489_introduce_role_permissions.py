@@ -40,13 +40,32 @@ def upgrade() -> None:
             "rolepermissionschema",
             "roleschema",
             "userroleassignmentschema",
+            "teamroleassignmentschema",
             "userschema",
         )
     )
 
-    # In order to insure unique names on roles delete potential admin/guest role
+    # In order to ensure unique names on roles delete potential admin/guest role
     conn = op.get_bind()
-    res = conn.execute(
+    conn.execute(
+        sa.text(
+            """
+            DELETE FROM userroleassignmentschema 
+            WHERE role_id 
+            IN (SELECT id FROM roleschema WHERE name=='admin' OR name=='guest')
+            """
+        )
+    )
+    conn.execute(
+        sa.text(
+            """
+            DELETE FROM teamroleassignmentschema 
+            WHERE role_id 
+            IN (SELECT id FROM roleschema WHERE name=='admin' OR name=='guest')
+            """
+        )
+    )
+    conn.execute(
         sa.text(
             """DELETE FROM roleschema WHERE name=='admin' OR name=='guest'"""
         )
