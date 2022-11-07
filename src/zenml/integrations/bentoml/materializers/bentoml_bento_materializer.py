@@ -37,7 +37,7 @@ class BentoMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[bento.Bento]) -> bento.Bento:
-        """Read from artifact store.
+        """Read from artifact store and return a Bento object.
 
         Args:
             data_type: An bento.Bento type.
@@ -70,9 +70,6 @@ class BentoMaterializer(BaseMaterializer):
 
         Args:
             bento: An bento.Bento object.
-
-        Args:
-            Bento: An bento.Bento object.
         """
         super().handle_return(bento)
 

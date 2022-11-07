@@ -71,6 +71,8 @@ def bentoml_model_deployer_step(
 ) -> BentoMLDeploymentService:
     """Model deployer pipeline step for BentoML.
 
+    This step deploys a given Bento to a local BentoML http prediction server.
+
     Args:
         deploy_decision: whether to deploy the model or not
         params: parameters for the deployer step
@@ -104,7 +106,7 @@ def bentoml_model_deployer_step(
         model_name=params.model_name,
     )
 
-    # Return the apis endopoint of the defined service to use in the predict.
+    # Return the apis endpoint of the defined service to use in the predict.
     # This is a workaround to get the endpoints of the service defined as functions 
     # from the user code in the BentoML service.
     def service_apis(bento_tag:str):

@@ -65,18 +65,21 @@ def bento_builder_step(
     params: BentoMLBuilderParameters,
     context: StepContext,
 ) -> bento.Bento:
-    """Build a bentoML Model and Bento bundle.
-    
+    """Build a BentoML Model and Bento bundle.
+
+    This steps takes a model artifact of a trained or loaded ML model in a 
+    previous step and save it with BentoML, then build a BentoML bundle.
+
     Args:
         model: the model to be packaged.
         params: the parameters for the BentoML builder step.
         context: the step context.
-        
-    Returns:
-        the BentoML Bento object.
-        
+            
     Raises:
         ValueError: if the zenml repo is not found.
+             
+    Returns:
+        the BentoML Bento object.
     """
 
     # get the path of the ZenML repo

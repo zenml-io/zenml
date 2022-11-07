@@ -118,7 +118,7 @@ step to deploy the bento bundle to our local http server. The following example
 shows how to call the built-in bento deployer step within a ZenML pipeline.
 
 ```python
-# Import the step and parameters classe
+# Import the step and parameters class
 from zenml.integrations.bentoml.steps import BentoMLDeployerParameters, bentoml_model_deployer_step,
 
 # The name we gave to our deployed model
