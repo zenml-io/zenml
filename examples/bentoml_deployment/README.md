@@ -1,6 +1,14 @@
 # 🚀 Local model deployment with BentoML deployments
 
+BentoML is an open source framework for serving, managing, and deploying machine learning models. 
+It provides a high-level API for defining models and model servers, and supports 
+all major machine learning frameworks, including Tensorflow, Keras, PyTorch, 
+XGBoost, scikit-learn, and etc.
 
+This example demonstrates how you can use BentoML to serve your models locally
+with ZenML. While the integration offers a way to deploy your models locally,
+you can also use it to deploy your models in a cloud environment, or on a
+Kubernetes environment by exporting the built Bentos. 
 
 ## 🗺 Overview
 
@@ -8,11 +16,20 @@ The example uses the
 [Fashion-MNIST](https://keras.io/api/datasets/mnist/) dataset to
 train a classifier using [PyTorch](https://pytorch.org/).
 
+In order to show how a porject can use a model deployer such as BentoML, this
+example contains two pipelines:
 
+  * `train_fashion_mnist` - this pipeline load the Fashion-MNIST dataset, trains a classifier, and use the built-in bento_builder and bentoml_deployer steps to build and deploy the model.
+ 
+  * `inference_fashion_mnist` - this pipeline load samples of images stored in a folder within the repo, call the prediction service to get the prediction url, and then call the prediction url to get the predictions. 
 ## 🧰 How the example is implemented
 This example contains two very important aspects that should be highlighted.
 
 ### 🛠️ BentoML Service and runner definition
+
+In order to use BentoML, you need to define a service and a runner. The service
+is the main logic that defines how your model will be served, and the runner
+represents a unit of execution for your model on a remote Python worker.
 
 ```python
 import bentoml
@@ -39,10 +56,16 @@ async def predict_ndarray(inp: NDArray[t.Any]) -> NDArray[t.Any]:
     output_tensor = await mnist_runner.async_run(inp)
     return to_numpy(output_tensor)
 ...
-
 ```
 
+More information about BentoML Service and runner can be found in the
+[BentoML documentation](https://docs.bentoml.org/en/latest/concepts/service.html).
+
 ### ↩️ BentoML bento builder step
+
+Once you have defined your service and runner, you can use the built-in
+`bento_builder` step within ZenML pipeline to save build a bento. This step
+will save the source code, models, data files and dependency configurations required for running the service.
 
 ```python
 from zenml.integrations.bentoml.steps import (
@@ -65,7 +88,13 @@ bento_builder = bento_builder_step(
 )
 ```
 
+For more information about the `bento_builder` step parameters, please refer to the [bento builder step]()
+
 ### ↩️ BentoML Deployer step
+
+The `bentoml_deployer` step is used to deploy the built bento to a local
+environment. This step will start a local server that will serve the model
+locally. 
 
 ```python
 from constants import MODEL_NAME
@@ -82,7 +111,7 @@ bentoml_model_deployer = bentoml_model_deployer_step(
     )
 )
 ```
-
+For more information about the `bentoml_deployer` step parameters, please refer to the [bentoml deployer step]()
 # 🖥 Run it locally
 
 ## ⏩ SuperQuick `bentoml` run

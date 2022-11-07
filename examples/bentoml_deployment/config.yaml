@@ -1,4 +1,4 @@
-name: fashion_mnist_pipeline
+name: training_fashion_mnist
 steps:
   importer:
     source:
@@ -14,3 +14,17 @@ steps:
     source:
       file: steps/evaluators
       name: evaluator
+  bento_builder:
+    source:
+      file: steps/bento_builder
+      name: bento_builder
+  deployment_trigger:
+    source:
+      file: steps/deployment_trigger_step
+      name: deployment_trigger
+    parameters:
+      min_accuracy: 0.8
+  model_deployer:
+    source:
+      file: steps/deployer
+      name: bentoml_model_deployer
