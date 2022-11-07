@@ -69,6 +69,9 @@ class BentoMaterializer(BaseMaterializer):
         """Write to artifact store.
 
         Args:
+            bento: An bento.Bento object.
+
+        Args:
             Bento: An bento.Bento object.
         """
         super().handle_return(bento)
