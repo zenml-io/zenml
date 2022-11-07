@@ -1,3 +1,5 @@
+"""Module to generate an Airflow DAG from a config file."""
+
 import datetime
 import importlib
 import os

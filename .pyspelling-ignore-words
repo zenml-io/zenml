@@ -137,6 +137,7 @@ ComponentSpecs
 ComponentWrapper
 ComputeTarget
 ConfigMap
+ConnectionConfig
 ConnectionError
 ConstrainedStrValue
 ContainerOp
@@ -207,6 +208,7 @@ DevOps
 DockerConfiguration
 DockerHub
 DockerHubContainerRegistry
+DockerOperator
 DockerSettings
 DockerZenServer
 Dockerfile
@@ -359,6 +361,7 @@ KubeflowOrchestrator
 Kubernetes
 KubernetesMetadataStore
 KubernetesOrchestrator
+KubernetesPodOperator
 KubernetesSparkStepOperatorConfig
 LATESTREADYREVISION
 LLC
@@ -413,6 +416,7 @@ MaterializerName
 Mattermost
 Mesos
 MetadataStore
+MetadataStoreClientConfig
 MiB
 Microsoft
 MinIO
@@ -1062,6 +1066,7 @@ gpu
 graphviz
 grey
 gritty
+grpc
 gserviceaccount
 gsutil
 hadoop
@@ -1526,6 +1531,3 @@ zenmldocker
 zenmlregistry
 zenmlserver
 zenserver
-ConnectionConfig
-MetadataStoreClientConfig
-grpc
