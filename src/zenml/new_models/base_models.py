@@ -13,16 +13,15 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import Any, ForwardRef, TYPE_CHECKING
+from typing import Any, ForwardRef
 from uuid import UUID
 
 from pydantic import Field
 
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
-
-ProjectResponseModel = ForwardRef('ProjectResponseModel')
-UserResponseModel = ForwardRef('UserResponseModel')
+ProjectResponseModel = ForwardRef("ProjectResponseModel")
+UserResponseModel = ForwardRef("UserResponseModel")
 
 # --------------- #
 # RESPONSE MODELS #
@@ -73,7 +72,9 @@ class UserOwnedResponseModel(BaseResponseModel):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: UserResponseModel = Field(title="The user that created this resource.")
+    user: UserResponseModel = Field(
+        title="The user that created this resource."
+    )
 
 
 class ProjectScopedResponseModel(UserOwnedResponseModel):

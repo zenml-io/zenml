@@ -19,7 +19,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from zenml.constants import API, STACKS, VERSION_1
-from zenml.new_models import StackModel, StackRequestModel
+from zenml.new_models import StackRequestModel, StackResponseModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -33,7 +33,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[StackModel],
+    response_model=List[StackResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -44,7 +44,7 @@ def list_stacks(
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     auth_context: AuthContext = Depends(authorize),
-) -> List[StackModel]:
+) -> List[StackResponseModel]:
     """Returns all stacks.
 
     Args:
@@ -81,11 +81,11 @@ def list_stacks(
 
 @router.get(
     "/{stack_id}",
-    response_model=StackModel,
+    response_model=StackResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_stack(stack_id: UUID) -> StackModel:
+def get_stack(stack_id: UUID) -> StackResponseModel:
     """Returns the requested stack.
 
     Args:
@@ -99,11 +99,13 @@ def get_stack(stack_id: UUID) -> StackModel:
 
 @router.put(
     "/{stack_id}",
-    response_model=StackModel,
+    response_model=StackResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def update_stack(stack_id: UUID, stack_update: StackRequestModel) -> StackModel:
+def update_stack(
+    stack_id: UUID, stack_update: StackRequestModel
+) -> StackResponseModel:
     """Updates a stack.
 
     Args:

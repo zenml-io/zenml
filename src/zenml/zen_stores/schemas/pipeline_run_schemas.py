@@ -44,7 +44,9 @@ class PipelineRunSchema(NamedSchema, table=True):
     stack: "StackSchema" = Relationship(back_populates="runs")
     pipeline: "PipelineSchema" = Relationship(back_populates="runs")
 
-    def to_model(self, _block_recursion: bool = False) -> PipelineRunResponseModel:
+    def to_model(
+        self, _block_recursion: bool = False
+    ) -> PipelineRunResponseModel:
         """Convert a `PipelineRunSchema` to a `PipelineRunResponseModel`.
 
         Returns:

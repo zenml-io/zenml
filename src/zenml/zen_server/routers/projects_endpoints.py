@@ -30,17 +30,17 @@ from zenml.constants import (
 )
 from zenml.enums import StackComponentType
 from zenml.new_models import (
-    ComponentModel,
     ComponentRequestModel,
-    FlavorModel,
+    ComponentResponseModel,
     FlavorRequestModel,
-    PipelineModel,
+    FlavorResponseModel,
     PipelineRequestModel,
-    ProjectModel,
+    PipelineResponseModel,
     ProjectRequestModel,
+    ProjectResponseModel,
     RoleAssignmentResponseModel,
-    StackModel,
     StackRequestModel,
+    StackResponseModel,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -55,11 +55,11 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[ProjectModel],
+    response_model=List[ProjectResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_projects() -> List[ProjectModel]:
+def list_projects() -> List[ProjectResponseModel]:
     """Lists all projects in the organization.
 
     Returns:
@@ -70,11 +70,11 @@ def list_projects() -> List[ProjectModel]:
 
 @router.post(
     "",
-    response_model=ProjectModel,
+    response_model=ProjectResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_project(project: ProjectRequestModel) -> ProjectModel:
+def create_project(project: ProjectRequestModel) -> ProjectResponseModel:
     """Creates a project based on the requestBody.
 
     # noqa: DAR401
@@ -90,11 +90,11 @@ def create_project(project: ProjectRequestModel) -> ProjectModel:
 
 @router.get(
     "/{project_name_or_id}",
-    response_model=ProjectModel,
+    response_model=ProjectResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_project(project_name_or_id: Union[str, UUID]) -> ProjectModel:
+def get_project(project_name_or_id: Union[str, UUID]) -> ProjectResponseModel:
     """Get a project for given name.
 
     # noqa: DAR401
@@ -110,13 +110,13 @@ def get_project(project_name_or_id: Union[str, UUID]) -> ProjectModel:
 
 @router.put(
     "/{project_name_or_id}",
-    response_model=ProjectModel,
+    response_model=ProjectResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_project(
     project_name_or_id: Union[str, UUID], project_update: ProjectRequestModel
-) -> ProjectModel:
+) -> ProjectResponseModel:
     """Get a project for given name.
 
     # noqa: DAR401
@@ -180,7 +180,7 @@ def get_role_assignments_for_project(
 
 @router.get(
     "/{project_name_or_id}" + STACKS,
-    response_model=List[StackModel],
+    response_model=List[StackResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -191,7 +191,7 @@ def list_project_stacks(
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     auth_context: AuthContext = Depends(authorize),
-) -> List[StackModel]:
+) -> List[StackResponseModel]:
     """Get stacks that are part of a specific project.
 
     # noqa: DAR401
@@ -230,7 +230,7 @@ def list_project_stacks(
 
 @router.post(
     "/{project_name_or_id}" + STACKS,
-    response_model=StackModel,
+    response_model=StackResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -238,7 +238,7 @@ def create_stack(
     project_name_or_id: Union[str, UUID],
     stack: StackRequestModel,
     auth_context: AuthContext = Depends(authorize),
-) -> StackModel:
+) -> StackResponseModel:
     """Creates a stack for a particular project.
 
     Args:
@@ -260,7 +260,7 @@ def create_stack(
 
 @router.get(
     "/{project_name_or_id}" + STACK_COMPONENTS,
-    response_model=List[ComponentModel],
+    response_model=List[ComponentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -272,7 +272,7 @@ def list_project_stack_components(
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     auth_context: AuthContext = Depends(authorize),
-) -> List[ComponentModel]:
+) -> List[ComponentResponseModel]:
     """List stack components that are part of a specific project.
 
     # noqa: DAR401
@@ -314,7 +314,7 @@ def list_project_stack_components(
 
 @router.post(
     "/{project_name_or_id}" + STACK_COMPONENTS,
-    response_model=ComponentModel,
+    response_model=ComponentResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -322,7 +322,7 @@ def create_stack_component(
     project_name_or_id: Union[str, UUID],
     component: ComponentRequestModel,
     auth_context: AuthContext = Depends(authorize),
-) -> ComponentModel:
+) -> ComponentResponseModel:
     """Creates a stack component.
 
     Args:
@@ -347,7 +347,7 @@ def create_stack_component(
 
 @router.get(
     "/{project_name_or_id}" + FLAVORS,
-    response_model=List[FlavorModel],
+    response_model=List[FlavorResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -357,7 +357,7 @@ def list_project_flavors(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-) -> List[FlavorModel]:
+) -> List[FlavorResponseModel]:
     """List stack components flavors of a certain type that are part of a project.
 
     # noqa: DAR401
@@ -383,7 +383,7 @@ def list_project_flavors(
 
 @router.post(
     "/{project_name_or_id}" + FLAVORS,
-    response_model=FlavorModel,
+    response_model=FlavorResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -391,7 +391,7 @@ def create_flavor(
     project_name_or_id: Union[str, UUID],
     flavor: FlavorRequestModel,
     auth_context: AuthContext = Depends(authorize),
-) -> FlavorModel:
+) -> FlavorResponseModel:
     """Creates a stack component flavor.
 
     Args:
@@ -413,7 +413,7 @@ def create_flavor(
 
 @router.get(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=List[PipelineModel],
+    response_model=List[PipelineResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -421,7 +421,7 @@ def list_project_pipelines(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
-) -> List[PipelineModel]:
+) -> List[PipelineResponseModel]:
     """Gets pipelines defined for a specific project.
 
     # noqa: DAR401
@@ -443,7 +443,7 @@ def list_project_pipelines(
 
 @router.post(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=PipelineModel,
+    response_model=PipelineResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -451,7 +451,7 @@ def create_pipeline(
     project_name_or_id: Union[str, UUID],
     pipeline: PipelineRequestModel,
     auth_context: AuthContext = Depends(authorize),
-) -> PipelineModel:
+) -> PipelineResponseModel:
     """Creates a pipeline.
 
     Args:

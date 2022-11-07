@@ -20,9 +20,9 @@ from fastapi import APIRouter, Depends
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.new_models import (
-    PipelineModel,
     PipelineRequestModel,
-    PipelineRunModel,
+    PipelineResponseModel,
+    PipelineRunResponseModel,
 )
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -37,7 +37,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[PipelineModel],
+    response_model=List[PipelineResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -45,7 +45,7 @@ def list_pipelines(
     project_name_or_id: Optional[Union[str, UUID]] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
-) -> List[PipelineModel]:
+) -> List[PipelineResponseModel]:
     """Gets a list of pipelines.
 
     Args:
@@ -65,11 +65,11 @@ def list_pipelines(
 
 @router.get(
     "/{pipeline_id}",
-    response_model=PipelineModel,
+    response_model=PipelineResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_pipeline(pipeline_id: UUID) -> PipelineModel:
+def get_pipeline(pipeline_id: UUID) -> PipelineResponseModel:
     """Gets a specific pipeline using its unique id.
 
     Args:
@@ -83,14 +83,14 @@ def get_pipeline(pipeline_id: UUID) -> PipelineModel:
 
 @router.put(
     "/{pipeline_id}",
-    response_model=PipelineModel,
+    response_model=PipelineResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_pipeline(
     pipeline_id: UUID,
     pipeline_update: PipelineRequestModel,
-) -> PipelineModel:
+) -> PipelineResponseModel:
     """Updates the attribute on a specific pipeline using its unique id.
 
     Args:
@@ -121,7 +121,7 @@ def delete_pipeline(pipeline_id: UUID) -> None:
 
 @router.get(
     "/{pipeline_id}" + RUNS,
-    response_model=PipelineRunModel,
+    response_model=PipelineRunResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -132,7 +132,7 @@ def list_pipeline_runs(
     run_name: Optional[str] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[UUID] = None,
-) -> List[PipelineRunModel]:
+) -> List[PipelineRunResponseModel]:
     """Get pipeline runs according to query filters.
 
     Args:

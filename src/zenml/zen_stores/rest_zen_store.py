@@ -71,24 +71,25 @@ from zenml.models import RoleAssignmentModel
 from zenml.models.server_models import ServerModel
 from zenml.new_models import (
     ArtifactModel,
-    ComponentModel,
     ComponentRequestModel,
-    FlavorModel,
+    ComponentResponseModel,
+    EmailOptInModel,
     FlavorRequestModel,
-    PipelineModel,
+    FlavorResponseModel,
     PipelineRequestModel,
-    PipelineRunModel,
-    ProjectModel,
+    PipelineResponseModel,
+    PipelineRunResponseModel,
     ProjectRequestModel,
-    RoleModel,
+    ProjectResponseModel,
     RoleRequestModel,
-    StackModel,
+    RoleResponseModel,
     StackRequestModel,
-    StepRunModel,
-    TeamModel,
+    StackResponseModel,
+    StepRunResponseModel,
     TeamRequestModel,
-    UserModel,
+    TeamResponseModel,
     UserRequestModel,
+    UserResponseModel,
 )
 from zenml.new_models.base_models import (
     BaseRequestModel,
@@ -375,7 +376,7 @@ class RestZenStore(BaseZenStore):
     # ------
 
     @track(AnalyticsEvent.REGISTERED_STACK)
-    def create_stack(self, stack: StackRequestModel) -> StackModel:
+    def create_stack(self, stack: StackRequestModel) -> StackResponseModel:
         """Register a new stack.
 
         Args:
@@ -387,10 +388,10 @@ class RestZenStore(BaseZenStore):
         return self._create_project_scoped_resource(
             resource=stack,
             route=STACKS,
-            response_model=StackModel,
+            response_model=StackResponseModel,
         )
 
-    def get_stack(self, stack_id: UUID) -> StackModel:
+    def get_stack(self, stack_id: UUID) -> StackResponseModel:
         """Get a stack by its unique ID.
 
         Args:
@@ -402,7 +403,7 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=stack_id,
             route=STACKS,
-            response_model=StackModel,
+            response_model=StackResponseModel,
         )
 
     def list_stacks(
@@ -412,7 +413,7 @@ class RestZenStore(BaseZenStore):
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[StackModel]:
+    ) -> List[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -431,14 +432,14 @@ class RestZenStore(BaseZenStore):
         filters.pop("self")
         return self._list_resources(
             route=STACKS,
-            response_model=StackModel,
+            response_model=StackResponseModel,
             **filters,
         )
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
         self, stack_id: UUID, stack_update: StackRequestModel
-    ) -> StackModel:
+    ) -> StackResponseModel:
         """Update a stack.
 
 
@@ -456,7 +457,7 @@ class RestZenStore(BaseZenStore):
             resource_id=stack_id,
             resource_update=stack_update,
             route=STACKS,
-            response_model=StackModel,
+            response_model=StackResponseModel,
         )
 
     @track(AnalyticsEvent.DELETED_STACK)
@@ -479,7 +480,7 @@ class RestZenStore(BaseZenStore):
     def create_stack_component(
         self,
         component: ComponentRequestModel,
-    ) -> ComponentModel:
+    ) -> ComponentResponseModel:
         """Create a stack component.
 
         Args:
@@ -491,10 +492,10 @@ class RestZenStore(BaseZenStore):
         return self._create_project_scoped_resource(
             resource=component,
             route=STACK_COMPONENTS,
-            response_model=ComponentModel,
+            response_model=ComponentResponseModel,
         )
 
-    def get_stack_component(self, component_id: UUID) -> ComponentModel:
+    def get_stack_component(self, component_id: UUID) -> ComponentResponseModel:
         """Get a stack component by ID.
 
         Args:
@@ -506,7 +507,7 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=component_id,
             route=STACK_COMPONENTS,
-            response_model=ComponentModel,
+            response_model=ComponentResponseModel,
         )
 
     def list_stack_components(
@@ -517,7 +518,7 @@ class RestZenStore(BaseZenStore):
         flavor_name: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[ComponentModel]:
+    ) -> List[ComponentResponseModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
@@ -537,7 +538,7 @@ class RestZenStore(BaseZenStore):
         filters.pop("self")
         return self._list_resources(
             route=STACK_COMPONENTS,
-            response_model=ComponentModel,
+            response_model=ComponentResponseModel,
             **filters,
         )
 
@@ -546,7 +547,7 @@ class RestZenStore(BaseZenStore):
         self,
         component_id: UUID,
         component_update: ComponentRequestModel,
-    ) -> ComponentModel:
+    ) -> ComponentResponseModel:
         """Update an existing stack component.
 
         Args:
@@ -560,7 +561,7 @@ class RestZenStore(BaseZenStore):
             resource_id=component_id,
             resource_update=component_update,
             route=STACK_COMPONENTS,
-            response_model=ComponentModel,
+            response_model=ComponentResponseModel,
         )
 
     @track(AnalyticsEvent.DELETED_STACK_COMPONENT)
@@ -580,7 +581,7 @@ class RestZenStore(BaseZenStore):
     # -----------------------
 
     @track(AnalyticsEvent.CREATED_FLAVOR)
-    def create_flavor(self, flavor: FlavorRequestModel) -> FlavorModel:
+    def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
         """Creates a new stack component flavor.
 
         Args:
@@ -592,10 +593,10 @@ class RestZenStore(BaseZenStore):
         return self._create_project_scoped_resource(
             resource=flavor,
             route=FLAVORS,
-            response_model=FlavorModel,
+            response_model=FlavorResponseModel,
         )
 
-    def get_flavor(self, flavor_id: UUID) -> FlavorModel:
+    def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
         """Get a stack component flavor by ID.
 
         Args:
@@ -607,7 +608,7 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=flavor_id,
             route=FLAVORS,
-            response_model=FlavorModel,
+            response_model=FlavorResponseModel,
         )
 
     def list_flavors(
@@ -617,7 +618,7 @@ class RestZenStore(BaseZenStore):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[FlavorModel]:
+    ) -> List[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
@@ -636,7 +637,7 @@ class RestZenStore(BaseZenStore):
         filters.pop("self")
         return self._list_resources(
             route=FLAVORS,
-            response_model=FlavorModel,
+            response_model=FlavorResponseModel,
             **filters,
         )
 
@@ -666,7 +667,7 @@ class RestZenStore(BaseZenStore):
         return self.config.username
 
     @track(AnalyticsEvent.CREATED_USER)
-    def create_user(self, user: UserRequestModel) -> UserModel:
+    def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
 
         Args:
@@ -678,11 +679,11 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=user,
             route=USERS,
-            response_model=UserModel,
+            response_model=UserResponseModel,
         )
 
     # TODO: Should this be name or id?
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserModel:
+    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
         """Gets a specific user.
 
         Args:
@@ -694,10 +695,10 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=user_name_or_id,
             route=USERS,
-            response_model=UserModel,
+            response_model=UserResponseModel,
         )
 
-    def list_users(self) -> List[UserModel]:
+    def list_users(self) -> List[UserResponseModel]:
         """List all users.
 
         Returns:
@@ -707,14 +708,14 @@ class RestZenStore(BaseZenStore):
         filters.pop("self")
         return self._list_resources(
             route=USERS,
-            response_model=UserModel,
+            response_model=UserResponseModel,
             **filters,
         )
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
         self, user_id: UUID, user_update: UserRequestModel
-    ) -> UserModel:
+    ) -> UserResponseModel:
         """Updates an existing user.
 
         Args:
@@ -728,7 +729,7 @@ class RestZenStore(BaseZenStore):
             resource_id=user_id,
             resource_update=user_update,
             route=USERS,
-            response_model=UserModel,
+            response_model=UserResponseModel,
         )
 
     @track(AnalyticsEvent.DELETED_USER)
@@ -748,7 +749,7 @@ class RestZenStore(BaseZenStore):
         user_name_or_id: Union[str, UUID],
         user_opt_in_response: bool,
         email: Optional[str] = None,
-    ) -> UserModel:
+    ) -> UserResponseModel:
         """Persist user response to the email prompt.
 
         Args:
@@ -766,7 +767,7 @@ class RestZenStore(BaseZenStore):
         route = f"{USERS}/{str(user_name_or_id)}{EMAIL_ANALYTICS}"
 
         response_body = self.put(route, body=request)
-        user = UserModel.parse_obj(response_body)
+        user = UserResponseModel.parse_obj(response_body)
         return user
 
     # -----
@@ -774,7 +775,7 @@ class RestZenStore(BaseZenStore):
     # -----
 
     @track(AnalyticsEvent.CREATED_TEAM)
-    def create_team(self, team: TeamRequestModel) -> TeamModel:
+    def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
         """Creates a new team.
 
         Args:
@@ -786,10 +787,10 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=team,
             route=TEAMS,
-            response_model=TeamModel,
+            response_model=TeamResponseModel,
         )
 
-    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamModel:
+    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponseModel:
         """Gets a specific team.
 
         Args:
@@ -801,10 +802,10 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=team_name_or_id,
             route=TEAMS,
-            response_model=TeamModel,
+            response_model=TeamResponseModel,
         )
 
-    def list_teams(self) -> List[TeamModel]:
+    def list_teams(self) -> List[TeamResponseModel]:
         """List all teams.
 
         Returns:
@@ -814,7 +815,7 @@ class RestZenStore(BaseZenStore):
         filters.pop("self")
         return self._list_resources(
             route=TEAMS,
-            response_model=TeamModel,
+            response_model=TeamResponseModel,
             **filters,
         )
 
@@ -836,7 +837,7 @@ class RestZenStore(BaseZenStore):
             resource_id=team_id,
             resource_update=team_update,
             route=TEAMS,
-            response_model=TeamModel,
+            response_model=TeamResponseModel,
         )
 
     @track(AnalyticsEvent.DELETED_TEAM)
@@ -857,7 +858,7 @@ class RestZenStore(BaseZenStore):
 
     def get_users_for_team(
         self, team_name_or_id: Union[str, UUID]
-    ) -> List[UserModel]:
+    ) -> List[UserResponseModel]:
         """Fetches all users of a team.
 
         Args:
@@ -866,7 +867,7 @@ class RestZenStore(BaseZenStore):
 
     def get_teams_for_user(
         self, user_name_or_id: Union[str, UUID]
-    ) -> List[TeamModel]:
+    ) -> List[TeamResponseModel]:
         """Fetches all teams for a user.
 
         Args:
@@ -903,7 +904,7 @@ class RestZenStore(BaseZenStore):
     # -----
 
     @track(AnalyticsEvent.CREATED_ROLE)
-    def create_role(self, role: RoleRequestModel) -> RoleModel:
+    def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
         """Creates a new role.
 
         Args:
@@ -915,11 +916,11 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=role,
             route=ROLES,
-            response_model=RoleModel,
+            response_model=RoleResponseModel,
         )
 
     # TODO: Should it be name or id or just id?
-    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleModel:
+    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
         """Gets a specific role.
 
         Args:
@@ -931,10 +932,10 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=role_name_or_id,
             route=ROLES,
-            response_model=RoleModel,
+            response_model=RoleResponseModel,
         )
 
-    def list_roles(self) -> List[RoleModel]:
+    def list_roles(self) -> List[RoleResponseModel]:
         """List all roles.
 
         Returns:
@@ -944,14 +945,14 @@ class RestZenStore(BaseZenStore):
         filters.pop("self")
         return self._list_resources(
             route=ROLES,
-            response_model=RoleModel,
+            response_model=RoleResponseModel,
             **filters,
         )
 
     @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(
         self, role_id: UUID, role_update: RoleRequestModel
-    ) -> RoleModel:
+    ) -> RoleResponseModel:
         """Update an existing role.
 
         Args:
@@ -965,7 +966,7 @@ class RestZenStore(BaseZenStore):
             resource_id=role_id,
             resource_update=role_update,
             route=ROLES,
-            response_model=RoleModel,
+            response_model=RoleResponseModel,
         )
 
     @track(AnalyticsEvent.DELETED_ROLE)
@@ -1065,7 +1066,9 @@ class RestZenStore(BaseZenStore):
     # --------
 
     @track(AnalyticsEvent.CREATED_PROJECT)
-    def create_project(self, project: ProjectRequestModel) -> ProjectModel:
+    def create_project(
+        self, project: ProjectRequestModel
+    ) -> ProjectResponseModel:
         """Creates a new project.
 
         Args:
@@ -1077,11 +1080,13 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=project,
             route=PROJECTS,
-            response_model=ProjectModel,
+            response_model=ProjectResponseModel,
         )
 
     # TODO: Should this be just the id?
-    def get_project(self, project_name_or_id: Union[UUID, str]) -> ProjectModel:
+    def get_project(
+        self, project_name_or_id: Union[UUID, str]
+    ) -> ProjectResponseModel:
         """Get an existing project by name or ID.
 
         Args:
@@ -1093,10 +1098,10 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=project_name_or_id,
             route=PROJECTS,
-            response_model=ProjectModel,
+            response_model=ProjectResponseModel,
         )
 
-    def list_projects(self) -> List[ProjectModel]:
+    def list_projects(self) -> List[ProjectResponseModel]:
         """List all projects.
 
         Returns:
@@ -1106,14 +1111,14 @@ class RestZenStore(BaseZenStore):
         filters.pop("self")
         return self._list_resources(
             route=PROJECTS,
-            response_model=ProjectModel,
+            response_model=ProjectResponseModel,
             **filters,
         )
 
     @track(AnalyticsEvent.UPDATED_PROJECT)
     def update_project(
         self, project_id: UUID, project_update: ProjectRequestModel
-    ) -> ProjectModel:
+    ) -> ProjectResponseModel:
         """Update an existing project.
 
         Args:
@@ -1127,7 +1132,7 @@ class RestZenStore(BaseZenStore):
             resource_id=project_id,
             resource_update=project_update,
             route=PROJECTS,
-            response_model=ProjectModel,
+            response_model=ProjectResponseModel,
         )
 
     @track(AnalyticsEvent.DELETED_PROJECT)
@@ -1147,7 +1152,9 @@ class RestZenStore(BaseZenStore):
     # ---------
 
     @track(AnalyticsEvent.CREATE_PIPELINE)
-    def create_pipeline(self, pipeline: PipelineRequestModel) -> PipelineModel:
+    def create_pipeline(
+        self, pipeline: PipelineRequestModel
+    ) -> PipelineResponseModel:
         """Creates a new pipeline in a project.
 
         Args:
@@ -1159,10 +1166,10 @@ class RestZenStore(BaseZenStore):
         return self._create_project_scoped_resource(
             resource=pipeline,
             route=PIPELINES,
-            response_model=PipelineModel,
+            response_model=PipelineResponseModel,
         )
 
-    def get_pipeline(self, pipeline_id: UUID) -> PipelineModel:
+    def get_pipeline(self, pipeline_id: UUID) -> PipelineResponseModel:
         """Get a pipeline with a given ID.
 
         Args:
@@ -1174,7 +1181,7 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=pipeline_id,
             route=PIPELINES,
-            response_model=PipelineModel,
+            response_model=PipelineResponseModel,
         )
 
     def list_pipelines(
@@ -1182,7 +1189,7 @@ class RestZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-    ) -> List[PipelineModel]:
+    ) -> List[PipelineResponseModel]:
         """List all pipelines in the project.
 
         Args:
@@ -1198,14 +1205,14 @@ class RestZenStore(BaseZenStore):
         filters.pop("self")
         return self._list_resources(
             route=PIPELINES,
-            response_model=PipelineModel,
+            response_model=PipelineResponseModel,
             **filters,
         )
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
-        self, pipeline_id: UUID, pipeline_update: PipelineModel
-    ) -> PipelineModel:
+        self, pipeline_id: UUID, pipeline_update: PipelineResponseModel
+    ) -> PipelineResponseModel:
         """Updates a pipeline.
 
         Args:
@@ -1219,7 +1226,7 @@ class RestZenStore(BaseZenStore):
             resource_id=pipeline_id,
             resource_update=pipeline_update,
             route=PIPELINES,
-            response_model=PipelineModel,
+            response_model=PipelineResponseModel,
         )
 
     @track(AnalyticsEvent.DELETE_PIPELINE)
@@ -1238,7 +1245,7 @@ class RestZenStore(BaseZenStore):
     # Pipeline runs
     # --------------
 
-    def get_run(self, run_id: UUID) -> PipelineRunModel:
+    def get_run(self, run_id: UUID) -> PipelineRunResponseModel:
         """Gets a pipeline run.
 
         Args:
@@ -1250,7 +1257,7 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=run_id,
             route=RUNS,
-            response_model=PipelineRunModel,
+            response_model=PipelineRunResponseModel,
         )
 
     def list_runs(
@@ -1262,7 +1269,7 @@ class RestZenStore(BaseZenStore):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-    ) -> List[PipelineRunModel]:
+    ) -> List[PipelineRunResponseModel]:
         """Gets all pipeline runs.
 
         Args:
@@ -1283,7 +1290,7 @@ class RestZenStore(BaseZenStore):
         filters.pop("self")
         return self._list_resources(
             route=RUNS,
-            response_model=PipelineRunModel,
+            response_model=PipelineRunResponseModel,
             **filters,
         )
 
@@ -1303,7 +1310,7 @@ class RestZenStore(BaseZenStore):
     # Pipeline run steps
     # ------------------
 
-    def get_run_step(self, step_id: UUID) -> StepRunModel:
+    def get_run_step(self, step_id: UUID) -> StepRunResponseModel:
         """Get a step by ID.
 
         Args:
@@ -1315,7 +1322,7 @@ class RestZenStore(BaseZenStore):
         return self._get_resource(
             resource_id=step_id,
             route=STEPS,
-            response_model=StepRunModel,
+            response_model=StepRunResponseModel,
         )
 
     def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
@@ -1372,7 +1379,7 @@ class RestZenStore(BaseZenStore):
         body = self.get(f"{STEPS}/{str(step_id)}{STATUS}")
         return ExecutionStatus(body)
 
-    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
+    def list_run_steps(self, run_id: UUID) -> List[StepRunResponseModel]:
         """Gets all steps in a pipeline run.
 
         Args:
@@ -1383,7 +1390,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_resources(
             route=f"{RUNS}/{str(run_id)}{STEPS}",
-            response_model=StepRunModel,
+            response_model=StepRunResponseModel,
         )
 
     def list_artifacts(

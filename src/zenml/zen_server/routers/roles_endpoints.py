@@ -18,7 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from zenml.constants import API, ROLES, VERSION_1
-from zenml.new_models import RoleModel, RoleRequestModel
+from zenml.new_models import RoleRequestModel, RoleResponseModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -32,11 +32,11 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[RoleModel],
+    response_model=List[RoleResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_roles() -> List[RoleModel]:
+def list_roles() -> List[RoleResponseModel]:
     """Returns a list of all roles.
 
     Returns:
@@ -47,11 +47,11 @@ def list_roles() -> List[RoleModel]:
 
 @router.post(
     "",
-    response_model=RoleModel,
+    response_model=RoleResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_role(role: RoleRequestModel) -> RoleModel:
+def create_role(role: RoleRequestModel) -> RoleResponseModel:
     """Creates a role.
 
     # noqa: DAR401
@@ -67,11 +67,11 @@ def create_role(role: RoleRequestModel) -> RoleModel:
 
 @router.get(
     "/{role_name_or_id}",
-    response_model=RoleModel,
+    response_model=RoleResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
+def get_role(role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
     """Returns a specific role.
 
     Args:
@@ -85,13 +85,13 @@ def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
 
 @router.put(
     "/{role_name_or_id}",
-    response_model=RoleModel,
+    response_model=RoleResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_role(
     role_name_or_id: Union[str, UUID], role_update: RoleRequestModel
-) -> RoleModel:
+) -> RoleResponseModel:
     """Updates a role.
 
     # noqa: DAR401

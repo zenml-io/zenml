@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends
 
 from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.enums import StackComponentType
-from zenml.new_models import FlavorModel
+from zenml.new_models import FlavorResponseModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -34,7 +34,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[FlavorModel],
+    response_model=List[FlavorResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -44,7 +44,7 @@ def list_flavors(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-) -> List[FlavorModel]:
+) -> List[FlavorResponseModel]:
     """Returns all flavors.
 
     Args:
@@ -68,11 +68,11 @@ def list_flavors(
 
 @router.get(
     "/{flavor_id}",
-    response_model=FlavorModel,
+    response_model=FlavorResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_flavor(flavor_id: UUID) -> FlavorModel:
+def get_flavor(flavor_id: UUID) -> FlavorResponseModel:
     """Returns the requested flavor.
 
     Args:

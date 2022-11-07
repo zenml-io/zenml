@@ -31,9 +31,10 @@ from zenml.constants import (
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.new_models import (
+    EmailOptInModel,
     RoleAssignmentResponseModel,
-    UserModel,
     UserRequestModel,
+    UserResponseModel,
 )
 from zenml.zen_server.auth import (
     AuthContext,
@@ -69,11 +70,11 @@ current_user_router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[UserModel],
+    response_model=List[UserResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_users() -> List[UserModel]:
+def list_users() -> List[UserResponseModel]:
     """Returns a list of all users.
 
     Returns:
@@ -84,11 +85,11 @@ def list_users() -> List[UserModel]:
 
 @router.post(
     "",
-    response_model=UserModel,
+    response_model=UserResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_user(user: UserRequestModel) -> UserModel:
+def create_user(user: UserRequestModel) -> UserResponseModel:
     """Creates a user.
 
     # noqa: DAR401
@@ -120,11 +121,11 @@ def create_user(user: UserRequestModel) -> UserModel:
 
 @router.get(
     "/{user_name_or_id}",
-    response_model=UserModel,
+    response_model=UserResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
+def get_user(user_name_or_id: Union[str, UUID]) -> UserResponseModel:
     """Returns a specific user.
 
     Args:
@@ -138,13 +139,13 @@ def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
 
 @router.put(
     "/{user_name_or_id}",
-    response_model=UserModel,
+    response_model=UserResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_user(
     user_name_or_id: Union[str, UUID], user_update: UserRequestModel
-) -> UserModel:
+) -> UserResponseModel:
     """Updates a specific user.
 
     Args:
@@ -163,13 +164,13 @@ def update_user(
 
 @activation_router.put(
     "/{user_name_or_id}" + ACTIVATE,
-    response_model=UserModel,
+    response_model=UserResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def activate_user(
     user_name_or_id: Union[str, UUID], user: UserRequestModel
-) -> UserModel:
+) -> UserResponseModel:
     """Activates a specific user.
 
     Args:
@@ -201,11 +202,11 @@ def activate_user(
 
 @router.put(
     "/{user_name_or_id}" + DEACTIVATE,
-    response_model=UserModel,
+    response_model=UserResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def deactivate_user(user_name_or_id: Union[str, UUID]) -> UserModel:
+def deactivate_user(user_name_or_id: Union[str, UUID]) -> UserResponseModel:
     """Deactivates a user and generates a new activation token for it.
 
     Args:
@@ -254,13 +255,13 @@ def delete_user(
 
 @router.put(
     "/{user_name_or_id}" + EMAIL_ANALYTICS,
-    response_model=UserModel,
+    response_model=UserResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def email_opt_in_response(
     user_name_or_id: Union[str, UUID], user_response: EmailOptInModel
-) -> UserModel:
+) -> UserResponseModel:
     """Deactivates a user and generates a new activation token for it.
 
     Args:
@@ -358,13 +359,13 @@ def unassign_role(
 
 @current_user_router.get(
     "/current-user",
-    response_model=UserModel,
+    response_model=UserResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_current_user(
     auth_context: AuthContext = Depends(authorize),
-) -> UserModel:
+) -> UserResponseModel:
     """Returns the model of the authenticated user.
 
     Args:

@@ -22,7 +22,11 @@ from pydantic import BaseModel, Field, SecretStr
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.logger import get_logger
+from zenml.models.constants import (
+    MODEL_NAME_FIELD_MAX_LENGTH,
+    USER_PASSWORD_MAX_LENGTH,
+)
 from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.utils.enum_utils import StrEnum
 
@@ -30,6 +34,7 @@ if TYPE_CHECKING:
     from passlib.context import CryptContext  # type: ignore[import]
 
     from zenml.new_models.team_models import TeamResponseModel
+logger = get_logger(__name__)
 
 
 class JWTTokenType(StrEnum):
@@ -156,42 +161,8 @@ class UserBaseModel(BaseModel):
 
     active: bool = Field(default=False, title="Active account.")
 
-
-# -------- #
-# RESPONSE #
-# -------- #
-
-
-class UserResponseModel(UserBaseModel, BaseResponseModel):
-    """"""
-
-    teams: Optional[List["TeamResponseModel"]] = Field(
-        title="The list of teams for this user."
-    )
-
-    def generate_access_token(self) -> str:
-        """Generates an access token.
-
-        Generates an access token and returns it.
-
-        Returns:
-            The generated access token.
-        """
-        return JWTToken(
-            token_type=JWTTokenType.ACCESS_TOKEN, user_id=self.id
-        ).encode()
-
-
-# ------- #
-# REQUEST #
-# ------- #
-
-
-class UserRequestModel(UserBaseModel, BaseRequestModel):
-    """"""
-
-    password: Optional[SecretStr] = Field(default=None, exclude=True)
     activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
+    password: Optional[SecretStr] = Field(default=None, exclude=True)
 
     def generate_activation_token(self) -> SecretStr:
         """Generates and stores a new activation token.
@@ -201,6 +172,86 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
         """
         self.activation_token = SecretStr(token_hex(32))
         return self.activation_token
+
+    @classmethod
+    def verify_password(
+        cls, plain_password: str, user: Optional["UserResponseModel"] = None
+    ) -> bool:
+        """Verifies a given plain password against the stored password.
+
+        Args:
+            plain_password: Input password to be verified.
+            user: User for which the password is to be verified.
+
+        Returns:
+            True if the passwords match.
+        """
+        # even when the user or password is not set, we still want to execute
+        # the password hash verification to protect against response discrepancy
+        # attacks (https://cwe.mitre.org/data/definitions/204.html)
+        token_hash: Optional[str] = None
+        if user is not None and user.password is not None and user.active:
+            token_hash = user.get_hashed_password()
+        pwd_context = cls._get_crypt_context()
+
+        return cast(bool, pwd_context.verify(plain_password, token_hash))
+
+    @classmethod
+    def verify_access_token(cls, token: str) -> Optional["UserResponseModel"]:
+        """Verifies an access token.
+
+        Verifies an access token and returns the user that was used to generate
+        it if the token is valid and None otherwise.
+
+        Args:
+            token: The access token to verify.
+
+        Returns:
+            The user that generated the token if valid, None otherwise.
+        """
+        try:
+            access_token = JWTToken.decode(
+                token_type=JWTTokenType.ACCESS_TOKEN, token=token
+            )
+        except AuthorizationException:
+            return None
+
+        zen_store = GlobalConfiguration().zen_store
+        try:
+            user = zen_store.get_user(user_name_or_id=access_token.user_id)
+        except KeyError:
+            return None
+
+        if access_token.user_id == user.id and user.active:
+            return user
+
+        return None
+
+    @classmethod
+    def verify_activation_token(
+        cls, activation_token: str, user: Optional["UserResponseModel"] = None
+    ) -> bool:
+        """Verifies a given activation token against the stored token.
+
+        Args:
+            activation_token: Input activation token to be verified.
+            user: User for which the activation token is to be verified.
+
+        Returns:
+            True if the token is valid.
+        """
+        # even when the user or token is not set, we still want to execute the
+        # token hash verification to protect against response discrepancy
+        # attacks (https://cwe.mitre.org/data/definitions/204.html)
+        token_hash: Optional[str] = None
+        if (
+            user is not None
+            and user.activation_token is not None
+            and not user.active
+        ):
+            token_hash = user.get_hashed_activation_token()
+        pwd_context = cls._get_crypt_context()
+        return cast(bool, pwd_context.verify(activation_token, token_hash))
 
     @classmethod
     def _is_hashed_secret(cls, secret: SecretStr) -> bool:
@@ -246,17 +297,6 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
         pwd_context = cls._get_crypt_context()
         return cast(str, pwd_context.hash(secret.get_secret_value()))
 
-    @classmethod
-    def _get_crypt_context(cls) -> "CryptContext":
-        """Returns the password encryption context.
-
-        Returns:
-            The password encryption context.
-        """
-        from passlib.context import CryptContext
-
-        return CryptContext(schemes=["bcrypt"], deprecated="auto")
-
     def get_hashed_password(self) -> Optional[str]:
         """Returns the hashed password, if configured.
 
@@ -284,83 +324,55 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
         return self._get_hashed_secret(self.activation_token)
 
     @classmethod
-    def verify_password(
-        cls, plain_password: str, user: Optional["UserRequestModel"] = None
-    ) -> bool:
-        """Verifies a given plain password against the stored password.
-
-        Args:
-            plain_password: Input password to be verified.
-            user: User for which the password is to be verified.
+    def _get_crypt_context(cls) -> "CryptContext":
+        """Returns the password encryption context.
 
         Returns:
-            True if the passwords match.
+            The password encryption context.
         """
-        # even when the user or password is not set, we still want to execute
-        # the password hash verification to protect against response discrepancy
-        # attacks (https://cwe.mitre.org/data/definitions/204.html)
-        token_hash: Optional[str] = None
-        if user is not None and user.password is not None and user.active:
-            token_hash = user.get_hashed_password()
-        pwd_context = cls._get_crypt_context()
-        return cast(bool, pwd_context.verify(plain_password, token_hash))
+        from passlib.context import CryptContext
 
-    @classmethod
-    def verify_access_token(cls, token: str) -> Optional["UserRequestModel"]:
-        """Verifies an access token.
+        return CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-        Verifies an access token and returns the user that was used to generate
-        it if the token is valid and None otherwise.
 
-        Args:
-            token: The access token to verify.
+# -------- #
+# RESPONSE #
+# -------- #
+
+
+class UserResponseModel(UserBaseModel, BaseResponseModel):
+    """"""
+
+    teams: Optional[List["TeamResponseModel"]] = Field(
+        title="The list of teams for this user."
+    )
+
+    def generate_access_token(self) -> str:
+        """Generates an access token.
+
+        Generates an access token and returns it.
 
         Returns:
-            The user that generated the token if valid, None otherwise.
+            The generated access token.
         """
-        try:
-            access_token = JWTToken.decode(
-                token_type=JWTTokenType.ACCESS_TOKEN, token=token
-            )
-        except AuthorizationException:
-            return None
+        return JWTToken(
+            token_type=JWTTokenType.ACCESS_TOKEN, user_id=self.id
+        ).encode()
 
-        zen_store = GlobalConfiguration().zen_store
-        try:
-            user = zen_store.get_user(user_name_or_id=access_token.user_id)
-        except KeyError:
-            return None
 
-        if access_token.user_id == user.id and user.active:
-            return user
+# ------- #
+# REQUEST #
+# ------- #
 
-        return None
 
-    @classmethod
-    def verify_activation_token(
-        cls, activation_token: str, user: Optional["UserRequestModel"] = None
-    ) -> bool:
-        """Verifies a given activation token against the stored token.
+class UserRequestModel(UserBaseModel, BaseRequestModel):
+    """"""
 
-        Args:
-            activation_token: Input activation token to be verified.
-            user: User for which the activation token is to be verified.
-
-        Returns:
-            True if the token is valid.
-        """
-        # even when the user or token is not set, we still want to execute the
-        # token hash verification to protect against response discrepancy
-        # attacks (https://cwe.mitre.org/data/definitions/204.html)
-        token_hash: Optional[str] = None
-        if (
-            user is not None
-            and user.activation_token is not None
-            and not user.active
-        ):
-            token_hash = user.get_hashed_activation_token()
-        pwd_context = cls._get_crypt_context()
-        return cast(bool, pwd_context.verify(activation_token, token_hash))
+    password: Optional[str] = Field(
+        default=None,
+        title="Account password.",
+        max_length=USER_PASSWORD_MAX_LENGTH,
+    )
 
     class Config:
         """Pydantic configuration class."""
@@ -370,3 +382,21 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
         # Forbid extra attributes to prevent unexpected behavior
         extra = "forbid"
         underscore_attrs_are_private = True
+
+
+# ---- #
+# MISC #
+# ---- #
+
+
+class EmailOptInModel(BaseModel):
+    """Model for user deactivation requests."""
+
+    email: Optional[str] = Field(
+        default=None,
+        title="Email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    email_opted_in: bool = Field(
+        title="Whether or not to associate the email with the user"
+    )

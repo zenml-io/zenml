@@ -47,19 +47,19 @@ from zenml.new_models.step_run_models import (
     StepRunResponseModel,
 )
 from zenml.new_models.team_models import TeamRequestModel, TeamResponseModel
-from zenml.new_models.user_models import UserRequestModel, UserResponseModel
+from zenml.new_models.user_models import (
+    EmailOptInModel,
+    UserRequestModel,
+    UserResponseModel,
+)
 
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel
+    ProjectResponseModel=ProjectResponseModel,
 )
 StackResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel
+    ProjectResponseModel=ProjectResponseModel,
 )
-UserResponseModel.update_forward_refs(
-    TeamResponseModel=TeamResponseModel
-)
-TeamResponseModel.update_forward_refs(
-    UserResponseModel=UserResponseModel
-)
+UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
+TeamResponseModel.update_forward_refs(UserResponseModel=UserResponseModel)

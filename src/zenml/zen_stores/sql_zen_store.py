@@ -56,28 +56,28 @@ from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.new_models import (
     ArtifactModel,
     ArtifactRequestModel,
-    ComponentResponseModel,
     ComponentRequestModel,
-    FlavorResponseModel,
+    ComponentResponseModel,
     FlavorRequestModel,
-    PipelineResponseModel,
+    FlavorResponseModel,
     PipelineRequestModel,
-    PipelineRunResponseModel,
+    PipelineResponseModel,
     PipelineRunRequestModel,
-    ProjectResponseModel,
+    PipelineRunResponseModel,
     ProjectRequestModel,
-    RoleAssignmentResponseModel,
+    ProjectResponseModel,
     RoleAssignmentRequestModel,
-    RoleResponseModel,
+    RoleAssignmentResponseModel,
     RoleRequestModel,
-    StackResponseModel,
+    RoleResponseModel,
     StackRequestModel,
-    StepRunResponseModel,
+    StackResponseModel,
     StepRunRequestModel,
-    TeamResponseModel,
+    StepRunResponseModel,
     TeamRequestModel,
-    UserResponseModel,
+    TeamResponseModel,
     UserRequestModel,
+    UserResponseModel,
 )
 from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.new_models.team_models import TeamResponseModel
@@ -1407,19 +1407,21 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
-        self, user_id: UUID, user_update: UserRequestModel
+        self, user_name_or_id: UUID, user_update: UserRequestModel
     ) -> UserResponseModel:
         """Updates an existing user.
 
         Args:
-            user_id: The id of the user to update.
+            user_name_or_id: The id of the user to update.
             user_update: The update to be applied to the user.
 
         Returns:
             The updated user.
         """
         with Session(self.engine) as session:
-            existing_user = self._get_user_schema(user_id, session=session)
+            existing_user = self._get_user_schema(
+                user_name_or_id, session=session
+            )
 
             existing_user.name = user_update.name
             existing_user.full_name = user_update.full_name
@@ -2080,7 +2082,9 @@ class SqlZenStore(BaseZenStore):
     # --------
 
     @track(AnalyticsEvent.CREATED_PROJECT)
-    def create_project(self, project: ProjectRequestModel) -> ProjectResponseModel:
+    def create_project(
+        self, project: ProjectRequestModel
+    ) -> ProjectResponseModel:
         """Creates a new project.
 
         Args:
@@ -2113,7 +2117,9 @@ class SqlZenStore(BaseZenStore):
 
             return new_project.to_model()
 
-    def get_project(self, project_name_or_id: Union[str, UUID]) -> ProjectResponseModel:
+    def get_project(
+        self, project_name_or_id: Union[str, UUID]
+    ) -> ProjectResponseModel:
         """Get an existing project by name or ID.
 
         Args:
@@ -3096,7 +3102,9 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_run)
             return existing_run.to_model()
 
-    def _create_run_step(self, step_run: StepRunRequestModel) -> StepRunResponseModel:
+    def _create_run_step(
+        self, step_run: StepRunRequestModel
+    ) -> StepRunResponseModel:
         """Creates a step.
 
         Args:

@@ -28,7 +28,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.new_models import ArtifactModel, StepRunModel
+from zenml.new_models import ArtifactModel, StepRunResponseModel
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -42,11 +42,11 @@ router = APIRouter(
 
 @router.get(
     "/{step_id}",
-    response_model=StepRunModel,
+    response_model=StepRunResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_step(step_id: UUID) -> StepRunModel:
+def get_step(step_id: UUID) -> StepRunResponseModel:
     """Get one specific step.
 
     Args:

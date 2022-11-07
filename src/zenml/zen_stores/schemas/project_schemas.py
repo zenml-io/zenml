@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, List
 
 from sqlmodel import Relationship
 
-from zenml.new_models import ProjectResponseModel, ProjectRequestModel
+from zenml.new_models import ProjectRequestModel, ProjectResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:

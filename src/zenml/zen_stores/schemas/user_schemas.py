@@ -65,6 +65,7 @@ class UserSchema(NamedSchema, table=True):
         Returns:
             The created `UserSchema`.
         """
+        breakpoint()
         return cls(
             name=model.name,
             full_name=model.full_name,
@@ -91,7 +92,9 @@ class UserSchema(NamedSchema, table=True):
                 email_opted_in=self.email_opted_in,
                 active=self.active,
                 created=self.created,
-                updated=self.updated
+                updated=self.updated,
+                password=self.password,
+                activation_token=self.activation_token,
             )
         else:
             return UserResponseModel(
@@ -104,4 +107,6 @@ class UserSchema(NamedSchema, table=True):
                 active=self.active,
                 created=self.created,
                 updated=self.updated,
+                password=self.password,
+                activation_token=self.activation_token,
             )

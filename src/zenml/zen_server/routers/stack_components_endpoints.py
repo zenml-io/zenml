@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import StackComponentType
-from zenml.new_models import ComponentModel, ComponentRequestModel
+from zenml.new_models import ComponentRequestModel, ComponentResponseModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -40,7 +40,7 @@ types_router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[ComponentModel],
+    response_model=List[ComponentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -52,7 +52,7 @@ def list_stack_components(
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     auth_context: AuthContext = Depends(authorize),
-) -> List[ComponentModel]:
+) -> List[ComponentResponseModel]:
     """Get a list of all stack components for a specific type.
 
     Args:
@@ -94,11 +94,11 @@ def list_stack_components(
 
 @router.get(
     "/{component_id}",
-    response_model=ComponentModel,
+    response_model=ComponentResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_stack_component(component_id: UUID) -> ComponentModel:
+def get_stack_component(component_id: UUID) -> ComponentResponseModel:
     """Returns the requested stack component.
 
     Args:
@@ -112,14 +112,14 @@ def get_stack_component(component_id: UUID) -> ComponentModel:
 
 @router.put(
     "/{component_id}",
-    response_model=ComponentModel,
+    response_model=ComponentResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_stack_component(
     component_id: UUID,
     component_update: ComponentRequestModel,
-) -> ComponentModel:
+) -> ComponentResponseModel:
     """Updates a stack component.
 
     Args:

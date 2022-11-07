@@ -18,8 +18,8 @@ from sqlmodel import Field, Relationship
 
 from zenml.new_models import (
     RoleAssignmentRequestModel,
-    RoleResponseModel,
     RoleRequestModel,
+    RoleResponseModel,
 )
 from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema

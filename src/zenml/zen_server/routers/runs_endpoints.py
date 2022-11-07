@@ -28,7 +28,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.new_models import PipelineRunModel, StepRunModel
+from zenml.new_models import PipelineRunResponseModel, StepRunResponseModel
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -43,7 +43,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[PipelineRunModel],
+    response_model=List[PipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -55,7 +55,7 @@ def list_runs(
     component_id: Optional[UUID] = None,
     pipeline_id: Optional[UUID] = None,
     unlisted: bool = False,
-) -> List[PipelineRunModel]:
+) -> List[PipelineRunResponseModel]:
     """Get pipeline runs according to query filters.
 
     Args:
@@ -84,13 +84,13 @@ def list_runs(
 
 @router.get(
     "/{run_id}",
-    response_model=PipelineRunModel,
+    response_model=PipelineRunResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_run(
     run_id: UUID,
-) -> PipelineRunModel:
+) -> PipelineRunResponseModel:
     """Get a specific pipeline run using its ID.
 
     Args:
@@ -126,11 +126,11 @@ def get_run_dag(run_id: UUID) -> LineageGraph:
 
 @router.get(
     "/{run_id}" + STEPS,
-    response_model=List[StepRunModel],
+    response_model=List[StepRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_run_steps(run_id: UUID) -> List[StepRunModel]:
+def get_run_steps(run_id: UUID) -> List[StepRunResponseModel]:
     """Get all steps for a given pipeline run.
 
     Args:

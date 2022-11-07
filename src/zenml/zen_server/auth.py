@@ -27,7 +27,7 @@ from pydantic import BaseModel
 
 from zenml.constants import API, ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
 from zenml.logger import get_logger
-from zenml.models.user_management_models import UserModel
+from zenml.new_models import UserResponseModel
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
@@ -46,7 +46,7 @@ class AuthScheme(StrEnum):
 class AuthContext(BaseModel):
     """The authentication context."""
 
-    user: UserModel
+    user: UserResponseModel
 
 
 def authentication_scheme() -> AuthScheme:
@@ -86,27 +86,30 @@ def authenticate_credentials(
         The authenticated account details, if the account is valid, otherwise
         None.
     """
-    user: Optional[UserModel] = None
+    user: Optional[UserResponseModel] = None
     auth_context: Optional[AuthContext] = None
     if user_name_or_id:
         try:
             user = zen_store().get_user(user_name_or_id)
             auth_context = AuthContext(user=user)
+
         except KeyError:
             # even when the user does not exist, we still want to execute the
             # password/token verification to protect against response discrepancy
             # attacks (https://cwe.mitre.org/data/definitions/204.html)
             pass
     if password is not None:
-        if not UserModel.verify_password(password, user):
+        if not UserResponseModel.verify_password(password, user):
             return None
     elif access_token is not None:
-        user = UserModel.verify_access_token(access_token)
+        user = UserResponseModel.verify_access_token(access_token)
         if not user:
             return None
         auth_context = AuthContext(user=user)
     elif activation_token is not None:
-        if not UserModel.verify_activation_token(activation_token, user):
+        if not UserResponseModel.verify_activation_token(
+            activation_token, user
+        ):
             return None
     return auth_context
 
