@@ -50,8 +50,8 @@ def upgrade() -> None:
     conn.execute(
         sa.text(
             """
-            DELETE FROM userroleassignmentschema 
-            WHERE role_id 
+            DELETE FROM userroleassignmentschema
+            WHERE role_id
             IN (SELECT id FROM roleschema WHERE name=='admin' OR name=='guest')
             """
         )
@@ -59,8 +59,8 @@ def upgrade() -> None:
     conn.execute(
         sa.text(
             """
-            DELETE FROM teamroleassignmentschema 
-            WHERE role_id 
+            DELETE FROM teamroleassignmentschema
+            WHERE role_id
             IN (SELECT id FROM roleschema WHERE name=='admin' OR name=='guest')
             """
         )
