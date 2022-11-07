@@ -14,7 +14,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "5994f9ad0489"
-down_revision = "ccd68b7825ae"
+down_revision = "d02b3d3464cf"
 branch_labels = None
 depends_on = None
 
@@ -41,6 +41,14 @@ def upgrade() -> None:
             "roleschema",
             "userroleassignmentschema",
             "userschema",
+        )
+    )
+
+    # In order to insure unique names on roles delete potential admin/guest role
+    conn = op.get_bind()
+    res = conn.execute(
+        sa.text(
+            """DELETE FROM roleschema WHERE name=='admin' OR name=='guest'"""
         )
     )
 
