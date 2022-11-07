@@ -82,7 +82,7 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
         bento: Bento package to deploy
         workers: number of workers to use
         backlog: number of requests to queue
-        prduction: whether to run in production mode
+        production: whether to run in production mode
         working_dir: working directory for the service
         host: host to expose the service on
     """

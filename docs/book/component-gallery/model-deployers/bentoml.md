@@ -27,7 +27,7 @@ on a Kubernetes environment.
 
 You should use the MLflow Model Deployer:
 
-* Standarize the way you ddeploy your models to production withing your organization.
+* Standarize the way you deploy your models to production withing your organization.
 
 * if you are looking to deploy your models in a simple way, while you are still
 able to transform your model into a production ready solution when that time comes.
@@ -91,7 +91,7 @@ to serve the model. The following example shows how can call the built-in
 bento builder step within a ZenML pipeline.
 
 ```python
-# Import the step and parameters classe
+# Import the step and parameters class
 from zenml.integrations.bentoml.steps import BentoMLBuilderParameters, bento_builder_step,
 
 # The name we gave to our deployed model

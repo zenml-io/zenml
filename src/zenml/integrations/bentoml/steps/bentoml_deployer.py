@@ -104,7 +104,7 @@ def bentoml_model_deployer_step(
         model_name=params.model_name,
     )
 
-    # Return the apis endopoints of the defined service to use in the predict.
+    # Return the apis endopoint of the defined service to use in the predict.
     # This is a workaround to get the endpoints of the service defined as functions 
     # from the user code in the BentoML service.
     def service_apis(bento_tag:str):
@@ -166,7 +166,7 @@ def bentoml_deployer_step(
     enable_cache: bool = True,
     name: Optional[str] = None,
 ) -> Type[BaseStep]:
-    """Creates a pipeline step to deploy a given ML model with a local BentoMl prediction server.
+    """Creates a pipeline step to deploy a given ML model with a local BentoML prediction server.
 
     The returned step can be used in a pipeline to implement continuous
     deployment for an BentoML model.
