@@ -588,7 +588,7 @@ def update_role(
 
         role.name = name or role.name
         Client().zen_store.update_role(role)
-    except (EntityExistsError, KeyError) as err:
+    except (EntityExistsError, KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Updated role '{role_name}'.")
 
@@ -606,7 +606,7 @@ def delete_role(role_name_or_id: str) -> None:
         Client().zen_store.delete_role(
             role_name_or_id=parse_name_or_uuid(role_name_or_id)
         )
-    except KeyError as err:
+    except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Deleted role '{role_name_or_id}'.")
 

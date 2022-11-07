@@ -513,6 +513,28 @@ def test_deleting_nonexistent_role_fails(sql_store: BaseZenStore):
         sql_store["store"].delete_role(uuid.uuid4())
 
 
+def test_deleting_builtin_role_fails(sql_store: BaseZenStore):
+    """Tests deleting a built-in role fails."""
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].delete_role("admin")
+
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].delete_role("guest")
+
+
+def test_updating_builtin_role_fails(sql_store: BaseZenStore):
+    """Tests updating a built-in role fails."""
+    role = sql_store["store"].get_role("admin")
+    role.name = "new_name"
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].update_role(role)
+
+    role = sql_store["store"].get_role("guest")
+    role.name = "new_name"
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].update_role(role)
+
+
 #  .----------------
 # | ROLE ASSIGNMENTS
 # '-----------------

@@ -81,8 +81,10 @@ from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.base_zen_store import (
+    ADMIN_ROLE,
     DEFAULT_STACK_COMPONENT_NAME,
     DEFAULT_STACK_NAME,
+    GUEST_ROLE,
     BaseZenStore,
 )
 from zenml.zen_stores.migrations.alembic import (
@@ -2076,6 +2078,12 @@ class SqlZenStore(BaseZenStore):
                     f"'{role.id}': Found no"
                     f"existing roles with this id."
                 )
+
+            if existing_role.name in [ADMIN_ROLE, GUEST_ROLE]:
+                raise IllegalOperationError(
+                    f"The built-in role '{role.name}' cannot be updated."
+                )
+
             # Update the role
             existing_role.from_update_model(role)
 
@@ -2116,11 +2124,15 @@ class SqlZenStore(BaseZenStore):
             role_name_or_id: Name or ID of the role to delete.
 
         Raises:
-            IllegalOperationError: If the role is still assigned to users.
+            IllegalOperationError: If the role is still assigned to users or
+                the role is one of the built-in roles.
         """
         with Session(self.engine) as session:
             role = self._get_role_schema(role_name_or_id, session=session)
-
+            if role.name in [ADMIN_ROLE, GUEST_ROLE]:
+                raise IllegalOperationError(
+                    f"The built-in role '{role.name}' cannot be deleted."
+                )
             user_role = session.exec(
                 select(UserRoleAssignmentSchema).where(
                     UserRoleAssignmentSchema.role_id == role.id
