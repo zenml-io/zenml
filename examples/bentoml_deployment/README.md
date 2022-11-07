@@ -16,7 +16,7 @@ The example uses the
 [Fashion-MNIST](https://keras.io/api/datasets/mnist/) dataset to
 train a classifier using [PyTorch](https://pytorch.org/).
 
-In order to show how a porject can use a model deployer such as BentoML, this
+In order to show how a project can use a model deployer such as BentoML, this
 example contains two pipelines:
 
   * `train_fashion_mnist` - this pipeline load the Fashion-MNIST dataset, trains a classifier, and use the built-in bento_builder and bentoml_deployer steps to build and deploy the model.

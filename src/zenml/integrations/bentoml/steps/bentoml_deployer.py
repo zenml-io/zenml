@@ -82,7 +82,6 @@ def bentoml_model_deployer_step(
     Returns:
         BentoML deployment service
     """
-
     # get the path of the ZenML repo
     repo_path = Client.find_repository()
     if not repo_path:

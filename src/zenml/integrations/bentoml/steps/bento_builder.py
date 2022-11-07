@@ -81,7 +81,6 @@ def bento_builder_step(
     Returns:
         the BentoML Bento object.
     """
-
     # get the path of the ZenML repo
     repo_path = Client.find_repository()
     if not repo_path:
