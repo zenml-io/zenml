@@ -78,6 +78,7 @@ class PipelineRunModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
 
+    orchestrator_run_id: Optional[str] = None
     stack_id: Optional[UUID]  # Might become None if the stack is deleted.
     pipeline_id: Optional[UUID]  # Unlisted runs have this as None.
 

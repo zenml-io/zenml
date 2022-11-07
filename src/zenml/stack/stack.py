@@ -14,7 +14,6 @@
 """Implementation of the ZenML Stack class."""
 
 import os
-import time
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -33,7 +32,7 @@ from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.models.stack_models import HydratedStackModel, StackModel
-from zenml.utils import settings_utils, string_utils
+from zenml.utils import settings_utils
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
@@ -696,22 +695,7 @@ class Stack:
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
         """
-        logger.info(
-            "Using stack `%s` to run pipeline `%s`...",
-            self.name,
-            deployment.pipeline.name,
-        )
-        start_time = time.time()
-        return_value = self.orchestrator.run(deployment=deployment, stack=self)
-
-        run_duration = time.time() - start_time
-        logger.info(
-            "Pipeline run `%s` has finished in %s.",
-            deployment.run_name,
-            string_utils.get_human_readable_time(run_duration),
-        )
-
-        return return_value
+        return self.orchestrator.run(deployment=deployment, stack=self)
 
     def _get_active_components_for_step(
         self, step_config: "StepConfiguration"

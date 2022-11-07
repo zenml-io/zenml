@@ -68,6 +68,57 @@ You can now run any ZenML pipeline using the Vertex orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+### Additional configuration
+
+For additional configuration of the Vertex orchestrator, you can pass
+`VertexOrchestratorSettings` which allows you to configure the following attributes:
+
+* `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
+your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
+
+```python
+from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import VertexOrchestratorSettings
+from kubernetes.client.models import V1Toleration
+
+
+vertex_settings = VertexOrchestratorSettings(
+    pod_settings={
+        "affinity": {
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchExpressions": [
+                                {
+                                    "key": "node.kubernetes.io/name",
+                                    "operator": "In",
+                                    "values": ["my_powerful_node_group"],
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "tolerations": [
+            V1Toleration(
+                key="node.kubernetes.io/name",
+                operator="Equal",
+                value="",
+                effect="NoSchedule"
+            )
+        ]
+    }
+)
+
+@pipeline(
+    settings={
+        "orchestrator.vertex": vertex_settings
+    }
+)
+  ...
+```
+
 A concrete example of using the Vertex orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/vertex_ai_orchestration).
 

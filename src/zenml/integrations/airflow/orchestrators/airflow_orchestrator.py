@@ -85,6 +85,8 @@ def set_environment_variable(key: str, value: str) -> Iterator[None]:
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
+    _orchestrator_run_id: Optional[str] = None
+
     def __init__(self, **values: Any):
         """Sets environment variables to configure airflow.
 
@@ -142,6 +144,21 @@ class AirflowOrchestrator(BaseOrchestrator):
             "catchup": False,
         }
 
+    def get_orchestrator_run_id(self) -> str:
+        """Returns the active orchestrator run id.
+
+        Raises:
+            RuntimeError: If no run id exists. This happens when this method
+                gets called while the orchestrator is not running a pipeline.
+
+        Returns:
+            The orchestrator run id.
+        """
+        if not self._orchestrator_run_id:
+            raise RuntimeError("No run id set.")
+
+        return self._orchestrator_run_id
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
@@ -197,12 +214,11 @@ class AirflowOrchestrator(BaseOrchestrator):
                         "configuration for step %s.",
                         step.name,
                     )
-                # Extract run name for the kwargs that will be passed to the
-                # callable
-                run_name = kwargs["ti"].get_dagrun().run_id
+                self._orchestrator_run_id = kwargs["ti"].get_dagrun().run_id
                 self._prepare_run(deployment=deployment)
-                self.run_step(step=step_instance, run_name=run_name)
+                self.run_step(step=step_instance)
                 self._cleanup_run()
+                self._orchestrator_run_id = None
 
             # Create airflow python operator that contains the step callable
             airflow_operator = airflow_python.PythonOperator(
