@@ -12,11 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import click
-from rich import print
 from constants import MODEL_NAME, PIPELINE_NAME, PIPELINE_STEP_NAME
-
-from pipelines.training_fashion_mnist import training_fashion_mnist
 from pipelines.inference_fashion_mnist import inference_fashion_mnist
+from pipelines.training_fashion_mnist import training_fashion_mnist
 from steps.bento_builder import bento_builder
 from steps.deployer import bentoml_model_deployer
 from steps.deployment_trigger_step import (
@@ -25,17 +23,18 @@ from steps.deployment_trigger_step import (
 )
 from steps.evaluators import evaluator
 from steps.importers import importer_mnist
-from steps.trainers import trainer
 from steps.inference_loader import inference_loader
 from steps.predection_service_loader import (
-    bentoml_prediction_service_loader, 
     PredectionServiceLoaderStepParameters,
+    bentoml_prediction_service_loader,
 )
 from steps.predictor import predictor
+from steps.trainers import trainer
 
 DEPLOY = "deploy"
 PREDICT = "predict"
 DEPLOY_AND_PREDICT = "deploy_and_predict"
+
 
 @click.command()
 @click.option(
@@ -49,7 +48,6 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
     "(`predict`). By default both will be run "
     "(`deploy_and_predict`).",
 )
-
 def main(
     config: str,
 ):
@@ -71,16 +69,17 @@ def main(
         ).run()
     if predict:
         inference_fashion_mnist(
-            inference_loader = inference_loader(),
-            prediction_service_loader = bentoml_prediction_service_loader(
+            inference_loader=inference_loader(),
+            prediction_service_loader=bentoml_prediction_service_loader(
                 params=PredectionServiceLoaderStepParameters(
                     model_name=MODEL_NAME,
                     pipeline_name=PIPELINE_NAME,
                     step_name=PIPELINE_STEP_NAME,
                 )
             ),
-            predictor = predictor(),
+            predictor=predictor(),
         ).run()
+
 
 if __name__ == "__main__":
     main()

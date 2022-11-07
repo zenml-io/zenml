@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from zenml.config import DockerSettings
-from zenml.integrations.constants import PYTORCH, BENTOML
+from zenml.integrations.constants import BENTOML, PYTORCH
 from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(required_integrations=[PYTORCH, BENTOML])
@@ -29,5 +29,3 @@ def inference_fashion_mnist(
     inference_data = inference_loader()
     prediction_service = prediction_service_loader()
     predictor(inference_data=inference_data, service=prediction_service)
-
-

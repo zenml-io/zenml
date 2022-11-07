@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from constants import MODEL_NAME
+
 from zenml.integrations.bentoml.steps import (
     BentoMLBuilderParameters,
     bento_builder_step,
@@ -27,6 +28,6 @@ bento_builder = bento_builder_step(
             "dataset": "mnist",
             "zenml_version": "0.21.1",
         },
-       exclude=["data"], 
+        exclude=["data"],
     )
 )

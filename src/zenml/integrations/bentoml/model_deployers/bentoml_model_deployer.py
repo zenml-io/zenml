@@ -38,6 +38,7 @@ from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 
 logger = get_logger(__name__)
 
+
 class BentoMLModelDeployer(BaseModelDeployer):
     """BentoML model deployer stack component implementation."""
 
@@ -119,7 +120,9 @@ class BentoMLModelDeployer(BaseModelDeployer):
             "BENTO_URI": service_instance.config.bento_uri,
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
-            "PREDICITON_APIS_URLS": "  ".join(service_instance.prediction_apis_urls),
+            "PREDICITON_APIS_URLS": ", ".join(
+                service_instance.prediction_apis_urls
+            ),
         }
 
     def deploy_model(
@@ -285,6 +288,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
             model_type: Type/format of the deployed model. Not used in this
                 BentoML case.
             port: The port on which the model server is listening.
+            working_dir: The working directory of the model server.
 
         Returns:
             One or more Service objects representing model servers that match

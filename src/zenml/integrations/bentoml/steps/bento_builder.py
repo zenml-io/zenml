@@ -67,17 +67,17 @@ def bento_builder_step(
 ) -> bento.Bento:
     """Build a BentoML Model and Bento bundle.
 
-    This steps takes a model artifact of a trained or loaded ML model in a 
+    This steps takes a model artifact of a trained or loaded ML model in a
     previous step and save it with BentoML, then build a BentoML bundle.
 
     Args:
         model: the model to be packaged.
         params: the parameters for the BentoML builder step.
         context: the step context.
-            
+
     Raises:
         ValueError: if the zenml repo is not found.
-             
+
     Returns:
         the BentoML Bento object.
     """
@@ -88,7 +88,9 @@ def bento_builder_step(
 
     # save the model and bento uri as part of the bento lables
     params.labels["model_uri"] = model.uri
-    params.labels["bento_uri"] = os.path.join(context.get_output_artifact_uri(),DEFAULT_BENTO_FILENAME)
+    params.labels["bento_uri"] = os.path.join(
+        context.get_output_artifact_uri(), DEFAULT_BENTO_FILENAME
+    )
 
     # Load the model from the model artifact
     model = model_from_model_artifact(model)

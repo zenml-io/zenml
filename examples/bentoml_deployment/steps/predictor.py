@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Dict, List
+
 import numpy as np
-from typing import Any, Dict, List
 import requests
 from rich import print as rich_print
 
@@ -35,7 +36,7 @@ def predictor(
     prediction_url = service.prediction_apis_urls[0]
 
     for img, data in inference_data.items():
-        response = requests.post(prediction_url, json = data).json()
+        response = requests.post(prediction_url, json=data).json()
         result = to_labels(response[0])
         rich_print(f"Prediction for {img} is {result}")
 
@@ -50,5 +51,16 @@ def to_labels(prediction: List[float]) -> str:
         The list of labels.
     """
 
-    labels = ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"]
+    labels = [
+        "T-shirt/top",
+        "Trouser",
+        "Pullover",
+        "Dress",
+        "Coat",
+        "Sandal",
+        "Shirt",
+        "Sneaker",
+        "Bag",
+        "Ankle boot",
+    ]
     return labels[np.argmax(prediction, axis=0)]

@@ -6,9 +6,8 @@ from typing import TYPE_CHECKING
 import bentoml
 import numpy as np
 from bentoml.io import Image, NumpyNdarray
-from PIL.Image import Image as PILImage
-
 from constants import MODEL_NAME, SERVICE_NAME
+from PIL.Image import Image as PILImage
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -20,6 +19,7 @@ svc = bentoml.Service(name=SERVICE_NAME, runners=[mnist_runner])
 
 def to_numpy(tensor):
     return tensor.detach().cpu().numpy()
+
 
 @svc.api(
     input=NumpyNdarray(dtype="float32", enforce_dtype=True),

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from zenml.config import DockerSettings
-from zenml.integrations.constants import PYTORCH, BENTOML
+from zenml.integrations.constants import BENTOML, PYTORCH
 from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(required_integrations=[PYTORCH, BENTOML])

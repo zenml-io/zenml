@@ -1,4 +1,3 @@
-
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,20 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
-from io import BytesIO
 import os
 from typing import Dict, List
 
-import requests
 from numpy import asarray
 from PIL import Image
 
 from zenml.steps import step
 
+
 @step(enable_cache=False)
-def inference_loader(
-) -> Dict[str, List]:
+def inference_loader() -> Dict[str, List]:
     """Load an image and make it available for inference.
 
     This step is used to load an image from a URL make as a numpy array and
@@ -43,7 +39,7 @@ def inference_loader(
     images = {}
     for image in os.listdir(folder_dir):
         # check if the image ends with png
-        img = Image.open(os.path.join(folder_dir,image))
+        img = Image.open(os.path.join(folder_dir, image))
         numpydata = asarray(img)
         input = numpydata.tolist()
         images[image] = input

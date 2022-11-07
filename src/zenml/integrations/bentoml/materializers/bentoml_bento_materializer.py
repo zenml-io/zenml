@@ -30,6 +30,7 @@ from zenml.utils import io_utils
 
 logger = get_logger(__name__)
 
+
 class BentoMaterializer(BaseMaterializer):
     """Materializer for Bentoml Bento objects."""
 

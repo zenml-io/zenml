@@ -12,10 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the BentoML model deployer pipeline step."""
-from typing import Optional, Type, cast
+from typing import List, Optional, Type, cast
 
-from bentoml._internal.bento import bento
 import bentoml
+from bentoml._internal.bento import bento
 
 from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
@@ -55,11 +55,11 @@ class BentoMLDeployerParameters(BaseParameters):
 
     model_name: str
     port: int
-    workers: int = None
-    backlog: int = None
+    workers: Optional[int] = None
+    backlog: Optional[int] = None
     production: bool = False
-    working_dir: str = None
-    host: str = None
+    working_dir: Optional[str] = None
+    host: Optional[str] = None
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT * 2
 
 
@@ -77,7 +77,9 @@ def bentoml_model_deployer_step(
         deploy_decision: whether to deploy the model or not
         params: parameters for the deployer step
         bento: the bento artifact to deploy
-        context: the step context
+
+    Raises:
+        ValueError: if the zenml repo is not initialized
 
     Returns:
         BentoML deployment service
@@ -106,9 +108,9 @@ def bentoml_model_deployer_step(
     )
 
     # Return the apis endpoint of the defined service to use in the predict.
-    # This is a workaround to get the endpoints of the service defined as functions 
+    # This is a workaround to get the endpoints of the service defined as functions
     # from the user code in the BentoML service.
-    def service_apis(bento_tag:str):
+    def service_apis(bento_tag: str) -> List[str]:
         service = bentoml.load(bento_tag)
         apis = service.apis
         apis_paths = list(apis.keys())
@@ -119,7 +121,7 @@ def bentoml_model_deployer_step(
         model_name=params.model_name,
         bento=str(bento.tag),
         model_uri=bento.info.labels.get("model_uri"),
-        bento_uri= bento.info.labels.get("bento_uri"),
+        bento_uri=bento.info.labels.get("bento_uri"),
         apis=service_apis(str(bento.tag)),
         workers=params.workers,
         working_dir=params.working_dir or str(repo_path),

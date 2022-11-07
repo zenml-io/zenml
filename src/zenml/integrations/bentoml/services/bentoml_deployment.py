@@ -17,7 +17,10 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
-from zenml.integrations.bentoml.constants import BENTOML_HEALTHCHECK_URL_PATH, BENTOML_PREDICTION_URL_PATH
+from zenml.integrations.bentoml.constants import (
+    BENTOML_HEALTHCHECK_URL_PATH,
+    BENTOML_PREDICTION_URL_PATH,
+)
 from zenml.logger import get_logger
 from zenml.services import (
     HTTPEndpointHealthMonitor,
@@ -91,13 +94,13 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
     model_uri: str
     bento: str
     bento_uri: Optional[str] = None
-    apis: Optional[List[str]] = None
-    workers: int = None
-    port: int = None
-    backlog: int = None
+    apis: List[str] = []
+    workers: Optional[int] = None
+    port: Optional[int] = None
+    backlog: Optional[int] = None
     production: bool = False
     working_dir: str
-    host: str = None
+    host: Optional[str] = None
 
 
 class BentoMLDeploymentService(LocalDaemonService):

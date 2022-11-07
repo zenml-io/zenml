@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from constants import MODEL_NAME
+
 from zenml.integrations.bentoml.steps import (
     BentoMLDeployerParameters,
     bentoml_model_deployer_step,
