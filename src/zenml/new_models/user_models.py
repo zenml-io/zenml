@@ -29,7 +29,7 @@ from zenml.utils.enum_utils import StrEnum
 if TYPE_CHECKING:
     from passlib.context import CryptContext  # type: ignore[import]
 
-    from zenml.new_models import TeamModel
+    from zenml.new_models.team_models import TeamResponseModel
 
 
 class JWTTokenType(StrEnum):
@@ -165,7 +165,7 @@ class UserBaseModel(BaseModel):
 class UserResponseModel(UserBaseModel, BaseResponseModel):
     """"""
 
-    teams: Optional[List["TeamModel"]] = Field(
+    teams: Optional[List["TeamResponseModel"]] = Field(
         title="The list of teams for this user."
     )
 

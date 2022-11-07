@@ -16,7 +16,7 @@ from typing import List, Optional
 
 from sqlmodel import Field, Relationship
 
-from zenml.new_models import UserModel, UserRequestModel
+from zenml.new_models import UserRequestModel, UserResponseModel
 from zenml.zen_stores.schemas import (
     FlavorSchema,
     PipelineRunSchema,
@@ -73,19 +73,35 @@ class UserSchema(NamedSchema, table=True):
             activation_token=model.get_hashed_activation_token(),
         )
 
-    def to_model(self) -> UserModel:
-        """Convert a `UserSchema` to a `UserModel`.
+    def to_model(self, _block_recursion: bool = False) -> UserResponseModel:
+        """Convert a `UserSchema` to a `UserResponseModel`.
+
+        Args:
+            _block_recursion: Don't recursively fill attributes
 
         Returns:
-            The converted `UserModel`.
+            The converted `UserResponseModel`.
         """
-        return UserModel(
-            id=self.id,
-            name=self.name,
-            full_name=self.full_name,
-            email=self.email,
-            email_opted_in=self.email_opted_in,
-            active=self.active,
-            created=self.created,
-            updated=self.updated,
-        )
+        if _block_recursion:
+            return UserResponseModel(
+                id=self.id,
+                name=self.name,
+                full_name=self.full_name,
+                email=self.email,
+                email_opted_in=self.email_opted_in,
+                active=self.active,
+                created=self.created,
+                updated=self.updated
+            )
+        else:
+            return UserResponseModel(
+                id=self.id,
+                name=self.name,
+                teams=[t.to_model(_block_recursion=False) for t in self.teams],
+                full_name=self.full_name,
+                email=self.email,
+                email_opted_in=self.email_opted_in,
+                active=self.active,
+                created=self.created,
+                updated=self.updated,
+            )

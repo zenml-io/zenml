@@ -54,7 +54,11 @@ if TYPE_CHECKING:
     from zenml.enums import ExecutionStatus
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
-    from zenml.new_models import StackModel
+    from zenml.new_models import (
+        FlavorResponseModel,
+        PipelineRunResponseModel,
+        StackModel,
+    )
     from zenml.secret import BaseSecretSchema
     from zenml.services import BaseService, ServiceState
     from zenml.zen_server.deploy.deployment import ServerDeployment
@@ -287,7 +291,7 @@ def print_stack_configuration(
     )
 
 
-def print_flavor_list(flavors: List["FlavorModel"]) -> None:
+def print_flavor_list(flavors: List["FlavorResponseModel"]) -> None:
     """Prints the list of flavors.
 
     Args:
@@ -946,7 +950,7 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
 
 def print_pipeline_runs_table(
-    client: "Client", pipeline_runs: List["PipelineRunModel"]
+    client: "Client", pipeline_runs: List["PipelineRunResponseModel"]
 ) -> None:
     """Print a prettified list of all pipeline runs supplied to this method.
 

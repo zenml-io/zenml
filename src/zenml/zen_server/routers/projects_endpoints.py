@@ -38,6 +38,7 @@ from zenml.new_models import (
     PipelineRequestModel,
     ProjectModel,
     ProjectRequestModel,
+    RoleAssignmentResponseModel,
     StackModel,
     StackRequestModel,
 )
@@ -149,7 +150,7 @@ def delete_project(project_name_or_id: Union[str, UUID]) -> None:
 
 @router.get(
     "/{project_name_or_id}" + ROLES,
-    response_model=List[RoleAssignmentModel],
+    response_model=List[RoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -157,7 +158,7 @@ def get_role_assignments_for_project(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     team_name_or_id: Optional[Union[str, UUID]] = None,
-) -> List[RoleAssignmentModel]:
+) -> List[RoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a team.
 
     Args:

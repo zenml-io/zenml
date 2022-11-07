@@ -16,35 +16,50 @@ from zenml.new_models.artifact_models import ArtifactRequestModel
 from zenml.new_models.artifact_models import (
     ArtifactResponseModel as ArtifactModel,
 )
-from zenml.new_models.component_models import ComponentRequestModel
 from zenml.new_models.component_models import (
-    ComponentResponseModel as ComponentModel,
+    ComponentRequestModel,
+    ComponentResponseModel,
 )
-from zenml.new_models.flavor_models import FlavorRequestModel
-from zenml.new_models.flavor_models import FlavorResponseModel as FlavorModel
-from zenml.new_models.pipeline_models import PipelineRequestModel
+from zenml.new_models.flavor_models import (
+    FlavorRequestModel,
+    FlavorResponseModel,
+)
 from zenml.new_models.pipeline_models import (
-    PipelineResponseModel as PipelineModel,
+    PipelineRequestModel,
+    PipelineResponseModel,
 )
-from zenml.new_models.pipeline_run_models import PipelineRunRequestModel
 from zenml.new_models.pipeline_run_models import (
-    PipelineRunResponseModel as PipelineRunModel,
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
 )
-from zenml.new_models.project_models import ProjectRequestModel
-from zenml.new_models.project_models import ProjectResponseModel as ProjectModel
-from zenml.new_models.role_assignment_models import RoleAssignmentRequestModel
+from zenml.new_models.project_models import (
+    ProjectRequestModel,
+    ProjectResponseModel,
+)
 from zenml.new_models.role_assignment_models import (
-    RoleAssignmentResponseModel as RoleAssignmentModel,
+    RoleAssignmentRequestModel,
+    RoleAssignmentResponseModel,
 )
-from zenml.new_models.role_models import RoleRequestModel
-from zenml.new_models.role_models import RoleResponseModel as RoleModel
-from zenml.new_models.stack_models import StackRequestModel
-from zenml.new_models.stack_models import StackResponseModel as StackModel
-from zenml.new_models.step_run_models import StepRunRequestModel
+from zenml.new_models.role_models import RoleRequestModel, RoleResponseModel
+from zenml.new_models.stack_models import StackRequestModel, StackResponseModel
 from zenml.new_models.step_run_models import (
-    StepRunResponseModel as StepRunModel,
+    StepRunRequestModel,
+    StepRunResponseModel,
 )
-from zenml.new_models.team_models import TeamRequestModel
-from zenml.new_models.team_models import TeamResponseModel as TeamModel
-from zenml.new_models.user_models import UserRequestModel
-from zenml.new_models.user_models import UserResponseModel as UserModel
+from zenml.new_models.team_models import TeamRequestModel, TeamResponseModel
+from zenml.new_models.user_models import UserRequestModel, UserResponseModel
+
+ComponentResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel
+)
+StackResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel
+)
+UserResponseModel.update_forward_refs(
+    TeamResponseModel=TeamResponseModel
+)
+TeamResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel
+)

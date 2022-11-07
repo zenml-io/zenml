@@ -56,27 +56,27 @@ from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.new_models import (
     ArtifactModel,
     ArtifactRequestModel,
-    ComponentModel,
+    ComponentResponseModel,
     ComponentRequestModel,
-    FlavorModel,
+    FlavorResponseModel,
     FlavorRequestModel,
-    PipelineModel,
+    PipelineResponseModel,
     PipelineRequestModel,
-    PipelineRunModel,
+    PipelineRunResponseModel,
     PipelineRunRequestModel,
-    ProjectModel,
+    ProjectResponseModel,
     ProjectRequestModel,
-    RoleAssignmentModel,
+    RoleAssignmentResponseModel,
     RoleAssignmentRequestModel,
-    RoleModel,
+    RoleResponseModel,
     RoleRequestModel,
-    StackModel,
+    StackResponseModel,
     StackRequestModel,
-    StepRunModel,
+    StepRunResponseModel,
     StepRunRequestModel,
-    TeamModel,
+    TeamResponseModel,
     TeamRequestModel,
-    UserModel,
+    UserResponseModel,
     UserRequestModel,
 )
 from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
@@ -601,7 +601,7 @@ class SqlZenStore(BaseZenStore):
     # ------
 
     @track(AnalyticsEvent.REGISTERED_STACK)
-    def create_stack(self, stack: StackRequestModel) -> StackModel:
+    def create_stack(self, stack: StackRequestModel) -> StackResponseModel:
         """Register a new stack.
 
         Args:
@@ -642,8 +642,8 @@ class SqlZenStore(BaseZenStore):
             new_stack_schema = StackSchema(
                 project_id=stack.project,
                 user_id=stack.user,
-                is_shared=stack.name,
-                name=stack.is_shared,
+                is_shared=stack.is_shared,
+                name=stack.name,
                 description=stack.description,
                 components=defined_components,
             )
@@ -654,7 +654,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_stack_schema.to_model()
 
-    def get_stack(self, stack_id: UUID) -> StackModel:
+    def get_stack(self, stack_id: UUID) -> StackResponseModel:
         """Get a stack by its unique ID.
 
         Args:
@@ -682,7 +682,7 @@ class SqlZenStore(BaseZenStore):
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[StackModel]:
+    ) -> List[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -724,7 +724,7 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
         self, stack_id: UUID, stack_update: StackRequestModel
-    ) -> StackModel:
+    ) -> StackResponseModel:
         """Update a stack.
 
         Args:
@@ -892,7 +892,7 @@ class SqlZenStore(BaseZenStore):
     def create_stack_component(
         self,
         component: ComponentRequestModel,
-    ) -> ComponentModel:
+    ) -> ComponentResponseModel:
         """Create a stack component.
 
         Args:
@@ -931,7 +931,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_component.to_model()
 
-    def get_stack_component(self, component_id: UUID) -> ComponentModel:
+    def get_stack_component(self, component_id: UUID) -> ComponentResponseModel:
         """Get a stack component by ID.
 
         Args:
@@ -965,7 +965,7 @@ class SqlZenStore(BaseZenStore):
         flavor_name: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[ComponentModel]:
+    ) -> List[ComponentResponseModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
@@ -1010,7 +1010,7 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
         self, component_id: UUID, component_update: ComponentRequestModel
-    ) -> ComponentModel:
+    ) -> ComponentResponseModel:
         """Update an existing stack component.
 
         Args:
@@ -1189,7 +1189,7 @@ class SqlZenStore(BaseZenStore):
     # -----------------------
 
     @track(AnalyticsEvent.CREATED_FLAVOR)
-    def create_flavor(self, flavor: FlavorRequestModel) -> FlavorModel:
+    def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
         """Creates a new stack component flavor.
 
         Args:
@@ -1236,7 +1236,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_flavor.to_model()
 
-    def get_flavor(self, flavor_id: UUID) -> FlavorModel:
+    def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
         """Get a flavor by ID.
 
         Args:
@@ -1263,7 +1263,7 @@ class SqlZenStore(BaseZenStore):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[FlavorModel]:
+    ) -> List[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
@@ -1350,7 +1350,7 @@ class SqlZenStore(BaseZenStore):
         return self._default_user_name
 
     @track(AnalyticsEvent.CREATED_USER)
-    def create_user(self, user: UserRequestModel) -> UserModel:
+    def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
 
         Args:
@@ -1380,7 +1380,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_user.to_model()
 
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserModel:
+    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
         """Gets a specific user.
 
         Args:
@@ -1391,9 +1391,10 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             user = self._get_user_schema(user_name_or_id, session=session)
-        return user.to_model()
 
-    def list_users(self) -> List[UserModel]:
+            return user.to_model()
+
+    def list_users(self) -> List[UserResponseModel]:
         """List all users.
 
         Returns:
@@ -1402,12 +1403,12 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             users = session.exec(select(UserSchema)).all()
 
-        return [user.to_model() for user in users]
+            return [user.to_model() for user in users]
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
         self, user_id: UUID, user_update: UserRequestModel
-    ) -> UserModel:
+    ) -> UserResponseModel:
         """Updates an existing user.
 
         Args:
@@ -1459,7 +1460,7 @@ class SqlZenStore(BaseZenStore):
     # -----
 
     @track(AnalyticsEvent.CREATED_TEAM)
-    def create_team(self, team: TeamRequestModel) -> TeamModel:
+    def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
         """Creates a new team.
 
         Args:
@@ -1489,7 +1490,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_team.to_model()
 
-    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamModel:
+    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponseModel:
         """Gets a specific team.
 
         Args:
@@ -1502,7 +1503,7 @@ class SqlZenStore(BaseZenStore):
             team = self._get_team_schema(team_name_or_id, session=session)
         return team.to_model()
 
-    def list_teams(self) -> List[TeamModel]:
+    def list_teams(self) -> List[TeamResponseModel]:
         """List all teams.
 
         Returns:
@@ -1576,7 +1577,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_users_for_team(
         self, team_name_or_id: Union[str, UUID]
-    ) -> List[UserModel]:
+    ) -> List[UserResponseModel]:
         """Fetches all users of a team.
 
         Args:
@@ -1594,7 +1595,7 @@ class SqlZenStore(BaseZenStore):
     # -----
 
     @track(AnalyticsEvent.CREATED_ROLE)
-    def create_role(self, role: RoleRequestModel) -> RoleModel:
+    def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
         """Creates a new role.
 
         Args:
@@ -1622,7 +1623,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             return role_schema.to_model()
 
-    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleModel:
+    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
         """Gets a specific role.
 
         Args:
@@ -1635,7 +1636,7 @@ class SqlZenStore(BaseZenStore):
             role = self._get_role_schema(role_name_or_id, session=session)
             return role.to_model()
 
-    def list_roles(self) -> List[RoleModel]:
+    def list_roles(self) -> List[RoleResponseModel]:
         """List all roles.
 
         Returns:
@@ -1649,7 +1650,7 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(
         self, role_id: UUID, role_update: RoleRequestModel
-    ) -> RoleModel:
+    ) -> RoleResponseModel:
         """Update an existing role.
 
         Args:
@@ -1735,7 +1736,7 @@ class SqlZenStore(BaseZenStore):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentModel]:
+    ) -> List[RoleAssignmentResponseModel]:
         """List all user role assignments.
 
         Args:
@@ -1765,7 +1766,7 @@ class SqlZenStore(BaseZenStore):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentModel]:
+    ) -> List[RoleAssignmentResponseModel]:
         """List all team role assignments.
 
         Args:
@@ -1796,7 +1797,7 @@ class SqlZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentModel]:
+    ) -> List[RoleAssignmentResponseModel]:
         """List all role assignments.
 
         Args:
@@ -2079,7 +2080,7 @@ class SqlZenStore(BaseZenStore):
     # --------
 
     @track(AnalyticsEvent.CREATED_PROJECT)
-    def create_project(self, project: ProjectRequestModel) -> ProjectModel:
+    def create_project(self, project: ProjectRequestModel) -> ProjectResponseModel:
         """Creates a new project.
 
         Args:
@@ -2112,7 +2113,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_project.to_model()
 
-    def get_project(self, project_name_or_id: Union[str, UUID]) -> ProjectModel:
+    def get_project(self, project_name_or_id: Union[str, UUID]) -> ProjectResponseModel:
         """Get an existing project by name or ID.
 
         Args:
@@ -2127,7 +2128,7 @@ class SqlZenStore(BaseZenStore):
             )
         return project.to_model()
 
-    def list_projects(self) -> List[ProjectModel]:
+    def list_projects(self) -> List[ProjectResponseModel]:
         """List all projects.
 
         Returns:
@@ -2140,7 +2141,7 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.UPDATED_PROJECT)
     def update_project(
         self, project_id: UUID, project_update: ProjectRequestModel
-    ) -> ProjectModel:
+    ) -> ProjectResponseModel:
         """Update an existing project.
 
         Args:
@@ -2207,7 +2208,7 @@ class SqlZenStore(BaseZenStore):
     def create_pipeline(
         self,
         pipeline: PipelineRequestModel,
-    ) -> PipelineModel:
+    ) -> PipelineResponseModel:
         """Creates a new pipeline in a project.
 
         Args:
@@ -2242,7 +2243,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_pipeline.to_model()
 
-    def get_pipeline(self, pipeline_id: UUID) -> PipelineModel:
+    def get_pipeline(self, pipeline_id: UUID) -> PipelineResponseModel:
         """Get a pipeline with a given ID.
 
         Args:
@@ -2272,7 +2273,7 @@ class SqlZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-    ) -> List[PipelineModel]:
+    ) -> List[PipelineResponseModel]:
         """List all pipelines in the project.
 
         Args:
@@ -2307,7 +2308,7 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
         self, pipeline_id: UUID, pipeline_update: PipelineRequestModel
-    ) -> PipelineModel:
+    ) -> PipelineResponseModel:
         """Updates a pipeline.
 
         Args:
@@ -2370,7 +2371,7 @@ class SqlZenStore(BaseZenStore):
     # Pipeline runs
     # --------------
 
-    def get_run(self, run_id: UUID) -> PipelineRunModel:
+    def get_run(self, run_id: UUID) -> PipelineRunResponseModel:
         """Gets a pipeline run.
 
         Args:
@@ -2406,7 +2407,7 @@ class SqlZenStore(BaseZenStore):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-    ) -> List[PipelineRunModel]:
+    ) -> List[PipelineRunResponseModel]:
         """Gets all pipeline runs.
 
         Args:
@@ -2487,7 +2488,7 @@ class SqlZenStore(BaseZenStore):
     # Pipeline run steps
     # ------------------
 
-    def get_run_step(self, step_id: UUID) -> StepRunModel:
+    def get_run_step(self, step_id: UUID) -> StepRunResponseModel:
         """Get a step by ID.
 
         Args:
@@ -2593,7 +2594,7 @@ class SqlZenStore(BaseZenStore):
         step = self.get_run_step(step_id)
         return self.metadata_store.get_step_status(step.mlmd_id)
 
-    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
+    def list_run_steps(self, run_id: UUID) -> List[StepRunResponseModel]:
         """Gets all steps in a pipeline run.
 
         Args:
@@ -2997,7 +2998,7 @@ class SqlZenStore(BaseZenStore):
 
     def _create_run(
         self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunModel:
+    ) -> PipelineRunResponseModel:
         """Creates a pipeline run.
 
         Args:
@@ -3059,7 +3060,7 @@ class SqlZenStore(BaseZenStore):
 
     def _update_run(
         self, run_id: UUID, run_update: PipelineRunRequestModel
-    ) -> PipelineRunModel:
+    ) -> PipelineRunResponseModel:
         """Updates a pipeline run.
 
         Args:
@@ -3095,7 +3096,7 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_run)
             return existing_run.to_model()
 
-    def _create_run_step(self, step_run: StepRunRequestModel) -> StepRunModel:
+    def _create_run_step(self, step_run: StepRunRequestModel) -> StepRunResponseModel:
         """Creates a step.
 
         Args:

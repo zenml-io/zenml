@@ -38,16 +38,16 @@ from zenml.models.server_models import (
 )
 from zenml.new_models import (
     ComponentRequestModel,
-    ProjectModel,
     ProjectRequestModel,
-    RoleAssignmentModel,
-    RoleModel,
-    StackModel,
+    ProjectResponseModel,
+    RoleAssignmentResponseModel,
+    RoleResponseModel,
     StackRequestModel,
-    TeamModel,
+    StackResponseModel,
     TeamRequestModel,
-    UserModel,
+    TeamResponseModel,
     UserRequestModel,
+    UserResponseModel,
 )
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
@@ -75,7 +75,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
     config: StoreConfiguration
     track_analytics: bool = True
-    _active_user: Optional[UserModel] = None
+    _active_user: Optional[UserResponseModel] = None
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
@@ -232,7 +232,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         active_project_name_or_id: Optional[Union[str, UUID]] = None,
         active_stack_id: Optional[UUID] = None,
         config_name: str = "",
-    ) -> Tuple[ProjectModel, StackModel]:
+    ) -> Tuple[ProjectResponseModel, StackResponseModel]:
         """Validate the active configuration.
 
         Call this method to validate the supplied active project and active
@@ -252,7 +252,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Returns:
             A tuple containing the active project and active stack.
         """
-        active_project: ProjectModel
+        active_project: ProjectResponseModel
 
         # Ensure that the current active project is still valid
         if active_project_name_or_id:
@@ -272,7 +272,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             )
             active_project = self._default_project
 
-        active_stack: StackModel
+        active_stack: StackResponseModel
 
         # TODO: To behaviour here is to always create a default stack if
         #   something goes wrong. Should we change that?
@@ -344,8 +344,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.get_store_info().is_local()
 
     def _get_or_create_default_stack(
-        self, project: "ProjectModel"
-    ) -> "StackModel":
+        self, project: "ProjectResponseModel"
+    ) -> "StackResponseModel":
         try:
             return self._get_default_stack(
                 project_name_or_id=project.id,
@@ -366,7 +366,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         self,
         project_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
-    ) -> StackModel:
+    ) -> StackResponseModel:
         """Create the default stack components and stack.
 
         The default stack contains a local orchestrator and a local artifact
@@ -443,7 +443,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         self,
         project_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
-    ) -> StackModel:
+    ) -> StackResponseModel:
         """Get the default stack for a user in a project.
 
         Args:
@@ -473,7 +473,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     # -----
 
     @property
-    def active_user(self) -> UserModel:
+    def active_user(self) -> UserResponseModel:
         """The active user.
 
         Returns:
@@ -484,7 +484,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self._active_user
 
     @property
-    def users(self) -> List[UserModel]:
+    def users(self) -> List[UserResponseModel]:
         """All existing users.
 
         Returns:
@@ -502,7 +502,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
 
     @property
-    def _default_user(self) -> UserModel:
+    def _default_user(self) -> UserResponseModel:
         """Get the default user.
 
         Returns:
@@ -518,7 +518,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             raise KeyError(f"The default user '{user_name}' is not configured")
 
     @track(AnalyticsEvent.CREATED_DEFAULT_USER)
-    def _create_default_user(self) -> UserModel:
+    def _create_default_user(self) -> UserResponseModel:
         """Creates a default user.
 
         Returns:
@@ -543,7 +543,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         user_name_or_id: Union[str, UUID],
         user_opt_in_response: bool,
         email: Optional[str] = None,
-    ) -> UserModel:
+    ) -> UserResponseModel:
         """Persist user response to the email prompt.
 
         Args:
@@ -561,7 +561,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
         return self.update_user(
             user_name_or_id=user_name_or_id,
-            user_update=UserUpdateModel(
+            user_update=UserRequestModel(
                 email=email,
                 email_opted_in=user_opt_in_response,
             ),
@@ -569,7 +569,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
     def get_teams_for_user(
         self, user_name_or_id: Union[str, UUID]
-    ) -> List[TeamModel]:
+    ) -> List[TeamResponseModel]:
         """"""
         user = self.get_user(user_name_or_id=user_name_or_id)
         return user.teams
@@ -579,7 +579,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     # -----
 
     @property
-    def teams(self) -> List[TeamModel]:
+    def teams(self) -> List[TeamResponseModel]:
         """List all teams.
 
         Returns:
@@ -589,7 +589,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
     def get_users_for_team(
         self, team_name_or_id: Union[str, UUID]
-    ) -> List[UserModel]:
+    ) -> List[UserResponseModel]:
         """"""
         team = self.get_team(team_name_or_id=team_name_or_id)
         return team.users
@@ -639,7 +639,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     # -----
 
     @property
-    def roles(self) -> List[RoleModel]:
+    def roles(self) -> List[RoleResponseModel]:
         """All existing roles.
 
         Returns:
@@ -648,7 +648,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.list_roles()
 
     @property
-    def role_assignments(self) -> List[RoleAssignmentModel]:
+    def role_assignments(self) -> List[RoleAssignmentResponseModel]:
         """All role assignments.
 
         Returns:
@@ -661,7 +661,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     # --------
 
     @property
-    def _default_project(self) -> ProjectModel:
+    def _default_project(self) -> ProjectResponseModel:
         """Get the default project.
 
         Returns:
@@ -681,7 +681,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             )
 
     @track(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
-    def _create_default_project(self) -> ProjectModel:
+    def _create_default_project(self) -> ProjectResponseModel:
         """Creates a default project.
 
         Returns:

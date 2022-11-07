@@ -16,7 +16,7 @@ from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.new_models import TeamModel, TeamRequestModel
+from zenml.new_models import TeamRequestModel, TeamResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
@@ -53,15 +53,28 @@ class TeamSchema(NamedSchema, table=True):
         """
         return cls(name=model.name)
 
-    def to_model(self) -> TeamModel:
-        """Convert a `TeamSchema` to a `TeamModel`.
+    def to_model(self, _block_recursion: bool = False) -> TeamResponseModel:
+        """Convert a `TeamSchema` to a `TeamResponseModel`.
+
+        Args:
+            _block_recursion: Don't recursively fill attributes
 
         Returns:
-            The converted `TeamModel`.
+            The converted `TeamResponseModel`.
         """
-        return TeamModel(
-            id=self.id,
-            name=self.name,
-            created=self.created,
-            updated=self.updated,
-        )
+        if _block_recursion:
+            return TeamResponseModel(
+                id=self.id,
+                name=self.name,
+                created=self.created,
+                updated=self.updated,
+                users=None,
+            )
+        else:
+            return TeamResponseModel(
+                id=self.id,
+                name=self.name,
+                created=self.created,
+                updated=self.updated,
+                users=[u.to_model(_block_recursion=False) for u in self.users],
+            )

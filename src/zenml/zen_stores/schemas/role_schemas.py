@@ -18,7 +18,7 @@ from sqlmodel import Field, Relationship
 
 from zenml.new_models import (
     RoleAssignmentRequestModel,
-    RoleModel,
+    RoleResponseModel,
     RoleRequestModel,
 )
 from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
@@ -41,23 +41,23 @@ class RoleSchema(NamedSchema, table=True):
 
     @classmethod
     def from_request(cls, model: RoleRequestModel) -> "RoleSchema":
-        """Create a `RoleSchema` from a `RoleModel`.
+        """Create a `RoleSchema` from a `RoleResponseModel`.
 
         Args:
-            model: The `RoleModel` from which to create the schema.
+            model: The `RoleResponseModel` from which to create the schema.
 
         Returns:
             The created `RoleSchema`.
         """
         return cls(name=model.name)
 
-    def to_model(self) -> RoleModel:
-        """Convert a `RoleSchema` to a `RoleModel`.
+    def to_model(self) -> RoleResponseModel:
+        """Convert a `RoleSchema` to a `RoleResponseModel`.
 
         Returns:
-            The converted `RoleModel`.
+            The converted `RoleResponseModel`.
         """
-        return RoleModel(
+        return RoleResponseModel(
             id=self.id,
             name=self.name,
             created=self.created,

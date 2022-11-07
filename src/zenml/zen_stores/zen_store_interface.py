@@ -19,16 +19,16 @@ from uuid import UUID
 from zenml.enums import StackComponentType
 from zenml.models.server_models import ServerModel
 from zenml.new_models import (
-    ProjectModel,
     ProjectRequestModel,
-    RoleAssignmentModel,
+    ProjectResponseModel,
     RoleAssignmentRequestModel,
-    RoleModel,
+    RoleAssignmentResponseModel,
     RoleRequestModel,
-    TeamModel,
+    RoleResponseModel,
     TeamRequestModel,
-    UserModel,
+    TeamResponseModel,
     UserRequestModel,
+    UserResponseModel,
 )
 from zenml.new_models.artifact_models import ArtifactResponseModel
 from zenml.new_models.component_models import (
@@ -46,7 +46,6 @@ from zenml.new_models.pipeline_models import (
 from zenml.new_models.pipeline_run_models import PipelineRunResponseModel
 from zenml.new_models.stack_models import StackRequestModel, StackResponseModel
 from zenml.new_models.step_run_models import StepRunResponseModel
-from zenml.new_models.team_models import TeamResponseModel
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
@@ -362,7 +361,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
+    def get_flavor(self, name_id_or_prefix: str) -> FlavorResponseModel:
         """Get a stack component flavor by ID.
 
         Args:
@@ -428,7 +427,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def create_user(self, user: UserRequestModel) -> UserModel:
+    def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
 
         Args:
@@ -442,7 +441,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserModel:
+    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
         """Gets a specific user.
 
         Args:
@@ -456,7 +455,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_users(self) -> List[UserModel]:
+    def list_users(self) -> List[UserResponseModel]:
         """List all users.
 
         Returns:
@@ -466,7 +465,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_user(
         self, user_name_or_id: UUID, user_update: UserRequestModel
-    ) -> UserModel:
+    ) -> UserResponseModel:
         """Updates an existing user.
 
         Args:
@@ -496,7 +495,7 @@ class ZenStoreInterface(ABC):
     # -----
 
     @abstractmethod
-    def create_team(self, team: TeamRequestModel) -> TeamModel:
+    def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
         """Creates a new team.
 
         Args:
@@ -507,7 +506,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamModel:
+    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponseModel:
         """Gets a specific team.
 
         Args:
@@ -521,7 +520,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_teams(self) -> List[TeamModel]:
+    def list_teams(self) -> List[TeamResponseModel]:
         """List all teams.
 
         Returns:
@@ -561,7 +560,7 @@ class ZenStoreInterface(ABC):
     # -----
 
     @abstractmethod
-    def create_role(self, role: RoleRequestModel) -> RoleModel:
+    def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
         """Creates a new role.
 
         Args:
@@ -575,7 +574,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleModel:
+    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
         """Gets a specific role.
 
         Args:
@@ -589,7 +588,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_roles(self) -> List[RoleModel]:
+    def list_roles(self) -> List[RoleResponseModel]:
         """List all roles.
 
         Returns:
@@ -599,7 +598,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_role(
         self, role_id: UUID, role_update: RoleRequestModel
-    ) -> RoleModel:
+    ) -> RoleResponseModel:
         """Update an existing role.
 
         Args:
@@ -630,13 +629,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def create_role_assignment(
         self, role_assignment: RoleAssignmentRequestModel
-    ) -> RoleAssignmentModel:
+    ) -> RoleAssignmentResponseModel:
         """"""
 
     @abstractmethod
     def get_role_assignment(
         self, role_assignment_id: UUID
-    ) -> RoleAssignmentModel:
+    ) -> RoleAssignmentResponseModel:
         """"""
 
     @abstractmethod
@@ -649,7 +648,7 @@ class ZenStoreInterface(ABC):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentModel]:
+    ) -> List[RoleAssignmentResponseModel]:
         """List all role assignments.
 
         Args:
@@ -669,7 +668,9 @@ class ZenStoreInterface(ABC):
     # --------
 
     @abstractmethod
-    def create_project(self, project: ProjectRequestModel) -> ProjectModel:
+    def create_project(
+        self, project: ProjectRequestModel
+    ) -> ProjectResponseModel:
         """Creates a new project.
 
         Args:
@@ -683,7 +684,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_project(self, project_name_or_id: Union[UUID, str]) -> ProjectModel:
+    def get_project(
+        self, project_name_or_id: Union[UUID, str]
+    ) -> ProjectResponseModel:
         """Get an existing project by name or ID.
 
         Args:
@@ -697,7 +700,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_projects(self) -> List[ProjectModel]:
+    def list_projects(self) -> List[ProjectResponseModel]:
         """List all projects.
 
         Returns:
@@ -707,7 +710,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_project(
         self, project_id: UUID, project_update: ProjectRequestModel
-    ) -> ProjectModel:
+    ) -> ProjectResponseModel:
         """Update an existing project.
 
         Args:

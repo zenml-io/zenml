@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship
 
-from zenml.new_models import PipelineRunModel
+from zenml.new_models import PipelineRunResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
@@ -44,14 +44,14 @@ class PipelineRunSchema(NamedSchema, table=True):
     stack: "StackSchema" = Relationship(back_populates="runs")
     pipeline: "PipelineSchema" = Relationship(back_populates="runs")
 
-    def to_model(self, _block_recursion: bool = False) -> PipelineRunModel:
-        """Convert a `PipelineRunSchema` to a `PipelineRunModel`.
+    def to_model(self, _block_recursion: bool = False) -> PipelineRunResponseModel:
+        """Convert a `PipelineRunSchema` to a `PipelineRunResponseModel`.
 
         Returns:
-            The created `PipelineRunModel`.
+            The created `PipelineRunResponseModel`.
         """
         if _block_recursion:
-            return PipelineRunModel(
+            return PipelineRunResponseModel(
                 id=self.id,
                 name=self.name,
                 stack_id=self.stack.to_model(),
@@ -66,7 +66,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 updated=self.updated,
             )
         else:
-            return PipelineRunModel(
+            return PipelineRunResponseModel(
                 id=self.id,
                 name=self.name,
                 stack_id=self.stack.to_model(),

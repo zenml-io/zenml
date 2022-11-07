@@ -123,11 +123,11 @@ def list_pipeline_runs(
         if pipeline:
             pipeline_id = client.get_pipeline(pipeline).id
         if user:
-            client.get_user(user).id
+            user_id = client.get_user(user).id
         pipeline_runs = client.list_runs(
             pipeline_id=pipeline_id,
             stack_id=stack_id,
-            user_name_or_id=user,
+            user_name_or_id=user_id,
             unlisted=unlisted,
         )
     except KeyError as err:

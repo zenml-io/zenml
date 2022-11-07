@@ -21,7 +21,8 @@ from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
 
 if TYPE_CHECKING:
-    from zenml.new_models import UserModel
+    from zenml.new_models import UserModel, UserResponseModel
+
 
 # ---- #
 # BASE #
@@ -45,7 +46,7 @@ class TeamBaseModel(BaseModel):
 class TeamResponseModel(TeamBaseModel, BaseResponseModel):
     """"""
 
-    users: Optional[List["UserModel"]] = Field(
+    users: Optional[List["UserResponseModel"]] = Field(
         title="The list of users within this team."
     )
 

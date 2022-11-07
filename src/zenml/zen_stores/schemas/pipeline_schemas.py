@@ -53,6 +53,9 @@ class PipelineSchema(NamedSchema, table=True):
     ) -> "PipelineResponseModel":
         """Convert a `PipelineSchema` to a `PipelineModel`.
 
+        Args:
+            _block_recursion: Don't recursively fill attributes
+
         Returns:
             The created PipelineModel.
         """

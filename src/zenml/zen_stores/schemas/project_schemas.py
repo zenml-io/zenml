@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, List
 
 from sqlmodel import Relationship
 
-from zenml.new_models import ProjectModel, ProjectRequestModel
+from zenml.new_models import ProjectResponseModel, ProjectRequestModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
@@ -62,23 +62,23 @@ class ProjectSchema(NamedSchema, table=True):
 
     @classmethod
     def from_request(cls, project: ProjectRequestModel) -> "ProjectSchema":
-        """Create a `ProjectSchema` from a `ProjectModel`.
+        """Create a `ProjectSchema` from a `ProjectResponseModel`.
 
         Args:
-            project: The `ProjectModel` from which to create the schema.
+            project: The `ProjectResponseModel` from which to create the schema.
 
         Returns:
             The created `ProjectSchema`.
         """
         return cls(name=project.name, description=project.description)
 
-    def to_model(self) -> ProjectModel:
-        """Convert a `ProjectSchema` to a `ProjectModel`.
+    def to_model(self) -> ProjectResponseModel:
+        """Convert a `ProjectSchema` to a `ProjectResponseModel`.
 
         Returns:
-            The converted `ProjectModel`.
+            The converted `ProjectResponseModel`.
         """
-        return ProjectModel(
+        return ProjectResponseModel(
             id=self.id,
             name=self.name,
             description=self.description,
