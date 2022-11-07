@@ -28,10 +28,11 @@ from zenml.cli.stack import (
     describe_stack,
     export_stack,
     import_stack,
+    register_stack,
     remove_stack_component,
     rename_stack,
     share_stack,
-    update_stack, register_stack,
+    update_stack,
 )
 from zenml.client import Client
 from zenml.enums import StackComponentType
@@ -303,8 +304,10 @@ def test_create_shared_stack_when_component_is_private_fails(
     """When sharing a stack all the components should also be shared, so if a
     component is not shared this should fail."""
     runner = CliRunner()
-    result = runner.invoke(register_stack, ["default2", "-o", "default",
-                                            "-a", "default", "--share"])
+    result = runner.invoke(
+        register_stack,
+        ["default2", "-o", "default", "-a", "default", "--share"],
+    )
     assert result.exit_code == 1
 
 
@@ -316,9 +319,11 @@ def test_add_private_component_to_shared_stack_fails(
     runner = CliRunner()
     local_secrets_manager = _create_local_secrets_manager(clean_client)
     clean_client.register_stack_component(local_secrets_manager.to_model())
-    result = runner.invoke(share_stack, ["default", '-r'])
+    result = runner.invoke(share_stack, ["default", "-r"])
     assert result.exit_code == 0
-    result = runner.invoke(update_stack, ["default", "-x", "arias_secrets_manager"])
+    result = runner.invoke(
+        update_stack, ["default", "-x", "arias_secrets_manager"]
+    )
     assert result.exit_code == 1
 
 
