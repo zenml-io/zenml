@@ -83,6 +83,8 @@ from zenml.new_models import (
     ProjectResponseModel,
     RoleRequestModel,
     RoleResponseModel,
+    RoleAssignmentResponseModel,
+    RoleAssignmentRequestModel,
     StackRequestModel,
     StackResponseModel,
     StepRunResponseModel,
@@ -1023,43 +1025,21 @@ class RestZenStore(BaseZenStore):
             )
         return roles
 
-    def assign_role(
+    def get_role_assignment(
+        self, role_assignment_id: UUID
+    ) -> RoleAssignmentResponseModel:
+        """"""
+
+    def delete_role_assignment(
         self,
-        role_name_or_id: Union[str, UUID],
-        user_or_team_name_or_id: Union[str, UUID],
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        is_user: bool = True,
-    ) -> None:
-        """Assigns a role to a user or team, scoped to a specific project.
+        role_assignment_id: UUID
+    ) -> UUID:
+        """"""
 
-        Args:
-            role_name_or_id: Name or ID of the role to assign.
-            user_or_team_name_or_id: Name or ID of the user or team to which to
-                assign the role.
-            is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_name_or_id: Optional Name or ID of a project in which to
-                assign the role. If this is not provided, the role will be
-                assigned globally.
-        """
-
-    def revoke_role(
-        self,
-        role_name_or_id: Union[str, UUID],
-        user_or_team_name_or_id: Union[str, UUID],
-        is_user: bool = True,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> None:
-        """Revokes a role from a user or team for a given project.
-
-        Args:
-            role_name_or_id: ID of the role to revoke.
-            user_or_team_name_or_id: Name or ID of the user or team from which
-                to revoke the role.
-            is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_name_or_id: Optional ID of a project in which to revoke
-                the role. If this is not provided, the role will be revoked
-                globally.
-        """
+    def create_role_assignment(
+        self, role_assignment: RoleAssignmentRequestModel
+    ) -> RoleAssignmentResponseModel:
+        """"""
 
     # --------
     # Projects
