@@ -18,7 +18,7 @@ from typing import Optional, Type, cast
 from uuid import UUID
 
 from zenml.enums import StackComponentType
-from zenml.new_models import FlavorModel
+from zenml.new_models import FlavorResponseModel
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.utils.source_utils import load_source_path_class, resolve_class
 
@@ -72,7 +72,7 @@ class Flavor:
         return self.config_class.schema_json()
 
     @classmethod
-    def from_model(cls, flavor_model: FlavorModel) -> "Flavor":
+    def from_model(cls, flavor_model: FlavorResponseModel) -> "Flavor":
         """Loads a flavor from a model.
 
         Args:
@@ -84,7 +84,10 @@ class Flavor:
         flavor = load_source_path_class(flavor_model.source)()  # noqa
         return cast(Flavor, flavor)
 
-    def to_model(self, integration: Optional[str] = None) -> FlavorModel:
+    def to_model(
+        self,
+        integration: Optional[str] = None
+    ) -> FlavorResponseModel:
         """Converts a flavor to a model.
 
         Args:
@@ -97,7 +100,7 @@ class Flavor:
         # built-in and integration flavors are not tied to a project or user.
         # The Repository is responsible for setting the project and user
         # correctly for custom flavors.
-        model = FlavorModel(
+        model = FlavorResponseModel(
             user=UUID(int=0),
             project=UUID(int=0),
             name=self.name,

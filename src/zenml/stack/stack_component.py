@@ -26,7 +26,7 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
-from zenml.new_models import ComponentModel
+from zenml.new_models import ComponentResponseModel
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -308,7 +308,10 @@ class StackComponent:
         self.updated = updated
 
     @classmethod
-    def from_model(cls, component_model: "ComponentModel") -> "StackComponent":
+    def from_model(
+        cls,
+        component_model: "ComponentResponseModel"
+    ) -> "StackComponent":
         """Creates a StackComponent from a ComponentModel.
 
         Args:
@@ -350,13 +353,13 @@ class StackComponent:
             updated=component_model.updated,
         )
 
-    def to_model(self) -> "ComponentModel":
+    def to_model(self) -> "ComponentResponseModel":
         """Converts a stack component to a model.
 
         Returns:
             The model representation of the stack component.
         """
-        return ComponentModel(
+        return ComponentResponseModel(
             user=self.user,
             project=self.project,
             id=self.id,
@@ -446,7 +449,7 @@ class StackComponent:
 
     @property
     def local_path(self) -> Optional[str]:
-        """Path to a local directory used by the component to store persistent information.
+        """Path to a local directory to store persistent information.
 
         This property should only be implemented by components that need to
         store persistent information in a directory on the local machine and
@@ -510,7 +513,7 @@ class StackComponent:
 
     @property
     def post_registration_message(self) -> Optional[str]:
-        """Optional message that will be printed after the stack component is registered.
+        """Optional message printed after the stack component is registered.
 
         Returns:
             An optional message.
