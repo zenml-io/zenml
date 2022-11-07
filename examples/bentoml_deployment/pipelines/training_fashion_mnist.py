@@ -20,7 +20,7 @@ docker_settings = DockerSettings(required_integrations=[PYTORCH, BENTOML])
 
 
 @pipeline(settings={"docker": docker_settings})
-def bentoml_fashion_mnist_pipeline(
+def training_fashion_mnist(
     importer,
     trainer,
     evaluator,
