@@ -80,7 +80,11 @@ from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.base_zen_store import (
+    DEFAULT_STACK_COMPONENT_NAME,
+    DEFAULT_STACK_NAME,
+    BaseZenStore,
+)
 from zenml.zen_stores.migrations.alembic import (
     ZENML_ALEMBIC_START_REVISION,
     Alembic,
@@ -909,6 +913,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack doesn't exist.
+            IllegalOperationError: if the stack is a default stack.
         """
         with Session(self.engine) as session:
             # Check if stack with the domain key (name, project, owner) already
@@ -922,6 +927,10 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update stack with id "
                     f"'{stack.id}': Found no"
                     f"existing stack with this id."
+                )
+            if stack.name == DEFAULT_STACK_NAME:
+                raise IllegalOperationError(
+                    "The default stack cannot be modified."
                 )
             # In case of a renaming update, make sure no stack already exists
             # with that name
@@ -975,12 +984,17 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack doesn't exist.
+            IllegalOperationError: if the stack is a default stack.
         """
         with Session(self.engine) as session:
             try:
                 stack = session.exec(
                     select(StackSchema).where(StackSchema.id == stack_id)
                 ).one()
+                if stack.name == DEFAULT_STACK_NAME:
+                    raise IllegalOperationError(
+                        "The default stack cannot be deleted."
+                    )
                 session.delete(stack)
             except NoResultFound as error:
                 raise KeyError from error
@@ -1221,6 +1235,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack component doesn't exist.
+            IllegalOperationError: if the stack component a default stack
+                component.
         """
         with Session(self.engine) as session:
             existing_component = session.exec(
@@ -1234,6 +1250,18 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update component with id "
                     f"'{component.id}': Found no"
                     f"existing component with this id."
+                )
+
+            if (
+                existing_component.name == DEFAULT_STACK_COMPONENT_NAME
+                and existing_component.type
+                in [
+                    StackComponentType.ORCHESTRATOR,
+                    StackComponentType.ARTIFACT_STORE,
+                ]
+            ):
+                raise IllegalOperationError(
+                    f"The default {existing_component.type} cannot be modified."
                 )
 
             # In case of a renaming update, make sure no component of the same
@@ -1279,7 +1307,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component doesn't exist.
             IllegalOperationError: if the stack component is part of one or
-                more stacks.
+                more stacks, or if it's a default stack component.
         """
         with Session(self.engine) as session:
             try:
@@ -1288,10 +1316,22 @@ class SqlZenStore(BaseZenStore):
                         StackComponentSchema.id == component_id
                     )
                 ).one()
+                if (
+                    stack_component.name == DEFAULT_STACK_COMPONENT_NAME
+                    and stack_component.type
+                    in [
+                        StackComponentType.ORCHESTRATOR,
+                        StackComponentType.ARTIFACT_STORE,
+                    ]
+                ):
+                    raise IllegalOperationError(
+                        f"The default {stack_component.type} cannot be deleted."
+                    )
+
                 if len(stack_component.stacks) > 0:
                     raise IllegalOperationError(
                         f"Stack Component `{stack_component.name}` of type "
-                        f"`{stack_component.type} can not be "
+                        f"`{stack_component.type} cannot be "
                         f"deleted as it is part of "
                         f"{len(stack_component.stacks)} stacks. "
                         f"Before deleting this stack "
@@ -1591,7 +1631,7 @@ class SqlZenStore(BaseZenStore):
                 if len(components_of_flavor) > 0:
                     raise IllegalOperationError(
                         f"Stack Component `{flavor_in_db.name}` of type "
-                        f"`{flavor_in_db.type} can not be "
+                        f"`{flavor_in_db.type} cannot be "
                         f"deleted as it is used by"
                         f"{len(components_of_flavor)} "
                         f"components. Before deleting this "
@@ -1682,9 +1722,21 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated user.
+
+        Raises:
+            IllegalOperationError: If the request tries to update the username
+                for the default user account.
         """
         with Session(self.engine) as session:
             existing_user = self._get_user_schema(user.id, session=session)
+            if (
+                existing_user.name == self._default_user_name
+                and user.name != existing_user.name
+            ):
+                raise IllegalOperationError(
+                    "The username of the default user account cannot be "
+                    "changed."
+                )
             existing_user.from_update_model(user)
             session.add(existing_user)
             session.commit()
@@ -1702,10 +1754,15 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: If no user with the given name exists.
+            IllegalOperationError: If the user is the default user account.
         """
         with Session(self.engine) as session:
             try:
                 user = self._get_user_schema(user_name_or_id, session=session)
+                if user.name == self._default_user_name:
+                    raise IllegalOperationError(
+                        "The default user account cannot be deleted."
+                    )
                 session.delete(user)
                 session.commit()
             except NoResultFound as error:
@@ -2100,7 +2157,7 @@ class SqlZenStore(BaseZenStore):
                     # TODO: Eventually we might want to allow this deletion
                     #  and simply cascade
                     raise IllegalOperationError(
-                        f"Role `{role.name}` of type can not be "
+                        f"Role `{role.name}` of type cannot be "
                         f"deleted as it is in use by multiple users and teams. "
                         f"Before deleting this role make sure to remove all "
                         f"instances where this role is used."
@@ -2492,15 +2549,15 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the project does not exist.
         """
         with Session(self.engine) as session:
-            existing_project = session.exec(
-                select(ProjectSchema).where(ProjectSchema.id == project.id)
-            ).first()
-
-            if existing_project is None:
-                raise KeyError(
-                    f"Unable to update project with id "
-                    f"'{project.id}': Found no"
-                    f"existing projects with this id."
+            existing_project = self._get_project_schema(
+                project.id, session=session
+            )
+            if (
+                existing_project.name == self._default_project_name
+                and project.name != existing_project.name
+            ):
+                raise IllegalOperationError(
+                    "The name of the default project cannot be changed."
                 )
 
             # Update the project
@@ -2529,6 +2586,10 @@ class SqlZenStore(BaseZenStore):
                 project = self._get_project_schema(
                     project_name_or_id, session=session
                 )
+                if project.name == self._default_project_name:
+                    raise IllegalOperationError(
+                        "The default project cannot be deleted."
+                    )
 
                 session.delete(project)
                 session.commit()

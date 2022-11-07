@@ -28,7 +28,7 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import ProvisioningError
+from zenml.exceptions import IllegalOperationError, ProvisioningError
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -427,7 +427,10 @@ def update_stack(
 
         stack_to_update.components = stack_components
 
-        client.update_stack(stack_to_update)
+        try:
+            client.update_stack(stack_to_update)
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(
             f"Stack `{stack_to_update.name}` successfully " f"updated!"
         )
@@ -483,8 +486,10 @@ def share_stack(
         with console.status(f"Sharing stack `{stack_to_share.name}` ...\n"):
 
             stack_to_share.is_shared = True
-
-            client.update_stack(stack_to_share)
+            try:
+                client.update_stack(stack_to_share)
+            except IllegalOperationError as err:
+                cli_utils.error(str(err))
             cli_utils.declare(
                 f"Stack `{stack_to_share.name}` successfully shared!"
             )
@@ -655,7 +660,10 @@ def remove_stack_component(
                 StackComponentType.DATA_VALIDATOR, None
             )
 
-        client.update_stack(stack_to_update)
+        try:
+            client.update_stack(stack_to_update)
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(f"Stack `{stack_name_or_id}` successfully updated!")
 
 
@@ -696,7 +704,10 @@ def rename_stack(
             pass
 
         stack_to_rename.name = new_stack_name
-        client.update_stack(stack_to_rename)
+        try:
+            client.update_stack(stack_to_rename)
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(
             f"Stack `{current_stack_name_or_id}` successfully renamed to `"
             f"{new_stack_name}`!"
@@ -812,8 +823,10 @@ def delete_stack(
                 f"active. Please choose a different active stack first by "
                 f"running 'zenml stack set STACK'."
             )
-
-    Client().deregister_stack(stack_to_delete)
+    try:
+        Client().deregister_stack(stack_to_delete)
+    except IllegalOperationError as err:
+        cli_utils.error(str(err))
     cli_utils.declare(f"Deleted stack '{stack_to_delete.name}'.")
 
 

@@ -25,6 +25,7 @@ from zenml.constants import ENV_ZENML_SERVER_ROOT_URL_PATH
 from zenml.enums import StoreType
 from zenml.exceptions import (
     EntityExistsError,
+    IllegalOperationError,
     NotAuthorizedError,
     StackComponentExistsError,
     StackExistsError,
@@ -112,6 +113,18 @@ def not_authorized(error: Exception) -> HTTPException:
     return HTTPException(status_code=401, detail=error_detail(error))
 
 
+def forbidden(error: Exception) -> HTTPException:
+    """Convert an Exception to a HTTP 403 response.
+
+    Args:
+        error: Exception to convert.
+
+    Returns:
+        HTTPException with status code 404.
+    """
+    return HTTPException(status_code=403, detail=error_detail(error))
+
+
 def not_found(error: Exception) -> HTTPException:
     """Convert an Exception to a HTTP 404 response.
 
@@ -178,6 +191,9 @@ def handle_exceptions(func: F) -> F:
         ) as error:
             logger.exception("Entity already exists")
             raise conflict(error) from error
+        except IllegalOperationError as error:
+            logger.exception("Illegal operation")
+            raise forbidden(error) from error
         except ValueError as error:
             logger.exception("Validation error")
             raise unprocessable(error) from error
