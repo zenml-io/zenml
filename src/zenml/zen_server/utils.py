@@ -120,7 +120,7 @@ def forbidden(error: Exception) -> HTTPException:
         error: Exception to convert.
 
     Returns:
-        HTTPException with status code 404.
+        HTTPException with status code 403.
     """
     return HTTPException(status_code=403, detail=error_detail(error))
 

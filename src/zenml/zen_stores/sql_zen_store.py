@@ -1234,7 +1234,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack component doesn't exist.
-            IllegalOperationError: if the stack component a default stack
+            IllegalOperationError: if the stack component is a default stack
                 component.
         """
         with Session(self.engine) as session:
