@@ -28,7 +28,12 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import IllegalOperationError, ProvisioningError
+from zenml.exceptions import (
+    IllegalOperationError,
+    ProvisioningError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -481,14 +486,20 @@ def share_stack(
                 )
 
                 only_component.is_shared = True
-                client.update_stack_component(component=only_component)
+                try:
+                    client.update_stack_component(component=only_component)
+                except (
+                    IllegalOperationError,
+                    StackComponentExistsError,
+                ) as err:
+                    cli_utils.error(str(err))
 
         with console.status(f"Sharing stack `{stack_to_share.name}` ...\n"):
 
             stack_to_share.is_shared = True
             try:
                 client.update_stack(stack_to_share)
-            except IllegalOperationError as err:
+            except (IllegalOperationError, StackExistsError) as err:
                 cli_utils.error(str(err))
             cli_utils.declare(
                 f"Stack `{stack_to_share.name}` successfully shared!"

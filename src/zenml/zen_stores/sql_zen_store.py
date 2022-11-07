@@ -921,14 +921,13 @@ class SqlZenStore(BaseZenStore):
             existing_stack = session.exec(
                 select(StackSchema).where(StackSchema.id == stack.id)
             ).first()
-
             if existing_stack is None:
                 raise KeyError(
                     f"Unable to update stack with id "
                     f"'{stack.id}': Found no"
                     f"existing stack with this id."
                 )
-            if stack.name == DEFAULT_STACK_NAME:
+            if existing_stack.name == DEFAULT_STACK_NAME:
                 raise IllegalOperationError(
                     "The default stack cannot be modified."
                 )
@@ -1753,20 +1752,16 @@ class SqlZenStore(BaseZenStore):
             user_name_or_id: The name or the ID of the user to delete.
 
         Raises:
-            KeyError: If no user with the given name exists.
             IllegalOperationError: If the user is the default user account.
         """
         with Session(self.engine) as session:
-            try:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                if user.name == self._default_user_name:
-                    raise IllegalOperationError(
-                        "The default user account cannot be deleted."
-                    )
-                session.delete(user)
-                session.commit()
-            except NoResultFound as error:
-                raise KeyError from error
+            user = self._get_user_schema(user_name_or_id, session=session)
+            if user.name == self._default_user_name:
+                raise IllegalOperationError(
+                    "The default user account cannot be deleted."
+                )
+            session.delete(user)
+            session.commit()
 
     def user_email_opt_in(
         self,
@@ -1784,23 +1779,16 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         with Session(self.engine) as session:
-            try:
-                user = self._get_user_schema(user_name_or_id, session=session)
-            except NoResultFound as error:
-                raise KeyError from error
-            else:
-                # TODO: In the future we might want to validate that the email
-                #  is non-empty and valid at this point if user_opt_in_response
-                #  is True
-                user.email = email
-                user.email_opted_in = user_opt_in_response
-                session.add(user)
-                session.commit()
+            user = self._get_user_schema(user_name_or_id, session=session)
+            # TODO: In the future we might want to validate that the email
+            #  is non-empty and valid at this point if user_opt_in_response
+            #  is True
+            user.email = email
+            user.email_opted_in = user_opt_in_response
+            session.add(user)
+            session.commit()
 
             return user.to_model()
 
@@ -1903,18 +1891,11 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_name_or_id: Name or ID of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given name exists.
         """
         with Session(self.engine) as session:
-            try:
-                team = self._get_team_schema(team_name_or_id, session=session)
-                session.delete(team)
-                session.commit()
-
-            except NoResultFound as error:
-                raise KeyError from error
+            team = self._get_team_schema(team_name_or_id, session=session)
+            session.delete(team)
+            session.commit()
 
     # ---------------
     # Team membership
@@ -2136,38 +2117,34 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             IllegalOperationError: If the role is still assigned to users.
-            KeyError: If the role does not exist.
         """
         with Session(self.engine) as session:
-            try:
-                role = self._get_role_schema(role_name_or_id, session=session)
+            role = self._get_role_schema(role_name_or_id, session=session)
 
-                user_role = session.exec(
-                    select(UserRoleAssignmentSchema).where(
-                        UserRoleAssignmentSchema.role_id == role.id
-                    )
-                ).all()
-                team_role = session.exec(
-                    select(TeamRoleAssignmentSchema).where(
-                        TeamRoleAssignmentSchema.role_id == role.id
-                    )
-                ).all()
+            user_role = session.exec(
+                select(UserRoleAssignmentSchema).where(
+                    UserRoleAssignmentSchema.role_id == role.id
+                )
+            ).all()
+            team_role = session.exec(
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.role_id == role.id
+                )
+            ).all()
 
-                if len(user_role) > 0 or len(team_role) > 0:
-                    # TODO: Eventually we might want to allow this deletion
-                    #  and simply cascade
-                    raise IllegalOperationError(
-                        f"Role `{role.name}` of type cannot be "
-                        f"deleted as it is in use by multiple users and teams. "
-                        f"Before deleting this role make sure to remove all "
-                        f"instances where this role is used."
-                    )
-                else:
-                    # Delete role
-                    session.delete(role)
-                    session.commit()
-            except NoResultFound as error:
-                raise KeyError from error
+            if len(user_role) > 0 or len(team_role) > 0:
+                # TODO: Eventually we might want to allow this deletion
+                #  and simply cascade
+                raise IllegalOperationError(
+                    f"Role `{role.name}` of type cannot be "
+                    f"deleted as it is in use by multiple users and teams. "
+                    f"Before deleting this role make sure to remove all "
+                    f"instances where this role is used."
+                )
+            else:
+                # Delete role
+                session.delete(role)
+                session.commit()
 
     # ----------------
     # Role assignments
@@ -2546,7 +2523,7 @@ class SqlZenStore(BaseZenStore):
             The updated project.
 
         Raises:
-            KeyError: if the project does not exist.
+            IllegalOperationError: if the project is the default project.
         """
         with Session(self.engine) as session:
             existing_project = self._get_project_schema(
@@ -2578,23 +2555,20 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: Name or ID of the project to delete.
 
         Raises:
-            KeyError: If the project does not exist.
+            IllegalOperationError: If the project is the default project.
         """
         with Session(self.engine) as session:
-            try:
-                # Check if project with the given name exists
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
+            # Check if project with the given name exists
+            project = self._get_project_schema(
+                project_name_or_id, session=session
+            )
+            if project.name == self._default_project_name:
+                raise IllegalOperationError(
+                    "The default project cannot be deleted."
                 )
-                if project.name == self._default_project_name:
-                    raise IllegalOperationError(
-                        "The default project cannot be deleted."
-                    )
 
-                session.delete(project)
-                session.commit()
-            except NoResultFound as error:
-                raise KeyError from error
+            session.delete(project)
+            session.commit()
 
     # ------------
     # Repositories
