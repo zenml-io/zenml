@@ -1010,7 +1010,7 @@ def test_getting_run_succeeds(
     """Tests getting run."""
     run_id = sql_store_with_run["pipeline_run"].id
     with does_not_raise():
-        run = sql_store_with_run["store"].get_run(run_id=run_id)
+        run = sql_store_with_run["store"].get_run(run_id)
         assert run is not None
         assert run.name == sql_store_with_run["pipeline_run"].name
 
@@ -1055,6 +1055,15 @@ def test_list_runs_returns_nothing_when_no_runs_exist(
 
     false_pipeline_runs = sql_store["store"].list_runs(pipeline_id=uuid.uuid4())
     assert len(false_pipeline_runs) == 0
+
+
+def test_list_runs_is_ordered(sql_store_with_runs):
+    """Tests listing runs returns ordered runs."""
+    runs = sql_store_with_runs["store"].list_runs()
+    assert len(runs) == 10
+    assert all(
+        runs[i].created <= runs[i + 1].created for i in range(len(runs) - 1)
+    )
 
 
 # ------------------
