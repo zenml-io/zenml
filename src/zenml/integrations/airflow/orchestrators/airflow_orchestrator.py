@@ -35,7 +35,7 @@ import os
 import shutil
 import tempfile
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
@@ -123,7 +123,10 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     @property
     def validator(self) -> Optional["StackValidator"]:
-        """Validates that the stack contains a container registry.
+        """Validates the stack.
+
+        In the remote case, checks that the stack contains a container registry
+        and only remote components.
 
         Returns:
             A `StackValidator` instance.
@@ -132,8 +135,28 @@ class AirflowOrchestrator(BaseOrchestrator):
             # No container registry required if just running locally.
             return None
         else:
+
+            def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+                for component in stack.components.values():
+                    if not component.config.is_local:
+                        continue
+
+                    return False, (
+                        f"The Airflow orchestrator is configured to run "
+                        f"pipelines remotely, but the '{component.name}' "
+                        f"{component.type.value} is a local stack component "
+                        f"and will not be available in the Airflow "
+                        f"task.\nPlease ensure that you always use non-local "
+                        f"stack components with a remote Airflow orchestrator, "
+                        f"otherwise you may run into pipeline execution "
+                        f"problems."
+                    )
+
+                return True, ""
+
             return StackValidator(
                 required_components={StackComponentType.CONTAINER_REGISTRY},
+                custom_validation_function=_validate_remote_components,
             )
 
     def prepare_pipeline_deployment(
