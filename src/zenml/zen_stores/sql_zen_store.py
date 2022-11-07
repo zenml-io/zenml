@@ -1005,7 +1005,7 @@ class SqlZenStore(BaseZenStore):
 
             list_of_stack_components_in_db = session.exec(query).all()
 
-        return [comp.to_model() for comp in list_of_stack_components_in_db]
+            return [comp.to_model() for comp in list_of_stack_components_in_db]
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
@@ -1426,11 +1426,15 @@ class SqlZenStore(BaseZenStore):
             existing_user.name = user_update.name
             existing_user.full_name = user_update.full_name
             existing_user.active = user_update.active
-            existing_user.password = user_update.get_hashed_password()
-            existing_user.activation_token = (
-                user_update.get_hashed_activation_token()
-            )
+            if user_update.password:
+                existing_user.password = user_update.get_hashed_password()
+            if user_update.activation_token:
+                existing_user.activation_token = (
+                    user_update.get_hashed_activation_token()
+                )
             existing_user.updated = datetime.now()
+            existing_user.email = user_update.email
+            existing_user.email_opted_in = user_update.email_opted_in
 
             session.add(existing_user)
             session.commit()

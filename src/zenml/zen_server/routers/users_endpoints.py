@@ -271,10 +271,18 @@ def email_opt_in_response(
     Returns:
         The updated user.
     """
-    return zen_store().user_email_opt_in(
-        user_name_or_id=user_name_or_id,
+    user = zen_store().get_user(user_name_or_id=user_name_or_id)
+    update_user = UserRequestModel(
+        name=user.name,
+        full_name=user.full_name,
+        active=user.active,
         email=user_response.email,
-        user_opt_in_response=user_response.email_opted_in,
+        email_opted_in=user_response.email_opted_in
+    )
+
+    return zen_store().update_user(
+        user_name_or_id=user_name_or_id,
+        user_update=update_user
     )
 
 
