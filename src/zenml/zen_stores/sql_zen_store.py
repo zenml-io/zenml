@@ -2066,6 +2066,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the role does not exist.
+            IllegalOperationError: if the role is a system role.
         """
         with Session(self.engine) as session:
             existing_role = session.exec(
