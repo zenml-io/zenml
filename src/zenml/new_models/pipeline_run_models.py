@@ -1,16 +1,19 @@
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional, cast, TYPE_CHECKING
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml import __version__ as current_zenml_version
 from zenml.enums import ExecutionStatus
-from zenml.models import PipelineModel, StackModel
+
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.new_models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
+
+if TYPE_CHECKING:
+    from zenml.new_models import PipelineResponseModel, StackResponseModel
 
 
 def get_git_sha(clean: bool = True) -> Optional[str]:
@@ -73,10 +76,10 @@ class PipelineRunResponseModel(
 
     status: ExecutionStatus = Field(title="The status of the run.")
 
-    pipeline: Optional[PipelineModel] = Field(
+    pipeline: Optional["PipelineResponseModel"] = Field(
         title="The pipeline this run belongs to."
     )
-    stack: Optional[StackModel] = Field(
+    stack: Optional["StackResponseModel"] = Field(
         title="The stack that was used for this run."
     )
 
