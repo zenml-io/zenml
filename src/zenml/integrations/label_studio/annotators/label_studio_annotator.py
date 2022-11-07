@@ -656,7 +656,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
     def resume(self) -> None:
         """Resumes the annotation interface."""
         if self.is_running:
-            logger.info("Local kubeflow pipelines deployment already running.")
+            logger.info("Local annotation deployment already running.")
             return
 
         self.start_annotator_daemon()
