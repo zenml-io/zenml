@@ -96,7 +96,7 @@ class HydratedPipelineModel(PipelineModel):
         project = zen_store.get_project(pipeline_model.project)
         user = zen_store.get_user(pipeline_model.user)
         runs = zen_store.list_runs(pipeline_id=pipeline_model.id)
-        last_x_runs = runs[:num_runs]
+        last_x_runs = runs[-num_runs:]
         status_last_x_runs = []
         for run in last_x_runs:
             status_last_x_runs.append(

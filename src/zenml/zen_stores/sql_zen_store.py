@@ -18,6 +18,7 @@ import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path, PurePath
+from threading import Lock, get_ident
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -528,6 +529,8 @@ class SqlZenStore(BaseZenStore):
         CONFIG_TYPE: The type of the store configuration.
         _engine: The SQLAlchemy engine.
         _metadata_store: The metadata store.
+        _lock: A thread mutex used to ensure thread safety during the pipeline
+            run synchronization.
     """
 
     config: SqlZenStoreConfiguration
@@ -539,6 +542,7 @@ class SqlZenStore(BaseZenStore):
     _metadata_store: Optional["MetadataStore"] = None
     _highest_synced_run_mlmd_id: int = 0
     _alembic: Optional[Alembic] = None
+    _sync_lock: Optional[Lock] = None
 
     @property
     def engine(self) -> Engine:
@@ -593,6 +597,20 @@ class SqlZenStore(BaseZenStore):
             raise ValueError("Store not initialized")
         return self._alembic
 
+    @property
+    def sync_lock(self) -> Lock:
+        """The mutex used to synchronize pipeline runs.
+
+        Returns:
+            The mutex used to synchronize pipeline runs.
+
+        Raises:
+            ValueError: If the store is not initialized.
+        """
+        if not self._sync_lock:
+            raise ValueError("Store not initialized")
+        return self._sync_lock
+
     # ====================================
     # ZenML Store interface implementation
     # ====================================
@@ -620,6 +638,8 @@ class SqlZenStore(BaseZenStore):
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
+
+        self._sync_lock = Lock()
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the current python package."""
@@ -3566,18 +3586,37 @@ class SqlZenStore(BaseZenStore):
         exists in the database, and if not, creates it.
         """
         from zenml.zen_stores.migrations.alembic import AlembicVersion
+        from zenml.zen_stores.rest_zen_store import DEFAULT_HTTP_TIMEOUT
 
+        # This is to synchronize the locally running threads so that only
+        # one thread attempts to sync the runs at any given time.
+        # The timeout is set to be shorter than the default REST client
+        # timeout, so that we don't block the client for too long.
+        logger.debug(f"[{get_ident()}] Trying to acquire sync lock...")
+        if not self.sync_lock.acquire(timeout=DEFAULT_HTTP_TIMEOUT - 10):
+            logger.warning(
+                f"[{get_ident()}] Timed out waiting to acquire pipeline "
+                f"run sync lock. Skipping the sync this time around."
+            )
+            return
+
+        logger.debug(f"[{get_ident()}] Pipeline run sync lock acquired.")
         try:
             with Session(self.engine) as session:
-                # We use the alembic version table as a shared resource that we
-                # can lock to prevent multiple processes from syncing runs at
-                # the same time.
                 logger.debug("Syncing pipeline runs...")
-                session.query(AlembicVersion).with_for_update().all()
+                if self.config.driver != SQLDatabaseDriver.SQLITE:
+                    # This is to synchronize all server processes trying to
+                    # sync the pipeline runs at the same time. We use the
+                    # alembic version table as a shared resource that we can
+                    # lock to prevent multiple processes from syncing runs
+                    # at the same time.
+                    session.query(AlembicVersion).with_for_update().all()
                 self._sync_runs_with_lock(session)
                 logger.debug("Pipeline runs sync complete")
         except Exception:
             logger.exception("Failed to sync pipeline runs.")
+        finally:
+            self.sync_lock.release()
 
     def _sync_runs_with_lock(self, session: Session) -> None:
         """Sync runs from MLMD into the database while the DB is locked.

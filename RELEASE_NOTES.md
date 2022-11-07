@@ -1,5 +1,18 @@
 <!-- markdown-link-check-disable -->
 
+# 0.21.1
+
+This is an ad-hoc release to fix some bugs introduced the 0.21.0 release that
+made the local ZenML dashboard unusable.
+
+## What's Changed
+* Include latest (not oldest) three runs in HydratedPipelineModel by @schustmi in https://github.com/zenml-io/zenml/pull/1039
+* Update docs to use `pip install [server]` by @strickvl in https://github.com/zenml-io/zenml/pull/1037
+* Docs fix for Deepchecks by @strickvl in https://github.com/zenml-io/zenml/pull/1040
+* Fix the pipeline run sync on sqlite and the --blocking zenml server deployment by @stefannica in https://github.com/zenml-io/zenml/pull/1041
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.21.0...0.21.1
+
 # 0.21.0
 
 This release primarily fixes a number of bugs that were introduced as part of
