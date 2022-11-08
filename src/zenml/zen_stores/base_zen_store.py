@@ -48,7 +48,7 @@ from zenml.new_models import (
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
-    UserResponseModel,
+    UserResponseModel, RoleAssignmentRequestModel,
 )
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
@@ -626,10 +626,13 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                 password=user_password,
             )
         )
-        self.assign_role(
-            role_name_or_id=self._admin_role.id,
-            user_or_team_name_or_id=new_user.id,
-            is_user=True,
+        self.create_role_assignment(
+            RoleAssignmentRequestModel(
+                role=self._admin_role.id,
+                user=new_user.id,
+                project=None,
+                is_user=True,
+            )
         )
         return new_user
 

@@ -344,16 +344,21 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
         title="The list of teams for this user."
     )
 
-    def generate_access_token(self) -> str:
+    def generate_access_token(self, permissions: List[str]) -> str:
         """Generates an access token.
 
         Generates an access token and returns it.
+
+        Args:
+            permissions: Permissions to add to the token
 
         Returns:
             The generated access token.
         """
         return JWTToken(
-            token_type=JWTTokenType.ACCESS_TOKEN, user_id=self.id
+            token_type=JWTTokenType.ACCESS_TOKEN,
+            user_id=self.id,
+            permissions=permissions,
         ).encode()
 
 
