@@ -3611,28 +3611,6 @@ class SqlZenStore(BaseZenStore):
             logger.debug(f"Updating run status for pipeline run '{run_.id}'")
             self._sync_run_status(run_.to_model())
 
-        # Sync steps of all recently updated runs when running in a server.
-        # This is done to prevent missing output artifacts of steps in case the
-        # run status was updated after all steps of a run have completed but
-        # before the last artifact was written to MLMD.
-        if self.runs_inside_server:
-            recently_updated_runs = session.exec(
-                select(PipelineRunSchema).where(
-                    PipelineRunSchema.updated
-                    >= datetime.now() - timedelta(minutes=1)
-                )
-            ).all()
-            logger.debug(
-                f"Updating {len(recently_updated_runs)} recently updated "
-                "pipeline runs from MLMD"
-            )
-            for run_ in recently_updated_runs:
-                if run_ not in unfinished_runs:
-                    logger.debug(
-                        f"Syncing run steps for recent pipeline run '{run_.id}'"
-                    )
-                    self._sync_run_steps(run_.id)
-
     def _sync_run(self, mlmd_run: "MLMDPipelineRunModel") -> PipelineRunModel:
         """Sync a single run from MLMD into the database.
 
@@ -3711,9 +3689,10 @@ class SqlZenStore(BaseZenStore):
                 step_schema = zenml_step_dict[step_name]
                 step_model = self._run_step_schema_to_model(step_schema)
 
-            # Sync artifacts and status of all steps.
-            self._sync_run_step_artifacts(step_model)
-            self._sync_run_step_status(step_model)
+            # Sync artifacts and status of all unfinished steps.
+            if step_model.status == ExecutionStatus.RUNNING:
+                self._sync_run_step_artifacts(step_model)
+                self._sync_run_step_status(step_model)
 
     def _sync_run_step(
         self, run_id: UUID, step_name: str, mlmd_step: "MLMDStepRunModel"
