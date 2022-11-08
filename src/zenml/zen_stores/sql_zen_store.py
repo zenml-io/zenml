@@ -2764,9 +2764,7 @@ class SqlZenStore(BaseZenStore):
             The pipeline run model with updated status.
         """
         # Update status only if the run is running and fully synced.
-        if run_model.status != ExecutionStatus.RUNNING or self._sync_run_steps(
-            run_model.id, check=True
-        ):
+        if run_model.status != ExecutionStatus.RUNNING:
             return run_model
 
         steps = self._list_run_steps_without_sync(run_id=run_model.id)
@@ -3153,11 +3151,10 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The step run model with updated status.
         """
-        # Update status only if the step is running and fully synced.
+        # Update status only if the step is running and has an MLMD ID.
         if (
             step_model.status != ExecutionStatus.RUNNING
             or step_model.mlmd_id is None
-            or self._sync_run_step_artifacts(step_model, check=True)
         ):
             return step_model
 
@@ -3736,7 +3733,7 @@ class SqlZenStore(BaseZenStore):
         )
         return self.create_run(new_run)
 
-    def _sync_run_steps(self, run_id: UUID, check: bool = False) -> bool:
+    def _sync_run_steps(self, run_id: UUID) -> None:
         """Sync run steps from MLMD into the database.
 
         Since we do not allow to create steps in the database directly, this is
@@ -3744,11 +3741,6 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to sync steps for.
-            check: If set to True, only check whether steps need to be synced
-                and do not sync them if they are not.
-
-        Returns:
-            True if check is True and steps need to be synced, else False.
 
         Raises:
             KeyError: if the run couldn't be found.
@@ -3767,7 +3759,7 @@ class SqlZenStore(BaseZenStore):
 
             # If the run didn't come from MLMD, we can't sync artifacts.
             if run.mlmd_id is None:
-                return False
+                return
 
             # Get all steps that already exist in the database.
             zenml_steps = session.exec(
@@ -3783,8 +3775,6 @@ class SqlZenStore(BaseZenStore):
         # For each step in MLMD, sync it into ZenML if it doesn't exist yet.
         for step_name, mlmd_step in mlmd_steps.items():
             if step_name not in zenml_step_dict:
-                if check:
-                    return True
                 try:
                     step_model = self._sync_run_step(
                         run_id, step_name, mlmd_step
@@ -3795,9 +3785,6 @@ class SqlZenStore(BaseZenStore):
                     )
                     continue
 
-            elif check:
-                continue
-
             else:
                 step_schema = zenml_step_dict[step_name]
                 step_model = self._run_step_schema_to_model(step_schema)
@@ -3805,8 +3792,6 @@ class SqlZenStore(BaseZenStore):
             # Sync artifacts and status of all steps.
             self._sync_run_step_artifacts(step_model)
             self._update_run_step_status(step_model)
-
-        return False
 
     def _sync_run_step(
         self, run_id: UUID, step_name: str, mlmd_step: "MLMDStepRunModel"
@@ -3854,9 +3839,7 @@ class SqlZenStore(BaseZenStore):
         )
         return self.create_run_step(new_step)
 
-    def _sync_run_step_artifacts(
-        self, step_model: StepRunModel, check: bool = False
-    ) -> bool:
+    def _sync_run_step_artifacts(self, step_model: StepRunModel) -> None:
         """Sync run step artifacts from MLMD into the database.
 
         Since we do not allow to create artifacts in the database directly, this
@@ -3864,15 +3847,10 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             step_model: The model of the step run to sync artifacts for.
-            check: If set to True, only check whether artifacts need to be
-                synced and do not sync them if they are not.
-
-        Returns:
-            True if check is True and artifacts need to be synced, else False.
         """
         # If the step didn't come from MLMD, we can't sync artifacts.
         if step_model.mlmd_id is None:
-            return False
+            return
 
         # Get the names of all outputs that are already in ZenML.
         with Session(self.engine) as session:
@@ -3892,8 +3870,6 @@ class SqlZenStore(BaseZenStore):
         # For each output in MLMD, sync it into ZenML if it doesn't exist yet.
         for output_name, mlmd_artifact in mlmd_outputs.items():
             if output_name not in zenml_output_names:
-                if check:
-                    return True
                 try:
                     self._sync_run_step_artifact(output_name, mlmd_artifact)
                 except KeyError as err:
@@ -3901,8 +3877,6 @@ class SqlZenStore(BaseZenStore):
                         f"Syncing artifact '{output_name}' failed: {str(err)}"
                     )
                     continue
-
-        return False
 
     def _sync_run_step_artifact(
         self, output_name: str, mlmd_artifact: "MLMDArtifactModel"
