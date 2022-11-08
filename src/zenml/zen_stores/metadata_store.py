@@ -37,6 +37,7 @@ from zenml.steps.utils import (
 )
 from zenml.utils.proto_utils import (
     MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME,
+    MLMD_CONTEXT_NUM_OUTPUTS_PROPERTY_NAME,
     MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME,
     MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME,
     MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME,
@@ -70,6 +71,7 @@ class MLMDStepRunModel(BaseModel):
     parameters: Dict[str, str]
     step_configuration: Dict[str, Any]
     docstring: Optional[str]
+    num_outputs: Optional[int]
 
 
 class MLMDArtifactModel(BaseModel):
@@ -210,6 +212,16 @@ class MetadataStore:
             if "docstring" in step_configuration_config:
                 docstring = step_configuration_config["docstring"]
 
+        # Get number of outputs.
+        if MLMD_CONTEXT_NUM_OUTPUTS_PROPERTY_NAME in step_context_properties:
+            num_outputs = int(
+                step_context_properties.get(
+                    MLMD_CONTEXT_NUM_OUTPUTS_PROPERTY_NAME
+                ).string_value
+            )
+        else:
+            num_outputs = None
+
         # TODO [ENG-222]: This is a lot of querying to the metadata store. We
         #  should refactor and make it nicer. Probably it makes more sense
         #  to first get `executions_ids_for_current_run` and then filter on
@@ -258,6 +270,7 @@ class MetadataStore:
             parameters=step_parameters,
             step_configuration=step_configuration,
             docstring=docstring,
+            num_outputs=num_outputs,
         )
 
     def _get_pipeline_run_model_from_context(

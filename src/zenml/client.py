@@ -1412,6 +1412,7 @@ class Client(metaclass=ClientMetaClass):
                     parameters=step.parameters,
                     step_configuration={},
                     mlmd_parent_step_ids=[],
+                    num_outputs=len(outputs),
                 )
                 new_step = self.zen_store.create_run_step(step_run)
                 step_mlmd_id_mapping[step.mlmd_id] = new_step.id

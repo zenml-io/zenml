@@ -3663,7 +3663,7 @@ class SqlZenStore(BaseZenStore):
             stack_id=mlmd_run.stack_id,
             pipeline_id=mlmd_run.pipeline_id,
             pipeline_configuration=mlmd_run.pipeline_configuration,
-            num_steps=mlmd_run.num_steps or -1,  # For legacy
+            num_steps=mlmd_run.num_steps,
             status=ExecutionStatus.RUNNING,  # Update later.
         )
         return self.create_run(new_run)
@@ -3764,6 +3764,7 @@ class SqlZenStore(BaseZenStore):
             parameters=mlmd_step.parameters,
             step_configuration=mlmd_step.step_configuration,
             docstring=mlmd_step.docstring,
+            num_outputs=mlmd_step.num_outputs,
             pipeline_run_id=run_id,
             parent_step_ids=[
                 self._resolve_mlmd_step_id(parent_step_id)
@@ -3893,7 +3894,7 @@ class SqlZenStore(BaseZenStore):
         # determine the status of the run correctly. Instead, we need to
         # load all steps from MLMD and compute `status` and `num_steps`
         # from that.
-        if run_model.num_steps > 0:
+        if run_model.num_steps and run_model.num_steps > 0:
             num_steps = run_model.num_steps
         else:
             num_steps = len(steps)

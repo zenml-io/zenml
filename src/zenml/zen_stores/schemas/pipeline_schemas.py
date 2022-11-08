@@ -142,7 +142,7 @@ class PipelineRunSchema(SQLModel, table=True):
 
     status: ExecutionStatus
     pipeline_configuration: str = Field(max_length=4096)
-    num_steps: int
+    num_steps: Optional[int]
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
 
@@ -235,6 +235,7 @@ class StepRunSchema(SQLModel, table=True):
     parameters: str = Field(max_length=4096)
     step_configuration: str = Field(max_length=4096)
     docstring: Optional[str] = Field(max_length=4096, nullable=True)
+    num_outputs: Optional[int]
 
     mlmd_id: Optional[int] = Field(default=None, nullable=True)
 
@@ -261,6 +262,7 @@ class StepRunSchema(SQLModel, table=True):
             parameters=json.dumps(model.parameters),
             step_configuration=json.dumps(model.step_configuration),
             docstring=model.docstring,
+            num_outputs=model.num_outputs,
             mlmd_id=model.mlmd_id,
         )
 
@@ -304,6 +306,7 @@ class StepRunSchema(SQLModel, table=True):
             parameters=json.loads(self.parameters),
             step_configuration=json.loads(self.step_configuration),
             docstring=self.docstring,
+            num_outputs=self.num_outputs,
             mlmd_id=self.mlmd_id,
             mlmd_parent_step_ids=mlmd_parent_step_ids,
             created=self.created,
