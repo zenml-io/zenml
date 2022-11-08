@@ -44,7 +44,7 @@ class JWTToken(BaseModel):
     """Pydantic object representing a JWT token.
 
     Attributes:
-        user_id: The ID of the user.
+        token: The JWT token.
         token_type: The type of token.
     """
 
@@ -52,6 +52,7 @@ class JWTToken(BaseModel):
 
     token_type: JWTTokenType
     user_id: UUID
+    permissions: List[str]
 
     @classmethod
     def decode(cls, token_type: JWTTokenType, token: str) -> "JWTToken":
@@ -87,9 +88,18 @@ class JWTToken(BaseModel):
             raise AuthorizationException(
                 "Invalid JWT token: the subject claim is missing"
             )
+        permissions: List[str] = payload.get("permissions")
+        if permissions is None:
+            raise AuthorizationException(
+                "Invalid JWT token: the permissions scope is missing"
+            )
 
         try:
-            return cls(token_type=token_type, user_id=UUID(subject))
+            return cls(
+                token_type=token_type,
+                user_id=UUID(subject),
+                permissions=set(permissions),
+            )
         except ValueError as e:
             raise AuthorizationException(
                 f"Invalid JWT token: could not decode subject claim: {e}"
@@ -113,6 +123,7 @@ class JWTToken(BaseModel):
 
         claims: Dict[str, Any] = {
             "sub": str(self.user_id),
+            "permissions": list(self.permissions),
         }
 
         if expire_minutes:
@@ -125,7 +136,6 @@ class JWTToken(BaseModel):
             algorithm=self.JWT_ALGORITHM,
         )
         return token
-
 
 # ---- #
 # BASE #
