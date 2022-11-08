@@ -65,9 +65,6 @@ class DockerServerDeploymentConfig(ServerDeploymentConfig):
 
     port: int = 8238
     image: str = DOCKER_ZENML_SERVER_DEFAULT_IMAGE
-    ip_address: Union[
-        ipaddress.IPv4Address, ipaddress.IPv6Address
-    ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
     store: Optional[StoreConfiguration] = None
 
     class Config:

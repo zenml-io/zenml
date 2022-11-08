@@ -223,6 +223,9 @@ class ContainerService(BaseService):
         if container is None:
             return ServiceState.INACTIVE, "Docker container is not present"
         elif container.status == "running":
+            if self.endpoint:
+                ip_address = container.attrs['NetworkSettings']['IPAddress']
+                self.endpoint.status.hostname = ip_address
             return ServiceState.ACTIVE, "Docker container is running"
         elif container.status == "exited":
             return (
@@ -419,7 +422,7 @@ class ContainerService(BaseService):
                     group_add=[os.getgid()],
                 )
 
-            self.docker_client.containers.run(
+            container = self.docker_client.containers.run(
                 name=self.container_id,
                 image=self.config.image,
                 entrypoint=command,
@@ -435,6 +438,10 @@ class ContainerService(BaseService):
                 working_dir=SERVICE_CONTAINER_PATH,
                 **uid_args,
             )
+            if self.endpoint:
+                ip_address = container.attrs['NetworkSettings']['IPAddress']
+                self.endpoint.status.hostname = ip_address
+
             logger.debug(
                 "Docker container for service '%s' started with ID: %s",
                 self,

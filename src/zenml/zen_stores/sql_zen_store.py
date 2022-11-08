@@ -335,6 +335,18 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         """
         return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
 
+    @classmethod
+    def supports_url_scheme(cls, url: str) -> bool:
+        """Check if a URL scheme is supported by this store.
+
+        Args:
+            url: The URL to check.
+
+        Returns:
+            True if the URL scheme is supported, False otherwise.
+        """
+        return make_url(url).drivername in SQLDatabaseDriver.values()
+
     def expand_certificates(self) -> None:
         """Expands the certificates in the verify_ssl field."""
         # Load the certificate values back into the configuration

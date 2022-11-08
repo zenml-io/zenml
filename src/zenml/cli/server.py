@@ -193,7 +193,7 @@ def up(
         config_attrs["image"] = image
     if port is not None:
         config_attrs["port"] = port
-    if ip_address is not None:
+    if ip_address is not None and provider == ServerProviderType.DOCKER:
         config_attrs["ip_address"] = ip_address
 
     from zenml.zen_server.deploy.deployment import ServerDeploymentConfig

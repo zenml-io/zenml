@@ -25,6 +25,9 @@ This command deploys a ZenML server locally in a Docker container, then connects
 your client to it. Similar to running plain `zenml up`, the server and the local
 ZenML client share the same SQLite database.
 
+The rest of this guide is addressed to advanced users who are looking to
+manually deploy and manage a containerized ZenML server.
+
 ## ZenML Server Configuration Options
 
 If you're planning on deploying a custom containerized ZenML server yourself,
@@ -47,9 +50,6 @@ The following environment variables can be passed to the container:
 - **ZENML_DEFAULT_USER_PASSWORD**:
     The password to use for the default admin user account. Defaults to an empty
     password value, if not set.
-- **ZENML_STORE_TYPE**:
-    The type of backend store that you want to configure 
-    ZenML with. This should always be set to "sql".
 - **ZENML_STORE_URL**:
     This URL should point to a SQLite database file _mounted in the container_,
     or to a MySQL compatible database service _reachable from the container_. It
@@ -60,6 +60,28 @@ The following environment variables can be passed to the container:
     or:
 
         mysql://username:password@host:port/database
+
+{% hint style="warning" %}
+The SQLite database backend option currently has one major limitation:
+the server will store incomplete information about pipeline runs and
+thus the pipeline runs will only be partially available in the ZenML UI. This
+comes from the requirement that the ZenML clients and orchestrators still need
+direct access to the server database to store this information.
+
+This limitation will be corrected in a future release that removes the
+dependency on the ml-metadata library for pipeline run tracking.
+
+This situation will be signalled by a warning message in the ZenML client and
+pipeline logs that looks like this:
+
+    The ZenML server is using a SQLite database at /zenml/.zenconfig/local_stores/default_zen_store/zenml.db
+    that is not available locally. Using the default local SQLite database
+    instead.
+
+In the meantime, it is recommended to configure the ZenML server to connect to a
+MySQL database service that is also reachable from the client and orchestrators.
+This is covered in the next sections.
+{% endhint %}
 
 - **ZENML_STORE_SSL_CA**:
     This can be set to a custom server CA certificate in use by the MySQL
@@ -96,7 +118,7 @@ If none of the `ZENML_STORE_*` variables are set, the container will default to
 creating and using a SQLite database file stored at `/zenml/.zenconfig/local_stores/default_zen_store/zenml.db`
 inside the container. The `/zenml/.zenconfig/local_stores` base path where the
 default SQLite database is located can optionally be overridden by setting the
-`ZENML_LOCAL_STORES_PATH` environment variable to pint to a different path
+`ZENML_LOCAL_STORES_PATH` environment variable to point to a different path
 (e.g. a persistent volume or directory that is mounted from the host).
 
 ### Advanced Server Configuration Options
@@ -134,15 +156,15 @@ deployment with multiple replicas):
      openssl rand -hex 32
      ```
 
-## Run the ZenML server on Docker
+## Run the ZenML server with Docker
 
 As previously mentioned, the ZenML server container image uses sensible defaults
 for most configuration options. This means that you can simply run the container
 with Docker without any additional configuration and it will work out of the
-box:
+box for most use cases:
 
 ```
-docker run -it -d -p 8080:80 zenmldocker/zenml-server
+docker run -it -d -p 8080:80 --name zenml zenmldocker/zenml-server
 ```
 
 > **Note**
@@ -151,36 +173,188 @@ docker run -it -d -p 8080:80 zenmldocker/zenml-server
 > `zenmldocker/zenml-server:0.21.1` instead of `zenmldocker/zenml-server`).
 
 The above command will start a containerized ZenML server running on your
-machine that uses a temporary SQLite database file stored in the container.
+machine that uses a temporary SQLite database file stored in the container,
+with all the limitations that this entails (see the earlier warning).
 Temporary means that the database and all its contents (stacks, pipelines,
 pipeline runs etc.) will be lost when the container is removed with `docker rm`.
+
 You can visit the ZenML dashboard at http://localhost:8080 or connect your
-client to the server with:
+client to the server with the `default` username and empty password:
 
 ```shell
-zenml connect --url http://localhost:8080
+$ zenml connect --url http://localhost:8080
+Connecting to: 'http://localhost:8080'...
+Username: default
+Password for user default (press ENTER for empty password) []: 
+Updated the global store configuration.
 ```
+
+{% hint style="warning" %}
+The `localhost` URL will not work if you are using Docker based ZenML
+orchestrators in your stack. In this case, you need to
+[use an IP address that is reachable from other containers](#inter-container-communication)
+instead of `localhost` when you connect your client to the server, e.g.:
+
+```shell
+zenml connect --url http://172.17.0.1:8080
+```
+
+{% endhint %}
+
+You can manage the container with the usual Docker commands:
+
+* `docker logs zenml` to view the server logs
+* `docker stop zenml` to stop the server
+* `docker start zenml` to start the server again
+* `docker rm zenml` to remove the container
 
 If you are looking for a customized ZenML server Docker deployment, you can
 configure one or more of [the supported environment variables](#zenml-server-configuration-options)
-in a file and then pass it to the `docker` CLI using the `--env-file` flag (see
-the [Docker documentation](https://docs.docker.com/engine/reference/commandline/run/#set-environment-variables--e---env---env-file) for more details). For example:
+and then pass them to the container using the `docker run` `--env` or
+`--env-file` arguments (see the [Docker documentation](https://docs.docker.com/engine/reference/commandline/run/#set-environment-variables--e---env---env-file)
+for more details). For example:
 
 ```shell
-docker run -it -d -p 8080:80 zenmldocker/zenml-server --env-file /path/to/env/file
+docker run -it -d -p 8080:80 --name zenml \
+    --env ZENML_STORE_URL=mysql://username:password@host:port/database \
+    zenmldocker/zenml-server
 ```
 
-The next sections cover a few relevant examples of ZenML Docker deployments
-that you can use as a starting point for your own customized deployments.
+### Inter-container communication
 
-### Persistent SQLite database
+This section is dedicated to solving the issue of accessing a Docker container
+from another Docker container. This situation arises when you want to run a
+containerized ZenML server and one or both of the following:
+
+- you want to connect the ZenML server container to another container such as a
+MySQL database server
+- you want to use one of the local container based orchestrators in your ZenML
+stack, such as the [ZenML Kubeflow orchestrator](../../component-gallery/orchestrators/kubeflow.md),
+or the [ZenML Docker orchestrator](../../component-gallery/orchestrators/local-docker.md).
+
+In both these cases, a containerized server (the ZenML server or a MySQL server)
+needs to be accessible from both the local host as well as from other
+containers. The `localhost` hostname or `127.0.0.1` IP address will not work in
+this case, because every container has its own isolated loopback interface. What
+is needed is a hostname or IP address that is accessible from both the host and
+other containers.
+
+You have the following solutions:
+
+1. find out the IP address of the server container and use that address
+when connecting to the server container. This can be done with the
+`docker inspect` command, e.g.:
+
+    ```shell
+    docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' zenml
+    ```
+
+    The output usually looks something like this:
+
+    ```
+    172.17.0.3
+    ```
+
+    > **IMPORTANT**
+    > The IP address of the server container needs to be paired with the TCP
+    > port that the server is listening on inside the container, not the port
+    > that is forwarded to the host by Docker (e.g. `80` instead of `8080` in
+    > the example above).
+
+2. find and use the Docker gateway address in use by the default network bridge
+that all containers are connected to. This can be done with the `docker network inspect`
+command, but this option is not available on Mac OS:
+
+    ```shell
+    docker inspect -f '{{range.IPAM.Config}}{{.Gateway}}{{end}}' bridge
+    ```
+
+    The output usually looks something like this:
+
+    ```
+    172.17.0.1
+    ```
+
+3. (not recommended) use the special `host.docker.internal` DNS name
+resolved from within the Docker containers to the host IP address used by
+the Docker network (see the [Docker documentation](https://docs.docker.com/desktop/networking/#use-cases-and-workarounds-for-all-platforms)
+for more details). This option is only mentioned here for completeness, but is
+currently unusable for the same reason that SQLite is not recommended for
+use as a ZenML server database backend: the database also needs to be accessible
+from the host and the `host.docker.internal` DNS name is not resolvable from the
+host machine.
+
+### Persisting the SQLite database
 
 Depending on your use case, you may also want to mount a persistent volume or
 directory from the host into the container to store the ZenML SQLite database
-file. This can be done using the `--mount` flag (see the [Docker documentation](https://docs.docker.com/storage/volumes/) for more details). For example:
+file. This can be done using the `--mount` flag (see the [Docker documentation](https://docs.docker.com/storage/volumes/)
+for more details). For example:
 
 ```shell
-docker run -it -d -p 8080:80 zenmldocker/zenml-server --mount type=bind,source=/path/to/host/dir,target=/zenml/.zenconfig/local_stores
+mkdir zenml-server
+docker run -it -d -p 8080:80 --name zenml \
+    --mount type=bind,source=$PWD/zenml-server,target=/zenml/.zenconfig/local_stores/default_zen_store \
+    zenmldocker/zenml-server
+```
+
+This deployment has the advantage that the SQLite database file is persisted
+even when the container is removed with `docker rm`. However, it still suffers
+from the limitations incurred by using a SQLite database backend (see the
+earlier warning). The recommended way to deploy a containerized ZenML server
+is to use a MySQL database backend instead, as described in the next section.
+
+### Docker MySQL database
+
+As a recommended alternative to the SQLite database, you can run a MySQL
+database service as another Docker container and connect the ZenML server
+container to it.
+
+A command like the following can be run to start the containerized MySQL
+database service:
+
+```shell
+docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:5.7
+```
+
+Configuring the ZenML server container to connect to the MySQL database is just
+a matter of setting the `ZENML_STORE_URL` environment variable. The difficult
+part is finding the IP address where the MySQL container is reachable from the
+ZenML server container. As explained in the
+[inter-container communication section](#inter-container-communication), the
+`127.0.0.1` loopback interface will not work in this case and you will need
+the IP address of the MySQL container or the Docker gateway address, e.g.:
+
+```shell
+$ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mysql
+172.17.0.3
+```
+
+With the IP address of the MySQL container in hand, you can start the ZenML
+server container and connect it to the MySQL container with the following
+command:
+
+```shell
+docker run -it -d -p 8080:80 --name zenml \
+    --env ZENML_STORE_URL=mysql://root:password@172.17.0.3/zenml \
+    zenmldocker/zenml-server
+```
+
+Connecting your client to the ZenML server in a way that also enables you to
+use other, Docker-based ZenML orchestrator again requires you to
+[find the IP address of the ZenML server container or the Docker gateway address](#inter-container-communication),
+e.g.:
+
+```shell
+$ docker inspect -f '{{range.IPAM.Config}}{{.Gateway}}{{end}}' bridge
+172.17.0.1
+```
+
+The IP address of the ZenML server container is then used to connect your
+client with the default account credentials:
+
+```shell
+zenml connect --url http://172.17.0.1:8080 --username default --password ''
 ```
 
 

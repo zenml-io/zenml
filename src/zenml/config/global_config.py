@@ -543,6 +543,11 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             if k.startswith(ENV_ZENML_STORE_PREFIX):
                 env_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
         if len(env_config):
+            if "type" not in env_config and "url" in env_config:
+                store_type = BaseZenStore.get_store_type(env_config["url"])
+                if store_type:
+                    env_config["type"] = store_type
+
             logger.debug(
                 "Using environment variables to configure the default store"
             )

@@ -143,6 +143,27 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             )
 
     @staticmethod
+    def get_store_type(url: str) -> Optional[StoreType]:
+        """Returns the store type associated with a URL schema.
+
+        Args:
+            url: The store URL.
+
+        Returns:
+            The store type associated with the supplied URL schema or None if
+            the store type cannot be determined.
+        """
+        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
+        from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+
+        if SqlZenStoreConfiguration.supports_url_scheme(url):
+            return StoreType.SQL
+        elif RestZenStoreConfiguration.supports_url_scheme(url):
+            return StoreType.REST
+
+        return None
+
+    @staticmethod
     def create_store(
         config: StoreConfiguration,
         skip_default_registrations: bool = False,

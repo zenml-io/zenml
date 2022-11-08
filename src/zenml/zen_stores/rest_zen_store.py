@@ -32,6 +32,7 @@ from uuid import UUID
 import requests
 import urllib3
 from pydantic import BaseModel, validator
+from urllib.parse import urlparse
 
 import zenml
 from zenml.config.global_config import GlobalConfiguration
@@ -212,6 +213,18 @@ class RestZenStoreConfiguration(StoreConfiguration):
         verify_ssl = str(file_path)
 
         return verify_ssl
+
+    @classmethod
+    def supports_url_scheme(cls, url: str) -> bool:
+        """Check if a URL scheme is supported by this store.
+
+        Args:
+            url: The URL to check.
+
+        Returns:
+            True if the URL scheme is supported, False otherwise.
+        """
+        return urlparse(url).scheme in ("http", "https")
 
     def expand_certificates(self) -> None:
         """Expands the certificates in the verify_ssl field."""
