@@ -404,7 +404,7 @@ def update_project(
         project.name = name or project.name
         project.description = description or project.description
         Client().zen_store.update_project(project)
-    except (EntityExistsError, KeyError) as err:
+    except (EntityExistsError, KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Updated project '{project_name}'.")
 
