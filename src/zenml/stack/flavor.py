@@ -15,7 +15,7 @@
 
 from abc import abstractmethod
 from typing import Optional, Type, cast
-
+from uuid import UUID
 from zenml.enums import StackComponentType
 from zenml.new_models import FlavorResponseModel, FlavorRequestModel
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
@@ -94,7 +94,12 @@ class Flavor:
         Returns:
             The model.
         """
+        from zenml.client import Client
+
+        client = Client()
         model = FlavorRequestModel(
+            user=client.active_user.id,
+            project=client.active_project.id,
             name=self.name,
             type=self.type,
             source=resolve_class(self.__class__),  # noqa

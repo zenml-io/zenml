@@ -18,7 +18,7 @@ MODEL_NAME_FIELD_MAX_LENGTH = 128
 # The maximum length of description string fields in models.
 MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH = 300
 # The maximum length of the config schema of a flavor.
-MODEL_CONFIG_SCHEMA_MAX_LENGTH = 1024
+MODEL_CONFIG_SCHEMA_MAX_LENGTH = 10000
 
 # The maximum length of a password
 # NOTE: this should be kept under 50 characters to avoid problems with

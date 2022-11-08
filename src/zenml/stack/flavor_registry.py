@@ -21,9 +21,9 @@ from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
 from zenml.new_models import FlavorResponseModel, FlavorRequestModel
-from zenml.client import  Client
+from zenml.client import Client
 from uuid import UUID
-
+from datetime import datetime
 logger = get_logger(__name__)
 
 
@@ -116,6 +116,8 @@ class FlavorRegistry:
             id=UUID(int=0),
             user=client.active_user,
             project=client.active_project,
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
         flavors[flavor.name] = flavor_response_model
