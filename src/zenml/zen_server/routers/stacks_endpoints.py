@@ -16,7 +16,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Security
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.new_models import StackRequestModel, StackResponseModel
@@ -26,7 +26,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + STACKS,
     tags=["stacks"],
-    dependencies=[Depends(authorize)],
+    dependencies=[Security(authorize, scopes=["read"])],
     responses={401: error_response},
 )
 
@@ -85,7 +85,9 @@ def list_stacks(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_stack(stack_id: UUID) -> StackResponseModel:
+def get_stack(
+    stack_id: UUID,
+) -> StackResponseModel:
     """Returns the requested stack.
 
     Args:
@@ -104,7 +106,9 @@ def get_stack(stack_id: UUID) -> StackResponseModel:
 )
 @handle_exceptions
 def update_stack(
-    stack_id: UUID, stack_update: StackRequestModel
+    stack_id: UUID,
+    stack_update: StackRequestModel,
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> StackResponseModel:
     """Updates a stack.
 
@@ -126,7 +130,9 @@ def update_stack(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_stack(stack_id: UUID) -> None:
+def delete_stack(
+    stack_id: UUID, _: AuthContext = Security(authorize, scopes=["write"])
+) -> None:
     """Deletes a stack.
 
     Args:

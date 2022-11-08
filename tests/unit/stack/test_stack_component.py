@@ -106,6 +106,9 @@ class StubOrchestrator(BaseOrchestrator):
     def prepare_or_run_pipeline(self, **kwargs):
         pass
 
+    def get_orchestrator_run_id(self) -> str:
+        return "some_run_id"
+
 
 class StubOrchestratorFlavor(BaseOrchestratorFlavor):
     @property

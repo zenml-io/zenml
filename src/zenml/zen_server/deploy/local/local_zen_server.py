@@ -23,6 +23,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     ZEN_SERVER_ENTRYPOINT,
@@ -177,6 +178,8 @@ class LocalZenServer(LocalDaemonService):
         env[
             ENV_ZENML_LOCAL_STORES_PATH
         ] = GlobalConfiguration().local_stores_path
+        env[ENV_ZENML_DISABLE_DATABASE_MIGRATION] = "True"
+
         return cmd, env
 
     def provision(self) -> None:
@@ -196,10 +199,12 @@ class LocalZenServer(LocalDaemonService):
             super().start(timeout)
         else:
             self._copy_global_configuration()
+            local_stores_path = GlobalConfiguration().local_stores_path
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
             config_path = os.environ.get(ENV_ZENML_CONFIG_PATH)
             os.environ[ENV_ZENML_CONFIG_PATH] = self._global_config_path
+            os.environ[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
             try:
                 self.run()
             finally:
@@ -207,6 +212,7 @@ class LocalZenServer(LocalDaemonService):
                     os.environ[ENV_ZENML_CONFIG_PATH] = config_path
                 else:
                     del os.environ[ENV_ZENML_CONFIG_PATH]
+                del os.environ[ENV_ZENML_LOCAL_STORES_PATH]
                 GlobalConfiguration._reset_instance()
                 Client._reset_instance()
 
@@ -237,7 +243,6 @@ class LocalZenServer(LocalDaemonService):
                 host=self.endpoint.config.ip_address,
                 port=self.endpoint.config.port,
                 log_level="info",
-                reload=True,
             )
         except KeyboardInterrupt:
             logger.info("ZenML Server stopped. Resuming normal execution.")

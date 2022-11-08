@@ -5,7 +5,11 @@ ENV PYTHONFAULTHANDLER=1 \
     PYTHONHASHSEED=random \
     PIP_NO_CACHE_DIR=off \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
-    POETRY_HOME=/root/.local
+    POETRY_HOME=/root/.local \
+    ZENML_DEBUG=1 \
+    ZENML_LOGGING_VERBOSITY=INFO \
+    ZENML_CONTAINER=1
+
 
 RUN apt-get update && \
   apt-get install --no-install-recommends -q -y \

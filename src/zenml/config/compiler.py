@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Class for compiling ZenML pipelines into a serializable format."""
 import copy
-from datetime import datetime
+import string
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
 import tfx.orchestration.pipeline as tfx_pipeline
@@ -27,7 +27,7 @@ from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
-from zenml.exceptions import StackValidationError
+from zenml.exceptions import PipelineInterfaceError, StackValidationError
 from zenml.utils import source_utils, string_utils
 
 if TYPE_CHECKING:
@@ -66,6 +66,10 @@ class Compiler:
         self._apply_run_configuration(
             pipeline=pipeline, config=run_configuration
         )
+        self._verify_distinct_step_names(pipeline=pipeline)
+        if run_configuration.run_name:
+            self._verify_run_name(run_configuration.run_name)
+
         pipeline.connect(**pipeline.steps)
         pb2_pipeline = self._compile_proto_pipeline(
             pipeline=pipeline, stack=stack
@@ -142,6 +146,52 @@ class Compiler:
             if step_name not in pipeline.steps:
                 raise KeyError(f"No step with name {step_name}.")
             pipeline.steps[step_name]._apply_configuration(step_config)
+
+    def _verify_distinct_step_names(self, pipeline: "BasePipeline") -> None:
+        """Verifies that all steps inside the pipeline have separate names.
+
+        Args:
+            pipeline: The pipeline to verify.
+
+        Raises:
+            PipelineInterfaceError: If multiple steps share the same name.
+        """
+        step_names: Dict[str, str] = {}
+
+        for step_argument_name, step in pipeline.steps.items():
+            previous_argument_name = step_names.get(step.name, None)
+            if previous_argument_name:
+                raise PipelineInterfaceError(
+                    f"Found multiple step objects with the same name "
+                    f"`{step.name}` for arguments '{previous_argument_name}' "
+                    f"and '{step_argument_name}' in pipeline "
+                    f"'{pipeline.name}'. All steps of a ZenML pipeline need "
+                    "to have distinct names. To solve this issue, assign a new "
+                    "name to one of the steps by calling "
+                    "`my_step_instance.configure(name='some_distinct_name')`"
+                )
+
+            step_names[step.name] = step_argument_name
+
+    @staticmethod
+    def _verify_run_name(run_name: str) -> None:
+        """Verifies that the run name contains only valid placeholders.
+
+        Args:
+            run_name: The run name to verify.
+
+        Raises:
+            ValueError: If the run name contains invalid placeholders.
+        """
+        valid_placeholder_names = {"date", "time"}
+        placeholders = {
+            v[1] for v in string.Formatter().parse(run_name) if v[1]
+        }
+        if not placeholders.issubset(valid_placeholder_names):
+            raise ValueError(
+                f"Invalid run name {run_name}. Only the placeholders "
+                f"{valid_placeholder_names} are allowed in run names."
+            )
 
     def _filter_and_validate_settings(
         self,
@@ -299,10 +349,7 @@ class Compiler:
         Returns:
             Run name.
         """
-        return (
-            f"{pipeline_name}-"
-            f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
-        )
+        return f"{pipeline_name}-{{date}}-{{time}}"
 
     @staticmethod
     def _get_sorted_steps(

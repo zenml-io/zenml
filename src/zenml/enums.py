@@ -15,6 +15,7 @@
 
 import logging
 from enum import Enum
+from typing import List
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -38,6 +39,28 @@ class ExecutionStatus(StrEnum):
     COMPLETED = "completed"
     RUNNING = "running"
     CACHED = "cached"
+
+    @staticmethod
+    def run_status(
+        step_statuses: List["ExecutionStatus"], num_steps: int
+    ) -> "ExecutionStatus":
+        """Returns the overall run status based on the list of step statuses.
+
+        Args:
+            step_statuses: A list of step statuses.
+            num_steps: The number of steps in the pipeline.
+
+        Returns:
+            The overall run status.
+        """
+        if ExecutionStatus.FAILED in step_statuses:
+            return ExecutionStatus.FAILED
+        if (
+            len(step_statuses) < num_steps
+            or ExecutionStatus.RUNNING in step_statuses
+        ):
+            return ExecutionStatus.RUNNING
+        return ExecutionStatus.COMPLETED
 
 
 class LoggingLevels(Enum):
@@ -133,6 +156,7 @@ class ServerProviderType(StrEnum):
     DOCKER = "docker"
     AWS = "aws"
     GCP = "gcp"
+    AZURE = "azure"
 
 
 class AnalyticsEventSource(StrEnum):
@@ -140,3 +164,12 @@ class AnalyticsEventSource(StrEnum):
 
     ZENML_GO = "zenml go"
     ZENML_SERVER = "zenml server"
+
+
+class PermissionType(Enum):
+    """All permission types."""
+
+    # ANY CHANGES TO THIS ENUM WILL NEED TO BE DONE TOGETHER WITH A DB MIGRATION
+    WRITE = "write"  # allows the user to create, update, delete everything
+    READ = "read"  # allows the user to read everything
+    ME = "me"  # allows the user to self administrate (change name, password...)

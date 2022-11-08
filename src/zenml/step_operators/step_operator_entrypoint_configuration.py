@@ -107,7 +107,7 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         step_run_info = StepRunInfo(
             config=step.config,
             pipeline=deployment.pipeline,
-            run_name=deployment.run_name,
+            run_name=execution_info.pipeline_run_id,
         )
 
         stack.prepare_step_run(info=step_run_info)

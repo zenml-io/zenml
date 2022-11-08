@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column, ForeignKey, String
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
@@ -40,7 +40,7 @@ class FlavorSchema(NamedSchema, table=True):
 
     type: StackComponentType
     source: str
-    config_schema: str
+    config_schema: str = Field(sa_column=Column(String(4096)), nullable=False)
     integration: Optional[str] = Field(default="")
 
     user_id: UUID = Field(

@@ -14,12 +14,12 @@
 """Implementation of the ZenML Stack class."""
 
 import os
-import time
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
     Any,
     Dict,
+    List,
     NoReturn,
     Optional,
     Set,
@@ -476,6 +476,19 @@ class Stack:
         ]
         return set.union(*requirements) if requirements else set()
 
+    @property
+    def apt_packages(self) -> List[str]:
+        """List of APT package requirements for the stack.
+
+        Returns:
+            A list of APT package requirements for the stack.
+        """
+        return [
+            package
+            for component in self.components.values()
+            for package in component.apt_packages
+        ]
+
     def check_local_paths(self) -> bool:
         """Checks if the stack has local paths.
 
@@ -682,22 +695,7 @@ class Stack:
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
         """
-        logger.info(
-            "Using stack `%s` to run pipeline `%s`...",
-            self.name,
-            deployment.pipeline.name,
-        )
-        start_time = time.time()
-        return_value = self.orchestrator.run(deployment=deployment, stack=self)
-
-        run_duration = time.time() - start_time
-        logger.info(
-            "Pipeline run `%s` has finished in %s.",
-            deployment.run_name,
-            string_utils.get_human_readable_time(run_duration),
-        )
-
-        return return_value
+        return self.orchestrator.run(deployment=deployment, stack=self)
 
     def _get_active_components_for_step(
         self, step_config: "StepConfiguration"

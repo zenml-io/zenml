@@ -15,7 +15,7 @@
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Security, Depends
 
 from zenml.constants import (
     API,
@@ -28,15 +28,16 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.new_models import PipelineRunResponseModel, StepRunResponseModel
+from zenml.new_models import PipelineRunResponseModel, StepRunResponseModel, \
+    PipelineRunRequestModel
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import authorize, AuthContext
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + RUNS,
     tags=["runs"],
-    dependencies=[Depends(authorize)],
+    dependencies=[Security(authorize, scopes=["read"])],
     responses={401: error_response},
 )
 
@@ -98,7 +99,38 @@ def get_run(
     Returns:
         The pipeline run.
     """
-    return zen_store().get_run(run_id=run_id)
+    return zen_store().get_run(run_name_or_id=run_id)
+
+
+@router.put(
+    "/{run_id}",
+    response_model=PipelineRunResponseModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def update_run(
+    run_id: UUID,
+    run_model: PipelineRunRequestModel,
+    auth_context: AuthContext = Depends(authorize)
+) -> PipelineRunResponseModel:
+    """Updates a run.
+
+    Args:
+        run_id: ID of the run.
+        run_model: Run model to use for the update.
+        auth_context: Authorization Context
+
+    Returns:
+        The updated run model.
+    """
+    project = zen_store().get_project()
+
+    # TODO add some warnings/errors around this
+    run_model.project = project.id
+    run_model.user = auth_context.user.id
+
+    # TODO use id as well
+    return zen_store().update_run(run_id=run_id, run=run_model)
 
 
 @router.get(
@@ -118,7 +150,7 @@ def get_run_dag(run_id: UUID) -> LineageGraph:
     """
     from zenml.post_execution.pipeline_run import PipelineRunView
 
-    run = zen_store().get_run(run_id=run_id)
+    run = zen_store().get_run(run_name_or_id=run_id)
     graph = LineageGraph()
     graph.generate_run_nodes_and_edges(PipelineRunView(run))
     return graph
@@ -181,7 +213,7 @@ def get_pipeline_configuration(run_id: UUID) -> Dict[str, Any]:
     Returns:
         The pipeline configuration of the pipeline run.
     """
-    return zen_store().get_run(run_id=run_id).pipeline_configuration
+    return zen_store().get_run(run_name_or_id=run_id).pipeline_configuration
 
 
 @router.get(
@@ -199,4 +231,4 @@ def get_run_status(run_id: UUID) -> ExecutionStatus:
     Returns:
         The status of the pipeline run.
     """
-    return zen_store().get_run_status(run_id)
+    return zen_store().get_run(run_id).status

@@ -28,7 +28,7 @@ ZenML repository:
 
 ```bash
 # Install python dependencies
-pip install zenml
+pip install "zenml[server]"
 
 # Install ZenML integrations
 zenml integration install tekton tensorflow

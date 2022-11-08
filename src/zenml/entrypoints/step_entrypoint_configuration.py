@@ -36,16 +36,10 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
 
     If an orchestrator needs to run steps in a separate process or environment
     (e.g. a docker container), this class can either be used directly or
-    subclassed if custom behavior like setting a run name for scheduled runs
-    is necessary.
+    subclassed if custom behavior is necessary.
 
     How to subclass:
     ----------------
-    There is only one mandatory method `get_run_name(...)` that you need to
-    implement in order to get a functioning entrypoint. Inside this method you
-    need to return a string which **has** to be the same for all steps that are
-    executed as part of the same pipeline run.
-
     Passing additional arguments to the entrypoint:
         If you need to pass additional arguments to the entrypoint, there are
         two methods that you need to implement:

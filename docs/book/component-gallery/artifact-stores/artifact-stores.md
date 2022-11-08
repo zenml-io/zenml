@@ -131,9 +131,9 @@ Python modules:
 * `zenml.io.fileio` provides low-level utilities for manipulating Artifact Store
 objects (e.g. `open`, `copy`, `rename`, `remove`, `mkdir`). These functions
 work seamlessly across Artifact Stores types. They have the same signature as
-the [Artifact Store abstraction methods](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore)
+the [Artifact Store abstraction methods](https://apidocs.zenml.io/latest/core_code_docs/core-artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore)
 (in fact, they are one and the same under the hood).
-* [zenml.utils.io_utils](https://apidocs.zenml.io/latest/api_docs/utils/#zenml.utils.io_utils)
+* [zenml.utils.io_utils](https://apidocs.zenml.io/latest/core_code_docs/core-utils/#zenml.utils.io_utils)
 includes some higher-level helper utilities that make it easier to find and
 transfer objects between the Artifact Store and the local filesystem or memory.
 

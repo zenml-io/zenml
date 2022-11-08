@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import click
 
@@ -21,7 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.enums import CliCategories, StoreType
+from zenml.enums import CliCategories, PermissionType, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.utils.uuid_utils import parse_name_or_uuid
 
@@ -72,12 +72,26 @@ def list_users() -> None:
     required=False,
     type=str,
 )
-def create_user(user_name: str, password: Optional[str] = None) -> None:
+@click.option(
+    "--role",
+    "-r",
+    "initial_role",
+    help=("Give the user an initial role."),
+    required=False,
+    type=str,
+    default="admin",
+)
+def create_user(
+    user_name: str,
+    initial_role: str = "admin",
+    password: Optional[str] = None,
+) -> None:
     """Create a new user.
 
     Args:
         user_name: The name of the user to create.
         password: The password of the user to create.
+        initial_role: Give the user an initial role
     """
     gc = GlobalConfiguration()
     if not password:
@@ -110,7 +124,19 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
         user = gc.zen_store.create_user(user)
     except EntityExistsError as err:
         cli_utils.error(str(err))
-    cli_utils.declare(f"Created user '{user_name}'.")
+
+    try:
+        gc.zen_store.assign_role(
+            role_name_or_id=initial_role,
+            user_or_team_name_or_id=user.id,
+            is_user=True,
+        )
+    except KeyError as err:
+        cli_utils.error(str(err))
+
+    cli_utils.declare(
+        f"Created user '{user_name}' with role " f"'{initial_role}'."
+    )
     if not user.active and user.activation_token is not None:
         cli_utils.declare(
             f"The created user account is currently inactive. You can activate "
@@ -459,17 +485,50 @@ def list_roles() -> None:
 
 @role.command("create", help="Create a new role.")
 @click.argument("role_name", type=str, required=True)
-def create_role(role_name: str) -> None:
+@click.option(
+    "--write",
+    "-w",
+    "write",
+    is_flag=True,
+    default=False,
+)
+@click.option(
+    "--read",
+    "-r",
+    "read",
+    is_flag=True,
+    default=False,
+)
+@click.option(
+    "--me",
+    "-m",
+    "me",
+    is_flag=True,
+    default=False,
+)
+def create_role(role_name: str, write: bool, read: bool, me: bool) -> None:
     """Create a new role.
 
     Args:
         role_name: Name of the role to create.
+        write: Give this role general read permission
+        read: Give this role general write permission
+        me: Give this role permission the self-edit permission
     """
     cli_utils.print_active_config()
 
     from zenml.models import RoleModel
 
-    Client().zen_store.create_role(role=RoleModel(name=role_name))
+    permissions = set()
+    if write:
+        permissions.add(PermissionType.WRITE.value)
+    if read:
+        permissions.add(PermissionType.READ.value)
+    if me:
+        permissions.add(PermissionType.ME.value)
+    Client().zen_store.create_role(
+        role=RoleModel(name=role_name, permissions=permissions)
+    )
 
     cli_utils.declare(f"Created role '{role_name}'.")
 
@@ -477,19 +536,56 @@ def create_role(role_name: str) -> None:
 @role.command("update", help="Update an existing role.")
 @click.argument("role_name", type=str, required=True)
 @click.option("--name", "-n", type=str, required=False, help="New role name.")
+@click.option(
+    "--remove-permission",
+    "-r",
+    type=str,
+    required=False,
+    help="Name of permission to remove.",
+    multiple=True,
+)
+@click.option(
+    "--add-permission",
+    "-a",
+    type=str,
+    required=False,
+    help="Name of permission to add.",
+    multiple=True,
+)
 def update_role(
     role_name: str,
     name: Optional[str] = None,
+    remove_permission: Optional[List[str]] = None,
+    add_permission: Optional[List[str]] = None,
 ) -> None:
     """Update an existing role.
 
     Args:
         role_name: The name of the role.
         name: The new name of the role.
+        remove_permission: Name of permission to remove from role
+        add_permission: Name of permission to add to role
     """
     cli_utils.print_active_config()
     try:
         role = Client().zen_store.get_role(role_name)
+
+        if remove_permission:
+            for rm_p in remove_permission:
+                if rm_p in [p.value for p in PermissionType]:
+                    try:
+                        role.permissions.remove(PermissionType(rm_p))
+                    except KeyError:
+                        cli_utils.error(
+                            f"Role {remove_permission} was already not "
+                            f"part of the {role} Role."
+                        )
+        if add_permission:
+            for add_p in add_permission:
+                if add_p in [p.value for p in PermissionType]:
+                    # Set won't throw an error if the item was already in the set
+                    role.permissions.add(PermissionType(add_p))
+
         role.name = name or role.name
         Client().zen_store.update_role(role)
     except (EntityExistsError, KeyError) as err:
@@ -660,6 +756,7 @@ def assignment() -> None:
     required=False,
 )
 def list_role_assignments(
+    role_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
     team_name_or_id: Optional[str] = None,
     project_name_or_id: Optional[str] = None,
@@ -667,6 +764,7 @@ def list_role_assignments(
     """List all role assignments.
 
     Args:
+        role_name_or_id: Name or ID of a role to list role assignments for.
         user_name_or_id: Name or ID of a user to list role assignments for.
         team_name_or_id: Name or ID of a team to list role assignments for.
         project_name_or_id: Name or ID of a project to list role assignments
@@ -682,3 +780,18 @@ def list_role_assignments(
         cli_utils.declare("No roles assigned.")
         return
     cli_utils.print_pydantic_models(role_assignments)
+
+
+@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
+def permission() -> None:
+    """Commands for role management."""
+
+
+@permission.command("list")
+def list_permissions() -> None:
+    """List all role assignments."""
+    cli_utils.print_active_config()
+    permissions = [i.value for i in PermissionType]
+    cli_utils.declare(
+        f"The following permissions are currently supported: " f"{permissions}"
+    )

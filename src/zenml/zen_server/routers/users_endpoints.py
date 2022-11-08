@@ -16,7 +16,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Security, status
 from pydantic import SecretStr
 
 from zenml.constants import (
@@ -28,7 +28,7 @@ from zenml.constants import (
     USERS,
     VERSION_1,
 )
-from zenml.exceptions import IllegalOperationError
+from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.new_models import (
     EmailOptInModel,
@@ -48,7 +48,7 @@ logger = get_logger(__name__)
 router = APIRouter(
     prefix=API + VERSION_1 + USERS,
     tags=["users"],
-    dependencies=[Depends(authorize)],
+    dependencies=[Security(authorize, scopes=["read"])],
     responses={401: error_response},
 )
 
@@ -89,7 +89,10 @@ def list_users() -> List[UserResponseModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_user(user: UserRequestModel) -> UserResponseModel:
+def create_user(
+    user: CreateUserRequest,
+    _: AuthContext = Security(authorize, scopes=["write"]),
+) -> CreateUserResponse:
     """Creates a user.
 
     # noqa: DAR401
@@ -114,7 +117,12 @@ def create_user(user: UserRequestModel) -> UserResponseModel:
     new_user = zen_store().create_user(user)
     # add back the original non-hashed activation token, if generated, to
     # send it back to the client
-    # TODO: the user response doesnt have an activation token
+    zen_store().assign_role(
+        role_name_or_id=zen_store()._admin_role.id,
+        user_or_team_name_or_id=new_user.id,
+        is_user=True,
+    )
+
     new_user.activation_token = token
     return new_user
 
@@ -144,8 +152,10 @@ def get_user(user_name_or_id: Union[str, UUID]) -> UserResponseModel:
 )
 @handle_exceptions
 def update_user(
-    user_name_or_id: Union[str, UUID], user_update: UserRequestModel
-) -> UserResponseModel:
+    user_name_or_id: Union[str, UUID],
+    user: UpdateUserRequest,
+    _: AuthContext = Security(authorize, scopes=["write"]),
+) -> UserModel:
     """Updates a specific user.
 
     Args:
@@ -206,7 +216,10 @@ def activate_user(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def deactivate_user(user_name_or_id: Union[str, UUID]) -> UserResponseModel:
+def deactivate_user(
+    user_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=["write"]),
+) -> DeactivateUserResponse:
     """Deactivates a user and generates a new activation token for it.
 
     Args:
@@ -233,6 +246,7 @@ def deactivate_user(user_name_or_id: Union[str, UUID]) -> UserResponseModel:
 def delete_user(
     user_name_or_id: Union[str, UUID],
     auth_context: AuthContext = Depends(authorize),
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> None:
     """Deletes a specific user.
 
@@ -260,30 +274,42 @@ def delete_user(
 )
 @handle_exceptions
 def email_opt_in_response(
-    user_name_or_id: Union[str, UUID], user_response: EmailOptInModel
-) -> UserResponseModel:
-    """Deactivates a user and generates a new activation token for it.
+    user_name_or_id: Union[str, UUID],
+    user_response: EmailOptInModel,
+    auth_context: AuthContext = Security(authorize, scopes=["me"]),
+) -> UserModel:
+    """Sets the response of the user to the email prompt.
 
     Args:
         user_name_or_id: Name or ID of the user.
         user_response: User Response to email prompt
+        auth_context: The authentication context of the user
 
     Returns:
         The updated user.
-    """
-    user = zen_store().get_user(user_name_or_id=user_name_or_id)
-    update_user = UserRequestModel(
-        name=user.name,
-        full_name=user.full_name,
-        active=user.active,
-        email=user_response.email,
-        email_opted_in=user_response.email_opted_in
-    )
 
-    return zen_store().update_user(
-        user_name_or_id=user_name_or_id,
-        user_update=update_user
-    )
+    Raises:
+        NotAuthorizedError: if the user does not have the required
+            permissions
+    """
+    if str(auth_context.user.id) == str(user_name_or_id):
+        user = zen_store().get_user(user_name_or_id=user_name_or_id)
+        update_user = UserRequestModel(
+            name=user.name,
+            full_name=user.full_name,
+            active=user.active,
+            email=user_response.email,
+            email_opted_in=user_response.email_opted_in
+        )
+
+        return zen_store().update_user(
+            user_name_or_id=user_name_or_id,
+            user_update=update_user
+        )
+    else:
+        raise NotAuthorizedError(
+            "Users can not opt in on behalf of another " "user."
+        )
 
 
 @router.get(
@@ -321,6 +347,7 @@ def assign_role(
     user_name_or_id: Union[str, UUID],
     role_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> None:
     """Assign a role to a user for all resources within a given project or globally.
 
@@ -348,6 +375,7 @@ def unassign_role(
     user_name_or_id: Union[str, UUID],
     role_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]],
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> None:
     """Remove a users role within a project or globally.
 
@@ -367,13 +395,13 @@ def unassign_role(
 
 @current_user_router.get(
     "/current-user",
-    response_model=UserResponseModel,
+    response_model=UserModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_current_user(
-    auth_context: AuthContext = Depends(authorize),
-) -> UserResponseModel:
+    auth_context: AuthContext = Security(authorize, scopes=["me"]),
+) -> UserModel:
     """Returns the model of the authenticated user.
 
     Args:
@@ -383,3 +411,26 @@ def get_current_user(
         The model of the authenticated user.
     """
     return auth_context.user
+
+
+@current_user_router.put(
+    "/current-user",
+    response_model=UserModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def update_myself(
+    user: UpdateUserRequest,
+    auth_context: AuthContext = Security(authorize, scopes=["me"]),
+) -> UserModel:
+    """Updates a specific user.
+
+    Args:
+        user: the user to to use for the update.
+        auth_context: The authentication context.
+
+    Returns:
+        The updated user.
+    """
+    user_model = user.apply_to_model(auth_context.user)
+    return zen_store().update_user(user_model)

@@ -24,5 +24,5 @@ def my_step(...)
 {% hint style="info" %}
 To explore all possible operations that can be performed via the
 `Environment`, please consult the API docs section on
-[Environment](https://apidocs.zenml.io/latest/api_docs/environment/#zenml.environment.Environment).
+[Environment](https://apidocs.zenml.io/latest/core_code_docs/core-environment/#zenml.environment.Environment).
 {% endhint %}

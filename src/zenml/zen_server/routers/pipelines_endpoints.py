@@ -15,7 +15,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Security
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
@@ -24,13 +24,13 @@ from zenml.new_models import (
     PipelineResponseModel,
     PipelineRunResponseModel,
 )
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import authorize, AuthContext
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINES,
     tags=["pipelines"],
-    dependencies=[Depends(authorize)],
+    dependencies=[Security(authorize, scopes=["read"])],
     responses={401: error_response},
 )
 
@@ -90,6 +90,8 @@ def get_pipeline(pipeline_id: UUID) -> PipelineResponseModel:
 def update_pipeline(
     pipeline_id: UUID,
     pipeline_update: PipelineRequestModel,
+    hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> PipelineResponseModel:
     """Updates the attribute on a specific pipeline using its unique id.
 
@@ -110,7 +112,9 @@ def update_pipeline(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_pipeline(pipeline_id: UUID) -> None:
+def delete_pipeline(
+    pipeline_id: UUID, _: AuthContext = Security(authorize, scopes=["write"])
+) -> None:
     """Deletes a specific pipeline.
 
     Args:

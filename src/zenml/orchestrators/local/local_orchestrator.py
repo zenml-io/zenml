@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML local orchestrator."""
 
-from typing import TYPE_CHECKING, Any, Type
+import time
+from typing import TYPE_CHECKING, Any, Optional, Type
+from uuid import uuid4
 
+from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.base_orchestrator import (
@@ -22,6 +25,7 @@ from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorFlavor,
 )
 from zenml.stack import Stack
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -36,6 +40,8 @@ class LocalOrchestrator(BaseOrchestrator):
     does not support running on a schedule.
     """
 
+    _orchestrator_run_id: Optional[str] = None
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
@@ -49,10 +55,13 @@ class LocalOrchestrator(BaseOrchestrator):
         """
         if deployment.schedule:
             logger.warning(
-                "Local Orchestrator currently does not support the"
+                "Local Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )
+
+        self._orchestrator_run_id = str(uuid4())
+        start_time = time.time()
 
         # Run each step
         for step in deployment.steps.values():
@@ -67,6 +76,33 @@ class LocalOrchestrator(BaseOrchestrator):
             self.run_step(
                 step=step,
             )
+
+        run_duration = time.time() - start_time
+        run_id = self.get_run_id_for_orchestrator_run_id(
+            self._orchestrator_run_id
+        )
+        run_model = Client().zen_store.get_run(run_id)
+        logger.info(
+            "Pipeline run `%s` has finished in %s.",
+            run_model.name,
+            string_utils.get_human_readable_time(run_duration),
+        )
+        self._orchestrator_run_id = None
+
+    def get_orchestrator_run_id(self) -> str:
+        """Returns the active orchestrator run id.
+
+        Raises:
+            RuntimeError: If no run id exists. This happens when this method
+                gets called while the orchestrator is not running a pipeline.
+
+        Returns:
+            The orchestrator run id.
+        """
+        if not self._orchestrator_run_id:
+            raise RuntimeError("No run id set.")
+
+        return self._orchestrator_run_id
 
 
 class LocalOrchestratorConfig(BaseOrchestratorConfig):

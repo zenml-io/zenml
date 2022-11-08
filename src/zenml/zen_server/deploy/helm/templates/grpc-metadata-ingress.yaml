@@ -1,0 +1,67 @@
+{{- if and .Values.grpcMetadata.enabled .Values.grpcMetadata.ingress.enabled .Values.zenml.database.url -}}
+{{- $fullName := include "zenml.fullname" . -}}
+{{- $svcPort := .Values.grpcMetadata.service.port -}}
+{{- if and .Values.grpcMetadata.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.grpcMetadata.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.grpcMetadata.ingress.annotations "kubernetes.io/ingress.class" .Values.grpcMetadata.ingress.className}}
+  {{- end }}
+{{- end }}
+{{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1
+{{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1beta1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-grpc-metadata
+  labels:
+    {{- include "zenml.metadataLabels" . | nindent 4 }}
+  annotations:
+    {{- if and .Values.grpcMetadata.tls.enabled }}
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+    # Enable client certificate authentication
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
+    # The secret containing the trusted ca certificates
+    nginx.ingress.kubernetes.io/auth-tls-secret: {{ .Release.Namespace }}/{{ .Values.grpcMetadata.tls.clientSecretName }}
+    # Specify the verification depth in the client certificates chain
+    nginx.ingress.kubernetes.io/auth-tls-verify-depth: "1"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    {{- else }}
+    {{- fail "TLS must be enabled for the gRPC metadata service is an ingress is used to expose the service" }}
+    {{- end }}
+  {{- with .Values.grpcMetadata.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if and .Values.grpcMetadata.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.grpcMetadata.ingress.className }}
+  {{- end }}
+  {{- if .Values.grpcMetadata.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.grpcMetadata.ingress.host | quote }}
+      secretName: {{ .Values.grpcMetadata.tls.secretName }}
+  {{- end }}
+  rules:
+    - http:
+        paths:
+          - path: /
+            {{- if semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion }}
+            pathType: Prefix
+            {{- end }}
+            backend:
+              {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
+              service:
+                name: {{ $fullName }}-grpc-metadata
+                port:
+                  number: {{ $svcPort }}
+              {{- else }}
+              serviceName: {{ $fullName }}-grpc-metadata
+              servicePort: {{ $svcPort }}
+              {{- end }}
+      {{- if .Values.grpcMetadata.ingress.host }}
+      host: {{ .Values.grpcMetadata.ingress.host | quote }}
+      {{- end }}
+{{- end }}

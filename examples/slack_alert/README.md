@@ -44,7 +44,7 @@ Make sure to replace `<SLACK_TOKEN>` and `<SLACK_CHANNEL_ID>` first.
 
 ```shell
 # install CLI
-pip install zenml
+pip install "zenml[server]"
 
 # install ZenML integrations
 zenml integration install sklearn slack -y

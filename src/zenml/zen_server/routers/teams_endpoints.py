@@ -15,10 +15,10 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ROLES, TEAMS, VERSION_1
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import authorize, AuthContext
 from zenml.new_models import (
     TeamResponseModel,
     TeamRequestModel,
@@ -29,7 +29,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + TEAMS,
     tags=["teams"],
-    dependencies=[Depends(authorize)],
+    dependencies=[Security(authorize, scopes=["read"])],
     responses={401: error_response},
 )
 
@@ -55,7 +55,10 @@ def list_teams() -> List[TeamResponseModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_team(team: TeamRequestModel) -> TeamResponseModel:
+def create_team(
+    team: TeamRequestModel,
+    _: AuthContext = Security(authorize, scopes=["write"]),
+) -> TeamResponseModel:
     """Creates a team.
 
     # noqa: DAR401
@@ -94,7 +97,9 @@ def get_team(team_name_or_id: Union[str, UUID]) -> TeamResponseModel:
 )
 @handle_exceptions
 def update_team(
-    team_name_or_id: Union[str, UUID], team_update: TeamRequestModel
+    team_name_or_id: Union[str, UUID],
+    team_update: TeamRequestModel,
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> TeamResponseModel:
     """Updates a team.
 
@@ -118,7 +123,10 @@ def update_team(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_team(team_name_or_id: Union[str, UUID]) -> None:
+def delete_team(
+    team_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=["write"]),
+) -> None:
     """Deletes a specific team.
 
     Args:

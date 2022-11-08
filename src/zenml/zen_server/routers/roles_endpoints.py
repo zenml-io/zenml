@@ -15,17 +15,17 @@
 from typing import List, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ROLES, VERSION_1
 from zenml.new_models import RoleRequestModel, RoleResponseModel
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import authorize, AuthContext
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + ROLES,
     tags=["roles"],
-    dependencies=[Depends(authorize)],
+    dependencies=[Security(authorize, scopes=["read"])],
     responses={401: error_response},
 )
 
@@ -51,7 +51,10 @@ def list_roles() -> List[RoleResponseModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_role(role: RoleRequestModel) -> RoleResponseModel:
+def create_role(
+    role: RoleRequestModel,
+    _: AuthContext = Security(authorize, scopes=["write"]),
+) -> RoleResponseModel:
     """Creates a role.
 
     # noqa: DAR401
@@ -90,7 +93,9 @@ def get_role(role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
 )
 @handle_exceptions
 def update_role(
-    role_name_or_id: Union[str, UUID], role_update: RoleRequestModel
+    role_name_or_id: Union[str, UUID],
+    role_update: RoleRequestModel,
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> RoleResponseModel:
     """Updates a role.
 
@@ -113,7 +118,10 @@ def update_role(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_role(role_name_or_id: Union[str, UUID]) -> None:
+def delete_role(
+    role_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=["write"]),
+) -> None:
     """Deletes a specific role.
 
     Args:
