@@ -402,6 +402,23 @@ def test_renaming_non_core_component_succeeds(clean_client) -> None:
 
 def test_renaming_core_component_succeeds(clean_client) -> None:
     """Test renaming a core stack component succeeds."""
+
+    new_component_name = "arias_orchestrator"
+    register_orchestrator_command = cli.commands["orchestrator"].commands[
+        "register"
+    ]
+
+    runner = CliRunner()
+    register_result = runner.invoke(
+        register_orchestrator_command,
+        [
+            "some_orchestrator",
+            "--flavor",
+            "local",
+        ],
+    )
+    assert register_result.exit_code == 0
+
     new_component_name = "arias_orchestrator"
 
     rename_orchestrator_command = cli.commands["orchestrator"].commands[
@@ -410,18 +427,92 @@ def test_renaming_core_component_succeeds(clean_client) -> None:
     runner = CliRunner()
     result = runner.invoke(
         rename_orchestrator_command,
-        ["default", new_component_name],
+        ["some_orchestrator", new_component_name],
     )
     assert result.exit_code == 0
     with pytest.raises(KeyError):
         cli_utils.get_component_by_id_or_name_or_prefix(
             client=clean_client,
             component_type=StackComponentType.ORCHESTRATOR,
-            id_or_name_or_prefix="default",
+            id_or_name_or_prefix="some_orchestrator",
         )
     with does_not_raise():
         cli_utils.get_component_by_id_or_name_or_prefix(
             client=clean_client,
             component_type=StackComponentType.ORCHESTRATOR,
             id_or_name_or_prefix=new_component_name,
+        )
+
+
+def test_renaming_default_component_fails(clean_client) -> None:
+    """Test renaming a default stack component fails."""
+    new_component_name = "aria"
+
+    runner = CliRunner()
+    rename_command = cli.commands["orchestrator"].commands["rename"]
+    result = runner.invoke(
+        rename_command,
+        ["default", new_component_name],
+    )
+    assert result.exit_code == 1
+    with does_not_raise():
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            client=clean_client,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix="default",
+        )
+    with pytest.raises(KeyError):
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            client=clean_client,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix=new_component_name,
+        )
+
+    rename_command = cli.commands["artifact-store"].commands["rename"]
+    result = runner.invoke(
+        rename_command,
+        ["default", new_component_name],
+    )
+    assert result.exit_code == 1
+    with does_not_raise():
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            client=clean_client,
+            component_type=StackComponentType.ARTIFACT_STORE,
+            id_or_name_or_prefix="default",
+        )
+    with pytest.raises(KeyError):
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            client=clean_client,
+            component_type=StackComponentType.ARTIFACT_STORE,
+            id_or_name_or_prefix=new_component_name,
+        )
+
+
+def test_delete_default_component_fails(clean_client) -> None:
+    """Test deleting a default stack component fails."""
+    runner = CliRunner()
+    delete_command = cli.commands["orchestrator"].commands["delete"]
+    result = runner.invoke(
+        delete_command,
+        ["default"],
+    )
+    assert result.exit_code == 1
+    with does_not_raise():
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            client=clean_client,
+            component_type=StackComponentType.ORCHESTRATOR,
+            id_or_name_or_prefix="default",
+        )
+
+    delete_command = cli.commands["artifact-store"].commands["delete"]
+    result = runner.invoke(
+        delete_command,
+        ["default"],
+    )
+    assert result.exit_code == 1
+    with does_not_raise():
+        cli_utils.get_component_by_id_or_name_or_prefix(
+            client=clean_client,
+            component_type=StackComponentType.ARTIFACT_STORE,
+            id_or_name_or_prefix="default",
         )

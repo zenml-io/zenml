@@ -63,6 +63,7 @@ from zenml.exceptions import (
     AuthorizationException,
     DoesNotExistException,
     EntityExistsError,
+    IllegalOperationError,
     StackComponentExistsError,
     StackExistsError,
 )
@@ -1587,6 +1588,8 @@ class RestZenStore(BaseZenStore):
                 entity already exists.
             AuthorizationException: If the response indicates that the request
                 is not authorized.
+            IllegalOperationError: If the response indicates that the requested
+                operation is forbidden.
             KeyError: If the response indicates that the requested entity
                 does not exist.
             RuntimeError: If the response indicates that the requested entity
@@ -1611,6 +1614,10 @@ class RestZenStore(BaseZenStore):
             raise AuthorizationException(
                 f"{response.status_code} Client Error: Unauthorized request to "
                 f"URL {response.url}: {response.json().get('detail')}"
+            )
+        elif response.status_code == 403:
+            raise IllegalOperationError(
+                response.json().get("detail", (response.text,))[1]
             )
         elif response.status_code == 404:
             if "KeyError" in response.text:
