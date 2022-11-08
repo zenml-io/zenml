@@ -34,13 +34,16 @@ from zenml.new_models import (
     EmailOptInModel,
     RoleAssignmentResponseModel,
     UserRequestModel,
-    UserResponseModel,
+    UserResponseModel, RoleAssignmentRequestModel,
 )
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
     authorize,
 )
+from zenml.zen_server.models.user_models import CreateUserResponse, \
+    CreateUserRequest, UpdateUserRequest, ActivateUserRequest, \
+    DeactivateUserResponse
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 logger = get_logger(__name__)
@@ -85,7 +88,7 @@ def list_users() -> List[UserResponseModel]:
 
 @router.post(
     "",
-    response_model=UserResponseModel,
+    response_model=CreateUserResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -108,6 +111,7 @@ def create_user(
     # 2. Create a new user without a password and have it activated at a
     # later time with an activation token
 
+    user_model = user.to_model()
     token: Optional[SecretStr] = None
     if user.password is None:
         user.active = False
@@ -124,7 +128,7 @@ def create_user(
     )
 
     new_user.activation_token = token
-    return new_user
+    return CreateUserResponse.from_model(new_user)
 
 
 @router.get(
@@ -155,21 +159,19 @@ def update_user(
     user_name_or_id: Union[str, UUID],
     user: UpdateUserRequest,
     _: AuthContext = Security(authorize, scopes=["write"]),
-) -> UserModel:
+) -> UserResponseModel:
     """Updates a specific user.
 
     Args:
         user_name_or_id: Name or ID of the user.
-        user_update: the User to use for the update.
+        user: the user to to use for the update.
 
     Returns:
         The updated user.
     """
     existing_user = zen_store().get_user(user_name_or_id)
-    return zen_store().update_user(
-        user_name_or_id=existing_user.id,
-        user_update=user_update,
-    )
+    user_model = user.apply_to_model(existing_user)
+    return zen_store().update_user(user_model)
 
 
 @activation_router.put(
@@ -179,13 +181,13 @@ def update_user(
 )
 @handle_exceptions
 def activate_user(
-    user_name_or_id: Union[str, UUID], user: UserRequestModel
+    user_name_or_id: Union[str, UUID], user: ActivateUserRequest
 ) -> UserResponseModel:
     """Activates a specific user.
 
     Args:
-        user_name_or_id: The name or ID of the user.
-        user: The user to use for the update.
+        user_name_or_id: Name or ID of the user.
+        user: the user to to use for the update.
 
     Returns:
         The updated user.
@@ -202,8 +204,6 @@ def activate_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
         )
-
-    user.password = auth_context.user.password
     user_model = user.apply_to_model(auth_context.user)
     user_model.active = True
     user_model.activation_token = None
@@ -212,7 +212,7 @@ def activate_user(
 
 @router.put(
     "/{user_name_or_id}" + DEACTIVATE,
-    response_model=UserResponseModel,
+    response_model=DeactivateUserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -229,11 +229,10 @@ def deactivate_user(
         The generated activation token.
     """
     user = zen_store().get_user(user_name_or_id)
-
     user.active = False
     token = user.generate_activation_token()
     user = zen_store().update_user(user=user)
-    # add back the original non-hashed activation token
+    # add back the original unhashed activation token
     user.activation_token = token
     return DeactivateUserResponse.from_model(user)
 
@@ -277,7 +276,7 @@ def email_opt_in_response(
     user_name_or_id: Union[str, UUID],
     user_response: EmailOptInModel,
     auth_context: AuthContext = Security(authorize, scopes=["me"]),
-) -> UserModel:
+) -> UserResponseModel:
     """Sets the response of the user to the email prompt.
 
     Args:
@@ -293,17 +292,10 @@ def email_opt_in_response(
             permissions
     """
     if str(auth_context.user.id) == str(user_name_or_id):
-        user = zen_store().get_user(user_name_or_id=user_name_or_id)
-        update_user = UserRequestModel(
-            name=user.name,
-            full_name=user.full_name,
-            active=user.active,
+        return zen_store().user_email_opt_in(
+            user_name_or_id=user_name_or_id,
             email=user_response.email,
-            email_opted_in=user_response.email_opted_in,
-        )
-
-        return zen_store().update_user(
-            user_name_or_id=user_name_or_id, user_update=update_user
+            user_opt_in_response=user_response.email_opted_in,
         )
     else:
         raise NotAuthorizedError(
@@ -313,7 +305,7 @@ def email_opt_in_response(
 
 @router.get(
     "/{user_name_or_id}" + ROLES,
-    response_model=List[RoleAssignmentResponseModel],
+    response_model=List[RoleAssignmentRequestModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -394,13 +386,13 @@ def unassign_role(
 
 @current_user_router.get(
     "/current-user",
-    response_model=UserModel,
+    response_model=UserResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_current_user(
     auth_context: AuthContext = Security(authorize, scopes=["me"]),
-) -> UserModel:
+) -> UserResponseModel:
     """Returns the model of the authenticated user.
 
     Args:
@@ -414,18 +406,18 @@ def get_current_user(
 
 @current_user_router.put(
     "/current-user",
-    response_model=UserModel,
+    response_model=UserResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_myself(
     user: UpdateUserRequest,
     auth_context: AuthContext = Security(authorize, scopes=["me"]),
-) -> UserModel:
+) -> UserResponseModel:
     """Updates a specific user.
 
     Args:
-        user: the user to to use for the update.
+        user: the user to use for the update.
         auth_context: The authentication context.
 
     Returns:
