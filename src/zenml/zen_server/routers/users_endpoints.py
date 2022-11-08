@@ -260,8 +260,10 @@ def delete_user(
 
     if auth_context.user.name == user.name:
         raise IllegalOperationError(
-            "You cannot delete yourself. If you wish to delete your active "
-            "user account, please contact your ZenML administrator."
+            "You cannot delete the user account currently used to authenticate "
+            "to the ZenML server. If you wish to delete this account, "
+            "please authenticate with another account or contact your ZenML "
+            "administrator."
         )
     zen_store().delete_user(user_name_or_id=user_name_or_id)
 
