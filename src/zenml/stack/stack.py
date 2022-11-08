@@ -32,7 +32,7 @@ from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.new_models import StackResponseModel
-from zenml.utils import settings_utils, string_utils
+from zenml.utils import settings_utils
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter

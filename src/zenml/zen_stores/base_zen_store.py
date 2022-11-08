@@ -41,6 +41,7 @@ from zenml.new_models import (
     ProjectRequestModel,
     ProjectResponseModel,
     RoleAssignmentResponseModel,
+    RoleRequestModel,
     RoleResponseModel,
     StackRequestModel,
     StackResponseModel,
@@ -502,7 +503,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     # Roles
     # -----
     @property
-    def _admin_role(self) -> RoleModel:
+    def _admin_role(self) -> RoleResponseModel:
         """Get the admin role.
 
         Returns:
@@ -511,7 +512,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.get_role(ADMIN_ROLE)
 
     @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
-    def _create_admin_role(self) -> RoleModel:
+    def _create_admin_role(self) -> RoleResponseModel:
         """Creates the admin role.
 
         Returns:
@@ -519,7 +520,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         """
         logger.info(f"Creating '{ADMIN_ROLE}' role ...")
         return self.create_role(
-            RoleModel(
+            RoleRequestModel(
                 name=ADMIN_ROLE,
                 permissions=[
                     PermissionType.READ.value,
@@ -530,7 +531,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         )
 
     @property
-    def _guest_role(self) -> RoleModel:
+    def _guest_role(self) -> RoleResponseModel:
         """Get the guest role.
 
         Returns:
@@ -539,7 +540,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.get_role(GUEST_ROLE)
 
     @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
-    def _create_guest_role(self) -> RoleModel:
+    def _create_guest_role(self) -> RoleResponseModel:
         """Creates the guest role.
 
         Returns:
@@ -547,7 +548,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         """
         logger.info(f"Creating '{GUEST_ROLE}' role ...")
         return self.create_role(
-            RoleModel(
+            RoleRequestModel(
                 name=GUEST_ROLE,
                 permissions=[
                     PermissionType.READ.value,

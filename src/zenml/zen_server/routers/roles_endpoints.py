@@ -15,11 +15,11 @@
 from typing import List, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Security
 
 from zenml.constants import API, ROLES, VERSION_1
 from zenml.new_models import RoleRequestModel, RoleResponseModel
-from zenml.zen_server.auth import authorize, AuthContext
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(

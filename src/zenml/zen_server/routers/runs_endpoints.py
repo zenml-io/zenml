@@ -15,7 +15,7 @@
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
@@ -28,10 +28,13 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.new_models import PipelineRunResponseModel, StepRunResponseModel, \
-    PipelineRunRequestModel
+from zenml.new_models import (
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
+    StepRunResponseModel,
+)
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
-from zenml.zen_server.auth import authorize, AuthContext
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -111,7 +114,7 @@ def get_run(
 def update_run(
     run_id: UUID,
     run_model: PipelineRunRequestModel,
-    auth_context: AuthContext = Depends(authorize)
+    auth_context: AuthContext = Depends(authorize),
 ) -> PipelineRunResponseModel:
     """Updates a run.
 

@@ -85,8 +85,7 @@ class Flavor:
         return cast(Flavor, flavor)
 
     def to_model(
-        self,
-        integration: Optional[str] = None
+        self, integration: Optional[str] = None
     ) -> FlavorResponseModel:
         """Converts a flavor to a model.
 

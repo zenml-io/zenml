@@ -15,15 +15,15 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Security
 
 from zenml.constants import API, ROLES, TEAMS, VERSION_1
-from zenml.zen_server.auth import authorize, AuthContext
 from zenml.new_models import (
-    TeamResponseModel,
-    TeamRequestModel,
     RoleAssignmentResponseModel,
+    TeamRequestModel,
+    TeamResponseModel,
 )
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -113,8 +113,7 @@ def update_team(
         The created team.
     """
     return zen_store().update_team(
-        team_name_or_id=team_name_or_id,
-        team_update=team_update
+        team_name_or_id=team_name_or_id, team_update=team_update
     )
 
 

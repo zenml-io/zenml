@@ -38,7 +38,6 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import StackComponentType
-from zenml.environment import Environment
 from zenml.exceptions import (
     AlreadyExistsException,
     IllegalOperationError,
@@ -1959,20 +1958,3 @@ class Client(metaclass=ClientMetaClass):
                     f"No {response_model} with name or id "
                     f"prefix '{name_id_or_prefix}' exists."
                 )
-
-    def delete_user(self, user_name_or_id: str) -> None:
-        """Delete a user.
-
-        Args:
-            user_name_or_id: The name or ID of the user to delete.
-
-        Raises:
-            IllegalOperationError: If the user to delete is the active user.
-        """
-        user = self.zen_store.get_user(user_name_or_id)
-        if self.zen_store.active_user_name == user.name:
-            raise IllegalOperationError(
-                "You cannot delete yourself. If you wish to delete your active "
-                "user account, please contact your ZenML administrator."
-            )
-        Client().zen_store.delete_user(user_name_or_id=user.name)

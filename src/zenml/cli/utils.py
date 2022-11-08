@@ -30,7 +30,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 
 import click
@@ -45,6 +44,9 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.secret import BaseSecretSchema
+from zenml.services import ServiceState, BaseService
+from zenml.zen_server.deploy import ServerDeployment
 
 logger = get_logger(__name__)
 
@@ -56,13 +58,11 @@ if TYPE_CHECKING:
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
     from zenml.new_models import (
+        ComponentResponseModel,
         FlavorResponseModel,
         PipelineRunResponseModel,
-        StackModel,
+        StackResponseModel
     )
-    from zenml.secret import BaseSecretSchema
-    from zenml.services import BaseService, ServiceState
-    from zenml.zen_server.deploy.deployment import ServerDeployment
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
@@ -257,7 +257,7 @@ def format_integration_list(
 
 
 def print_stack_configuration(
-    stack: "HydratedStackModel", active: bool
+    stack: "StackResponseModel", active: bool
 ) -> None:
     """Prints the configuration options of a stack.
 
@@ -312,7 +312,7 @@ def print_flavor_list(flavors: List["FlavorResponseModel"]) -> None:
 
 
 def print_stack_component_configuration(
-    component: "HydratedComponentModel", active_status: bool
+    component: "ComponentResponseModel", active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component.
 
@@ -836,7 +836,7 @@ def get_shared_emoji(is_shared: bool) -> str:
     return ":white_heavy_check_mark:" if is_shared else ":heavy_minus_sign:"
 
 
-def print_stacks_table(client: "Client", stacks: List["StackModel"]) -> None:
+def print_stacks_table(client: "Client", stacks: List["StackResponseModel"]) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
     Args:
@@ -866,7 +866,7 @@ def print_stacks_table(client: "Client", stacks: List["StackModel"]) -> None:
 def print_components_table(
     client: "Client",
     component_type: StackComponentType,
-    components: List["HydratedComponentModel"],
+    components: List["ComponentResponseModel"],
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 

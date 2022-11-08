@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Optional, Union, Dict, Any
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from zenml.enums import StackComponentType, ExecutionStatus
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.server_models import ServerModel
 from zenml.new_models import (
     ProjectRequestModel,
@@ -30,8 +30,10 @@ from zenml.new_models import (
     UserRequestModel,
     UserResponseModel,
 )
-from zenml.new_models.artifact_models import ArtifactResponseModel, \
-    ArtifactRequestModel
+from zenml.new_models.artifact_models import (
+    ArtifactRequestModel,
+    ArtifactResponseModel,
+)
 from zenml.new_models.component_models import (
     ComponentRequestModel,
     ComponentResponseModel,
@@ -44,11 +46,15 @@ from zenml.new_models.pipeline_models import (
     PipelineRequestModel,
     PipelineResponseModel,
 )
-from zenml.new_models.pipeline_run_models import PipelineRunResponseModel, \
-    PipelineRunRequestModel
+from zenml.new_models.pipeline_run_models import (
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
+)
 from zenml.new_models.stack_models import StackRequestModel, StackResponseModel
-from zenml.new_models.step_run_models import StepRunResponseModel, \
-    StepRunRequestModel
+from zenml.new_models.step_run_models import (
+    StepRunRequestModel,
+    StepRunResponseModel,
+)
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import (
@@ -831,7 +837,9 @@ class ZenStoreInterface(ABC):
     # --------------
 
     @abstractmethod
-    def create_run(self, pipeline_run: PipelineRunRequestModel) -> PipelineRunResponseModel:
+    def create_run(
+        self, pipeline_run: PipelineRunRequestModel
+    ) -> PipelineRunResponseModel:
         """Creates a pipeline run.
 
         Args:
@@ -846,7 +854,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run(self, run_name_or_id: Union[str, UUID]) -> PipelineRunResponseModel:
+    def get_run(
+        self, run_name_or_id: Union[str, UUID]
+    ) -> PipelineRunResponseModel:
         """Gets a pipeline run.
 
         Args:
@@ -888,7 +898,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_run(self, run: PipelineRunRequestModel) -> PipelineRunResponseModel:
+    def update_run(
+        self, run: PipelineRunRequestModel
+    ) -> PipelineRunResponseModel:
         """Updates a pipeline run.
 
         Args:
@@ -926,7 +938,9 @@ class ZenStoreInterface(ABC):
     # ------------------
 
     @abstractmethod
-    def create_run_step(self, step: StepRunRequestModel) -> StepRunResponseModel:
+    def create_run_step(
+        self, step: StepRunRequestModel
+    ) -> StepRunResponseModel:
         """Creates a step.
 
         Args:
@@ -955,7 +969,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactResponseModel]:
+    def get_run_step_outputs(
+        self, step_id: UUID
+    ) -> Dict[str, ArtifactResponseModel]:
         """Get a list of outputs for a specific step.
 
         Args:
@@ -966,7 +982,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactResponseModel]:
+    def get_run_step_inputs(
+        self, step_id: UUID
+    ) -> Dict[str, ArtifactResponseModel]:
         """Get a list of inputs for a specific step.
 
         Args:
@@ -999,7 +1017,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_run_step(self, step: StepRunRequestModel) -> StepRunResponseModel:
+    def update_run_step(
+        self, step: StepRunRequestModel
+    ) -> StepRunResponseModel:
         """Updates a step.
 
         Args:
@@ -1012,22 +1032,14 @@ class ZenStoreInterface(ABC):
             KeyError: if the step doesn't exist.
         """
 
-    @abstractmethod
-    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactResponseModel]:
-        """Get a list of inputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get inputs for.
-
-        Returns:
-            A dict mapping artifact names to the input artifacts for the step.
-        """
     # ---------
     # Artifacts
     # ---------
 
     @abstractmethod
-    def create_artifact(self, artifact: ArtifactRequestModel) -> ArtifactResponseModel:
+    def create_artifact(
+        self, artifact: ArtifactRequestModel
+    ) -> ArtifactResponseModel:
         """Creates an artifact.
 
         Args:

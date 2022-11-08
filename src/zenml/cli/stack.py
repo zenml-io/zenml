@@ -14,9 +14,7 @@
 """CLI for manipulating ZenML local and global config file."""
 
 import getpass
-from typing import Dict, List, Optional
-import json
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 import click
@@ -33,7 +31,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
-    from zenml.models.stack_models import StackModel
+    pass
 
 
 # Stacks
@@ -623,7 +621,9 @@ def list_stacks(just_mine: bool = False) -> None:
         stacks = client.stacks
         if just_mine:
             stacks = [
-                stack for stack in stacks if stack.user.id == client.active_user.id
+                stack
+                for stack in stacks
+                if stack.user.id == client.active_user.id
             ]
         print_stacks_table(client, stacks)
 
@@ -693,6 +693,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     client = Client()
+    scope = " repository" if client.root else " global"
 
     with console.status(
         f"Setting the{scope} active stack to '{stack_name_or_id}'..."

@@ -69,6 +69,7 @@ from zenml.models import RoleAssignmentModel
 from zenml.models.server_models import ServerModel
 from zenml.new_models import (
     ArtifactModel,
+    ArtifactRequestModel,
     ComponentRequestModel,
     ComponentResponseModel,
     EmailOptInModel,
@@ -76,21 +77,22 @@ from zenml.new_models import (
     FlavorResponseModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunRequestModel,
     PipelineRunResponseModel,
     ProjectRequestModel,
     ProjectResponseModel,
+    RoleAssignmentRequestModel,
+    RoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
-    RoleAssignmentResponseModel,
-    RoleAssignmentRequestModel,
     StackRequestModel,
     StackResponseModel,
+    StepRunRequestModel,
     StepRunResponseModel,
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
-    UserResponseModel, PipelineRunRequestModel, StepRunRequestModel,
-    ArtifactRequestModel,
+    UserResponseModel,
 )
 from zenml.new_models.artifact_models import ArtifactResponseModel
 from zenml.new_models.base_models import (
@@ -99,7 +101,6 @@ from zenml.new_models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.new_models.team_models import TeamResponseModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -1043,10 +1044,7 @@ class RestZenStore(BaseZenStore):
     ) -> RoleAssignmentResponseModel:
         """"""
 
-    def delete_role_assignment(
-        self,
-        role_assignment_id: UUID
-    ) -> UUID:
+    def delete_role_assignment(self, role_assignment_id: UUID) -> UUID:
         """"""
 
     def create_role_assignment(
@@ -1238,7 +1236,9 @@ class RestZenStore(BaseZenStore):
     # Pipeline runs
     # --------------
 
-    def create_run(self, pipeline_run: PipelineRunRequestModel) -> PipelineRunResponseModel:
+    def create_run(
+        self, pipeline_run: PipelineRunRequestModel
+    ) -> PipelineRunResponseModel:
         """Creates a pipeline run.
 
         Args:
@@ -1301,7 +1301,9 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
-    def update_run(self, run: PipelineRunRequestModel) -> PipelineRunResponseModel:
+    def update_run(
+        self, run: PipelineRunRequestModel
+    ) -> PipelineRunResponseModel:
         """Updates a pipeline run.
 
         Args:
@@ -1332,7 +1334,9 @@ class RestZenStore(BaseZenStore):
     # Pipeline run steps
     # ------------------
 
-    def create_run_step(self, step: StepRunRequestModel) -> StepRunResponseModel:
+    def create_run_step(
+        self, step: StepRunRequestModel
+    ) -> StepRunResponseModel:
         """Creates a step.
 
         Args:
@@ -1380,7 +1384,9 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
-    def update_run_step(self, step: StepRunRequestModel) -> StepRunResponseModel:
+    def update_run_step(
+        self, step: StepRunRequestModel
+    ) -> StepRunResponseModel:
         """Updates a step.
 
         Args:
@@ -1419,7 +1425,9 @@ class RestZenStore(BaseZenStore):
     # Artifacts
     # ---------
 
-    def create_artifact(self, artifact: ArtifactRequestModel) -> ArtifactResponseModel:
+    def create_artifact(
+        self, artifact: ArtifactRequestModel
+    ) -> ArtifactResponseModel:
         """Creates an artifact.
 
         Args:

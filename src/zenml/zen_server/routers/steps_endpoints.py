@@ -28,7 +28,11 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.new_models import ArtifactModel, StepRunResponseModel
+from zenml.new_models import (
+    ArtifactModel,
+    StepRunRequestModel,
+    StepRunResponseModel,
+)
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -42,13 +46,13 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[StepRunModel],
+    response_model=List[StepRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_run_steps(
     run_id: Optional[UUID] = None,
-) -> List[StepRunModel]:
+) -> List[StepRunResponseModel]:
     """Get run steps according to query filters.
 
     Args:
@@ -62,11 +66,11 @@ def list_run_steps(
 
 @router.post(
     "",
-    response_model=StepRunModel,
+    response_model=StepRunResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_run_step(step: StepRunModel) -> StepRunModel:
+def create_run_step(step: StepRunRequestModel) -> StepRunResponseModel:
     """Create a run step.
 
     Args:
@@ -98,11 +102,13 @@ def get_step(step_id: UUID) -> StepRunResponseModel:
 
 @router.put(
     "/{step_id}",
-    response_model=StepRunModel,
+    response_model=StepRunResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def update_step(step_id: UUID, step_model: StepRunModel) -> StepRunModel:
+def update_step(
+    step_id: UUID, step_model: StepRunRequestModel
+) -> StepRunResponseModel:
     """Updates a step.
 
     Args:

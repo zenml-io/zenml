@@ -1,11 +1,10 @@
-from typing import Any, Dict, Optional, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml import __version__ as current_zenml_version
 from zenml.enums import ExecutionStatus
-
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.new_models.base_models import (
     ProjectScopedRequestModel,

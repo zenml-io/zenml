@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
-import logging
 import base64
 import json
+import logging
 import os
 import re
 from datetime import datetime, timedelta
@@ -73,7 +73,6 @@ from zenml.new_models import (
     FlavorResponseModel,
     PipelineRequestModel,
     PipelineResponseModel,
-    PipelineRunRequestModel,
     PipelineRunResponseModel,
     ProjectRequestModel,
     ProjectResponseModel,
@@ -119,10 +118,8 @@ from zenml.zen_stores.schemas import (
     UserSchema,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.role_schemas import RolePermissionSchema
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
-from zenml.zen_stores.schemas.role_schemas import (
-    RolePermissionSchema,
-)
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import (
@@ -2810,7 +2807,9 @@ class SqlZenStore(BaseZenStore):
     # Pipeline run steps
     # ------------------
 
-    def create_run_step(self, step: StepRunRequestModel) -> StepRunResponseModel:
+    def create_run_step(
+        self, step: StepRunRequestModel
+    ) -> StepRunResponseModel:
         """Creates a step.
 
         Args:
@@ -3187,7 +3186,9 @@ class SqlZenStore(BaseZenStore):
     # Artifacts
     # ---------
 
-    def create_artifact(self, artifact: ArtifactRequestModel) -> ArtifactResponseModel:
+    def create_artifact(
+        self, artifact: ArtifactRequestModel
+    ) -> ArtifactResponseModel:
         """Creates an artifact.
 
         Args:

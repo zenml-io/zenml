@@ -309,8 +309,7 @@ class StackComponent:
 
     @classmethod
     def from_model(
-        cls,
-        component_model: "ComponentResponseModel"
+        cls, component_model: "ComponentResponseModel"
     ) -> "StackComponent":
         """Creates a StackComponent from a ComponentModel.
 
