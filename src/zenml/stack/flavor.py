@@ -16,9 +16,8 @@
 from abc import abstractmethod
 from typing import Optional, Type, cast
 from uuid import UUID
-
 from zenml.enums import StackComponentType
-from zenml.new_models import FlavorResponseModel
+from zenml.new_models import FlavorResponseModel, FlavorRequestModel
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.utils.source_utils import load_source_path_class, resolve_class
 
@@ -86,7 +85,7 @@ class Flavor:
 
     def to_model(
         self, integration: Optional[str] = None
-    ) -> FlavorResponseModel:
+    ) -> FlavorRequestModel:
         """Converts a flavor to a model.
 
         Args:
@@ -95,19 +94,16 @@ class Flavor:
         Returns:
             The model.
         """
-        # NOTE: we set the project and user to a zero UUID here because
-        # built-in and integration flavors are not tied to a project or user.
-        # The Repository is responsible for setting the project and user
-        # correctly for custom flavors.
-        model = FlavorResponseModel(
-            user=UUID(int=0),
-            project=UUID(int=0),
+        from zenml.client import Client
+
+        client = Client()
+        model = FlavorRequestModel(
+            user=client.active_user.id,
+            project=client.active_project.id,
             name=self.name,
             type=self.type,
             source=resolve_class(self.__class__),  # noqa
             config_schema=self.config_schema,
+            integration=integration,
         )
-        if integration:
-            model.integration = integration
-
         return model

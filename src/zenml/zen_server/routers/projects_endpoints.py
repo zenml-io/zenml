@@ -332,7 +332,6 @@ def list_project_stack_components(
 def create_stack_component(
     project_name_or_id: Union[str, UUID],
     component: ComponentRequestModel,
-    hydrated: bool = False,
     auth_context: AuthContext = Security(authorize, scopes=["write"]),
 ) -> ComponentResponseModel:
     """Creates a stack component.

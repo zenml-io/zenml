@@ -33,6 +33,7 @@ from zenml.logger import get_logger
 from zenml.new_models import (
     EmailOptInModel,
     RoleAssignmentResponseModel,
+    RoleAssignmentRequestModel,
     UserRequestModel,
     UserResponseModel, RoleAssignmentRequestModel,
 )

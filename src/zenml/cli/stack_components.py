@@ -142,7 +142,9 @@ def generate_stack_component_list_command(
         client = Client()
 
         with console.status(f"Listing {component_type.plural}..."):
-            components = client.list_stack_components(component_type)
+            components = client.list_stack_components(
+                component_type=component_type
+            )
 
             cli_utils.print_components_table(
                 client=client,
