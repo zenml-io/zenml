@@ -57,7 +57,7 @@ def import_class_by_path(class_path: str) -> Type[Any]:
     """
     module_name, class_name = class_path.rsplit(".", 1)
     module = importlib.import_module(module_name)
-    return getattr(module, class_name)
+    return getattr(module, class_name)  # type: ignore[no-any-return]
 
 
 def get_operator_init_kwargs(

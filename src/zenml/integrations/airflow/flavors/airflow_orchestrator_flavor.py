@@ -88,6 +88,9 @@ class AirflowOrchestratorSettings(BaseSettings):
         Returns:
             The operator source.
         """
+        if isinstance(value, OperatorType):
+            return value.source
+
         try:
             return OperatorType(value).source
         except ValueError:

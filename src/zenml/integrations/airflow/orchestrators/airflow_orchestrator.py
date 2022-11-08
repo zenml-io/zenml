@@ -169,10 +169,6 @@ class AirflowOrchestrator(BaseOrchestrator):
         Args:
             deployment: The pipeline deployment configuration.
             stack: The stack on which the pipeline will be deployed.
-
-        Raises:
-            RuntimeError: If Airflow is not running or no DAG filepath runtime
-                          option is provided.
         """
         if self.config.local:
             stack.check_local_paths()
@@ -406,7 +402,9 @@ class AirflowOrchestrator(BaseOrchestrator):
         if not self.config.local:
             return True
 
-        from airflow.cli.commands.standalone_command import StandaloneCommand
+        from airflow.cli.commands.standalone_command import (
+            StandaloneCommand,  # type: ignore
+        )
         from airflow.jobs.triggerer_job import TriggererJob
 
         daemon_running = daemon.check_if_daemon_is_running(self.pid_file)
