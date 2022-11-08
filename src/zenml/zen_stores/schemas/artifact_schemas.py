@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from sqlmodel import Field, SQLModel
@@ -36,9 +37,9 @@ class ArtifactSchema(SQLModel, table=True):
     data_type: str
     is_cached: bool
 
-    mlmd_id: int = Field(default=None, nullable=True)
-    mlmd_parent_step_id: int = Field(default=None, nullable=True)
-    mlmd_producer_step_id: int = Field(default=None, nullable=True)
+    mlmd_id: Optional[int] = Field(default=None, nullable=True)
+    mlmd_parent_step_id: Optional[int] = Field(default=None, nullable=True)
+    mlmd_producer_step_id: Optional[int] = Field(default=None, nullable=True)
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)

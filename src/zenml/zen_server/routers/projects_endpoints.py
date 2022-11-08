@@ -248,7 +248,6 @@ def list_project_stacks(
 def create_stack(
     project_name_or_id: Union[str, UUID],
     stack: StackRequestModel,
-    hydrated: bool = False,
     auth_context: AuthContext = Security(authorize, scopes=["write"]),
 ) -> StackResponseModel:
     """Creates a stack for a particular project.

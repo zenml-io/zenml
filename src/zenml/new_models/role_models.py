@@ -11,10 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+from typing import Set
 
 from pydantic import BaseModel, Field
 
+from zenml.enums import PermissionType
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
 
@@ -30,6 +31,7 @@ class RoleBaseModel(BaseModel):
         title="The unique name of the role.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
+    permissions: Set[PermissionType]
 
 
 # -------- #

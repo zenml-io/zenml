@@ -969,19 +969,6 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run_step_outputs(
-        self, step_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get a list of outputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get outputs for.
-
-        Returns:
-            A dict mapping artifact names to the output artifacts for the step.
-        """
-
-    @abstractmethod
     def get_run_step_inputs(
         self, step_id: UUID
     ) -> Dict[str, ArtifactResponseModel]:
@@ -992,17 +979,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A dict mapping artifact names to the input artifacts for the step.
-        """
-
-    @abstractmethod
-    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a single step.
-
-        Args:
-            step_id: The ID of the step to get the status for.
-
-        Returns:
-            ExecutionStatus: The status of the step.
         """
 
     @abstractmethod

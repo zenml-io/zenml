@@ -32,6 +32,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 from uuid import UUID
 
@@ -63,6 +64,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
+from zenml.models import PipelineRunModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.new_models import (
     ArtifactModel,
@@ -73,6 +75,7 @@ from zenml.new_models import (
     FlavorResponseModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunRequestModel,
     PipelineRunResponseModel,
     ProjectRequestModel,
     ProjectResponseModel,
@@ -91,7 +94,6 @@ from zenml.new_models import (
 )
 from zenml.new_models.artifact_models import ArtifactResponseModel
 from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
-from zenml.new_models.team_models import TeamResponseModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
@@ -862,7 +864,6 @@ class SqlZenStore(BaseZenStore):
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
-            hydrated: Flag to decide whether to return hydrated models.
 
         Returns:
             A list of all stacks matching the filter criteria.
@@ -889,10 +890,7 @@ class SqlZenStore(BaseZenStore):
 
             stacks = session.exec(query.order_by(StackSchema.name)).all()
 
-            if hydrated:
-                return [stack.to_hydrated_model() for stack in stacks]
-            else:
-                return [stack.to_model() for stack in stacks]
+            return [stack.to_model() for stack in stacks]
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
@@ -1869,10 +1867,12 @@ class SqlZenStore(BaseZenStore):
 
             existing_permissions = {p.name for p in existing_role.permissions}
 
-            diff = existing_permissions.symmetric_difference(role.permissions)
+            diff = existing_permissions.symmetric_difference(
+                role_update.permissions
+            )
 
             for permission in diff:
-                if permission not in role.permissions:
+                if permission not in role_update.permissions:
                     permission_to_delete = session.exec(
                         select(RolePermissionSchema)
                         .where(RolePermissionSchema.name == permission)
@@ -2582,8 +2582,10 @@ class SqlZenStore(BaseZenStore):
     # Pipeline runs
     # --------------
 
-    def get_run(self, run_id: UUID) -> PipelineRunResponseModel:
-        """Gets a pipeline run.
+    def create_run(
+        self, pipeline_run: PipelineRunRequestModel
+    ) -> PipelineRunResponseModel:
+        """Creates a pipeline run.
 
         Args:
             pipeline_run: The pipeline run to create.
@@ -2642,7 +2644,9 @@ class SqlZenStore(BaseZenStore):
 
             return new_run.to_model()
 
-    def get_run(self, run_name_or_id: Union[str, UUID]) -> PipelineRunModel:
+    def get_run(
+        self, run_name_or_id: Union[str, UUID]
+    ) -> PipelineRunResponseModel:
         """Gets a pipeline run.
 
         Args:
@@ -2658,8 +2662,8 @@ class SqlZenStore(BaseZenStore):
             return run_model
 
     def _update_run_status(
-        self, run_model: PipelineRunModel
-    ) -> PipelineRunModel:
+        self, run_model: PipelineRunRequestModel
+    ) -> PipelineRunResponseModel:
         """Updates the status of a pipeline run model.
 
         In contrast to other update methods, this does not use the status of the
@@ -2989,7 +2993,7 @@ class SqlZenStore(BaseZenStore):
             session.add(assignment)
             session.commit()
 
-    def get_run_step(self, step_id: UUID) -> StepRunModel:
+    def get_run_step(self, step_id: UUID) -> StepRunResponseModel:
         """Get a step by ID.
 
         Args:
@@ -3015,7 +3019,9 @@ class SqlZenStore(BaseZenStore):
             step_model = self._update_run_step_status(step_model)
             return step_model
 
-    def _run_step_schema_to_model(self, step: StepRunSchema) -> StepRunModel:
+    def _run_step_schema_to_model(
+        self, step: StepRunSchema
+    ) -> StepRunResponseModel:
         """Converts a run step schema to a step model.
 
         Args:
@@ -3058,7 +3064,9 @@ class SqlZenStore(BaseZenStore):
                 input_artifacts=input_artifacts,
             )
 
-    def _update_run_step_status(self, step_model: StepRunModel) -> StepRunModel:
+    def _update_run_step_status(
+        self, step_model: StepRunRequestModel
+    ) -> StepRunResponseModel:
         """Updates the status of a step run model.
 
         In contrast to other update methods, this does not use the status of the
@@ -3086,7 +3094,7 @@ class SqlZenStore(BaseZenStore):
 
     def _list_run_steps_without_sync(
         self, run_id: Optional[UUID] = None
-    ) -> List[StepRunModel]:
+    ) -> List[StepRunResponseModel]:
         """Get all run steps without synchronizing the runs.
 
         Args:
@@ -3104,7 +3112,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_run_steps(
         self, run_id: Optional[UUID] = None
-    ) -> List[StepRunModel]:
+    ) -> List[StepRunResponseModel]:
         """Get all run steps.
 
         Args:
@@ -3116,7 +3124,9 @@ class SqlZenStore(BaseZenStore):
         self._sync_runs()
         return self._list_run_steps_without_sync(run_id)
 
-    def update_run_step(self, step: StepRunModel) -> StepRunModel:
+    def update_run_step(
+        self, step: StepRunRequestModel
+    ) -> StepRunResponseModel:
         """Updates a step.
 
         Args:
@@ -3713,7 +3723,7 @@ class SqlZenStore(BaseZenStore):
 
     def _sync_run_step(
         self, run_id: UUID, step_name: str, mlmd_step: "MLMDStepRunModel"
-    ) -> StepRunModel:
+    ) -> StepRunResponseModel:
         """Sync a single run step from MLMD into the database.
 
         Args:
@@ -3739,7 +3749,7 @@ class SqlZenStore(BaseZenStore):
             input_artifacts[input_name] = artifact_id
 
         # Create step.
-        new_step = StepRunModel(
+        new_step = StepRunResponseModel(
             name=step_name,
             mlmd_id=mlmd_step.mlmd_id,
             mlmd_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
@@ -3758,7 +3768,7 @@ class SqlZenStore(BaseZenStore):
         return self.create_run_step(new_step)
 
     def _sync_run_step_artifacts(
-        self, step_model: StepRunModel, check: bool = False
+        self, step_model: StepRunResponseModel, check: bool = False
     ) -> bool:
         """Sync run step artifacts from MLMD into the database.
 

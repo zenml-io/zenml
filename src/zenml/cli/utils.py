@@ -45,7 +45,7 @@ from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.secret import BaseSecretSchema
-from zenml.services import ServiceState, BaseService
+from zenml.services import BaseService, ServiceState
 from zenml.zen_server.deploy import ServerDeployment
 
 logger = get_logger(__name__)
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
         ComponentResponseModel,
         FlavorResponseModel,
         PipelineRunResponseModel,
-        StackResponseModel
+        StackResponseModel,
     )
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
@@ -836,7 +836,9 @@ def get_shared_emoji(is_shared: bool) -> str:
     return ":white_heavy_check_mark:" if is_shared else ":heavy_minus_sign:"
 
 
-def print_stacks_table(client: "Client", stacks: List["StackResponseModel"]) -> None:
+def print_stacks_table(
+    client: "Client", stacks: List["StackResponseModel"]
+) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
     Args:

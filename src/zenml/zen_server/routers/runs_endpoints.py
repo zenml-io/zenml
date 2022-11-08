@@ -126,10 +126,7 @@ def update_run(
     Returns:
         The updated run model.
     """
-    project = zen_store().get_project()
-
     # TODO add some warnings/errors around this
-    run_model.project = project.id
     run_model.user = auth_context.user.id
 
     # TODO use id as well

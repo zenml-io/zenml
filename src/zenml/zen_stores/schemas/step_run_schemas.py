@@ -4,6 +4,7 @@ from uuid import UUID
 
 from sqlmodel import Field, SQLModel
 
+from zenml.enums import ExecutionStatus
 from zenml.new_models.step_run_models import (
     StepRunRequestModel,
     StepRunResponseModel,
@@ -38,8 +39,9 @@ class StepRunSchema(NamedSchema, table=True):
     parameters: str = Field(max_length=4096)
     step_configuration: str = Field(max_length=4096)
     docstring: Optional[str] = Field(max_length=4096, nullable=True)
+    status: ExecutionStatus
 
-    mlmd_id: int = Field(default=None, nullable=True)
+    mlmd_id: Optional[int] = Field(default=None, nullable=True)
 
     @classmethod
     def from_request(cls, request: StepRunRequestModel):
@@ -74,6 +76,7 @@ class StepRunSchema(NamedSchema, table=True):
             parameters=json.loads(self.parameters),
             step_configuration=json.loads(self.step_configuration),
             docstring=self.docstring,
+            status=self.status,
             mlmd_id=self.mlmd_id,
             mlmd_parent_step_ids=mlmd_parent_step_ids,
             created=self.created,

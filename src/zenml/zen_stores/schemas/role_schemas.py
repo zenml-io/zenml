@@ -14,8 +14,9 @@
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
+from zenml.enums import PermissionType
 from zenml.new_models import (
     RoleAssignmentRequestModel,
     RoleRequestModel,
@@ -29,6 +30,14 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.team_schemas import TeamSchema, UserSchema
 
 
+class RolePermissionSchema(SQLModel, table=True):
+    """SQL Model for team assignments."""
+
+    name: PermissionType = Field(primary_key=True)
+    role_id: UUID = Field(primary_key=True, foreign_key="roleschema.id")
+    roles: List["RoleSchema"] = Relationship(back_populates="permissions")
+
+
 class RoleSchema(NamedSchema, table=True):
     """SQL Model for roles."""
 
@@ -37,6 +46,9 @@ class RoleSchema(NamedSchema, table=True):
     )
     team_role_assignments: List["TeamRoleAssignmentSchema"] = Relationship(
         back_populates="role", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    permissions: List["RolePermissionSchema"] = Relationship(
+        back_populates="roles", sa_relationship_kwargs={"cascade": "delete"}
     )
 
     @classmethod
@@ -62,6 +74,7 @@ class RoleSchema(NamedSchema, table=True):
             name=self.name,
             created=self.created,
             updated=self.updated,
+            permissions=[p.name for p in self.permissions],
         )
 
 

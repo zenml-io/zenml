@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship
 
+from zenml.enums import ExecutionStatus
 from zenml.new_models import PipelineRunResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
@@ -24,7 +25,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     num_steps: int
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
-    mlmd_id: int = Field(default=None, nullable=True)
+    mlmd_id: Optional[int] = Field(default=None, nullable=True)
     stack_id: Optional[UUID] = Field(
         nullable=True,
         sa_column=Column(ForeignKey("stackschema.id", ondelete="SET NULL")),
@@ -43,6 +44,9 @@ class PipelineRunSchema(NamedSchema, table=True):
     user: "UserSchema" = Relationship(back_populates="runs")
     stack: "StackSchema" = Relationship(back_populates="runs")
     pipeline: "PipelineSchema" = Relationship(back_populates="runs")
+    orchestrator_run_id: Optional[str] = Field(nullable=True)
+
+    status: ExecutionStatus
 
     def to_model(
         self, _block_recursion: bool = False
@@ -59,6 +63,8 @@ class PipelineRunSchema(NamedSchema, table=True):
                 stack_id=self.stack.to_model(),
                 project=self.project.to_model(),
                 user=self.user.to_model(),
+                orchestrator_run_id=self.orchestrator_run_id,
+                status=self.status,
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
@@ -74,6 +80,8 @@ class PipelineRunSchema(NamedSchema, table=True):
                 stack_id=self.stack.to_model(),
                 project=self.project.to_model(),
                 user=self.user.to_model(),
+                orchestrator_run_id=self.orchestrator_run_id,
+                status=self.status,
                 pipeline=self.pipeline.to_model(not _block_recursion),
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,
