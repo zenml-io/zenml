@@ -18,20 +18,25 @@ from typing import Optional, Type, TypeVar, cast
 from zenml.client import Client
 from zenml.secret import BaseSecretSchema
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
+from zenml.utils.deprecation_utils import deprecate_pydantic_attributes
 
 T = TypeVar("T", bound=BaseSecretSchema)
 
 
 class AuthenticationConfigMixin(StackComponentConfig):
-    """Base config for authentication mixins.
+    """DEPRECATED: Base config for authentication mixins.
 
     Any stack component that implements `AuthenticationMixin` should have a
     config that inherits from this class.
 
     Attributes:
-        authentication_secret: Name of the secret that stores the
+        authentication_secret: DEPRECATED: Name of the secret that stores the
             authentication credentials.
     """
+
+    _deprecation_validator = deprecate_pydantic_attributes(
+        "authentication_secret"
+    )
 
     authentication_secret: Optional[str] = None
 

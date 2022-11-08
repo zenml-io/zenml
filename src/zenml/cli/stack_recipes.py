@@ -960,7 +960,7 @@ def deploy(
 
                     cli_utils.declare(
                         "Please consider creating any secrets that your stack "
-                        "components like the metadata store might need. "
+                        "components like the artifact store might need. "
                         "You can inspect the fields of a stack component by "
                         "running a describe command on them."
                     )

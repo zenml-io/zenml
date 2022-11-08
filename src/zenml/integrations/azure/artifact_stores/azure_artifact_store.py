@@ -63,8 +63,20 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
             secret = self.get_authentication_secret(
                 expected_schema_type=AzureSecretSchema
             )
-            credentials = secret.content if secret else {}
+            old_credentials = secret.content if secret else {}
+            new_credentials = self.config.get_credentials()
 
+            if old_credentials and new_credentials:
+                raise ValueError(
+                    "Azure credentials were specified using the "
+                    "`authentication_secret` attribute as well as the new "
+                    "attributes `account_name`, `account_key`, ...\n"
+                    "You can remove the deprecated `authentication_secret` "
+                    "attribute by running `zenml artifact-store "
+                    f"remove-attribute {self.name} authentication_secret`"
+                )
+
+            credentials = old_credentials or new_credentials
             self._filesystem = adlfs.AzureBlobFileSystem(
                 **credentials,
                 anon=False,

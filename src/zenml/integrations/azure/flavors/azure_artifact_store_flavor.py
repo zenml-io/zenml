@@ -20,6 +20,9 @@ from zenml.artifact_stores import (
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
+from zenml.integrations.azure.azure_credentials_mixin import (
+    AzureCredentialsMixin,
+)
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
@@ -27,7 +30,7 @@ if TYPE_CHECKING:
 
 
 class AzureArtifactStoreConfig(
-    BaseArtifactStoreConfig, AuthenticationConfigMixin
+    BaseArtifactStoreConfig, AuthenticationConfigMixin, AzureCredentialsMixin
 ):
     """Configuration class for Azure Artifact Store."""
 
