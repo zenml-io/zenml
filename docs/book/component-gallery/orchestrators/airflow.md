@@ -50,8 +50,8 @@ zenml stack update -o <NAME>
 {% tabs %}
 {% tab title="Local" %}
 
-Once the orchestrator is part of the active stack, we can provision all 
-required local resources by running:
+Once the orchestrator is part of the active stack, we can start the
+local Airflow server by running:
 
 ```shell
 zenml stack up
@@ -63,6 +63,18 @@ provision it. When it is finished, it will print a
 username and password which you can use to log in to the Airflow UI
 [here](http://0.0.0.0:8080).
 
+As long as you didn't configure any custom value for the `dag_output_dir`
+attribute of your orchestrator, running a pipeline locally is as simple 
+as calling:
+
+```shell
+python file_that_runs_a_zenml_pipeline.py
+```
+
+This call will write a `.zip` file containing a representation of your ZenML
+pipeline to the Airflow DAGs directory. From there, the local Airflow server
+will load it and run your pipeline (It might take a few seconds until the pipeline
+shows up in the Airflow UI).
 {% endtab %}
 
 {% tab title="Remote" %}
@@ -77,6 +89,13 @@ your stack.
 * A [remote container registry](../container-registries/container-registries.md) 
 as part of your stack.
 
+In the remote case, the Airflow orchestrator works different than other ZenML orchestrators.
+Executing a python file which runs a pipeline by calling `pipeline.run()` will not actually run
+the pipeline, but instead will create a `.zip` file containing an Airflow representation of your
+ZenML pipeline. In one additional step, you need to make sure this zip file ends up in the
+[DAGs directoy](https://airflow.apache.org/docs/apache-airflow/stable/concepts/overview.html#architecture-overview) of your Airflow deployment.
+
+
 {% endtab %}
 {% endtabs %}
 
@@ -89,10 +108,6 @@ if you want to learn more about how ZenML builds these images and how you can
 customize them.
 {% endhint %}
 
-You can now run any ZenML pipeline using the Airflow orchestrator:
-```shell
-python file_that_runs_a_zenml_pipeline.py
-```
 
 A concrete example of using the Airflow orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/airflow_orchestration).
