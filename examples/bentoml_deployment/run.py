@@ -24,8 +24,8 @@ from steps.deployment_trigger_step import (
 from steps.evaluators import evaluator
 from steps.importers import importer_mnist
 from steps.inference_loader import inference_loader
-from steps.predection_service_loader import (
-    PredectionServiceLoaderStepParameters,
+from steps.prediction_service_loader import (
+    PredictionServiceLoaderStepParameters,
     bentoml_prediction_service_loader,
 )
 from steps.predictor import predictor
@@ -71,7 +71,7 @@ def main(
         inference_fashion_mnist(
             inference_loader=inference_loader(),
             prediction_service_loader=bentoml_prediction_service_loader(
-                params=PredectionServiceLoaderStepParameters(
+                params=PredictionServiceLoaderStepParameters(
                     model_name=MODEL_NAME,
                     pipeline_name=PIPELINE_NAME,
                     step_name=PIPELINE_STEP_NAME,

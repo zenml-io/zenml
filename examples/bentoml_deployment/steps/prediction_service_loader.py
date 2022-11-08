@@ -22,7 +22,7 @@ from zenml.integrations.bentoml.services.bentoml_deployment import (
 from zenml.steps import BaseParameters, step
 
 
-class PredectionServiceLoaderStepParameters(BaseParameters):
+class PredictionServiceLoaderStepParameters(BaseParameters):
     """Prediction Service loader parameters.
 
     Attrs:
@@ -38,7 +38,7 @@ class PredectionServiceLoaderStepParameters(BaseParameters):
 
 @step(enable_cache=False)
 def bentoml_prediction_service_loader(
-    params: PredectionServiceLoaderStepParameters,
+    params: PredictionServiceLoaderStepParameters,
 ) -> BentoMLDeploymentService:
     """Get the BentoML prediction service started by the deployment pipeline."""
 

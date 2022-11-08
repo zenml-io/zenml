@@ -16,6 +16,7 @@ from typing import List, Optional, Type, cast
 
 import bentoml
 from bentoml._internal.bento import bento
+from pydantic import BaseModel, Field
 
 from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
@@ -26,6 +27,7 @@ from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (
 from zenml.integrations.bentoml.services.bentoml_deployment import (
     BentoMLDeploymentConfig,
     BentoMLDeploymentService,
+    SSLBentoMLParametersConfig,
 )
 from zenml.logger import get_logger
 from zenml.steps import (
@@ -37,6 +39,28 @@ from zenml.steps import (
 )
 
 logger = get_logger(__name__)
+
+
+class SSLBentoMLParametersConfig(BaseModel):
+    """BentoML SSL parameters configuration.
+
+    Attributes:
+        ssl_certfile: SSL certificate file
+        ssl_keyfile: SSL key file
+        ssl_keyfile_password: SSL key file password
+        ssl_version: SSL version
+        ssl_cert_reqs: SSL certificate requirements
+        ssl_ca_certs: SSL CA certificates
+        ssl_ciphers: SSL ciphers
+    """
+
+    ssl_certfile: Optional[str] = None
+    ssl_keyfile: Optional[str] = None
+    ssl_keyfile_password: Optional[str] = None
+    ssl_version: Optional[str] = None
+    ssl_cert_reqs: Optional[str] = None
+    ssl_ca_certs: Optional[str] = None
+    ssl_ciphers: Optional[str] = None
 
 
 class BentoMLDeployerParameters(BaseParameters):
@@ -60,6 +84,9 @@ class BentoMLDeployerParameters(BaseParameters):
     production: bool = False
     working_dir: Optional[str] = None
     host: Optional[str] = None
+    ssl_settings: Optional[SSLBentoMLParametersConfig] = Field(
+        default_factory=SSLBentoMLParametersConfig
+    )
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT * 2
 
 
@@ -111,7 +138,11 @@ def bentoml_model_deployer_step(
     # This is a workaround to get the endpoints of the service defined as functions
     # from the user code in the BentoML service.
     def service_apis(bento_tag: str) -> List[str]:
-        service = bentoml.load(bento_tag)
+        # Add working dir in the bentoml load
+        service = bentoml.load(
+            bento_identifier=bento_tag,
+            working_dir=params.working_dir or str(repo_path),
+        )
         apis = service.apis
         apis_paths = list(apis.keys())
         return apis_paths
@@ -129,6 +160,7 @@ def bentoml_model_deployer_step(
         pipeline_name=pipeline_name,
         pipeline_run_id=run_id,
         pipeline_step_name=step_name,
+        ssl_settings=params.ssl_settings,
     )
 
     # Creating a new service with inactive state and status by default

@@ -25,7 +25,7 @@ BentoML is an open source framework for machine learning model serving.
 it can be used to serve to deploy models locally, in a cloud environment, or
 on a Kubernetes environment.
 
-You should use the MLflow Model Deployer:
+You should use the BentoML Model Deployer:
 
 * Standarize the way you deploy your models to production withing your organization.
 
@@ -36,6 +36,11 @@ If you are looking to deploy your models in a more complex producation grade
 dedicated ways, you can take a look to one of the other 
 [Model Deployer Flavors](./model-deployers.md#model-deployers-flavors) 
 available in ZenML (e.g. Seldon Core, KServe, etc.)
+
+Note: The BentoML also allows you to deploy your models in a more complex
+production grade dedicated ways, you can take a look to 
+[Yatai](https://github.com/bentoml/Yatai) and 
+[bentoctl](https://github.com/bentoml/bentoctl)
 
 ## How do you deploy it?
 

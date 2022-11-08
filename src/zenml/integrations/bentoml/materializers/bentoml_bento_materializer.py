@@ -17,7 +17,7 @@ import os
 import tempfile
 from typing import Type
 
-from bentoml import export_bento, import_bento
+import bentoml
 from bentoml._internal.bento import Bento, bento
 from bentoml.exceptions import BentoMLException
 
@@ -61,9 +61,9 @@ class BentoMaterializer(BaseMaterializer):
 
         # Try save the Bento to the local BentoML store
         try:
-            import_bento(os.path.join(temp_dir.name, DEFAULT_BENTO_FILENAME))
-        except BentoMLException as e:
-            logger.error(f"{e}")
+            _ = bentoml.get(imported_bento.tag)
+        except BentoMLException:
+            imported_bento.save()
         return imported_bento
 
     def handle_return(self, bento: bento.Bento) -> None:
@@ -79,7 +79,7 @@ class BentoMaterializer(BaseMaterializer):
         temp_bento_path = os.path.join(temp_dir.name, DEFAULT_BENTO_FILENAME)
 
         # save the image in a temporary directory
-        export_bento(bento.tag, temp_bento_path)
+        bentoml.export_bento(bento.tag, temp_bento_path)
 
         # copy the saved image to the artifact store
         io_utils.copy_dir(temp_dir.name, self.artifact.uri)

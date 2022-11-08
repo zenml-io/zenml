@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the BentoML bento builder step."""
+import importlib
 import os
 from typing import Dict, List, Optional
 
@@ -96,41 +97,13 @@ def bento_builder_step(
     model = model_from_model_artifact(model)
 
     # Save the model to a BentoML model based on the model type
-    if params.model_type == "tensorflow":
-        bentoml.tensorflow.save_model(
+    try:
+        module = importlib.import_module(f".{params.model_type}", "bentoml")
+        module.save_model(params.model_name, model, labels=params.labels)
+    except importlib.metadata.PackageNotFoundError:
+        bentoml.pickable_model.save_model(
             params.model_name,
             model,
-            signatures={"__call__": {"batchable": True, "batch_dim": 0}},
-            labels=params.labels,
-        )
-    elif params.model_type == "sklearn":
-        bentoml.sklearn.save_model(
-            params.model_name,
-            model,
-            signatures={"predict": {"batchable": True, "batch_dim": 0}},
-        )
-    elif params.model_type == "pytorch":
-        bentoml.pytorch.save_model(
-            params.model_name,
-            model,
-            signatures={"__call__": {"batchable": True, "batchdim": 0}},
-        )
-    elif params.model_type == "transformers":
-        bentoml.transformers.save_model(
-            params.model_name,
-            model,
-            signatures={"__call__": {"batchable": True, "batchdim": 0}},
-        )
-    elif params.model_type == "xgboost":
-        bentoml.xgboost.save_model(
-            params.model_name,
-            model,
-        )
-    else:
-        bentoml.picklable_model.save_model(
-            params.model_name,
-            model,
-            signatures={"batchable": True, "batch_dim": 0},
         )
 
     # Build the BentoML bundle

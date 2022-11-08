@@ -16,6 +16,8 @@
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
+from pydantic import BaseModel, Field
+
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.integrations.bentoml.constants import (
     BENTOML_HEALTHCHECK_URL_PATH,
@@ -75,6 +77,28 @@ class BentoMLDeploymentEndpoint(LocalDaemonServiceEndpoint):
         return os.path.join(uri, self.config.prediction_url_path)
 
 
+class SSLBentoMLParametersConfig(BaseModel):
+    """BentoML SSL parameters configuration.
+
+    Attributes:
+        ssl_certfile: SSL certificate file
+        ssl_keyfile: SSL key file
+        ssl_keyfile_password: SSL key file password
+        ssl_version: SSL version
+        ssl_cert_reqs: SSL certificate requirements
+        ssl_ca_certs: SSL CA certificates
+        ssl_ciphers: SSL ciphers
+    """
+
+    ssl_certfile: Optional[str] = None
+    ssl_keyfile: Optional[str] = None
+    ssl_keyfile_password: Optional[str] = None
+    ssl_version: Optional[str] = None
+    ssl_cert_reqs: Optional[str] = None
+    ssl_ca_certs: Optional[str] = None
+    ssl_ciphers: Optional[str] = None
+
+
 class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
     """BentoML model deployment configuration.
 
@@ -101,6 +125,9 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
     production: bool = False
     working_dir: str
     host: Optional[str] = None
+    ssl_settings: Optional[SSLBentoMLParametersConfig] = Field(
+        default_factory=SSLBentoMLParametersConfig
+    )
 
 
 class BentoMLDeploymentService(LocalDaemonService):
@@ -166,7 +193,6 @@ class BentoMLDeploymentService(LocalDaemonService):
         )
 
         self.endpoint.prepare_for_start()
-
         if self.config.production:
             logger.info("Running in production mode.")
             from bentoml.serve import serve_http_production
@@ -179,6 +205,13 @@ class BentoMLDeploymentService(LocalDaemonService):
                     backlog=self.config.backlog,
                     host=self.endpoint.status.hostname,
                     working_dir=self.config.working_dir,
+                    ssl_certfile=self.config.ssl_settings.ssl_certfile,
+                    ssl_keyfile=self.config.ssl_settings.ssl_keyfile,
+                    ssl_keyfile_password=self.config.ssl_settings.ssl_keyfile_password,
+                    ssl_version=self.config.ssl_settings.ssl_version,
+                    ssl_cert_reqs=self.config.ssl_settings.ssl_cert_reqs,
+                    ssl_ca_certs=self.config.ssl_settings.ssl_ca_certs,
+                    ssl_ciphers=self.config.ssl_settings.ssl_ciphers,
                 )
             except KeyboardInterrupt:
                 logger.info(
@@ -193,6 +226,15 @@ class BentoMLDeploymentService(LocalDaemonService):
                     port=self.endpoint.status.port,
                     working_dir=self.config.working_dir,
                     host=self.endpoint.status.hostname,
+                    ssl_certfile=self.config.ssl_settings.ssl_certfile or None,
+                    ssl_keyfile=self.config.ssl_settings.ssl_keyfile or None,
+                    ssl_keyfile_password=self.config.ssl_settings.ssl_keyfile_password
+                    or None,
+                    ssl_version=self.config.ssl_settings.ssl_version or None,
+                    ssl_cert_reqs=self.config.ssl_settings.ssl_cert_reqs
+                    or None,
+                    ssl_ca_certs=self.config.ssl_settings.ssl_ca_certs or None,
+                    ssl_ciphers=self.config.ssl_settings.ssl_ciphers or None,
                 )
             except KeyboardInterrupt:
                 logger.info(

@@ -19,7 +19,7 @@ from zenml.pipelines import pipeline
 docker_settings = DockerSettings(required_integrations=[PYTORCH, BENTOML])
 
 
-@pipeline(settings={"docker": docker_settings})
+@pipeline(enable_cache=False, settings={"docker": docker_settings})
 def training_fashion_mnist(
     importer,
     trainer,
