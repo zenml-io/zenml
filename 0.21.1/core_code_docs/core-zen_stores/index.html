@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://apidocs.zenml.io/0.21.1/core_code_docs/core-zen_stores/">
       
       <link rel="icon" href="../../_assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.3.0">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.3.0">
     
     
       
@@ -1154,26 +1154,6 @@
           <li class="md-nav__item">
   <a href="#zenml.zen_stores.migrations.alembic.include_object" class="md-nav__link">
     include_object()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#zenml.zen_stores.migrations.env" class="md-nav__link">
-    env
-  </a>
-  
-    <nav class="md-nav" aria-label="env">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#zenml.zen_stores.migrations.env.run_migrations" class="md-nav__link">
-    run_migrations()
   </a>
   
 </li>
@@ -4480,26 +4460,6 @@
           <li class="md-nav__item">
   <a href="#zenml.zen_stores.migrations.alembic.include_object" class="md-nav__link">
     include_object()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#zenml.zen_stores.migrations.env" class="md-nav__link">
-    env
-  </a>
-  
-    <nav class="md-nav" aria-label="env">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#zenml.zen_stores.migrations.env.run_migrations" class="md-nav__link">
-    run_migrations()
   </a>
   
 </li>
@@ -10991,86 +10951,6 @@ AlembicVersion            (<span title="sqlalchemy.orm.decl_api.Base">Base</span
 <span class="sd">        True if the object should be included, False otherwise.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span><span class="n">type_</span> <span class="o">==</span> <span class="s2">&quot;table&quot;</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">exclude_tables</span><span class="p">)</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-module">
-
-
-
-<h4 id="zenml.zen_stores.migrations.env" class="doc doc-heading">
-        <code>env</code>
-
-
-
-</h4>
-
-    <div class="doc doc-contents ">
-
-      <p>Alembic environment script.</p>
-<p>This script is used by all Alembic CLI commands. It uses the SqlZenStore
-currently configured in the global configuration, or the default store if
-no store is configured, to get the SQLAlchemy engine and the context to run
-migrations.</p>
-
-
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-  <div class="doc doc-object doc-function">
-
-
-
-<h5 id="zenml.zen_stores.migrations.env.run_migrations" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">run_migrations</span><span class="p">()</span></code>
-
-
-</h5>
-
-    <div class="doc doc-contents ">
-
-      <p>Run migrations through the ZenML SqlZenStore and Alembic classes.</p>
-
-        <details class="quote">
-          <summary>Source code in <code>zenml/zen_stores/migrations/env.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run_migrations</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Run migrations through the ZenML SqlZenStore and Alembic classes.&quot;&quot;&quot;</span>
-    <span class="n">store_cfg</span> <span class="o">=</span> <span class="n">GlobalConfiguration</span><span class="p">()</span><span class="o">.</span><span class="n">store</span>
-
-    <span class="k">if</span> <span class="n">store_cfg</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">store_cfg</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="n">StoreType</span><span class="o">.</span><span class="n">SQL</span><span class="p">:</span>
-        <span class="n">store_cfg</span> <span class="o">=</span> <span class="n">GlobalConfiguration</span><span class="p">()</span><span class="o">.</span><span class="n">get_default_store</span><span class="p">()</span>
-
-    <span class="n">store</span> <span class="o">=</span> <span class="n">SqlZenStore</span><span class="p">(</span>
-        <span class="n">config</span><span class="o">=</span><span class="n">store_cfg</span><span class="p">,</span>
-        <span class="n">skip_default_registrations</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">skip_migrations</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="n">a</span> <span class="o">=</span> <span class="n">Alembic</span><span class="p">(</span><span class="n">engine</span><span class="o">=</span><span class="n">store</span><span class="o">.</span><span class="n">engine</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">cast</span><span class="p">(</span><span class="n">EnvironmentContext</span><span class="p">,</span> <span class="n">context</span><span class="p">))</span>
-    <span class="n">a</span><span class="o">.</span><span class="n">run_migrations</span><span class="p">(</span><span class="n">fn</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
