@@ -61,5 +61,9 @@ StackResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     ProjectResponseModel=ProjectResponseModel,
 )
+FlavorResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel,
+)
 UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
 TeamResponseModel.update_forward_refs(UserResponseModel=UserResponseModel)

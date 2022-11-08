@@ -33,6 +33,7 @@ from zenml.logger import get_logger
 from zenml.new_models import (
     EmailOptInModel,
     RoleAssignmentResponseModel,
+    RoleAssignmentRequestModel,
     UserRequestModel,
     UserResponseModel, RoleAssignmentRequestModel,
 )
@@ -119,13 +120,6 @@ def create_user(
     else:
         user.active = True
     new_user = zen_store().create_user(user)
-    # add back the original non-hashed activation token, if generated, to
-    # send it back to the client
-    zen_store().assign_role(
-        role_name_or_id=zen_store()._admin_role.id,
-        user_or_team_name_or_id=new_user.id,
-        is_user=True,
-    )
 
     new_user.activation_token = token
     return CreateUserResponse.from_model(new_user)

@@ -19,7 +19,10 @@ from typing import DefaultDict, Dict, List
 from zenml.enums import StackComponentType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.models import FlavorModel
+
+from zenml.new_models import FlavorResponseModel, FlavorRequestModel
+from zenml.client import  Client
+from uuid import UUID
 
 logger = get_logger(__name__)
 
@@ -33,7 +36,8 @@ class FlavorRegistry:
     def __init__(self) -> None:
         """Initialization of the flavors."""
         self._flavors: DefaultDict[
-            StackComponentType, Dict[str, FlavorModel]
+            StackComponentType,
+            Dict[str, FlavorResponseModel]
         ] = defaultdict(dict)
 
         self.register_default_flavors()
@@ -82,7 +86,7 @@ class FlavorRegistry:
 
     def _register_flavor(
         self,
-        flavor: FlavorModel,
+        flavor: FlavorRequestModel,
     ) -> None:
         """Registers a stack component flavor.
 
@@ -100,13 +104,27 @@ class FlavorRegistry:
                 f"`{flavor.name}`. Please select another name for the flavor."
             )
 
-        flavors[flavor.name] = flavor
+        client = Client()
+
+        flavor_response_model = FlavorResponseModel(
+            name=flavor.name,
+            type=flavor.type,
+            config_schema=flavor.config_schema,
+            source=flavor.source,
+            integration=flavor.integration,
+            # This is a small trick to convert the request to response
+            id=UUID(int=0),
+            user=client.active_user,
+            project=client.active_project,
+        )
+
+        flavors[flavor.name] = flavor_response_model
         logger.debug(
             f"Registered flavor for '{flavor.name}' and type '{flavor.type}'.",
         )
 
     @property
-    def flavors(self) -> List[FlavorModel]:
+    def flavors(self) -> List[FlavorResponseModel]:
         """Returns all registered flavors.
 
         Returns:
@@ -120,7 +138,7 @@ class FlavorRegistry:
 
     def get_flavors_by_type(
         self, component_type: StackComponentType
-    ) -> List[FlavorModel]:
+    ) -> List[FlavorResponseModel]:
         """Return the list of flavors with given type.
 
         Args:
@@ -133,7 +151,7 @@ class FlavorRegistry:
 
     def get_flavor_by_name_and_type(
         self, name: str, component_type: StackComponentType
-    ) -> FlavorModel:
+    ) -> FlavorResponseModel:
         """Gets the flavor for a given name and type.
 
         Args:

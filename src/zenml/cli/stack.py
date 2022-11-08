@@ -393,43 +393,12 @@ def share_stack(
 
     client = Client()
 
-    active_stack_name = client.active_stack_model.name
-    stack_name_or_id = stack_name_or_id or active_stack_name
-
-    client = Client()
-    try:
-        stack_to_share = cli_utils.get_stack_by_id_or_name_or_prefix(
-            client=client, id_or_name_or_prefix=stack_name_or_id
+    with console.status(f"Sharing stack `{stack_name_or_id}` ...\n"):
+        client.update_stack(
+            name_id_or_prefix=stack_name_or_id,
+            is_shared=True,
         )
-    except KeyError:
-        cli_utils.error(
-            f"Stack `{stack_name_or_id}` cannot be updated as it does not "
-            f"exist.",
-        )
-    else:
-        for c_t, c in stack_to_share.to_hydrated_model().components.items():
-            only_component = c[0]  # For future compatibility
-            with console.status(
-                f"Sharing component `{only_component.name}`" f"...\n"
-            ):
-                cli_utils.declare(
-                    f"A Stack can only be shared when all its "
-                    f"components are also shared. Component "
-                    f"'{only_component.name}' is also set to "
-                    f"shared."
-                )
-
-                only_component.is_shared = True
-                client.update_stack_component(component=only_component)
-
-        with console.status(f"Sharing stack `{stack_to_share.name}` ...\n"):
-
-            stack_to_share.is_shared = True
-
-            client.update_stack(stack_to_share)
-            cli_utils.declare(
-                f"Stack `{stack_to_share.name}` successfully shared!"
-            )
+        cli_utils.declare(f"Stack `{stack_name_or_id}` successfully shared!")
 
 
 @stack.command(
@@ -618,13 +587,11 @@ def list_stacks(just_mine: bool = False) -> None:
 
     client = Client()
     with console.status("Listing stacks...\n"):
-        stacks = client.stacks
         if just_mine:
-            stacks = [
-                stack
-                for stack in stacks
-                if stack.user.id == client.active_user.id
-            ]
+            stacks = client.list_stacks(user_name_or_id=client.active_user.id)
+        else:
+            stacks = client.list_stacks()
+
         print_stacks_table(client, stacks)
 
 
