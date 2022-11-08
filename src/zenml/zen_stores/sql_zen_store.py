@@ -3830,7 +3830,8 @@ class SqlZenStore(BaseZenStore):
         ):
             return step_model
 
-        # Update status only if all output artifacts have been synced.
+        # Check if all output artifacts have been synced.
+        all_synced = True
         if step_model.num_outputs and step_model.num_outputs > 0:
             with Session(self.engine) as session:
                 outputs = session.exec(
@@ -3839,11 +3840,13 @@ class SqlZenStore(BaseZenStore):
                     )
                 ).all()
             if len(outputs) < step_model.num_outputs:
-                return step_model
+                all_synced = False
 
         # Get the status from MLMD and update the model if necessary.
         status = self.metadata_store.get_step_status(step_model.mlmd_id)
-        if step_model.status != status:
+        is_failed = status == ExecutionStatus.FAILED
+        is_done = status in (ExecutionStatus.COMPLETED, ExecutionStatus.CACHED)
+        if is_failed or (is_done and all_synced):
             step_model.status = status
             self.update_run_step(step_model)
 
@@ -3875,15 +3878,19 @@ class SqlZenStore(BaseZenStore):
                 )
             ).all()
 
-        # Update status only if all steps have been synced.
+        # Check if all steps have been synced.
+        all_synced = True
         if run_model.num_steps and run_model.num_steps > 0:
             if len(steps) < run_model.num_steps:
-                return run_model
+                all_synced = False
 
         # Compute the status of the run based on the status of the steps and
         # update the model if necessary.
         status = ExecutionStatus.run_status([step.status for step in steps])
-        if run_model.status != status:
+        is_failed = status == ExecutionStatus.FAILED
+        is_done = status in (ExecutionStatus.COMPLETED, ExecutionStatus.CACHED)
+        if is_failed or (is_done and all_synced):
             run_model.status = status
             self.update_run(run_model)
+
         return run_model
