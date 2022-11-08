@@ -3673,9 +3673,13 @@ class SqlZenStore(BaseZenStore):
                     continue
 
         # Sync steps and status of all unfinished runs.
+        # We also filter out anything older than 1 week to prevent old broken
+        # unfinished runs from being synced over and over again.
         unfinished_runs = session.exec(
-            select(PipelineRunSchema).where(
-                PipelineRunSchema.status == ExecutionStatus.RUNNING
+            select(PipelineRunSchema)
+            .where(PipelineRunSchema.status == ExecutionStatus.RUNNING)
+            .where(
+                PipelineRunSchema.updated >= datetime.now() - timedelta(weeks=1)
             )
         ).all()
         logger.debug(
