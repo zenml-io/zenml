@@ -1373,16 +1373,15 @@ class Client(metaclass=ClientMetaClass):
                     status = ExecutionStatus.FAILED
                 step_statuses.append(status)
 
-            num_steps = len(steps)
             pipeline_run = PipelineRunModel(
                 user=self.active_user.id,  # Old user might not exist.
                 project=self.active_project.id,  # Old project might not exist.
                 name=mlmd_run.name,
                 stack_id=None,  # Stack might not exist in new DB.
                 pipeline_id=None,  # Pipeline might not exist in new DB.
-                status=ExecutionStatus.run_status(step_statuses, num_steps),
+                status=ExecutionStatus.run_status(step_statuses),
                 pipeline_configuration=mlmd_run.pipeline_configuration,
-                num_steps=num_steps,
+                num_steps=len(steps),
                 mlmd_id=None,  # Run might not exist in new MLMD.
             )
             new_run = self.zen_store.create_run(pipeline_run)

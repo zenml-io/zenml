@@ -3099,24 +3099,6 @@ class SqlZenStore(BaseZenStore):
                 input_artifacts=input_artifacts,
             )
 
-    def _list_run_steps_without_sync(
-        self, run_id: Optional[UUID] = None
-    ) -> List[StepRunModel]:
-        """Get all run steps without synchronizing the runs.
-
-        Args:
-            run_id: If provided, only return steps for this pipeline run.
-
-        Returns:
-            A list of all run steps.
-        """
-        query = select(StepRunSchema)
-        if run_id is not None:
-            query = query.where(StepRunSchema.pipeline_run_id == run_id)
-        with Session(self.engine) as session:
-            steps = session.exec(query).all()
-            return [self._run_step_schema_to_model(step) for step in steps]
-
     def list_run_steps(
         self, run_id: Optional[UUID] = None
     ) -> List[StepRunModel]:
@@ -3129,7 +3111,12 @@ class SqlZenStore(BaseZenStore):
             A list of all run steps.
         """
         self._sync_runs()
-        return self._list_run_steps_without_sync(run_id)
+        query = select(StepRunSchema)
+        if run_id is not None:
+            query = query.where(StepRunSchema.pipeline_run_id == run_id)
+        with Session(self.engine) as session:
+            steps = session.exec(query).all()
+            return [self._run_step_schema_to_model(step) for step in steps]
 
     def update_run_step(self, step: StepRunModel) -> StepRunModel:
         """Updates a step.
@@ -3864,10 +3851,23 @@ class SqlZenStore(BaseZenStore):
         ):
             return step_model
 
+        # Update status only if all output artifacts have been synced.
+        if step_model.num_outputs and step_model.num_outputs > 0:
+            with Session(self.engine) as session:
+                outputs = session.exec(
+                    select(ArtifactSchema).where(
+                        ArtifactSchema.parent_step_id == step_model.id
+                    )
+                ).all()
+            if len(outputs) < step_model.num_outputs:
+                return step_model
+
+        # Get the status from MLMD and update the model if necessary.
         status = self.metadata_store.get_step_status(step_model.mlmd_id)
         if step_model.status != status:
             step_model.status = status
             self.update_run_step(step_model)
+
         return step_model
 
     def _sync_run_status(self, run_model: PipelineRunModel) -> PipelineRunModel:
@@ -3884,25 +3884,26 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The pipeline run model with updated status.
         """
-        # Update status only if the run is running and fully synced.
+        # Update status only if the run is running.
         if run_model.status != ExecutionStatus.RUNNING:
             return run_model
 
-        steps = self._list_run_steps_without_sync(run_id=run_model.id)
+        # Get all steps of the run.
+        with Session(self.engine) as session:
+            steps = session.exec(
+                select(StepRunSchema).where(
+                    StepRunSchema.pipeline_run_id == run_model.id
+                )
+            ).all()
 
-        # For legacy runs, we have no `num_steps`. Therefore, we cannot
-        # determine the status of the run correctly. Instead, we need to
-        # load all steps from MLMD and compute `status` and `num_steps`
-        # from that.
+        # Update status only if all steps have been synced.
         if run_model.num_steps and run_model.num_steps > 0:
-            num_steps = run_model.num_steps
-        else:
-            num_steps = len(steps)
+            if len(steps) < run_model.num_steps:
+                return run_model
 
-        status = ExecutionStatus.run_status(
-            step_statuses=[step.status for step in steps],
-            num_steps=num_steps,
-        )
+        # Compute the status of the run based on the status of the steps and
+        # update the model if necessary.
+        status = ExecutionStatus.run_status([step.status for step in steps])
         if run_model.status != status:
             run_model.status = status
             self.update_run(run_model)
