@@ -114,17 +114,18 @@ def create_user(
     user_model = user.to_model()
     token: Optional[SecretStr] = None
     if user.password is None:
-        user.active = False
-        token = user.generate_activation_token()
+        user_model.active = False
+        token = user_model.generate_activation_token()
     else:
-        user.active = True
-    new_user = zen_store().create_user(user)
-    # add back the original non-hashed activation token, if generated, to
+        user_model.active = True
+    new_user = zen_store().create_user(user_model)
+    # add back the original unhashed activation token, if generated, to
     # send it back to the client
-    zen_store().assign_role(
-        role_name_or_id=zen_store()._admin_role.id,
-        user_or_team_name_or_id=new_user.id,
-        is_user=True,
+    zen_store().create_role_assignment(
+        RoleAssignmentRequestModel(
+            role=zen_store()._admin_role.id,
+            user=new_user.id,
+        )
     )
 
     new_user.activation_token = token
@@ -207,7 +208,8 @@ def activate_user(
     user_model = user.apply_to_model(auth_context.user)
     user_model.active = True
     user_model.activation_token = None
-    return zen_store().update_user(user_model)
+    return zen_store().update_user(user_name_or_id=user_name_or_id,
+                                   user_update=user_model)
 
 
 @router.put(
@@ -292,10 +294,17 @@ def email_opt_in_response(
             permissions
     """
     if str(auth_context.user.id) == str(user_name_or_id):
-        return zen_store().user_email_opt_in(
-            user_name_or_id=user_name_or_id,
+        user = zen_store().get_user(user_name_or_id=user_name_or_id)
+        update_user = UserRequestModel(
+            name=user.name,
+            full_name=user.full_name,
+            active=user.active,
             email=user_response.email,
-            user_opt_in_response=user_response.email_opted_in,
+            email_opted_in=user_response.email_opted_in,
+        )
+
+        return zen_store().update_user(
+            user_name_or_id=user_name_or_id, user_update=update_user
         )
     else:
         raise NotAuthorizedError(

@@ -24,6 +24,7 @@ from zenml.models.constants import (
     USER_PASSWORD_MAX_LENGTH,
 )
 from zenml.models.user_management_models import RoleModel, TeamModel, UserModel
+from zenml.new_models import UserRequestModel, UserResponseModel
 from zenml.zen_server.models.base_models import (
     CreateRequest,
     CreateResponse,
@@ -35,7 +36,7 @@ from zenml.zen_server.models.base_models import (
 class CreateUserRequest(CreateRequest[UserModel]):
     """Model for user creation requests."""
 
-    _MODEL_TYPE = UserModel
+    _MODEL_TYPE = UserRequestModel
 
     name: str = Field(
         title="The unique username for the account.",
@@ -68,10 +69,10 @@ class CreateUserRequest(CreateRequest[UserModel]):
         )
 
 
-class CreateUserResponse(UserModel, CreateResponse[UserModel]):
+class CreateUserResponse(UserResponseModel, CreateResponse[UserModel]):
     """Model for user creation responses."""
 
-    _MODEL_TYPE = UserModel
+    _MODEL_TYPE = UserResponseModel
 
     activation_token: Optional[str] = Field(  # type: ignore[assignment]
         default=None, title="Account activation token."
@@ -79,7 +80,7 @@ class CreateUserResponse(UserModel, CreateResponse[UserModel]):
 
     @classmethod
     def from_model(
-        cls, model: UserModel, **kwargs: Any
+        cls, model: UserResponseModel, **kwargs: Any
     ) -> "CreateUserResponse":
         """Convert a user domain model into a user create response.
         Args:
