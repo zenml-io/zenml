@@ -1062,8 +1062,8 @@ class Client(metaclass=ClientMetaClass):
         # Create and validate the configuration
         from zenml.stack import Flavor
 
-        flavor = Flavor.from_model(flavor_model)
-        configuration = flavor.config_class(**configuration)
+        flavor_class = Flavor.from_model(flavor_model)
+        configuration = flavor_class.config_class(**configuration)
 
         self._validate_stack_component_configuration(
             component_type, configuration=configuration
@@ -1075,6 +1075,8 @@ class Client(metaclass=ClientMetaClass):
             flavor=flavor,
             configuration=configuration,
             is_shared=is_shared,
+            user=self.active_user.id,
+            project=self.active_project.id,
         )
 
         # Register the new model
