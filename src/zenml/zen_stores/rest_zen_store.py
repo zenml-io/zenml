@@ -33,12 +33,15 @@ import requests
 import urllib3
 from pydantic import BaseModel, validator
 
+import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
     ARTIFACTS,
+    DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EMAIL_ANALYTICS,
+    ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
     INFO,
     INPUTS,
@@ -289,8 +292,21 @@ class RestZenStore(BaseZenStore):
 
     def _initialize(self) -> None:
         """Initialize the REST store."""
-        # try to connect to the server to validate the configuration
-        self.active_user
+        client_version = zenml.__version__
+        server_version = self.get_store_info().version
+
+        if not DISABLE_CLIENT_SERVER_MISMATCH_WARNING and (
+            server_version != client_version
+        ):
+            logger.warning(
+                "Your ZenML client version (%s) does not match the server "
+                "version (%s). This version mismatch might lead to errors or "
+                "unexpected behavior. \nTo disable this warning message, set "
+                "the environment variable `%s=True`",
+                client_version,
+                server_version,
+                ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+            )
 
     def get_store_info(self) -> ServerModel:
         """Get information about the server.

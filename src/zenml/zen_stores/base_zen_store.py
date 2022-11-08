@@ -27,7 +27,7 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.exceptions import StackExistsError
 from zenml.logger import get_logger
 from zenml.models import (
@@ -59,6 +59,8 @@ DEFAULT_USERNAME = "default"
 DEFAULT_PASSWORD = ""
 DEFAULT_PROJECT_NAME = "default"
 DEFAULT_STACK_NAME = "default"
+ADMIN_ROLE = "admin"
+GUEST_ROLE = "guest"
 
 
 class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
@@ -191,6 +193,14 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             default_project = self._default_project
         except KeyError:
             default_project = self._create_default_project()
+        try:
+            assert self._admin_role
+        except KeyError:
+            self._create_admin_role()
+        try:
+            assert self._guest_role
+        except KeyError:
+            self._create_guest_role()
         try:
             default_user = self._default_user
         except KeyError:
@@ -478,6 +488,64 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         return default_stacks[0]
 
     # -----
+    # Roles
+    # -----
+    @property
+    def _admin_role(self) -> RoleModel:
+        """Get the admin role.
+
+        Returns:
+            The default admin role.
+        """
+        return self.get_role(ADMIN_ROLE)
+
+    @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
+    def _create_admin_role(self) -> RoleModel:
+        """Creates the admin role.
+
+        Returns:
+            The admin role
+        """
+        logger.info(f"Creating '{ADMIN_ROLE}' role ...")
+        return self.create_role(
+            RoleModel(
+                name=ADMIN_ROLE,
+                permissions=[
+                    PermissionType.READ.value,
+                    PermissionType.WRITE.value,
+                    PermissionType.ME.value,
+                ],
+            )
+        )
+
+    @property
+    def _guest_role(self) -> RoleModel:
+        """Get the guest role.
+
+        Returns:
+            The guest role.
+        """
+        return self.get_role(GUEST_ROLE)
+
+    @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
+    def _create_guest_role(self) -> RoleModel:
+        """Creates the guest role.
+
+        Returns:
+            The guest role
+        """
+        logger.info(f"Creating '{GUEST_ROLE}' role ...")
+        return self.create_role(
+            RoleModel(
+                name=GUEST_ROLE,
+                permissions=[
+                    PermissionType.READ.value,
+                    PermissionType.ME.value,
+                ],
+            )
+        )
+
+    # -----
     # Users
     # -----
 
@@ -528,7 +596,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
     @track(AnalyticsEvent.CREATED_DEFAULT_USER)
     def _create_default_user(self) -> UserModel:
-        """Creates a default user.
+        """Creates a default user with the admin role.
 
         Returns:
             The default user.
@@ -539,13 +607,19 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         )
 
         logger.info(f"Creating default user '{user_name}' ...")
-        return self.create_user(
+        new_user = self.create_user(
             UserModel(
                 name=user_name,
                 active=True,
                 password=user_password,
             )
         )
+        self.assign_role(
+            role_name_or_id=self._admin_role.id,
+            user_or_team_name_or_id=new_user.id,
+            is_user=True,
+        )
+        return new_user
 
     # -----
     # Teams
