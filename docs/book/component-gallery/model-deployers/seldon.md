@@ -222,12 +222,12 @@ def seldon_model_deployer_step(
 ```
 
 Within the `SeldonDeploymentConfig` you can configure:
-   * `model_name` : the name of the model in the KServe cluster and in ZenML.
-   * `replicas` : the number of replicas to deploy the model with
-   * `implementation` : the type of seldon inference server to use for the model. The
+   * `model_name`: the name of the model in the KServe cluster and in ZenML.
+   * `replicas`: the number of replicas with which to deploy the model
+   * `implementation`: the type of Seldon inference server to use for the model. The
     implementation type can be one of the following: `TENSORFLOW_SERVER`, 
     `SKLEARN_SERVER`, `XGBOOST_SERVER`, `custom`.
-   * `resources` : the resources to be allocated to the model. This can be 
+   * `resources`: the resources to be allocated to the model. This can be 
     configured by passing a dictionary with the `requests` and `limits` keys. 
     The values for these keys can be a dictionary with the `cpu` and `memory` 
     keys. The values for these keys can be a string with the amount of CPU and 
