@@ -772,7 +772,9 @@ def connect(
     store_dict["username"] = username
     if password is None:
         password = click.prompt(
-            f"Password for user {username}", hide_input=True
+            f"Password for user {username} (press ENTER for empty password)",
+            default="",
+            hide_input=True,
         )
     store_dict["password"] = password
     store_dict["verify_ssl"] = verify_ssl
