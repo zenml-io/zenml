@@ -2742,11 +2742,10 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
+        self._sync_runs()
         with Session(self.engine) as session:
             run = self._get_run_schema(run_name_or_id, session=session)
-            run_model = run.to_model()
-            run_model = self._update_run_status(run_model)
-            return run_model
+            return run.to_model()
 
     def _update_run_status(
         self, run_model: PipelineRunModel
@@ -2844,10 +2843,7 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(PipelineRunSchema.user_id == user.id)
             query = query.order_by(PipelineRunSchema.created)
             runs = session.exec(query).all()
-            run_models = [run.to_model() for run in runs]
-            for run_model in run_models:
-                self._update_run_status(run_model)
-            return run_models
+            return [run.to_model() for run in runs]
 
     def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
         """Updates a pipeline run.
@@ -3090,6 +3086,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step doesn't exist.
         """
+        self._sync_runs()
         with Session(self.engine) as session:
             step = session.exec(
                 select(StepRunSchema).where(StepRunSchema.id == step_id)
@@ -3099,10 +3096,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get step with ID {step_id}: No step with this "
                     "ID found."
                 )
-
-            step_model = self._run_step_schema_to_model(step)
-            step_model = self._update_run_step_status(step_model)
-            return step_model
+            return self._run_step_schema_to_model(step)
 
     def _run_step_schema_to_model(self, step: StepRunSchema) -> StepRunModel:
         """Converts a run step schema to a step model.
@@ -3189,7 +3183,7 @@ class SqlZenStore(BaseZenStore):
             query = query.where(StepRunSchema.pipeline_run_id == run_id)
         with Session(self.engine) as session:
             steps = session.exec(query).all()
-            return [self.get_run_step(step.id) for step in steps]
+            return [self._run_step_schema_to_model(step) for step in steps]
 
     def list_run_steps(
         self, run_id: Optional[UUID] = None
