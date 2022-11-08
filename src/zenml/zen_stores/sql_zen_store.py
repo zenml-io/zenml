@@ -104,6 +104,9 @@ from zenml.zen_stores.schemas import (
     UserSchema,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
+from zenml.zen_stores.schemas.user_management_schemas import (
+    RolePermissionSchema,
+)
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import (
@@ -1978,6 +1981,13 @@ class SqlZenStore(BaseZenStore):
             role_schema = RoleSchema.from_create_model(role)
             session.add(role_schema)
             session.commit()
+            # Add all permissions
+            for p in role.permissions:
+                session.add(
+                    RolePermissionSchema(name=p, role_id=role_schema.id)
+                )
+
+            session.commit()
             return role_schema.to_model()
 
     def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleModel:
@@ -2028,11 +2038,32 @@ class SqlZenStore(BaseZenStore):
                     f"'{role.id}': Found no"
                     f"existing roles with this id."
                 )
-
             # Update the role
             existing_role.from_update_model(role)
 
             session.add(existing_role)
+            session.commit()
+
+            existing_permissions = {p.name for p in existing_role.permissions}
+
+            diff = existing_permissions.symmetric_difference(role.permissions)
+
+            for permission in diff:
+                if permission not in role.permissions:
+                    permission_to_delete = session.exec(
+                        select(RolePermissionSchema)
+                        .where(RolePermissionSchema.name == permission)
+                        .where(RolePermissionSchema.role_id == existing_role.id)
+                    ).one_or_none()
+                    session.delete(permission_to_delete)
+
+                elif permission not in existing_permissions:
+                    session.add(
+                        RolePermissionSchema(
+                            name=permission, role_id=existing_role.id
+                        )
+                    )
+
             session.commit()
 
             # Refresh the Model that was just created
