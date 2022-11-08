@@ -16,7 +16,6 @@ from typing import List, Optional, Type, cast
 
 import bentoml
 from bentoml._internal.bento import bento
-from pydantic import Field
 
 from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
@@ -27,7 +26,6 @@ from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (
 from zenml.integrations.bentoml.services.bentoml_deployment import (
     BentoMLDeploymentConfig,
     BentoMLDeploymentService,
-    SSLBentoMLParametersConfig,
 )
 from zenml.logger import get_logger
 from zenml.steps import (
@@ -62,9 +60,13 @@ class BentoMLDeployerParameters(BaseParameters):
     production: bool = False
     working_dir: Optional[str] = None
     host: Optional[str] = None
-    ssl_settings: Optional[SSLBentoMLParametersConfig] = Field(
-        default_factory=SSLBentoMLParametersConfig
-    )
+    ssl_certfile: Optional[str] = None
+    ssl_keyfile: Optional[str] = None
+    ssl_keyfile_password: Optional[str] = None
+    ssl_version: Optional[str] = None
+    ssl_cert_reqs: Optional[str] = None
+    ssl_ca_certs: Optional[str] = None
+    ssl_ciphers: Optional[str] = None
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT * 2
 
 
@@ -138,7 +140,13 @@ def bentoml_model_deployer_step(
         pipeline_name=pipeline_name,
         pipeline_run_id=run_id,
         pipeline_step_name=step_name,
-        ssl_settings=params.ssl_settings,
+        ssl_certfile=params.ssl_certfile,
+        ssl_keyfile=params.ssl_keyfile,
+        ssl_keyfile_password=params.ssl_keyfile_password,
+        ssl_version=params.ssl_version,
+        ssl_cert_reqs=params.ssl_cert_reqs,
+        ssl_ca_certs=params.ssl_ca_certs,
+        ssl_ciphers=params.ssl_ciphers,
     )
 
     # Creating a new service with inactive state and status by default

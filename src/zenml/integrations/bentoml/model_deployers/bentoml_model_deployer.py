@@ -112,6 +112,15 @@ class BentoMLModelDeployer(BaseModelDeployer):
         Returns:
             A dictionary containing the model server information.
         """
+        if service_instance.prediction_apis_urls is not None:
+            predictions_apis_urls = ", ".join(
+                [
+                    api
+                    for api in service_instance.prediction_apis_urls
+                    if api is not None
+                ]
+            )
+
         return {
             "PREDICTION_URL": service_instance.prediction_url,
             "BENTO_TAG": service_instance.config.bento,
@@ -120,9 +129,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
             "BENTO_URI": service_instance.config.bento_uri,
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
-            "PREDICITON_APIS_URLS": ", ".join(
-                service_instance.prediction_apis_urls
-            ),
+            "PREDICITON_APIS_URLS": predictions_apis_urls,
         }
 
     def deploy_model(
@@ -264,9 +271,6 @@ class BentoMLModelDeployer(BaseModelDeployer):
         pipeline_run_id: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
         model_name: Optional[str] = None,
-        bento: Optional[str] = None,
-        port: Optional[int] = None,
-        working_dir: Optional[str] = None,
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
     ) -> List[BaseService]:
@@ -300,10 +304,10 @@ class BentoMLModelDeployer(BaseModelDeployer):
         services = []
         config = BentoMLDeploymentConfig(
             model_name=model_name or "",
-            bento=bento or "",
-            port=port or BENTOML_DEFAULT_PORT,
+            bento="",
+            port=BENTOML_DEFAULT_PORT,
             model_uri=model_uri or "",
-            working_dir=working_dir or "",
+            working_dir="",
             pipeline_name=pipeline_name or "",
             pipeline_run_id=pipeline_run_id or "",
             pipeline_step_name=pipeline_step_name or "",

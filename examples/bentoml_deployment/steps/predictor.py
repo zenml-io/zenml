@@ -33,11 +33,10 @@ def predictor(
         data: The data to predict.
     """
 
-    prediction_url = service.prediction_apis_urls[0]
-
+    service.start(timeout=10)  # should be a NOP if already started
     for img, data in inference_data.items():
-        response = requests.post(prediction_url, json=data).json()
-        result = to_labels(response[0])
+        prediction = service.predict("predict_ndarray",np.array(data))
+        result = to_labels(prediction[0])
         rich_print(f"Prediction for {img} is {result}")
 
 

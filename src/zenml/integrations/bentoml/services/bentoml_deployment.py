@@ -16,7 +16,8 @@
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from bentoml.client import Client
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.integrations.bentoml.constants import (
@@ -125,9 +126,13 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
     production: bool = False
     working_dir: str
     host: Optional[str] = None
-    ssl_settings: Optional[SSLBentoMLParametersConfig] = Field(
-        default_factory=SSLBentoMLParametersConfig
-    )
+    ssl_certfile: Optional[str] = None
+    ssl_keyfile: Optional[str] = None
+    ssl_keyfile_password: Optional[str] = None
+    ssl_version: Optional[str] = None
+    ssl_cert_reqs: Optional[str] = None
+    ssl_ca_certs: Optional[str] = None
+    ssl_ciphers: Optional[str] = None
 
 
 class BentoMLDeploymentService(LocalDaemonService):
@@ -205,19 +210,20 @@ class BentoMLDeploymentService(LocalDaemonService):
                     backlog=self.config.backlog,
                     host=self.endpoint.status.hostname,
                     working_dir=self.config.working_dir,
-                    ssl_certfile=self.config.ssl_settings.ssl_certfile,
-                    ssl_keyfile=self.config.ssl_settings.ssl_keyfile,
-                    ssl_keyfile_password=self.config.ssl_settings.ssl_keyfile_password,
-                    ssl_version=self.config.ssl_settings.ssl_version,
-                    ssl_cert_reqs=self.config.ssl_settings.ssl_cert_reqs,
-                    ssl_ca_certs=self.config.ssl_settings.ssl_ca_certs,
-                    ssl_ciphers=self.config.ssl_settings.ssl_ciphers,
+                    ssl_certfile=self.config.ssl_certfile,
+                    ssl_keyfile=self.config.ssl_keyfile,
+                    ssl_keyfile_password=self.config.ssl_keyfile_password,
+                    ssl_version=self.config.ssl_version,
+                    ssl_cert_reqs=self.config.ssl_cert_reqs,
+                    ssl_ca_certs=self.config.ssl_ca_certs,
+                    ssl_ciphers=self.config.ssl_ciphers,
                 )
             except KeyboardInterrupt:
                 logger.info(
                     "BentoML prediction service stopped. Resuming normal execution."
                 )
         else:
+            logger.info("Running in development mode.")
             from bentoml.serve import serve_http_development
 
             try:
@@ -226,15 +232,13 @@ class BentoMLDeploymentService(LocalDaemonService):
                     port=self.endpoint.status.port,
                     working_dir=self.config.working_dir,
                     host=self.endpoint.status.hostname,
-                    ssl_certfile=self.config.ssl_settings.ssl_certfile or None,
-                    ssl_keyfile=self.config.ssl_settings.ssl_keyfile or None,
-                    ssl_keyfile_password=self.config.ssl_settings.ssl_keyfile_password
-                    or None,
-                    ssl_version=self.config.ssl_settings.ssl_version or None,
-                    ssl_cert_reqs=self.config.ssl_settings.ssl_cert_reqs
-                    or None,
-                    ssl_ca_certs=self.config.ssl_settings.ssl_ca_certs or None,
-                    ssl_ciphers=self.config.ssl_settings.ssl_ciphers or None,
+                    ssl_certfile=self.config.ssl_certfile,
+                    ssl_keyfile=self.config.ssl_keyfile,
+                    ssl_keyfile_password=self.config.ssl_keyfile_password,
+                    ssl_version=self.config.ssl_version,
+                    ssl_cert_reqs=self.config.ssl_cert_reqs,
+                    ssl_ca_certs=self.config.ssl_ca_certs,
+                    ssl_ciphers=self.config.ssl_ciphers,
                 )
             except KeyboardInterrupt:
                 logger.info(
@@ -263,4 +267,36 @@ class BentoMLDeploymentService(LocalDaemonService):
         """
         if not self.is_running:
             return None
-        return [self.prediction_url + api for api in self.config.apis]
+
+        if self.config.apis:
+            return [
+                f"{self.endpoint.prediction_url}/{api}"
+                for api in self.config.apis
+            ]
+        return None
+
+
+    def predict(self, api_endpoint:str, data: "Any") -> "Any":
+        """Make a prediction using the service.
+
+        Args:
+            data: data to make a prediction on
+
+        Returns:
+            The prediction result.
+
+        Raises:
+            Exception: if the service is not running
+            ValueError: if the prediction endpoint is unknown.
+        """
+        if not self.is_running:
+            raise Exception(
+                "BentoML prediction service is not running. "
+                "Please start the service before making predictions."
+            )
+        if self.endpoint.prediction_url is not None:
+            client = Client.from_url(self.endpoint.prediction_url)
+            result = client.call(api_endpoint, data)
+        else:
+            raise ValueError("No endpoint known for prediction.")
+        return result

@@ -88,8 +88,9 @@ def bento_builder_step(
         raise ValueError("No ZenML repository found.")
 
     # save the model and bento uri as part of the bento lables
-    params.labels["model_uri"] = model.uri
-    params.labels["bento_uri"] = os.path.join(
+    labels = params.labels or {}
+    labels["model_uri"] = model.uri
+    labels["bento_uri"] = os.path.join(
         context.get_output_artifact_uri(), DEFAULT_BENTO_FILENAME
     )
 
@@ -110,7 +111,7 @@ def bento_builder_step(
     bento = bentos.build(
         service=params.service,
         version=params.version,
-        labels=params.labels,
+        labels=labels,
         description=params.description,
         include=params.include,
         exclude=params.exclude,
