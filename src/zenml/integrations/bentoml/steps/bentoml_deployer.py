@@ -16,7 +16,7 @@ from typing import List, Optional, Type, cast
 
 import bentoml
 from bentoml._internal.bento import bento
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
@@ -39,28 +39,6 @@ from zenml.steps import (
 )
 
 logger = get_logger(__name__)
-
-
-class SSLBentoMLParametersConfig(BaseModel):
-    """BentoML SSL parameters configuration.
-
-    Attributes:
-        ssl_certfile: SSL certificate file
-        ssl_keyfile: SSL key file
-        ssl_keyfile_password: SSL key file password
-        ssl_version: SSL version
-        ssl_cert_reqs: SSL certificate requirements
-        ssl_ca_certs: SSL CA certificates
-        ssl_ciphers: SSL ciphers
-    """
-
-    ssl_certfile: Optional[str] = None
-    ssl_keyfile: Optional[str] = None
-    ssl_keyfile_password: Optional[str] = None
-    ssl_version: Optional[str] = None
-    ssl_cert_reqs: Optional[str] = None
-    ssl_ca_certs: Optional[str] = None
-    ssl_ciphers: Optional[str] = None
 
 
 class BentoMLDeployerParameters(BaseParameters):
