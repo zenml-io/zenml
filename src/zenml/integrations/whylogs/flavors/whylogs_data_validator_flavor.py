@@ -21,6 +21,9 @@ from zenml.data_validators.base_data_validator import (
     BaseDataValidatorFlavor,
 )
 from zenml.integrations.whylogs import WHYLOGS_DATA_VALIDATOR_FLAVOR
+from zenml.integrations.whylogs.whylabs_credentials_mixin import (
+    WhylabsCredentialsMixin,
+)
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
 
 if TYPE_CHECKING:
@@ -42,7 +45,7 @@ class WhylogsDataValidatorSettings(BaseSettings):
 
 
 class WhylogsDataValidatorConfig(
-    BaseDataValidatorConfig, AuthenticationConfigMixin
+    BaseDataValidatorConfig, AuthenticationConfigMixin, WhylabsCredentialsMixin
 ):
     """Config for the whylogs data validator."""
 

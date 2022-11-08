@@ -162,10 +162,29 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
         secret = self.get_authentication_secret(
             expected_schema_type=WhylabsSecretSchema
         )
-        if not secret:
+        old_credentials = secret.content if secret else {}
+        new_credentials = self.config.get_credentials()
+
+        if old_credentials and new_credentials:
+            raise ValueError(
+                "Whylabs credentials were specified using the "
+                "`authentication_secret` attribute as well as the new "
+                "attributes `whylabs_default_org_id`, `whylabs_api_key` and "
+                "`whylabs_default_dataset_id`.\n"
+                "You can remove the deprecated `authentication_secret` "
+                "attribute by running `zenml data-validator "
+                f"remove-attribute {self.name} authentication_secret`"
+            )
+
+        credentials = old_credentials or new_credentials
+
+        if not credentials:
+            logger.info(
+                "No whylabs credentials specified, skipping profile upload."
+            )
             return
 
-        dataset_id = dataset_id or secret.whylabs_default_dataset_id
+        dataset_id = dataset_id or credentials.get("whylabs_default_dataset_id")
 
         if not dataset_id:
             # use the current pipeline name and the step name to generate a
@@ -184,8 +203,8 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
 
         # Instantiate WhyLabs Writer
         writer = WhyLabsWriter(
-            org_id=secret.whylabs_default_org_id,
-            api_key=secret.whylabs_api_key,
+            org_id=credentials["whylabs_default_org_id"],
+            api_key=credentials["whylabs_api_key"],
             dataset_id=dataset_id,
         )
 
