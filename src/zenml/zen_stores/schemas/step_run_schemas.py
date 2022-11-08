@@ -44,7 +44,7 @@ class StepRunSchema(NamedSchema, table=True):
     mlmd_id: Optional[int] = Field(default=None, nullable=True)
 
     @classmethod
-    def from_request(cls, request: StepRunRequestModel):
+    def from_request(cls, request: StepRunRequestModel) -> "StepRunSchema":
         return cls(
             name=request.name,
             pipeline_run_id=request.pipeline_run_id,

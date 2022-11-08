@@ -45,7 +45,7 @@ from zenml.utils.analytics_utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.new_models import ProjectModel
+    from zenml.new_models import ProjectResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -148,7 +148,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
-    _active_project: Optional["ProjectModel"] = None
+    _active_project: Optional["ProjectResponseModel"] = None
 
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
@@ -644,7 +644,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         return self._zen_store
 
     @property
-    def active_project(self) -> "ProjectModel":
+    def active_project(self) -> "ProjectResponseModel":
         """Get the currently active project of the local client.
 
         Returns:
@@ -672,7 +672,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             )
         return self._active_project
 
-    def set_active_project(self, project: "ProjectModel") -> None:
+    def set_active_project(self, project: "ProjectResponseModel") -> None:
         """Set the project for the local client.
 
         Args:

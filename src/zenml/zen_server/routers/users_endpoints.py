@@ -32,19 +32,23 @@ from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.new_models import (
     EmailOptInModel,
-    RoleAssignmentResponseModel,
     RoleAssignmentRequestModel,
+    RoleAssignmentResponseModel,
     UserRequestModel,
-    UserResponseModel, RoleAssignmentRequestModel,
+    UserResponseModel,
 )
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
     authorize,
 )
-from zenml.zen_server.models.user_models import CreateUserResponse, \
-    CreateUserRequest, UpdateUserRequest, ActivateUserRequest, \
-    DeactivateUserResponse
+from zenml.zen_server.models.user_models import (
+    ActivateUserRequest,
+    CreateUserRequest,
+    CreateUserResponse,
+    DeactivateUserResponse,
+    UpdateUserRequest,
+)
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 logger = get_logger(__name__)
@@ -209,8 +213,9 @@ def activate_user(
     user_model = user.apply_to_model(auth_context.user)
     user_model.active = True
     user_model.activation_token = None
-    return zen_store().update_user(user_name_or_id=user_name_or_id,
-                                   user_update=user_model)
+    return zen_store().update_user(
+        user_name_or_id=user_name_or_id, user_update=user_model
+    )
 
 
 @router.put(

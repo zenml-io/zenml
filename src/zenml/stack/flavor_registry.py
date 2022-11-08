@@ -14,16 +14,16 @@
 """Implementation of the ZenML flavor registry."""
 
 from collections import defaultdict
+from datetime import datetime
 from typing import DefaultDict, Dict, List
+from uuid import UUID
 
+from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
+from zenml.new_models import FlavorRequestModel, FlavorResponseModel
 
-from zenml.new_models import FlavorResponseModel, FlavorRequestModel
-from zenml.client import Client
-from uuid import UUID
-from datetime import datetime
 logger = get_logger(__name__)
 
 
@@ -36,8 +36,7 @@ class FlavorRegistry:
     def __init__(self) -> None:
         """Initialization of the flavors."""
         self._flavors: DefaultDict[
-            StackComponentType,
-            Dict[str, FlavorResponseModel]
+            StackComponentType, Dict[str, FlavorResponseModel]
         ] = defaultdict(dict)
 
         self.register_default_flavors()

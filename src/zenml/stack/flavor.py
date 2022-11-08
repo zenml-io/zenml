@@ -15,9 +15,9 @@
 
 from abc import abstractmethod
 from typing import Optional, Type, cast
-from uuid import UUID
+
 from zenml.enums import StackComponentType
-from zenml.new_models import FlavorResponseModel, FlavorRequestModel
+from zenml.new_models import FlavorRequestModel, FlavorResponseModel
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.utils.source_utils import load_source_path_class, resolve_class
 
@@ -83,9 +83,7 @@ class Flavor:
         flavor = load_source_path_class(flavor_model.source)()  # noqa
         return cast(Flavor, flavor)
 
-    def to_model(
-        self, integration: Optional[str] = None
-    ) -> FlavorRequestModel:
+    def to_model(self, integration: Optional[str] = None) -> FlavorRequestModel:
         """Converts a flavor to a model.
 
         Args:

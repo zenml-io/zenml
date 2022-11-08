@@ -15,7 +15,7 @@
 import re
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Set, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr
@@ -137,6 +137,7 @@ class JWTToken(BaseModel):
         )
         return token
 
+
 # ---- #
 # BASE #
 # ---- #
@@ -228,9 +229,9 @@ class UserBaseModel(BaseModel):
             user = zen_store.get_user(user_name_or_id=access_token.user_id)
         except KeyError:
             return None
-
-        if access_token.user_id == user.id and user.active:
-            return user
+        else:
+            if access_token.user_id == user.id and user.active:
+                return user
 
         return None
 

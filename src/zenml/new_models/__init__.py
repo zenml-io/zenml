@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.new_models.artifact_models import ArtifactRequestModel
 from zenml.new_models.artifact_models import (
-    ArtifactResponseModel as ArtifactModel,
+    ArtifactRequestModel,
+    ArtifactResponseModel,
 )
 from zenml.new_models.component_models import (
     ComponentRequestModel,
@@ -67,3 +67,31 @@ FlavorResponseModel.update_forward_refs(
 )
 UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
 TeamResponseModel.update_forward_refs(UserResponseModel=UserResponseModel)
+
+__all__ = [
+    "ArtifactRequestModel",
+    "ArtifactResponseModel",
+    "ComponentRequestModel",
+    "ComponentResponseModel",
+    "FlavorRequestModel",
+    "FlavorResponseModel",
+    "PipelineRequestModel",
+    "PipelineResponseModel",
+    "PipelineRunRequestModel",
+    "PipelineRunResponseModel",
+    "ProjectRequestModel",
+    "ProjectResponseModel",
+    "RoleAssignmentRequestModel",
+    "RoleAssignmentResponseModel",
+    "RoleRequestModel",
+    "RoleResponseModel",
+    "StackRequestModel",
+    "StackResponseModel",
+    "StepRunRequestModel",
+    "StepRunResponseModel",
+    "TeamRequestModel",
+    "TeamResponseModel",
+    "EmailOptInModel",
+    "UserRequestModel",
+    "UserResponseModel",
+]

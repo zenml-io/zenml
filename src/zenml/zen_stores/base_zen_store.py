@@ -40,6 +40,7 @@ from zenml.new_models import (
     ComponentRequestModel,
     ProjectRequestModel,
     ProjectResponseModel,
+    RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
@@ -48,7 +49,7 @@ from zenml.new_models import (
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
-    UserResponseModel, RoleAssignmentRequestModel,
+    UserResponseModel,
 )
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,

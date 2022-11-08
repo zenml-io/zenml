@@ -26,6 +26,7 @@ from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models.base_models import DomainModel
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.new_models import UserResponseModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.utils.enum_utils import StrEnum
 
@@ -258,7 +259,7 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         return self._get_hashed_secret(self.password)
 
     @classmethod
-    def verify_access_token(cls, token: str) -> Optional["UserModel"]:
+    def verify_access_token(cls, token: str) -> Optional["UserResponseModel"]:
         """Verifies an access token.
 
         Verifies an access token and returns the user that was used to generate

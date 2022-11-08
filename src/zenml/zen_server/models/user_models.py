@@ -14,7 +14,7 @@
 """REST API user management models implementation."""
 
 
-from typing import Any, Optional, Set, cast
+from typing import Any, Optional, cast
 
 from pydantic import BaseModel, Field, SecretStr
 
@@ -23,7 +23,7 @@ from zenml.models.constants import (
     USER_ACTIVATION_TOKEN_LENGTH,
     USER_PASSWORD_MAX_LENGTH,
 )
-from zenml.models.user_management_models import RoleModel, TeamModel, UserModel
+from zenml.models.user_management_models import UserModel
 from zenml.new_models import UserRequestModel, UserResponseModel
 from zenml.zen_server.models.base_models import (
     CreateRequest,
@@ -178,7 +178,7 @@ class ActivateUserRequest(UpdateRequest[UserModel]):
         max_length=USER_ACTIVATION_TOKEN_LENGTH,
     )
 
-    def apply_to_model(self, model: UserModel) -> UserModel:
+    def apply_to_model(self, model: UserResponseModel) -> UserRequestModel:
         """Apply the update changes to a user domain model.
         Args:
             model: The user domain model to update.
@@ -192,7 +192,7 @@ class ActivateUserRequest(UpdateRequest[UserModel]):
         model.password = self.password
         # skip the activation token intentionally, because it is validated
         # separately
-        return model
+        return UserRequestModel(**model.dict())
 
 
 class DeactivateUserResponse(UserModel, UpdateResponse[UserModel]):
@@ -204,7 +204,7 @@ class DeactivateUserResponse(UserModel, UpdateResponse[UserModel]):
 
     @classmethod
     def from_model(
-        cls, model: UserModel, **kwargs: Any
+        cls, model: UserResponseModel, **kwargs: Any
     ) -> "DeactivateUserResponse":
         """Convert a domain model into a user deactivation response.
         Args:

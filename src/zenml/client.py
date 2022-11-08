@@ -50,16 +50,15 @@ from zenml.new_models import (
     ComponentRequestModel,
     FlavorRequestModel,
     PipelineRequestModel,
+    PipelineResponseModel,
+    PipelineRunResponseModel,
+    RoleResponseModel,
     StackRequestModel,
+    StackResponseModel,
+    TeamResponseModel,
+    UserResponseModel,
 )
 from zenml.new_models.base_models import BaseResponseModel
-from zenml.new_models.flavor_models import FlavorResponseModel
-from zenml.new_models.pipeline_models import PipelineResponseModel
-from zenml.new_models.pipeline_run_models import PipelineRunResponseModel
-from zenml.new_models.role_models import RoleResponseModel
-from zenml.new_models.stack_models import StackResponseModel
-from zenml.new_models.team_models import TeamResponseModel
-from zenml.new_models.user_models import UserResponseModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -67,11 +66,9 @@ from zenml.utils.filesync_model import FileSyncModel
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
     from zenml.new_models import (
-        ComponentModel,
-        FlavorModel,
-        ProjectModel,
-        StackModel,
-        UserModel,
+        ComponentResponseModel,
+        FlavorResponseModel,
+        ProjectResponseModel,
     )
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -83,13 +80,13 @@ AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 class ClientConfiguration(FileSyncModel):
     """Pydantic object used for serializing client configuration options."""
 
-    _active_stack: Optional["StackModel"] = None
+    _active_stack: Optional["StackResponseModel"] = None
     active_stack_id: Optional[UUID]
 
-    _active_project: Optional["ProjectModel"] = None
+    _active_project: Optional["ProjectResponseModel"] = None
     active_project_id: Optional[UUID]
 
-    def set_active_project(self, project: "ProjectModel") -> None:
+    def set_active_project(self, project: "ProjectResponseModel") -> None:
         """Set the project for the local client.
 
         Args:
@@ -98,7 +95,7 @@ class ClientConfiguration(FileSyncModel):
         self._active_project = project
         self.active_project_id = project.id
 
-    def set_active_stack(self, stack: "StackModel") -> None:
+    def set_active_stack(self, stack: "StackResponseModel") -> None:
         """Set the stack for the local client.
 
         Args:
@@ -108,12 +105,12 @@ class ClientConfiguration(FileSyncModel):
         self.active_stack_id = stack.id
 
     @property
-    def active_project(self):
+    def active_project(self) -> ProjectResponseModel:
         """"""
         return self._active_project
 
     @property
-    def active_stack(self):
+    def active_stack(self) -> StackResponseModel:
         """"""
         return self._active_stack
 
@@ -502,7 +499,7 @@ class Client(metaclass=ClientMetaClass):
     @track(event=AnalyticsEvent.SET_PROJECT)
     def set_active_project(
         self, project_name_or_id: Union[str, UUID]
-    ) -> "ProjectModel":
+    ) -> "ProjectResponseModel":
         """Set the project for the local client.
 
         Args:
@@ -527,7 +524,7 @@ class Client(metaclass=ClientMetaClass):
     # ---- #
 
     @property
-    def active_user(self) -> "UserModel":
+    def active_user(self) -> "UserResponseModel":
         """Get the user that is currently in use.
 
         Returns:
@@ -621,7 +618,7 @@ class Client(metaclass=ClientMetaClass):
     # ------- #
 
     @property
-    def active_project(self) -> "ProjectModel":
+    def active_project(self) -> "ProjectResponseModel":
         """Get the currently active project of the local client.
 
         If no active project is configured locally for the client, the
@@ -633,7 +630,7 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active project is not set.
         """
-        project: Optional["ProjectModel"] = None
+        project: Optional["ProjectResponseModel"] = None
         if self._config:
             project = self._config.active_project
 
@@ -694,7 +691,7 @@ class Client(metaclass=ClientMetaClass):
         return Stack.from_model(self.active_stack_model)
 
     @property
-    def active_stack_model(self) -> "StackModel":
+    def active_stack_model(self) -> "StackResponseModel":
         """The model of the active stack for this client.
 
         If no active stack is configured locally for the client, the active
@@ -733,7 +730,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         components: Dict[StackComponentType, Optional[str]],
         is_shared: bool = False,
-    ) -> "StackModel":
+    ) -> "StackResponseModel":
         """Registers a stack and its components.
 
         Args:
@@ -777,7 +774,7 @@ class Client(metaclass=ClientMetaClass):
         components: Optional[
             Dict[StackComponentType, List[Optional[str]]]
         ] = None,
-    ) -> "StackModel":
+    ) -> "StackResponseModel":
         """Updates a stack and its components.
 
         Args:
@@ -890,7 +887,7 @@ class Client(metaclass=ClientMetaClass):
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List["StackModel"]:
+    ) -> List["StackResponseModel"]:
         """"""
         return self.zen_store.list_stacks(
             project_name_or_id=self.active_project.id,
@@ -999,7 +996,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: str,
         component_type: StackComponentType,
-    ) -> "ComponentModel":
+    ) -> "ComponentResponseModel":
         """Fetches a registered stack component.
 
         Args:
@@ -1022,7 +1019,7 @@ class Client(metaclass=ClientMetaClass):
         flavor_name: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List["ComponentModel"]:
+    ) -> List["ComponentResponseModel"]:
         """"""
         return self.zen_store.list_stack_components(
             project_name_or_id=project_name_or_id,
@@ -1040,7 +1037,7 @@ class Client(metaclass=ClientMetaClass):
         component_type: StackComponentType,
         configuration: Dict[str, str],
         is_shared: bool,
-    ) -> "ComponentModel":
+    ) -> "ComponentResponseModel":
         """Registers a stack component.
 
         Args:
@@ -1091,7 +1088,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         configuration: Optional[Dict[str, str]] = None,
         is_shared: Optional[bool] = None,
-    ) -> "ComponentModel":
+    ) -> "ComponentResponseModel":
         """Updates a stack component.
 
         Args:
@@ -1235,7 +1232,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         source: str,
         component_type: StackComponentType,
-    ) -> "FlavorModel":
+    ) -> "FlavorResponseModel":
         """Creates a new flavor.
 
         Args:
@@ -1294,7 +1291,7 @@ class Client(metaclass=ClientMetaClass):
 
     def list_flavors(
         self,
-    ) -> List["FlavorModel"]:
+    ) -> List["FlavorResponseModel"]:
         """Fetches all the flavor models.
 
         Returns:
@@ -1308,7 +1305,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_flavors_by_type(
         self, component_type: "StackComponentType"
-    ) -> List["FlavorModel"]:
+    ) -> List["FlavorResponseModel"]:
         """Fetches the list of flavor for a stack component type.
 
         Args:
@@ -1334,7 +1331,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_flavor_by_name_and_type(
         self, name: str, component_type: "StackComponentType"
-    ) -> "FlavorModel":
+    ) -> "FlavorResponseModel":
         """Fetches a registered flavor.
 
         Args:
@@ -1832,7 +1829,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: str,
         component_type: StackComponentType,
-    ) -> "ComponentModel":
+    ) -> "ComponentResponseModel":
         """Fetches a component of given type using the name, id or partial id.
 
         Args:
