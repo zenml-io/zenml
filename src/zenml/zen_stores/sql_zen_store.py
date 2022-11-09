@@ -2226,6 +2226,7 @@ class SqlZenStore(BaseZenStore):
     def list_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
@@ -2234,6 +2235,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             project_name_or_id: If provided, only return role assignments for
                 this project.
+            role_name_or_id: If provided, only list assignments of the given
+                role
             team_name_or_id: If provided, only list assignments for this team.
             user_name_or_id: If provided, only list assignments for this user.
 

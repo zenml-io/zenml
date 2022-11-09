@@ -367,7 +367,7 @@ def assign_role(
 def unassign_role(
     user_name_or_id: Union[str, UUID],
     role_name_or_id: Union[str, UUID],
-    project_name_or_id: Optional[Union[str, UUID]],
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> None:
     """Remove a users role within a project or globally.

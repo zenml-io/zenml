@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """REST Zen Store implementation."""
-
+import json
 import os
 import re
 from pathlib import Path, PurePath
@@ -937,6 +937,7 @@ class RestZenStore(BaseZenStore):
         Args:
             team_name_or_id: The name or ID of the team for which to get users.
         """
+        raise NotImplementedError("Not Implemented")
 
     def get_teams_for_user(
         self, user_name_or_id: Union[str, UUID]
@@ -947,6 +948,7 @@ class RestZenStore(BaseZenStore):
             user_name_or_id: The name or ID of the user for which to get all
                 teams.
         """
+        raise NotImplementedError("Not Implemented")
 
     def add_user_to_team(
         self,
@@ -959,6 +961,7 @@ class RestZenStore(BaseZenStore):
             user_name_or_id: Name or ID of the user to add to the team.
             team_name_or_id: Name or ID of the team to which to add the user to.
         """
+        raise NotImplementedError("Not Implemented")
 
     def remove_user_from_team(
         self,
@@ -971,6 +974,7 @@ class RestZenStore(BaseZenStore):
             user_name_or_id: Name or ID of the user to remove from the team.
             team_name_or_id: Name or ID of the team from which to remove the user.
         """
+        raise NotImplementedError("Not Implemented")
 
     # -----
     # Roles
@@ -1058,6 +1062,7 @@ class RestZenStore(BaseZenStore):
     def list_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
@@ -1066,6 +1071,8 @@ class RestZenStore(BaseZenStore):
         Args:
             project_name_or_id: If provided, only list assignments for the given
                 project
+            role_name_or_id: If provided, only list assignments of the given
+                role
             team_name_or_id: If provided, only list assignments for the given
                 team
             user_name_or_id: If provided, only list assignments for the given
@@ -1111,6 +1118,14 @@ class RestZenStore(BaseZenStore):
                 assign the role. If this is not provided, the role will be
                 assigned globally.
         """
+        path = f"{USERS}/{str(user_or_team_name_or_id)}{ROLES}" \
+               f"?role_name_or_id={role_name_or_id}"
+        logger.debug(f"Sending POST request to {path}...")
+        self._request(
+            "POST",
+            self.url + API + VERSION_1 + path,
+            data=json.dumps({}),
+        )
 
     def revoke_role(
         self,
@@ -1130,6 +1145,14 @@ class RestZenStore(BaseZenStore):
                 the role. If this is not provided, the role will be revoked
                 globally.
         """
+        path = f"{USERS}/{str(user_or_team_name_or_id)}{ROLES}" \
+               f"/{str(role_name_or_id)}"
+        logger.debug(f"Sending POST request to {path}...")
+        self._request(
+            "DELETE",
+            self.url + API + VERSION_1 + path,
+            data=json.dumps({}),
+        )
 
     # --------
     # Projects
