@@ -70,6 +70,7 @@ def upgrade() -> None:
     ).fetchall()
 
     role_ids = [i[0] for i in res]
+
     conn.execute(
         userroleassignmentschema
         .delete()
@@ -143,6 +144,7 @@ def upgrade() -> None:
     conn = op.get_bind()
     res = conn.execute(select(userschema.c.id)).fetchall()
     user_ids = [i[0] for i in res]
+
     for user_id in user_ids:
         op.bulk_insert(
             sa.Table(
@@ -153,7 +155,7 @@ def upgrade() -> None:
                 {
                     "id": str(uuid.uuid4()).replace("-", ""),
                     "role_id": admin_id,
-                    "user_id": user_id[0],
+                    "user_id": user_id,
                     "created": datetime.datetime.now(),
                     "updated": datetime.datetime.now(),
                 }
