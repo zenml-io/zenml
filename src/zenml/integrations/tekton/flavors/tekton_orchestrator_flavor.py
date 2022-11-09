@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Tekton orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
@@ -21,8 +21,20 @@ from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 if TYPE_CHECKING:
     from zenml.integrations.tekton.orchestrators import TektonOrchestrator
 
+from zenml.config.base_settings import BaseSettings
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
 DEFAULT_TEKTON_UI_PORT = 8080
+
+
+class TektonOrchestratorSettings(BaseSettings):
+    """Settings for the Tekton orchestrator.
+
+    Attributes:
+        pod_settings: Pod settings to apply.
+    """
+
+    pod_settings: Optional[KubernetesPodSettings] = None
 
 
 class TektonOrchestratorConfig(BaseOrchestratorConfig):

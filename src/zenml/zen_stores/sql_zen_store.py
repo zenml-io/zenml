@@ -18,6 +18,7 @@ import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path, PurePath
+from threading import Lock, get_ident
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -79,7 +80,13 @@ from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.base_zen_store import (
+    ADMIN_ROLE,
+    DEFAULT_STACK_COMPONENT_NAME,
+    DEFAULT_STACK_NAME,
+    GUEST_ROLE,
+    BaseZenStore,
+)
 from zenml.zen_stores.migrations.alembic import (
     ZENML_ALEMBIC_START_REVISION,
     Alembic,
@@ -103,6 +110,9 @@ from zenml.zen_stores.schemas import (
     UserSchema,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
+from zenml.zen_stores.schemas.user_management_schemas import (
+    RolePermissionSchema,
+)
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import (
@@ -528,6 +538,8 @@ class SqlZenStore(BaseZenStore):
         CONFIG_TYPE: The type of the store configuration.
         _engine: The SQLAlchemy engine.
         _metadata_store: The metadata store.
+        _lock: A thread mutex used to ensure thread safety during the pipeline
+            run synchronization.
     """
 
     config: SqlZenStoreConfiguration
@@ -539,6 +551,7 @@ class SqlZenStore(BaseZenStore):
     _metadata_store: Optional["MetadataStore"] = None
     _highest_synced_run_mlmd_id: int = 0
     _alembic: Optional[Alembic] = None
+    _sync_lock: Optional[Lock] = None
 
     @property
     def engine(self) -> Engine:
@@ -593,6 +606,20 @@ class SqlZenStore(BaseZenStore):
             raise ValueError("Store not initialized")
         return self._alembic
 
+    @property
+    def sync_lock(self) -> Lock:
+        """The mutex used to synchronize pipeline runs.
+
+        Returns:
+            The mutex used to synchronize pipeline runs.
+
+        Raises:
+            ValueError: If the store is not initialized.
+        """
+        if not self._sync_lock:
+            raise ValueError("Store not initialized")
+        return self._sync_lock
+
     # ====================================
     # ZenML Store interface implementation
     # ====================================
@@ -620,6 +647,8 @@ class SqlZenStore(BaseZenStore):
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
+
+        self._sync_lock = Lock()
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the current python package."""
@@ -886,6 +915,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack doesn't exist.
+            IllegalOperationError: if the stack is a default stack.
         """
         with Session(self.engine) as session:
             # Check if stack with the domain key (name, project, owner) already
@@ -893,12 +923,15 @@ class SqlZenStore(BaseZenStore):
             existing_stack = session.exec(
                 select(StackSchema).where(StackSchema.id == stack.id)
             ).first()
-
             if existing_stack is None:
                 raise KeyError(
                     f"Unable to update stack with id "
                     f"'{stack.id}': Found no"
                     f"existing stack with this id."
+                )
+            if existing_stack.name == DEFAULT_STACK_NAME:
+                raise IllegalOperationError(
+                    "The default stack cannot be modified."
                 )
             # In case of a renaming update, make sure no stack already exists
             # with that name
@@ -952,12 +985,17 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack doesn't exist.
+            IllegalOperationError: if the stack is a default stack.
         """
         with Session(self.engine) as session:
             try:
                 stack = session.exec(
                     select(StackSchema).where(StackSchema.id == stack_id)
                 ).one()
+                if stack.name == DEFAULT_STACK_NAME:
+                    raise IllegalOperationError(
+                        "The default stack cannot be deleted."
+                    )
                 session.delete(stack)
             except NoResultFound as error:
                 raise KeyError from error
@@ -1194,6 +1232,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack component doesn't exist.
+            IllegalOperationError: if the stack component is a default stack
+                component.
         """
         with Session(self.engine) as session:
             existing_component = session.exec(
@@ -1207,6 +1247,18 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update component with id "
                     f"'{component.id}': Found no"
                     f"existing component with this id."
+                )
+
+            if (
+                existing_component.name == DEFAULT_STACK_COMPONENT_NAME
+                and existing_component.type
+                in [
+                    StackComponentType.ORCHESTRATOR,
+                    StackComponentType.ARTIFACT_STORE,
+                ]
+            ):
+                raise IllegalOperationError(
+                    f"The default {existing_component.type} cannot be modified."
                 )
 
             # In case of a renaming update, make sure no component of the same
@@ -1252,7 +1304,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component doesn't exist.
             IllegalOperationError: if the stack component is part of one or
-                more stacks.
+                more stacks, or if it's a default stack component.
         """
         with Session(self.engine) as session:
             try:
@@ -1261,10 +1313,22 @@ class SqlZenStore(BaseZenStore):
                         StackComponentSchema.id == component_id
                     )
                 ).one()
+                if (
+                    stack_component.name == DEFAULT_STACK_COMPONENT_NAME
+                    and stack_component.type
+                    in [
+                        StackComponentType.ORCHESTRATOR,
+                        StackComponentType.ARTIFACT_STORE,
+                    ]
+                ):
+                    raise IllegalOperationError(
+                        f"The default {stack_component.type} cannot be deleted."
+                    )
+
                 if len(stack_component.stacks) > 0:
                     raise IllegalOperationError(
                         f"Stack Component `{stack_component.name}` of type "
-                        f"`{stack_component.type} can not be "
+                        f"`{stack_component.type} cannot be "
                         f"deleted as it is part of "
                         f"{len(stack_component.stacks)} stacks. "
                         f"Before deleting this stack "
@@ -1559,7 +1623,7 @@ class SqlZenStore(BaseZenStore):
                 if len(components_of_flavor) > 0:
                     raise IllegalOperationError(
                         f"Stack Component `{flavor_in_db.name}` of type "
-                        f"`{flavor_in_db.type} can not be "
+                        f"`{flavor_in_db.type} cannot be "
                         f"deleted as it is used by"
                         f"{len(components_of_flavor)} "
                         f"components. Before deleting this "
@@ -1650,9 +1714,21 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated user.
+
+        Raises:
+            IllegalOperationError: If the request tries to update the username
+                for the default user account.
         """
         with Session(self.engine) as session:
             existing_user = self._get_user_schema(user.id, session=session)
+            if (
+                existing_user.name == self._default_user_name
+                and user.name != existing_user.name
+            ):
+                raise IllegalOperationError(
+                    "The username of the default user account cannot be "
+                    "changed."
+                )
             existing_user.from_update_model(user)
             session.add(existing_user)
             session.commit()
@@ -1669,15 +1745,16 @@ class SqlZenStore(BaseZenStore):
             user_name_or_id: The name or the ID of the user to delete.
 
         Raises:
-            KeyError: If no user with the given name exists.
+            IllegalOperationError: If the user is the default user account.
         """
         with Session(self.engine) as session:
-            try:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                session.delete(user)
-                session.commit()
-            except NoResultFound as error:
-                raise KeyError from error
+            user = self._get_user_schema(user_name_or_id, session=session)
+            if user.name == self._default_user_name:
+                raise IllegalOperationError(
+                    "The default user account cannot be deleted."
+                )
+            session.delete(user)
+            session.commit()
 
     def user_email_opt_in(
         self,
@@ -1695,23 +1772,16 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         with Session(self.engine) as session:
-            try:
-                user = self._get_user_schema(user_name_or_id, session=session)
-            except NoResultFound as error:
-                raise KeyError from error
-            else:
-                # TODO: In the future we might want to validate that the email
-                #  is non-empty and valid at this point if user_opt_in_response
-                #  is True
-                user.email = email
-                user.email_opted_in = user_opt_in_response
-                session.add(user)
-                session.commit()
+            user = self._get_user_schema(user_name_or_id, session=session)
+            # TODO: In the future we might want to validate that the email
+            #  is non-empty and valid at this point if user_opt_in_response
+            #  is True
+            user.email = email
+            user.email_opted_in = user_opt_in_response
+            session.add(user)
+            session.commit()
 
             return user.to_model()
 
@@ -1814,18 +1884,11 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_name_or_id: Name or ID of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given name exists.
         """
         with Session(self.engine) as session:
-            try:
-                team = self._get_team_schema(team_name_or_id, session=session)
-                session.delete(team)
-                session.commit()
-
-            except NoResultFound as error:
-                raise KeyError from error
+            team = self._get_team_schema(team_name_or_id, session=session)
+            session.delete(team)
+            session.commit()
 
     # ---------------
     # Team membership
@@ -1949,6 +2012,13 @@ class SqlZenStore(BaseZenStore):
             role_schema = RoleSchema.from_create_model(role)
             session.add(role_schema)
             session.commit()
+            # Add all permissions
+            for p in role.permissions:
+                session.add(
+                    RolePermissionSchema(name=p, role_id=role_schema.id)
+                )
+
+            session.commit()
             return role_schema.to_model()
 
     def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleModel:
@@ -1987,6 +2057,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the role does not exist.
+            IllegalOperationError: if the role is a system role.
         """
         with Session(self.engine) as session:
             existing_role = session.exec(
@@ -2000,10 +2071,37 @@ class SqlZenStore(BaseZenStore):
                     f"existing roles with this id."
                 )
 
+            if existing_role.name in [ADMIN_ROLE, GUEST_ROLE]:
+                raise IllegalOperationError(
+                    f"The built-in role '{role.name}' cannot be updated."
+                )
+
             # Update the role
             existing_role.from_update_model(role)
 
             session.add(existing_role)
+            session.commit()
+
+            existing_permissions = {p.name for p in existing_role.permissions}
+
+            diff = existing_permissions.symmetric_difference(role.permissions)
+
+            for permission in diff:
+                if permission not in role.permissions:
+                    permission_to_delete = session.exec(
+                        select(RolePermissionSchema)
+                        .where(RolePermissionSchema.name == permission)
+                        .where(RolePermissionSchema.role_id == existing_role.id)
+                    ).one_or_none()
+                    session.delete(permission_to_delete)
+
+                elif permission not in existing_permissions:
+                    session.add(
+                        RolePermissionSchema(
+                            name=permission, role_id=existing_role.id
+                        )
+                    )
+
             session.commit()
 
             # Refresh the Model that was just created
@@ -2018,39 +2116,39 @@ class SqlZenStore(BaseZenStore):
             role_name_or_id: Name or ID of the role to delete.
 
         Raises:
-            IllegalOperationError: If the role is still assigned to users.
-            KeyError: If the role does not exist.
+            IllegalOperationError: If the role is still assigned to users or
+                the role is one of the built-in roles.
         """
         with Session(self.engine) as session:
-            try:
-                role = self._get_role_schema(role_name_or_id, session=session)
+            role = self._get_role_schema(role_name_or_id, session=session)
+            if role.name in [ADMIN_ROLE, GUEST_ROLE]:
+                raise IllegalOperationError(
+                    f"The built-in role '{role.name}' cannot be deleted."
+                )
+            user_role = session.exec(
+                select(UserRoleAssignmentSchema).where(
+                    UserRoleAssignmentSchema.role_id == role.id
+                )
+            ).all()
+            team_role = session.exec(
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.role_id == role.id
+                )
+            ).all()
 
-                user_role = session.exec(
-                    select(UserRoleAssignmentSchema).where(
-                        UserRoleAssignmentSchema.role_id == role.id
-                    )
-                ).all()
-                team_role = session.exec(
-                    select(TeamRoleAssignmentSchema).where(
-                        TeamRoleAssignmentSchema.role_id == role.id
-                    )
-                ).all()
-
-                if len(user_role) > 0 or len(team_role) > 0:
-                    # TODO: Eventually we might want to allow this deletion
-                    #  and simply cascade
-                    raise IllegalOperationError(
-                        f"Role `{role.name}` of type can not be "
-                        f"deleted as it is in use by multiple users and teams. "
-                        f"Before deleting this role make sure to remove all "
-                        f"instances where this role is used."
-                    )
-                else:
-                    # Delete role
-                    session.delete(role)
-                    session.commit()
-            except NoResultFound as error:
-                raise KeyError from error
+            if len(user_role) > 0 or len(team_role) > 0:
+                # TODO: Eventually we might want to allow this deletion
+                #  and simply cascade
+                raise IllegalOperationError(
+                    f"Role `{role.name}` of type cannot be "
+                    f"deleted as it is in use by multiple users and teams. "
+                    f"Before deleting this role make sure to remove all "
+                    f"instances where this role is used."
+                )
+            else:
+                # Delete role
+                session.delete(role)
+                session.commit()
 
     # ----------------
     # Role assignments
@@ -2429,18 +2527,18 @@ class SqlZenStore(BaseZenStore):
             The updated project.
 
         Raises:
-            KeyError: if the project does not exist.
+            IllegalOperationError: if the project is the default project.
         """
         with Session(self.engine) as session:
-            existing_project = session.exec(
-                select(ProjectSchema).where(ProjectSchema.id == project.id)
-            ).first()
-
-            if existing_project is None:
-                raise KeyError(
-                    f"Unable to update project with id "
-                    f"'{project.id}': Found no"
-                    f"existing projects with this id."
+            existing_project = self._get_project_schema(
+                project.id, session=session
+            )
+            if (
+                existing_project.name == self._default_project_name
+                and project.name != existing_project.name
+            ):
+                raise IllegalOperationError(
+                    "The name of the default project cannot be changed."
                 )
 
             # Update the project
@@ -2461,19 +2559,20 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: Name or ID of the project to delete.
 
         Raises:
-            KeyError: If the project does not exist.
+            IllegalOperationError: If the project is the default project.
         """
         with Session(self.engine) as session:
-            try:
-                # Check if project with the given name exists
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
+            # Check if project with the given name exists
+            project = self._get_project_schema(
+                project_name_or_id, session=session
+            )
+            if project.name == self._default_project_name:
+                raise IllegalOperationError(
+                    "The default project cannot be deleted."
                 )
 
-                session.delete(project)
-                session.commit()
-            except NoResultFound as error:
-                raise KeyError from error
+            session.delete(project)
+            session.commit()
 
     # ------------
     # Repositories
@@ -3557,18 +3656,37 @@ class SqlZenStore(BaseZenStore):
         exists in the database, and if not, creates it.
         """
         from zenml.zen_stores.migrations.alembic import AlembicVersion
+        from zenml.zen_stores.rest_zen_store import DEFAULT_HTTP_TIMEOUT
 
+        # This is to synchronize the locally running threads so that only
+        # one thread attempts to sync the runs at any given time.
+        # The timeout is set to be shorter than the default REST client
+        # timeout, so that we don't block the client for too long.
+        logger.debug(f"[{get_ident()}] Trying to acquire sync lock...")
+        if not self.sync_lock.acquire(timeout=DEFAULT_HTTP_TIMEOUT - 10):
+            logger.warning(
+                f"[{get_ident()}] Timed out waiting to acquire pipeline "
+                f"run sync lock. Skipping the sync this time around."
+            )
+            return
+
+        logger.debug(f"[{get_ident()}] Pipeline run sync lock acquired.")
         try:
             with Session(self.engine) as session:
-                # We use the alembic version table as a shared resource that we
-                # can lock to prevent multiple processes from syncing runs at
-                # the same time.
                 logger.debug("Syncing pipeline runs...")
-                session.query(AlembicVersion).with_for_update().all()
+                if self.config.driver != SQLDatabaseDriver.SQLITE:
+                    # This is to synchronize all server processes trying to
+                    # sync the pipeline runs at the same time. We use the
+                    # alembic version table as a shared resource that we can
+                    # lock to prevent multiple processes from syncing runs
+                    # at the same time.
+                    session.query(AlembicVersion).with_for_update().all()
                 self._sync_runs_with_lock(session)
                 logger.debug("Pipeline runs sync complete")
         except Exception:
             logger.exception("Failed to sync pipeline runs.")
+        finally:
+            self.sync_lock.release()
 
     def _sync_runs_with_lock(self, session: Session) -> None:
         """Sync runs from MLMD into the database while the DB is locked.

@@ -44,7 +44,7 @@ The `deploy` command, by default, tries to create an NGINX ingress controller on
 - Set `create_ingress_controller` to `false`.
 - Supply your controller's hostname to the `ingress_controller_hostname` variable.
     > **Note**
-    > If you're on GCP, the ingress host could be an IP address of the form `https://xx.xx.xx.xx`. Append `.nip.io` to this address before supplying the value to the `ingress_controller_hostname` variable. Learn more [here](https://nip.io/).
+    > The address should not have a trailing `/`.
 - You can now run the `deploy` command and pass the config file above, to it.
 
     ```
@@ -122,6 +122,7 @@ ingress_controller_hostname: The ingress controller hostname to use for
     the ingress self-signed certificate and to compute the ZenML server
     URL.
 
+deploy_db [true]: Whether to create a SQL database service as part of the recipe.
 database_username [admin]: The username for the database.
 database_password: The password for the database.
 database_url: The URL of the database to use for the ZenML server.
@@ -148,7 +149,6 @@ log_level [ERROR]: The log level to set the terraform client to. Choose one of
 ```
 region [eu-west-1]: The AWS region to deploy to.
 
-create_rds [true]: Whether to create an RDS database.
 rds_name [zenmlserver]: The name of the RDS instance to create
 db_name [zenmlserver]: Name of RDS database to create.
 db_type [mysql]: Type of RDS database to create.
@@ -157,7 +157,7 @@ db_instance_class [db.t3.micro]: Instance class of RDS database to create.
 db_allocated_storage [5]: Allocated storage of RDS database to create.
 ```
 
-The `database_username` and `database_password` from the general config is used to set those variables for the AWS RDS instance as well.
+The `database_username` and `database_password` from the general config is used to set those variables for the AWS RDS instance.
 
 {% endtab %}
 
@@ -167,7 +167,6 @@ The `database_username` and `database_password` from the general config is used 
 project_id: The project in GCP to deploy the server to.
 region [europe-west3]: The GCP region to deploy to.
 
-create_cloudsql [true]: Whether to create an CloudSQL database.
 cloudsql_name [zenmlserver]: The name of the CloudSQL instance to create
 db_name [zenmlserver]: Name of CloudSQL database to create.
 db_instance_tier [db-n1-standard-1]: Instance class of CloudSQL database to create.
@@ -175,14 +174,23 @@ db_disk_size [10]: Allocated storage of CloudSQL database, in GB, to create.
 ```
 
 - The `project_id` is required to be set.
-- The username for the database is `admin` irrespective of the value passed to the `database_username` variable.
+- The `database_username` and `database_password` from the general config is used to set those variables for the CloudSQL instance.
 - SSL is disabled by default on the database and option to enable it is coming soon!
 
 {% endtab %}
 
 {% tab title="Azure" %}
 
-Coming Soon!
+```
+resource_group [zenml]: The Azure resource_group to deploy to.
+
+db_instance_name [zenmlserver]: The name of the Flexible MySQL instance to create
+db_name [zenmlserver]: Name of RDS database to create.
+db_version [5.7]: Version of MySQL database to create.
+db_sku_name [B_Standard_B1s]: The sku_name for the database resource.
+db_disk_size [20]: Allocated storage of MySQL database to create.
+```
+The `database_username` and `database_password` from the general config is used to set those variables for the Azure Flexible MySQL server.
 
 {% endtab %}
 {% endtabs %}

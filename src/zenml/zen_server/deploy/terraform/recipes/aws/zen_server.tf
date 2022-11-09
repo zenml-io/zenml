@@ -18,8 +18,8 @@ resource "helm_release" "zen-server" {
   }
   set {
     name = "zenml.initImage.tag"
-    value = var.zenmlserver_image_tag
-  }
+    value = var.zenmlinit_image_tag
+  } 
   set {
     name  = "zenml.defaultUsername"
     value = var.username
@@ -70,23 +70,23 @@ resource "helm_release" "zen-server" {
   # set parameters for the mysql database
   set {
     name  = "zenml.database.url"
-    value = var.create_rds? "mysql://${module.metadata_store[0].db_instance_username}:${module.metadata_store[0].db_instance_password}@${module.metadata_store[0].db_instance_address}:3306/${var.db_name}" : var.database_url
+    value = var.deploy_db? "mysql://${module.metadata_store[0].db_instance_username}:${module.metadata_store[0].db_instance_password}@${module.metadata_store[0].db_instance_address}:3306/${var.db_name}" : var.database_url
   }
   set {
     name  = "zenml.database.sslCa"
-    value = var.create_rds? "" : var.database_ssl_ca
+    value = var.deploy_db? "" : var.database_ssl_ca
   }
   set {
     name  = "zenml.database.sslCert"
-    value = var.create_rds? "" : var.database_ssl_cert
+    value = var.deploy_db? "" : var.database_ssl_cert
   }
   set {
     name  = "zenml.database.sslKey"
-    value = var.create_rds? "" : var.database_ssl_key
+    value = var.deploy_db? "" : var.database_ssl_key
   }
   set {
     name  = "zenml.database.sslVerifyServerCert"
-    value = var.create_rds? false : var.database_ssl_verify_server_cert
+    value = var.deploy_db? false : var.database_ssl_verify_server_cert
   }
   depends_on = [
     resource.kubernetes_namespace.zen-server

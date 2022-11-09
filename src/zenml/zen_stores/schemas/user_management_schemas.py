@@ -12,14 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Users, Teams, Roles."""
-
-
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from zenml.enums import PermissionType
 from zenml.models import RoleAssignmentModel, RoleModel, TeamModel, UserModel
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -208,6 +207,14 @@ class TeamSchema(SQLModel, table=True):
         )
 
 
+class RolePermissionSchema(SQLModel, table=True):
+    """SQL Model for team assignments."""
+
+    name: PermissionType = Field(primary_key=True)
+    role_id: UUID = Field(primary_key=True, foreign_key="roleschema.id")
+    roles: List["RoleSchema"] = Relationship(back_populates="permissions")
+
+
 class RoleSchema(SQLModel, table=True):
     """SQL Model for roles."""
 
@@ -217,7 +224,9 @@ class RoleSchema(SQLModel, table=True):
     name: str
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
-
+    permissions: List["RolePermissionSchema"] = Relationship(
+        back_populates="roles", sa_relationship_kwargs={"cascade": "delete"}
+    )
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="role", sa_relationship_kwargs={"cascade": "delete"}
     )
@@ -261,6 +270,7 @@ class RoleSchema(SQLModel, table=True):
             name=self.name,
             created=self.created,
             updated=self.updated,
+            permissions=[p.name for p in self.permissions],
         )
 
 

@@ -15,7 +15,7 @@
 from typing import Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
@@ -58,7 +58,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + PROJECTS,
     tags=["projects"],
-    dependencies=[Depends(authorize)],
+    dependencies=[Security(authorize, scopes=["read"])],
     responses={401: error_response},
 )
 
@@ -84,7 +84,10 @@ def list_projects() -> List[ProjectModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_project(project: CreateProjectRequest) -> ProjectModel:
+def create_project(
+    project: CreateProjectRequest,
+    _: AuthContext = Security(authorize, scopes=["write"]),
+) -> ProjectModel:
     """Creates a project based on the requestBody.
 
     # noqa: DAR401
@@ -125,7 +128,9 @@ def get_project(project_name_or_id: Union[str, UUID]) -> ProjectModel:
 )
 @handle_exceptions
 def update_project(
-    project_name_or_id: Union[str, UUID], project_update: UpdateProjectRequest
+    project_name_or_id: Union[str, UUID],
+    project_update: UpdateProjectRequest,
+    _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> ProjectModel:
     """Get a project for given name.
 
@@ -150,7 +155,10 @@ def update_project(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_project(project_name_or_id: Union[str, UUID]) -> None:
+def delete_project(
+    project_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=["write"]),
+) -> None:
     """Deletes a project.
 
     Args:
@@ -242,7 +250,7 @@ def create_stack(
     project_name_or_id: Union[str, UUID],
     stack: CreateStackRequest,
     hydrated: bool = False,
-    auth_context: AuthContext = Depends(authorize),
+    auth_context: AuthContext = Security(authorize, scopes=["write"]),
 ) -> Union[HydratedStackModel, StackModel]:
     """Creates a stack for a particular project.
 
@@ -325,7 +333,7 @@ def create_stack_component(
     project_name_or_id: Union[str, UUID],
     component: CreateComponentModel,
     hydrated: bool = False,
-    auth_context: AuthContext = Depends(authorize),
+    auth_context: AuthContext = Security(authorize, scopes=["write"]),
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Creates a stack component.
 
@@ -411,7 +419,7 @@ def create_flavor(
     project_name_or_id: Union[str, UUID],
     flavor: FlavorModel,
     hydrated: bool = False,
-    auth_context: AuthContext = Depends(authorize),
+    auth_context: AuthContext = Security(authorize, scopes=["write"]),
 ) -> FlavorModel:
     """Creates a stack component flavor.
 
@@ -431,10 +439,6 @@ def create_flavor(
     created_flavor = zen_store().create_flavor(
         flavor=flavor,
     )
-    # if hydrated:
-    #     return created_flavor.to_hydrated_model()
-    # else:
-    #     return created_flavor
     return created_flavor
 
 
@@ -488,7 +492,7 @@ def create_pipeline(
     project_name_or_id: Union[str, UUID],
     pipeline: CreatePipelineRequest,
     hydrated: bool = False,
-    auth_context: AuthContext = Depends(authorize),
+    auth_context: AuthContext = Security(authorize, scopes=["write"]),
 ) -> Union[HydratedPipelineModel, PipelineModel]:
     """Creates a pipeline.
 
