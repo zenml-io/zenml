@@ -14,7 +14,7 @@
 """REST API user management models implementation."""
 
 
-from typing import Any, Optional, cast
+from typing import Any, Optional, Set, cast
 
 from pydantic import BaseModel, Field, SecretStr
 
@@ -262,6 +262,7 @@ class CreateRoleRequest(CreateRequest[RoleModel]):
         title="The unique name of the role.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
+    permissions: Set[str]
 
 
 class UpdateRoleRequest(UpdateRequest[RoleModel]):
@@ -274,6 +275,7 @@ class UpdateRoleRequest(UpdateRequest[RoleModel]):
         title="Updated role name.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
+    permissions: Set[str]
 
 
 class CreateTeamRequest(CreateRequest[TeamModel]):
