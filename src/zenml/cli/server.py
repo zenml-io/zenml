@@ -33,7 +33,6 @@ from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
-
 logger = get_logger(__name__)
 
 LOCAL_ZENML_SERVER_NAME = "local"
