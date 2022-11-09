@@ -65,6 +65,11 @@ latest models and Bentos.
 
 ## How do you use it?
 
+In order to use the BentoML Model Deployer, We need to understand this three
+main concepts:
+
+### BentoML Service and Runner
+
 The first step to be able to deploy your models and use your BentoML is to create 
 a [bento service](https://docs.bentoml.org/en/latest/concepts/service.html)
 which is the main logic that defines how your model will be served, and
@@ -89,6 +94,8 @@ def classify(input_series: np.ndarray) -> np.ndarray:
     return result
 
 ```
+
+### ZenML Bento Builder step
 
 Once you have your bento service and runner defined, we can use the
 built-in bento builder step to build the bento bundle that will be used
@@ -118,6 +125,8 @@ bento_builder = bento_builder_step(
 )
 ```
 
+### ZenML BentoML Deployer step
+
 We have now built our bento bundle, and we can use the built-in bento deployer
 step to deploy the bento bundle to our local http server. The following example
 shows how to call the built-in bento deployer step within a ZenML pipeline.
@@ -138,6 +147,8 @@ bentoml_model_deployer = bentoml_model_deployer_step(
     )
 )
 ```
+
+### ZenML BentoML Pipeline example
 
 Once all the steps have been defined, we can create a ZenML pipeline and run it.
 The bento builder step expects to get the trained model as an input, so we need
@@ -169,6 +180,36 @@ def bentoml_pipeline(
     bento = bento_builder(model=model)
     deployer(deploy_decision=decision, bento=bento)
 
+```
+
+### Predicting with the deployed model
+
+Once the model has been deployed we can use the BentoML client to send requests
+to the deployed model. ZenML will automatically create a BentoML client for you
+and you can use it to send requests to the deployed model by simply calling the
+service predict method and passing the input data and the api function name.
+
+The following example shows how to use the BentoML client to send requests to the
+deployed model.
+
+```python
+@step
+def predictor(
+    inference_data: Dict[str, List],
+    service: BentoMLDeploymentService,
+) -> None:
+    """Run an inference request against the BentoML prediction service.
+
+    Args:
+        service: The BentoML service.
+        data: The data to predict.
+    """
+
+    service.start(timeout=10)  # should be a NOP if already started
+    for img, data in inference_data.items():
+        prediction = service.predict("predict_ndarray", np.array(data))
+        result = to_labels(prediction[0])
+        rich_print(f"Prediction for {img} is {result}")
 ```
 
 You can check the BentoML deployment example for more details.

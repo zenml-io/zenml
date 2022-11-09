@@ -18,7 +18,7 @@ from typing import Dict, List, Optional
 
 import bentoml
 from bentoml import bentos
-from bentoml._internal.bento import bento  # type: ignore [import]
+from bentoml._internal.bento import bento
 
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.client import Client

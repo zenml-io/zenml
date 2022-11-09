@@ -17,9 +17,9 @@ import os
 import tempfile
 from typing import Type
 
-import bentoml  # type: ignore [import]
-from bentoml._internal.bento import Bento, bento  # type: ignore [import]
-from bentoml.exceptions import BentoMLException  # type: ignore [import]
+import bentoml
+from bentoml._internal.bento import Bento, bento
+from bentoml.exceptions import BentoMLException
 
 from zenml.artifacts import DataArtifact
 from zenml.integrations.bentoml.constants import DEFAULT_BENTO_FILENAME
