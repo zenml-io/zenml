@@ -67,7 +67,7 @@ from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import PipelineRunModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.new_models import (
-    ArtifactModel,
+    ArtifactResponseModel,
     ArtifactRequestModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -92,8 +92,6 @@ from zenml.new_models import (
     UserRequestModel,
     UserResponseModel,
 )
-from zenml.new_models.artifact_models import ArtifactResponseModel
-from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
@@ -2177,7 +2175,7 @@ class SqlZenStore(BaseZenStore):
                     f"not found."
                 )
 
-    def delete_role_assignment(self, role_assignment_id: UUID) -> UUID:
+    def delete_role_assignment(self, role_assignment_id: UUID) -> None:
         """"""
         with Session(self.engine) as session:
             user_role = session.exec(
@@ -3161,7 +3159,7 @@ class SqlZenStore(BaseZenStore):
                 input_artifacts=step.input_artifacts,
             )
 
-    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactResponseModel]:
         """Get the inputs for a specific step.
 
         Args:
@@ -3234,7 +3232,7 @@ class SqlZenStore(BaseZenStore):
         self,
         artifact_uri: Optional[str] = None,
         parent_step_id: Optional[UUID] = None,
-    ) -> List[ArtifactModel]:
+    ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
@@ -3749,7 +3747,7 @@ class SqlZenStore(BaseZenStore):
             input_artifacts[input_name] = artifact_id
 
         # Create step.
-        new_step = StepRunResponseModel(
+        new_step = StepRunRequestModel(
             name=step_name,
             mlmd_id=mlmd_step.mlmd_id,
             mlmd_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
@@ -3819,7 +3817,7 @@ class SqlZenStore(BaseZenStore):
 
     def _sync_run_step_artifact(
         self, output_name: str, mlmd_artifact: "MLMDArtifactModel"
-    ) -> ArtifactModel:
+    ) -> ArtifactResponseModel:
         """Sync a single run step artifact from MLMD into the database.
 
         Args:
@@ -3829,7 +3827,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The synced artifact model.
         """
-        new_artifact = ArtifactModel(
+        new_artifact = ArtifactRequestModel(
             name=output_name,
             mlmd_id=mlmd_artifact.mlmd_id,
             type=mlmd_artifact.type,

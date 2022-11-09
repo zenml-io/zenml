@@ -19,7 +19,7 @@ from uuid import UUID
 from sqlmodel import Field, SQLModel
 
 from zenml.enums import ArtifactType
-from zenml.new_models import ArtifactModel, ArtifactRequestModel
+from zenml.new_models import ArtifactResponseModel, ArtifactRequestModel
 
 
 class ArtifactSchema(SQLModel, table=True):
@@ -60,13 +60,13 @@ class ArtifactSchema(SQLModel, table=True):
             mlmd_producer_step_id=artifact_request.mlmd_producer_step_id,
         )
 
-    def to_model(self) -> ArtifactModel:
+    def to_model(self) -> ArtifactResponseModel:
         """Convert an `ArtifactSchema` to an `ArtifactModel`.
 
         Returns:
             The created `ArtifactModel`.
         """
-        return ArtifactModel(
+        return ArtifactResponseModel(
             id=self.id,
             name=self.name,
             parent_step_id=self.parent_step_id,

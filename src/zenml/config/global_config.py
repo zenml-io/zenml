@@ -46,6 +46,7 @@ from zenml.utils.analytics_utils import (
 
 if TYPE_CHECKING:
     from zenml.new_models import ProjectResponseModel
+    from zenml.new_models import StackResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -131,7 +132,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             global config.
         store: Store configuration.
         active_stack_id: The ID of the active stack.
-        active_project_name: The name of the active project.
+        active_project_id: The ID of the active project.
         jwt_secret_key: The secret key used to sign and verify JWT tokens.
         _config_path: Directory where the global config file is stored.
     """
@@ -143,12 +144,13 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     version: Optional[str]
     store: Optional[StoreConfiguration]
     active_stack_id: Optional[uuid.UUID]
-    active_project_name: Optional[str]
+    active_project_id: Optional[uuid.UUID]
     jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
     _active_project: Optional["ProjectResponseModel"] = None
+    _active_stack: Optional["StackResponseModel"] = None
 
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
@@ -371,7 +373,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """Configure the global zen store.
 
         This method creates and initializes the global store according to the
-        the supplied configuration.
+        supplied configuration.
 
         Args:
             config: The new store configuration to use.
@@ -413,12 +415,12 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         are set to their default values, if possible.
         """
         active_project, active_stack = self.zen_store.validate_active_config(
-            self.active_project_name,
+            self.active_project_id,
             self.active_stack_id,
             config_name="global",
         )
         self.set_active_project(active_project)
-        self.active_stack_id = active_stack.id
+        self.set_active_stack(active_stack)
 
     @staticmethod
     def default_config_directory() -> str:
@@ -643,43 +645,37 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         return self._zen_store
 
-    @property
-    def active_project(self) -> "ProjectResponseModel":
-        """Get the currently active project of the local client.
-
-        Returns:
-            The active project.
-
-        Raises:
-            RuntimeError: If no project is active.
-        """
-        if (
-            self._active_project
-            and self._active_project.name != self.active_project_name
-        ):
-            # in case someone tries to set the active project name directly
-            # outside of this class
-            self._active_project = None
-        if not self._active_project:
-            if not self.active_project_name:
-                raise RuntimeError(
-                    "No active project is configured. Run "
-                    "`zenml project set PROJECT_NAME` to set the active "
-                    "project."
-                )
-            self._active_project = self.zen_store.get_project(
-                project_name_or_id=self.active_project_name
-            )
-        return self._active_project
-
     def set_active_project(self, project: "ProjectResponseModel") -> None:
         """Set the project for the local client.
 
         Args:
             project: The project to set active.
         """
-        self.active_project_name = project.name
+        self.active_project_id = project.id
         self._active_project = project
+
+    def set_active_stack(self, stack: "StackResponseModel") -> None:
+        self.active_stack_id = stack.id
+        self._active_stack = stack
+
+    @property
+    def active_stack(self):
+        if not self._active_stack:
+            stack = self.zen_store.get_stack(
+                stack_id=self.active_stack_id
+            )
+            self.set_active_stack(stack)
+
+        return self._active_stack
+
+    @property
+    def active_project(self):
+        if not self._active_project:
+            project = self.zen_store.get_project(
+                project_name_or_id=self.active_project_id
+            )
+            self.set_active_project(project)
+        return self._active_project
 
     def record_email_opt_in_out(
         self, opted_in: bool, email: Optional[str], source: AnalyticsEventSource

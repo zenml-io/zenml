@@ -26,7 +26,6 @@ from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models.base_models import DomainModel
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
-from zenml.new_models import UserResponseModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.utils.enum_utils import StrEnum
 
@@ -35,6 +34,7 @@ logger = get_logger(__name__)
 if TYPE_CHECKING:
     from passlib.context import CryptContext  # type: ignore[import]
 
+    from zenml.new_models import UserResponseModel
 
 class JWTTokenType(StrEnum):
     """The type of JWT token."""

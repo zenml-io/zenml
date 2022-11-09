@@ -105,12 +105,12 @@ class ClientConfiguration(FileSyncModel):
         self.active_stack_id = stack.id
 
     @property
-    def active_project(self) -> ProjectResponseModel:
+    def active_project(self) -> "ProjectResponseModel":
         """"""
         return self._active_project
 
     @property
-    def active_stack(self) -> StackResponseModel:
+    def active_stack(self) -> "StackResponseModel":
         """"""
         return self._active_stack
 
@@ -293,8 +293,8 @@ class Client(metaclass=ClientMetaClass):
             return
 
         active_project, active_stack = self.zen_store.validate_active_config(
-            self._config.active_project,
-            self._config.active_stack,
+            self._config.active_project_id,
+            self._config.active_stack_id,
             config_name="repo",
         )
         self._config.set_active_stack(active_stack)
@@ -585,9 +585,9 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    # ---- #
+    # ----- #
     # ROLES #
-    # ---- #
+    # ----- #
 
     def get_role(self, name_id_or_prefix: str) -> RoleResponseModel:
         """Gets a user.
@@ -703,7 +703,21 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the active stack is not set.
         """
-        return self._config.active_stack
+        stack: Optional["StackResponseModel"] = None
+        if self._config:
+            stack = self._config.active_stack
+
+        if not stack:
+            stack = GlobalConfiguration().active_stack
+
+        if not stack:
+            raise RuntimeError(
+                "No active stack is configured. Run "
+                "`zenml stack set PROJECT_NAME` to set the active "
+                "stack."
+            )
+
+        return stack
 
     def get_stack(
         self, name_id_or_prefix: Optional[str] = None
