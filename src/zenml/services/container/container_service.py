@@ -223,9 +223,6 @@ class ContainerService(BaseService):
         if container is None:
             return ServiceState.INACTIVE, "Docker container is not present"
         elif container.status == "running":
-            if self.endpoint:
-                ip_address = container.attrs['NetworkSettings']['IPAddress']
-                self.endpoint.status.hostname = ip_address
             return ServiceState.ACTIVE, "Docker container is running"
         elif container.status == "exited":
             return (
@@ -436,11 +433,9 @@ class ContainerService(BaseService):
                     "zenml-service-uuid": str(self.uuid),
                 },
                 working_dir=SERVICE_CONTAINER_PATH,
+                extra_hosts={"host.docker.internal": "host-gateway"},
                 **uid_args,
             )
-            if self.endpoint:
-                ip_address = container.attrs['NetworkSettings']['IPAddress']
-                self.endpoint.status.hostname = ip_address
 
             logger.debug(
                 "Docker container for service '%s' started with ID: %s",

@@ -16,6 +16,7 @@
 from typing import Optional, Union
 
 from pydantic import Field
+from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 
 from zenml.logger import get_logger
 from zenml.services.service_endpoint import (
@@ -121,3 +122,5 @@ class ContainerServiceEndpoint(BaseServiceEndpoint):
         """
         self.status.protocol = self.config.protocol
         self.status.port = self._lookup_free_port()
+        # Container endpoints are always exposed on the local host
+        self.status.hostname = DEFAULT_LOCAL_SERVICE_IP_ADDRESS

@@ -18,6 +18,7 @@ import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path, PurePath
+import socket
 from threading import Lock, get_ident
 from typing import (
     TYPE_CHECKING,
@@ -165,8 +166,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             against the provided server certificate.
         pool_size: The maximum number of connections to keep in the SQLAlchemy
             pool.
-        pool_recycle: The number of seconds after which a connection should be
-            recycled.
+        max_overflow: The maximum number of connections to allow in the
+            SQLAlchemy pool in addition to the pool_size.
         grpc_metadata_host: The host to use for the gRPC metadata server.
         grpc_metadata_port: The port to use for the gRPC metadata server.
         grpc_metadata_ssl_ca: The certificate authority certificate to use for
@@ -404,13 +405,15 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         return config
 
     def get_metadata_config(
-        self, expand_certs: bool = False
+        self, expand_certs: bool = False, external: bool = False
     ) -> "ConnectionConfig":
         """Get the metadata configuration for the SQL ZenML store.
 
         Args:
             expand_certs: Whether to expand the certificate paths to their
                 contents.
+            external: Whether to return the external metadata configuration
+                that is advertised to clients.
 
         Returns:
             The metadata configuration.
@@ -434,8 +437,23 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             assert self.password is not None
             assert sql_url.host is not None
 
+            db_host = sql_url.host
+            if external:
+                pass
+            if db_host.endswith(".docker.internal"):
+                # This is a special case where the external hostname is
+                # set to point to the Docker network gateway. We need to
+                # resolve the hostname because it may not be resolvable from
+                # outside the container.
+                try:
+                    db_host = socket.gethostbyname(db_host)
+                except socket.gaierror:
+                    logger.warning(
+                        "Could not resolve Docker hostname %s", db_host
+                    )
+
             mlmd_config = metadata.mysql_metadata_connection_config(
-                host=sql_url.host,
+                host=db_host,
                 port=sql_url.port or 3306,
                 database=self.database,
                 username=self.username,
@@ -765,7 +783,9 @@ class SqlZenStore(BaseZenStore):
 
             return mlmd_config
 
-        return self.config.get_metadata_config(expand_certs=expand_certs)
+        return self.config.get_metadata_config(
+            expand_certs=expand_certs, external=True
+        )
 
     # ------
     # Stacks
