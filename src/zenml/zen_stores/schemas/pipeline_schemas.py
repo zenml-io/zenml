@@ -48,7 +48,7 @@ class PipelineSchema(SQLModel, table=True):
     user: "UserSchema" = Relationship(back_populates="pipelines")
 
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    spec: str = Field(sa_column=Column(TEXT))
+    spec: str = Field(sa_column=Column(TEXT, nullable=False))
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -141,7 +141,7 @@ class PipelineRunSchema(SQLModel, table=True):
     orchestrator_run_id: Optional[str] = Field(nullable=True)
 
     status: ExecutionStatus
-    pipeline_configuration: str = Field(sa_column=Column(TEXT))
+    pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     num_steps: int
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
@@ -232,8 +232,8 @@ class StepRunSchema(SQLModel, table=True):
 
     status: ExecutionStatus
     entrypoint_name: str
-    parameters: str = Field(sa_column=Column(TEXT))
-    step_configuration: str = Field(sa_column=Column(TEXT))
+    parameters: str = Field(sa_column=Column(TEXT, nullable=False))
+    step_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
     mlmd_id: Optional[int] = Field(default=None, nullable=True)
