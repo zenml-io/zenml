@@ -276,40 +276,41 @@ class MetadataStore:
     def _get_pipeline_run_model_from_context(
         self, context: proto.Context
     ) -> MLMDPipelineRunModel:
-        context_properties = self._get_zenml_execution_context_properties(
-            self.store.get_executions_by_context(context_id=context.id)[-1]
-        )
 
-        if MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME in context_properties:
-            model_ids = json.loads(
-                context_properties.get(
-                    MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME
-                ).string_value
-            )
-            project = model_ids["project_id"]
-            user = model_ids["user_id"]
-            pipeline_id = model_ids["pipeline_id"]
-            stack_id = model_ids["stack_id"]
-        else:
-            project, user, pipeline_id, stack_id = None, None, None, None
+        project, user, pipeline_id, stack_id = None, None, None, None
+        pipeline_configuration = {}
+        num_steps = None
 
-        if MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME in context_properties:
-            pipeline_configuration = json.loads(
-                context_properties.get(
-                    MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME
-                ).string_value
+        executions = self.store.get_executions_by_context(context_id=context.id)
+        if len(executions) > 0:
+            context_properties = self._get_zenml_execution_context_properties(
+                executions[-1]
             )
-        else:
-            pipeline_configuration = {}
 
-        if MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME in context_properties:
-            num_steps = int(
-                context_properties.get(
-                    MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME
-                ).string_value
-            )
-        else:
-            num_steps = None
+            if MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME in context_properties:
+                model_ids = json.loads(
+                    context_properties.get(
+                        MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME
+                    ).string_value
+                )
+                project = model_ids["project_id"]
+                user = model_ids["user_id"]
+                pipeline_id = model_ids["pipeline_id"]
+                stack_id = model_ids["stack_id"]
+
+            if MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME in context_properties:
+                pipeline_configuration = json.loads(
+                    context_properties.get(
+                        MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME
+                    ).string_value
+                )
+
+            if MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME in context_properties:
+                num_steps = int(
+                    context_properties.get(
+                        MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME
+                    ).string_value
+                )
 
         return MLMDPipelineRunModel(
             mlmd_id=context.id,
