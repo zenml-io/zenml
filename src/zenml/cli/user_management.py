@@ -140,9 +140,7 @@ def create_user(
     except EntityExistsError:
         # As the role assignment of the user might already have happened in the
         #  zen_serve_api.
-        cli_utils.declare(
-            f"Created user '{user_name}'."
-        )
+        cli_utils.declare(f"Created user '{user_name}'.")
 
     if not user.active and user.activation_token is not None:
         cli_utils.declare(

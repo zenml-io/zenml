@@ -1118,8 +1118,10 @@ class RestZenStore(BaseZenStore):
                 assign the role. If this is not provided, the role will be
                 assigned globally.
         """
-        path = f"{USERS}/{str(user_or_team_name_or_id)}{ROLES}" \
-               f"?role_name_or_id={role_name_or_id}"
+        path = (
+            f"{USERS}/{str(user_or_team_name_or_id)}{ROLES}"
+            f"?role_name_or_id={role_name_or_id}"
+        )
         logger.debug(f"Sending POST request to {path}...")
         self._request(
             "POST",
@@ -1145,8 +1147,10 @@ class RestZenStore(BaseZenStore):
                 the role. If this is not provided, the role will be revoked
                 globally.
         """
-        path = f"{USERS}/{str(user_or_team_name_or_id)}{ROLES}" \
-               f"/{str(role_name_or_id)}"
+        path = (
+            f"{USERS}/{str(user_or_team_name_or_id)}{ROLES}"
+            f"/{str(role_name_or_id)}"
+        )
         logger.debug(f"Sending POST request to {path}...")
         self._request(
             "DELETE",
