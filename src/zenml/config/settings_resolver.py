@@ -16,8 +16,9 @@ from typing import TYPE_CHECKING, Type, TypeVar
 
 from pydantic import ValidationError
 
+from zenml.enums import StackComponentType
 from zenml.exceptions import SettingsResolvingError
-from zenml.utils import settings_utils
+from zenml.utils import pydantic_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -71,6 +72,7 @@ class SettingsResolver:
             target_class = self._resolve_stack_component_setting_class(
                 stack=stack
             )
+            self._update_with_stack_component_default_settings(stack=stack)
 
         return self._convert_settings(target_class=target_class)
 
@@ -129,3 +131,20 @@ class SettingsResolver:
                 f"Failed to convert settings `{settings_dict}` to expected "
                 f"class {target_class}."
             )
+
+    def _update_with_stack_component_default_settings(
+        self, stack: "Stack"
+    ) -> "BaseSettings":
+        component_type, _ = self._key.split(".", 1)
+
+        stack_component = stack.components[StackComponentType(component_type)]
+        assert stack_component.settings_class
+
+        # Exclude additional config attributes that aren't part of the settings
+        field_names = set(stack_component.settings_class.__fields__)
+        default_settings = stack_component.settings_class.parse_obj(
+            stack_component.config.dict(include=field_names, exclude_unset=True)
+        )
+        self._settings = pydantic_utils.update_model(
+            default_settings, self._settings
+        )

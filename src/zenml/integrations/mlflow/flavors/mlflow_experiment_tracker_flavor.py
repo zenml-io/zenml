@@ -72,7 +72,9 @@ class MLFlowExperimentTrackerSettings(BaseSettings):
     tags: Dict[str, Any] = {}
 
 
-class MLFlowExperimentTrackerConfig(BaseExperimentTrackerConfig):
+class MLFlowExperimentTrackerConfig(
+    BaseExperimentTrackerConfig, MLFlowExperimentTrackerSettings
+):
     """Config for the MLflow experiment tracker.
 
     Attributes:

@@ -410,16 +410,13 @@ class StackComponent:
 
         key = settings_utils.get_stack_component_setting_key(self)
 
-        options = (
+        all_settings = (
             container.config.settings
             if isinstance(container, (Step, StepRunInfo))
             else container.pipeline.settings
         )
 
-        if key not in options:
-            return None
-
-        return self.settings_class(**options[key].dict())
+        return self.settings_class(**all_settings[key].dict())
 
     @property
     def log_file(self) -> Optional[str]:

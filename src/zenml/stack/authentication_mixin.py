@@ -33,7 +33,7 @@ class AuthenticationConfigMixin(StackComponentConfig):
             authentication credentials.
     """
 
-    authentication_secret: Optional[str] = None  # TODO[1376]: Config and secret syntax not done
+    authentication_secret: Optional[str] = None
 
 
 class AuthenticationMixin(StackComponent):

@@ -31,15 +31,35 @@ class VertexOrchestratorSettings(BaseSettings):
     """Settings for the Vertex orchestrator.
 
     Attributes:
+        synchronous: If `True`, running a pipeline using this orchestrator will
+            block until all steps finished running on Vertex AI Pipelines
+            service.
+        labels: Labels to assign to the pipeline job.
+        node_selector_constraint: Each constraint is a key-value pair label.
+            For the container to be eligible to run on a node, the node must have
+            each of the constraints appeared as labels.
+            For example a GPU type can be providing by one of the following tuples:
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_A100")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_K80")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P4")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P100")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_T4")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_V100")
+            Hint: the selected region (location) must provide the requested accelerator
+            (see https://cloud.google.com/compute/docs/gpus/gpu-regions-zones).
         pod_settings: Pod settings to apply.
     """
 
+    labels: Dict[str, str] = {}
+    synchronous: bool = False
+    node_selector_constraint: Optional[Tuple[str, str]] = None
     pod_settings: Optional[KubernetesPodSettings] = None
 
 
 class VertexOrchestratorConfig(
     BaseOrchestratorConfig,
     GoogleCredentialsConfigMixin,
+    VertexOrchestratorSettings,
 ):
     """Configuration for the Vertex orchestrator.
 
@@ -50,7 +70,6 @@ class VertexOrchestratorConfig(
             Vertex AI Pipelines is available in the following regions:
             https://cloud.google.com/vertex-ai/docs/general/locations#feature
             -availability
-        labels: Labels to assign to the pipeline job.
         pipeline_root: a Cloud Storage URI that will be used by the Vertex AI
             Pipelines. If not provided but the artifact store in the stack used
             to execute the pipeline is a
@@ -68,9 +87,6 @@ class VertexOrchestratorConfig(
         network: the full name of the Compute Engine Network to which the job
             should be peered. For example, `projects/12345/global/networks/myVPC`
             If not provided, the job will not be peered with any network.
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on Vertex AI Pipelines
-            service.
         cpu_limit: The maximum CPU limit for this operator. This string value
             can be a number (integer value for number of CPUs) as string,
             or a number followed by "m", which means 1/1000. You can specify
@@ -79,18 +95,6 @@ class VertexOrchestratorConfig(
         memory_limit: The maximum memory limit for this operator. This string
             value can be a number, or a number followed by "K" (kilobyte),
             "M" (megabyte), or "G" (gigabyte). At most 624GB is supported.
-        node_selector_constraint: Each constraint is a key-value pair label.
-            For the container to be eligible to run on a node, the node must have
-            each of the constraints appeared as labels.
-            For example a GPU type can be providing by one of the following tuples:
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_A100")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_K80")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P4")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P100")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_T4")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_V100")
-            Hint: the selected region (location) must provide the requested accelerator
-            (see https://cloud.google.com/compute/docs/gpus/gpu-regions-zones).
         gpu_limit: The GPU limit (positive number) for the operator.
             For more information about GPU resources, see:
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus
@@ -99,15 +103,12 @@ class VertexOrchestratorConfig(
     project: Optional[str] = None
     location: str
     pipeline_root: Optional[str] = None
-    labels: Dict[str, str] = {}  # TODO[1376]: Setting
     encryption_spec_key_name: Optional[str] = None
     workload_service_account: Optional[str] = None
     network: Optional[str] = None
-    synchronous: bool = False  # TODO[1376]: Setting
 
     cpu_limit: Optional[str] = None
     memory_limit: Optional[str] = None
-    node_selector_constraint: Optional[Tuple[str, str]] = None  # TODO[1376]: Setting
     gpu_limit: Optional[int] = None
 
     @property

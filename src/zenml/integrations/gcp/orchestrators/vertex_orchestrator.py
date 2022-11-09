@@ -223,6 +223,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         self,
         container_op: dsl.ContainerOp,
         resource_settings: "ResourceSettings",
+        node_selector_constraint: Optional[Tuple[str, str]] = None,
     ) -> None:
         """Adds resource requirements to the container.
 
@@ -230,6 +231,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             container_op: The kubeflow container operation to configure.
             resource_settings: The resource settings to use for this
                 container.
+            node_selector_constraint: Node selector constraint to apply to
+                the container.
         """
         # Set optional CPU, RAM and GPU constraints for the pipeline
 
@@ -254,9 +257,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         if gpu_limit is not None and gpu_limit > 0:
             container_op = container_op.set_gpu_limit(gpu_limit)
 
-        if self.config.node_selector_constraint is not None:
-            constraint_label = self.config.node_selector_constraint[0]
-            value = self.config.node_selector_constraint[1]
+        if node_selector_constraint:
+            constraint_label, value = node_selector_constraint
             if not (
                 constraint_label
                 == GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
@@ -396,9 +398,13 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                         settings=settings.pod_settings,
                     )
 
+                node_selector_constraint = (
+                    settings.node_selector_constraint if settings else None
+                )
                 self._configure_container_resources(
                     container_op=container_op,
                     resource_settings=step.config.resource_settings,
+                    node_selector_constraint=node_selector_constraint,
                 )
 
                 step_name_to_container_op[step.config.name] = container_op
@@ -438,6 +444,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         pipeline_name: str,
         pipeline_file_path: str,
         enable_cache: bool,
+        settings: VertexOrchestratorSettings,
     ) -> None:
         """Uploads and run the pipeline on the Vertex AI Pipelines service.
 
@@ -446,6 +453,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             pipeline_file_path: Path of the JSON file containing the compiled
                 Kubeflow pipeline (compiled with Kubeflow SDK v2).
             enable_cache: Whether caching is enabled for this pipeline run.
+            settings: Pipeline level settings for this orchestrator.
         """
         # We have to replace the hyphens in the pipeline name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
@@ -479,7 +487,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             parameter_values=None,
             enable_caching=enable_cache,
             encryption_spec_key_name=self.config.encryption_spec_key_name,
-            labels=self.config.labels,
+            labels=settings.labels,
             credentials=credentials,
             project=self.config.project,
             location=self.config.location,
@@ -516,7 +524,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 "View the Vertex AI Pipelines job at %s", run._dashboard_uri()
             )
 
-            if self.config.synchronous:
+            if settings.synchronous:
                 logger.info(
                     "Waiting for the Vertex AI Pipelines job to finish..."
                 )
