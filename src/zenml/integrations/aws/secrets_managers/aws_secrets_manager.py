@@ -220,17 +220,21 @@ class AWSSecretsManager(BaseSecretsManager):
                 }
             )
 
-        # TODO [ENG-720]: Deal with pagination in the aws secret manager when
-        #  listing all secrets
-        # TODO [ENG-721]: take out this magic maxresults number
-        response = self.CLIENT.list_secrets(MaxResults=100, Filters=filters)
+        paginator = self.CLIENT.get_paginator('list_secrets')
+        pages = paginator.paginate(
+            Filters=filters,
+            PaginationConfig={
+                'PageSize': 100,
+            }
+        )
         results = []
-        for secret in response["SecretList"]:
-            name = self._get_unscoped_secret_name(secret["Name"])
-            # keep only the names that are in scope and filter by secret name,
-            # if one was given
-            if name and (not secret_name or secret_name == name):
-                results.append(name)
+        for page in pages:
+            for secret in page["SecretList"]:
+                name = self._get_unscoped_secret_name(secret["Name"])
+                # keep only the names that are in scope and filter by secret name,
+                # if one was given
+                if name and (not secret_name or secret_name == name):
+                    results.append(name)
 
         return results
 
