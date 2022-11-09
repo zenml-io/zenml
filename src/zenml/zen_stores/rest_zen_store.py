@@ -33,12 +33,15 @@ import requests
 import urllib3
 from pydantic import BaseModel, validator
 
+import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
     ARTIFACTS,
+    DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EMAIL_ANALYTICS,
+    ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
     INFO,
     INPUTS,
@@ -60,6 +63,7 @@ from zenml.exceptions import (
     AuthorizationException,
     DoesNotExistException,
     EntityExistsError,
+    IllegalOperationError,
     StackComponentExistsError,
     StackExistsError,
 )
@@ -289,8 +293,21 @@ class RestZenStore(BaseZenStore):
 
     def _initialize(self) -> None:
         """Initialize the REST store."""
-        # try to connect to the server to validate the configuration
-        self.active_user
+        client_version = zenml.__version__
+        server_version = self.get_store_info().version
+
+        if not DISABLE_CLIENT_SERVER_MISMATCH_WARNING and (
+            server_version != client_version
+        ):
+            logger.warning(
+                "Your ZenML client version (%s) does not match the server "
+                "version (%s). This version mismatch might lead to errors or "
+                "unexpected behavior. \nTo disable this warning message, set "
+                "the environment variable `%s=True`",
+                client_version,
+                server_version,
+                ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+            )
 
     def get_store_info(self) -> ServerModel:
         """Get information about the server.
@@ -1571,6 +1588,8 @@ class RestZenStore(BaseZenStore):
                 entity already exists.
             AuthorizationException: If the response indicates that the request
                 is not authorized.
+            IllegalOperationError: If the response indicates that the requested
+                operation is forbidden.
             KeyError: If the response indicates that the requested entity
                 does not exist.
             RuntimeError: If the response indicates that the requested entity
@@ -1595,6 +1614,10 @@ class RestZenStore(BaseZenStore):
             raise AuthorizationException(
                 f"{response.status_code} Client Error: Unauthorized request to "
                 f"URL {response.url}: {response.json().get('detail')}"
+            )
+        elif response.status_code == 403:
+            raise IllegalOperationError(
+                response.json().get("detail", (response.text,))[1]
             )
         elif response.status_code == 404:
             if "KeyError" in response.text:
