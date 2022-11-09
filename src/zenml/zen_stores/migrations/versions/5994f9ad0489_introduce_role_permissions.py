@@ -65,26 +65,25 @@ def upgrade() -> None:
     )
     conn = op.get_bind()
     res = conn.execute(
-        select(roleschema.c.id)
-        .where(roleschema.c.name.in_(['admin', 'guest']))
+        select(roleschema.c.id).where(roleschema.c.name.in_(["admin", "guest"]))
     ).fetchall()
 
     role_ids = [i[0] for i in res]
 
     conn.execute(
-        userroleassignmentschema
-        .delete()
-        .where(userroleassignmentschema.c.role_id.in_(role_ids))
+        userroleassignmentschema.delete().where(
+            userroleassignmentschema.c.role_id.in_(role_ids)
+        )
     )
     conn.execute(
-        teamroleassignmentschema
-        .delete()
-        .where(teamroleassignmentschema.c.role_id.in_(role_ids))
+        teamroleassignmentschema.delete().where(
+            teamroleassignmentschema.c.role_id.in_(role_ids)
+        )
     )
     conn.execute(
-        roleschema
-        .delete()
-        .where(or_(roleschema.c.name == 'admin', roleschema.c.name == 'guest'))
+        roleschema.delete().where(
+            or_(roleschema.c.name == "admin", roleschema.c.name == "guest")
+        )
     )
 
     # Create the three standard permissions also defined in
