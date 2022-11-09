@@ -239,7 +239,7 @@ def deactivate_user(
     user = zen_store().get_user(user_name_or_id)
     user.active = False
     token = user.generate_activation_token()
-    user = zen_store().update_user(user=user)
+    user = zen_store().update_user(user_name_or_id=user_name_or_id)
     # add back the original unhashed activation token
     user.activation_token = token
     return DeactivateUserResponse.from_model(user)

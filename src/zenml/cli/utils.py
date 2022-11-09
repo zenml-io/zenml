@@ -60,8 +60,8 @@ if TYPE_CHECKING:
         PipelineRunResponseModel,
         StackResponseModel,
     )
-    from zenml.services import BaseService, ServiceState
     from zenml.secret import BaseSecretSchema
+    from zenml.services import BaseService, ServiceState
     from zenml.zen_server.deploy import ServerDeployment
 
 MAX_ARGUMENT_VALUE_SIZE = 10240

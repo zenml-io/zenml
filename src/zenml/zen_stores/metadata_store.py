@@ -26,7 +26,6 @@ from pydantic import BaseModel, Extra
 
 from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.logger import get_logger
-
 from zenml.utils.proto_utils import (
     MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME,
     MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME,

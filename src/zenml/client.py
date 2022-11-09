@@ -107,12 +107,24 @@ class ClientConfiguration(FileSyncModel):
     @property
     def active_project(self) -> "ProjectResponseModel":
         """"""
-        return self._active_project
+        if self._active_project:
+            return self._active_project
+        else:
+            raise RuntimeError(
+                "No active project configured. You will need"
+                "to configure an active project to continue."
+            )
 
     @property
     def active_stack(self) -> "StackResponseModel":
         """"""
-        return self._active_stack
+        if self._active_stack:
+            return self._active_stack
+        else:
+            raise RuntimeError(
+                "No active project configured. You will need"
+                "to configure an active project to continue."
+            )
 
     class Config:
         """Pydantic configuration class."""
