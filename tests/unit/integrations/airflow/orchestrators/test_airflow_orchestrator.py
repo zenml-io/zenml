@@ -39,4 +39,4 @@ def test_airflow_orchestrator_attributes():
 
     assert orchestrator.type == StackComponentType.ORCHESTRATOR
     assert orchestrator.flavor == "airflow"
-    assert orchestrator.config.local is False
+    assert orchestrator.config.local is True
