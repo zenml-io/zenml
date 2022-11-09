@@ -158,7 +158,7 @@ $ zenml secrets-manager secret get kserve_secret
 ```
 
 For more information and a full list of configurable attributes of the KServe 
-secret schemas, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kserve.secret_schemas).
+secret schemas, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-kserve/#zenml.integrations.kserve.secret_schemas).
 
 ## How do you use it?
 
@@ -222,13 +222,13 @@ A concrete example of using the KServe Model Deployer can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment).
 
 For more information and a full list of configurable attributes of the KServe 
-Model Deployer, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kserve.model_deployers).
+Model Deployer, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-kserve/#zenml.integrations.kserve.model_deployers).
 
 {% hint style="info" %}
 The model deployment step are experimental good for standard use cases. 
 However, if you need to customize the deployment step, you can always create 
 your own model deployment step. Find more information about model deployment 
-steps in the [Model Deployment Steps](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kserve.steps) section.
+steps in the [Model Deployment Steps](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-kserve/#zenml.integrations.kserve.steps) section.
 {% endhint %}
 
 ## Custom Model Deployment

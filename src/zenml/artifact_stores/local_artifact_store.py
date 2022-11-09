@@ -57,7 +57,6 @@ from zenml.artifact_stores import (
     BaseArtifactStoreFlavor,
 )
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
 from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.utils import io_utils
 
@@ -128,8 +127,7 @@ class LocalArtifactStore(BaseArtifactStore):
             str: The default local path.
         """
         return os.path.join(
-            GlobalConfiguration().config_directory,
-            LOCAL_STORES_DIRECTORY_NAME,
+            GlobalConfiguration().local_stores_path,
             str(id_),
         )
 

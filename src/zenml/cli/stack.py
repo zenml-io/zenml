@@ -15,7 +15,7 @@
 
 import getpass
 import json
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
 import click
@@ -28,9 +28,33 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import ProvisioningError
+from zenml.exceptions import (
+    IllegalOperationError,
+    ProvisioningError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
+
+if TYPE_CHECKING:
+    from zenml.models.stack_models import StackModel
+
+
+def _set_active_stack(stack: "StackModel") -> None:
+    """Sets the active stack.
+
+    Args:
+        stack: The stack to activate
+    """
+    client = Client()
+    scope = " repository" if client.root else " global"
+
+    with console.status(
+        f"Setting the{scope} active stack to " f"'{stack.name}'..."
+    ):
+        client.activate_stack(stack)
+        cli_utils.declare(f"Active{scope} stack set to: " f"'{stack.name}'")
 
 
 # Stacks
@@ -232,7 +256,7 @@ def register_stack(
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
     if set_stack:
-        client.activate_stack(stack=created_stack)
+        _set_active_stack(created_stack)
 
 
 @stack.command(
@@ -408,7 +432,10 @@ def update_stack(
 
         stack_to_update.components = stack_components
 
-        client.update_stack(stack_to_update)
+        try:
+            client.update_stack(stack_to_update)
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(
             f"Stack `{stack_to_update.name}` successfully " f"updated!"
         )
@@ -448,24 +475,32 @@ def share_stack(
     else:
         for c_t, c in stack_to_share.to_hydrated_model().components.items():
             only_component = c[0]  # For future compatibility
-            # with console.status(
-            #     f"Sharing component `{only_component.name}`" f"...\n"
-            # ):
-            cli_utils.declare(
-                f"A Stack can only be shared when all its "
-                f"components are also shared. Component "
-                f"'{only_component.name}' is also set to "
-                f"shared."
-            )
+            with console.status(
+                f"Sharing component `{only_component.name}`" f"...\n"
+            ):
+                cli_utils.declare(
+                    f"A Stack can only be shared when all its "
+                    f"components are also shared. Component "
+                    f"'{only_component.name}' is also set to "
+                    f"shared."
+                )
 
-            only_component.is_shared = True
-            client.update_stack_component(component=only_component)
+                only_component.is_shared = True
+                try:
+                    client.update_stack_component(component=only_component)
+                except (
+                    IllegalOperationError,
+                    StackComponentExistsError,
+                ) as err:
+                    cli_utils.error(str(err))
 
         with console.status(f"Sharing stack `{stack_to_share.name}` ...\n"):
 
             stack_to_share.is_shared = True
-
-            client.update_stack(stack_to_share)
+            try:
+                client.update_stack(stack_to_share)
+            except (IllegalOperationError, StackExistsError) as err:
+                cli_utils.error(str(err))
             cli_utils.declare(
                 f"Stack `{stack_to_share.name}` successfully shared!"
             )
@@ -636,7 +671,10 @@ def remove_stack_component(
                 StackComponentType.DATA_VALIDATOR, None
             )
 
-        client.update_stack(stack_to_update)
+        try:
+            client.update_stack(stack_to_update)
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(f"Stack `{stack_name_or_id}` successfully updated!")
 
 
@@ -677,7 +715,10 @@ def rename_stack(
             pass
 
         stack_to_rename.name = new_stack_name
-        client.update_stack(stack_to_rename)
+        try:
+            client.update_stack(stack_to_rename)
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(
             f"Stack `{current_stack_name_or_id}` successfully renamed to `"
             f"{new_stack_name}`!"
@@ -685,12 +726,21 @@ def rename_stack(
 
 
 @stack.command("list")
-def list_stacks() -> None:
-    """List all available stacks."""
+@click.option("--just-mine", "-m", is_flag=True, required=False)
+def list_stacks(just_mine: bool = False) -> None:
+    """List all available stacks.
+
+    Args:
+        just_mine: To list only the stacks that the current user has created.
+    """
     cli_utils.print_active_config()
 
     client = Client()
     stacks = client.stacks
+    if just_mine:
+        stacks = [
+            stack for stack in stacks if stack.user.id == client.active_user.id
+        ]
     print_stacks_table(client, stacks)
 
 
@@ -784,8 +834,10 @@ def delete_stack(
                 f"active. Please choose a different active stack first by "
                 f"running 'zenml stack set STACK'."
             )
-
-    Client().deregister_stack(stack_to_delete)
+    try:
+        Client().deregister_stack(stack_to_delete)
+    except IllegalOperationError as err:
+        cli_utils.error(str(err))
     cli_utils.declare(f"Deleted stack '{stack_to_delete.name}'.")
 
 
@@ -798,7 +850,6 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
         stack_name_or_id: Name of the stack to set as active.
     """
     cli_utils.print_active_config()
-    scope = " repository" if Client().root else " global"
     client = Client()
 
     try:
@@ -808,14 +859,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
     except KeyError as e:
         cli_utils.error(str(e))
     else:
-        with console.status(
-            f"Setting the{scope} active stack to "
-            f"'{stack_to_set_active.name}'..."
-        ):
-            client.activate_stack(stack_to_set_active)
-            cli_utils.declare(
-                f"Active{scope} stack set to: " f"'{stack_to_set_active.name}'"
-            )
+        _set_active_stack(stack_to_set_active)
 
 
 @stack.command("get")

@@ -6,6 +6,10 @@ The Tekton orchestrator is an [orchestrator](./orchestrators.md) flavor
 provided with the ZenML `tekton` integration that uses [Tekton Pipelines](https://tekton.dev/) 
 to run your pipelines.
 
+{% hint style="warning" %}
+This component is only meant to be used within the context of [remote ZenML deployment scenario](../../getting-started/deploying-zenml/deploying-zenml.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+{% endhint %}
+
 ## When to use it
 
 You should use the Tekton orchestrator if:
@@ -23,6 +27,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 {% tabs %}
 {% tab title="AWS" %}
 
+* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md) for more information.
 * Have an existing
   AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html)
   set up.
@@ -40,6 +45,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 
 {% tab title="GCP" %}
 
+* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md) for more information.
 * Have an existing
   GCP [GKE cluster](https://cloud.google.com/kubernetes-engine/docs/quickstart)
   set up.
@@ -57,6 +63,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 
 {% tab title="Azure" %}
 
+* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md) for more information.
 * Have an
   existing [AKS cluster](https://azure.microsoft.com/en-in/services/kubernetes-service/#documentation)
   set up.
@@ -128,8 +135,66 @@ You can now run any ZenML pipeline using the Tekton orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+### Additional configuration
+
+For additional configuration of the Tekton orchestrator, you can pass
+`TektonOrchestratorSettings` which allows you to configure the following attributes:
+
+* `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
+your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
+
+```python
+from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import TektonOrchestratorSettings
+from kubernetes.client.models import V1Toleration
+
+
+tekton_settings = TektonOrchestratorSettings(
+    pod_settings={
+        "affinity": {
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchExpressions": [
+                                {
+                                    "key": "node.kubernetes.io/name",
+                                    "operator": "In",
+                                    "values": ["my_powerful_node_group"],
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "tolerations": [
+            V1Toleration(
+                key="node.kubernetes.io/name",
+                operator="Equal",
+                value="",
+                effect="NoSchedule"
+            )
+        ]
+    }
+)
+
+@pipeline(
+    settings={
+        "orchestrator.tekton": tekton_settings
+    }
+)
+  ...
+```
+
 A concrete example of using the Tekton orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/tekton_pipelines_orchestration).
 
 For more information and a full list of configurable attributes of the Tekton 
-orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.tekton.orchestrators.tekton_orchestrator.TektonOrchestrator).
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-tekton/#zenml.integrations.tekton.orchestrators.tekton_orchestrator.TektonOrchestrator).
+
+### Enabling CUDA for GPU-backed hardware
+
+Note that if you wish to use this orchestrator to run steps on a GPU, you will
+need to follow [the instructions on this page](../../advanced-guide/pipelines/gpu-hardware.md) to ensure that it works. It
+requires adding some extra settings customization and is essential to enable
+CUDA for the GPU to give its full acceleration.

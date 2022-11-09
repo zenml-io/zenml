@@ -101,6 +101,7 @@ class AnalyticsEvent(str, Enum):
 
     # Role
     CREATED_ROLE = "Role created"
+    CREATED_DEFAULT_ROLES = "Default roles created"
     UPDATED_ROLE = "Role updated"
     DELETED_ROLE = "Role deleted"
 

@@ -88,12 +88,12 @@ def mlflow_model_deployer_step(
     Returns:
         MLflow deployment service
     """
-    model_deployer = MLFlowModelDeployer.get_active_model_deployer()
+    model_deployer = cast(
+        MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
+    )
 
     # fetch the MLflow artifacts logged during the pipeline run
-    experiment_tracker = Client(  # type: ignore[call-arg]
-        skip_client_check=True
-    ).active_stack.experiment_tracker
+    experiment_tracker = Client().active_stack.experiment_tracker
 
     if not isinstance(experiment_tracker, MLFlowExperimentTracker):
         raise get_missing_mlflow_experiment_tracker_error()

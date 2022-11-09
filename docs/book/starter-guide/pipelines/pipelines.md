@@ -45,7 +45,7 @@ def digits_data_loader() -> Output(
 As this step has multiple outputs, we need to use the
 `zenml.steps.step_output.Output` class to indicate the names of each output. 
 These names can be used to directly access the outputs of steps after running
-a pipeline, as we will see [in a later chapter](./inspecting-pipeline-runs.md).
+a pipeline, as we will see [in a later chapter](./fetching-pipelines.md).
 
 Let's come up with a second step that consumes the output of our first step and
 performs some sort of transformation on it. In this case, let's train a support
@@ -168,13 +168,6 @@ first_pipeline_instance = first_pipeline(
     step_2=svc_trainer(),
 )
 ```
-
-{% hint style="info" %}
-Currently, you cannot use the same step twice in a pipeline because step names
-must be unique. If you would like to reuse a step, use the 
-[`clone_step()`](https://apidocs.zenml.io/latest/api_docs/steps/#zenml.steps.utils.clone_step)
-utility function to create a copy of the step with a new name.
-{% endhint %}
 
 You can then execute your pipeline instance with the `.run()` method:
 

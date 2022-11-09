@@ -33,7 +33,6 @@ class GCPServerDeploymentConfig(TerraformServerDeploymentConfig):
     Attributes:
         project_id: The project in GCP to deploy the server to.
         region: The GCP region to deploy to.
-        create_cloudsql: Whether to create an CloudSQL database.
         cloudsql_name: The name of the CloudSQL instance to create
         db_name: Name of CloudSQL database to create.
         db_instance_tier: Instance class of CloudSQL database to create.
@@ -42,7 +41,6 @@ class GCPServerDeploymentConfig(TerraformServerDeploymentConfig):
 
     project_id: str
     region: str = "europe-west3"
-    create_cloudsql: bool = True
     cloudsql_name: str = "zenmlserver"
     db_name: str = "zenmlserver"
     db_instance_tier: str = "db-n1-standard-1"

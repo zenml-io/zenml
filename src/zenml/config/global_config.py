@@ -28,6 +28,7 @@ from zenml import __version__
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_STORE_DIRECTORY_NAME,
+    ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
@@ -260,7 +261,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             The attribute value.
         """
         value = super().__getattribute__(key)
-        if key.startswith("_"):
+        if key.startswith("_") or key not in type(self).__fields__:
             return value
 
         environment_variable_name = f"{CONFIG_ENV_VAR_PREFIX}{key.upper()}"
@@ -351,7 +352,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 global configuration path is used.
         """
         config_file = self._config_file(config_path)
-        yaml_dict = json.loads(self.json())
+        yaml_dict = json.loads(self.json(exclude_none=True))
         logger.debug(f"Writing config to {config_file}")
 
         if not fileio.exists(config_file):
@@ -445,6 +446,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         config_path: str,
         load_config_path: Optional[PurePath] = None,
         store_config: Optional[StoreConfiguration] = None,
+        empty_store: bool = False,
     ) -> "GlobalConfiguration":
         """Create a copy of the global config using a different configuration path.
 
@@ -452,36 +454,50 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         different configuration path, where it can be loaded in the context of a
         new environment, such as a container image.
 
-        If the global store configuration uses a local database, the database is
-        also copied to the new location.
+        The configuration files accompanying the store configuration are also
+        copied to the new configuration path (e.g. certificates etc.)
+        unless a custom store configuration is provided or the `empty_store`
+        flag is set to `True`.
+
+        If the default local store is currently in use, it will not be included
+        in the configuration copy. This is the same as explicitly setting the
+        `empty_store` flag to `True`.
 
         Args:
-            config_path: path where the active configuration copy should be saved
-            load_config_path: path that will be used to load the configuration
-                copy. This can be set to a value different from `config_path`
-                if the configuration copy will be loaded from a different
-                path, e.g. when the global config copy is copied to a
-                container image. This will be reflected in the paths and URLs
-                encoded in the copied store configuration.
+            config_path: path where the configuration copy should be saved
+            load_config_path: absolute path that will be used to load the copied
+                configuration. This can be set to a value different from
+                `config_path` if the configuration copy will be loaded from
+                a different environment, e.g. when the configuration is copied
+                to a container image and loaded using a different absolute path.
+                This will be reflected in the paths and URLs encoded in the
+                copied configuration.
             store_config: custom store configuration to use for the copied
                 global configuration. If not specified, the current global store
                 configuration is used.
+            empty_store: if `True`, an empty store configuration is used for the
+                copied global configuration. This means that the copied global
+                configuration will be initialized to the default local store in
+                the new environment.
 
         Returns:
             A new global configuration object copied to the specified path.
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
-        # TODO: shouldn't this be done at the end?
         self._write_config(config_path)
-
         config_copy = GlobalConfiguration(config_path=config_path)
-        if store_config:
+
+        if store_config is not None:
             config_copy.store = store_config
+
+        elif empty_store or self.uses_default_store():
+            config_copy.store = None
+
         elif self.store:
             store_class = BaseZenStore.get_store_class(self.store.type)
 
-            store_config_copy = store_class.copy_local_store(
+            store_config_copy = store_class.CONFIG_TYPE.copy_configuration(
                 self.store, config_path, load_config_path
             )
             config_copy.store = store_config_copy
@@ -504,6 +520,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Returns:
             The path where local stores information is stored.
         """
+        if ENV_ZENML_LOCAL_STORES_PATH in os.environ:
+            return os.environ[ENV_ZENML_LOCAL_STORES_PATH]
+
         return os.path.join(
             self.config_directory,
             LOCAL_STORES_DIRECTORY_NAME,
@@ -548,6 +567,17 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         track_event(
             AnalyticsEvent.INITIALIZED_STORE,
             {"store_type": default_store_cfg.type.value},
+        )
+
+    def uses_default_store(self) -> bool:
+        """Check if the global configuration uses the default store.
+
+        Returns:
+            `True` if the global configuration uses the default store.
+        """
+        return (
+            self.store is not None
+            and self.store.url == self.get_default_store().url
         )
 
     def set_store(

@@ -96,7 +96,7 @@ and [for computer vision](https://docs.deepchecks.com/stable/checks_gallery/visi
 that expect two datasets as input: target and reference.
 
 This structure is directly reflected in how Deepchecks can be used with ZenML:
-there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.validation_checks).
+there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.validation_checks).
 [The Deepchecks Data Validator API](#the-deepchecks-data-validator) is also
 modeled to reflect this same structure.
 
@@ -185,16 +185,16 @@ explained below.
 ZenML wraps the Deepchecks functionality for tabular data in the form of four
 standard steps:
 
-* [`DeepchecksDataIntegrityCheckStep`](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.steps.deepchecks_data_drift.DeepchecksDataDriftCheckStep):
+* [`DeepchecksDataIntegrityCheckStep`](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_drift.DeepchecksDataDriftCheckStep):
 use it in your pipelines to run data integrity tests on a single dataset
-* [`DeepchecksDataDriftCheckStep`](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStep):
+* [`DeepchecksDataDriftCheckStep`](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStep):
 use it in your pipelines to run data drift tests on two datasets as input:
 target and reference.
-* [`DeepchecksModelValidationCheckStep`](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.steps.deepchecks_model_validation.DeepchecksModelValidationCheckStep):
+* [`DeepchecksModelValidationCheckStep`](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_model_validation.DeepchecksModelValidationCheckStep):
 class DeepchecksModelDriftCheckStep(BaseStep):
 use it in your pipelines to run model performance tests using a single dataset
 and a mandatory model artifact as input
-* [`DeepchecksModelDriftCheckStep`](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.steps.deepchecks_model_drift.DeepchecksModelDriftCheckStep):
+* [`DeepchecksModelDriftCheckStep`](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_model_drift.DeepchecksModelDriftCheckStep):
 use it in your pipelines to run model comparison/drift tests using a mandatory
 model artifact and two datasets as input: target and reference.
 
@@ -208,7 +208,7 @@ and returned artifacts, with the following differences:
 * the type and number of input artifacts are different, as mentioned above
 * each step expects a different enum data type to be used when explicitly
 listing the checks to be performed via the `check_list` configuration attribute.
-See the [`zenml.integrations.deepchecks.validation_checks`](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.validation_checks)
+See the [`zenml.integrations.deepchecks.validation_checks`](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.validation_checks)
 module for more details about these enums (e.g. the data integrity step expects
 a list of `DeepchecksDataIntegrityCheck` values).
 
@@ -249,7 +249,7 @@ pipeline = data_validation_pipeline(
 pipeline.run()
 ```
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStepConfig),
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStepParameters),
 the step takes in a dataset and it returns a Deepchecks `SuiteResult` object
 that contains the test results:
 
@@ -290,7 +290,7 @@ data_validator = deepchecks_data_integrity_check_step(
 You should consult [the official Deepchecks documentation](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html)
 for more information on what each test is useful for.
 
-For more customization, the `DeepchecksDataIntegrityCheckStepConfig` step
+For more customization, the `DeepchecksDataIntegrityCheckStepParams` step
 configuration also allows for additional keyword arguments to be supplied to be
 passed transparently to the Deepchecks library:
 
@@ -404,7 +404,7 @@ check.add_condition_number_of_outliers_less_or_equal(
 suite.run(train_dataset=train_dataset)
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStepConfig) in the API
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStepParameters) in the API
 docs.
 
 You can also check out our examples pages for working examples that use the
@@ -462,7 +462,7 @@ def data_integrity_check(
 The arguments that the Deepchecks Data Validator methods can take in are the
 same as those used for [the Deepchecks standard steps](#the-deepchecks-standard-steps).
 
-Have a look at [the complete list of methods and parameters available in the `DeepchecksDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.data_validators.deepchecks_data_validator.DeepchecksDataValidator) in the API docs.
+Have a look at [the complete list of methods and parameters available in the `DeepchecksDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.data_validators.deepchecks_data_validator.DeepchecksDataValidator) in the API docs.
 
 ### Call Deepchecks directly
 

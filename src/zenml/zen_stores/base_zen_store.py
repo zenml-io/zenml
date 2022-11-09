@@ -27,7 +27,7 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.exceptions import StackExistsError
 from zenml.logger import get_logger
 from zenml.models import (
@@ -59,6 +59,9 @@ DEFAULT_USERNAME = "default"
 DEFAULT_PASSWORD = ""
 DEFAULT_PROJECT_NAME = "default"
 DEFAULT_STACK_NAME = "default"
+DEFAULT_STACK_COMPONENT_NAME = "default"
+ADMIN_ROLE = "admin"
+GUEST_ROLE = "guest"
 
 
 class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
@@ -161,6 +164,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         store = store_class(
             config=config,
             skip_default_registrations=skip_default_registrations,
+            **kwargs,
         )
         return store
 
@@ -177,13 +181,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             The default store configuration.
         """
-        from zenml.zen_stores.sql_zen_store import (
-            SqlZenStore,
-            SqlZenStoreConfiguration,
-        )
+        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         config = SqlZenStoreConfiguration(
-            type=StoreType.SQL, url=SqlZenStore.get_local_url(path)
+            type=StoreType.SQL, url=SqlZenStoreConfiguration.get_local_url(path)
         )
         return config
 
@@ -193,6 +194,14 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             default_project = self._default_project
         except KeyError:
             default_project = self._create_default_project()
+        try:
+            assert self._admin_role
+        except KeyError:
+            self._create_admin_role()
+        try:
+            assert self._guest_role
+        except KeyError:
+            self._create_guest_role()
         try:
             default_user = self._default_user
         except KeyError:
@@ -253,6 +262,23 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         """
         active_project: ProjectModel
 
+        # Figure out a project to use if one isn't configured or
+        # available:
+        #   1. If the default project is configured, use that.
+        #   2. If the default project is not configured, use the first
+        #      project in the store.
+        #   3. If there are no projects in the store, create the default
+        #      project and use that
+        try:
+            default_project = self._default_project
+        except KeyError:
+            projects = self.list_projects()
+            if len(projects) == 0:
+                self._create_default_project()
+                default_project = self._default_project
+            else:
+                default_project = projects[0]
+
         # Ensure that the current active project is still valid
         if active_project_name_or_id:
             try:
@@ -260,16 +286,18 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             except KeyError:
                 logger.warning(
                     "The current %s active project is no longer available. "
-                    "Resetting the active project to default.",
+                    "Resetting the active project to '%s'.",
                     config_name,
+                    default_project.name,
                 )
-                active_project = self._default_project
+                active_project = default_project
         else:
             logger.info(
-                "Setting the %s active project to default.",
+                "Setting the %s active project to '%s'.",
                 config_name,
+                default_project.name,
             )
-            active_project = self._default_project
+            active_project = default_project
 
         active_stack: StackModel
 
@@ -392,7 +420,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             )
 
         logger.info(
-            f"Creating default stack for user {user.name} in project "
+            f"Creating default stack for user '{user.name}' in project "
             f"{project.name}..."
         )
 
@@ -401,7 +429,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             component=ComponentModel(
                 user=user.id,
                 project=project.id,
-                name="default",
+                name=DEFAULT_STACK_COMPONENT_NAME,
                 type=StackComponentType.ORCHESTRATOR,
                 flavor="local",
                 configuration={},
@@ -413,7 +441,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             component=ComponentModel(
                 user=user.id,
                 project=project.id,
-                name="default",
+                name=DEFAULT_STACK_COMPONENT_NAME,
                 type=StackComponentType.ARTIFACT_STORE,
                 flavor="local",
                 configuration={},
@@ -423,7 +451,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         components = {c.type: [c.id] for c in [orchestrator, artifact_store]}
         # Register the default stack
         stack = StackModel(
-            name="default",
+            name=DEFAULT_STACK_NAME,
             components=components,
             is_shared=False,
             project=project.id,
@@ -459,6 +487,64 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 f"project {str(project_name_or_id)}"
             )
         return default_stacks[0]
+
+    # -----
+    # Roles
+    # -----
+    @property
+    def _admin_role(self) -> RoleModel:
+        """Get the admin role.
+
+        Returns:
+            The default admin role.
+        """
+        return self.get_role(ADMIN_ROLE)
+
+    @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
+    def _create_admin_role(self) -> RoleModel:
+        """Creates the admin role.
+
+        Returns:
+            The admin role
+        """
+        logger.info(f"Creating '{ADMIN_ROLE}' role ...")
+        return self.create_role(
+            RoleModel(
+                name=ADMIN_ROLE,
+                permissions=[
+                    PermissionType.READ.value,
+                    PermissionType.WRITE.value,
+                    PermissionType.ME.value,
+                ],
+            )
+        )
+
+    @property
+    def _guest_role(self) -> RoleModel:
+        """Get the guest role.
+
+        Returns:
+            The guest role.
+        """
+        return self.get_role(GUEST_ROLE)
+
+    @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
+    def _create_guest_role(self) -> RoleModel:
+        """Creates the guest role.
+
+        Returns:
+            The guest role
+        """
+        logger.info(f"Creating '{GUEST_ROLE}' role ...")
+        return self.create_role(
+            RoleModel(
+                name=GUEST_ROLE,
+                permissions=[
+                    PermissionType.READ.value,
+                    PermissionType.ME.value,
+                ],
+            )
+        )
 
     # -----
     # Users
@@ -511,7 +597,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
     @track(AnalyticsEvent.CREATED_DEFAULT_USER)
     def _create_default_user(self) -> UserModel:
-        """Creates a default user.
+        """Creates a default user with the admin role.
 
         Returns:
             The default user.
@@ -522,13 +608,19 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         )
 
         logger.info(f"Creating default user '{user_name}' ...")
-        return self.create_user(
+        new_user = self.create_user(
             UserModel(
                 name=user_name,
                 active=True,
                 password=user_password,
             )
         )
+        self.assign_role(
+            role_name_or_id=self._admin_role.id,
+            user_or_team_name_or_id=new_user.id,
+            is_user=True,
+        )
+        return new_user
 
     # -----
     # Teams
@@ -570,6 +662,15 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
     # --------
 
     @property
+    def _default_project_name(self) -> str:
+        """Get the default project name.
+
+        Returns:
+            The default project name.
+        """
+        return os.getenv(ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME)
+
+    @property
     def _default_project(self) -> ProjectModel:
         """Get the default project.
 
@@ -579,9 +680,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Raises:
             KeyError: if the default project doesn't exist.
         """
-        project_name = os.getenv(
-            ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME
-        )
+        project_name = self._default_project_name
         try:
             return self.get_project(project_name)
         except KeyError:
@@ -596,9 +695,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             The default project.
         """
-        project_name = os.getenv(
-            ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME
-        )
+        project_name = self._default_project_name
         logger.info(f"Creating default project '{project_name}' ...")
         return self.create_project(ProjectModel(name=project_name))
 

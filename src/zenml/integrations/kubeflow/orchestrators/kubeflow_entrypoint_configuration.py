@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the Kubeflow entrypoint configuration."""
 
-import os
 from typing import Any, List, Optional, Set
 
 from tfx.orchestration.portable import data_types
@@ -22,7 +21,6 @@ from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.integrations.kubeflow.orchestrators import utils
 
 METADATA_UI_PATH_OPTION = "metadata_ui_path"
-ENV_ZENML_RUN_NAME = "ZENML_RUN_NAME"
 
 
 class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
@@ -61,26 +59,6 @@ class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
             f"--{METADATA_UI_PATH_OPTION}",
             kwargs[METADATA_UI_PATH_OPTION],
         ]
-
-    def get_run_name(self, pipeline_name: str) -> Optional[str]:
-        """Returns the Kubeflow pipeline run name.
-
-        Args:
-            pipeline_name: The name of the pipeline.
-
-        Returns:
-            The Kubeflow pipeline run name.
-
-        Raises:
-            RuntimeError: If the run name environment variable is not set.
-        """
-        try:
-            return os.environ[ENV_ZENML_RUN_NAME]
-        except KeyError:
-            raise RuntimeError(
-                "Unable to read run name from environment variable "
-                f"{ENV_ZENML_RUN_NAME}."
-            )
 
     def post_run(
         self,

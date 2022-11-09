@@ -15,6 +15,7 @@
 
 import ipaddress
 import os
+import sys
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import click
@@ -26,10 +27,12 @@ from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
+from zenml.constants import ENV_AUTO_OPEN_DASHBOARD, handle_bool_env_var
 from zenml.enums import ServerProviderType, StoreType
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.docker_utils import check_docker
 
 logger = get_logger(__name__)
 
@@ -147,14 +150,31 @@ def up(
         image: A custom Docker image to use for the server, when the
             `--docker` flag is set.
     """
+    # flake8: noqa: C901
+
     from zenml.zen_server.deploy.deployer import ServerDeployer
     from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
 
     gc = GlobalConfiguration()
 
     if docker:
+        if not check_docker():
+            cli_utils.error(
+                "Docker does not seem to be installed on your system. Please "
+                "install Docker to use the Docker ZenML server local "
+                "deployment or use one of the other deployment options."
+            )
         provider = ServerProviderType.DOCKER
     else:
+        if sys.platform == "win32" and not blocking:
+            cli_utils.error(
+                "Running the ZenML server locally as a background process is "
+                "not supported on Windows. Please use the `--blocking` flag "
+                "to run the server in blocking mode, or run the server in "
+                "a Docker container by setting `--docker` instead."
+            )
+        else:
+            pass
         provider = ServerProviderType.LOCAL
 
     deployer = ServerDeployer()
@@ -240,8 +260,23 @@ def up(
             cli_utils.declare(
                 f"The local ZenML dashboard is available at "
                 f"'{server.status.url}'. You can connect to it using the "
-                f"'{DEFAULT_USERNAME}' username and an empty password."
+                f"'{DEFAULT_USERNAME}' username and an empty password. "
+                f"To open the dashboard in a browser automatically, "
+                f"set the env variable AUTO_OPEN_DASHBOARD=true."
             )
+
+            if handle_bool_env_var(ENV_AUTO_OPEN_DASHBOARD, default=True):
+                try:
+                    import webbrowser
+
+                    webbrowser.open(server.status.url)
+                    cli_utils.declare(
+                        "Automatically opening the dashboard in your browser. "
+                        "To disable this, set the env variable "
+                        "AUTO_OPEN_DASHBOARD=false."
+                    )
+                except Exception as e:
+                    logger.error(e)
 
 
 @cli.command("down", help="Shut down the local ZenML dashboard.")
@@ -275,7 +310,11 @@ def down() -> None:
     "--provider",
     "-p",
     type=click.Choice(
-        [ServerProviderType.AWS.value, ServerProviderType.GCP.value],
+        [
+            ServerProviderType.AWS.value,
+            ServerProviderType.GCP.value,
+            ServerProviderType.AZURE.value,
+        ],
         case_sensitive=True,
     ),
     default=None,
@@ -379,7 +418,11 @@ def deploy(
         provider = click.prompt(
             "ZenML server provider",
             type=click.Choice(
-                [ServerProviderType.AWS.value, ServerProviderType.GCP.value],
+                [
+                    ServerProviderType.AWS.value,
+                    ServerProviderType.GCP.value,
+                    ServerProviderType.AZURE.value,
+                ],
                 case_sensitive=True,
             ),
             default=ServerProviderType.AWS.value,
@@ -387,11 +430,12 @@ def deploy(
     config_dict["provider"] = provider
 
     if provider == ServerProviderType.GCP.value:
-        if not gcp_project_id:
-            gcp_project_id = click.prompt(
-                "GCP project ID",
-            )
-        config_dict["project_id"] = gcp_project_id
+        if "project_id" not in config_dict:
+            if not gcp_project_id:
+                gcp_project_id = click.prompt(
+                    "GCP project ID",
+                )
+            config_dict["project_id"] = gcp_project_id
 
     if not username:
         username = click.prompt(
@@ -511,7 +555,7 @@ def status() -> None:
     if client.root:
         cli_utils.declare(f"Active repository root: {client.root}")
     if store_cfg is not None:
-        if store_cfg == gc.get_default_store():
+        if gc.uses_default_store():
             cli_utils.declare(f"Using the local database ('{store_cfg.url}')")
         else:
             cli_utils.declare(f"Connected to a ZenML server: '{store_cfg.url}'")

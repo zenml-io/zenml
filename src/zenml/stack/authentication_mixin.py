@@ -71,7 +71,7 @@ class AuthenticationMixin(StackComponent):
         if not self.config.authentication_secret:
             return None
 
-        active_stack = Client(skip_client_check=True).active_stack  # type: ignore[call-arg]
+        active_stack = Client().active_stack
         secrets_manager = active_stack.secrets_manager
         if not secrets_manager:
             raise RuntimeError(

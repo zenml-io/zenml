@@ -30,6 +30,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 from uuid import UUID
 
@@ -380,11 +381,10 @@ def print_active_config() -> None:
     if not gc.store:
         return
 
-    if gc.store.type == StoreType.SQL:
-        if gc.store.url == gc.get_default_store().url:
-            declare("Using the default local database.")
-        else:
-            declare(f"Using the SQL database: '{gc.store.url}'.")
+    if gc.uses_default_store():
+        declare("Using the default local database.")
+    elif gc.store.type == StoreType.SQL:
+        declare(f"Using the SQL database: '{gc.store.url}'.")
     elif gc.store.type == StoreType.REST:
         declare(f"Connected to the ZenML server: '{gc.store.url}'")
     if gc.active_project_name:
@@ -852,17 +852,23 @@ def get_stack_by_id_or_name_or_prefix(
     except ValueError:
         pass
 
-    user_only_stacks = client.zen_store.list_stacks(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        user_name_or_id=client.active_user.name,
-        is_shared=False,
+    user_only_stacks = cast(
+        List["StackModel"],
+        client.zen_store.list_stacks(
+            project_name_or_id=client.active_project.name,
+            name=id_or_name_or_prefix,
+            user_name_or_id=client.active_user.name,
+            is_shared=False,
+        ),
     )
 
-    shared_stacks = client.zen_store.list_stacks(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        is_shared=True,
+    shared_stacks = cast(
+        List["StackModel"],
+        client.zen_store.list_stacks(
+            project_name_or_id=client.active_project.name,
+            name=id_or_name_or_prefix,
+            is_shared=True,
+        ),
     )
 
     named_stacks = user_only_stacks + shared_stacks
@@ -884,15 +890,21 @@ def get_stack_by_id_or_name_or_prefix(
             f"exists. Trying to resolve as partial_id"
         )
 
-        user_only_stacks = client.zen_store.list_stacks(
-            project_name_or_id=client.active_project.name,
-            user_name_or_id=client.active_user.name,
-            is_shared=False,
+        user_only_stacks = cast(
+            List["StackModel"],
+            client.zen_store.list_stacks(
+                project_name_or_id=client.active_project.name,
+                user_name_or_id=client.active_user.name,
+                is_shared=False,
+            ),
         )
 
-        shared_stacks = client.zen_store.list_stacks(
-            project_name_or_id=client.active_project.name,
-            is_shared=True,
+        shared_stacks = cast(
+            List["StackModel"],
+            client.zen_store.list_stacks(
+                project_name_or_id=client.active_project.name,
+                is_shared=True,
+            ),
         )
 
         all_stacks = user_only_stacks + shared_stacks
@@ -942,9 +954,9 @@ def print_stacks_table(
         stacks: List of stacks
     """
     stack_dicts = []
+    active_stack_model_id = client.active_stack_model.id
     for stack in stacks:
-        active_stack_id = client.active_stack_model.id
-        is_active = stack.id == active_stack_id
+        is_active = stack.id == active_stack_model_id
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,
@@ -1074,7 +1086,7 @@ def get_component_by_id_or_name_or_prefix(
             components=hydrated_components,
         )
         error(
-            f"Multiple components have been found for name "
+            f"Multiple {component_type.value} components have been found for name "
             f"'{id_or_name_or_prefix}'. The components listed above all share "
             f"this name. Please specify the component by full or partial id."
         )
@@ -1178,7 +1190,7 @@ def print_pipeline_runs_table(
             stack_name = "[DELETED]"
         else:
             stack_name = client.zen_store.get_stack(pipeline_run.stack_id).name
-        status = client.zen_store.get_run_status(pipeline_run.id)
+        status = client.zen_store.get_run(pipeline_run.id).status
         status_emoji = get_execution_status_emoji(status)
         run_dict = {
             "PIPELINE NAME": pipeline_name,

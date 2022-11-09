@@ -27,11 +27,11 @@ from zenml.container_registries import (
     BaseContainerRegistry,
     GitHubContainerRegistryFlavor,
 )
+from zenml.entrypoints.step_entrypoint_configuration import (
+    StepEntrypointConfiguration,
+)
 from zenml.integrations.github.flavors.github_actions_orchestrator_flavor import (
     GitHubActionsOrchestratorConfig,
-)
-from zenml.integrations.github.orchestrators.github_actions_entrypoint_configuration import (
-    GitHubActionsEntrypointConfiguration,
 )
 from zenml.integrations.github.secrets_managers.github_secrets_manager import (
     ENV_IN_GITHUB_ACTIONS,
@@ -57,6 +57,8 @@ logger = get_logger(__name__)
 GITHUB_REMOTE_URL_PREFIXES = ["git@github.com", "https://github.com"]
 # Name of the GitHub Action used to login to docker
 DOCKER_LOGIN_ACTION = "docker/login-action@v1"
+
+ENV_ZENML_GH_ACTIONS_RUN_ID = "ZENML_GH_ACTIONS_RUN_ID"
 
 
 class GitHubActionsOrchestrator(BaseOrchestrator):
@@ -218,8 +220,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         self,
         file_name: str,
         secrets_manager: Optional[BaseSecretsManager] = None,
-    ) -> Optional[Dict[str, Any]]:
-        """GitHub Actions step for writing secrets to an environment file.
+    ) -> Dict[str, Any]:
+        """GitHub Actions step for writing required environment variables.
 
         Args:
             file_name: Name of the environment file that should be written.
@@ -230,9 +232,6 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             Dictionary specifying the GitHub Actions step for writing the
             environment file.
         """
-        if not isinstance(secrets_manager, GitHubSecretsManager):
-            return None
-
         # Always include the environment variable that specifies whether
         # we're running in a GitHub Action workflow so the secret manager knows
         # how to query secret values
@@ -241,24 +240,50 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             f"> {file_name}; "
         )
 
-        # Write all ZenML secrets into the environment file. Explicitly writing
-        # these `${{ secrets.<SECRET_NAME> }}` placeholders into the workflow
-        # yaml is the only way for us to access the GitHub secrets in a GitHub
-        # Actions workflow.
-        append_secret_placeholder = (
-            "echo {secret_name}=${{{{ secrets.{secret_name} }}}} >> {file}; "
+        run_id_placeholder = (
+            "${{ github.run_id }}_${{ github.run_number }}_"
+            "${{ github.run_attempt }}"
         )
-        for secret_name in secrets_manager.get_all_secret_keys(
-            include_prefix=True
-        ):
-            command += append_secret_placeholder.format(
-                secret_name=secret_name, file=file_name
-            )
+        command += (
+            f'echo {ENV_ZENML_GH_ACTIONS_RUN_ID}="{run_id_placeholder}" '
+            f">> {file_name}; "
+        )
+
+        if isinstance(secrets_manager, GitHubSecretsManager):
+            # Write all ZenML secrets into the environment file. Explicitly writing
+            # these `${{ secrets.<SECRET_NAME> }}` placeholders into the workflow
+            # yaml is the only way for us to access the GitHub secrets in a GitHub
+            # Actions workflow.
+            append_secret_placeholder = "echo {secret_name}=${{{{ secrets.{secret_name} }}}} >> {file}; "
+            for secret_name in secrets_manager.get_all_secret_keys(
+                include_prefix=True
+            ):
+                command += append_secret_placeholder.format(
+                    secret_name=secret_name, file=file_name
+                )
 
         return {
             "name": "Write environment file",
             "run": command,
         }
+
+    def get_orchestrator_run_id(self) -> str:
+        """Returns the active orchestrator run id.
+
+        Raises:
+            RuntimeError: If the environment variable specifying the run id
+                is not set.
+
+        Returns:
+            The orchestrator run id.
+        """
+        try:
+            return os.environ[ENV_ZENML_GH_ACTIONS_RUN_ID]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to read run id from environment variable "
+                f"{ENV_ZENML_GH_ACTIONS_RUN_ID}."
+            )
 
     def prepare_pipeline_deployment(
         self,
@@ -381,9 +406,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         write_env_file_step = self._write_environment_file_step(
             file_name=env_file_name, secrets_manager=stack.secrets_manager
         )
-        docker_run_args = (
-            ["--env-file", env_file_name] if write_env_file_step else []
-        )
+        docker_run_args = ["--env-file", env_file_name]
 
         # Prepare the docker login step if necessary
         container_registry = stack.container_registry
@@ -396,7 +419,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             "run",
             *docker_run_args,
             image_name,
-        ] + GitHubActionsEntrypointConfiguration.get_entrypoint_command()
+        ] + StepEntrypointConfiguration.get_entrypoint_command()
 
         jobs = {}
         for step_name, step in deployment.steps.items():
@@ -412,14 +435,13 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
             # Copy the shared dicts here to avoid creating yaml anchors (which
             # are currently not supported in GitHub workflow yaml files)
-            if write_env_file_step:
-                job_steps.append(copy.deepcopy(write_env_file_step))
+            job_steps.append(copy.deepcopy(write_env_file_step))
 
             if docker_login_step:
                 job_steps.append(copy.deepcopy(docker_login_step))
 
             entrypoint_args = (
-                GitHubActionsEntrypointConfiguration.get_entrypoint_arguments(
+                StepEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
                 )
             )

@@ -53,7 +53,6 @@ from zenml.logger import get_logger
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
-from zenml.steps.utils import clone_step
 from zenml.utils import (
     dashboard_utils,
     dict_utils,
@@ -186,12 +185,12 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return self.__steps
 
     def configure(
-        self,
+        self: T,
         enable_cache: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         merge: bool = True,
-    ) -> None:
+    ) -> T:
         """Configures the pipeline.
 
         Configuration merging example:
@@ -213,6 +212,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
+
+        Returns:
+            The pipeline instance that this method was called on.
         """
         values = dict_utils.remove_none_values(
             {
@@ -223,6 +225,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
         config = PipelineConfigurationUpdate(**values)
         self._apply_configuration(config, merge=merge)
+        return self
 
     def _apply_class_configuration(self, options: Dict[str, Any]) -> None:
         """Applies the configurations specified on the pipeline class.
@@ -258,7 +261,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
 
         combined_steps = {}
-        step_classes: Dict[Type[BaseStep], str] = {}
+        step_ids: Dict[int, str] = {}
 
         def _verify_step(key: str, step: BaseStep) -> None:
             """Verifies a single step of the pipeline.
@@ -294,21 +297,21 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"a pipeline."
                 )
 
-            if step_class in step_classes:
-                previous_key = step_classes[step_class]
+            if id(step) in step_ids:
+                previous_key = step_ids[id(step)]
                 raise PipelineInterfaceError(
-                    f"Found multiple step objects of the same class "
-                    f"(`{step_class}`) for arguments '{previous_key}' and "
-                    f"'{key}' in pipeline '{self.name}'. Only one step object "
-                    f"per class is allowed inside a ZenML pipeline. A possible "
-                    f"solution is to use the "
-                    f"{clone_step.__module__}.{clone_step.__name__} utility to "
-                    f"create multiple copies of the same step."
+                    f"Found the same step object for arguments "
+                    f"'{previous_key}' and '{key}' in pipeline '{self.name}'. "
+                    "Step object cannot be reused inside a ZenML pipeline. "
+                    "A possible solution is to create two instances of the "
+                    "same step class and assigning them different names: "
+                    "`first_instance = step_class(name='s1')` and "
+                    "`second_instance = step_class(name='s2')`."
                 )
 
             step.pipeline_parameter_name = key
+            step_ids[id(step)] = key
             combined_steps[key] = step
-            step_classes[step_class] = key
 
         # verify args
         for i, step in enumerate(steps):
@@ -490,11 +493,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         skip_pipeline_registration = constants.handle_bool_env_var(
             constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
         )
-        caching_status = (
-            "enabled"
-            if pipeline_deployment.pipeline.enable_cache
-            else "disabled"
-        )
+
         register_pipeline = not (skip_pipeline_registration or unlisted)
 
         pipeline_id = None
@@ -512,23 +511,24 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline_deployment = pipeline_deployment.copy(
                 update={"pipeline_id": pipeline_id}
             )
-            logger.info(
-                "Creating run `%s` for pipeline `%s` (Caching %s)",
-                pipeline_deployment.run_name,
-                self.name,
-                caching_status,
-            )
-        else:
-            logger.info(
-                "Creating unlisted run `%s` (Caching %s)",
-                pipeline_deployment.run_name,
-                caching_status,
-            )
 
         self._track_pipeline_deployment(
             deployment=pipeline_deployment, stack=stack
         )
-
+        caching_status = (
+            "enabled"
+            if pipeline_deployment.pipeline.enable_cache
+            else "disabled"
+        )
+        logger.info(
+            "%s %s on stack `%s` (caching %s)",
+            "Scheduling" if pipeline_deployment.schedule else "Running",
+            f"pipeline `{pipeline_deployment.pipeline.name}`"
+            if register_pipeline
+            else "unlisted pipeline",
+            stack.name,
+            caching_status,
+        )
         stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
 
         # Prevent execution of nested pipelines which might lead to unexpected

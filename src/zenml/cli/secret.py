@@ -58,9 +58,9 @@ def register_secrets_manager_subcommands() -> None:
         from zenml.stack.stack_component import StackComponent
 
         client = Client()
-        secrets_manager_models = client.active_stack_model.components[
+        secrets_manager_models = client.active_stack_model.components.get(
             StackComponentType.SECRETS_MANAGER
-        ]
+        )
         if secrets_manager_models is None:
             error(
                 "No active secrets manager found. Please create a secrets "
@@ -154,8 +154,6 @@ def register_secrets_manager_subcommands() -> None:
         """
         # flake8: noqa: C901
 
-        # TODO [ENG-871]: Formatting for `zenml secrets-manager secret register
-        #  --help` currently broken.
         # TODO [ENG-725]: Allow passing in json/dict when registering a secret
         #  as an additional option for the user on top of the interactive
 
@@ -302,6 +300,9 @@ def register_secrets_manager_subcommands() -> None:
         """
         with console.status("Getting secret names..."):
             secret_names = secrets_manager.get_all_secret_keys()
+            if not secret_names:
+                warning("No secrets registered.")
+                return
             print_list_items(
                 list_items=secret_names, column_title="SECRET_NAMES"
             )

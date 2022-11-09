@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Iterator, List, Optional, Sequence, Tuple
 
 import zenml
 from zenml.config import DockerSettings
+from zenml.config.docker_settings import PythonEnvironmentExportMethod
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE,
@@ -209,6 +210,7 @@ class PipelineDockerImageBuilder:
                 docker_settings.required_integrations,
                 docker_settings.replicate_local_python_environment,
                 docker_settings.install_stack_requirements,
+                docker_settings.apt_packages,
                 docker_settings.environment,
                 docker_settings.copy_files,
                 docker_settings.copy_global_config,
@@ -250,7 +252,7 @@ class PipelineDockerImageBuilder:
             if parent_image == DEFAULT_DOCKER_PARENT_IMAGE:
                 raise ValueError(
                     "Unable to run a ZenML pipeline with the given Docker "
-                    "configuration: No Dockerfile or custom parent image "
+                    "settings: No Dockerfile or custom parent image "
                     "specified and no files will be copied or requirements "
                     "installed."
                 )
@@ -265,10 +267,21 @@ class PipelineDockerImageBuilder:
             )
             requirements_file_names = [f[0] for f in requirement_files]
 
+            apt_packages = docker_settings.apt_packages
+            if docker_settings.install_stack_requirements:
+                apt_packages += stack.apt_packages
+
+            if apt_packages:
+                logger.info(
+                    "Including apt packages: %s",
+                    ", ".join(f"`{p}`" for p in apt_packages),
+                )
+
             dockerfile = self._generate_zenml_pipeline_dockerfile(
                 parent_image=parent_image,
                 docker_settings=docker_settings,
                 requirements_files=requirements_file_names,
+                apt_packages=apt_packages,
                 entrypoint=entrypoint,
             )
 
@@ -340,10 +353,21 @@ class PipelineDockerImageBuilder:
 
         # Generate requirements file for the local environment if configured
         if docker_settings.replicate_local_python_environment:
+            if isinstance(
+                docker_settings.replicate_local_python_environment,
+                PythonEnvironmentExportMethod,
+            ):
+                command = (
+                    docker_settings.replicate_local_python_environment.command
+                )
+            else:
+                command = " ".join(
+                    docker_settings.replicate_local_python_environment
+                )
+
             try:
                 local_requirements = subprocess.check_output(
-                    docker_settings.replicate_local_python_environment.command,
-                    shell=True,
+                    command, shell=True
                 ).decode()
             except subprocess.CalledProcessError as e:
                 raise RuntimeError(
@@ -414,6 +438,7 @@ class PipelineDockerImageBuilder:
         parent_image: str,
         docker_settings: DockerSettings,
         requirements_files: Sequence[str] = (),
+        apt_packages: Sequence[str] = (),
         entrypoint: Optional[str] = None,
     ) -> List[str]:
         """Generates a Dockerfile.
@@ -422,6 +447,7 @@ class PipelineDockerImageBuilder:
             parent_image: The image to use as parent for the Dockerfile.
             docker_settings: Docker settings for this image build.
             requirements_files: Paths of requirements files to install.
+            apt_packages: APT packages to install.
             entrypoint: The default entrypoint command that gets executed when
                 running a container of an image created by this Dockerfile.
 
@@ -430,9 +456,6 @@ class PipelineDockerImageBuilder:
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
-        if docker_settings.user:
-            lines.append(f"USER {docker_settings.user}")
-
         if docker_settings.copy_global_config:
             lines.append(
                 f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
@@ -440,6 +463,14 @@ class PipelineDockerImageBuilder:
 
         for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}={value}")
+
+        if apt_packages:
+            apt_packages = " ".join(f"'{p}'" for p in apt_packages)
+
+            lines.append(
+                "RUN apt-get update && apt-get install -y "
+                f"--no-install-recommends {apt_packages}"
+            )
 
         for file in requirements_files:
             lines.append(f"COPY {file} .")
@@ -451,6 +482,10 @@ class PipelineDockerImageBuilder:
             lines.append(f"COPY {DOCKER_IMAGE_ZENML_CONFIG_DIR} .")
 
         lines.append("RUN chmod -R a+rw .")
+
+        if docker_settings.user:
+            lines.append(f"USER {docker_settings.user}")
+            lines.append(f"RUN chown -R {docker_settings.user} .")
 
         if entrypoint:
             lines.append(f"ENTRYPOINT {entrypoint}")

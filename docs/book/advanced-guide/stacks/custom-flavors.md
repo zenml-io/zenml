@@ -248,6 +248,11 @@ used, check out the [Managing Stack Component States](./stack-state-management.m
 section for more details.
 {% endhint %}
 
+Check out [this short (< 3 minutes) video](https://www.youtube.com/watch?v=CQRVSKbBjtQ) on how to quickly get some more
+information about the registered flavors available to you:
+
+{% embed url="https://www.youtube.com/watch?v=CQRVSKbBjtQ" %} Describe MLOps Stack Component Flavors {% endembed %}
+
 ## Extending Specific Stack Components
 
 If you would like to learn more about how to build a custom stack component

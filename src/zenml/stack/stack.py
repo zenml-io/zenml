@@ -14,12 +14,12 @@
 """Implementation of the ZenML Stack class."""
 
 import os
-import time
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
     Any,
     Dict,
+    List,
     NoReturn,
     Optional,
     Set,
@@ -32,7 +32,7 @@ from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.models.stack_models import HydratedStackModel, StackModel
-from zenml.utils import settings_utils, string_utils
+from zenml.utils import settings_utils
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
@@ -477,6 +477,54 @@ class Stack:
         return set.union(*requirements) if requirements else set()
 
     @property
+    def apt_packages(self) -> List[str]:
+        """List of APT package requirements for the stack.
+
+        Returns:
+            A list of APT package requirements for the stack.
+        """
+        return [
+            package
+            for component in self.components.values()
+            for package in component.apt_packages
+        ]
+
+    def check_local_paths(self) -> bool:
+        """Checks if the stack has local paths.
+
+        Returns:
+            True if the stack has local paths, False otherwise.
+
+        Raises:
+            ValueError: If the stack has local paths that do not conform to
+                the convention that all local path must be relative to the
+                local stores directory.
+        """
+        from zenml.config.global_config import GlobalConfiguration
+
+        local_stores_path = GlobalConfiguration().local_stores_path
+
+        # go through all stack components and identify those that advertise
+        # a local path where they persist information that they need to be
+        # available when running pipelines.
+        has_local_paths = False
+        for stack_comp in self.components.values():
+            local_path = stack_comp.local_path
+            if not local_path:
+                continue
+            # double-check this convention, just in case it wasn't respected
+            # as documented in `StackComponent.local_path`
+            if not local_path.startswith(local_stores_path):
+                raise ValueError(
+                    f"Local path {local_path} for component "
+                    f"{stack_comp.name} is not in the local stores "
+                    f"directory ({local_stores_path})."
+                )
+            has_local_paths = True
+
+        return has_local_paths
+
+    @property
     def required_secrets(self) -> Set["secret_utils.SecretReference"]:
         """All required secrets for this stack.
 
@@ -647,22 +695,7 @@ class Stack:
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
         """
-        logger.info(
-            "Using stack `%s` to run pipeline `%s`...",
-            self.name,
-            deployment.pipeline.name,
-        )
-        start_time = time.time()
-        return_value = self.orchestrator.run(deployment=deployment, stack=self)
-
-        run_duration = time.time() - start_time
-        logger.info(
-            "Pipeline run `%s` has finished in %s.",
-            deployment.run_name,
-            string_utils.get_human_readable_time(run_duration),
-        )
-
-        return return_value
+        return self.orchestrator.run(deployment=deployment, stack=self)
 
     def _get_active_components_for_step(
         self, step_config: "StepConfiguration"

@@ -1,11 +1,15 @@
-{{- if .Values.ingress.enabled -}}
+{{- if .Values.zenml.ingress.enabled -}}
 {{- $fullName := include "zenml.fullname" . -}}
-{{- $svcPort := .Values.service.port -}}
-{{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
-  {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
-  {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
+{{- $svcPort := .Values.zenml.service.port -}}
+{{- if and .Values.zenml.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.zenml.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.zenml.ingress.annotations "kubernetes.io/ingress.class" .Values.zenml.ingress.className}}
   {{- end }}
 {{- end }}
+{{- if $.Values.zenml.ingress.tls.enabled }}
+  {{- $_ := set .Values.zenml.ingress.annotations "nginx.ingress.kubernetes.io/ssl-redirect" "true"}}
+{{- end }}
+
 {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
 apiVersion: networking.k8s.io/v1
 {{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
@@ -18,24 +22,24 @@ metadata:
   name: {{ $fullName }}
   labels:
     {{- include "zenml.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
+  {{- with .Values.zenml.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ .Values.ingress.className }}
+  {{- if and .Values.zenml.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.zenml.ingress.className }}
   {{- end }}
-  {{- if .Values.ingress.tls.enabled }}
+  {{- if .Values.zenml.ingress.tls.enabled }}
   tls:
     - hosts:
-        - {{ .Values.ingress.host | quote }}
-      secretName: {{ .Values.ingress.tls.secretName }}
+        - {{ .Values.zenml.ingress.host | quote }}
+      secretName: {{ .Values.zenml.ingress.tls.secretName }}
   {{- end }}
   rules:
     - http:
         paths:
-          - path: {{ .Values.ingress.path }}
+          - path: {{ .Values.zenml.ingress.path }}
             {{- if semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion }}
             pathType: Prefix
             {{- end }}
@@ -49,7 +53,7 @@ spec:
               serviceName: {{ $fullName }}
               servicePort: {{ $svcPort }}
               {{- end }}
-      {{- if .Values.ingress.host }}
-      host: {{ .Values.ingress.host | quote }}
+      {{- if .Values.zenml.ingress.host }}
+      host: {{ .Values.zenml.ingress.host | quote }}
       {{- end }}
 {{- end }}

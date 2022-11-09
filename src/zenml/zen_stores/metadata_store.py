@@ -52,12 +52,12 @@ class MLMDPipelineRunModel(BaseModel):
 
     mlmd_id: int
     name: str
-    project: UUID
-    user: UUID
+    project: Optional[UUID]
+    user: Optional[UUID]
     pipeline_id: Optional[UUID]
-    stack_id: UUID
+    stack_id: Optional[UUID]
     pipeline_configuration: Dict[str, Any]
-    num_steps: int
+    num_steps: Optional[int]
 
 
 class MLMDStepRunModel(BaseModel):
@@ -69,6 +69,7 @@ class MLMDStepRunModel(BaseModel):
     name: str
     parameters: Dict[str, str]
     step_configuration: Dict[str, Any]
+    docstring: Optional[str]
 
 
 class MLMDArtifactModel(BaseModel):
@@ -193,11 +194,21 @@ class MetadataStore:
         step_context_properties = self._get_zenml_execution_context_properties(
             execution=execution,
         )
-        step_configuration = json.loads(
-            step_context_properties.get(
-                MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME
-            ).string_value
-        )
+        if MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME in step_context_properties:
+            step_configuration = json.loads(
+                step_context_properties.get(
+                    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME
+                ).string_value
+            )
+        else:
+            step_configuration = {}
+
+        # Extract docstring.
+        docstring = None
+        if "config" in step_configuration:
+            step_configuration_config = step_configuration["config"]
+            if "docstring" in step_configuration_config:
+                docstring = step_configuration_config["docstring"]
 
         # TODO [ENG-222]: This is a lot of querying to the metadata store. We
         #  should refactor and make it nicer. Probably it makes more sense
@@ -246,6 +257,7 @@ class MetadataStore:
             name=step_name,
             parameters=step_parameters,
             step_configuration=step_configuration,
+            docstring=docstring,
         )
 
     def _get_pipeline_run_model_from_context(
@@ -254,45 +266,68 @@ class MetadataStore:
         context_properties = self._get_zenml_execution_context_properties(
             self.store.get_executions_by_context(context_id=context.id)[-1]
         )
-        model_ids = json.loads(
-            context_properties.get(
-                MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME
-            ).string_value
-        )
-        pipeline_configuration = json.loads(
-            context_properties.get(
-                MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME
-            ).string_value
-        )
-        num_steps = int(
-            context_properties.get(
-                MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME
-            ).string_value
-        )
+
+        if MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME in context_properties:
+            model_ids = json.loads(
+                context_properties.get(
+                    MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME
+                ).string_value
+            )
+            project = model_ids["project_id"]
+            user = model_ids["user_id"]
+            pipeline_id = model_ids["pipeline_id"]
+            stack_id = model_ids["stack_id"]
+        else:
+            project, user, pipeline_id, stack_id = None, None, None, None
+
+        if MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME in context_properties:
+            pipeline_configuration = json.loads(
+                context_properties.get(
+                    MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME
+                ).string_value
+            )
+        else:
+            pipeline_configuration = {}
+
+        if MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME in context_properties:
+            num_steps = int(
+                context_properties.get(
+                    MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME
+                ).string_value
+            )
+        else:
+            num_steps = None
+
         return MLMDPipelineRunModel(
             mlmd_id=context.id,
             name=context.name,
-            project=model_ids["project_id"],
-            user=model_ids["user_id"],
-            pipeline_id=model_ids["pipeline_id"],
-            stack_id=model_ids["stack_id"],
+            project=project,
+            user=user,
+            pipeline_id=pipeline_id,
+            stack_id=stack_id,
             pipeline_configuration=pipeline_configuration,
             num_steps=num_steps,
         )
 
-    def get_all_runs(self) -> Dict[str, MLMDPipelineRunModel]:
+    def get_all_runs(
+        self, ignored_ids: Optional[List[int]] = None
+    ) -> List[MLMDPipelineRunModel]:
         """Gets a mapping run name -> ID for all runs registered in MLMD.
+
+        Args:
+            ignored_ids: A list of run IDs to ignore.
 
         Returns:
             A mapping run name -> ID for all runs registered in MLMD.
         """
-        all_pipeline_runs = self.store.get_contexts_by_type(
+        run_contexts = self.store.get_contexts_by_type(
             PIPELINE_RUN_CONTEXT_TYPE_NAME
         )
-        return {
-            run.name: self._get_pipeline_run_model_from_context(run)
-            for run in all_pipeline_runs
-        }
+        return [
+            self._get_pipeline_run_model_from_context(run_context)
+            for run_context in run_contexts
+            if not ignored_ids or run_context.id not in ignored_ids
+        ]
 
     def get_pipeline_run_steps(
         self, run_id: int

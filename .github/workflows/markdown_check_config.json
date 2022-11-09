@@ -9,5 +9,16 @@
     {
       "pattern": "^http://localhost"
     }
-  ]
+  ],
+  "aliveStatusCodes": [
+    999,
+    403,
+    503,
+    200,
+    0
+  ],
+  "timeout": "20s",
+  "retryOn429": true,
+  "retryCount": 5,
+  "fallbackRetryDelay": "30s"
 }

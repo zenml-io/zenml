@@ -15,13 +15,25 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
     from zenml.integrations.kubernetes.orchestrators import (
         KubernetesOrchestrator,
     )
+
+
+class KubernetesOrchestratorSettings(BaseSettings):
+    """Settings for the Kubernetes orchestrator.
+
+    Attributes:
+        pod_settings: Pod settings to apply.
+    """
+
+    pod_settings: Optional[KubernetesPodSettings] = None
 
 
 class KubernetesOrchestratorConfig(BaseOrchestratorConfig):
