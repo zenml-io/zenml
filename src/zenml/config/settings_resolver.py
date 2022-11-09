@@ -143,7 +143,9 @@ class SettingsResolver:
         # Exclude additional config attributes that aren't part of the settings
         field_names = set(stack_component.settings_class.__fields__)
         default_settings = stack_component.settings_class.parse_obj(
-            stack_component.config.dict(include=field_names, exclude_unset=True)
+            stack_component.config.dict(
+                include=field_names, exclude_unset=True, exclude_defaults=True
+            )
         )
         self._settings = pydantic_utils.update_model(
             default_settings, self._settings

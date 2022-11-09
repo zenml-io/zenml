@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.gcp import GCP_VERTEX_STEP_OPERATOR_FLAVOR
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
@@ -28,9 +29,27 @@ if TYPE_CHECKING:
     from zenml.integrations.gcp.step_operators import VertexStepOperator
 
 
+class VertexStepOperatorSettings(BaseSettings):
+    """Settings for the Vertex step operator.
+
+    Attributes:
+        accelerator_type: Accelerator type from list
+            https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
+        accelerator_count: Defines number of accelerators to be used for the
+            job.
+        machine_type: Machine type specified here
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
+    """
+
+    accelerator_type: Optional[str] = None
+    accelerator_count: int = 0
+    machine_type: str = "n1-standard-4"
+
+
 class VertexStepOperatorConfig(
     BaseStepOperatorConfig,
     GoogleCredentialsConfigMixin,
+    VertexStepOperatorSettings,
 ):
     """Configuration for the Vertex step operator.
 
@@ -38,18 +57,11 @@ class VertexStepOperatorConfig(
         region: Region name, e.g., `europe-west1`.
         project: GCP project name. If left None, inferred from the
             environment.
-        accelerator_type: Accelerator type from list: https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
-        accelerator_count: Defines number of accelerators to be
-            used for the job.
-        machine_type: Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
         encryption_spec_key_name: Encryption spec key name.
     """
 
     region: str
     project: Optional[str] = None
-    accelerator_type: Optional[str] = None  # TODO[1376]: Setting
-    accelerator_count: int = 0  # TODO[1376]: Setting
-    machine_type: str = "n1-standard-4"  # TODO[1376]: Setting
 
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set
