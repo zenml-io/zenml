@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import Column, ForeignKey
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType, ExecutionStatus
@@ -111,6 +111,10 @@ class PipelineSchema(SQLModel, table=True):
 
 class PipelineRunSchema(SQLModel, table=True):
     """SQL Model for pipeline runs."""
+
+    __table_args__ = (
+        UniqueConstraint("mlmd_id", name="unique_pipeline_run_mlmd_id"),
+    )
 
     id: UUID = Field(primary_key=True)
     name: str
@@ -225,6 +229,10 @@ class PipelineRunSchema(SQLModel, table=True):
 class StepRunSchema(SQLModel, table=True):
     """SQL Model for steps of pipeline runs."""
 
+    __table_args__ = (
+        UniqueConstraint("mlmd_id", name="unique_step_run_mlmd_id"),
+    )
+
     id: UUID = Field(primary_key=True)
     name: str
 
@@ -323,6 +331,12 @@ class StepRunOrderSchema(SQLModel, table=True):
 
 class ArtifactSchema(SQLModel, table=True):
     """SQL Model for artifacts of steps."""
+
+    __table_args__ = (
+        UniqueConstraint(
+            "mlmd_id", "mlmd_parent_step_id", name="unique_mlmd_output_artifact"
+        ),
+    )
 
     id: UUID = Field(primary_key=True)
     name: str  # Name of the output in the parent step
