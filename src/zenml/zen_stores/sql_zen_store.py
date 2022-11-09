@@ -67,8 +67,8 @@ from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import PipelineRunModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.new_models import (
-    ArtifactResponseModel,
     ArtifactRequestModel,
+    ArtifactResponseModel,
     ComponentRequestModel,
     ComponentResponseModel,
     FlavorRequestModel,
@@ -661,7 +661,7 @@ class SqlZenStore(BaseZenStore):
         self._sync_lock = Lock()
 
     def migrate_database(self) -> None:
-        """Migrate the database to the head as defined by the current python package."""
+        """Migrate the database to the head as defined by the python package."""
         alembic_logger = logging.getLogger("alembic")
 
         # remove all existing handlers
@@ -684,7 +684,6 @@ class SqlZenStore(BaseZenStore):
         #   before (i.e. was created with SQLModel back when alembic wasn't
         #   used)
         # 3. the database is not empty and has been migrated with alembic before
-
         revisions = self.alembic.current_revisions()
         if len(revisions) >= 1:
             if len(revisions) > 1:
@@ -3159,7 +3158,9 @@ class SqlZenStore(BaseZenStore):
                 input_artifacts=step.input_artifacts,
             )
 
-    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactResponseModel]:
+    def get_run_step_inputs(
+        self, step_id: UUID
+    ) -> Dict[str, ArtifactResponseModel]:
         """Get the inputs for a specific step.
 
         Args:

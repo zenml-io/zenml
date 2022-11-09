@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 
     from zenml.new_models import UserResponseModel
 
+
 class JWTTokenType(StrEnum):
     """The type of JWT token."""
 

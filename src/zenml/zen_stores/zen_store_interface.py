@@ -19,41 +19,30 @@ from uuid import UUID
 from zenml.enums import StackComponentType
 from zenml.models.server_models import ServerModel
 from zenml.new_models import (
+    ArtifactRequestModel,
+    ArtifactResponseModel,
+    ComponentRequestModel,
+    ComponentResponseModel,
+    FlavorRequestModel,
+    FlavorResponseModel,
+    PipelineRequestModel,
+    PipelineResponseModel,
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
     ProjectRequestModel,
     ProjectResponseModel,
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
+    StackRequestModel,
+    StackResponseModel,
+    StepRunRequestModel,
+    StepRunResponseModel,
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
-)
-from zenml.new_models.artifact_models import (
-    ArtifactRequestModel,
-    ArtifactResponseModel,
-)
-from zenml.new_models.component_models import (
-    ComponentRequestModel,
-    ComponentResponseModel,
-)
-from zenml.new_models.flavor_models import (
-    FlavorRequestModel,
-    FlavorResponseModel,
-)
-from zenml.new_models.pipeline_models import (
-    PipelineRequestModel,
-    PipelineResponseModel,
-)
-from zenml.new_models.pipeline_run_models import (
-    PipelineRunRequestModel,
-    PipelineRunResponseModel,
-)
-from zenml.new_models.stack_models import StackRequestModel, StackResponseModel
-from zenml.new_models.step_run_models import (
-    StepRunRequestModel,
-    StepRunResponseModel,
 )
 
 if TYPE_CHECKING:

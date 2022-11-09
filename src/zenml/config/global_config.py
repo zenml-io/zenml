@@ -45,8 +45,7 @@ from zenml.utils.analytics_utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.new_models import ProjectResponseModel
-    from zenml.new_models import StackResponseModel
+    from zenml.new_models import ProjectResponseModel, StackResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -661,9 +660,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     @property
     def active_stack(self):
         if not self._active_stack:
-            stack = self.zen_store.get_stack(
-                stack_id=self.active_stack_id
-            )
+            stack = self.zen_store.get_stack(stack_id=self.active_stack_id)
             self.set_active_stack(stack)
 
         return self._active_stack

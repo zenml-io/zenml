@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
-
 import getpass
-from typing import TYPE_CHECKING, Dict, List, Optional
+import json
+from typing import Dict, List, Optional
 from uuid import UUID
 
 import click
@@ -29,9 +29,6 @@ from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
-
-if TYPE_CHECKING:
-    pass
 
 
 # Stacks
@@ -677,12 +674,12 @@ def get_active_stack() -> None:
     """Gets the active stack."""
     cli_utils.print_active_config()
 
-    scope = " repository" if Client().uses_local_configuration else " global"
+    scope = "repository" if Client().uses_local_configuration else "global"
 
     with console.status("Getting the active stack..."):
         client = Client()
         cli_utils.declare(
-            f"The{scope} active stack is: '{client.active_stack_model.name}'"
+            f"The {scope} active stack is: '{client.active_stack_model.name}'"
         )
 
 
@@ -785,6 +782,7 @@ def _import_stack_component(
     component_name = component_config.pop("name")
     component_flavor = component_config.pop("flavor")
     component_id = component_config.pop("id")
+    component_shared = component_config.pop("is_shared")
 
     # make sure component can be registered, otherwise ask for new name
     client = Client()
@@ -825,17 +823,12 @@ def _import_stack_component(
     except KeyError:
         pass
 
-    from zenml.models import ComponentModel
-
     registered_component = client.register_stack_component(
-        ComponentModel(
-            user=client.active_user.id,
-            project=client.active_project.id,
-            type=component_type,
-            name=component_name,
-            flavor=component_flavor,
-            configuration=component_config["configuration"],
-        )
+        name=component_name,
+        flavor=component_flavor,
+        configuration=json.loads(component_config["configuration"]),
+        component_type=component_type,
+        is_shared=component_shared == "True",
     )
     return registered_component.id
 
@@ -905,10 +898,10 @@ def import_stack(
 
     # ask user for a new stack_name if current one already exists
     client = Client()
-    if stack_name in [s.name for s in client.list_stacks()]:
+    if client.list_stacks(name=stack_name):
         stack_name = click.prompt(
-            f"Stack `{stack_name}` already exists. "
-            f"Please choose a different name.",
+            f"Stack `{stack_name}` already exists. Please choose a different "
+            f"name.",
             type=str,
         )
 

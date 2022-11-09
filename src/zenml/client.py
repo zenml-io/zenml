@@ -856,6 +856,7 @@ class Client(metaclass=ClientMetaClass):
                 only_component.is_shared = True
                 self.update_stack_component(
                     name_id_or_prefix=only_component.id,
+                    component_type=only_component.type,
                     is_shared=True,
                 )
 
@@ -967,7 +968,8 @@ class Client(metaclass=ClientMetaClass):
             for component_id in component_ids:
                 try:
                     component = self.get_stack_component(
-                        name_id_or_prefix=component_id
+                        name_id_or_prefix=component_id,
+                        component_type=component_type,
                     )
                 except KeyError:
                     raise KeyError(
@@ -1020,7 +1022,7 @@ class Client(metaclass=ClientMetaClass):
     # '------------'
     def get_stack_component(
         self,
-        name_id_or_prefix: str,
+        name_id_or_prefix: Union[str, UUID],
         component_type: StackComponentType,
     ) -> "ComponentResponseModel":
         """Fetches a registered stack component.
@@ -1109,7 +1111,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_stack_component(
         self,
-        name_id_or_prefix: str,
+        name_id_or_prefix: Union[str, UUID],
         component_type: StackComponentType,
         name: Optional[str] = None,
         configuration: Optional[Dict[str, str]] = None,
@@ -1177,7 +1179,7 @@ class Client(metaclass=ClientMetaClass):
 
     def deregister_stack_component(
         self,
-        name_id_or_prefix: str,
+        name_id_or_prefix: Union[str, UUID],
         component_type: StackComponentType,
     ) -> None:
         """Deletes a registered stack component.
@@ -1262,7 +1264,8 @@ class Client(metaclass=ClientMetaClass):
         """Creates a new flavor.
 
         Args:
-            flavor: The flavor to create.
+            source: The flavor to create.
+            component_type: The type of the flavor.
 
         Returns:
             The created flavor (in model form).
@@ -1703,7 +1706,8 @@ class Client(metaclass=ClientMetaClass):
             )
         else:
             raise NotImplementedError(
-                "Migrating pipeline runs is only supported for SQLite and MySQL."
+                "Migrating pipeline runs is only supported for SQLite and "
+                "MySQL."
             )
 
         metadata_store = MetadataStore(config=mlmd_config)
