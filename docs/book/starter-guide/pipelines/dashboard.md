@@ -5,8 +5,8 @@ description: How to use ZenML's native dashboard to monitor your pipelines
 # Dashboard 101
 
 ZenML comes with a native dashboard that allows you to monitor your pipelines
-and their runs. It is a great way to get a quick overview of your pipelines and
-their runs, and to inspect the artifacts that were produced by your pipeline
+and their runs. It is a great way to get a quick overview of your stacks and
+their components, and to inspect the artifacts that were produced by your pipeline
 runs.
 
 ## How to use it
