@@ -47,6 +47,7 @@ class PipelineSchema(SQLModel, table=True):
         source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
     )
     project: "ProjectSchema" = Relationship(back_populates="pipelines")
 
@@ -136,6 +137,7 @@ class PipelineRunSchema(SQLModel, table=True):
         source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
     )
     project: "ProjectSchema" = Relationship(back_populates="runs")
 
@@ -267,6 +269,7 @@ class StepRunSchema(SQLModel, table=True):
         source_column="pipeline_run_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
     )
 
     status: ExecutionStatus
@@ -387,6 +390,7 @@ class ArtifactSchema(SQLModel, table=True):
         source_column="parent_step_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
     )
     producer_step_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -394,6 +398,7 @@ class ArtifactSchema(SQLModel, table=True):
         source_column="producer_step_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
     )
 
     type: ArtifactType

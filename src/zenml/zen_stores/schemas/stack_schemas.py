@@ -73,6 +73,7 @@ class StackSchema(SQLModel, table=True):
         source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
     )
     project: "ProjectSchema" = Relationship(back_populates="stacks")
 

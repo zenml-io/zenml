@@ -276,6 +276,7 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
         source_column="role_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
     )
     user_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -283,6 +284,7 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
         source_column="user_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
     )
     project_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -329,6 +331,7 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
         source_column="role_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
     )
     team_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -336,6 +339,7 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
         source_column="team_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
     )
     project_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
