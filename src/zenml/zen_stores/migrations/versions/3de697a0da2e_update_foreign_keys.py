@@ -1,15 +1,15 @@
-"""Update foreign keys [34f8c84b1ad5].
+"""Update foreign keys [3de697a0da2e].
 
-Revision ID: 34f8c84b1ad5
+Revision ID: 3de697a0da2e
 Revises: 5330ba58bf20
-Create Date: 2022-11-09 15:06:25.236801
+Create Date: 2022-11-09 17:05:18.761240
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "34f8c84b1ad5"
+revision = "3de697a0da2e"
 down_revision = "5330ba58bf20"
 branch_labels = None
 depends_on = None
@@ -26,16 +26,16 @@ def upgrade() -> None:
             "fk_artifacts_parent_step_id_step_run", type_="foreignkey"
         )
         batch_op.create_foreign_key(
-            "fk_artifacts_parent_step_id_step_run",
+            "fk_artifacts_producer_step_id_step_run",
             "step_run",
-            ["parent_step_id"],
+            ["producer_step_id"],
             ["id"],
             ondelete="CASCADE",
         )
         batch_op.create_foreign_key(
-            "fk_artifacts_producer_step_id_step_run",
+            "fk_artifacts_parent_step_id_step_run",
             "step_run",
-            ["producer_step_id"],
+            ["parent_step_id"],
             ["id"],
             ondelete="CASCADE",
         )
@@ -72,26 +72,23 @@ def upgrade() -> None:
             "fk_pipeline_project_id_project", type_="foreignkey"
         )
         batch_op.create_foreign_key(
-            "fk_pipeline_project_id_project",
-            "project",
-            ["project_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
-        batch_op.create_foreign_key(
             "fk_pipeline_user_id_user",
             "user",
             ["user_id"],
             ["id"],
             ondelete="SET NULL",
         )
+        batch_op.create_foreign_key(
+            "fk_pipeline_project_id_project",
+            "project",
+            ["project_id"],
+            ["id"],
+            ondelete="CASCADE",
+        )
 
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id", existing_type=sa.CHAR(length=32), nullable=False
-        )
-        batch_op.drop_constraint(
-            "fk_pipeline_run_project_id_project", type_="foreignkey"
         )
         batch_op.drop_constraint(
             "fk_pipeline_run_stack_id_stack", type_="foreignkey"
@@ -100,21 +97,10 @@ def upgrade() -> None:
             "fk_pipeline_run_pipeline_id_pipeline", type_="foreignkey"
         )
         batch_op.drop_constraint(
+            "fk_pipeline_run_project_id_project", type_="foreignkey"
+        )
+        batch_op.drop_constraint(
             "fk_pipeline_run_user_id_user", type_="foreignkey"
-        )
-        batch_op.create_foreign_key(
-            "fk_pipeline_run_project_id_project",
-            "project",
-            ["project_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
-        batch_op.create_foreign_key(
-            "fk_pipeline_run_pipeline_id_pipeline",
-            "pipeline",
-            ["pipeline_id"],
-            ["id"],
-            ondelete="SET NULL",
         )
         batch_op.create_foreign_key(
             "fk_pipeline_run_stack_id_stack",
@@ -124,6 +110,20 @@ def upgrade() -> None:
             ondelete="SET NULL",
         )
         batch_op.create_foreign_key(
+            "fk_pipeline_run_pipeline_id_pipeline",
+            "pipeline",
+            ["pipeline_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
+        batch_op.create_foreign_key(
+            "fk_pipeline_run_project_id_project",
+            "project",
+            ["project_id"],
+            ["id"],
+            ondelete="CASCADE",
+        )
+        batch_op.create_foreign_key(
             "fk_pipeline_run_user_id_user",
             "user",
             ["user_id"],
@@ -131,13 +131,32 @@ def upgrade() -> None:
             ondelete="SET NULL",
         )
 
+    with op.batch_alter_table("role_permission", schema=None) as batch_op:
+        batch_op.drop_constraint(
+            "fk_role_permission_role_id_role", type_="foreignkey"
+        )
+        batch_op.create_foreign_key(
+            "fk_role_permission_role_id_role",
+            "role",
+            ["role_id"],
+            ["id"],
+            ondelete="CASCADE",
+        )
+
     with op.batch_alter_table("stack", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id", existing_type=sa.CHAR(length=32), nullable=False
         )
-        batch_op.drop_constraint("fk_stack_user_id_user", type_="foreignkey")
         batch_op.drop_constraint(
             "fk_stack_project_id_project", type_="foreignkey"
+        )
+        batch_op.drop_constraint("fk_stack_user_id_user", type_="foreignkey")
+        batch_op.create_foreign_key(
+            "fk_stack_project_id_project",
+            "project",
+            ["project_id"],
+            ["id"],
+            ondelete="CASCADE",
         )
         batch_op.create_foreign_key(
             "fk_stack_user_id_user",
@@ -145,13 +164,6 @@ def upgrade() -> None:
             ["user_id"],
             ["id"],
             ondelete="SET NULL",
-        )
-        batch_op.create_foreign_key(
-            "fk_stack_project_id_project",
-            "project",
-            ["project_id"],
-            ["id"],
-            ondelete="CASCADE",
         )
 
     with op.batch_alter_table("stack_component", schema=None) as batch_op:
@@ -165,18 +177,18 @@ def upgrade() -> None:
             "fk_stack_component_user_id_user", type_="foreignkey"
         )
         batch_op.create_foreign_key(
-            "fk_stack_component_user_id_user",
-            "user",
-            ["user_id"],
-            ["id"],
-            ondelete="SET NULL",
-        )
-        batch_op.create_foreign_key(
             "fk_stack_component_project_id_project",
             "project",
             ["project_id"],
             ["id"],
             ondelete="CASCADE",
+        )
+        batch_op.create_foreign_key(
+            "fk_stack_component_user_id_user",
+            "user",
+            ["user_id"],
+            ["id"],
+            ondelete="SET NULL",
         )
 
     with op.batch_alter_table("stack_composition", schema=None) as batch_op:
@@ -188,16 +200,16 @@ def upgrade() -> None:
             "fk_stack_composition_stack_id_stack", type_="foreignkey"
         )
         batch_op.create_foreign_key(
-            "fk_stack_composition_stack_id_stack",
-            "stack",
-            ["stack_id"],
+            "fk_stack_composition_component_id_stack_component",
+            "stack_component",
+            ["component_id"],
             ["id"],
             ondelete="CASCADE",
         )
         batch_op.create_foreign_key(
-            "fk_stack_composition_component_id_stack_component",
-            "stack_component",
-            ["component_id"],
+            "fk_stack_composition_stack_id_stack",
+            "stack",
+            ["stack_id"],
             ["id"],
             ondelete="CASCADE",
         )
@@ -222,16 +234,16 @@ def upgrade() -> None:
             "fk_step_run_artifact_artifact_id_artifacts", type_="foreignkey"
         )
         batch_op.create_foreign_key(
-            "fk_step_run_artifact_artifact_id_artifacts",
-            "artifacts",
-            ["artifact_id"],
+            "fk_step_run_artifact_step_id_step_run",
+            "step_run",
+            ["step_id"],
             ["id"],
             ondelete="CASCADE",
         )
         batch_op.create_foreign_key(
-            "fk_step_run_artifact_step_id_step_run",
-            "step_run",
-            ["step_id"],
+            "fk_step_run_artifact_artifact_id_artifacts",
+            "artifacts",
+            ["artifact_id"],
             ["id"],
             ondelete="CASCADE",
         )
@@ -260,10 +272,10 @@ def upgrade() -> None:
 
     with op.batch_alter_table("team_assignment", schema=None) as batch_op:
         batch_op.drop_constraint(
-            "fk_team_assignment_user_id_user", type_="foreignkey"
+            "fk_team_assignment_team_id_team", type_="foreignkey"
         )
         batch_op.drop_constraint(
-            "fk_team_assignment_team_id_team", type_="foreignkey"
+            "fk_team_assignment_user_id_user", type_="foreignkey"
         )
         batch_op.create_foreign_key(
             "fk_team_assignment_team_id_team",
@@ -282,25 +294,18 @@ def upgrade() -> None:
 
     with op.batch_alter_table("team_role_assignment", schema=None) as batch_op:
         batch_op.drop_constraint(
-            "fk_team_role_assignment_role_id_role", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
             "fk_team_role_assignment_project_id_project", type_="foreignkey"
         )
         batch_op.drop_constraint(
             "fk_team_role_assignment_team_id_team", type_="foreignkey"
         )
+        batch_op.drop_constraint(
+            "fk_team_role_assignment_role_id_role", type_="foreignkey"
+        )
         batch_op.create_foreign_key(
             "fk_team_role_assignment_team_id_team",
             "team",
             ["team_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
-        batch_op.create_foreign_key(
-            "fk_team_role_assignment_role_id_role",
-            "role",
-            ["role_id"],
             ["id"],
             ondelete="CASCADE",
         )
@@ -311,16 +316,23 @@ def upgrade() -> None:
             ["id"],
             ondelete="CASCADE",
         )
+        batch_op.create_foreign_key(
+            "fk_team_role_assignment_role_id_role",
+            "role",
+            ["role_id"],
+            ["id"],
+            ondelete="CASCADE",
+        )
 
     with op.batch_alter_table("user_role_assignment", schema=None) as batch_op:
         batch_op.drop_constraint(
-            "fk_user_role_assignment_user_id_user", type_="foreignkey"
+            "fk_user_role_assignment_role_id_role", type_="foreignkey"
         )
         batch_op.drop_constraint(
             "fk_user_role_assignment_project_id_project", type_="foreignkey"
         )
         batch_op.drop_constraint(
-            "fk_user_role_assignment_role_id_role", type_="foreignkey"
+            "fk_user_role_assignment_user_id_user", type_="foreignkey"
         )
         batch_op.create_foreign_key(
             "fk_user_role_assignment_role_id_role",
@@ -330,16 +342,16 @@ def upgrade() -> None:
             ondelete="CASCADE",
         )
         batch_op.create_foreign_key(
-            "fk_user_role_assignment_user_id_user",
-            "user",
-            ["user_id"],
+            "fk_user_role_assignment_project_id_project",
+            "project",
+            ["project_id"],
             ["id"],
             ondelete="CASCADE",
         )
         batch_op.create_foreign_key(
-            "fk_user_role_assignment_project_id_project",
-            "project",
-            ["project_id"],
+            "fk_user_role_assignment_user_id_user",
+            "user",
+            ["user_id"],
             ["id"],
             ondelete="CASCADE",
         )
@@ -352,16 +364,16 @@ def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
     with op.batch_alter_table("user_role_assignment", schema=None) as batch_op:
         batch_op.drop_constraint(
-            "fk_user_role_assignment_project_id_project", type_="foreignkey"
+            "fk_user_role_assignment_user_id_user", type_="foreignkey"
         )
         batch_op.drop_constraint(
-            "fk_user_role_assignment_user_id_user", type_="foreignkey"
+            "fk_user_role_assignment_project_id_project", type_="foreignkey"
         )
         batch_op.drop_constraint(
             "fk_user_role_assignment_role_id_role", type_="foreignkey"
         )
         batch_op.create_foreign_key(
-            "fk_user_role_assignment_role_id_role", "role", ["role_id"], ["id"]
+            "fk_user_role_assignment_user_id_user", "user", ["user_id"], ["id"]
         )
         batch_op.create_foreign_key(
             "fk_user_role_assignment_project_id_project",
@@ -370,18 +382,21 @@ def downgrade() -> None:
             ["id"],
         )
         batch_op.create_foreign_key(
-            "fk_user_role_assignment_user_id_user", "user", ["user_id"], ["id"]
+            "fk_user_role_assignment_role_id_role", "role", ["role_id"], ["id"]
         )
 
     with op.batch_alter_table("team_role_assignment", schema=None) as batch_op:
         batch_op.drop_constraint(
-            "fk_team_role_assignment_project_id_project", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
             "fk_team_role_assignment_role_id_role", type_="foreignkey"
         )
         batch_op.drop_constraint(
+            "fk_team_role_assignment_project_id_project", type_="foreignkey"
+        )
+        batch_op.drop_constraint(
             "fk_team_role_assignment_team_id_team", type_="foreignkey"
+        )
+        batch_op.create_foreign_key(
+            "fk_team_role_assignment_role_id_role", "role", ["role_id"], ["id"]
         )
         batch_op.create_foreign_key(
             "fk_team_role_assignment_team_id_team", "team", ["team_id"], ["id"]
@@ -392,9 +407,6 @@ def downgrade() -> None:
             ["project_id"],
             ["id"],
         )
-        batch_op.create_foreign_key(
-            "fk_team_role_assignment_role_id_role", "role", ["role_id"], ["id"]
-        )
 
     with op.batch_alter_table("team_assignment", schema=None) as batch_op:
         batch_op.drop_constraint(
@@ -404,10 +416,10 @@ def downgrade() -> None:
             "fk_team_assignment_team_id_team", type_="foreignkey"
         )
         batch_op.create_foreign_key(
-            "fk_team_assignment_team_id_team", "team", ["team_id"], ["id"]
+            "fk_team_assignment_user_id_user", "user", ["user_id"], ["id"]
         )
         batch_op.create_foreign_key(
-            "fk_team_assignment_user_id_user", "user", ["user_id"], ["id"]
+            "fk_team_assignment_team_id_team", "team", ["team_id"], ["id"]
         )
 
     with op.batch_alter_table("step_run_parents", schema=None) as batch_op:
@@ -432,10 +444,10 @@ def downgrade() -> None:
 
     with op.batch_alter_table("step_run_artifact", schema=None) as batch_op:
         batch_op.drop_constraint(
-            "fk_step_run_artifact_step_id_step_run", type_="foreignkey"
+            "fk_step_run_artifact_artifact_id_artifacts", type_="foreignkey"
         )
         batch_op.drop_constraint(
-            "fk_step_run_artifact_artifact_id_artifacts", type_="foreignkey"
+            "fk_step_run_artifact_step_id_step_run", type_="foreignkey"
         )
         batch_op.create_foreign_key(
             "fk_step_run_artifact_artifact_id_artifacts",
@@ -463,11 +475,11 @@ def downgrade() -> None:
 
     with op.batch_alter_table("stack_composition", schema=None) as batch_op:
         batch_op.drop_constraint(
-            "fk_stack_composition_component_id_stack_component",
-            type_="foreignkey",
+            "fk_stack_composition_stack_id_stack", type_="foreignkey"
         )
         batch_op.drop_constraint(
-            "fk_stack_composition_stack_id_stack", type_="foreignkey"
+            "fk_stack_composition_component_id_stack_component",
+            type_="foreignkey",
         )
         batch_op.create_foreign_key(
             "fk_stack_composition_stack_id_stack", "stack", ["stack_id"], ["id"]
@@ -481,10 +493,10 @@ def downgrade() -> None:
 
     with op.batch_alter_table("stack_component", schema=None) as batch_op:
         batch_op.drop_constraint(
-            "fk_stack_component_project_id_project", type_="foreignkey"
+            "fk_stack_component_user_id_user", type_="foreignkey"
         )
         batch_op.drop_constraint(
-            "fk_stack_component_user_id_user", type_="foreignkey"
+            "fk_stack_component_project_id_project", type_="foreignkey"
         )
         batch_op.create_foreign_key(
             "fk_stack_component_user_id_user", "user", ["user_id"], ["id"]
@@ -500,18 +512,26 @@ def downgrade() -> None:
         )
 
     with op.batch_alter_table("stack", schema=None) as batch_op:
+        batch_op.drop_constraint("fk_stack_user_id_user", type_="foreignkey")
         batch_op.drop_constraint(
             "fk_stack_project_id_project", type_="foreignkey"
-        )
-        batch_op.drop_constraint("fk_stack_user_id_user", type_="foreignkey")
-        batch_op.create_foreign_key(
-            "fk_stack_project_id_project", "project", ["project_id"], ["id"]
         )
         batch_op.create_foreign_key(
             "fk_stack_user_id_user", "user", ["user_id"], ["id"]
         )
+        batch_op.create_foreign_key(
+            "fk_stack_project_id_project", "project", ["project_id"], ["id"]
+        )
         batch_op.alter_column(
             "project_id", existing_type=sa.CHAR(length=32), nullable=True
+        )
+
+    with op.batch_alter_table("role_permission", schema=None) as batch_op:
+        batch_op.drop_constraint(
+            "fk_role_permission_role_id_role", type_="foreignkey"
+        )
+        batch_op.create_foreign_key(
+            "fk_role_permission_role_id_role", "role", ["role_id"], ["id"]
         )
 
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
@@ -519,16 +539,22 @@ def downgrade() -> None:
             "fk_pipeline_run_user_id_user", type_="foreignkey"
         )
         batch_op.drop_constraint(
-            "fk_pipeline_run_stack_id_stack", type_="foreignkey"
+            "fk_pipeline_run_project_id_project", type_="foreignkey"
         )
         batch_op.drop_constraint(
             "fk_pipeline_run_pipeline_id_pipeline", type_="foreignkey"
         )
         batch_op.drop_constraint(
-            "fk_pipeline_run_project_id_project", type_="foreignkey"
+            "fk_pipeline_run_stack_id_stack", type_="foreignkey"
         )
         batch_op.create_foreign_key(
             "fk_pipeline_run_user_id_user", "user", ["user_id"], ["id"]
+        )
+        batch_op.create_foreign_key(
+            "fk_pipeline_run_project_id_project",
+            "project",
+            ["project_id"],
+            ["id"],
         )
         batch_op.create_foreign_key(
             "fk_pipeline_run_pipeline_id_pipeline",
@@ -539,21 +565,15 @@ def downgrade() -> None:
         batch_op.create_foreign_key(
             "fk_pipeline_run_stack_id_stack", "stack", ["stack_id"], ["id"]
         )
-        batch_op.create_foreign_key(
-            "fk_pipeline_run_project_id_project",
-            "project",
-            ["project_id"],
-            ["id"],
-        )
         batch_op.alter_column(
             "project_id", existing_type=sa.CHAR(length=32), nullable=True
         )
 
     with op.batch_alter_table("pipeline", schema=None) as batch_op:
-        batch_op.drop_constraint("fk_pipeline_user_id_user", type_="foreignkey")
         batch_op.drop_constraint(
             "fk_pipeline_project_id_project", type_="foreignkey"
         )
+        batch_op.drop_constraint("fk_pipeline_user_id_user", type_="foreignkey")
         batch_op.create_foreign_key(
             "fk_pipeline_project_id_project", "project", ["project_id"], ["id"]
         )
@@ -581,10 +601,10 @@ def downgrade() -> None:
 
     with op.batch_alter_table("artifacts", schema=None) as batch_op:
         batch_op.drop_constraint(
-            "fk_artifacts_producer_step_id_step_run", type_="foreignkey"
+            "fk_artifacts_parent_step_id_step_run", type_="foreignkey"
         )
         batch_op.drop_constraint(
-            "fk_artifacts_parent_step_id_step_run", type_="foreignkey"
+            "fk_artifacts_producer_step_id_step_run", type_="foreignkey"
         )
         batch_op.create_foreign_key(
             "fk_artifacts_parent_step_id_step_run",

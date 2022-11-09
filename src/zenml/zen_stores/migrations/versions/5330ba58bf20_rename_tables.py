@@ -1,7 +1,7 @@
 """Rename tables [5330ba58bf20].
 
 Revision ID: 5330ba58bf20
-Revises: d02b3d3464cf
+Revises: 5994f9ad0489
 Create Date: 2022-11-03 16:33:15.220179
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "5330ba58bf20"
-down_revision = "d02b3d3464cf"
+down_revision = "5994f9ad0489"
 branch_labels = None
 depends_on = None
 
@@ -114,6 +114,7 @@ def _get_changes() -> Tuple[
         "stackcompositionschema": "stack_composition",
         "teamroleassignmentschema": "team_role_assignment",
         "stackschema": "stack",
+        "rolepermissionschema": "role_permission",
     }
     reversed_table_name_mapping = {v: k for k, v in table_name_mapping.items()}
     old_table_names = list(table_name_mapping.keys())
@@ -154,6 +155,7 @@ def _get_changes() -> Tuple[
         ("team_role_assignment", "role", "role_id", "id"),  # 27
         ("team_role_assignment", "project", "project_id", "id"),  # 28
         ("user_role_assignment", "role", "role_id", "id"),  # 29
+        ("role_permission", "role", "role_id", "id"),  # 30
     ]
     old_fk_constraints = [
         (

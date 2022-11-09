@@ -210,8 +210,17 @@ class TeamSchema(SQLModel, table=True):
 class RolePermissionSchema(SQLModel, table=True):
     """SQL Model for team assignments."""
 
+    __tablename__ = "role_permission"
+
     name: PermissionType = Field(primary_key=True)
-    role_id: UUID = Field(primary_key=True, foreign_key="roleschema.id")
+    role_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="role",  # TODO: how to reference `RoleSchema.__tablename__`?
+        source_column="role_id",
+        target_column="id",
+        ondelete="CASCADE",
+        primary_key=True,
+    )
     roles: List["RoleSchema"] = Relationship(back_populates="permissions")
 
 
