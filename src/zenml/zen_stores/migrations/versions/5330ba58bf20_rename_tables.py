@@ -45,7 +45,6 @@ def _drop_fk_constraint(source: str, target: str, source_column: str) -> None:
         source: Source table name.
         target: Target table name.
         source_column: Source column name.
-        target_column: Target column name.
     """
     naming_convention = {
         "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
@@ -175,7 +174,6 @@ def _get_changes() -> Tuple[
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-
     (
         old_table_names,
         new_table_names,
@@ -198,7 +196,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
-
     (
         old_table_names,
         new_table_names,
