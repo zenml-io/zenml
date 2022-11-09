@@ -38,14 +38,6 @@ default:
 
 ![ZenML Dashboard Preview](../../assets/migration/zenml-dashboard.png)
 
-To start the dashboard locally, run the following command:
-
-```shell
-zenml up
-```
-
-![ZenML Up](../../assets/getting_started/zenml-up.gif)
-
 ### Deployed dashboard
 
 For more details on other possible deployment options, see the
