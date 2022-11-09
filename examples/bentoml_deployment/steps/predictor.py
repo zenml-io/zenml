@@ -14,7 +14,6 @@
 from typing import Dict, List
 
 import numpy as np
-import requests
 from rich import print as rich_print
 
 from zenml.integrations.bentoml.services import BentoMLDeploymentService
@@ -35,7 +34,7 @@ def predictor(
 
     service.start(timeout=10)  # should be a NOP if already started
     for img, data in inference_data.items():
-        prediction = service.predict("predict_ndarray",np.array(data))
+        prediction = service.predict("predict_ndarray", np.array(data))
         result = to_labels(prediction[0])
         rich_print(f"Prediction for {img} is {result}")
 

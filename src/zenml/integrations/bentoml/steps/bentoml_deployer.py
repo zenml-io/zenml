@@ -15,7 +15,7 @@
 from typing import List, Optional, Type, cast
 
 import bentoml
-from bentoml._internal.bento import bento
+from bentoml._internal.bento import bento  # type: ignore [import]
 
 from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT

@@ -16,8 +16,8 @@
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel
 from bentoml.client import Client
+from pydantic import BaseModel
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.integrations.bentoml.constants import (
@@ -275,8 +275,7 @@ class BentoMLDeploymentService(LocalDaemonService):
             ]
         return None
 
-
-    def predict(self, api_endpoint:str, data: "Any") -> "Any":
+    def predict(self, api_endpoint: str, data: "Any") -> "Any":
         """Make a prediction using the service.
 
         Args:
