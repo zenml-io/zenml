@@ -32,7 +32,7 @@ from zenml.enums import ServerProviderType, StoreType
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.utils.docker_utils import check_docker
+
 
 logger = get_logger(__name__)
 
@@ -158,6 +158,8 @@ def up(
     gc = GlobalConfiguration()
 
     if docker:
+        from zenml.utils.docker_utils import check_docker
+
         if not check_docker():
             cli_utils.error(
                 "Docker does not seem to be installed on your system. Please "

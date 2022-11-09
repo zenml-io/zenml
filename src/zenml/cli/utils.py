@@ -44,9 +44,6 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
-from zenml.secret import BaseSecretSchema
-from zenml.services import BaseService, ServiceState
-from zenml.zen_server.deploy import ServerDeployment
 
 logger = get_logger(__name__)
 
@@ -63,6 +60,9 @@ if TYPE_CHECKING:
         PipelineRunResponseModel,
         StackResponseModel,
     )
+    from zenml.services import BaseService, ServiceState
+    from zenml.secret import BaseSecretSchema
+    from zenml.zen_server.deploy import ServerDeployment
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
