@@ -280,6 +280,7 @@ class BentoMLDeploymentService(LocalDaemonService):
 
         Args:
             data: data to make a prediction on
+            api_endpoint: the api endpoint to make the prediction on
 
         Returns:
             The prediction result.

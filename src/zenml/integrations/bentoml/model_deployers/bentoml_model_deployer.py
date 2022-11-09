@@ -287,12 +287,9 @@ class BentoMLModelDeployer(BaseModelDeployer):
             pipeline_step_name: The name of the pipeline model deployment step
                 that deployed the model.
             model_name: Name of the deployed model.
-            bento: tag of the Bento package that was used to deploy the model.
             model_uri: URI of the deployed model.
             model_type: Type/format of the deployed model. Not used in this
                 BentoML case.
-            port: The port on which the model server is listening.
-            working_dir: The working directory of the model server.
 
         Returns:
             One or more Service objects representing model servers that match
