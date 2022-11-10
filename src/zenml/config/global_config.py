@@ -143,7 +143,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     version: Optional[str]
     store: Optional[StoreConfiguration]
     active_stack_id: Optional[uuid.UUID]
-    active_project_id: Optional[uuid.UUID]
+    active_project_name: Optional[str]
     jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
 
     _config_path: str
@@ -650,7 +650,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Args:
             project: The project to set active.
         """
-        self.active_project_id = project.id
+        self.active_project_name = project.name
         self._active_project = project
 
     def set_active_stack(self, stack: "StackResponseModel") -> None:
