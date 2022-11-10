@@ -16,7 +16,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Security, status
+from fastapi import APIRouter, HTTPException, Security, status
 from pydantic import SecretStr
 
 from zenml.constants import (
@@ -28,6 +28,7 @@ from zenml.constants import (
     USERS,
     VERSION_1,
 )
+from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel, UserModel
@@ -51,7 +52,6 @@ logger = get_logger(__name__)
 router = APIRouter(
     prefix=API + VERSION_1 + USERS,
     tags=["users"],
-    dependencies=[Security(authorize, scopes=["read"])],
     responses={401: error_response},
 )
 
@@ -66,7 +66,6 @@ activation_router = APIRouter(
 current_user_router = APIRouter(
     prefix=API + VERSION_1,
     tags=["users"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
@@ -77,7 +76,9 @@ current_user_router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_users() -> List[UserModel]:
+def list_users(
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> List[UserModel]:
     """Returns a list of all users.
 
     Returns:
@@ -94,7 +95,7 @@ def list_users() -> List[UserModel]:
 @handle_exceptions
 def create_user(
     user: CreateUserRequest,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> CreateUserResponse:
     """Creates a user.
 
@@ -137,7 +138,10 @@ def create_user(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
+def get_user(
+    user_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> UserModel:
     """Returns a specific user.
 
     Args:
@@ -158,7 +162,7 @@ def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
 def update_user(
     user_name_or_id: Union[str, UUID],
     user: UpdateUserRequest,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> UserModel:
     """Updates a specific user.
 
@@ -218,7 +222,7 @@ def activate_user(
 @handle_exceptions
 def deactivate_user(
     user_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> DeactivateUserResponse:
     """Deactivates a user and generates a new activation token for it.
 
@@ -244,8 +248,9 @@ def deactivate_user(
 @handle_exceptions
 def delete_user(
     user_name_or_id: Union[str, UUID],
-    auth_context: AuthContext = Depends(authorize),
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> None:
     """Deletes a specific user.
 
@@ -277,7 +282,7 @@ def delete_user(
 def email_opt_in_response(
     user_name_or_id: Union[str, UUID],
     user_response: EmailOptInModel,
-    auth_context: AuthContext = Security(authorize, scopes=["me"]),
+    auth_context: AuthContext = Security(authorize, scopes=[PermissionType.ME]),
 ) -> UserModel:
     """Sets the response of the user to the email prompt.
 
@@ -314,6 +319,8 @@ def email_opt_in_response(
 def get_role_assignments_for_user(
     user_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
+    role_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a user.
 
@@ -321,6 +328,8 @@ def get_role_assignments_for_user(
         user_name_or_id: Name or ID of the user.
         project_name_or_id: If provided, only list roles that are limited to
             the given project.
+        role_name_or_id: If provided, only list assignments of the given
+            role
 
     Returns:
         A list of all roles that are assigned to a user.
@@ -328,6 +337,7 @@ def get_role_assignments_for_user(
     return zen_store().list_role_assignments(
         user_name_or_id=user_name_or_id,
         project_name_or_id=project_name_or_id,
+        role_name_or_id=role_name_or_id,
     )
 
 
@@ -340,7 +350,7 @@ def assign_role(
     user_name_or_id: Union[str, UUID],
     role_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Assign a role to a user for all resources within a given project or globally.
 
@@ -367,8 +377,8 @@ def assign_role(
 def unassign_role(
     user_name_or_id: Union[str, UUID],
     role_name_or_id: Union[str, UUID],
-    project_name_or_id: Optional[Union[str, UUID]],
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Remove a users role within a project or globally.
 
@@ -393,7 +403,9 @@ def unassign_role(
 )
 @handle_exceptions
 def get_current_user(
-    auth_context: AuthContext = Security(authorize, scopes=["me"]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> UserModel:
     """Returns the model of the authenticated user.
 
@@ -414,7 +426,7 @@ def get_current_user(
 @handle_exceptions
 def update_myself(
     user: UpdateUserRequest,
-    auth_context: AuthContext = Security(authorize, scopes=["me"]),
+    auth_context: AuthContext = Security(authorize, scopes=[PermissionType.ME]),
 ) -> UserModel:
     """Updates a specific user.
 

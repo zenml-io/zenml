@@ -2166,6 +2166,7 @@ class SqlZenStore(BaseZenStore):
     def _list_user_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
         """List all user role assignments.
@@ -2174,6 +2175,8 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: If provided, only return role assignments for
                 this project.
             user_name_or_id: If provided, only list assignments for this user.
+            role_name_or_id: If provided, only list assignments of the given
+                role
 
         Returns:
             A list of user role assignments.
@@ -2187,6 +2190,9 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(
                     UserRoleAssignmentSchema.project_id == project.id
                 )
+            if role_name_or_id is not None:
+                role = self._get_role_schema(role_name_or_id, session=session)
+                query = query.where(UserRoleAssignmentSchema.role_id == role.id)
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(UserRoleAssignmentSchema.user_id == user.id)
@@ -2197,6 +2203,7 @@ class SqlZenStore(BaseZenStore):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
         """List all team role assignments.
 
@@ -2204,6 +2211,8 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: If provided, only return role assignments for
                 this project.
             team_name_or_id: If provided, only list assignments for this team.
+            role_name_or_id: If provided, only list assignments of the given
+                role
 
         Returns:
             A list of team role assignments.
@@ -2217,6 +2226,9 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(
                     TeamRoleAssignmentSchema.project_id == project.id
                 )
+            if role_name_or_id is not None:
+                role = self._get_role_schema(role_name_or_id, session=session)
+                query = query.where(TeamRoleAssignmentSchema.role_id == role.id)
             if team_name_or_id is not None:
                 team = self._get_team_schema(team_name_or_id, session=session)
                 query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
@@ -2226,6 +2238,7 @@ class SqlZenStore(BaseZenStore):
     def list_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
@@ -2234,6 +2247,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             project_name_or_id: If provided, only return role assignments for
                 this project.
+            role_name_or_id: If provided, only list assignments of the given
+                role
             team_name_or_id: If provided, only list assignments for this team.
             user_name_or_id: If provided, only list assignments for this user.
 
@@ -2243,10 +2258,12 @@ class SqlZenStore(BaseZenStore):
         user_role_assignments = self._list_user_role_assignments(
             project_name_or_id=project_name_or_id,
             user_name_or_id=user_name_or_id,
+            role_name_or_id=role_name_or_id,
         )
         team_role_assignments = self._list_team_role_assignments(
             project_name_or_id=project_name_or_id,
             team_name_or_id=team_name_or_id,
+            role_name_or_id=role_name_or_id,
         )
         return user_role_assignments + team_role_assignments
 
