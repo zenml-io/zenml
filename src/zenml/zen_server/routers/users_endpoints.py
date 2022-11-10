@@ -16,7 +16,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Security, status
+from fastapi import APIRouter, HTTPException, Security, status
 from pydantic import SecretStr
 
 from zenml.constants import (
@@ -52,7 +52,6 @@ logger = get_logger(__name__)
 router = APIRouter(
     prefix=API + VERSION_1 + USERS,
     tags=["users"],
-    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
     responses={401: error_response},
 )
 
@@ -67,7 +66,6 @@ activation_router = APIRouter(
 current_user_router = APIRouter(
     prefix=API + VERSION_1,
     tags=["users"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
@@ -78,7 +76,9 @@ current_user_router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_users() -> List[UserModel]:
+def list_users(
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> List[UserModel]:
     """Returns a list of all users.
 
     Returns:
@@ -138,7 +138,10 @@ def create_user(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
+def get_user(
+    user_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> UserModel:
     """Returns a specific user.
 
     Args:
@@ -245,8 +248,9 @@ def deactivate_user(
 @handle_exceptions
 def delete_user(
     user_name_or_id: Union[str, UUID],
-    auth_context: AuthContext = Depends(authorize),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> None:
     """Deletes a specific user.
 
@@ -316,6 +320,7 @@ def get_role_assignments_for_user(
     user_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
     role_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a user.
 
