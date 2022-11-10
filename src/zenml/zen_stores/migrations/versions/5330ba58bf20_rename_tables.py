@@ -1,7 +1,7 @@
 """Rename tables [5330ba58bf20].
 
 Revision ID: 5330ba58bf20
-Revises: 5994f9ad0489
+Revises: 7280c14811d6
 Create Date: 2022-11-03 16:33:15.220179
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "5330ba58bf20"
-down_revision = "5994f9ad0489"
+down_revision = "7280c14811d6"
 branch_labels = None
 depends_on = None
 
