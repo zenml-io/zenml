@@ -131,7 +131,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             global config.
         store: Store configuration.
         active_stack_id: The ID of the active stack.
-        active_project_id: The ID of the active project.
+        active_project_name: The name of the active project.
         jwt_secret_key: The secret key used to sign and verify JWT tokens.
         _config_path: Directory where the global config file is stored.
     """
@@ -414,7 +414,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         are set to their default values, if possible.
         """
         active_project, active_stack = self.zen_store.validate_active_config(
-            self.active_project_id,
+            self.active_project_name,
             self.active_stack_id,
             config_name="global",
         )
@@ -669,7 +669,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     def active_project(self):
         if not self._active_project:
             project = self.zen_store.get_project(
-                project_name_or_id=self.active_project_id
+                project_name_or_id=self.active_project_name,
             )
             self.set_active_project(project)
         return self._active_project
