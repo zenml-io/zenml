@@ -456,6 +456,7 @@ class ZenStoreInterface(ABC):
         Raises:
             KeyError: If no user with the given name or ID exists.
         """
+
     def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
         """Gets the auth model to a specific user.
 

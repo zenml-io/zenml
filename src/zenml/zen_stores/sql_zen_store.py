@@ -1615,20 +1615,18 @@ class SqlZenStore(BaseZenStore):
                 user_name_or_id, session=session
             )
 
-            if user_update.name:
+            if user_update.name is not None:
                 existing_user.name = user_update.name
-            if user_update.full_name:
+            if user_update.full_name is not None:
                 existing_user.full_name = user_update.full_name
-            if user_update.active:
+            if user_update.active is not None:
                 existing_user.active = user_update.active
-            if user_update.password:
+            if user_update.password is not None:
                 existing_user.password = user_update.password
-            if user_update.activation_token:
-                existing_user.activation_token = (
-                    user_update.get_hashed_activation_token()
-                )
+            if user_update.activation_token is not None:
+                existing_user.activation_token = user_update.activation_token
             existing_user.updated = datetime.now()
-            if user_update.email:
+            if user_update.email is not None:
                 existing_user.email = user_update.email
             if user_update.email_opted_in is not None:
                 existing_user.email_opted_in = user_update.email_opted_in

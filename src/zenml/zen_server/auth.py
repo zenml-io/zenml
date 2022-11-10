@@ -111,9 +111,7 @@ def authenticate_credentials(
         user_model = zen_store().get_user(user_name_or_id=user.id)
         auth_context = AuthContext(user=user_model)
     elif activation_token is not None:
-        if not UserAuthModel.verify_activation_token(
-            activation_token, user
-        ):
+        if not UserAuthModel.verify_activation_token(activation_token, user):
             return None
 
     return auth_context

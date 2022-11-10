@@ -17,7 +17,6 @@ from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Security, status
-from pydantic import SecretStr
 
 from zenml.constants import (
     ACTIVATE,
@@ -127,7 +126,8 @@ def create_user(
 
     # add back the original unhashed activation token, if generated, to
     # send it back to the client
-    new_user.activation_token = token
+    if token:
+        new_user.activation_token = token
     return new_user
 
 
@@ -169,10 +169,20 @@ def update_user(
     Returns:
         The updated user.
     """
-    existing_user = zen_store().get_user(user_name_or_id)
-    # TODO get diff between user and existing user
-    return zen_store().update_user(user_name_or_id=user_name_or_id,
-                                   user_update=user)
+    db_user = zen_store().get_user(user_name_or_id)
+
+    if user.name:
+        db_user.name = user.name
+    if user.full_name:
+        db_user.full_name = user.full_name
+    if user.active:
+        db_user.active = user.active
+    if user.email_opted_in is not None:
+
+
+    return zen_store().update_user(
+        user_name_or_id=user_name_or_id, user_update=user
+    )
 
 
 @activation_router.put(
@@ -231,10 +241,14 @@ def deactivate_user(
         The generated activation token.
     """
     user = zen_store().get_user(user_name_or_id)
+    user = UserRequestModel(
+        **user.dict(exclude={"id", "created", "teams", "updated"})
+    )
     user.active = False
     token = user.generate_activation_token()
-    user = zen_store().update_user(user_name_or_id=user_name_or_id,
-                                   user_update=user)
+    user = zen_store().update_user(
+        user_name_or_id=user_name_or_id, user_update=user
+    )
     # add back the original unhashed activation token
     user.activation_token = token
     return user
@@ -399,7 +413,7 @@ def unassign_role(
     response_model=UserResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-# @handle_exceptions
+@handle_exceptions
 def get_current_user(
     auth_context: AuthContext = Security(authorize, scopes=["me"]),
 ) -> UserResponseModel:
