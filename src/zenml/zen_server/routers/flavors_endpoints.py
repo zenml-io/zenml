@@ -85,8 +85,6 @@ def get_flavor(
 
     Args:
         flavor_id: ID of the flavor.
-        hydrated: Defines if users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The requested stack.
