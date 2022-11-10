@@ -6,7 +6,6 @@ import os
 import zipfile
 from typing import Any, Dict, List, Optional, Type, Union
 
-import airflow
 from pydantic import BaseModel
 
 ENV_ZENML_AIRFLOW_RUN_ID = "ZENML_AIRFLOW_RUN_ID"
@@ -25,7 +24,7 @@ class TaskConfiguration(BaseModel):
     arguments: List[str]
 
     operator_source: str
-    operator_kwargs: Dict[str, Any] = {}
+    operator_args: Dict[str, Any] = {}
 
 
 class DagConfiguration(BaseModel):
@@ -43,7 +42,7 @@ class DagConfiguration(BaseModel):
     catchup: bool = False
 
     tags: List[str] = []
-    dag_kwargs: Dict[str, Any] = {}
+    dag_args: Dict[str, Any] = {}
 
 
 def import_class_by_path(class_path: str) -> Type[Any]:
@@ -103,7 +102,7 @@ def get_operator_init_kwargs(
     except ImportError:
         pass
 
-    init_kwargs.update(task_config.operator_kwargs)
+    init_kwargs.update(task_config.operator_args)
     return init_kwargs
 
 
@@ -174,6 +173,8 @@ except IsADirectoryError:
     # airflow dag zip
     pass
 else:
+    import airflow
+
     config_str = archive.read(CONFIG_FILENAME)
     dag_config = DagConfiguration.parse_raw(config_str)
 
@@ -187,7 +188,7 @@ else:
         start_date=dag_config.start_date,
         end_date=dag_config.end_date,
         catchup=dag_config.catchup,
-        **dag_config.dag_kwargs,
+        **dag_config.dag_args,
     ) as dag:
         for task in dag_config.tasks:
             operator_class = import_class_by_path(task.operator_source)

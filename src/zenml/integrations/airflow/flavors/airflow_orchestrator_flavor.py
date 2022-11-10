@@ -31,7 +31,7 @@ class OperatorType(Enum):
     """Airflow operator types."""
 
     DOCKER = "docker"
-    KUBERNETES = "kubernetes"
+    KUBERNETES_POD = "kubernetes_pod"
     GKE_START_POD = "gke_start_pod"
 
     @property
@@ -43,7 +43,7 @@ class OperatorType(Enum):
         """
         return {
             OperatorType.DOCKER: "airflow.providers.docker.operators.docker.DockerOperator",
-            OperatorType.KUBERNETES: "airflow.providers.cncf.kubernetes.operators.kubernetes_pod.KubernetesPodOperator",
+            OperatorType.KUBERNETES_POD: "airflow.providers.cncf.kubernetes.operators.kubernetes_pod.KubernetesPodOperator",
             OperatorType.GKE_START_POD: "airflow.providers.google.cloud.operators.kubernetes_engine.GKEStartPodOperator",
         }[self]
 
@@ -52,29 +52,32 @@ class AirflowOrchestratorSettings(BaseSettings):
     """Settings for the Airflow orchestrator.
 
     Attributes:
+        dag_output_dir: Output directory in which to write the Airflow DAG.
         dag_id: Optional ID of the Airflow DAG to create. This value is only
             applied if the settings are defined on a ZenML pipeline and
             ignored if defined on a step.
         dag_tags: Tags to add to the Airflow DAG. This value is only
             applied if the settings are defined on a ZenML pipeline and
             ignored if defined on a step.
-        dag_kwargs: Keyword arguments for initializing the Airflow DAG. This
+        dag_args: Arguments for initializing the Airflow DAG. This
             value is only applied if the settings are defined on a ZenML
             pipeline and ignored if defined on a step.
         operator: The operator to use for one or all steps. This can either be
             a `zenml.integrations.airflow.flavors.airflow_orchestrator_flavor.OperatorType`
             or a string representing the source of the operator class to use
             (e.g. `airflow.providers.docker.operators.docker.DockerOperator`)
-        operator_kwargs: Keyword arguments for initializing the Airflow
+        operator_args: Arguments for initializing the Airflow
             operator.
     """
 
+    dag_output_dir: Optional[str] = None
+
     dag_id: Optional[str] = None
     dag_tags: List[str] = []
-    dag_kwargs: Dict[str, Any] = {}
+    dag_args: Dict[str, Any] = {}
 
     operator: str = OperatorType.DOCKER.source
-    operator_kwargs: Dict[str, Any] = {}
+    operator_args: Dict[str, Any] = {}
 
     @validator("operator", always=True)
     def _convert_operator(
@@ -97,17 +100,17 @@ class AirflowOrchestratorSettings(BaseSettings):
             return value
 
 
-class AirflowOrchestratorConfig(BaseOrchestratorConfig):
+class AirflowOrchestratorConfig(
+    BaseOrchestratorConfig, AirflowOrchestratorSettings
+):
     """Configuration for the Airflow orchestrator.
 
     Attributes:
         local: If the orchestrator is local or not. If this is True, will spin
             up a local Airflow server to run pipelines.
-        dag_output_dir: Output directory in which to write the Airflow DAGs.
     """
 
     local: bool = True
-    dag_output_dir: Optional[str] = None
 
 
 class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):

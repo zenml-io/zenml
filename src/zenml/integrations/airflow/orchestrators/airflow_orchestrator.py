@@ -32,10 +32,9 @@
 
 import datetime
 import os
-import shutil
-import tempfile
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
+import zipfile
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, Union, cast
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
@@ -56,6 +55,8 @@ from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.config.step_configurations import Step
+    from zenml.config.step_run_info import StepRunInfo
     from zenml.integrations.airflow.orchestrators.dag_generator import (
         DagConfiguration,
     )
@@ -63,7 +64,6 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 
-AIRFLOW_ROOT_DIR = "airflow"
 logger = get_logger(__name__)
 
 
@@ -79,7 +79,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         super().__init__(**values)
         self.airflow_home = os.path.join(
             io_utils.get_global_config_directory(),
-            AIRFLOW_ROOT_DIR,
+            "airflow",
             str(self.id),
         )
         self._set_env()
@@ -193,6 +193,31 @@ class AirflowOrchestrator(BaseOrchestrator):
                 ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name
             )
 
+    # TODO: Remove this method as soon as the Settings/Config PR is merged which
+    # handles this automatically
+    def get_settings(
+        self, container: Union["Step", "StepRunInfo", "PipelineDeployment"]
+    ) -> AirflowOrchestratorSettings:
+        """Gets settings for the Airflow orchestrator.
+
+        Args:
+            container: The `Step`, `StepRunInfo` or `PipelineDeployment` from
+                which to get the settings.
+
+        Returns:
+            The settings.
+        """
+        default_settings = AirflowOrchestratorSettings.parse_obj(self.config)
+        settings = super().get_settings(container)
+        if settings:
+            from zenml.utils import pydantic_utils
+
+            return pydantic_utils.update_model(
+                default_settings, update=settings
+            )
+        else:
+            return default_settings
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
@@ -210,10 +235,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         tasks = []
         for step_name, step in deployment.steps.items():
-            settings = cast(
-                AirflowOrchestratorSettings,
-                self.get_settings(step) or AirflowOrchestratorSettings(),
-            )
+            settings = self.get_settings(step)
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name
             )
@@ -224,7 +246,7 @@ class AirflowOrchestrator(BaseOrchestrator):
                 command=command,
                 arguments=arguments,
                 operator_source=settings.operator,
-                operator_kwargs=settings.operator_kwargs,
+                operator_args=settings.operator_args,
             )
             tasks.append(task)
 
@@ -234,10 +256,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             else None
         )
         docker_image = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
-        pipeline_settings = cast(
-            AirflowOrchestratorSettings,
-            self.get_settings(deployment) or AirflowOrchestratorSettings(),
-        )
+        pipeline_settings = self.get_settings(deployment)
         dag_id = pipeline_settings.dag_id or get_orchestrator_run_name(
             pipeline_name=deployment.pipeline.name
         )
@@ -247,21 +266,26 @@ class AirflowOrchestrator(BaseOrchestrator):
             local_stores_path=local_stores_path,
             tasks=tasks,
             tags=pipeline_settings.dag_tags,
-            dag_kwargs=pipeline_settings.dag_kwargs,
+            dag_args=pipeline_settings.dag_args,
             **self._translate_schedule(deployment.schedule),
         )
 
-        self._write_dag(dag_config)
+        self._write_dag(
+            dag_config,
+            output_dir=pipeline_settings.dag_output_dir or self.dags_directory,
+        )
 
-    def _write_dag(self, dag_config: "DagConfiguration") -> None:
+    def _write_dag(
+        self, dag_config: "DagConfiguration", output_dir: str
+    ) -> None:
         """Writes an Airflow DAG to disk.
 
         Args:
             dag_config: Configuration of the DAG to write.
+            output_dir: The directory in which to write the DAG.
         """
         from zenml.integrations.airflow.orchestrators import dag_generator
 
-        output_dir = self.config.dag_output_dir or self.dags_directory
         io_utils.create_dir_recursive_if_not_exists(output_dir)
 
         if self.config.local and output_dir != self.dags_directory:
@@ -274,20 +298,34 @@ class AirflowOrchestrator(BaseOrchestrator):
                 self.dags_directory,
             )
 
-        dag_basename = os.path.join(output_dir, dag_config.id)
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            config_path = os.path.join(tmp_dir, dag_generator.CONFIG_FILENAME)
-            dag_generator_path = os.path.join(tmp_dir, "dag.py")
+        def _write_zip(path: str) -> None:
+            with zipfile.ZipFile(path, mode="w") as z:
+                z.write(dag_generator.__file__, arcname="dag.py")
+                z.writestr(dag_generator.CONFIG_FILENAME, dag_config.json())
 
-            with open(config_path, "w") as f:
-                f.write(dag_config.json())
+            logger.info("Writing DAG definition to `%s`.", path)
 
-            fileio.copy(dag_generator.__file__, dag_generator_path)
-            dag_path = shutil.make_archive(
-                dag_basename, format="zip", root_dir=tmp_dir
-            )
-
-        logger.info("Writing DAG definition to `%s`.", dag_path)
+        dag_filename = f"{dag_config.id}.zip"
+        if io_utils.is_remote(output_dir):
+            io_utils.create_dir_recursive_if_not_exists(self.dags_directory)
+            local_zip_path = os.path.join(self.dags_directory, dag_filename)
+            remote_zip_path = os.path.join(output_dir, dag_filename)
+            _write_zip(local_zip_path)
+            try:
+                fileio.copy(local_zip_path, remote_zip_path)
+                logger.info("Copied DAG definition to `%s`.", remote_zip_path)
+            except Exception as e:
+                logger.exception(e)
+                logger.error(
+                    "Failed to upload DAG to remote path `%s`. To run the "
+                    "pipeline in Airflow, please manually copy the file `%s` "
+                    "to your Airflow DAG directory.",
+                    remote_zip_path,
+                    local_zip_path,
+                )
+        else:
+            zip_path = os.path.join(output_dir, dag_filename)
+            _write_zip(zip_path)
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
