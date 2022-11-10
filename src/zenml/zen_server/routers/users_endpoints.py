@@ -52,7 +52,6 @@ logger = get_logger(__name__)
 router = APIRouter(
     prefix=API + VERSION_1 + USERS,
     tags=["users"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
@@ -67,7 +66,6 @@ activation_router = APIRouter(
 current_user_router = APIRouter(
     prefix=API + VERSION_1,
     tags=["users"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 

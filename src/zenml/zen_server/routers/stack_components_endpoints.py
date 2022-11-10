@@ -15,7 +15,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Security
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
@@ -28,14 +28,12 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + STACK_COMPONENTS,
     tags=["stack_components"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
 types_router = APIRouter(
     prefix=API + VERSION_1 + COMPONENT_TYPES,
     tags=["stack_components"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
