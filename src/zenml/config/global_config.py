@@ -498,9 +498,11 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             store = None
 
         elif self.store:
-            store_class = BaseZenStore.get_store_class(self.store.type)
+            store_config_class = BaseZenStore.get_store_config_class(
+                self.store.type
+            )
 
-            store_config_copy = store_class.CONFIG_TYPE.copy_configuration(
+            store_config_copy = store_config_class.copy_configuration(
                 self.store, config_path, load_config_path
             )
             store = store_config_copy

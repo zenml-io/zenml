@@ -143,6 +143,28 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             )
 
     @staticmethod
+    def get_store_config_class(
+        store_type: StoreType,
+    ) -> Type["StoreConfiguration"]:
+        """Returns the store config class of the given store type.
+
+        Args:
+            store_type: The type of the store to get the class for.
+
+        Returns:
+            The config class of the given store type or None if the type is
+            unknown.
+
+        Raises:
+            TypeError: If the store type is unsupported.
+        """
+        store_class = BaseZenStore.get_store_class(store_type)
+        if store_class is not None:
+            return store_class.CONFIG_TYPE
+
+        return None
+
+    @staticmethod
     def get_store_type(url: str) -> Optional[StoreType]:
         """Returns the store type associated with a URL schema.
 

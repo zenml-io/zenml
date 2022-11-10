@@ -223,6 +223,9 @@ docker run -it -d -p 8080:80 --name zenml \
 If you're looking for a quick way to run both the ZenML server and a MySQL
 database with Docker, you can [deploy the ZenML server with Docker Compose](#zenml-server-with-docker-compose).
 
+The rest of this guide covers various advanced use cases for running the ZenML
+server with Docker.
+
 ### Persisting the SQLite database
 
 Depending on your use case, you may also want to mount a persistent volume or
@@ -287,6 +290,30 @@ Connecting your client to the ZenML server is the same as before:
 ```shell
 zenml connect --url http://localhost:8080 --username default --password ''
 ```
+
+### Direct MySQL database connection
+
+This scenario is similar to the previous one, but instead of running a ZenML
+server, the client is configured to connect directly to a MySQL database running
+in a Docker container.
+
+As previously covered, the containerized MySQL database service can be started
+with a command like the following:
+
+```shell
+docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:5.7
+```
+
+The ZenML client on the host machine can then be configured to connect directly
+to the database with a slightly different `zenml connect` command:
+
+```shell
+zenml connect --url mysql://127.0.0.1/zenml --username root --password password
+```
+
+> **Note**
+> The `localhost` hostname will not work with MySQL databases. You need
+> to use the `127.0.0.1` IP address instead.
 
 ### ZenML server with Docker Compose
 

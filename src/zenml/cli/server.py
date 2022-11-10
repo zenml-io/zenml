@@ -717,7 +717,7 @@ def connect(
             missing fields.
     """
     from zenml.config.store_config import StoreConfiguration
-    from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
     store_dict: Dict[str, Any] = {}
     verify_ssl = ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
@@ -766,6 +766,8 @@ def connect(
         url = click.prompt("ZenML server URL", type=str)
     else:
         cli_utils.declare(f"Connecting to: '{url}'...")
+    assert url is not None
+
     store_dict["url"] = url
     if not username:
         username = click.prompt("Username", type=str)
@@ -777,9 +779,21 @@ def connect(
             hide_input=True,
         )
     store_dict["password"] = password
-    store_dict["verify_ssl"] = verify_ssl
 
-    store_config = RestZenStoreConfiguration.parse_obj(store_dict)
+    store_type = BaseZenStore.get_store_type(url)
+    if not store_type:
+        cli_utils.error(
+            "The URL provided is not associated with a valid ZenML store type. "
+            "Please check the URL and try again."
+        )
+
+    if store_type == StoreType.REST:
+        store_dict["verify_ssl"] = verify_ssl
+
+    store_config_class = BaseZenStore.get_store_config_class(store_type)
+    assert store_config_class is not None
+
+    store_config = store_config_class.parse_obj(store_dict)
     GlobalConfiguration().set_store(store_config)
 
     if project:
