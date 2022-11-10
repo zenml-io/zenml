@@ -391,13 +391,13 @@ def replace_localhost_with_internal_hostname(url: str) -> str:
     parsed_url = urlparse(url)
     if parsed_url.hostname in ("localhost", "127.0.0.1"):
 
-        url = parsed_url._replace(
+        parsed_url = parsed_url._replace(
             netloc=parsed_url.netloc.replace(
                 parsed_url.hostname,
                 "host.docker.internal",
             )
         )
 
-        return url.geturl()
+        return parsed_url.geturl()
 
     return url
