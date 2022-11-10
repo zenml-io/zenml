@@ -11,6 +11,7 @@ import uuid
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
+from sqlalchemy import or_, select
 
 # revision identifiers, used by Alembic.
 revision = "5994f9ad0489"
@@ -21,6 +22,8 @@ depends_on = None
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
+    # Create the rolepermissionschema table to track which permissions a given
+    #  role grants
     op.create_table(
         "rolepermissionschema",
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
@@ -34,7 +37,8 @@ def upgrade() -> None:
     # get metadata from current connection
     meta = sa.MetaData(bind=op.get_bind())
 
-    # pass in tuple with tables we want to reflect, otherwise whole database will get reflected
+    # pass in tuple with tables we want to reflect, otherwise whole database
+    #  will get reflected
     meta.reflect(
         only=(
             "rolepermissionschema",
@@ -46,31 +50,44 @@ def upgrade() -> None:
     )
 
     # In order to ensure unique names on roles delete potential admin/guest role
+    #  that might have been created previous to this alembic version
+    userroleassignmentschema = sa.Table(
+        "userroleassignmentschema",
+        meta,
+    )
+    teamroleassignmentschema = sa.Table(
+        "teamroleassignmentschema",
+        meta,
+    )
+    roleschema = sa.Table(
+        "roleschema",
+        meta,
+    )
     conn = op.get_bind()
+    res = conn.execute(
+        select(roleschema.c.id).where(roleschema.c.name.in_(["admin", "guest"]))
+    ).fetchall()
+
+    role_ids = [i[0] for i in res]
+
     conn.execute(
-        sa.text(
-            """
-            DELETE FROM userroleassignmentschema
-            WHERE role_id
-            IN (SELECT id FROM roleschema WHERE name=='admin' OR name=='guest')
-            """
+        userroleassignmentschema.delete().where(
+            userroleassignmentschema.c.role_id.in_(role_ids)
         )
     )
     conn.execute(
-        sa.text(
-            """
-            DELETE FROM teamroleassignmentschema
-            WHERE role_id
-            IN (SELECT id FROM roleschema WHERE name=='admin' OR name=='guest')
-            """
+        teamroleassignmentschema.delete().where(
+            teamroleassignmentschema.c.role_id.in_(role_ids)
         )
     )
     conn.execute(
-        sa.text(
-            """DELETE FROM roleschema WHERE name=='admin' OR name=='guest'"""
+        roleschema.delete().where(
+            or_(roleschema.c.name == "admin", roleschema.c.name == "guest")
         )
     )
 
+    # Create the three standard permissions also defined in
+    #  zenml.enums.PermissionType
     read = "READ"
     write = "WRITE"
     me = "ME"
@@ -78,7 +95,7 @@ def upgrade() -> None:
     admin_id = str(uuid.uuid4()).replace("-", "")
     guest_id = str(uuid.uuid4()).replace("-", "")
 
-    # Prefill the roles table with an admin role
+    # Prefill the roles table with the admin and guest role
     op.bulk_insert(
         sa.Table(
             "roleschema",
@@ -116,13 +133,17 @@ def upgrade() -> None:
         ],
     )
 
-    # In order to not break permissions for existing users, all will be assigned
-    # admin
+    # In order to not break permissions for existing users, all existing users
+    #  will be assigned the admin role
+    userschema = sa.Table(
+        "userschema",
+        meta,
+    )
+
     conn = op.get_bind()
-    res = conn.execute(sa.text("""SELECT id FROM userschema"""))
-    user_ids = res.fetchall()
-    # user_table = sa.Table('userschema', meta)
-    # user_ids = op.execute(user_table.select('id'))
+    res = conn.execute(select(userschema.c.id)).fetchall()
+    user_ids = [i[0] for i in res]
+
     for user_id in user_ids:
         op.bulk_insert(
             sa.Table(
@@ -133,7 +154,7 @@ def upgrade() -> None:
                 {
                     "id": str(uuid.uuid4()).replace("-", ""),
                     "role_id": admin_id,
-                    "user_id": user_id[0],
+                    "user_id": user_id,
                     "created": datetime.datetime.now(),
                     "updated": datetime.datetime.now(),
                 }
