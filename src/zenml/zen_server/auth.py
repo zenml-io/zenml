@@ -181,7 +181,7 @@ def oauth2_password_bearer_authentication(
     for scope in security_scopes.scopes:
         if scope not in access_token.permissions:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not enough permissions",
                 headers={"WWW-Authenticate": authenticate_value},
             )

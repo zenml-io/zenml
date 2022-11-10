@@ -247,7 +247,9 @@ class RoleSchema(SQLModel, table=True):
             name=self.name,
             created=self.created,
             updated=self.updated,
-            permissions=[p.name for p in self.permissions],
+            permissions=[
+                PermissionType(p.name.lower()) for p in self.permissions
+            ],
         )
 
 

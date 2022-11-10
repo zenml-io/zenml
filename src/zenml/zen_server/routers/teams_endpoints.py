@@ -18,6 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, Security
 
 from zenml.constants import API, ROLES, TEAMS, VERSION_1
+from zenml.enums import PermissionType
 from zenml.models import TeamModel
 from zenml.models.user_management_models import RoleAssignmentModel
 from zenml.zen_server.auth import AuthContext, authorize
@@ -30,7 +31,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + TEAMS,
     tags=["teams"],
-    dependencies=[Security(authorize, scopes=["read"])],
+    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
     responses={401: error_response},
 )
 
@@ -58,7 +59,7 @@ def list_teams() -> List[TeamModel]:
 @handle_exceptions
 def create_team(
     team: CreateTeamRequest,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> TeamModel:
     """Creates a team.
 
@@ -100,7 +101,7 @@ def get_team(team_name_or_id: Union[str, UUID]) -> TeamModel:
 def update_team(
     team_name_or_id: Union[str, UUID],
     team_update: UpdateTeamRequest,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> TeamModel:
     """Updates a team.
 
@@ -124,7 +125,7 @@ def update_team(
 @handle_exceptions
 def delete_team(
     team_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Deletes a specific team.
 

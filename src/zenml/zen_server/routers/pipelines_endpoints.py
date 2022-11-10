@@ -19,6 +19,7 @@ from fastapi import APIRouter, Security
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
+from zenml.enums import PermissionType
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import PipelineModel
 from zenml.zen_server.auth import AuthContext, authorize
@@ -32,7 +33,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINES,
     tags=["pipelines"],
-    dependencies=[Security(authorize, scopes=["read"])],
+    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
     responses={401: error_response},
 )
 
@@ -111,7 +112,7 @@ def update_pipeline(
     pipeline_id: UUID,
     pipeline_update: UpdatePipelineRequest,
     hydrated: bool = False,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> Union[HydratedPipelineModel, PipelineModel]:
     """Updates the attribute on a specific pipeline using its unique id.
 
@@ -141,7 +142,8 @@ def update_pipeline(
 )
 @handle_exceptions
 def delete_pipeline(
-    pipeline_id: UUID, _: AuthContext = Security(authorize, scopes=["write"])
+    pipeline_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Deletes a specific pipeline.
 
