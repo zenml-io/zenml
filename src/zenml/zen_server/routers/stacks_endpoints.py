@@ -16,7 +16,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.enums import PermissionType
@@ -47,7 +47,7 @@ def list_stacks(
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Union[List[HydratedStackModel], List[StackModel]]:
     """Returns all stacks.
 

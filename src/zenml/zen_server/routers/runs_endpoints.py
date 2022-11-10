@@ -15,7 +15,7 @@
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
@@ -30,7 +30,7 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
-from zenml.zen_server.auth import authorize, AuthContext
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models.pipeline_models import HydratedPipelineRunModel
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -59,7 +59,7 @@ def list_runs(
     pipeline_id: Optional[UUID] = None,
     unlisted: bool = False,
     hydrated: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Union[List[HydratedPipelineRunModel], List[PipelineRunModel]]:
     """Get pipeline runs according to query filters.
 
@@ -102,7 +102,7 @@ def list_runs(
 def get_run(
     run_name_or_id: Union[str, UUID],
     hydrated: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Union[HydratedPipelineRunModel, PipelineRunModel]:
     """Get a specific pipeline run using its ID.
 
@@ -130,7 +130,7 @@ def get_run(
 def update_run(
     run_id: UUID,
     run_model: PipelineRunModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> PipelineRunModel:
     """Updates a run.
 
@@ -154,7 +154,7 @@ def update_run(
 @handle_exceptions
 def get_run_dag(
     run_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> LineageGraph:
     """Get the DAG for a given pipeline run.
 
@@ -180,7 +180,7 @@ def get_run_dag(
 @handle_exceptions
 def get_run_steps(
     run_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[StepRunModel]:
     """Get all steps for a given pipeline run.
 
@@ -202,7 +202,7 @@ def get_run_steps(
 def get_run_component_side_effects(
     run_id: UUID,
     component_id: Optional[UUID] = None,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Dict[str, Any]:
     """Get the component side-effects for a given pipeline run.
 
@@ -228,7 +228,7 @@ def get_run_component_side_effects(
 @handle_exceptions
 def get_pipeline_configuration(
     run_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Dict[str, Any]:
     """Get the pipeline configuration of a specific pipeline run using its ID.
 
@@ -249,7 +249,7 @@ def get_pipeline_configuration(
 @handle_exceptions
 def get_run_status(
     run_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> ExecutionStatus:
     """Get the status of a specific pipeline run.
 

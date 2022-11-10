@@ -16,7 +16,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
@@ -44,7 +44,7 @@ def list_flavors(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[FlavorModel]:
     """Returns all flavors.
 
@@ -80,7 +80,7 @@ def list_flavors(
 @handle_exceptions
 def get_flavor(
     flavor_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> FlavorModel:
     """Returns the requested flavor.
 

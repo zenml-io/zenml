@@ -15,7 +15,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ROLES, TEAMS, VERSION_1
 from zenml.enums import PermissionType
@@ -84,7 +84,7 @@ def create_team(
 @handle_exceptions
 def get_team(
     team_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> TeamModel:
     """Returns a specific team.
 
@@ -149,7 +149,7 @@ def delete_team(
 def get_role_assignments_for_team(
     team_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a team.
 

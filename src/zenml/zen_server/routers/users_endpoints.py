@@ -142,7 +142,7 @@ def create_user(
 @handle_exceptions
 def get_user(
     user_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> UserModel:
     """Returns a specific user.
 
@@ -321,7 +321,7 @@ def get_role_assignments_for_user(
     user_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
     role_name_or_id: Optional[Union[str, UUID]] = None,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a user.
 

@@ -15,7 +15,7 @@
 from typing import List, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ROLES, VERSION_1
 from zenml.enums import PermissionType
@@ -83,7 +83,7 @@ def create_role(
 @handle_exceptions
 def get_role(
     role_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> RoleModel:
     """Returns a specific role.
 
