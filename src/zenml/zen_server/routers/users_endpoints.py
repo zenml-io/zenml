@@ -16,7 +16,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Security, status
+from fastapi import APIRouter, HTTPException, Security, status
 from pydantic import SecretStr
 
 from zenml.constants import (
@@ -248,8 +248,9 @@ def deactivate_user(
 @handle_exceptions
 def delete_user(
     user_name_or_id: Union[str, UUID],
-    auth_context: AuthContext = Depends(authorize),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> None:
     """Deletes a specific user.
 
