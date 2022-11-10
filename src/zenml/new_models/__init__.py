@@ -49,6 +49,7 @@ from zenml.new_models.step_run_models import (
 from zenml.new_models.team_models import TeamRequestModel, TeamResponseModel
 from zenml.new_models.user_models import (
     EmailOptInModel,
+    UserAuthModel,
     UserRequestModel,
     UserResponseModel,
 )
@@ -94,4 +95,5 @@ __all__ = [
     "EmailOptInModel",
     "UserRequestModel",
     "UserResponseModel",
+    "UserAuthModel",
 ]

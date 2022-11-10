@@ -68,7 +68,6 @@ from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel
 from zenml.models.server_models import ServerModel
 from zenml.new_models import (
-    ArtifactModel,
     ArtifactRequestModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -111,6 +110,8 @@ if TYPE_CHECKING:
         ConnectionConfig,
         MetadataStoreClientConfig,
     )
+
+    from zenml.new_models import UserAuthModel
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
@@ -712,6 +713,23 @@ class RestZenStore(BaseZenStore):
             resource_id=user_name_or_id,
             route=USERS,
             response_model=UserResponseModel,
+        )
+
+    def get_auth_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> "UserAuthModel":
+        """Gets the auth model to a specific user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+
+        Returns:
+            The requested user, if it was found.
+        """
+        raise NotImplementedError(
+            "This method is only designed for use"
+            " by the server endpoints. It is not designed"
+            " to be called from the client side."
         )
 
     def list_users(self) -> List[UserResponseModel]:
@@ -1400,7 +1418,9 @@ class RestZenStore(BaseZenStore):
             route=STEPS,
         )
 
-    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+    def get_run_step_inputs(
+        self, step_id: UUID
+    ) -> Dict[str, ArtifactResponseModel]:
         """Get a list of inputs for a specific step.
 
         Args:
@@ -1418,7 +1438,8 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected dict, got {type(body)}"
             )
         return {
-            name: ArtifactModel.parse_obj(entry) for name, entry in body.items()
+            name: ArtifactResponseModel.parse_obj(entry)
+            for name, entry in body.items()
         }
 
     # ---------

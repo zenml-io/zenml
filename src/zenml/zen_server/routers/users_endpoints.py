@@ -17,7 +17,6 @@ from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Security, status
-from pydantic import SecretStr
 
 from zenml.constants import (
     ACTIVATE,
@@ -41,13 +40,6 @@ from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
     authorize,
-)
-from zenml.zen_server.models.user_models import (
-    ActivateUserRequest,
-    CreateUserRequest,
-    CreateUserResponse,
-    DeactivateUserResponse,
-    UpdateUserRequest,
 )
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -93,14 +85,14 @@ def list_users() -> List[UserResponseModel]:
 
 @router.post(
     "",
-    response_model=CreateUserResponse,
+    response_model=UserResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_user(
-    user: CreateUserRequest,
+    user: UserRequestModel,
     _: AuthContext = Security(authorize, scopes=["write"]),
-) -> CreateUserResponse:
+) -> UserResponseModel:
     """Creates a user.
 
     # noqa: DAR401
@@ -116,16 +108,15 @@ def create_user(
     # 2. Create a new user without a password and have it activated at a
     # later time with an activation token
 
-    user_model = user.to_model()
-    token: Optional[SecretStr] = None
+    token: Optional[str] = None
     if user.password is None:
-        user_model.active = False
-        token = user_model.generate_activation_token()
+        user.active = False
+        token = user.generate_activation_token()
     else:
-        user_model.active = True
-    new_user = zen_store().create_user(user_model)
-    # add back the original unhashed activation token, if generated, to
-    # send it back to the client
+        user.active = True
+    new_user = zen_store().create_user(user)
+
+    # For the time beeing all users are implicitely assigned the admin role
     zen_store().create_role_assignment(
         RoleAssignmentRequestModel(
             role=zen_store()._admin_role.id,
@@ -133,8 +124,11 @@ def create_user(
         )
     )
 
-    new_user.activation_token = token
-    return CreateUserResponse.from_model(new_user)
+    # add back the original unhashed activation token, if generated, to
+    # send it back to the client
+    if token:
+        new_user.activation_token = token
+    return new_user
 
 
 @router.get(
@@ -163,7 +157,7 @@ def get_user(user_name_or_id: Union[str, UUID]) -> UserResponseModel:
 @handle_exceptions
 def update_user(
     user_name_or_id: Union[str, UUID],
-    user: UpdateUserRequest,
+    user: UserRequestModel,
     _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> UserResponseModel:
     """Updates a specific user.
@@ -175,9 +169,20 @@ def update_user(
     Returns:
         The updated user.
     """
-    existing_user = zen_store().get_user(user_name_or_id)
-    user_model = user.apply_to_model(existing_user)
-    return zen_store().update_user(user_model)
+    db_user = zen_store().get_user(user_name_or_id)
+
+    if user.name:
+        db_user.name = user.name
+    if user.full_name:
+        db_user.full_name = user.full_name
+    if user.active:
+        db_user.active = user.active
+    if user.email_opted_in is not None:
+
+
+    return zen_store().update_user(
+        user_name_or_id=user_name_or_id, user_update=user
+    )
 
 
 @activation_router.put(
@@ -187,7 +192,7 @@ def update_user(
 )
 @handle_exceptions
 def activate_user(
-    user_name_or_id: Union[str, UUID], user: ActivateUserRequest
+    user_name_or_id: Union[str, UUID], user: UserRequestModel
 ) -> UserResponseModel:
     """Activates a specific user.
 
@@ -210,24 +215,23 @@ def activate_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
         )
-    user_model = user.apply_to_model(auth_context.user)
-    user_model.active = True
-    user_model.activation_token = None
+    user.active = True
+    user.activation_token = None
     return zen_store().update_user(
-        user_name_or_id=user_name_or_id, user_update=user_model
+        user_name_or_id=user_name_or_id, user_update=user
     )
 
 
 @router.put(
     "/{user_name_or_id}" + DEACTIVATE,
-    response_model=DeactivateUserResponse,
+    response_model=UserResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def deactivate_user(
     user_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize, scopes=["write"]),
-) -> DeactivateUserResponse:
+) -> UserResponseModel:
     """Deactivates a user and generates a new activation token for it.
 
     Args:
@@ -237,12 +241,17 @@ def deactivate_user(
         The generated activation token.
     """
     user = zen_store().get_user(user_name_or_id)
+    user = UserRequestModel(
+        **user.dict(exclude={"id", "created", "teams", "updated"})
+    )
     user.active = False
     token = user.generate_activation_token()
-    user = zen_store().update_user(user_name_or_id=user_name_or_id)
+    user = zen_store().update_user(
+        user_name_or_id=user_name_or_id, user_update=user
+    )
     # add back the original unhashed activation token
     user.activation_token = token
-    return DeactivateUserResponse.from_model(user)
+    return user
 
 
 @router.delete(
@@ -426,7 +435,7 @@ def get_current_user(
 )
 @handle_exceptions
 def update_myself(
-    user: UpdateUserRequest,
+    user: UserRequestModel,
     auth_context: AuthContext = Security(authorize, scopes=["me"]),
 ) -> UserResponseModel:
     """Updates a specific user.
@@ -438,5 +447,5 @@ def update_myself(
     Returns:
         The updated user.
     """
-    user_model = user.apply_to_model(auth_context.user)
-    return zen_store().update_user(user_model)
+    # TODO find diff between user and the auth_context.user
+    return zen_store().update_user(user)

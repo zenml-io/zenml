@@ -49,7 +49,8 @@ def list_users() -> None:
 
     cli_utils.print_pydantic_models(
         users,
-        exclude_columns=["id", "created", "updated", "email", "email_opted_in"],
+        exclude_columns=["id", "created", "updated", "email", "email_opted_in",
+                         "activation_token"],
         is_active=lambda u: u.name == Client().zen_store.active_user_name,
     )
 

@@ -29,7 +29,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.new_models import (
-    ArtifactModel,
+    ArtifactResponseModel,
     StepRunRequestModel,
     StepRunResponseModel,
 )
@@ -125,11 +125,11 @@ def update_step(
 
 @router.get(
     "/{step_id}" + OUTPUTS,
-    response_model=Dict[str, ArtifactModel],
+    response_model=Dict[str, ArtifactResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_step_outputs(step_id: UUID) -> Dict[str, ArtifactModel]:
+def get_step_outputs(step_id: UUID) -> Dict[str, ArtifactResponseModel]:
     """Get the outputs of a specific step.
 
     Args:
@@ -146,11 +146,11 @@ def get_step_outputs(step_id: UUID) -> Dict[str, ArtifactModel]:
 
 @router.get(
     "/{step_id}" + INPUTS,
-    response_model=Dict[str, ArtifactModel],
+    response_model=Dict[str, ArtifactResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_step_inputs(step_id: UUID) -> Dict[str, ArtifactModel]:
+def get_step_inputs(step_id: UUID) -> Dict[str, ArtifactResponseModel]:
     """Get the inputs of a specific step.
 
     Args:

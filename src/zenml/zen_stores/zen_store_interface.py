@@ -44,6 +44,7 @@ from zenml.new_models import (
     UserRequestModel,
     UserResponseModel,
 )
+from zenml.new_models.user_models import UserAuthModel
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import (
@@ -454,6 +455,16 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If no user with the given name or ID exists.
+        """
+
+    def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
+        """Gets the auth model to a specific user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+
+        Returns:
+            The requested user, if it was found.
         """
 
     @abstractmethod

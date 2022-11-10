@@ -44,8 +44,9 @@ class JWTToken(BaseModel):
     """Pydantic object representing a JWT token.
 
     Attributes:
-        token: The JWT token.
         token_type: The type of token.
+        user_id: The id of the authenticated User
+        permissions: The permissions scope of the authenticated user
     """
 
     JWT_ALGORITHM: ClassVar[str] = "HS256"
@@ -156,11 +157,7 @@ class UserBaseModel(BaseModel):
         title="The full name for the account owner.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    email: Optional[str] = Field(
-        default="",
-        title="The email address associated with the account.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
-    )
+
     email_opted_in: Optional[bool] = Field(
         title="Whether the user agreed to share their email.",
         description="`null` if not answered, `true` if agreed, "
@@ -168,168 +165,6 @@ class UserBaseModel(BaseModel):
     )
 
     active: bool = Field(default=False, title="Active account.")
-
-    activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
-    password: Optional[SecretStr] = Field(default=None, exclude=True)
-
-    def generate_activation_token(self) -> SecretStr:
-        """Generates and stores a new activation token.
-
-        Returns:
-            The generated activation token.
-        """
-        self.activation_token = SecretStr(token_hex(32))
-        return self.activation_token
-
-    @classmethod
-    def verify_password(
-        cls, plain_password: str, user: Optional["UserResponseModel"] = None
-    ) -> bool:
-        """Verifies a given plain password against the stored password.
-
-        Args:
-            plain_password: Input password to be verified.
-            user: User for which the password is to be verified.
-
-        Returns:
-            True if the passwords match.
-        """
-        # even when the user or password is not set, we still want to execute
-        # the password hash verification to protect against response discrepancy
-        # attacks (https://cwe.mitre.org/data/definitions/204.html)
-        token_hash: Optional[str] = None
-        if user is not None and user.password is not None and user.active:
-            token_hash = user.get_hashed_password()
-        pwd_context = cls._get_crypt_context()
-
-        return cast(bool, pwd_context.verify(plain_password, token_hash))
-
-    @classmethod
-    def verify_access_token(cls, token: str) -> Optional["UserResponseModel"]:
-        """Verifies an access token.
-
-        Verifies an access token and returns the user that was used to generate
-        it if the token is valid and None otherwise.
-
-        Args:
-            token: The access token to verify.
-
-        Returns:
-            The user that generated the token if valid, None otherwise.
-        """
-        try:
-            access_token = JWTToken.decode(
-                token_type=JWTTokenType.ACCESS_TOKEN, token=token
-            )
-        except AuthorizationException:
-            return None
-
-        zen_store = GlobalConfiguration().zen_store
-        try:
-            user = zen_store.get_user(user_name_or_id=access_token.user_id)
-        except KeyError:
-            return None
-        else:
-            if access_token.user_id == user.id and user.active:
-                return user
-
-        return None
-
-    @classmethod
-    def verify_activation_token(
-        cls, activation_token: str, user: Optional["UserResponseModel"] = None
-    ) -> bool:
-        """Verifies a given activation token against the stored token.
-
-        Args:
-            activation_token: Input activation token to be verified.
-            user: User for which the activation token is to be verified.
-
-        Returns:
-            True if the token is valid.
-        """
-        # even when the user or token is not set, we still want to execute the
-        # token hash verification to protect against response discrepancy
-        # attacks (https://cwe.mitre.org/data/definitions/204.html)
-        token_hash: Optional[str] = None
-        if (
-            user is not None
-            and user.activation_token is not None
-            and not user.active
-        ):
-            token_hash = user.get_hashed_activation_token()
-        pwd_context = cls._get_crypt_context()
-        return cast(bool, pwd_context.verify(activation_token, token_hash))
-
-    @classmethod
-    def _is_hashed_secret(cls, secret: SecretStr) -> bool:
-        """Checks if a secret value is already hashed.
-
-        Args:
-            secret: The secret value to check.
-
-        Returns:
-            True if the secret value is hashed, otherwise False.
-        """
-        return (
-            re.match(r"^\$2[ayb]\$.{56}$", secret.get_secret_value())
-            is not None
-        )
-
-    def get_password(self) -> Optional[str]:
-        """Get the password.
-
-        Returns:
-            The password as a plain string, if it exists.
-        """
-        if self.password is None:
-            return None
-        return self.password.get_secret_value()
-
-    @classmethod
-    def _get_hashed_secret(cls, secret: Optional[SecretStr]) -> Optional[str]:
-        """Hashes the input secret and returns the hash value.
-
-        Only applied if supplied and if not already hashed.
-
-        Args:
-            secret: The secret value to hash.
-
-        Returns:
-            The secret hash value, or None if no secret was supplied.
-        """
-        if secret is None:
-            return None
-        if cls._is_hashed_secret(secret):
-            return secret.get_secret_value()
-        pwd_context = cls._get_crypt_context()
-        return cast(str, pwd_context.hash(secret.get_secret_value()))
-
-    def get_hashed_password(self) -> Optional[str]:
-        """Returns the hashed password, if configured.
-
-        Returns:
-            The hashed password.
-        """
-        return self._get_hashed_secret(self.password)
-
-    def get_activation_token(self) -> Optional[str]:
-        """Get the activation token.
-
-        Returns:
-            The activation token as a plain string, if it exists.
-        """
-        if self.activation_token is None:
-            return None
-        return self.activation_token.get_secret_value()
-
-    def get_hashed_activation_token(self) -> Optional[str]:
-        """Returns the hashed activation token, if configured.
-
-        Returns:
-            The hashed activation token.
-        """
-        return self._get_hashed_secret(self.activation_token)
 
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
@@ -354,6 +189,7 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
     teams: Optional[List["TeamResponseModel"]] = Field(
         title="The list of teams for this user."
     )
+    activation_token: Optional[str] = Field(default=None)
 
     def generate_access_token(self, permissions: List[str]) -> str:
         """Generates an access token.
@@ -373,6 +209,160 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
         ).encode()
 
 
+class UserAuthModel(UserResponseModel, BaseResponseModel):
+    """"""
+
+    email: Optional[str] = Field(
+        default="",
+        title="The email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+
+    active: bool = Field(default=False, title="Active account.")
+
+    activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
+    password: Optional[SecretStr] = Field(default=None, exclude=True)
+
+    @classmethod
+    def _is_hashed_secret(cls, secret: SecretStr) -> bool:
+        """Checks if a secret value is already hashed.
+
+        Args:
+            secret: The secret value to check.
+
+        Returns:
+            True if the secret value is hashed, otherwise False.
+        """
+        return (
+            re.match(r"^\$2[ayb]\$.{56}$", secret.get_secret_value())
+            is not None
+        )
+
+    @classmethod
+    def _get_hashed_secret(cls, secret: Optional[SecretStr]) -> Optional[str]:
+        """Hashes the input secret and returns the hash value.
+
+        Only applied if supplied and if not already hashed.
+
+        Args:
+            secret: The secret value to hash.
+
+        Returns:
+            The secret hash value, or None if no secret was supplied.
+        """
+        if secret is None:
+            return None
+        if cls._is_hashed_secret(secret):
+            return secret.get_secret_value()
+        pwd_context = cls._get_crypt_context()
+        return cast(str, pwd_context.hash(secret.get_secret_value()))
+
+    def get_password(self) -> Optional[str]:
+        """Get the password.
+
+        Returns:
+            The password as a plain string, if it exists.
+        """
+        if self.password is None:
+            return None
+        return self.password.get_secret_value()
+
+    def get_hashed_password(self) -> Optional[str]:
+        """Returns the hashed password, if configured.
+
+        Returns:
+            The hashed password.
+        """
+        return self._get_hashed_secret(self.password)
+
+    def get_hashed_activation_token(self) -> Optional[str]:
+        """Returns the hashed activation token, if configured.
+
+        Returns:
+            The hashed activation token.
+        """
+        return self._get_hashed_secret(self.activation_token)
+
+    @classmethod
+    def verify_password(
+        cls, plain_password: str, user: Optional["UserAuthModel"] = None
+    ) -> bool:
+        """Verifies a given plain password against the stored password.
+
+        Args:
+            plain_password: Input password to be verified.
+            user: User for which the password is to be verified.
+
+        Returns:
+            True if the passwords match.
+        """
+        # even when the user or password is not set, we still want to execute
+        # the password hash verification to protect against response discrepancy
+        # attacks (https://cwe.mitre.org/data/definitions/204.html)
+        token_hash: Optional[str] = None
+        if user is not None and user.password is not None:  # and user.active:
+            token_hash = user.get_hashed_password()
+        pwd_context = cls._get_crypt_context()
+        return cast(bool, pwd_context.verify(plain_password, token_hash))
+
+    @classmethod
+    def verify_access_token(cls, token: str) -> Optional["UserAuthModel"]:
+        """Verifies an access token.
+
+        Verifies an access token and returns the user that was used to generate
+        it if the token is valid and None otherwise.
+
+        Args:
+            token: The access token to verify.
+
+        Returns:
+            The user that generated the token if valid, None otherwise.
+        """
+        try:
+            access_token = JWTToken.decode(
+                token_type=JWTTokenType.ACCESS_TOKEN, token=token
+            )
+        except AuthorizationException:
+            return None
+
+        zen_store = GlobalConfiguration().zen_store
+        try:
+            user = zen_store.get_auth_user(user_name_or_id=access_token.user_id)
+        except KeyError:
+            return None
+        else:
+            if user.active:
+                return user
+
+        return None
+
+    @classmethod
+    def verify_activation_token(
+        cls, activation_token: str, user: Optional["UserAuthModel"] = None
+    ) -> bool:
+        """Verifies a given activation token against the stored token.
+
+        Args:
+            activation_token: Input activation token to be verified.
+            user: User for which the activation token is to be verified.
+
+        Returns:
+            True if the token is valid.
+        """
+        # even when the user or token is not set, we still want to execute the
+        # token hash verification to protect against response discrepancy
+        # attacks (https://cwe.mitre.org/data/definitions/204.html)
+        token_hash: Optional[str] = None
+        if (
+            user is not None
+            and user.activation_token is not None
+            and not user.active
+        ):
+            token_hash = user.get_hashed_activation_token()
+        pwd_context = cls._get_crypt_context()
+        return cast(bool, pwd_context.verify(activation_token, token_hash))
+
+
 # ------- #
 # REQUEST #
 # ------- #
@@ -380,6 +370,15 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
 
 class UserRequestModel(UserBaseModel, BaseRequestModel):
     """"""
+
+    email: Optional[str] = Field(
+        default="",
+        title="The email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+
+    password: Optional[str] = Field(default=None, exclude=True)
+    activation_token: Optional[str] = Field(default=None)
 
     class Config:
         """Pydantic configuration class."""
@@ -389,6 +388,48 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
         # Forbid extra attributes to prevent unexpected behavior
         extra = "forbid"
         underscore_attrs_are_private = True
+
+    @classmethod
+    def _create_hashed_secret(cls, secret: Optional[str]) -> Optional[str]:
+        """Hashes the input secret and returns the hash value.
+
+        Only applied if supplied and if not already hashed.
+
+        Args:
+            secret: The secret value to hash.
+
+        Returns:
+            The secret hash value, or None if no secret was supplied.
+        """
+        if secret is None:
+            return None
+        pwd_context = cls._get_crypt_context()
+        return cast(str, pwd_context.hash(secret))
+
+    def create_hashed_password(self) -> Optional[str]:
+        """Hashes the password.
+
+        Returns:
+            The hashed password.
+        """
+        return self._create_hashed_secret(self.password)
+
+    def create_hashed_activation_token(self) -> Optional[str]:
+        """Hashes the activation token.
+
+        Returns:
+            The hashed activation token.
+        """
+        return self._create_hashed_secret(self.activation_token)
+
+    def generate_activation_token(self) -> str:
+        """Generates and stores a new activation token.
+
+        Returns:
+            The generated activation token.
+        """
+        self.activation_token = token_hex(32)
+        return self.activation_token
 
 
 # ---- #
