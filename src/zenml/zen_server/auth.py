@@ -186,7 +186,6 @@ def oauth2_password_bearer_authentication(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    )
     for scope in security_scopes.scopes:
         if scope not in access_token.permissions:
             raise HTTPException(
