@@ -314,6 +314,7 @@ def email_opt_in_response(
 def get_role_assignments_for_user(
     user_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
+    role_name_or_id: Optional[Union[str, UUID]] = None,
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a user.
 
@@ -321,6 +322,8 @@ def get_role_assignments_for_user(
         user_name_or_id: Name or ID of the user.
         project_name_or_id: If provided, only list roles that are limited to
             the given project.
+        role_name_or_id: If provided, only list assignments of the given
+            role
 
     Returns:
         A list of all roles that are assigned to a user.
@@ -328,6 +331,7 @@ def get_role_assignments_for_user(
     return zen_store().list_role_assignments(
         user_name_or_id=user_name_or_id,
         project_name_or_id=project_name_or_id,
+        role_name_or_id=role_name_or_id,
     )
 
 
@@ -367,7 +371,7 @@ def assign_role(
 def unassign_role(
     user_name_or_id: Union[str, UUID],
     role_name_or_id: Union[str, UUID],
-    project_name_or_id: Optional[Union[str, UUID]],
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> None:
     """Remove a users role within a project or globally.
