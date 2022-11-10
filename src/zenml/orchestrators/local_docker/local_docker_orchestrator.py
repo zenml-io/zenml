@@ -16,7 +16,7 @@
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 from uuid import uuid4
 
 from zenml.client import Client
@@ -164,9 +164,10 @@ class LocalDockerOrchestrator(BaseOrchestrator):
                 step_name=step_name
             )
 
-            settings: Optional[
-                LocalDockerOrchestratorSettings
-            ] = self.get_settings(step)
+            settings = cast(
+                Optional[LocalDockerOrchestratorSettings],
+                self.get_settings(step),
+            )
 
             user = None
             if sys.platform != "win32":
