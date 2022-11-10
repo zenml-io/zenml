@@ -17,9 +17,11 @@ from zenml.integrations.label_studio.label_config_generators.label_config_genera
     TASK_TO_FILENAME_REFERENCE_MAPPING,
     generate_basic_object_detection_bounding_boxes_label_config,
     generate_image_classification_label_config,
+    generate_basic_ocr_label_config
 )
 
 __all__ = [
+    "generate_basic_ocr_label_config"
     "generate_basic_object_detection_bounding_boxes_label_config",
     "generate_image_classification_label_config",
     "TASK_TO_FILENAME_REFERENCE_MAPPING",
