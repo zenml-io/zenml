@@ -29,7 +29,7 @@ from zenml.constants import (
     STATISTICS,
     VERSION_1,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import PermissionType, StackComponentType
 from zenml.models import (
     ComponentModel,
     FlavorModel,
@@ -58,7 +58,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + PROJECTS,
     tags=["projects"],
-    dependencies=[Security(authorize, scopes=["read"])],
+    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
     responses={401: error_response},
 )
 
@@ -86,7 +86,7 @@ def list_projects() -> List[ProjectModel]:
 @handle_exceptions
 def create_project(
     project: CreateProjectRequest,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> ProjectModel:
     """Creates a project based on the requestBody.
 
@@ -130,7 +130,7 @@ def get_project(project_name_or_id: Union[str, UUID]) -> ProjectModel:
 def update_project(
     project_name_or_id: Union[str, UUID],
     project_update: UpdateProjectRequest,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> ProjectModel:
     """Get a project for given name.
 
@@ -157,7 +157,7 @@ def update_project(
 @handle_exceptions
 def delete_project(
     project_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Deletes a project.
 
@@ -250,7 +250,9 @@ def create_stack(
     project_name_or_id: Union[str, UUID],
     stack: CreateStackRequest,
     hydrated: bool = False,
-    auth_context: AuthContext = Security(authorize, scopes=["write"]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> Union[HydratedStackModel, StackModel]:
     """Creates a stack for a particular project.
 
@@ -333,7 +335,9 @@ def create_stack_component(
     project_name_or_id: Union[str, UUID],
     component: CreateComponentModel,
     hydrated: bool = False,
-    auth_context: AuthContext = Security(authorize, scopes=["write"]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Creates a stack component.
 
@@ -419,7 +423,9 @@ def create_flavor(
     project_name_or_id: Union[str, UUID],
     flavor: FlavorModel,
     hydrated: bool = False,
-    auth_context: AuthContext = Security(authorize, scopes=["write"]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> FlavorModel:
     """Creates a stack component flavor.
 
@@ -492,7 +498,9 @@ def create_pipeline(
     project_name_or_id: Union[str, UUID],
     pipeline: CreatePipelineRequest,
     hydrated: bool = False,
-    auth_context: AuthContext = Security(authorize, scopes=["write"]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> Union[HydratedPipelineModel, PipelineModel]:
     """Creates a pipeline.
 

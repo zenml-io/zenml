@@ -28,6 +28,7 @@ from zenml.constants import (
     USERS,
     VERSION_1,
 )
+from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel, UserModel
@@ -51,7 +52,7 @@ logger = get_logger(__name__)
 router = APIRouter(
     prefix=API + VERSION_1 + USERS,
     tags=["users"],
-    dependencies=[Security(authorize, scopes=["read"])],
+    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
     responses={401: error_response},
 )
 
@@ -94,7 +95,7 @@ def list_users() -> List[UserModel]:
 @handle_exceptions
 def create_user(
     user: CreateUserRequest,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> CreateUserResponse:
     """Creates a user.
 
@@ -158,7 +159,7 @@ def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
 def update_user(
     user_name_or_id: Union[str, UUID],
     user: UpdateUserRequest,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> UserModel:
     """Updates a specific user.
 
@@ -218,7 +219,7 @@ def activate_user(
 @handle_exceptions
 def deactivate_user(
     user_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> DeactivateUserResponse:
     """Deactivates a user and generates a new activation token for it.
 
@@ -245,7 +246,7 @@ def deactivate_user(
 def delete_user(
     user_name_or_id: Union[str, UUID],
     auth_context: AuthContext = Depends(authorize),
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Deletes a specific user.
 
@@ -277,7 +278,7 @@ def delete_user(
 def email_opt_in_response(
     user_name_or_id: Union[str, UUID],
     user_response: EmailOptInModel,
-    auth_context: AuthContext = Security(authorize, scopes=["me"]),
+    auth_context: AuthContext = Security(authorize, scopes=[PermissionType.ME]),
 ) -> UserModel:
     """Sets the response of the user to the email prompt.
 
@@ -344,7 +345,7 @@ def assign_role(
     user_name_or_id: Union[str, UUID],
     role_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Assign a role to a user for all resources within a given project or globally.
 
@@ -372,7 +373,7 @@ def unassign_role(
     user_name_or_id: Union[str, UUID],
     role_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Remove a users role within a project or globally.
 
@@ -397,7 +398,9 @@ def unassign_role(
 )
 @handle_exceptions
 def get_current_user(
-    auth_context: AuthContext = Security(authorize, scopes=["me"]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> UserModel:
     """Returns the model of the authenticated user.
 
@@ -418,7 +421,7 @@ def get_current_user(
 @handle_exceptions
 def update_myself(
     user: UpdateUserRequest,
-    auth_context: AuthContext = Security(authorize, scopes=["me"]),
+    auth_context: AuthContext = Security(authorize, scopes=[PermissionType.ME]),
 ) -> UserModel:
     """Updates a specific user.
 

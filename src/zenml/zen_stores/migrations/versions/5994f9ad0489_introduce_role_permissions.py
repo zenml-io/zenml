@@ -88,9 +88,9 @@ def upgrade() -> None:
 
     # Create the three standard permissions also defined in
     #  zenml.enums.PermissionType
-    read = "READ"
-    write = "WRITE"
-    me = "ME"
+    read = "read"
+    write = "write"
+    me = "me"
 
     admin_id = str(uuid.uuid4()).replace("-", "")
     guest_id = str(uuid.uuid4()).replace("-", "")

@@ -18,6 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, Security
 
 from zenml.constants import API, ROLES, VERSION_1
+from zenml.enums import PermissionType
 from zenml.models import RoleModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models.user_management_models import (
@@ -29,7 +30,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + ROLES,
     tags=["roles"],
-    dependencies=[Security(authorize, scopes=["read"])],
+    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
     responses={401: error_response},
 )
 
@@ -57,7 +58,7 @@ def list_roles() -> List[RoleModel]:
 @handle_exceptions
 def create_role(
     role: CreateRoleRequest,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> RoleModel:
     """Creates a role.
 
@@ -99,7 +100,7 @@ def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
 def update_role(
     role_name_or_id: Union[str, UUID],
     role_update: UpdateRoleRequest,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> RoleModel:
     """Updates a role.
 
@@ -123,7 +124,7 @@ def update_role(
 @handle_exceptions
 def delete_role(
     role_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Deletes a specific role.
 

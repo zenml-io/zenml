@@ -19,7 +19,7 @@ from uuid import UUID
 from fastapi import APIRouter, Security
 
 from zenml.constants import API, FLAVORS, VERSION_1
-from zenml.enums import StackComponentType
+from zenml.enums import PermissionType, StackComponentType
 from zenml.models import FlavorModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -27,7 +27,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + FLAVORS,
     tags=["flavors"],
-    dependencies=[Security(authorize, scopes=["read"])],
+    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
     responses={401: error_response},
 )
 
@@ -105,7 +105,7 @@ def update_flavor(
     flavor_id: UUID,
     flavor: FlavorModel,
     hydrated: bool = False,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> FlavorModel:
     """Updates a stack.
 
@@ -129,7 +129,8 @@ def update_flavor(
 )
 @handle_exceptions
 def delete_flavor(
-    flavor_id: UUID, _: AuthContext = Security(authorize, scopes=["write"])
+    flavor_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Deletes a flavor.
 
