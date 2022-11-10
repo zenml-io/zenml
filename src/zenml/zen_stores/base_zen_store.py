@@ -153,8 +153,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             The store type associated with the supplied URL schema or None if
             the store type cannot be determined.
         """
-        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
         from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         if SqlZenStoreConfiguration.supports_url_scheme(url):
             return StoreType.SQL

@@ -16,8 +16,8 @@
 from typing import Optional, Union
 
 from pydantic import Field
-from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 
+from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.logger import get_logger
 from zenml.services.service_endpoint import (
     BaseServiceEndpoint,

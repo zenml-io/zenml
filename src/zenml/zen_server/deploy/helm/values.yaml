@@ -93,13 +93,6 @@ zenml:
     # sslKey: /path/to/client-key.pem
     # sslVerifyServerCert: True
 
-    # The external DB hostname can be different than the one used in the
-    # database URL. This is useful when the database URL contains a private
-    # IP address or hostname that is not accessible from the clients.
-    # If set, the external hostname will be advertised to clients instead
-    # of the hostname in the connection string.
-    # externalHostname:
-
   service:
     type: ClusterIP
     port: 80

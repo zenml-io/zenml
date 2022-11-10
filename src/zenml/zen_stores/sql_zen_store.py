@@ -18,7 +18,6 @@ import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path, PurePath
-import socket
 from threading import Lock, get_ident
 from typing import (
     TYPE_CHECKING,
@@ -389,12 +388,23 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             A new store configuration object that reflects the new configuration
             path.
         """
+        from zenml.utils.docker_utils import (
+            replace_localhost_with_internal_hostname,
+        )
+
         assert isinstance(config, SqlZenStoreConfiguration)
         config = config.copy()
 
         if config.driver == SQLDatabaseDriver.MYSQL:
             # Load the certificate values back into the configuration
             config.expand_certificates()
+
+            # If the URL is localhost, then we make the assumption that the
+            # copied configuration will be used in a docker container running
+            # on the same machine (other scenarios are not technically possible)
+            # and so we replace the hostname with the special Docker
+            # `host.docker.internal` hostname to automatically enable that.
+            config.url = replace_localhost_with_internal_hostname(config.url)
 
         elif config.driver == SQLDatabaseDriver.SQLITE:
             if load_config_path:
@@ -405,7 +415,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         return config
 
     def get_metadata_config(
-        self, expand_certs: bool = False, external: bool = False
+        self, expand_certs: bool = False
     ) -> "ConnectionConfig":
         """Get the metadata configuration for the SQL ZenML store.
 
@@ -437,23 +447,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             assert self.password is not None
             assert sql_url.host is not None
 
-            db_host = sql_url.host
-            if external:
-                pass
-            if db_host.endswith(".docker.internal"):
-                # This is a special case where the external hostname is
-                # set to point to the Docker network gateway. We need to
-                # resolve the hostname because it may not be resolvable from
-                # outside the container.
-                try:
-                    db_host = socket.gethostbyname(db_host)
-                except socket.gaierror:
-                    logger.warning(
-                        "Could not resolve Docker hostname %s", db_host
-                    )
-
             mlmd_config = metadata.mysql_metadata_connection_config(
-                host=db_host,
+                host=sql_url.host,
                 port=sql_url.port or 3306,
                 database=self.database,
                 username=self.username,
@@ -783,9 +778,7 @@ class SqlZenStore(BaseZenStore):
 
             return mlmd_config
 
-        return self.config.get_metadata_config(
-            expand_certs=expand_certs, external=True
-        )
+        return self.config.get_metadata_config(expand_certs=expand_certs)
 
     # ------
     # Stacks

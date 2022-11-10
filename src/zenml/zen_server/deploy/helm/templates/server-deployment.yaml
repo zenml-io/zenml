@@ -85,10 +85,6 @@ spec:
               value: "True"
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
-            {{- if .Values.zenml.database.externalHostname }}
-            - name: ZENML_STORE_EXTERNAL_HOSTNAME
-              value: {{ .Values.zenml.database.externalHostname | quote }}
-            {{- end }}
             {{- end }}
             - name: ZENML_SERVER_DEPLOYMENT_TYPE
               value: {{ .Values.zenml.deploymentType | default "kubernetes" }}

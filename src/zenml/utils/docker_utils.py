@@ -27,6 +27,7 @@ from typing import (
     Union,
     cast,
 )
+from urllib.parse import urlparse
 
 from docker.client import DockerClient
 from docker.utils import build as docker_build_utils
@@ -368,3 +369,35 @@ def _process_stream(stream: Iterable[bytes]) -> List[Dict[str, Any]]:
                 )
 
     return auxiliary_info
+
+
+def replace_localhost_with_internal_hostname(url: str) -> str:
+    """Replaces the localhost with the `host.docker.internal` hostname in a URL.
+
+    Localhost URLs that are directly accessible on the host machine are not
+    accessible from within a Docker container running on that same machine, but
+    the special Docker `host.docker.internal` hostname can be used to access
+    the same service from within the container.
+
+    Use this method to replace `localhost` with `host.docker.internal` in a URL
+    if the URL is supposed to be used from within a Docker container.
+
+    Args:
+        url: The URL to update.
+
+    Returns:
+        The updated URL .
+    """
+    parsed_url = urlparse(url)
+    if parsed_url.hostname in ("localhost", "127.0.0.1"):
+
+        url = parsed_url._replace(
+            netloc=parsed_url.netloc.replace(
+                parsed_url.hostname,
+                "host.docker.internal",
+            )
+        )
+
+        return url.geturl()
+
+    return url

@@ -126,8 +126,7 @@ default SQLite database is located can optionally be overridden by setting the
 These configuration options are not required for most use cases, but can be
 useful in certain scenarios that require mirroring the same ZenML server
 configuration across multiple container instances (e.g. a Kubernetes
-deployment with multiple replicas) or connecting the ZenML server to a
-MySQL database over a private network:
+deployment with multiple replicas):
 
 - **ZENML_USER_ID**:
     This is a UUID value that is used to uniquely identify the server's
@@ -156,17 +155,6 @@ MySQL database over a private network:
      ```shell
      openssl rand -hex 32
      ```
-
-- **ZENML_STORE_EXTERNAL_HOSTNAME**:
-    The hostname that should be used by clients and orchestrators to connect to
-    the server's MySQL database. Only valid when `ZENML_STORE_URL` points to a
-    MySQL database.
-    The external DB hostname can be different than the one used in the
-    `ZENML_STORE_URL` connection string. This is useful when the ZenML server
-    connects to the database over a private IP address or hostname that is not
-    accessible from the clients.
-    If set, the external hostname will be advertised to clients instead
-    of the hostname in the connection string.
 
 ## Run the ZenML server with Docker
 
@@ -235,80 +223,6 @@ docker run -it -d -p 8080:80 --name zenml \
 If you're looking for a quick way to run both the ZenML server and a MySQL
 database with Docker, you can [deploy the ZenML server with Docker Compose](#zenml-server-with-docker-compose).
 
-### Inter-container communication
-
-This section is dedicated to solving the issue of accessing a Docker container
-from another Docker container. This situation arises when you want to run a
-containerized ZenML server and one or both of the following:
-
-- you want to connect the ZenML server container to another container such as a
-MySQL database server
-- you want to use one of the local container based orchestrators in your ZenML
-stack, such as the [ZenML Kubeflow orchestrator](../../component-gallery/orchestrators/kubeflow.md),
-or the [ZenML Docker orchestrator](../../component-gallery/orchestrators/local-docker.md).
-
-In both these cases, a containerized server (the ZenML server or a MySQL server)
-needs to be accessible from both the local host as well as from other
-containers. The `localhost` hostname or `127.0.0.1` IP address will not work in
-this case, because every container has its own isolated loopback interface. What
-is needed is a hostname or IP address that is accessible from both the host and
-other containers.
-
-You have the following solutions:
-
-
-1. (recommended) find and use the Docker gateway address in use by the default
-network bridge that all containers are connected to. This can be done with the
-`docker network inspect` command, but this option is not available on Mac OS:
-
-    ```shell
-    docker inspect -f '{{range.IPAM.Config}}{{.Gateway}}{{end}}' bridge
-    ```
-
-    The output usually looks something like this:
-
-    ```
-    172.17.0.1
-    ```
-
-2. use the special `host.docker.internal` DNS name
-resolved from within the Docker containers to the host IP address used by
-the Docker network (see the [Docker documentation](https://docs.docker.com/desktop/networking/#use-cases-and-workarounds-for-all-platforms)
-for more details). On Linux, this needs to be explicitly enabled in the
-`docker run` command with the `--add-host` argument, but can be useful if you
-want to avoid the hassle of finding the IP address of the server container,
-e.g.:
-
-    ```shell
-    docker run -it -d -p 8080:80 --name zenml \
-        --add-host host.docker.internal:host-gateway \
-        --env ZENML_STORE_URL=mysql://root:password@host.docker.internal/zenml
-        zenmldocker/zenml-server
-    ```
-
-
-3. (not recommended) find out the IP address of the server container and use
-that address when connecting to the server container. This can be done with the
-`docker inspect` command, e.g.:
-
-    ```shell
-    docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' zenml
-    ```
-
-    The output usually looks something like this:
-
-    ```
-    172.17.0.3
-    ```
-
-    > **IMPORTANT**
-    > The IP address of a container can change when the container is restarted,
-    > so you need to find the IP address again after each restart.
-    > The IP address of the server container also needs to be paired with the
-    > container TCP port, not the host port (e.g. `80` instead of `8080` in
-    > the example above).
-
-
 ### Persisting the SQLite database
 
 Depending on your use case, you may also want to mount a persistent volume or
@@ -354,13 +268,12 @@ docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password \
 ```
 
 Configuring the ZenML server container to connect to the MySQL database is just
-a matter of setting the `ZENML_STORE_URL` environment variable. The difficult
-part is finding the IP address where the MySQL container can be reachable from
-the ZenML server container. As explained in the
-[inter-container communication section](#inter-container-communication), the
-`127.0.0.1` loopback interface will not work in this case and you will need
-an alternative. In this example, we will use the `host.docker.internal` DNS
-name solution (NOTE: the `--add-host` argument is only needed on Linux):
+a matter of setting the `ZENML_STORE_URL` environment variable. We use the
+special `host.docker.internal` DNS name resolved from within the Docker
+containers to the gateway IP address used by the Docker network (see the
+[Docker documentation](https://docs.docker.com/desktop/networking/#use-cases-and-workarounds-for-all-platforms)
+for more details). On Linux, this needs to be explicitly enabled in the
+`docker run` command with the `--add-host` argument:
 
 ```shell
 docker run -it -d -p 8080:80 --name zenml \
@@ -369,19 +282,10 @@ docker run -it -d -p 8080:80 --name zenml \
     zenmldocker/zenml-server
 ```
 
-Connecting your client to the ZenML server in a way that also enables you to
-use Docker-based ZenML orchestrators requires you to again
-[find the IP address of the ZenML server container or the Docker gateway address](#inter-container-communication).
-The IP address is then used to connect your client with the default account
-credentials:
+Connecting your client to the ZenML server is the same as before:
 
 ```shell
-$ docker inspect -f '{{range.IPAM.Config}}{{.Gateway}}{{end}}' bridge
-172.17.0.1
-```
-
-```shell
-zenml connect --url http://172.17.0.1:8080 --username default --password ''
+zenml connect --url http://localhost:8080 --username default --password ''
 ```
 
 ### ZenML server with Docker Compose
@@ -412,8 +316,7 @@ services:
     ports:
       - "8080:80"
     environment:
-      - ZENML_STORE_URL=mysql://root:password@mysql/zenml
-      - ZENML_STORE_EXTERNAL_HOSTNAME=host.docker.internal
+      - ZENML_STORE_URL=mysql://root:password@host.docker.internal/zenml
       - ZENML_DEFAULT_USERNAME=admin
       - ZENML_DEFAULT_PASSWORD=zenml
     links:
@@ -427,14 +330,9 @@ services:
 
 Note the following:
 
-- `ZENML_STORE_URL` is set to point to the internal `mysql` hostname that
-Docker Compose will automatically assign to the MySQL container.
-- The `ZENML_STORE_EXTERNAL_HOSTNAME` environment variable is set to
-`host.docker.internal` to instruct the clients to use this hostname to connect
-to the database instead of the internally resolvable `mysql` hostname. ZenML
-knows to automatically resolve the `host.docker.internal` hostname to the
-Docker gateway address before advertising it to its clients.
-The ZenML client knows how to handles the `host.docker.internal` hostname
+- `ZENML_STORE_URL` is set to the special Docker `host.docker.internal` hostname
+to instruct the server to connect to the database over the Docker network. The
+ZenML client knows how to handle the `host.docker.internal` hostname
 differently depending on whether it is running on the host machine or in another
 Docker container.
 - The `extra_hosts` section is needed on Linux to make the `host.docker.internal`
@@ -449,23 +347,13 @@ the `docker-compose.yml` file is located:
 docker-compose up -d
 ```
 
-Connecting your client to the ZenML server in a way that also enables you to
-use Docker-based ZenML orchestrators requires you to
-[find the IP address of the ZenML server container or the Docker gateway address](#inter-container-communication).
-The IP address is then used to connect your client with the default account
-credentials. For example:
+Connecting your client to the ZenML server is the same as before:
 
 ```shell
-$ docker inspect -f '{{range.IPAM.Config}}{{.Gateway}}{{end}}' bridge
-172.17.0.1
-```
-
-```shell
-zenml connect --url http://172.17.0.1:8080 --username default --password ''
+zenml connect --url http://localhost:8080 --username default --password ''
 ```
 
 ## Troubleshooting
-
 
 You can check the logs of the container to verify if the server is up and depending on where you have deployed it, you can also access the dashboard at a `localhost` port (if running locally) or through some other service that exposes your container to the internet. 
 

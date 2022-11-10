@@ -15,6 +15,7 @@
 import json
 import os
 import re
+import socket
 from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
@@ -27,12 +28,12 @@ from typing import (
     TypeVar,
     Union,
 )
+from urllib.parse import urlparse
 from uuid import UUID
 
 import requests
 import urllib3
 from pydantic import BaseModel, validator
-from urllib.parse import urlparse
 
 import zenml
 from zenml.config.global_config import GlobalConfiguration
@@ -265,8 +266,19 @@ class RestZenStoreConfiguration(StoreConfiguration):
             A new store configuration object that reflects the new configuration
             path.
         """
+        from zenml.utils.docker_utils import (
+            replace_localhost_with_internal_hostname,
+        )
+
         assert isinstance(config, RestZenStoreConfiguration)
         config = config.copy(deep=True)
+
+        # If the URL is localhost, then we make the assumption that the
+        # copied configuration will be used in a docker container running
+        # on the same machine (other scenarios are not technically possible)
+        # and so we replace the hostname with the special Docker
+        # `host.docker.internal` hostname to automatically enable that.
+        config.url = replace_localhost_with_internal_hostname(config.url)
 
         # Load the certificate values back into the configuration
         config.expand_certificates()
@@ -391,10 +403,25 @@ class RestZenStore(BaseZenStore):
             assert isinstance(default_store_cfg, SqlZenStoreConfiguration)
             return default_store_cfg.get_metadata_config()
 
-        if not expand_certs:
-            if metadata_config_pb.HasField(
-                "mysql"
-            ) and metadata_config_pb.mysql.HasField("ssl_options"):
+        if metadata_config_pb.HasField("mysql"):
+            # If the server returns a MySQL connection config with a hostname
+            # that is a Docker internal hostname that cannot be resolved
+            # locally, we need to replace it with localhost. We're assuming
+            # that we're running on the host machine and the MySQL server can
+            # be accessed via localhost.
+            if metadata_config_pb.mysql.host.endswith(".docker.internal"):
+                try:
+                    socket.gethostbyname(metadata_config_pb.mysql.host)
+                except socket.gaierror:
+                    logger.debug(
+                        f"Replacing Docker internal MySQL hostname "
+                        f"{metadata_config_pb.mysql.host} with localhost."
+                    )
+                    metadata_config_pb.mysql.host = "127.0.0.1"
+
+            if not expand_certs and metadata_config_pb.mysql.HasField(
+                "ssl_options"
+            ):
                 # Save the certificates in a secure location on disk
                 secret_folder = Path(
                     GlobalConfiguration().local_stores_path,
@@ -406,7 +433,8 @@ class RestZenStore(BaseZenStore):
                     ):
                         continue
                     content = getattr(
-                        metadata_config_pb.mysql.ssl_options, key.lstrip("ssl_")
+                        metadata_config_pb.mysql.ssl_options,
+                        key.lstrip("ssl_"),
                     )
                     if content and not os.path.isfile(content):
                         fileio.makedirs(str(secret_folder))
