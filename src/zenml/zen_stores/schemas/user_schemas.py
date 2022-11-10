@@ -69,8 +69,8 @@ class UserSchema(NamedSchema, table=True):
             name=model.name,
             full_name=model.full_name,
             active=model.active,
-            password=model.get_hashed_password(),
-            activation_token=model.get_hashed_activation_token(),
+            password=model.create_hashed_password(),
+            activation_token=model.create_hashed_activation_token(),
         )
 
     def to_model(self, _block_recursion: bool = False) -> UserResponseModel:
@@ -86,26 +86,21 @@ class UserSchema(NamedSchema, table=True):
             return UserResponseModel(
                 id=self.id,
                 name=self.name,
-                full_name=self.full_name,
-                email=self.email,
-                email_opted_in=self.email_opted_in,
                 active=self.active,
+                email_opted_in=self.email_opted_in,
+                teams=[t.to_model(_block_recursion=True) for t in self.teams],
+                full_name=self.full_name,
                 created=self.created,
                 updated=self.updated,
-                password=self.password,
-                activation_token=self.activation_token,
             )
         else:
             return UserResponseModel(
                 id=self.id,
                 name=self.name,
-                teams=[t.to_model(_block_recursion=False) for t in self.teams],
-                full_name=self.full_name,
-                email=self.email,
-                email_opted_in=self.email_opted_in,
                 active=self.active,
+                email_opted_in=self.email_opted_in,
+                teams=[t.to_model(_block_recursion=True) for t in self.teams],
+                full_name=self.full_name,
                 created=self.created,
                 updated=self.updated,
-                password=self.password,
-                activation_token=self.activation_token,
             )

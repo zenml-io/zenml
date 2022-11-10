@@ -68,7 +68,6 @@ from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel
 from zenml.models.server_models import ServerModel
 from zenml.new_models import (
-    ArtifactModel,
     ArtifactRequestModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -1400,7 +1399,7 @@ class RestZenStore(BaseZenStore):
             route=STEPS,
         )
 
-    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactResponseModel]:
         """Get a list of inputs for a specific step.
 
         Args:
@@ -1418,7 +1417,7 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected dict, got {type(body)}"
             )
         return {
-            name: ArtifactModel.parse_obj(entry) for name, entry in body.items()
+            name: ArtifactResponseModel.parse_obj(entry) for name, entry in body.items()
         }
 
     # ---------

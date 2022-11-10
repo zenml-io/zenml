@@ -397,7 +397,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             if active_user.email_opted_in is not None:
                 self.record_email_opt_in_out(
                     opted_in=active_user.email_opted_in,
-                    email=active_user.email,
+                    email=None,  # TODO clean this up
                     source=AnalyticsEventSource.ZENML_SERVER,
                 )
 

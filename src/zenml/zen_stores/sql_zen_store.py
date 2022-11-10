@@ -92,6 +92,7 @@ from zenml.new_models import (
     UserRequestModel,
     UserResponseModel,
 )
+from zenml.new_models.user_models import UserAuthModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
@@ -1562,6 +1563,29 @@ class SqlZenStore(BaseZenStore):
 
             return user.to_model()
 
+    def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
+        """Gets the auth model to a specific user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+
+        Returns:
+            The requested user, if it was found.
+        """
+        with Session(self.engine) as session:
+            user = self._get_user_schema(user_name_or_id, session=session)
+            return UserAuthModel(
+                id=user.id,
+                name=user.name,
+                full_name=user.full_name,
+                email_opted_in=user.email_opted_in,
+                active=user.active,
+                created=user.created,
+                updated=user.updated,
+                password=user.password,
+                activation_token=user.activation_token,
+            )
+
     def list_users(self) -> List[UserResponseModel]:
         """List all users.
 
@@ -1591,18 +1615,23 @@ class SqlZenStore(BaseZenStore):
                 user_name_or_id, session=session
             )
 
-            existing_user.name = user_update.name
-            existing_user.full_name = user_update.full_name
-            existing_user.active = user_update.active
+            if user_update.name:
+                existing_user.name = user_update.name
+            if user_update.full_name:
+                existing_user.full_name = user_update.full_name
+            if user_update.active:
+                existing_user.active = user_update.active
             if user_update.password:
-                existing_user.password = user_update.get_hashed_password()
+                existing_user.password = user_update.password
             if user_update.activation_token:
                 existing_user.activation_token = (
                     user_update.get_hashed_activation_token()
                 )
             existing_user.updated = datetime.now()
-            existing_user.email = user_update.email
-            existing_user.email_opted_in = user_update.email_opted_in
+            if user_update.email:
+                existing_user.email = user_update.email
+            if user_update.email_opted_in is not None:
+                existing_user.email_opted_in = user_update.email_opted_in
 
             session.add(existing_user)
             session.commit()
