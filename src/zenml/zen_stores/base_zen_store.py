@@ -152,28 +152,23 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             store_type: The type of the store to get the class for.
 
         Returns:
-            The config class of the given store type or None if the type is
-            unknown.
-
-        Raises:
-            TypeError: If the store type is unsupported.
+            The config class of the given store type.
         """
         store_class = BaseZenStore.get_store_class(store_type)
-        if store_class is not None:
-            return store_class.CONFIG_TYPE
-
-        return None
+        return store_class.CONFIG_TYPE
 
     @staticmethod
-    def get_store_type(url: str) -> Optional[StoreType]:
+    def get_store_type(url: str) -> StoreType:
         """Returns the store type associated with a URL schema.
 
         Args:
             url: The store URL.
 
         Returns:
-            The store type associated with the supplied URL schema or None if
-            the store type cannot be determined.
+            The store type associated with the supplied URL schema.
+
+        Raises:
+            TypeError: If no store type was found to support the supplied URL.
         """
         from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
@@ -182,8 +177,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             return StoreType.SQL
         elif RestZenStoreConfiguration.supports_url_scheme(url):
             return StoreType.REST
-
-        return None
+        else:
+            raise TypeError(f"No store implementation found for URL: {url}.")
 
     @staticmethod
     def create_store(

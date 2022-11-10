@@ -382,5 +382,25 @@ zenml connect --url http://localhost:8080 --username default --password ''
 
 ## Troubleshooting
 
-You can check the logs of the container to verify if the server is up and depending on where you have deployed it, you can also access the dashboard at a `localhost` port (if running locally) or through some other service that exposes your container to the internet. 
+You can check the logs of the container to verify if the server is up and,
+depending on where you have deployed it, you can also access the dashboard at
+a `localhost` port (if running locally) or through some other service that
+exposes your container to the internet.
 
+### CLI Docker Deployments
+
+If you used the `zenml up --docker` CLI command to deploy the Docker ZenML
+server, you can check the logs with the command:
+
+```shell
+zenml logs
+```
+
+### Manual Docker Deployments
+
+If you used the `docker run` command to manually deploy the Docker ZenML server,
+you can check the logs with the command:
+
+```shell
+docker logs zenml
+```

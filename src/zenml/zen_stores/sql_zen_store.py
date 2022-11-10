@@ -420,8 +420,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         Args:
             expand_certs: Whether to expand the certificate paths to their
                 contents.
-            external: Whether to return the external metadata configuration
-                that is advertised to clients.
 
         Returns:
             The metadata configuration.

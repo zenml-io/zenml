@@ -781,12 +781,6 @@ def connect(
     store_dict["password"] = password
 
     store_type = BaseZenStore.get_store_type(url)
-    if not store_type:
-        cli_utils.error(
-            "The URL provided is not associated with a valid ZenML store type. "
-            "Please check the URL and try again."
-        )
-
     if store_type == StoreType.REST:
         store_dict["verify_ssl"] = verify_ssl
 

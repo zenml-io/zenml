@@ -447,7 +447,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         load_config_path: Optional[PurePath] = None,
         store_config: Optional[StoreConfiguration] = None,
         empty_store: bool = False,
-        localhost_replacement: Optional[str] = None,
     ) -> "GlobalConfiguration":
         """Create a copy of the global config using a different configuration path.
 
@@ -551,9 +550,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 env_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
         if len(env_config):
             if "type" not in env_config and "url" in env_config:
-                store_type = BaseZenStore.get_store_type(env_config["url"])
-                if store_type:
-                    env_config["type"] = store_type
+                env_config["type"] = BaseZenStore.get_store_type(
+                    env_config["url"]
+                )
 
             logger.debug(
                 "Using environment variables to configure the default store"
