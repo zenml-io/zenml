@@ -113,11 +113,16 @@ def generate_basic_object_detection_bounding_boxes_label_config(
 def generate_basic_ocr_label_config(
     labels: List[str],
 ) -> Tuple[str, str]:
-    """Generates a Label Studio config for OCR labelling task.
+    """Generates a Label Studio config for optical character recognition (OCR) labeling task.
+
+    This is based on the basic config example shown at
+    https://labelstud.io/templates/optical_character_recognition.html
     Args:
         labels: A list of labels to be used in the label config.
+
     Returns:
         A tuple of the generated label config and the label config type.
+
     Raises:
         ValueError: If no labels are provided.
     """
