@@ -15,7 +15,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Security, Depends
 
 from zenml.constants import API, ROLES, TEAMS, VERSION_1
 from zenml.enums import PermissionType
@@ -31,7 +31,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + TEAMS,
     tags=["teams"],
-    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
+    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
@@ -42,7 +42,9 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_teams() -> List[TeamModel]:
+def list_teams(
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> List[TeamModel]:
     """Returns a list of all teams.
 
     Returns:
@@ -80,7 +82,10 @@ def create_team(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_team(team_name_or_id: Union[str, UUID]) -> TeamModel:
+def get_team(
+    team_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> TeamModel:
     """Returns a specific team.
 
     Args:
@@ -144,6 +149,7 @@ def delete_team(
 def get_role_assignments_for_team(
     team_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a team.
 

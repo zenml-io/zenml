@@ -16,7 +16,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Security, Depends
 
 from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
@@ -27,7 +27,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + FLAVORS,
     tags=["flavors"],
-    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
+    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
@@ -44,7 +44,7 @@ def list_flavors(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> List[FlavorModel]:
     """Returns all flavors.
 
@@ -54,8 +54,6 @@ def list_flavors(
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by flavor name.
         is_shared: Optionally filter by shared status of the flavor.
-        hydrated: Defines if users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         All flavors.
@@ -80,7 +78,10 @@ def list_flavors(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_flavor(flavor_id: UUID, hydrated: bool = False) -> FlavorModel:
+def get_flavor(
+    flavor_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> FlavorModel:
     """Returns the requested flavor.
 
     Args:
@@ -104,7 +105,6 @@ def get_flavor(flavor_id: UUID, hydrated: bool = False) -> FlavorModel:
 def update_flavor(
     flavor_id: UUID,
     flavor: FlavorModel,
-    hydrated: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> FlavorModel:
     """Updates a stack.
@@ -112,8 +112,6 @@ def update_flavor(
     Args:
         flavor_id: ID of the flavor.
         flavor: Flavor to use for the update.
-        hydrated: Defines if users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The updated flavor.

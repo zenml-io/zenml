@@ -58,7 +58,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + PROJECTS,
     tags=["projects"],
-    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
+    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
@@ -69,7 +69,9 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_projects() -> List[ProjectModel]:
+def list_projects(
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> List[ProjectModel]:
     """Lists all projects in the organization.
 
     Returns:
@@ -107,7 +109,10 @@ def create_project(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_project(project_name_or_id: Union[str, UUID]) -> ProjectModel:
+def get_project(
+    project_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> ProjectModel:
     """Get a project for given name.
 
     # noqa: DAR401
@@ -177,6 +182,7 @@ def get_role_assignments_for_project(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     team_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a team.
 
@@ -210,6 +216,7 @@ def list_project_stacks(
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> Union[List[HydratedStackModel], List[StackModel]]:
     """Get stacks that are part of a specific project.
 
@@ -293,6 +300,7 @@ def list_project_stack_components(
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
     """List stack components that are part of a specific project.
 
@@ -381,7 +389,7 @@ def list_project_flavors(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> List[FlavorModel]:
     """List stack components flavors of a certain type that are part of a project.
 
@@ -393,8 +401,6 @@ def list_project_flavors(
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by flavor name.
         is_shared: Optionally filter by shared status of the flavor.
-        hydrated: Defines if users and projects will be
-            included by reference (FALSE) or as model (TRUE)
 
     Returns:
         All stack components of a certain type that are part of a project.
@@ -422,7 +428,6 @@ def list_project_flavors(
 def create_flavor(
     project_name_or_id: Union[str, UUID],
     flavor: FlavorModel,
-    hydrated: bool = False,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
@@ -432,8 +437,6 @@ def create_flavor(
     Args:
         project_name_or_id: Name or ID of the project.
         flavor: Stack component flavor to register.
-        hydrated: Defines if users and projects will be
-            included by reference (FALSE) or as model (TRUE)
         auth_context: Authentication context.
 
     Returns:
@@ -459,6 +462,7 @@ def list_project_pipelines(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> Union[List[HydratedPipelineModel], List[PipelineModel]]:
     """Gets pipelines defined for a specific project.
 
@@ -535,7 +539,9 @@ def create_pipeline(
 def create_pipeline_run(
     project_name_or_id: Union[str, UUID],
     pipeline_run: CreatePipelineRunRequest,
-    auth_context: AuthContext = Depends(authorize),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    )
 ) -> PipelineRunModel:
     """Creates a pipeline run.
 
@@ -562,7 +568,8 @@ def create_pipeline_run(
 )
 @handle_exceptions
 def get_project_statistics(
-    project_name_or_id: Union[str, UUID]
+    project_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> Dict[str, int]:
     """Gets statistics of a project.
 

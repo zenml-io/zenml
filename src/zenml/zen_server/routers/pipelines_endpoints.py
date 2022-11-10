@@ -15,7 +15,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Security, Depends
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
@@ -33,7 +33,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINES,
     tags=["pipelines"],
-    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
+    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
@@ -49,6 +49,7 @@ def list_pipelines(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> Union[List[HydratedPipelineModel], List[PipelineModel]]:
     """Gets a list of pipelines.
 
@@ -83,7 +84,9 @@ def list_pipelines(
 )
 @handle_exceptions
 def get_pipeline(
-    pipeline_id: UUID, hydrated: bool = False
+    pipeline_id: UUID,
+    hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> Union[HydratedPipelineModel, PipelineModel]:
     """Gets a specific pipeline using its unique id.
 
@@ -169,6 +172,7 @@ def list_pipeline_runs(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[UUID] = None,
     hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> Union[List[HydratedPipelineRunModel], List[PipelineRunModel]]:
     """Get pipeline runs according to query filters.
 
@@ -205,7 +209,10 @@ def list_pipeline_runs(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_pipeline_spec(pipeline_id: UUID) -> PipelineSpec:
+def get_pipeline_spec(
+    pipeline_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> PipelineSpec:
     """Gets the spec of a specific pipeline using its unique id.
 
     Args:

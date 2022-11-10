@@ -16,7 +16,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Security, Depends
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.enums import PermissionType
@@ -29,7 +29,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + STACKS,
     tags=["stacks"],
-    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
+    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
@@ -47,6 +47,7 @@ def list_stacks(
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> Union[List[HydratedStackModel], List[StackModel]]:
     """Returns all stacks.
 
@@ -81,7 +82,7 @@ def list_stacks(
 def get_stack(
     stack_id: UUID,
     hydrated: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Union[HydratedStackModel, StackModel]:
     """Returns the requested stack.
 

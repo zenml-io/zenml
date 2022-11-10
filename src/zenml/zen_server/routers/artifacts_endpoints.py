@@ -16,18 +16,18 @@
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Security, Depends
 
 from zenml.constants import API, ARTIFACTS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models.pipeline_models import ArtifactModel
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import authorize, AuthContext
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + ARTIFACTS,
     tags=["artifacts"],
-    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
+    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
@@ -41,6 +41,7 @@ router = APIRouter(
 def list_artifacts(
     artifact_uri: Optional[str] = None,
     parent_step_id: Optional[UUID] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> List[ArtifactModel]:
     """Get artifacts according to query filters.
 
@@ -65,7 +66,10 @@ def list_artifacts(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_artifact(artifact: ArtifactModel) -> ArtifactModel:
+def create_artifact(
+    artifact: ArtifactModel,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE])
+) -> ArtifactModel:
     """Create a new artifact.
 
     Args:

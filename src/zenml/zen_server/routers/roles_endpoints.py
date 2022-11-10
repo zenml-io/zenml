@@ -15,7 +15,7 @@
 from typing import List, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Security, Depends
 
 from zenml.constants import API, ROLES, VERSION_1
 from zenml.enums import PermissionType
@@ -30,7 +30,7 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + ROLES,
     tags=["roles"],
-    dependencies=[Security(authorize, scopes=[PermissionType.READ])],
+    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
@@ -41,7 +41,9 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_roles() -> List[RoleModel]:
+def list_roles(
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> List[RoleModel]:
     """Returns a list of all roles.
 
     Returns:
@@ -79,7 +81,10 @@ def create_role(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
+def get_role(
+    role_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> RoleModel:
     """Returns a specific role.
 
     Args:
