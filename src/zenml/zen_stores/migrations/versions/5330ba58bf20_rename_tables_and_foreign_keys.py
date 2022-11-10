@@ -214,7 +214,7 @@ def _get_changes() -> Tuple[
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision.
-    
+
     Raises:
         NotImplementedError: If the database engine is not SQLite or MySQL.
     """
