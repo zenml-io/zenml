@@ -15,7 +15,6 @@
 import json
 import os
 import re
-import socket
 from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
@@ -89,6 +88,10 @@ from zenml.models import (
 from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
 from zenml.models.server_models import ServerModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.networking_utils import (
+    replace_internal_hostname_with_localhost,
+    replace_localhost_with_internal_hostname,
+)
 from zenml.zen_server.models.base_models import (
     CreateRequest,
     CreateResponse,
@@ -179,6 +182,11 @@ class RestZenStoreConfiguration(StoreConfiguration):
                 "https://hostname[:port] or http://hostname[:port]."
             )
 
+        # When running inside a container, if the URL uses localhost, the
+        # target service will not be available. We try to replace localhost
+        # with one of the special Docker or K3D internal hostnames.
+        url = replace_localhost_with_internal_hostname(url)
+
         return url
 
     @validator("verify_ssl")
@@ -266,19 +274,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
             A new store configuration object that reflects the new configuration
             path.
         """
-        from zenml.utils.docker_utils import (
-            replace_localhost_with_internal_hostname,
-        )
-
         assert isinstance(config, RestZenStoreConfiguration)
         config = config.copy(deep=True)
-
-        # If the URL is localhost, then we make the assumption that the
-        # copied configuration will be used in a docker container running
-        # on the same machine (other scenarios are not technically possible)
-        # and so we replace the hostname with the special Docker
-        # `host.docker.internal` hostname to automatically enable that.
-        config.url = replace_localhost_with_internal_hostname(config.url)
 
         # Load the certificate values back into the configuration
         config.expand_certificates()
@@ -405,19 +402,15 @@ class RestZenStore(BaseZenStore):
 
         if metadata_config_pb.HasField("mysql"):
             # If the server returns a MySQL connection config with a hostname
-            # that is a Docker internal hostname that cannot be resolved
+            # that is a Docker or K3D internal hostname that cannot be resolved
             # locally, we need to replace it with localhost. We're assuming
             # that we're running on the host machine and the MySQL server can
             # be accessed via localhost.
-            if metadata_config_pb.mysql.host.endswith(".docker.internal"):
-                try:
-                    socket.gethostbyname(metadata_config_pb.mysql.host)
-                except socket.gaierror:
-                    logger.debug(
-                        f"Replacing Docker internal MySQL hostname "
-                        f"{metadata_config_pb.mysql.host} with localhost."
-                    )
-                    metadata_config_pb.mysql.host = "127.0.0.1"
+            metadata_config_pb.mysql.host = (
+                replace_internal_hostname_with_localhost(
+                    metadata_config_pb.mysql.host
+                )
+            )
 
             if not expand_certs and metadata_config_pb.mysql.HasField(
                 "ssl_options"

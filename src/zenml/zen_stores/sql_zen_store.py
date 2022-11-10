@@ -80,6 +80,9 @@ from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.networking_utils import (
+    replace_localhost_with_internal_hostname,
+)
 from zenml.zen_stores.base_zen_store import (
     ADMIN_ROLE,
     DEFAULT_STACK_COMPONENT_NAME,
@@ -219,6 +222,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         if url is None:
             return values
 
+        # When running inside a container, if the URL uses localhost, the
+        # target service will not be available. We try to replace localhost
+        # with one of the special Docker or K3D internal hostnames.
+        url = replace_localhost_with_internal_hostname(url)
+
         try:
             sql_url = make_url(url)
         except ArgumentError as e:
@@ -229,6 +237,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 url,
                 str(e),
             )
+
         if sql_url.drivername not in SQLDatabaseDriver.values():
             raise ValueError(
                 "Invalid SQL driver value `%s`: The driver must be one of: %s.",
@@ -388,23 +397,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             A new store configuration object that reflects the new configuration
             path.
         """
-        from zenml.utils.docker_utils import (
-            replace_localhost_with_internal_hostname,
-        )
-
         assert isinstance(config, SqlZenStoreConfiguration)
         config = config.copy()
 
         if config.driver == SQLDatabaseDriver.MYSQL:
             # Load the certificate values back into the configuration
             config.expand_certificates()
-
-            # If the URL is localhost, then we make the assumption that the
-            # copied configuration will be used in a docker container running
-            # on the same machine (other scenarios are not technically possible)
-            # and so we replace the hostname with the special Docker
-            # `host.docker.internal` hostname to automatically enable that.
-            config.url = replace_localhost_with_internal_hostname(config.url)
 
         elif config.driver == SQLDatabaseDriver.SQLITE:
             if load_config_path:

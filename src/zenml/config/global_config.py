@@ -447,6 +447,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         load_config_path: Optional[PurePath] = None,
         store_config: Optional[StoreConfiguration] = None,
         empty_store: bool = False,
+        localhost_replacement: Optional[str] = None,
     ) -> "GlobalConfiguration":
         """Create a copy of the global config using a different configuration path.
 
@@ -488,11 +489,13 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._write_config(config_path)
         config_copy = GlobalConfiguration(config_path=config_path)
 
+        store: Optional[StoreConfiguration] = None
+
         if store_config is not None:
-            config_copy.store = store_config
+            store = store_config
 
         elif empty_store or self.uses_default_store():
-            config_copy.store = None
+            store = None
 
         elif self.store:
             store_class = BaseZenStore.get_store_class(self.store.type)
@@ -500,7 +503,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             store_config_copy = store_class.CONFIG_TYPE.copy_configuration(
                 self.store, config_path, load_config_path
             )
-            config_copy.store = store_config_copy
+            store = store_config_copy
+
+        config_copy.store = store
 
         return config_copy
 
