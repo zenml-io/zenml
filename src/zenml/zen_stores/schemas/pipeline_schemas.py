@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.config.pipeline_configurations import PipelineSpec
@@ -61,8 +62,8 @@ class PipelineSchema(SQLModel, table=True):
     )
     user: "UserSchema" = Relationship(back_populates="pipelines")
 
-    docstring: Optional[str] = Field(max_length=4096, nullable=True)
-    spec: str = Field(max_length=4096)
+    docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    spec: str = Field(sa_column=Column(TEXT, nullable=False))
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -174,7 +175,7 @@ class PipelineRunSchema(SQLModel, table=True):
     orchestrator_run_id: Optional[str] = Field(nullable=True)
 
     status: ExecutionStatus
-    pipeline_configuration: str = Field(max_length=4096)
+    pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     num_steps: int
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
@@ -274,9 +275,9 @@ class StepRunSchema(SQLModel, table=True):
 
     status: ExecutionStatus
     entrypoint_name: str
-    parameters: str = Field(max_length=4096)
-    step_configuration: str = Field(max_length=4096)
-    docstring: Optional[str] = Field(max_length=4096, nullable=True)
+    parameters: str = Field(sa_column=Column(TEXT, nullable=False))
+    step_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
+    docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
 
     mlmd_id: Optional[int] = Field(default=None, nullable=True)
 
