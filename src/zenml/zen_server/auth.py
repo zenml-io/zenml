@@ -27,6 +27,7 @@ from fastapi.security import (
 from pydantic import BaseModel
 
 from zenml.constants import API, ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models.user_management_models import (
     JWTToken,
@@ -175,9 +176,16 @@ def oauth2_password_bearer_authentication(
         authenticate_value = "Bearer"
     auth_context = authenticate_credentials(access_token=token)
 
-    access_token = JWTToken.decode(
-        token_type=JWTTokenType.ACCESS_TOKEN, token=token
-    )
+    try:
+        access_token = JWTToken.decode(
+            token_type=JWTTokenType.ACCESS_TOKEN, token=token
+        )
+    except AuthorizationException:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     for scope in security_scopes.scopes:
         if scope not in access_token.permissions:
             raise HTTPException(
