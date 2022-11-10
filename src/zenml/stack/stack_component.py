@@ -416,6 +416,9 @@ class StackComponent:
             else container.pipeline.settings
         )
 
+        if key not in all_settings:
+            return None
+
         return self.settings_class(**all_settings[key].dict())
 
     @property
