@@ -936,6 +936,9 @@ class RestZenStore(BaseZenStore):
 
         Args:
             team_name_or_id: The name or ID of the team for which to get users.
+
+        Raises:
+            NotImplementedError: This method is not implemented
         """
         raise NotImplementedError("Not Implemented")
 
@@ -947,6 +950,9 @@ class RestZenStore(BaseZenStore):
         Args:
             user_name_or_id: The name or ID of the user for which to get all
                 teams.
+
+        Raises:
+            NotImplementedError: This method is not implemented
         """
         raise NotImplementedError("Not Implemented")
 
@@ -960,6 +966,9 @@ class RestZenStore(BaseZenStore):
         Args:
             user_name_or_id: Name or ID of the user to add to the team.
             team_name_or_id: Name or ID of the team to which to add the user to.
+
+        Raises:
+            NotImplementedError: This method is not implemented
         """
         raise NotImplementedError("Not Implemented")
 
@@ -972,7 +981,11 @@ class RestZenStore(BaseZenStore):
 
         Args:
             user_name_or_id: Name or ID of the user to remove from the team.
-            team_name_or_id: Name or ID of the team from which to remove the user.
+            team_name_or_id: Name or ID of the team from which to remove the
+                user.
+
+        Raises:
+            NotImplementedError: This method is not implemented
         """
         raise NotImplementedError("Not Implemented")
 
