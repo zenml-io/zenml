@@ -17,7 +17,11 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import PermissionType
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
-from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.new_models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update,
+)
 
 # ---- #
 # BASE #
@@ -49,4 +53,14 @@ class RoleResponseModel(RoleBaseModel, BaseResponseModel):
 
 
 class RoleRequestModel(RoleBaseModel, BaseRequestModel):
+    """"""
+
+
+# ------ #
+# UPDATE #
+# ------ #
+
+
+@update
+class RoleUpdateModel(RoleRequestModel):
     """"""

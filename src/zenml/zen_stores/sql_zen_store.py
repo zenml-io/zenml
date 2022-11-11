@@ -1572,10 +1572,7 @@ class SqlZenStore(BaseZenStore):
                 activation_token=user.activation_token,
             )
 
-    def list_users(
-        self,
-        name: Optional[str] = None
-    ) -> List[UserResponseModel]:
+    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
         """List all users.
 
         Args:
@@ -1683,10 +1680,7 @@ class SqlZenStore(BaseZenStore):
             team = self._get_team_schema(team_name_or_id, session=session)
         return team.to_model()
 
-    def list_teams(
-        self,
-        name: Optional[str] = None
-    ) -> List[TeamResponseModel]:
+    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
         """List all teams.
 
         Args:
@@ -1833,10 +1827,7 @@ class SqlZenStore(BaseZenStore):
             role = self._get_role_schema(role_name_or_id, session=session)
             return role.to_model()
 
-    def list_roles(
-        self,
-        name: Optional[str] = None
-    ) -> List[RoleResponseModel]:
+    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
         """List all roles.
 
         Args:
@@ -2362,8 +2353,7 @@ class SqlZenStore(BaseZenStore):
         return project.to_model()
 
     def list_projects(
-        self,
-        name: Optional[str] = None
+        self, name: Optional[str] = None
     ) -> List[ProjectResponseModel]:
         """List all projects.
 

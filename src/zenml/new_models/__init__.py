@@ -40,7 +40,11 @@ from zenml.new_models.role_assignment_models import (
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
 )
-from zenml.new_models.role_models import RoleRequestModel, RoleResponseModel
+from zenml.new_models.role_models import (
+    RoleRequestModel,
+    RoleResponseModel,
+    RoleUpdateModel,
+)
 from zenml.new_models.stack_models import (
     StackRequestModel,
     StackResponseModel,
@@ -91,6 +95,7 @@ __all__ = [
     "RoleAssignmentResponseModel",
     "RoleRequestModel",
     "RoleResponseModel",
+    "RoleUpdateModel",
     "StackRequestModel",
     "StackResponseModel",
     "StackUpdateModel",

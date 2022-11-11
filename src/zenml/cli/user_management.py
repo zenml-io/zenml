@@ -20,10 +20,8 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
-from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import CliCategories, PermissionType, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
-from zenml.new_models import UserRequestModel, RoleAssignmentRequestModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 
 
@@ -120,28 +118,26 @@ def create_user(
     cli_utils.print_active_config()
 
     try:
-        user = client.create_user(name=user_name, password=password)
+        new_user = client.create_user(name=user_name, password=password)
 
-        cli_utils.declare(
-            f"Created user '{user.name}'."
-        )
+        cli_utils.declare(f"Created user '{new_user.name}'.")
     except EntityExistsError as err:
         cli_utils.error(str(err))
     else:
         try:
             client.create_user_role_assignment(
                 role_name_or_id=initial_role,
-                user_name_or_id=str(user.id),
-                project_name_or_id=None
+                user_name_or_id=str(new_user.id),
+                project_name_or_id=None,
             )
         except KeyError as err:
             cli_utils.error(str(err))
 
-    if not user.active and user.activation_token is not None:
+    if not new_user.active and new_user.activation_token is not None:
         cli_utils.declare(
             f"The created user account is currently inactive. You can activate "
             f"it by visiting the dashboard at the following URL:\n"
-            f"{client.zen_store.url}/signup?user={str(user.id)}&username={user.name}&token={user.activation_token.get_secret_value()}\n"
+            f"{client.zen_store.url}/signup?user={str(new_user.id)}&username={new_user.name}&token={new_user.activation_token.get_secret_value()}\n"
         )
 
 
@@ -166,7 +162,7 @@ def create_user(
     type=str,
     required=False,
     help="New full name. If this contains an empty space make sure to surround "
-         "the name with quotes '<Full Name>'.",
+    "the name with quotes '<Full Name>'.",
 )
 @click.option(
     "--email",
@@ -542,50 +538,25 @@ def list_roles() -> None:
 @role.command("create", help="Create a new role.")
 @click.argument("role_name", type=str, required=True)
 @click.option(
-    "--write",
-    "-w",
-    "write",
-    is_flag=True,
-    default=False,
+    "--permissions",
+    "-p",
+    "permissions",
+    type=click.Choice(choices=PermissionType.values()),
+    multiple=True,
+    help="Name of permission to attach to this role.",
 )
-@click.option(
-    "--read",
-    "-r",
-    "read",
-    is_flag=True,
-    default=False,
-)
-@click.option(
-    "--me",
-    "-m",
-    "me",
-    is_flag=True,
-    default=False,
-)
-def create_role(role_name: str, write: bool, read: bool, me: bool) -> None:
+def create_role(role_name: str, permissions: List[str]) -> None:
     """Create a new role.
 
     Args:
         role_name: Name of the role to create.
-        write: Give this role general read permission
-        read: Give this role general write permission
-        me: Give this role permission the self-edit permission
+        permissions: Permissions to assign
     """
     cli_utils.print_active_config()
 
     from zenml.models import RoleModel
 
-    permissions = set()
-    if write:
-        permissions.add(PermissionType.WRITE.value)
-    if read:
-        permissions.add(PermissionType.READ.value)
-    if me:
-        permissions.add(PermissionType.ME.value)
-    Client().zen_store.create_role(
-        role=RoleModel(name=role_name, permissions=permissions)
-    )
-
+    Client().create_role(name=role_name, permissions_list=permissions)
     cli_utils.declare(f"Created role '{role_name}'.")
 
 
@@ -595,18 +566,16 @@ def create_role(role_name: str, write: bool, read: bool, me: bool) -> None:
 @click.option(
     "--remove-permission",
     "-r",
-    type=str,
-    required=False,
-    help="Name of permission to remove.",
+    type=click.Choice(choices=PermissionType.values()),
     multiple=True,
+    help="Name of permission to remove.",
 )
 @click.option(
     "--add-permission",
     "-a",
-    type=str,
-    required=False,
-    help="Name of permission to add.",
+    type=click.Choice(choices=PermissionType.values()),
     multiple=True,
+    help="Name of permission to add.",
 )
 def update_role(
     role_name: str,
@@ -623,27 +592,21 @@ def update_role(
         add_permission: Name of permission to add to role
     """
     cli_utils.print_active_config()
+
+    union_add_rm = set(remove_permission) & set(add_permission)
+    if union_add_rm:
+        cli_utils.error(f"The `--remove-permission` and `--add-permission` "
+                        f"options both contain the same value: "
+                        f"`{union_add_rm}`. Please rerun command and make sure "
+                        f"that the same role does not show up for "
+                        f"`--remove-permission` and `--add-permission`.")
+
     try:
-        role = Client().zen_store.get_role(role_name)
-
-        if remove_permission:
-            for rm_p in remove_permission:
-                if rm_p in [p.value for p in PermissionType]:
-                    try:
-                        role.permissions.remove(PermissionType(rm_p))
-                    except KeyError:
-                        cli_utils.error(
-                            f"Role {remove_permission} was already not "
-                            f"part of the {role} Role."
-                        )
-        if add_permission:
-            for add_p in add_permission:
-                if add_p in [p.value for p in PermissionType]:
-                    # Set won't throw an error if the item was already in the set
-                    role.permissions.add(PermissionType(add_p))
-
-        role.name = name or role.name
-        Client().zen_store.update_role(role)
+        Client().update_role(
+            name_id_or_prefix=role_name,
+            remove_permission=remove_permission,
+            add_permission=add_permission,
+        )
     except (EntityExistsError, KeyError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Updated role '{role_name}'.")

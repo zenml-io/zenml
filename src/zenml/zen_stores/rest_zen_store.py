@@ -734,10 +734,7 @@ class RestZenStore(BaseZenStore):
             " to be called from the client side."
         )
 
-    def list_users(
-        self,
-        name: Optional[str] = None
-    ) -> List[UserResponseModel]:
+    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
         """List all users.
 
         Args:
@@ -847,10 +844,7 @@ class RestZenStore(BaseZenStore):
             response_model=TeamResponseModel,
         )
 
-    def list_teams(
-        self,
-        name: Optional[str] = None
-    ) -> List[TeamResponseModel]:
+    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
         """List all teams.
 
         Args:
@@ -983,10 +977,7 @@ class RestZenStore(BaseZenStore):
             response_model=RoleResponseModel,
         )
 
-    def list_roles(
-        self,
-        name: Optional[str] = None
-    ) -> List[RoleResponseModel]:
+    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
         """List all roles.
 
         Args:
@@ -1131,8 +1122,7 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_projects(
-        self,
-        name: Optional[str] = None
+        self, name: Optional[str] = None
     ) -> List[ProjectResponseModel]:
         """List all projects.
 

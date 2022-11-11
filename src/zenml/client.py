@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
-import functools
 import os
 from abc import ABCMeta
 from pathlib import Path
@@ -26,7 +25,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
+    cast, Set,
 )
 from uuid import UUID
 
@@ -37,7 +36,7 @@ from zenml.constants import (
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.exceptions import (
     AlreadyExistsException,
     IllegalOperationError,
@@ -52,13 +51,16 @@ from zenml.new_models import (
     PipelineRequestModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
+    RoleAssignmentRequestModel,
     RoleResponseModel,
+    RoleUpdateModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
     TeamResponseModel,
+    UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, UserRequestModel, RoleAssignmentRequestModel,
+    UserUpdateModel, RoleRequestModel,
 )
 from zenml.new_models.base_models import BaseResponseModel
 from zenml.utils import io_utils
@@ -550,20 +552,14 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         password: Optional[str],
-
     ):
-        user = UserRequestModel(
-            name=name,
-            password=password or None
-        )
+        user = UserRequestModel(name=name, password=password or None)
         if self.zen_store.type != StoreType.REST:
             user.active = password != ""
         else:
             user.active = True
 
-        return self.zen_store.create_user(
-            user=user
-        )
+        return self.zen_store.create_user(user=user)
 
     def get_user(self, name_id_or_prefix: str) -> UserResponseModel:
         """Gets a user.
@@ -658,6 +654,86 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
+    def create_role(
+        self,
+        name: str,
+        permissions_list: List[str]
+    ) -> RoleResponseModel:
+        """Gets a user.
+
+        Args:
+            name: The name for the new role.
+            permissions_list: The permissions to attach to this role.
+
+        Returns:
+            The newly created role
+        """
+        permissions: Set[PermissionType] = set()
+        for permission in permissions_list:
+            if permission in PermissionType.values():
+                permissions.add(PermissionType(permission))
+
+        new_role = RoleRequestModel(
+            name=name,
+            permissions=permissions
+        )
+        return self.zen_store.create_role(new_role)
+
+    def update_role(
+        self,
+        name_id_or_prefix: str,
+        new_name: Optional[str] = None,
+        remove_permission: Optional[List[str]] = None,
+        add_permission: Optional[List[str]] = None,
+    ) -> RoleResponseModel:
+        """Gets a user.
+
+        Args:
+            name_id_or_prefix: The name or ID of the user.
+            new_name: The new name for the role
+            remove_permission: Permissions to remove from this role
+            add_permission: Permissions to add to this role
+
+        Returns:
+            The User
+        """
+        role = self._get_entity_by_id_or_name_or_prefix(
+            response_model=RoleResponseModel,
+            get_method=self.zen_store.get_team,
+            list_method=self.zen_store.list_teams,
+            name_id_or_prefix=name_id_or_prefix,
+        )
+
+        role_permissions = None
+        # Only if permissions are being added or removed will they need to be
+        #  set for the update model
+        if remove_permission or add_permission:
+            role_permissions = role.permissions
+        if remove_permission:
+            for rm_p in remove_permission:
+                if rm_p in PermissionType:
+                    try:
+                        role_permissions.remove(PermissionType(rm_p))
+                    except KeyError:
+                        logger.warning(
+                            f"Role {remove_permission} was already not "
+                            f"part of the {role} Role."
+                        )
+        if add_permission:
+            for add_p in add_permission:
+                if add_p in PermissionType:
+                    # Set won't throw an error if the item was already in it
+                    role_permissions.add(PermissionType(add_p))
+
+        role_update = RoleUpdateModel(
+            name=new_name,
+            permissions=role_permissions
+        )
+        return Client().zen_store.update_role(
+            role_id=role.id,
+            role_update=role_update
+        )
+
     def delete_role(self, name_id_or_prefix: str) -> None:
         """Gets a user.
 
@@ -680,13 +756,13 @@ class Client(metaclass=ClientMetaClass):
             response_model=UserResponseModel,
             get_method=self.zen_store.get_user,
             list_method=self.zen_store.list_users,
-            name_id_or_prefix=user_name_or_id
+            name_id_or_prefix=user_name_or_id,
         )
         role = self._get_entity_by_id_or_name_or_prefix(
             response_model=RoleResponseModel,
             get_method=self.zen_store.get_role,
             list_method=self.zen_store.list_roles,
-            name_id_or_prefix=role_name_or_id
+            name_id_or_prefix=role_name_or_id,
         )
         project = None
         if project_name_or_id:
@@ -694,14 +770,14 @@ class Client(metaclass=ClientMetaClass):
                 response_model=ProjectResponseModel,
                 get_method=self.zen_store.get_project,
                 list_method=self.zen_store.list_projects,
-                name_id_or_prefix=project_name_or_id
+                name_id_or_prefix=project_name_or_id,
             )
         role_assignment = RoleAssignmentRequestModel(
-                role=role.id,
-                user=user.id,
-                project=project,
-                is_user=True,
-            )
+            role=role.id,
+            user=user.id,
+            project=project,
+            is_user=True,
+        )
         return self.zen_store.create_role_assignment(
             role_assignment=role_assignment
         )
