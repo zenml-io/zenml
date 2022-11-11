@@ -43,6 +43,7 @@ from zenml.new_models import (
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
+    UserUpdateModel,
 )
 from zenml.new_models.user_models import UserAuthModel
 
@@ -477,7 +478,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_user(
-        self, user_name_or_id: UUID, user_update: UserRequestModel
+        self, user_name_or_id: UUID, user_update: UserUpdateModel
     ) -> UserResponseModel:
         """Updates an existing user.
 

@@ -15,8 +15,13 @@
 from typing import List, Optional
 
 from sqlmodel import Field, Relationship
+from datetime import datetime
 
-from zenml.new_models import UserRequestModel, UserResponseModel
+from zenml.new_models import (
+    UserRequestModel,
+    UserResponseModel,
+    UserUpdateModel,
+)
 from zenml.zen_stores.schemas import (
     FlavorSchema,
     PipelineRunSchema,
@@ -72,6 +77,13 @@ class UserSchema(NamedSchema, table=True):
             password=model.create_hashed_password(),
             activation_token=model.create_hashed_activation_token(),
         )
+
+    def update(self, user_update: UserUpdateModel):
+        for field, value in user_update.dict(exclude_unset=True).items():
+            setattr(self, field, value)
+
+        self.updated = datetime.now()
+        return self
 
     def to_model(self, _block_recursion: bool = False) -> UserResponseModel:
         """Convert a `UserSchema` to a `UserResponseModel`.

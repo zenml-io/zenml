@@ -92,7 +92,7 @@ from zenml.new_models import (
     UserRequestModel,
     UserResponseModel,
 )
-from zenml.new_models.user_models import UserAuthModel
+from zenml.new_models.user_models import UserAuthModel, UserUpdateModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
@@ -1599,7 +1599,7 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
-        self, user_name_or_id: UUID, user_update: UserRequestModel
+        self, user_name_or_id: UUID, user_update: UserUpdateModel
     ) -> UserResponseModel:
         """Updates an existing user.
 
@@ -1614,23 +1614,7 @@ class SqlZenStore(BaseZenStore):
             existing_user = self._get_user_schema(
                 user_name_or_id, session=session
             )
-
-            if user_update.name is not None:
-                existing_user.name = user_update.name
-            if user_update.full_name is not None:
-                existing_user.full_name = user_update.full_name
-            if user_update.active is not None:
-                existing_user.active = user_update.active
-            if user_update.password is not None:
-                existing_user.password = user_update.password
-            if user_update.activation_token is not None:
-                existing_user.activation_token = user_update.activation_token
-            existing_user.updated = datetime.now()
-            if user_update.email is not None:
-                existing_user.email = user_update.email
-            if user_update.email_opted_in is not None:
-                existing_user.email_opted_in = user_update.email_opted_in
-
+            existing_user.update(user_update=user_update)
             session.add(existing_user)
             session.commit()
 
