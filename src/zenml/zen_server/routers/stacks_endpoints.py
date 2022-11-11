@@ -19,10 +19,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STACKS, VERSION_1
-from zenml.new_models import (
-    StackRequestModel, StackResponseModel,
-    StackUpdateModel
-)
+from zenml.new_models import StackResponseModel, StackUpdateModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 

@@ -85,12 +85,13 @@ from zenml.new_models import (
     RoleResponseModel,
     StackRequestModel,
     StackResponseModel,
+    StackUpdateModel,
     StepRunRequestModel,
     StepRunResponseModel,
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
-    UserResponseModel, StackUpdateModel,
+    UserResponseModel,
 )
 from zenml.new_models.user_models import UserAuthModel, UserUpdateModel
 from zenml.utils import uuid_utils

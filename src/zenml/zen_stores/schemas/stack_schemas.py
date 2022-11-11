@@ -13,15 +13,16 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Stacks."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING, List
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey, select, or_
-from sqlmodel import Field, Relationship, SQLModel, Session
+from sqlalchemy import Column, ForeignKey, or_, select
+from sqlmodel import Field, Relationship, Session, SQLModel
 
 from zenml.new_models.stack_models import StackResponseModel, StackUpdateModel
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
-from datetime import datetime
+
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         PipelineRunSchema,
@@ -63,11 +64,10 @@ class StackSchema(ShareableSchema, table=True):
 
     def update(self, stack_update: StackUpdateModel, session: Session):
         for field, value in stack_update.dict(exclude_unset=True).items():
-            if field == 'components':
+            if field == "components":
                 filters = [
                     (StackComponentSchema.id == component_id)
-                    for list_of_component_ids in
-                    stack_update.components.values()
+                    for list_of_component_ids in stack_update.components.values()
                     for component_id in list_of_component_ids
                 ]
 
