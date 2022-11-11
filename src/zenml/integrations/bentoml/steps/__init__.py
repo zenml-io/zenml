@@ -19,7 +19,6 @@ from zenml.integrations.bentoml.steps.bento_builder import (
 )
 from zenml.integrations.bentoml.steps.bentoml_deployer import (
     BentoMLDeployerParameters,
-    bentoml_deployer_step,
     bentoml_model_deployer_step,
 )
 
@@ -28,5 +27,4 @@ __all__ = [
     "bento_builder_step",
     "BentoMLDeployerParameters",
     "bentoml_model_deployer_step",
-    "bentoml_deployer_step",
 ]

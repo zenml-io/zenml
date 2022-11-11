@@ -21,11 +21,11 @@ from bentoml import bentos
 from bentoml._internal.bento import bento
 
 from zenml.artifacts.model_artifact import ModelArtifact
-from zenml.client import Client
 from zenml.integrations.bentoml.constants import DEFAULT_BENTO_FILENAME
 from zenml.logger import get_logger
 from zenml.steps import BaseParameters, step
 from zenml.steps.step_context import StepContext
+from zenml.utils import source_utils
 from zenml.utils.materializer_utils import model_from_model_artifact
 
 logger = get_logger(__name__)
@@ -82,11 +82,6 @@ def bento_builder_step(
     Returns:
         the BentoML Bento object.
     """
-    # get the path of the ZenML repo
-    repo_path = Client.find_repository()
-    if not repo_path:
-        raise ValueError("No ZenML repository found.")
-
     # save the model and bento uri as part of the bento lables
     labels = params.labels or {}
     labels["model_uri"] = model.uri
@@ -102,7 +97,7 @@ def bento_builder_step(
         module = importlib.import_module(f".{params.model_type}", "bentoml")
         module.save_model(params.model_name, model, labels=params.labels)
     except importlib.metadata.PackageNotFoundError:
-        bentoml.pickable_model.save_model(
+        bentoml.picklable_model.save_model(
             params.model_name,
             model,
         )
@@ -117,7 +112,7 @@ def bento_builder_step(
         exclude=params.exclude,
         python=params.python,
         docker=params.docker,
-        build_ctx=params.working_dir or str(repo_path),
+        build_ctx=params.working_dir or source_utils.get_source_root_path(),
     )
 
     # Return the BentoML Bento bundle

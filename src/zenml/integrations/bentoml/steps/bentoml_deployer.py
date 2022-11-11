@@ -12,12 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the BentoML model deployer pipeline step."""
-from typing import List, Optional, Type, cast
+from typing import List, Optional, cast
 
 import bentoml
 from bentoml._internal.bento import bento
 
-from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.environment import Environment
 from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (
@@ -26,15 +25,16 @@ from zenml.integrations.bentoml.model_deployers.bentoml_model_deployer import (
 from zenml.integrations.bentoml.services.bentoml_deployment import (
     BentoMLDeploymentConfig,
     BentoMLDeploymentService,
+    SSLBentoMLParametersConfig,
 )
 from zenml.logger import get_logger
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
-    BaseStep,
     StepEnvironment,
     step,
 )
+from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -70,7 +70,7 @@ class BentoMLDeployerParameters(BaseParameters):
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT * 2
 
 
-@step(enable_cache=False)
+@step(enable_cache=True)
 def bentoml_model_deployer_step(
     deploy_decision: bool,
     bento: bento.Bento,
@@ -91,11 +91,6 @@ def bentoml_model_deployer_step(
     Returns:
         BentoML deployment service
     """
-    # get the path of the ZenML repo
-    repo_path = Client.find_repository()
-    if not repo_path:
-        raise ValueError("No ZenML repository found.")
-
     # get the current active model deployer
     model_deployer = cast(
         BentoMLModelDeployer, BentoMLModelDeployer.get_active_model_deployer()
@@ -121,7 +116,8 @@ def bentoml_model_deployer_step(
         # Add working dir in the bentoml load
         service = bentoml.load(
             bento_identifier=bento_tag,
-            working_dir=params.working_dir or str(repo_path),
+            working_dir=params.working_dir
+            or source_utils.get_source_root_path(),
         )
         apis = service.apis
         apis_paths = list(apis.keys())
@@ -135,18 +131,20 @@ def bentoml_model_deployer_step(
         bento_uri=bento.info.labels.get("bento_uri"),
         apis=service_apis(str(bento.tag)),
         workers=params.workers,
-        working_dir=params.working_dir or str(repo_path),
+        working_dir=params.working_dir or source_utils.get_source_root_path(),
         port=params.port,
         pipeline_name=pipeline_name,
         pipeline_run_id=run_id,
         pipeline_step_name=step_name,
-        ssl_certfile=params.ssl_certfile,
-        ssl_keyfile=params.ssl_keyfile,
-        ssl_keyfile_password=params.ssl_keyfile_password,
-        ssl_version=params.ssl_version,
-        ssl_cert_reqs=params.ssl_cert_reqs,
-        ssl_ca_certs=params.ssl_ca_certs,
-        ssl_ciphers=params.ssl_ciphers,
+        ssl_parameters=SSLBentoMLParametersConfig(
+            ssl_certfile=params.ssl_certfile,
+            ssl_keyfile=params.ssl_keyfile,
+            ssl_keyfile_password=params.ssl_keyfile_password,
+            ssl_version=params.ssl_version,
+            ssl_cert_reqs=params.ssl_cert_reqs,
+            ssl_ca_certs=params.ssl_ca_certs,
+            ssl_ciphers=params.ssl_ciphers,
+        ),
     )
 
     # Creating a new service with inactive state and status by default
@@ -181,27 +179,3 @@ def bentoml_model_deployer_step(
     )
 
     return new_service
-
-
-def bentoml_deployer_step(
-    enable_cache: bool = True,
-    name: Optional[str] = None,
-) -> Type[BaseStep]:
-    """Creates a pipeline step to deploy a given ML model with a local BentoML prediction server.
-
-    The returned step can be used in a pipeline to implement continuous
-    deployment for an BentoML model.
-
-    Args:
-        enable_cache: Specify whether caching is enabled for this step. If no
-            value is passed, caching is enabled by default
-        name: Name of the step.
-
-    Returns:
-        an BentoML model deployer pipeline step
-    """
-    logger.warning(
-        "The `bentoml_deployer_step` function is deprecated. Please "
-        "use the built-in `bentoml_model_deployer_step` step instead."
-    )
-    return bentoml_model_deployer_step

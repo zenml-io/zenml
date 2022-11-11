@@ -2,6 +2,10 @@
 description: How to deploy your models locally with BentoML
 ---
 
+BentoML is an open source framework for machine learning model serving. 
+it can be used to serve to deploy models locally, in a cloud environment, or
+on a Kubernetes environment.
+
 The BentoML Model Deployer is one of the available flavors of the [Model Deployer](./model-deployers.md) 
 stack component. Provided with the BentoML integration it can be used to deploy
 and manage [BentoML models](https://docs.bentoml.org/en/latest/concepts/model.html) or 
@@ -9,10 +13,11 @@ and manage [BentoML models](https://docs.bentoml.org/en/latest/concepts/model.ht
 on a local running http server.
 
 {% hint style="warning" %}
-The BentoML Model Deployer is mainly for local and development usage, 
-while the integration mainly work in local environment the used 
-[Bento](https://docs.bentoml.org/en/latest/concepts/bento.html) can be exported
-and containerized and be deployed in a remote environment.
+The BentoML Model Deployer can be used to deploy models for local development
+and production use cases. While the integration mainly work in local environment
+where pipelines are run, the used 
+[Bento](https://docs.bentoml.org/en/latest/concepts/bento.html) can be 
+exported and containerized and be deployed in a remote environment.
 Within BentoML ecosystem [Yatai](https://github.com/bentoml/Yatai) and 
 [bentoctl](https://github.com/bentoml/bentoctl) are the tools responsible for 
 deploying the Bentos into Kubernetes cluster and Cloud Platforms a full support 
@@ -21,19 +26,15 @@ for this advanced tools is in progress and will be available soon.
 
 ## When to use it?
 
-BentoML is an open source framework for machine learning model serving. 
-it can be used to serve to deploy models locally, in a cloud environment, or
-on a Kubernetes environment.
+You should use the BentoML Model Deployer to:
 
-You should use the BentoML Model Deployer:
-
-* Standarize the way you deploy your models to production withing your organization.
+* Standarize the way you deploy your models to production within your organization.
 
 * if you are looking to deploy your models in a simple way, while you are still
 able to transform your model into a production ready solution when that time comes.
 
-If you are looking to deploy your models in a more complex producation grade 
-dedicated ways, you can take a look to one of the other 
+If you are looking to deploy your models with other kubernetes based solutions, 
+you can take a look to one of the other 
 [Model Deployer Flavors](./model-deployers.md#model-deployers-flavors) 
 available in ZenML (e.g. Seldon Core, KServe, etc.)
 
@@ -44,9 +45,10 @@ production grade dedicated ways, you can take a look to
 
 ## How do you deploy it?
 
-The BentoML Model Deployer flavor is provided by the BentoML ZenML integration, 
-you need to install it on your local machine to be able to deploy your models. 
-You can do this by running the following command:
+Within ZenML you can quickly get started with BentoML by simply creating Model 
+Deployer Stack Component with the BentoML flavor. To do so you'll need to 
+install the required python packages on your local machine to be able to deploy 
+your models:
 
 ```bash
 zenml integration install bentoml -y
@@ -70,14 +72,14 @@ main concepts:
 
 ### BentoML Service and Runner
 
-The first step to be able to deploy your models and use your BentoML is to create 
+The first step to be able to deploy your models and use BentoML is to create
 a [bento service](https://docs.bentoml.org/en/latest/concepts/service.html)
 which is the main logic that defines how your model will be served, and
 a [bento runner](https://docs.bentoml.org/en/latest/concepts/runner.html)
 which represents a unit of execution for your model on a remote Python worker.
 
-The following example shows how to create a simple bento service and runner
-that will be used to serve a simple scikit-learn model.
+The following example shows how to create a basic bento service and runner
+that will be used to serve a basic scikit-learn model.
 
 ```python
 import numpy as np

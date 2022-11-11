@@ -17,7 +17,7 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from bentoml.client import Client
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.integrations.bentoml.constants import (
@@ -113,6 +113,7 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
         production: whether to run in production mode
         working_dir: working directory for the service
         host: host to expose the service on
+        ssl_parameters: SSL parameters for the Bentoml deployment
     """
 
     model_name: str
@@ -126,13 +127,9 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
     production: bool = False
     working_dir: str
     host: Optional[str] = None
-    ssl_certfile: Optional[str] = None
-    ssl_keyfile: Optional[str] = None
-    ssl_keyfile_password: Optional[str] = None
-    ssl_version: Optional[str] = None
-    ssl_cert_reqs: Optional[str] = None
-    ssl_ca_certs: Optional[str] = None
-    ssl_ciphers: Optional[str] = None
+    ssl_parameters: Optional[SSLBentoMLParametersConfig] = Field(
+        default_factory=SSLBentoMLParametersConfig
+    )
 
 
 class BentoMLDeploymentService(LocalDaemonService):
@@ -210,13 +207,13 @@ class BentoMLDeploymentService(LocalDaemonService):
                     backlog=self.config.backlog,
                     host=self.endpoint.status.hostname,
                     working_dir=self.config.working_dir,
-                    ssl_certfile=self.config.ssl_certfile,
-                    ssl_keyfile=self.config.ssl_keyfile,
-                    ssl_keyfile_password=self.config.ssl_keyfile_password,
-                    ssl_version=self.config.ssl_version,
-                    ssl_cert_reqs=self.config.ssl_cert_reqs,
-                    ssl_ca_certs=self.config.ssl_ca_certs,
-                    ssl_ciphers=self.config.ssl_ciphers,
+                    ssl_certfile=self.config.ssl_parameters.ssl_certfile,
+                    ssl_keyfile=self.config.ssl_parameters.ssl_keyfile,
+                    ssl_keyfile_password=self.config.ssl_parameters.ssl_keyfile_password,
+                    ssl_version=self.config.ssl_parameters.ssl_version,
+                    ssl_cert_reqs=self.config.ssl_parameters.ssl_cert_reqs,
+                    ssl_ca_certs=self.config.ssl_parameters.ssl_ca_certs,
+                    ssl_ciphers=self.config.ssl_parameters.ssl_ciphers,
                 )
             except KeyboardInterrupt:
                 logger.info(
@@ -232,13 +229,13 @@ class BentoMLDeploymentService(LocalDaemonService):
                     port=self.endpoint.status.port,
                     working_dir=self.config.working_dir,
                     host=self.endpoint.status.hostname,
-                    ssl_certfile=self.config.ssl_certfile,
-                    ssl_keyfile=self.config.ssl_keyfile,
-                    ssl_keyfile_password=self.config.ssl_keyfile_password,
-                    ssl_version=self.config.ssl_version,
-                    ssl_cert_reqs=self.config.ssl_cert_reqs,
-                    ssl_ca_certs=self.config.ssl_ca_certs,
-                    ssl_ciphers=self.config.ssl_ciphers,
+                    ssl_certfile=self.config.ssl_parameters.ssl_certfile,
+                    ssl_keyfile=self.config.ssl_parameters.ssl_keyfile,
+                    ssl_keyfile_password=self.config.ssl_parameters.ssl_keyfile_password,
+                    ssl_version=self.config.ssl_parameters.ssl_version,
+                    ssl_cert_reqs=self.config.ssl_parameters.ssl_cert_reqs,
+                    ssl_ca_certs=self.config.ssl_parameters.ssl_ca_certs,
+                    ssl_ciphers=self.config.ssl_parameters.ssl_ciphers,
                 )
             except KeyboardInterrupt:
                 logger.info(

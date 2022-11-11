@@ -19,9 +19,9 @@ train a classifier using [PyTorch](https://pytorch.org/).
 In order to show how a project can use a model deployer such as BentoML, this
 example contains two pipelines:
 
-  * `train_fashion_mnist` - this pipeline load the Fashion-MNIST dataset, trains a classifier, and use the built-in bento_builder and bentoml_deployer steps to build and deploy the model.
+  * `train_fashion_mnist` - this pipeline loads the Fashion-MNIST dataset, trains a classifier, and uses the built-in bento_builder and bentoml_deployer steps to build and deploy the model.
  
-  * `inference_fashion_mnist` - this pipeline load samples of images stored in a folder within the repo, call the prediction service to get the prediction url, and then call the prediction url to get the predictions. 
+  * `inference_fashion_mnist` - this pipeline loads samples of images stored in a folder within the repo, calls the prediction service to get the prediction url, and then calls the prediction url to make predictions. 
 ## 🧰 How the example is implemented
 This example contains two very important aspects that should be highlighted.
 
@@ -64,8 +64,9 @@ More information about BentoML Service and runner can be found in the
 ### ↩️ BentoML bento builder step
 
 Once you have defined your service and runner, you can use the built-in
-`bento_builder` step within ZenML pipeline to save build a bento. This step
-will save the source code, models, data files and dependency configurations required for running the service.
+`bento_builder` step within your ZenML pipeline to save build a bento. This step
+will save the source code, models, data files and dependency configurations 
+required for running the service.
 
 ```python
 from zenml.integrations.bentoml.steps import (
@@ -196,15 +197,14 @@ $ zenml model-deployer models describe cd38d6e6-467b-46e0-be13-3112c6e65d0e
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ BENTO_TAG              │ pytorch_mnist_service:kq25r5c6fgidomup                                         ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ BENTO_URI              │ /Users/.../local_stores/c0746cb9-04c8-4273-9881-9ecf6784b051/bento_builder_ ┃
+┃ BENTO_URI              │ /Users/.../local_stores/c0746cb9-04c8-4273-9881-9ecf6784b051/bento_builder_────┃
 ┃                        │ step/output/10/zenml_exported.bento                                            ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ DAEMON_PID             │ 98699                                                                          ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ MODEL_NAME             │ pytorch_mnist                                                                  ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ MODEL_URI              │ /Users/.../local_stores/c0746cb9-04c8-4273-9881-9ecf6784b051/trainer/output ┃
-┃                        │ /2                                                                             ┃
+┃ MODEL_URI              │ /Users/.../local_stores/c0746cb9-04c8-4273-9881-9ecf6784b051/trainer/output/2  ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_NAME          │ bentoml_fashion_mnist_pipeline                                                 ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
@@ -216,8 +216,8 @@ $ zenml model-deployer models describe cd38d6e6-467b-46e0-be13-3112c6e65d0e
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ PREDICTION_URL         │ http://127.0.0.1:3001/                                                         ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
-┃ SERVICE_PATH           │ /Users/.../local_stores/86c7fc93-f4c0-460b-b430-7d8f5143ba88/cd38d6e6-467b- ┃
-┃                        │ 46e0-be13-3112c6e65d0e                                                         ┃
+┃ SERVICE_PATH           │ /Users/.../local_stores/86c7fc93-f4c0-460b-b430-7d8f5143ba88/cd38d6e6-467b-46e0┃
+┃                        │ -be13-3112c6e65d0e                                                             ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
 ┃ STATUS                 │ ✅                                                                             ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────┨
