@@ -14,7 +14,7 @@
 """CLI for manipulating ZenML local and global config file."""
 import getpass
 import json
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from uuid import UUID
 
 import click
@@ -348,23 +348,38 @@ def update_stack(
     client = Client()
 
     with console.status(f"Updating stack `{stack_name_or_id}`...\n"):
-        component_mapping: Dict[StackComponentType, List[Optional[str]]] = {
-            StackComponentType.ARTIFACT_STORE: [artifact_store_name],
-            StackComponentType.ALERTER: [alerter_name],
-            StackComponentType.ANNOTATOR: [annotator_name],
-            StackComponentType.CONTAINER_REGISTRY: [container_registry_name],
-            StackComponentType.DATA_VALIDATOR: [data_validator_name],
-            StackComponentType.EXPERIMENT_TRACKER: [experiment_tracker_name],
-            StackComponentType.FEATURE_STORE: [feature_store_name],
-            StackComponentType.MODEL_DEPLOYER: [model_deployer_name],
-            StackComponentType.ORCHESTRATOR: [orchestrator_name],
-            StackComponentType.SECRETS_MANAGER: [secrets_manager_name],
-            StackComponentType.STEP_OPERATOR: [step_operator_name],
-        }
+
+        updates = dict()
+        if artifact_store_name:
+            updates[StackComponentType.ARTIFACT_STORE] = [artifact_store_name]
+        if alerter_name:
+            updates[StackComponentType.ALERTER] = [alerter_name]
+        if annotator_name:
+            updates[StackComponentType.ANNOTATOR] = [annotator_name]
+        if container_registry_name:
+            updates[StackComponentType.CONTAINER_REGISTRY] = [
+                container_registry_name
+            ]
+        if data_validator_name:
+            updates[StackComponentType.DATA_VALIDATOR] = [data_validator_name]
+        if experiment_tracker_name:
+            updates[StackComponentType.EXPERIMENT_TRACKER] = [
+                experiment_tracker_name
+            ]
+        if feature_store_name:
+            updates[StackComponentType.FEATURE_STORE] = [feature_store_name]
+        if model_deployer_name:
+            updates[StackComponentType.MODEL_DEPLOYER] = [model_deployer_name]
+        if orchestrator_name:
+            updates[StackComponentType.ORCHESTRATOR] = [orchestrator_name]
+        if secrets_manager_name:
+            updates[StackComponentType.SECRETS_MANAGER] = [secrets_manager_name]
+        if step_operator_name:
+            updates[StackComponentType.STEP_OPERATOR] = [step_operator_name]
 
         client.update_stack(
             name_id_or_prefix=stack_name_or_id,
-            components=component_mapping,
+            component_updates=updates,
         )
 
         cli_utils.declare(
@@ -508,8 +523,9 @@ def remove_stack_component(
 
     client = Client()
 
-    stack_component_update = {}
     with console.status(f"Updating stack `{stack_name_or_id}`...\n"):
+        stack_component_update = dict()
+
         if container_registry_flag:
             stack_component_update[StackComponentType.CONTAINER_REGISTRY] = []
 
@@ -539,7 +555,7 @@ def remove_stack_component(
 
         client.update_stack(
             name_id_or_prefix=stack_name_or_id,
-            components=stack_component_update,
+            component_updates=stack_component_update,
         )
         cli_utils.declare(f"Stack `{stack_name_or_id}` successfully updated!")
 

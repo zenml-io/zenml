@@ -86,6 +86,7 @@ from zenml.new_models import (
     RoleResponseModel,
     StackRequestModel,
     StackResponseModel,
+    StackUpdateModel,
     StepRunRequestModel,
     StepRunResponseModel,
     TeamRequestModel,
@@ -456,7 +457,7 @@ class RestZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
-        self, stack_id: UUID, stack_update: StackRequestModel
+        self, stack_id: UUID, stack_update: StackUpdateModel
     ) -> StackResponseModel:
         """Update a stack.
 
