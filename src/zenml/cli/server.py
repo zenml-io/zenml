@@ -805,9 +805,22 @@ def connect(
 def disconnect_server() -> None:
     """Disconnect from a ZenML server."""
     from zenml.zen_server.deploy.deployer import ServerDeployer
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
-    deployer = ServerDeployer()
-    deployer.disconnect_from_server()
+    gc = GlobalConfiguration()
+
+    if gc.store is None:
+        cli_utils.warning("No ZenML server is currently connected.")
+        return
+
+    url = gc.store.url
+    store_type = BaseZenStore.get_store_type(url)
+    if store_type == StoreType.REST:
+        deployer = ServerDeployer()
+        deployer.disconnect_from_server()
+    else:
+        gc.set_default_store()
+        cli_utils.declare("Restored default store configuration.")
 
 
 @cli.command("logs", help="Show the logs for the local or cloud ZenML server.")
