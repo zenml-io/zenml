@@ -735,8 +735,14 @@ class RestZenStore(BaseZenStore):
             " to be called from the client side."
         )
 
-    def list_users(self) -> List[UserResponseModel]:
+    def list_users(
+        self,
+        name: Optional[str] = None
+    ) -> List[UserResponseModel]:
         """List all users.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all users.
@@ -751,19 +757,19 @@ class RestZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
-        self, user_id: UUID, user_update: UserUpdateModel
+        self, user_name_or_id: Union[str, UUID], user_update: UserUpdateModel
     ) -> UserResponseModel:
         """Updates an existing user.
 
         Args:
-            user_id: The id of the user to update.
+            user_name_or_id: The id of the user to update.
             user_update: The update to be applied to the user.
 
         Returns:
             The updated user.
         """
         return self._update_resource(
-            resource_id=user_id,
+            resource_id=user_name_or_id,
             resource_update=user_update,
             route=USERS,
             response_model=UserResponseModel,
@@ -842,8 +848,14 @@ class RestZenStore(BaseZenStore):
             response_model=TeamResponseModel,
         )
 
-    def list_teams(self) -> List[TeamResponseModel]:
+    def list_teams(
+        self,
+        name: Optional[str] = None
+    ) -> List[TeamResponseModel]:
         """List all teams.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all teams.
@@ -972,8 +984,14 @@ class RestZenStore(BaseZenStore):
             response_model=RoleResponseModel,
         )
 
-    def list_roles(self) -> List[RoleResponseModel]:
+    def list_roles(
+        self,
+        name: Optional[str] = None
+    ) -> List[RoleResponseModel]:
         """List all roles.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all roles.
@@ -1113,8 +1131,14 @@ class RestZenStore(BaseZenStore):
             response_model=ProjectResponseModel,
         )
 
-    def list_projects(self) -> List[ProjectResponseModel]:
+    def list_projects(
+        self,
+        name: Optional[str] = None
+    ) -> List[ProjectResponseModel]:
         """List all projects.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all projects.
