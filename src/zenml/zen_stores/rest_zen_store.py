@@ -91,7 +91,7 @@ from zenml.new_models import (
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
-    UserResponseModel,
+    UserResponseModel, UserUpdateModel,
 )
 from zenml.new_models.artifact_models import ArtifactResponseModel
 from zenml.new_models.base_models import (
@@ -748,7 +748,7 @@ class RestZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
-        self, user_id: UUID, user_update: UserRequestModel
+        self, user_id: UUID, user_update: UserUpdateModel
     ) -> UserResponseModel:
         """Updates an existing user.
 
@@ -1757,7 +1757,7 @@ class RestZenStore(BaseZenStore):
         return self._request(
             "PUT",
             self.url + API + VERSION_1 + path,
-            data=body.json(),
+            data=body.json(exclude_unset=True),
             params=params,
             **kwargs,
         )
