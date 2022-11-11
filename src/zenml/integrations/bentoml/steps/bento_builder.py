@@ -76,9 +76,6 @@ def bento_builder_step(
         params: the parameters for the BentoML builder step.
         context: the step context.
 
-    Raises:
-        ValueError: if the zenml repo is not found.
-
     Returns:
         the BentoML Bento object.
     """

@@ -195,6 +195,8 @@ class BentoMLDeploymentService(LocalDaemonService):
         )
 
         self.endpoint.prepare_for_start()
+        ssl_params = self.config.ssl_parameters or SSLBentoMLParametersConfig()
+        # verify if to deploy in production mode or development mode
         if self.config.production:
             logger.info("Running in production mode.")
             from bentoml.serve import serve_http_production
@@ -207,13 +209,13 @@ class BentoMLDeploymentService(LocalDaemonService):
                     backlog=self.config.backlog,
                     host=self.endpoint.status.hostname,
                     working_dir=self.config.working_dir,
-                    ssl_certfile=self.config.ssl_parameters.ssl_certfile,
-                    ssl_keyfile=self.config.ssl_parameters.ssl_keyfile,
-                    ssl_keyfile_password=self.config.ssl_parameters.ssl_keyfile_password,
-                    ssl_version=self.config.ssl_parameters.ssl_version,
-                    ssl_cert_reqs=self.config.ssl_parameters.ssl_cert_reqs,
-                    ssl_ca_certs=self.config.ssl_parameters.ssl_ca_certs,
-                    ssl_ciphers=self.config.ssl_parameters.ssl_ciphers,
+                    ssl_certfile=ssl_params.ssl_certfile,
+                    ssl_keyfile=ssl_params.ssl_keyfile,
+                    ssl_keyfile_password=ssl_params.ssl_keyfile_password,
+                    ssl_version=ssl_params.ssl_version,
+                    ssl_cert_reqs=ssl_params.ssl_cert_reqs,
+                    ssl_ca_certs=ssl_params.ssl_ca_certs,
+                    ssl_ciphers=ssl_params.ssl_ciphers,
                 )
             except KeyboardInterrupt:
                 logger.info(
@@ -229,13 +231,13 @@ class BentoMLDeploymentService(LocalDaemonService):
                     port=self.endpoint.status.port,
                     working_dir=self.config.working_dir,
                     host=self.endpoint.status.hostname,
-                    ssl_certfile=self.config.ssl_parameters.ssl_certfile,
-                    ssl_keyfile=self.config.ssl_parameters.ssl_keyfile,
-                    ssl_keyfile_password=self.config.ssl_parameters.ssl_keyfile_password,
-                    ssl_version=self.config.ssl_parameters.ssl_version,
-                    ssl_cert_reqs=self.config.ssl_parameters.ssl_cert_reqs,
-                    ssl_ca_certs=self.config.ssl_parameters.ssl_ca_certs,
-                    ssl_ciphers=self.config.ssl_parameters.ssl_ciphers,
+                    ssl_certfile=ssl_params.ssl_certfile,
+                    ssl_keyfile=ssl_params.ssl_keyfile,
+                    ssl_keyfile_password=ssl_params.ssl_keyfile_password,
+                    ssl_version=ssl_params.ssl_version,
+                    ssl_cert_reqs=ssl_params.ssl_cert_reqs,
+                    ssl_ca_certs=ssl_params.ssl_ca_certs,
+                    ssl_ciphers=ssl_params.ssl_ciphers,
                 )
             except KeyboardInterrupt:
                 logger.info(

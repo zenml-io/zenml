@@ -85,9 +85,6 @@ def bentoml_model_deployer_step(
         params: parameters for the deployer step
         bento: the bento artifact to deploy
 
-    Raises:
-        ValueError: if the zenml repo is not initialized
-
     Returns:
         BentoML deployment service
     """
