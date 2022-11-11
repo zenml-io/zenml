@@ -49,7 +49,7 @@ def list_users() -> None:
 
     cli_utils.print_pydantic_models(
         users,
-        exclude_columns=["id", "created", "updated", "email", "email_opted_in"],
+        exclude_columns=["created", "updated", "email", "email_opted_in"],
         is_active=lambda u: u.name == Client().zen_store.active_user_name,
     )
 
@@ -131,12 +131,17 @@ def create_user(
             user_or_team_name_or_id=user.id,
             is_user=True,
         )
+
+        cli_utils.declare(
+            f"Created user '{user_name}' with role " f"'{initial_role}'."
+        )
     except KeyError as err:
         cli_utils.error(str(err))
+    except EntityExistsError:
+        # As the role assignment of the user might already have happened in the
+        #  zen_serve_api.
+        cli_utils.declare(f"Created user '{user_name}'.")
 
-    cli_utils.declare(
-        f"Created user '{user_name}' with role " f"'{initial_role}'."
-    )
     if not user.active and user.activation_token is not None:
         cli_utils.declare(
             f"The created user account is currently inactive. You can activate "
@@ -479,7 +484,7 @@ def list_roles() -> None:
         return
     cli_utils.print_pydantic_models(
         roles,
-        exclude_columns=["id", "created", "updated"],
+        exclude_columns=["created", "updated"],
     )
 
 
@@ -771,11 +776,17 @@ def list_role_assignments(
             for.
     """
     cli_utils.print_active_config()
-    role_assignments = Client().zen_store.list_role_assignments(
-        user_name_or_id=user_name_or_id,
-        team_name_or_id=team_name_or_id,
-        project_name_or_id=project_name_or_id,
-    )
+    # Hacky workaround while role assignments are scoped to the user endpoint
+    role_assignments = []
+    for user in Client().zen_store.users:
+        role_assignments.extend(
+            Client().zen_store.list_role_assignments(
+                user_name_or_id=user.id,
+                role_name_or_id=role_name_or_id,
+                team_name_or_id=team_name_or_id,
+                project_name_or_id=project_name_or_id,
+            )
+        )
     if not role_assignments:
         cli_utils.declare("No roles assigned.")
         return
