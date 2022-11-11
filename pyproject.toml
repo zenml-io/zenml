@@ -31,18 +31,18 @@ classifiers = [
 exclude = [
     "tests.*",
     "*.tests",
-    "*.tests.*",
     "docs",
     "tests",
     "tests",
     "legacy",
+    "*.tests.*",
     "examples"
 ]
 include = [
     "src/zenml",
     "*.txt",
-    "*.md",
-    "*.sh"
+     "*.sh",
+    "*.md"
 ]
 
 [tool.poetry.scripts]
