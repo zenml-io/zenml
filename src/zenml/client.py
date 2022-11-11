@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
-
+import functools
 import os
 from abc import ABCMeta
 from pathlib import Path
@@ -37,7 +37,7 @@ from zenml.constants import (
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
     AlreadyExistsException,
     IllegalOperationError,
@@ -57,6 +57,7 @@ from zenml.new_models import (
     StackResponseModel,
     TeamResponseModel,
     UserResponseModel,
+    UserUpdateModel, UserRequestModel, RoleAssignmentRequestModel,
 )
 from zenml.new_models.base_models import BaseResponseModel
 from zenml.utils import io_utils
@@ -544,6 +545,25 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.zen_store.active_user
 
+    def create_user(
+        self,
+        name: str,
+        password: Optional[str],
+
+    ):
+        user = UserRequestModel(
+            name=name,
+            password=password or None
+        )
+        if self.zen_store.type != StoreType.REST:
+            user.active = password != ""
+        else:
+            user.active = True
+
+        return self.zen_store.create_user(
+            user=user
+        )
+
     def get_user(self, name_id_or_prefix: str) -> UserResponseModel:
         """Gets a user.
 
@@ -576,6 +596,26 @@ class Client(metaclass=ClientMetaClass):
                 "user account, please contact your ZenML administrator."
             )
         self.zen_store.delete_user(user_name_or_id=user.name)
+
+    def update_user(
+        self,
+        user_name_or_id: str,
+        updated_name: Optional[str] = None,
+        updated_full_name: Optional[str] = None,
+        updated_email: Optional[str] = None,
+    ) -> UserResponseModel:
+        user = self._get_entity_by_id_or_name_or_prefix(
+            response_model=UserResponseModel,
+            get_method=self.zen_store.get_user,
+            list_method=self.zen_store.list_users,
+            name_id_or_prefix=user_name_or_id,
+        )
+        user_update = UserUpdateModel(
+            name=updated_name, full_name=updated_full_name, email=updated_email
+        )
+        return self.zen_store.update_user(
+            user_name_or_id=user.id, user_update=user_update
+        )
 
     # ---- #
     # TEAM #
@@ -624,6 +664,46 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name or ID of the user.
         """
         self.zen_store.delete_role(role_name_or_id=name_id_or_prefix)
+
+    # ---------------- #
+    # ROLE ASSIGNMENTS #
+    # ---------------- #
+
+    def create_user_role_assignment(
+        self,
+        role_name_or_id: str,
+        user_name_or_id: str,
+        project_name_or_id: Optional[str],
+    ):
+        user = self._get_entity_by_id_or_name_or_prefix(
+            response_model=UserResponseModel,
+            get_method=self.zen_store.get_user,
+            list_method=self.zen_store.list_users,
+            name_id_or_prefix=user_name_or_id
+        )
+        role = self._get_entity_by_id_or_name_or_prefix(
+            response_model=RoleResponseModel,
+            get_method=self.zen_store.get_role,
+            list_method=self.zen_store.list_roles,
+            name_id_or_prefix=role_name_or_id
+        )
+        project = None
+        if project_name_or_id:
+            project = self._get_entity_by_id_or_name_or_prefix(
+                response_model=ProjectResponseModel,
+                get_method=self.zen_store.get_project,
+                list_method=self.zen_store.list_projects,
+                name_id_or_prefix=project_name_or_id
+            )
+        role_assignment = RoleAssignmentRequestModel(
+                role=role.id,
+                user=user.id,
+                project=project,
+                is_user=True,
+            )
+        return self.zen_store.create_role_assignment(
+            role_assignment=role_assignment
+        )
 
     # ------- #
     # PROJECT #
@@ -1947,10 +2027,15 @@ class Client(metaclass=ClientMetaClass):
         except ValueError:
             pass
 
-        entities = list_method(
-            name=name_id_or_prefix,
-            project_name_or_id=self.active_project.id,
-        )
+        if "project" in response_model.__fields__:
+            entities = list_method(
+                name=name_id_or_prefix,
+                project_name_or_id=self.active_project.id,
+            )
+        else:
+            entities = list_method(
+                name=name_id_or_prefix,
+            )
 
         if len(entities) > 1:
             raise KeyError(

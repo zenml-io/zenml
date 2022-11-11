@@ -30,7 +30,6 @@ from zenml.constants import (
 from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.new_models import (
-    EmailOptInModel,
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     UserRequestModel,
@@ -210,8 +209,7 @@ def activate_user(
     user_update.active = True
     user_update.activation_token = None
     return zen_store().update_user(
-        user_name_or_id=user_name_or_id,
-        user_update=user_update
+        user_name_or_id=user_name_or_id, user_update=user_update
     )
 
 
@@ -236,8 +234,7 @@ def deactivate_user(
     user_update = UserUpdateModel(active=False)
     token = user_update.generate_activation_token()
     user = zen_store().update_user(
-        user_name_or_id=user_name_or_id,
-        user_update=user_update
+        user_name_or_id=user_name_or_id, user_update=user_update
     )
     # add back the original unhashed activation token
     user.activation_token = token
@@ -305,8 +302,7 @@ def email_opt_in_response(
         )
 
         return zen_store().update_user(
-            user_name_or_id=user_name_or_id,
-            user_update=user_update
+            user_name_or_id=user_name_or_id, user_update=user_update
         )
     else:
         raise NotAuthorizedError(
@@ -436,6 +432,5 @@ def update_myself(
     """
     # TODO find diff between user and the auth_context.user
     return zen_store().update_user(
-        user_name_or_id=auth_context.user.id,
-        user_update=user
+        user_name_or_id=auth_context.user.id, user_update=user
     )

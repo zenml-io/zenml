@@ -23,6 +23,7 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import CliCategories, PermissionType, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
+from zenml.new_models import UserRequestModel, RoleAssignmentRequestModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 
 
@@ -49,8 +50,14 @@ def list_users() -> None:
 
     cli_utils.print_pydantic_models(
         users,
-        exclude_columns=["id", "created", "updated", "email", "email_opted_in",
-                         "activation_token"],
+        exclude_columns=[
+            "id",
+            "created",
+            "updated",
+            "email",
+            "email_opted_in",
+            "activation_token",
+        ],
         is_active=lambda u: u.name == Client().zen_store.active_user_name,
     )
 
@@ -94,9 +101,9 @@ def create_user(
         password: The password of the user to create.
         initial_role: Give the user an initial role
     """
-    gc = GlobalConfiguration()
+    client = Client()
     if not password:
-        if gc.zen_store.type != StoreType.REST:
+        if client.zen_store.type != StoreType.REST:
 
             password = click.prompt(
                 f"Password for user {user_name}",
@@ -112,38 +119,86 @@ def create_user(
 
     cli_utils.print_active_config()
 
-    from zenml.models import UserModel
-
-    user = UserModel(name=user_name, password=password or None)
-    # Use the activation workflow only if connected to a ZenML server.
-    if gc.zen_store.type != StoreType.REST:
-        user.active = password != ""
-    else:
-        user.active = True
-
     try:
-        user = gc.zen_store.create_user(user)
+        user = client.create_user(name=user_name, password=password)
+
+        cli_utils.declare(
+            f"Created user '{user.name}'."
+        )
     except EntityExistsError as err:
         cli_utils.error(str(err))
+    else:
+        try:
+            client.create_user_role_assignment(
+                role_name_or_id=initial_role,
+                user_name_or_id=str(user.id),
+                project_name_or_id=None
+            )
+        except KeyError as err:
+            cli_utils.error(str(err))
 
-    try:
-        gc.zen_store.assign_role(
-            role_name_or_id=initial_role,
-            user_or_team_name_or_id=user.id,
-            is_user=True,
-        )
-    except KeyError as err:
-        cli_utils.error(str(err))
-
-    cli_utils.declare(
-        f"Created user '{user_name}' with role " f"'{initial_role}'."
-    )
     if not user.active and user.activation_token is not None:
         cli_utils.declare(
             f"The created user account is currently inactive. You can activate "
             f"it by visiting the dashboard at the following URL:\n"
-            f"{gc.zen_store.url}/signup?user={str(user.id)}&username={user.name}&token={user.activation_token.get_secret_value()}\n"
+            f"{client.zen_store.url}/signup?user={str(user.id)}&username={user.name}&token={user.activation_token.get_secret_value()}\n"
         )
+
+
+@user.command(
+    "update",
+    help="Update user information through the cli. All attributes "
+    "except for password can be updated through the cli.",
+)
+@click.argument("user_name_or_id", type=str, required=True)
+@click.option(
+    "--name",
+    "-n",
+    "updated_name",
+    type=str,
+    required=False,
+    help="New user name.",
+)
+@click.option(
+    "--full_name",
+    "-f",
+    "updated_full_name",
+    type=str,
+    required=False,
+    help="New full name. If this contains an empty space make sure to surround "
+         "the name with quotes '<Full Name>'.",
+)
+@click.option(
+    "--email",
+    "-e",
+    "updated_email",
+    type=str,
+    required=False,
+    help="New user email.",
+)
+def update_user(
+    user_name_or_id: str,
+    updated_name: Optional[str] = None,
+    updated_full_name: Optional[str] = None,
+    updated_email: Optional[str] = None,
+) -> None:
+    """Create a new user.
+
+    Args:
+        user_name_or_id: The name of the user to create.
+        updated_name: The name of the user to create.
+        updated_full_name: The name of the user to create.
+        updated_email: The name of the user to create.
+    """
+    try:
+        Client().update_user(
+            user_name_or_id=user_name_or_id,
+            updated_name=updated_name,
+            updated_full_name=updated_full_name,
+            updated_email=updated_email,
+        )
+    except (KeyError, IllegalOperationError) as err:
+        cli_utils.error(str(err))
 
 
 @user.command("delete")

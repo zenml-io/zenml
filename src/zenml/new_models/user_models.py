@@ -24,7 +24,11 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
-from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel, update
+from zenml.new_models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update,
+)
 from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
@@ -429,6 +433,7 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
         """
         self.activation_token = token_hex(32)
         return self.activation_token
+
 
 # ------ #
 # UPDATE #

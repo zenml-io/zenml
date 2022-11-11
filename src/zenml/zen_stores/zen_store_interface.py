@@ -469,8 +469,14 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_users(self) -> List[UserResponseModel]:
+    def list_users(
+        self,
+        name: Optional[str] = None
+    ) -> List[UserResponseModel]:
         """List all users.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all users.
@@ -478,7 +484,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_user(
-        self, user_name_or_id: UUID, user_update: UserUpdateModel
+        self, user_name_or_id: Union[str, UUID], user_update: UserUpdateModel
     ) -> UserResponseModel:
         """Updates an existing user.
 
@@ -534,8 +540,14 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_teams(self) -> List[TeamResponseModel]:
+    def list_teams(
+        self,
+        name: Optional[str] = None
+    ) -> List[TeamResponseModel]:
         """List all teams.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all teams.
@@ -602,8 +614,14 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_roles(self) -> List[RoleResponseModel]:
+    def list_roles(
+        self,
+        name: Optional[str] = None
+    ) -> List[RoleResponseModel]:
         """List all roles.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all roles.
@@ -714,8 +732,14 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_projects(self) -> List[ProjectResponseModel]:
+    def list_projects(
+        self,
+        name: Optional[str] = None
+    ) -> List[ProjectResponseModel]:
         """List all projects.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all projects.

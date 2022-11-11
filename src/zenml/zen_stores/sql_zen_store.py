@@ -1586,20 +1586,29 @@ class SqlZenStore(BaseZenStore):
                 activation_token=user.activation_token,
             )
 
-    def list_users(self) -> List[UserResponseModel]:
+    def list_users(
+        self,
+        name: Optional[str] = None
+    ) -> List[UserResponseModel]:
         """List all users.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all users.
         """
         with Session(self.engine) as session:
-            users = session.exec(select(UserSchema)).all()
+            query = select(UserSchema)
+            if name:
+                query = query.where(UserSchema.name == name)
+            users = session.exec(query.order_by(UserSchema.name)).all()
 
             return [user.to_model() for user in users]
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
-        self, user_name_or_id: UUID, user_update: UserUpdateModel
+        self, user_name_or_id: Union[str, UUID], user_update: UserUpdateModel
     ) -> UserResponseModel:
         """Updates an existing user.
 
@@ -1688,14 +1697,24 @@ class SqlZenStore(BaseZenStore):
             team = self._get_team_schema(team_name_or_id, session=session)
         return team.to_model()
 
-    def list_teams(self) -> List[TeamResponseModel]:
+    def list_teams(
+        self,
+        name: Optional[str] = None
+    ) -> List[TeamResponseModel]:
         """List all teams.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all teams.
         """
         with Session(self.engine) as session:
-            teams = session.exec(select(TeamSchema)).all()
+            query = select(TeamSchema)
+            if name:
+                query = query.where(TeamSchema.name == name)
+            teams = session.exec(query.order_by(TeamSchema.name)).all()
+
             return [team.to_model() for team in teams]
 
     @track(AnalyticsEvent.UPDATED_TEAM)
@@ -1828,14 +1847,23 @@ class SqlZenStore(BaseZenStore):
             role = self._get_role_schema(role_name_or_id, session=session)
             return role.to_model()
 
-    def list_roles(self) -> List[RoleResponseModel]:
+    def list_roles(
+        self,
+        name: Optional[str] = None
+    ) -> List[RoleResponseModel]:
         """List all roles.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all roles.
         """
         with Session(self.engine) as session:
-            roles = session.exec(select(RoleSchema)).all()
+            query = select(RoleSchema)
+            if name:
+                query = query.where(RoleSchema.name == name)
+            roles = session.exec(query.order_by(RoleSchema.name)).all()
 
             return [role.to_model() for role in roles]
 
@@ -2347,14 +2375,24 @@ class SqlZenStore(BaseZenStore):
             )
         return project.to_model()
 
-    def list_projects(self) -> List[ProjectResponseModel]:
+    def list_projects(
+        self,
+        name: Optional[str] = None
+    ) -> List[ProjectResponseModel]:
         """List all projects.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all projects.
         """
         with Session(self.engine) as session:
-            projects = session.exec(select(ProjectSchema)).all()
+            query = select(ProjectSchema)
+            if name:
+                query = query.where(ProjectSchema.name == name)
+            projects = session.exec(query.order_by(ProjectSchema.name)).all()
+
             return [project.to_model() for project in projects]
 
     @track(AnalyticsEvent.UPDATED_PROJECT)

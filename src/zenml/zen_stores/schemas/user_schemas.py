@@ -12,10 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from datetime import datetime
 from typing import List, Optional
 
 from sqlmodel import Field, Relationship
-from datetime import datetime
 
 from zenml.new_models import (
     UserRequestModel,
