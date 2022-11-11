@@ -30,6 +30,7 @@ from zenml.cli.utils import _component_display_name
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
+from zenml.exceptions import IllegalOperationError
 from zenml.io import fileio
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -318,12 +319,15 @@ def generate_stack_component_update_command(
                 **parsed_args,
             }
 
-            # Update the component
-            client.update_stack_component(
-                component=existing_component.copy(
-                    update={"configuration": updated_attributes}
+            try:
+                # Update the component
+                client.update_stack_component(
+                    component=existing_component.copy(
+                        update={"configuration": updated_attributes}
+                    )
                 )
-            )
+            except IllegalOperationError as err:
+                cli_utils.error(str(err))
 
             cli_utils.declare(
                 f"Successfully updated {display_name} `{name_or_id}`."
@@ -373,8 +377,11 @@ def generate_stack_component_share_command(
 
             existing_component.is_shared = True
 
-            # Update the component
-            client.update_stack_component(component=existing_component)
+            try:
+                # Update the component
+                client.update_stack_component(component=existing_component)
+            except IllegalOperationError as err:
+                cli_utils.error(str(err))
 
             cli_utils.declare(
                 f"Successfully shared {display_name} " f"`{name_or_id}`."
@@ -439,8 +446,11 @@ def generate_stack_component_remove_attribute_command(
                         f"."
                     )
 
-            # Update the stack component
-            client.update_stack_component(component=existing_comp)
+            try:
+                # Update the stack component
+                client.update_stack_component(component=existing_comp)
+            except IllegalOperationError as err:
+                cli_utils.error(str(err))
 
             cli_utils.declare(
                 f"Successfully updated {display_name} `{name_or_id}`."
@@ -493,10 +503,15 @@ def generate_stack_component_rename_command(
                 )
             )
 
-            # Rename and update the existing component
-            client.update_stack_component(
-                component=existing_component.copy(update={"name": new_name}),
-            )
+            try:
+                # Rename and update the existing component
+                client.update_stack_component(
+                    component=existing_component.copy(
+                        update={"name": new_name}
+                    ),
+                )
+            except IllegalOperationError as err:
+                cli_utils.error(str(err))
 
             cli_utils.declare(
                 f"Successfully renamed {display_name} `{name_or_id}` to"
@@ -538,8 +553,12 @@ def generate_stack_component_delete_command(
                 id_or_name_or_prefix=name_or_id,
             )
 
-            # Delete the component
-            client.deregister_stack_component(existing_comp)
+            try:
+                # Delete the component
+                client.deregister_stack_component(existing_comp)
+            except IllegalOperationError as err:
+                cli_utils.error(str(err))
+
             cli_utils.declare(f"Deleted {display_name}: {name_or_id}")
 
     return delete_stack_component_command

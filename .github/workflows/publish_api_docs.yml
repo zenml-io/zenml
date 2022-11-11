@@ -67,5 +67,13 @@ jobs:
           git config --global user.name 'Code Monkey'
           git config --global user.email 'codemonkey@zenml.io'
 
+        # env.py leads to errors in the build as run_migrations() gets executed
+        # the migration versions are not necessary parts of the api docs
+      - name: Delete unnecessary alembic files
+        run: |
+          rm -rf src/zenml/zen_stores/migrations/env.py
+          rm -rf src/zenml/zen_stores/migrations/versions
+          rm -rf src/zenml/zen_stores/migrations/script.py.mako
+
       - name: Runs docs generation
         run: poetry run bash scripts/generate-docs.sh -s src/zenml/ --push --latest -v ${{ steps.get_version.outputs.VERSION }}

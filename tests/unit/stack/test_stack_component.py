@@ -172,6 +172,25 @@ def test_stack_component_secret_reference_resolving(
     clean_client, register_stub_orchestrator_flavor
 ):
     """Tests that the stack component resolves secrets if possible."""
+
+    from zenml.artifact_stores import (
+        LocalArtifactStore,
+        LocalArtifactStoreConfig,
+    )
+
+    artifact_store = LocalArtifactStore(
+        name="local",
+        id=uuid4(),
+        config=LocalArtifactStoreConfig(),
+        flavor="local",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+    clean_client.register_stack_component(artifact_store.to_model())
+
     component = _get_stub_orchestrator(
         name="stub_orchestrator",
         repo=clean_client,
@@ -182,18 +201,18 @@ def test_stack_component_secret_reference_resolving(
         # not part of the active stack
         _ = component.config.attribute_without_validator
 
-    active_stack = clean_client.active_stack
     stack = Stack(
-        id=active_stack.id,
-        name=active_stack.name,
-        artifact_store=active_stack.artifact_store,
+        id=uuid4(),
+        name="aria",
+        artifact_store=artifact_store,
         orchestrator=component,
     )
     stack_model = stack.to_model(
         user=clean_client.active_user.id, project=clean_client.active_project.id
     )
 
-    clean_client.update_stack(stack_model)
+    clean_client.register_stack(stack_model)
+    clean_client.activate_stack(stack_model)
 
     with pytest.raises(RuntimeError):
         # no secret manager in stack
