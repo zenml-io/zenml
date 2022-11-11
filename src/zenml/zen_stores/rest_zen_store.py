@@ -71,6 +71,7 @@ from zenml.new_models import (
     ArtifactRequestModel,
     ComponentRequestModel,
     ComponentResponseModel,
+    ComponentUpdateModel,
     EmailOptInModel,
     FlavorRequestModel,
     FlavorResponseModel,
@@ -565,7 +566,7 @@ class RestZenStore(BaseZenStore):
     def update_stack_component(
         self,
         component_id: UUID,
-        component_update: ComponentRequestModel,
+        component_update: ComponentUpdateModel,
     ) -> ComponentResponseModel:
         """Update an existing stack component.
 

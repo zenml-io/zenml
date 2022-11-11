@@ -15,6 +15,7 @@
 
 import base64
 import json
+from datetime import datetime
 from typing import TYPE_CHECKING, List
 from uuid import UUID
 
@@ -22,7 +23,10 @@ from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
-from zenml.new_models.component_models import ComponentResponseModel
+from zenml.new_models.component_models import (
+    ComponentResponseModel,
+    ComponentUpdateModel,
+)
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
@@ -49,6 +53,18 @@ class StackComponentSchema(ShareableSchema, table=True):
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
     )
+
+    def update(self, component_update: ComponentUpdateModel):
+        for field, value in component_update.dict(exclude_unset=True).items():
+            if field == "configuration":
+                self.configuration = base64.b64encode(
+                    json.dumps(component_update.configuration).encode("utf-8")
+                )
+            else:
+                setattr(self, field, value)
+
+        self.updated = datetime.now()
+        return self
 
     def to_model(self) -> "ComponentResponseModel":
         """Creates a `ComponentModel` from an instance of a `StackSchema`.

@@ -19,6 +19,7 @@ from zenml.new_models.artifact_models import (
 from zenml.new_models.component_models import (
     ComponentRequestModel,
     ComponentResponseModel,
+    ComponentUpdateModel,
 )
 from zenml.new_models.flavor_models import (
     FlavorRequestModel,
@@ -79,6 +80,7 @@ __all__ = [
     "ArtifactResponseModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
+    "ComponentUpdateModel",
     "FlavorRequestModel",
     "FlavorResponseModel",
     "PipelineRequestModel",
