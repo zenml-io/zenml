@@ -1562,3 +1562,7 @@ BentoMlDeploymentConfig
 certfile
 keyfile
 reqs
+openssl
+signalled
+zenconfig
+
