@@ -1656,9 +1656,10 @@ class RestZenStore(BaseZenStore):
                 f"URL {response.url}: {response.json().get('detail')}"
             )
         elif response.status_code == 403:
-            raise IllegalOperationError(
-                response.json().get("detail", (response.text,))[1]
-            )
+            msg = response.json().get("detail", response.text)
+            if isinstance(msg, list):
+                msg = msg[-1]
+            raise IllegalOperationError(msg)
         elif response.status_code == 404:
             if "KeyError" in response.text:
                 raise KeyError(
