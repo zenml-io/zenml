@@ -371,13 +371,25 @@ To start the containers, run the following command from the directory where
 the `docker-compose.yml` file is located:
 
 ```shell
-docker-compose up -d
+docker-compose -p zenml up  -d
+```
+
+or, if you need to use a different filename or path:
+
+```shell
+docker-compose -f /path/to/docker-compose.yml -p zenml up -d
 ```
 
 Connecting your client to the ZenML server is the same as before:
 
 ```shell
 zenml connect --url http://localhost:8080 --username default --password ''
+```
+
+Tearing down the installation is as simple as running:
+
+```shell
+docker-compose -p zenml down
 ```
 
 ## Troubleshooting
@@ -393,7 +405,7 @@ If you used the `zenml up --docker` CLI command to deploy the Docker ZenML
 server, you can check the logs with the command:
 
 ```shell
-zenml logs
+zenml logs -f
 ```
 
 ### Manual Docker Deployments
@@ -402,5 +414,12 @@ If you used the `docker run` command to manually deploy the Docker ZenML server,
 you can check the logs with the command:
 
 ```shell
-docker logs zenml
+docker logs zenml -f
+```
+
+If you used the `docker compose` command to manually deploy the Docker ZenML
+server, you can check the logs with the command:
+
+```shell
+docker compose -p zenml logs -f
 ```

@@ -194,7 +194,7 @@ def replace_internal_hostname_with_localhost(hostname: str) -> str:
             try:
                 socket.gethostbyname(internal_hostname)
                 if internal_hostname != hostname:
-                    logger.info(
+                    logger.debug(
                         f"Replacing internal hostname {hostname} with "
                         f"{internal_hostname}"
                     )
@@ -202,6 +202,6 @@ def replace_internal_hostname_with_localhost(hostname: str) -> str:
             except socket.gaierror:
                 continue
 
-    logger.info(f"Replacing internal hostname {hostname} with localhost.")
+    logger.debug(f"Replacing internal hostname {hostname} with localhost.")
 
     return "127.0.0.1"
