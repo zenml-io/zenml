@@ -24,7 +24,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
-from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel, update
 from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
@@ -148,7 +148,6 @@ class UserBaseModel(BaseModel):
     """"""
 
     name: str = Field(
-        default="",
         title="The unique username for the account.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
@@ -372,7 +371,7 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
     """"""
 
     email: Optional[str] = Field(
-        default="",
+        default=None,
         title="The email address associated with the account.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
@@ -430,6 +429,15 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
         """
         self.activation_token = token_hex(32)
         return self.activation_token
+
+# ------ #
+# UPDATE #
+# ------ #
+
+
+@update
+class UserUpdateModel(UserRequestModel):
+    """"""
 
 
 # ---- #

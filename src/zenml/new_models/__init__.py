@@ -52,6 +52,7 @@ from zenml.new_models.user_models import (
     UserAuthModel,
     UserRequestModel,
     UserResponseModel,
+    UserUpdateModel,
 )
 
 ComponentResponseModel.update_forward_refs(
@@ -95,5 +96,6 @@ __all__ = [
     "EmailOptInModel",
     "UserRequestModel",
     "UserResponseModel",
+    "UserUpdateModel",
     "UserAuthModel",
 ]

@@ -17,11 +17,13 @@ from typing import Any, ForwardRef
 from uuid import UUID
 
 from pydantic import Field
+from typing import Optional
 
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 ProjectResponseModel = ForwardRef("ProjectResponseModel")
 UserResponseModel = ForwardRef("UserResponseModel")
+
 
 # --------------- #
 # RESPONSE MODELS #
@@ -142,3 +144,16 @@ class ShareableRequestModel(ProjectScopedRequestModel):
             "the same project."
         ),
     )
+
+
+# ------------- #
+# UPDATE MODELS #
+# ------------- #
+
+def update(_cls):
+    for field in _cls.__fields__:
+        if field not in ["user", "project"]:
+            new_field = _cls.__fields__[field]
+            new_field.required = False
+            new_field.allow_none = True
+    return _cls
