@@ -37,6 +37,7 @@ from zenml.new_models import (
     RoleResponseModel,
     StackRequestModel,
     StackResponseModel,
+    StackUpdateModel,
     StepRunRequestModel,
     StepRunResponseModel,
     TeamRequestModel,
@@ -221,7 +222,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_stack(
-        self, stack_id: UUID, stack_update: StackRequestModel
+        self, stack_id: UUID, stack_update: StackUpdateModel
     ) -> StackResponseModel:
         """Update a stack.
 

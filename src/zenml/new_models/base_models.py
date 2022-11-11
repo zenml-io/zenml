@@ -17,7 +17,6 @@ from typing import Any, ForwardRef
 from uuid import UUID
 
 from pydantic import Field
-from typing import Optional
 
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
@@ -149,6 +148,7 @@ class ShareableRequestModel(ProjectScopedRequestModel):
 # ------------- #
 # UPDATE MODELS #
 # ------------- #
+
 
 def update(_cls):
     for field in _cls.__fields__:

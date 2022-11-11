@@ -90,7 +90,7 @@ from zenml.new_models import (
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
-    UserResponseModel,
+    UserResponseModel, StackUpdateModel,
 )
 from zenml.new_models.user_models import UserAuthModel, UserUpdateModel
 from zenml.utils import uuid_utils
@@ -892,7 +892,7 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
-        self, stack_id: UUID, stack_update: StackRequestModel
+        self, stack_id: UUID, stack_update: StackUpdateModel
     ) -> StackResponseModel:
         """Update a stack.
 
@@ -933,22 +933,7 @@ class SqlZenStore(BaseZenStore):
                     stack=stack_update, session=session
                 )
 
-            # Get the Schemas of all components mentioned
-            filters = [
-                (StackComponentSchema.id == component_id)
-                for list_of_component_ids in stack_update.components.values()
-                for component_id in list_of_component_ids
-            ]
-
-            defined_components = session.exec(
-                select(StackComponentSchema).where(or_(*filters))
-            ).all()
-
-            existing_stack.name = stack_update.name
-            existing_stack.is_shared = stack_update.is_shared
-            existing_stack.description = stack_update.description
-            existing_stack.components = defined_components
-            existing_stack.updated = datetime.now()
+            existing_stack.update(stack_update=stack_update, session=session)
 
             session.add(existing_stack)
             session.commit()

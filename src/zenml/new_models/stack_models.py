@@ -12,6 +12,7 @@ from zenml.models.constants import (
 from zenml.new_models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
+    update,
 )
 from zenml.new_models.component_models import ComponentResponseModel
 
@@ -108,3 +109,13 @@ class StackRequestModel(StackBaseModel, ShareableRequestModel):
             return True
         else:
             return False
+
+
+# ------ #
+# UPDATE #
+# ------ #
+
+
+@update
+class StackUpdateModel(StackRequestModel):
+    """beautiful."""

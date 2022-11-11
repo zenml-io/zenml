@@ -55,6 +55,7 @@ from zenml.new_models import (
     RoleResponseModel,
     StackRequestModel,
     StackResponseModel,
+    StackUpdateModel,
     TeamResponseModel,
     UserResponseModel,
 )
@@ -797,7 +798,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
         description: Optional[str] = None,
-        components: Optional[
+        component_updates: Optional[
             Dict[StackComponentType, List[Optional[str]]]
         ] = None,
     ) -> "StackResponseModel":
@@ -809,70 +810,46 @@ class Client(metaclass=ClientMetaClass):
             name: the updated name of the stack
             is_shared: the updated shared status of the stack
             description: the updated description of the stack
-            components: dictionary which maps stack component types to
+            component_updates: dictionary which maps stack component types to
                 updated list of names.
         """
-        stack_to_update = self.get_stack(name_id_or_prefix=name_id_or_prefix)
+        # First, get the stack
+        stack = self.get_stack(name_id_or_prefix=name_id_or_prefix)
 
-        # Components
-        stack_components_update = {
-            c_type: [c.id for c in c_list]
-            for c_type, c_list in stack_to_update.components.items()
-        }
-        if components:
-            for c_type, c_list in components.items():
-                if c_list is not None:
-                    stack_components_update[c_type] = [
+        # Create the update model
+        update_model = StackUpdateModel()
+
+        if name:
+            update_model.name = name
+
+        if is_shared:
+            update_model.is_shared = is_shared
+
+        if description:
+            update_model.description = description
+
+        # Get the current components
+        if component_updates:
+            components = {}
+            for component_type, component_list in stack.components.items():
+                if component_list is not None:
+                    components[component_type] = [c.id for c in component_list]
+
+            for component_type, component_list in component_updates.items():
+                if component_list is not None:
+                    components[component_type] = [
                         self.get_stack_component(
                             name_id_or_prefix=c,
-                            component_type=c_type,
+                            component_type=component_type,
                         ).id
-                        for c in c_list
+                        for c in component_list
                     ]
 
-        # Name
-        name_update = stack_to_update.name
-        if name:
-            name_update = name
-
-        # Description
-        description_update = stack_to_update.description
-        if description:
-            description_update = description
-
-        # Share
-        share_update = stack_to_update.is_shared
-        if is_shared:
-            share_update = True
-
-            for c_type, components in stack_to_update.components.items():
-                only_component = components[0]  # For future compatibility
-                logger.info(
-                    f"A Stack can only be shared when all its components are "
-                    f"also shared. Component '{only_component.name}' is also "
-                    f"set to shared."
-                )
-
-                only_component.is_shared = True
-                self.update_stack_component(
-                    name_id_or_prefix=only_component.id,
-                    component_type=only_component.type,
-                    is_shared=True,
-                )
-
-        # Final Update
-        stack_update = StackRequestModel(
-            name=name_update,
-            description=description_update,
-            components=stack_components_update,
-            is_shared=share_update,
-        )
-
-        self._validate_stack_configuration(stack=stack_update)
+            update_model.components = components
 
         return self.zen_store.update_stack(
-            stack_id=stack_to_update.id,
-            stack_update=stack_update,
+            stack_id=stack.id,
+            stack_update=update_model,
         )
 
     def deregister_stack(self, name_id_or_prefix: Union[str, UUID]) -> None:

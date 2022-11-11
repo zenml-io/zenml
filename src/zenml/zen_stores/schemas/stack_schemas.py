@@ -16,12 +16,12 @@
 from typing import TYPE_CHECKING, List
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey
-from sqlmodel import Field, Relationship, SQLModel
+from sqlalchemy import Column, ForeignKey, select, or_
+from sqlmodel import Field, Relationship, SQLModel, Session
 
-from zenml.new_models.stack_models import StackResponseModel
+from zenml.new_models.stack_models import StackResponseModel, StackUpdateModel
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
-
+from datetime import datetime
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         PipelineRunSchema,
@@ -60,6 +60,25 @@ class StackSchema(ShareableSchema, table=True):
         link_model=StackCompositionSchema,
     )
     runs: List["PipelineRunSchema"] = Relationship(back_populates="stack")
+
+    def update(self, stack_update: StackUpdateModel, session: Session):
+        for field, value in stack_update.dict(exclude_unset=True).items():
+            if field == 'components':
+                filters = [
+                    (StackComponentSchema.id == component_id)
+                    for list_of_component_ids in
+                    stack_update.components.values()
+                    for component_id in list_of_component_ids
+                ]
+
+                self.components = session.exec(
+                    select(StackComponentSchema).where(or_(*filters))
+                ).all()
+            else:
+                setattr(self, field, value)
+
+        self.updated = datetime.now()
+        return self
 
     def to_model(self) -> StackResponseModel:
         """Creates a `HydratedStackModel` from an instance of a 'StackSchema'.

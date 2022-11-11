@@ -91,7 +91,7 @@ from zenml.new_models import (
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
-    UserResponseModel,
+    UserResponseModel, StackUpdateModel,
 )
 from zenml.new_models.artifact_models import ArtifactResponseModel
 from zenml.new_models.base_models import (
@@ -455,7 +455,7 @@ class RestZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
-        self, stack_id: UUID, stack_update: StackRequestModel
+        self, stack_id: UUID, stack_update: StackUpdateModel
     ) -> StackResponseModel:
         """Update a stack.
 
