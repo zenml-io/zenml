@@ -80,6 +80,9 @@ from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.networking_utils import (
+    replace_localhost_with_internal_hostname,
+)
 from zenml.zen_stores.base_zen_store import (
     ADMIN_ROLE,
     DEFAULT_STACK_COMPONENT_NAME,
@@ -165,8 +168,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             against the provided server certificate.
         pool_size: The maximum number of connections to keep in the SQLAlchemy
             pool.
-        pool_recycle: The number of seconds after which a connection should be
-            recycled.
+        max_overflow: The maximum number of connections to allow in the
+            SQLAlchemy pool in addition to the pool_size.
         grpc_metadata_host: The host to use for the gRPC metadata server.
         grpc_metadata_port: The port to use for the gRPC metadata server.
         grpc_metadata_ssl_ca: The certificate authority certificate to use for
@@ -219,6 +222,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         if url is None:
             return values
 
+        # When running inside a container, if the URL uses localhost, the
+        # target service will not be available. We try to replace localhost
+        # with one of the special Docker or K3D internal hostnames.
+        url = replace_localhost_with_internal_hostname(url)
+
         try:
             sql_url = make_url(url)
         except ArgumentError as e:
@@ -229,6 +237,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 url,
                 str(e),
             )
+
         if sql_url.drivername not in SQLDatabaseDriver.values():
             raise ValueError(
                 "Invalid SQL driver value `%s`: The driver must be one of: %s.",
@@ -334,6 +343,18 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             The local SQL url for the given path.
         """
         return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
+
+    @classmethod
+    def supports_url_scheme(cls, url: str) -> bool:
+        """Check if a URL scheme is supported by this store.
+
+        Args:
+            url: The URL to check.
+
+        Returns:
+            True if the URL scheme is supported, False otherwise.
+        """
+        return make_url(url).drivername in SQLDatabaseDriver.values()
 
     def expand_certificates(self) -> None:
         """Expands the certificates in the verify_ssl field."""

@@ -181,6 +181,7 @@ class LocalDockerOrchestrator(BaseOrchestrator):
                 volumes=volumes,
                 environment=environment,
                 stream=True,
+                extra_hosts={"host.docker.internal": "host-gateway"},
                 **(settings.run_args if settings else {}),
             )
 
