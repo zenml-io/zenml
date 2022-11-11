@@ -170,10 +170,6 @@ class Environment(metaclass=SingletonMetaClass):
             `True` if the current python process is running in a docker
             container, `False` otherwise.
         """
-        # TODO [ENG-167]: Make this more reliable and add test.
-        if not INSIDE_ZENML_CONTAINER:
-            return False
-
         if os.path.exists("./dockerenv") or os.path.exists("/.dockerinit"):
             return True
 
