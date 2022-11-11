@@ -15,7 +15,7 @@
 
 import time
 from importlib import import_module
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import Callable, List, Optional
 
 import click
 from rich.markdown import Markdown
@@ -32,9 +32,6 @@ from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.io import fileio
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-
-if TYPE_CHECKING:
-    pass
 
 
 def generate_stack_component_get_command(

@@ -47,6 +47,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.new_models import (
     ComponentRequestModel,
+    ComponentUpdateModel,
     FlavorRequestModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -1263,51 +1264,41 @@ class Client(metaclass=ClientMetaClass):
             The updated component.
         """
         # Get the existing component model
-        component_to_update = self.get_stack_component(
+        existing_component = self.get_stack_component(
             name_id_or_prefix=name_id_or_prefix,
             component_type=component_type,
         )
 
-        name_update = component_to_update.name
-        if name:
-            name_update = name
+        update_model = ComponentUpdateModel()
 
-        configuration_update = component_to_update.configuration
-        if configuration:
-            # Get the flavor model of the existing component
+        if name is not None:
+            update_model.name = name
+
+        if is_shared is not None:
+            update_model.is_shared = is_shared
+
+        if configuration is not None:
+            existing_configuration = existing_component.configuration
+            existing_configuration.update(configuration)
+
             flavor_model = self.get_flavor_by_name_and_type(
-                name=component_to_update.flavor,
-                component_type=component_to_update.type,
+                name=existing_component.flavor,
+                component_type=existing_component.type,
             )
 
-            # Use the flavor class to validate the new configuration
             from zenml.stack import Flavor
 
             flavor = Flavor.from_model(flavor_model)
-
-            configuration_update = component_to_update.configuration
-            configuration_update.update(configuration)
-
-            configuration_obj = flavor.config_class(**configuration_update)
+            configuration_obj = flavor.config_class(**existing_configuration)
 
             self._validate_stack_component_configuration(
-                component_to_update.type, configuration=configuration_obj
+                existing_component.type, configuration=configuration_obj
             )
-
-        share_update = component_to_update.is_shared
-        if is_shared:
-            share_update = True
-
-        update_request_model = ComponentRequestModel(
-            name=name_update,
-            configuration=configuration_update,
-            is_shared=share_update,
-        )
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
-            component_id=component_to_update.id,
-            component_update=update_request_model,
+            component_id=existing_component.id,
+            component_update=update_model,
         )
 
     def deregister_stack_component(

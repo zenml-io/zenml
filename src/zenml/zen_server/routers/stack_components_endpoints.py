@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import StackComponentType
-from zenml.new_models import ComponentRequestModel, ComponentResponseModel
+from zenml.new_models import ComponentResponseModel, ComponentUpdateModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -118,7 +118,7 @@ def get_stack_component(component_id: UUID) -> ComponentResponseModel:
 @handle_exceptions
 def update_stack_component(
     component_id: UUID,
-    component_update: ComponentRequestModel,
+    component_update: ComponentUpdateModel,
     _: AuthContext = Security(authorize, scopes=["write"]),
 ) -> ComponentResponseModel:
     """Updates a stack component.

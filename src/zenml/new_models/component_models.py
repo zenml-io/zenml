@@ -21,6 +21,7 @@ from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.new_models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
+    update,
 )
 
 # TODO: Add example schemas and analytics fields
@@ -63,3 +64,13 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
 
 class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
     """ """
+
+
+# ------ #
+# UPDATE #
+# ------ #
+
+
+@update
+class ComponentUpdateModel(ComponentRequestModel):
+    """"""

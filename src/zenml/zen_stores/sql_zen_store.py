@@ -71,6 +71,7 @@ from zenml.new_models import (
     ArtifactResponseModel,
     ComponentRequestModel,
     ComponentResponseModel,
+    ComponentUpdateModel,
     FlavorRequestModel,
     FlavorResponseModel,
     PipelineRequestModel,
@@ -921,18 +922,20 @@ class SqlZenStore(BaseZenStore):
                 )
             # In case of a renaming update, make sure no stack already exists
             # with that name
-            if existing_stack.name != stack_update.name:
-                self._fail_if_stack_with_name_exists_for_user(
-                    stack=stack_update, session=session
-                )
+            if stack_update.name:
+                if existing_stack.name != stack_update.name:
+                    self._fail_if_stack_with_name_exists_for_user(
+                        stack=stack_update, session=session
+                    )
 
             # Check if stack update makes the stack a shared stack. In that
             # case, check if a stack with the same name is already shared
             # within the project
-            if not existing_stack.is_shared and stack_update.is_shared:
-                self._fail_if_stack_with_name_already_shared(
-                    stack=stack_update, session=session
-                )
+            if stack_update.is_shared:
+                if not existing_stack.is_shared and stack_update.is_shared:
+                    self._fail_if_stack_with_name_already_shared(
+                        stack=stack_update, session=session
+                    )
 
             existing_stack.update(stack_update=stack_update, session=session)
 
@@ -1164,7 +1167,7 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
-        self, component_id: UUID, component_update: ComponentRequestModel
+        self, component_id: UUID, component_update: ComponentUpdateModel
     ) -> ComponentResponseModel:
         """Update an existing stack component.
 
@@ -1194,27 +1197,26 @@ class SqlZenStore(BaseZenStore):
 
             # In case of a renaming update, make sure no component of the same
             # type already exists with that name
-            if existing_component.name != component_update.name:
-                self._fail_if_component_with_name_type_exists_for_user(
-                    component=component_update,
-                    session=session,
-                )
+            if component_update.name:
+                if existing_component.name != component_update.name:
+                    self._fail_if_component_with_name_type_exists_for_user(
+                        component=component_update,
+                        session=session,
+                    )
 
             # Check if component update makes the component a shared component,
             # In that case check if a component with the same name, type are
             # already shared within the project
-            if not existing_component.is_shared and component_update.is_shared:
-                self._fail_if_component_with_name_type_already_shared(
-                    component=component_update, session=session
-                )
+            if component_update.is_shared:
+                if (
+                    not existing_component.is_shared
+                    and component_update.is_shared
+                ):
+                    self._fail_if_component_with_name_type_already_shared(
+                        component=component_update, session=session
+                    )
 
-            existing_component.name = component_update.name
-            existing_component.is_shared = component_update.is_shared
-            existing_component.configuration = base64.b64encode(
-                json.dumps(component_update.configuration).encode("utf-8")
-            )
-            existing_component.updated = datetime.now()
-
+            existing_component.update(component_update=component_update)
             session.add(existing_component)
             session.commit()
 

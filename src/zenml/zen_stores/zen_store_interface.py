@@ -23,6 +23,7 @@ from zenml.new_models import (
     ArtifactResponseModel,
     ComponentRequestModel,
     ComponentResponseModel,
+    ComponentUpdateModel,
     FlavorRequestModel,
     FlavorResponseModel,
     PipelineRequestModel,
@@ -316,7 +317,7 @@ class ZenStoreInterface(ABC):
     def update_stack_component(
         self,
         component_id: UUID,
-        component_update: ComponentRequestModel,
+        component_update: ComponentUpdateModel,
     ) -> ComponentResponseModel:
         """Update an existing stack component.
 
