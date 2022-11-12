@@ -26,7 +26,12 @@ from zenml.cli.utils import _component_display_name, print_stacks_table
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import ProvisioningError
+from zenml.exceptions import (
+    IllegalOperationError,
+    ProvisioningError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -377,10 +382,13 @@ def update_stack(
         if step_operator_name:
             updates[StackComponentType.STEP_OPERATOR] = [step_operator_name]
 
-        client.update_stack(
-            name_id_or_prefix=stack_name_or_id,
-            component_updates=updates,
-        )
+        try:
+            client.update_stack(
+                name_id_or_prefix=stack_name_or_id,
+                component_updates=updates,
+            )
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
 
         cli_utils.declare(
             f"Stack `{stack_name_or_id}` successfully " f"updated!"
@@ -406,10 +414,13 @@ def share_stack(
     client = Client()
 
     with console.status(f"Sharing stack `{stack_name_or_id}` ...\n"):
-        client.update_stack(
-            name_id_or_prefix=stack_name_or_id,
-            is_shared=True,
-        )
+        try:
+            client.update_stack(
+                name_id_or_prefix=stack_name_or_id,
+                is_shared=True,
+            )
+        except (IllegalOperationError, StackExistsError) as err:
+            cli_utils.error(str(err))
         cli_utils.declare(f"Stack `{stack_name_or_id}` successfully shared!")
 
 
@@ -553,10 +564,13 @@ def remove_stack_component(
         if data_validator_flag:
             stack_component_update[StackComponentType.DATA_VALIDATOR] = []
 
-        client.update_stack(
-            name_id_or_prefix=stack_name_or_id,
-            component_updates=stack_component_update,
-        )
+        try:
+            client.update_stack(
+                name_id_or_prefix=stack_name_or_id,
+                component_updates=stack_component_update,
+            )
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(f"Stack `{stack_name_or_id}` successfully updated!")
 
 
@@ -578,10 +592,13 @@ def rename_stack(
     client = Client()
 
     with console.status(f"Renaming stack `{stack_name_or_id}`...\n"):
-        client.update_stack(
-            name_id_or_prefix=stack_name_or_id,
-            name=new_stack_name,
-        )
+        try:
+            client.update_stack(
+                name_id_or_prefix=stack_name_or_id,
+                name=new_stack_name,
+            )
+        except (KeyError, IllegalOperationError) as err:
+            cli_utils.error(str(err))
         cli_utils.declare(
             f"Stack `{stack_name_or_id}` successfully renamed to `"
             f"{new_stack_name}`!"
@@ -659,7 +676,10 @@ def delete_stack(stack_name_or_id: str, yes: bool = False) -> None:
 
     with console.status(f"Deleting stack '{stack_name_or_id}'...\n"):
         client = Client()
-        client.deregister_stack(stack_name_or_id)
+        try:
+            client.deregister_stack(stack_name_or_id)
+        except (KeyError, ValueError, IllegalOperationError) as err:
+            cli_utils.error(str(err))
         cli_utils.declare(f"Deleted stack '{stack_name_or_id}'.")
 
 

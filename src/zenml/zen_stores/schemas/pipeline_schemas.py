@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column, ForeignKey, TEXT
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineSpec
@@ -32,8 +32,8 @@ if TYPE_CHECKING:
 class PipelineSchema(NamedSchema, table=True):
     """SQL Model for pipelines."""
 
-    docstring: Optional[str] = Field(max_length=4096, nullable=True)
-    spec: str = Field(max_length=4096)
+    docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    spec: str = Field(sa_column=Column(TEXT, nullable=False))
 
     user_id: UUID = Field(
         sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))

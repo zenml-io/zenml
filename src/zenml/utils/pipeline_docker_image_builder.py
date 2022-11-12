@@ -76,7 +76,8 @@ def _include_global_config(
     )
     try:
         GlobalConfiguration().copy_configuration(
-            config_path, load_config_path=load_config_path
+            config_path,
+            load_config_path=load_config_path,
         )
         yield
     finally:

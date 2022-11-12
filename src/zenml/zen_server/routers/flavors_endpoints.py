@@ -21,13 +21,14 @@ from fastapi import APIRouter, Security
 from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.new_models import FlavorResponseModel
+from zenml.enums import PermissionType, StackComponentType
+from zenml.models import FlavorModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + FLAVORS,
     tags=["flavors"],
-    dependencies=[Security(authorize, scopes=["read"])],
     responses={401: error_response},
 )
 
@@ -44,6 +45,7 @@ def list_flavors(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[FlavorResponseModel]:
     """Returns all flavors.
 
@@ -53,8 +55,6 @@ def list_flavors(
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by flavor name.
         is_shared: Optionally filter by shared status of the flavor.
-        hydrated: Defines if users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         All flavors.
@@ -74,13 +74,14 @@ def list_flavors(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_flavor(flavor_id: UUID, hydrated: bool = False) -> FlavorResponseModel:
+def get_flavor(
+    flavor_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> FlavorResponseModel:
     """Returns the requested flavor.
 
     Args:
         flavor_id: ID of the flavor.
-        hydrated: Defines if users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The requested stack.
@@ -98,16 +99,13 @@ def get_flavor(flavor_id: UUID, hydrated: bool = False) -> FlavorResponseModel:
 def update_flavor(
     flavor_id: UUID,
     flavor: FlavorResponseModel,
-    hydrated: bool = False,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> FlavorResponseModel:
     """Updates a stack.
 
     Args:
         flavor_id: ID of the flavor.
         flavor: Flavor to use for the update.
-        hydrated: Defines if users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The updated flavor.
@@ -123,7 +121,8 @@ def update_flavor(
 )
 @handle_exceptions
 def delete_flavor(
-    flavor_id: UUID, _: AuthContext = Security(authorize, scopes=["write"])
+    flavor_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Deletes a flavor.
 

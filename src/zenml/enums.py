@@ -166,7 +166,7 @@ class AnalyticsEventSource(StrEnum):
     ZENML_SERVER = "zenml server"
 
 
-class PermissionType(Enum):
+class PermissionType(StrEnum):
     """All permission types."""
 
     # ANY CHANGES TO THIS ENUM WILL NEED TO BE DONE TOGETHER WITH A DB MIGRATION

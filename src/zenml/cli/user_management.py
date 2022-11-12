@@ -49,7 +49,6 @@ def list_users() -> None:
     cli_utils.print_pydantic_models(
         users,
         exclude_columns=[
-            "id",
             "created",
             "updated",
             "email",
@@ -456,7 +455,7 @@ def update_project(
         project.name = name or project.name
         project.description = description or project.description
         Client().zen_store.update_project(project)
-    except (EntityExistsError, KeyError) as err:
+    except (EntityExistsError, KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Updated project '{project_name}'.")
 
@@ -531,7 +530,7 @@ def list_roles() -> None:
         return
     cli_utils.print_pydantic_models(
         roles,
-        exclude_columns=["id", "created", "updated"],
+        exclude_columns=["created", "updated"],
     )
 
 
@@ -607,7 +606,7 @@ def update_role(
             remove_permission=remove_permission,
             add_permission=add_permission,
         )
-    except (EntityExistsError, KeyError) as err:
+    except (EntityExistsError, KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Updated role '{role_name}'.")
 
@@ -625,7 +624,7 @@ def delete_role(role_name_or_id: str) -> None:
         Client().zen_store.delete_role(
             role_name_or_id=parse_name_or_uuid(role_name_or_id)
         )
-    except KeyError as err:
+    except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Deleted role '{role_name_or_id}'.")
 
@@ -790,11 +789,17 @@ def list_role_assignments(
             for.
     """
     cli_utils.print_active_config()
-    role_assignments = Client().zen_store.list_role_assignments(
-        user_name_or_id=user_name_or_id,
-        team_name_or_id=team_name_or_id,
-        project_name_or_id=project_name_or_id,
-    )
+    # Hacky workaround while role assignments are scoped to the user endpoint
+    role_assignments = []
+    for user in Client().zen_store.users:
+        role_assignments.extend(
+            Client().zen_store.list_role_assignments(
+                user_name_or_id=user.id,
+                role_name_or_id=role_name_or_id,
+                team_name_or_id=team_name_or_id,
+                project_name_or_id=project_name_or_id,
+            )
+        )
     if not role_assignments:
         cli_utils.declare("No roles assigned.")
         return

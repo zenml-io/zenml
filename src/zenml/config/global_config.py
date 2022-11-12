@@ -489,19 +489,25 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._write_config(config_path)
         config_copy = GlobalConfiguration(config_path=config_path)
 
+        store: Optional[StoreConfiguration] = None
+
         if store_config is not None:
-            config_copy.store = store_config
+            store = store_config
 
         elif empty_store or self.uses_default_store():
-            config_copy.store = None
+            store = None
 
         elif self.store:
-            store_class = BaseZenStore.get_store_class(self.store.type)
+            store_config_class = BaseZenStore.get_store_config_class(
+                self.store.type
+            )
 
-            store_config_copy = store_class.CONFIG_TYPE.copy_configuration(
+            store_config_copy = store_config_class.copy_configuration(
                 self.store, config_path, load_config_path
             )
-            config_copy.store = store_config_copy
+            store = store_config_copy
+
+        config_copy.store = store
 
         return config_copy
 
@@ -544,6 +550,11 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             if k.startswith(ENV_ZENML_STORE_PREFIX):
                 env_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
         if len(env_config):
+            if "type" not in env_config and "url" in env_config:
+                env_config["type"] = BaseZenStore.get_store_type(
+                    env_config["url"]
+                )
+
             logger.debug(
                 "Using environment variables to configure the default store"
             )

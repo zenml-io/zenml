@@ -27,19 +27,19 @@ from zenml.constants import (
     STEPS,
     VERSION_1,
 )
+from zenml.enums import ExecutionStatus, PermissionType
 from zenml.enums import ExecutionStatus
 from zenml.new_models import (
     ArtifactResponseModel,
     StepRunRequestModel,
     StepRunResponseModel,
 )
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + STEPS,
     tags=["steps"],
-    dependencies=[Security(authorize, scopes=["read"])],
     responses={401: error_response},
 )
 
@@ -52,6 +52,7 @@ router = APIRouter(
 @handle_exceptions
 def list_run_steps(
     run_id: Optional[UUID] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[StepRunResponseModel]:
     """Get run steps according to query filters.
 
@@ -70,7 +71,10 @@ def list_run_steps(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_run_step(step: StepRunRequestModel) -> StepRunResponseModel:
+def create_run_step(
+    step: StepRunRequestModel,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> StepRunResponseModel:
     """Create a run step.
 
     Args:
@@ -88,7 +92,10 @@ def create_run_step(step: StepRunRequestModel) -> StepRunResponseModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_step(step_id: UUID) -> StepRunResponseModel:
+def get_step(
+    step_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> StepRunResponseModel:
     """Get one specific step.
 
     Args:
@@ -107,7 +114,9 @@ def get_step(step_id: UUID) -> StepRunResponseModel:
 )
 @handle_exceptions
 def update_step(
-    step_id: UUID, step_model: StepRunRequestModel
+    step_id: UUID,
+    step_model: StepRunRequestModel,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> StepRunResponseModel:
     """Updates a step.
 
@@ -129,7 +138,10 @@ def update_step(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_step_outputs(step_id: UUID) -> Dict[str, ArtifactResponseModel]:
+def get_step_outputs(
+    step_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Dict[str, ArtifactResponseModel]:
     """Get the outputs of a specific step.
 
     Args:
@@ -150,7 +162,10 @@ def get_step_outputs(step_id: UUID) -> Dict[str, ArtifactResponseModel]:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_step_inputs(step_id: UUID) -> Dict[str, ArtifactResponseModel]:
+def get_step_inputs(
+    step_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Dict[str, ArtifactResponseModel]:
     """Get the inputs of a specific step.
 
     Args:
@@ -168,7 +183,10 @@ def get_step_inputs(step_id: UUID) -> Dict[str, ArtifactResponseModel]:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_step_configuration(step_id: UUID) -> Dict[str, Any]:
+def get_step_configuration(
+    step_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Dict[str, Any]:
     """Get the configuration of a specific step.
 
     Args:
@@ -186,7 +204,10 @@ def get_step_configuration(step_id: UUID) -> Dict[str, Any]:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_step_status(step_id: UUID) -> ExecutionStatus:
+def get_step_status(
+    step_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> ExecutionStatus:
     """Get the status of a specific step.
 
     Args:

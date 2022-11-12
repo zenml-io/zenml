@@ -671,6 +671,7 @@ class ZenStoreInterface(ABC):
     def list_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentResponseModel]:
@@ -679,6 +680,8 @@ class ZenStoreInterface(ABC):
         Args:
             project_name_or_id: If provided, only list assignments for the given
                 project
+            role_name_or_id: If provided, only list assignments of the given
+                role
             team_name_or_id: If provided, only list assignments for the given
                 team
             user_name_or_id: If provided, only list assignments for the given
