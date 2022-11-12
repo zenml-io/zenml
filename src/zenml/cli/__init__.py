@@ -1036,8 +1036,8 @@ A role groups permissions to resources. Currently, there are the following
 globally scoped roles to choose from: 'write', 'read' and 'me'. To create
 a role, run one of the following commands:
 ```bash
-zenml role create ROLE_NAME --write --read --me
-zenml role create ROLE_NAME --read
+zenml role create ROLE_NAME -p write -p read -p me
+zenml role create ROLE_NAME -p read
 ```
 
 To delete a role run:
