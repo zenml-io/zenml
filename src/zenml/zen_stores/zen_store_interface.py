@@ -45,7 +45,7 @@ from zenml.new_models import (
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, RoleUpdateModel,
 )
 from zenml.new_models.project_models import ProjectUpdateModel
 from zenml.new_models.user_models import UserAuthModel
@@ -623,7 +623,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_role(
-        self, role_id: UUID, role_update: RoleRequestModel
+        self, role_id: UUID, role_update: RoleUpdateModel
     ) -> RoleResponseModel:
         """Update an existing role.
 

@@ -92,7 +92,7 @@ from zenml.new_models import (
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
-    UserResponseModel,
+    UserResponseModel, RoleUpdateModel,
 )
 from zenml.new_models.project_models import ProjectUpdateModel
 from zenml.new_models.user_models import UserAuthModel, UserUpdateModel
@@ -1918,7 +1918,7 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(
-        self, role_id: UUID, role_update: RoleRequestModel
+        self, role_id: UUID, role_update: RoleUpdateModel
     ) -> RoleResponseModel:
         """Update an existing role.
 

@@ -702,8 +702,8 @@ class Client(metaclass=ClientMetaClass):
         """
         role = self._get_entity_by_id_or_name_or_prefix(
             response_model=RoleResponseModel,
-            get_method=self.zen_store.get_team,
-            list_method=self.zen_store.list_teams,
+            get_method=self.zen_store.get_role,
+            list_method=self.zen_store.list_roles,
             name_id_or_prefix=name_id_or_prefix,
         )
 
