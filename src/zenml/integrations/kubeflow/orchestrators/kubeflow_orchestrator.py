@@ -137,15 +137,17 @@ class KubeflowOrchestrator(BaseOrchestrator):
     def kubernetes_context(self) -> str:
         """Gets the kubernetes context associated with the orchestrator.
 
-        This sets the default `kubernetes_context` value to the value that is
-        used to create the locally managed k3d cluster, if not explicitly set.
+        This sets the default `kubernetes_context` value to the active
+        kubernetes context if it is set, otherwise it falls back to the
+        k3d local kubernetes context.
 
         Returns:
             The kubernetes context associated with the orchestrator.
         """
         if self.config.kubernetes_context:
             return self.config.kubernetes_context
-        return self._get_k3d_kubernetes_context(self.id)
+        _ , active_context = self.get_kubernetes_contexts()
+        return active_context if active_context else self._get_k3d_kubernetes_context(self.id)
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:
         """Get the list of configured Kubernetes contexts and the active context.
