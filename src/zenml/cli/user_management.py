@@ -561,7 +561,7 @@ def create_role(role_name: str, permissions: List[str]) -> None:
 
 @role.command("update", help="Update an existing role.")
 @click.argument("role_name", type=str, required=True)
-@click.option("--name", "-n", type=str, required=False, help="New role name.")
+@click.option("--name", "-n", "new_name", type=str, required=False, help="New role name.")
 @click.option(
     "--remove-permission",
     "-r",
@@ -578,7 +578,7 @@ def create_role(role_name: str, permissions: List[str]) -> None:
 )
 def update_role(
     role_name: str,
-    name: Optional[str] = None,
+    new_name: Optional[str] = None,
     remove_permission: Optional[List[str]] = None,
     add_permission: Optional[List[str]] = None,
 ) -> None:
@@ -586,7 +586,7 @@ def update_role(
 
     Args:
         role_name: The name of the role.
-        name: The new name of the role.
+        new_name: The new name of the role.
         remove_permission: Name of permission to remove from role
         add_permission: Name of permission to add to role
     """
@@ -603,6 +603,7 @@ def update_role(
     try:
         Client().update_role(
             name_id_or_prefix=role_name,
+            new_name=new_name,
             remove_permission=remove_permission,
             add_permission=add_permission,
         )
