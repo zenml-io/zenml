@@ -21,7 +21,8 @@ from zenml.enums import PermissionType
 from zenml.new_models import (
     RoleAssignmentRequestModel,
     RoleRequestModel,
-    RoleResponseModel, RoleUpdateModel,
+    RoleResponseModel,
+    RoleUpdateModel,
 )
 from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema

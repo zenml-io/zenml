@@ -18,8 +18,11 @@ from zenml.models.constants import (
     MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,
 )
-from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel, \
-    update
+from zenml.new_models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update,
+)
 
 
 # ---- #
@@ -55,6 +58,7 @@ class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
 
 class ProjectRequestModel(ProjectBaseModel, BaseRequestModel):
     """"""
+
 
 # ------ #
 # UPDATE #

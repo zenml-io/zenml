@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey, TEXT
+from sqlalchemy import TEXT, Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineSpec

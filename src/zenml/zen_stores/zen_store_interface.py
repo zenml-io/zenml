@@ -36,6 +36,7 @@ from zenml.new_models import (
     RoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
+    RoleUpdateModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -45,7 +46,7 @@ from zenml.new_models import (
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, RoleUpdateModel,
+    UserUpdateModel,
 )
 from zenml.new_models.project_models import ProjectUpdateModel
 from zenml.new_models.user_models import UserAuthModel

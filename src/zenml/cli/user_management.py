@@ -132,12 +132,12 @@ def create_user(
         except KeyError as err:
             cli_utils.error(str(err))
 
-    if not new_user.active and new_user.activation_token is not None:
-        cli_utils.declare(
-            f"The created user account is currently inactive. You can activate "
-            f"it by visiting the dashboard at the following URL:\n"
-            f"{client.zen_store.url}/signup?user={str(new_user.id)}&username={new_user.name}&token={new_user.activation_token.get_secret_value()}\n"
-        )
+        if not new_user.active and new_user.activation_token is not None:
+            cli_utils.declare(
+                f"The created user account is currently inactive. You can "
+                f"activate it by visiting the dashboard at the following URL:\n"
+                f"{client.zen_store.url}/signup?user={str(new_user.id)}&username={new_user.name}&token={new_user.activation_token.get_secret_value()}\n"
+            )
 
 
 @user.command(
@@ -423,7 +423,12 @@ def create_project(project_name: str, description: str) -> None:
 @project.command("update", help="Update an existing project.", hidden=True)
 @click.argument("project_name", type=str, required=True)
 @click.option(
-    "--name", "-n", "new_name", type=str, required=False, help="New project name."
+    "--name",
+    "-n",
+    "new_name",
+    type=str,
+    required=False,
+    help="New project name.",
 )
 @click.option(
     "--description",
@@ -451,7 +456,7 @@ def update_project(
         project = Client().update_project(
             name=project_name,
             new_name=new_name,
-            new_description=new_description
+            new_description=new_description,
         )
     except (EntityExistsError, KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
@@ -551,15 +556,15 @@ def create_role(role_name: str, permissions: List[str]) -> None:
     """
     cli_utils.print_active_config()
 
-    from zenml.models import RoleModel
-
     Client().create_role(name=role_name, permissions_list=permissions)
     cli_utils.declare(f"Created role '{role_name}'.")
 
 
 @role.command("update", help="Update an existing role.")
 @click.argument("role_name", type=str, required=True)
-@click.option("--name", "-n", "new_name", type=str, required=False, help="New role name.")
+@click.option(
+    "--name", "-n", "new_name", type=str, required=False, help="New role name."
+)
 @click.option(
     "--remove-permission",
     "-r",
@@ -592,11 +597,13 @@ def update_role(
 
     union_add_rm = set(remove_permission) & set(add_permission)
     if union_add_rm:
-        cli_utils.error(f"The `--remove-permission` and `--add-permission` "
-                        f"options both contain the same value: "
-                        f"`{union_add_rm}`. Please rerun command and make sure "
-                        f"that the same role does not show up for "
-                        f"`--remove-permission` and `--add-permission`.")
+        cli_utils.error(
+            f"The `--remove-permission` and `--add-permission` "
+            f"options both contain the same value: "
+            f"`{union_add_rm}`. Please rerun command and make sure "
+            f"that the same role does not show up for "
+            f"`--remove-permission` and `--add-permission`."
+        )
 
     try:
         Client().update_role(

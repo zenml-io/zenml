@@ -15,7 +15,7 @@
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Security
 
 from zenml.constants import (
     API,
@@ -115,7 +115,9 @@ def get_run(
 def update_run(
     run_id: UUID,
     run_model: PipelineRunRequestModel,
-    auth_context: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
 ) -> PipelineRunResponseModel:
     """Updates a run.
 

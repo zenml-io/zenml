@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """REST Zen Store implementation."""
-import json
 import os
 import re
 from pathlib import Path, PurePath
@@ -72,12 +71,6 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel
 from zenml.models.server_models import ServerModel
-from zenml.new_models.project_models import ProjectUpdateModel
-from zenml.utils.analytics_utils import AnalyticsEvent, track
-from zenml.utils.networking_utils import (
-    replace_internal_hostname_with_localhost,
-    replace_localhost_with_internal_hostname,
-)
 from zenml.new_models import (
     ArtifactRequestModel,
     ComponentRequestModel,
@@ -116,7 +109,12 @@ from zenml.new_models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
+from zenml.new_models.project_models import ProjectUpdateModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.networking_utils import (
+    replace_internal_hostname_with_localhost,
+    replace_localhost_with_internal_hostname,
+)
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)

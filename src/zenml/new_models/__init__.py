@@ -36,7 +36,7 @@ from zenml.new_models.pipeline_run_models import (
 from zenml.new_models.project_models import (
     ProjectRequestModel,
     ProjectResponseModel,
-    ProjectUpdateModel
+    ProjectUpdateModel,
 )
 from zenml.new_models.role_assignment_models import (
     RoleAssignmentRequestModel,

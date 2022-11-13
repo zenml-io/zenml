@@ -16,7 +16,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Security
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.enums import PermissionType
@@ -43,7 +43,9 @@ def list_stacks(
     component_id: Optional[UUID] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    auth_context: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> List[StackResponseModel]:
     """Returns all stacks.
 

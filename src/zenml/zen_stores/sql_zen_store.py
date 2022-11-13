@@ -84,6 +84,7 @@ from zenml.new_models import (
     RoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
+    RoleUpdateModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -92,7 +93,7 @@ from zenml.new_models import (
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
-    UserResponseModel, RoleUpdateModel,
+    UserResponseModel,
 )
 from zenml.new_models.project_models import ProjectUpdateModel
 from zenml.new_models.user_models import UserAuthModel, UserUpdateModel
@@ -1677,7 +1678,7 @@ class SqlZenStore(BaseZenStore):
             )
             if (
                 existing_user.name == self._default_user_name
-                and 'name' in user_update.__fields_set__
+                and "name" in user_update.__fields_set__
                 and user_update.name != existing_user.name
             ):
                 raise IllegalOperationError(

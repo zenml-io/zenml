@@ -22,10 +22,11 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Type,
     TypeVar,
     Union,
-    cast, Set,
+    cast,
 )
 from uuid import UUID
 
@@ -45,7 +46,6 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import ProjectModel
 from zenml.new_models import (
     ComponentRequestModel,
     ComponentUpdateModel,
@@ -53,7 +53,9 @@ from zenml.new_models import (
     PipelineRequestModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
+    ProjectRequestModel,
     RoleAssignmentRequestModel,
+    RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
     StackRequestModel,
@@ -62,7 +64,7 @@ from zenml.new_models import (
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, RoleRequestModel, ProjectRequestModel,
+    UserUpdateModel,
 )
 from zenml.new_models.base_models import BaseResponseModel
 from zenml.new_models.project_models import ProjectUpdateModel
@@ -554,7 +556,7 @@ class Client(metaclass=ClientMetaClass):
     def create_user(
         self,
         name: str,
-        password: Optional[str],
+        password: Optional[str] = None,
     ):
         user = UserRequestModel(name=name, password=password or None)
         if self.zen_store.type != StoreType.REST:
@@ -610,9 +612,14 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.zen_store.list_users,
             name_id_or_prefix=user_name_or_id,
         )
-        user_update = UserUpdateModel(
-            name=updated_name, full_name=updated_full_name, email=updated_email
-        )
+
+        user_update = UserUpdateModel()
+        if updated_name:
+            user_update.name = updated_name
+        if updated_full_name:
+            user_update.full_name = updated_full_name
+        if updated_email:
+            user_update.email = updated_email
         return self.zen_store.update_user(
             user_name_or_id=user.id, user_update=user_update
         )
@@ -658,9 +665,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def create_role(
-        self,
-        name: str,
-        permissions_list: List[str]
+        self, name: str, permissions_list: List[str]
     ) -> RoleResponseModel:
         """Gets a user.
 
@@ -676,10 +681,7 @@ class Client(metaclass=ClientMetaClass):
             if permission in PermissionType.values():
                 permissions.add(PermissionType(permission))
 
-        new_role = RoleRequestModel(
-            name=name,
-            permissions=permissions
-        )
+        new_role = RoleRequestModel(name=name, permissions=permissions)
         return self.zen_store.create_role(new_role)
 
     def update_role(
@@ -729,12 +731,10 @@ class Client(metaclass=ClientMetaClass):
                     role_permissions.add(PermissionType(add_p))
 
         role_update = RoleUpdateModel(
-            name=new_name,
-            permissions=role_permissions
+            name=new_name, permissions=role_permissions
         )
         return Client().zen_store.update_role(
-            role_id=role.id,
-            role_update=role_update
+            role_id=role.id, role_update=role_update
         )
 
     def delete_role(self, name_id_or_prefix: str) -> None:
@@ -830,9 +830,7 @@ class Client(metaclass=ClientMetaClass):
         return project
 
     def create_project(
-        self,
-        name: str,
-        description: str
+        self, name: str, description: str
     ) -> "ProjectResponseModel":
         """Create a new project.
 
@@ -845,10 +843,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def update_project(
-            self,
-            name: str,
-            new_name: str,
-            new_description: str
+        self, name: str, new_name: str, new_description: str
     ) -> "ProjectResponseModel":
         """Create a new project.
 
@@ -861,13 +856,15 @@ class Client(metaclass=ClientMetaClass):
             response_model=ProjectResponseModel,
             get_method=self.zen_store.get_project,
             list_method=self.zen_store.list_projects,
-            name_id_or_prefix=name
+            name_id_or_prefix=name,
         )
         return self.zen_store.update_project(
             project_id=project.id,
-            project_update=ProjectUpdateModel(name=new_name,
-                                              description=new_description)
+            project_update=ProjectUpdateModel(
+                name=new_name, description=new_description
+            ),
         )
+
     def delete_project(self, project_name_or_id: str) -> None:
         """Delete a project.
 

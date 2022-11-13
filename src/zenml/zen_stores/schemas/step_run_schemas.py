@@ -2,7 +2,7 @@ import json
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, TEXT
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, SQLModel
 
 from zenml.enums import ExecutionStatus

@@ -17,8 +17,11 @@ from typing import TYPE_CHECKING, List
 
 from sqlmodel import Relationship
 
-from zenml.new_models import ProjectRequestModel, ProjectResponseModel, \
-    UserUpdateModel, ProjectUpdateModel
+from zenml.new_models import (
+    ProjectRequestModel,
+    ProjectResponseModel,
+    ProjectUpdateModel,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:

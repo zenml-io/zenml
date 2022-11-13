@@ -29,7 +29,6 @@ from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import (
     IllegalOperationError,
     ProvisioningError,
-    StackComponentExistsError,
     StackExistsError,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event

@@ -29,7 +29,7 @@ from zenml.constants import (
     STATISTICS,
     VERSION_1,
 )
-from zenml.enums import  PermissionType, StackComponentType
+from zenml.enums import PermissionType, StackComponentType
 from zenml.new_models import (
     ComponentRequestModel,
     ComponentResponseModel,
@@ -206,7 +206,9 @@ def list_project_stacks(
     component_id: Optional[UUID] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    auth_context: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> List[StackResponseModel]:
     """Get stacks that are part of a specific project.
 
@@ -289,7 +291,9 @@ def list_project_stack_components(
     name: Optional[str] = None,
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    auth_context: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> List[ComponentResponseModel]:
     """List stack components that are part of a specific project.
 

@@ -28,7 +28,6 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus, PermissionType
-from zenml.enums import ExecutionStatus
 from zenml.new_models import (
     ArtifactResponseModel,
     StepRunRequestModel,

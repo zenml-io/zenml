@@ -17,8 +17,6 @@ from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Security, status
-from pydantic import SecretStr
-from fastapi import APIRouter, Depends, HTTPException, Security, status
 
 from zenml.constants import (
     ACTIVATE,
@@ -414,7 +412,8 @@ def unassign_role(
 def get_current_user(
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
-    ),) -> UserResponseModel:
+    ),
+) -> UserResponseModel:
     """Returns the model of the authenticated user.
 
     Args:

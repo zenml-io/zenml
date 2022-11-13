@@ -15,7 +15,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Security
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
@@ -49,7 +49,9 @@ def list_stack_components(
     name: Optional[str] = None,
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    auth_context: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.READ]
+    ),
 ) -> List[ComponentResponseModel]:
     """Get a list of all stack components for a specific type.
 
