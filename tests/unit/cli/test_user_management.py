@@ -278,3 +278,29 @@ def test_update_default_role_fails(
         ],
     )
     assert result.exit_code == 1
+
+
+def test_delete_role_succeeds(
+    client_with_sample_role,
+) -> None:
+    """Test that deleting a role succeeds."""
+    role_update_command = cli.commands["role"].commands["delete"]
+    runner = CliRunner()
+    result = runner.invoke(
+        role_update_command,
+        [SAMPLE_ROLE],
+    )
+    assert result.exit_code == 0
+
+
+def test_delete_default_role_fails(
+    clean_client,
+) -> None:
+    """Test that deleting a role succeeds."""
+    role_update_command = cli.commands["role"].commands["delete"]
+    runner = CliRunner()
+    result = runner.invoke(
+        role_update_command,
+        [DEFAULT_ADMIN_ROLE],
+    )
+    assert result.exit_code == 1
