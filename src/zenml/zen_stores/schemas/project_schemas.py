@@ -12,12 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Projects."""
-
+from datetime import datetime
 from typing import TYPE_CHECKING, List
 
 from sqlmodel import Relationship
 
-from zenml.new_models import ProjectRequestModel, ProjectResponseModel
+from zenml.new_models import ProjectRequestModel, ProjectResponseModel, \
+    UserUpdateModel, ProjectUpdateModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
@@ -71,6 +72,13 @@ class ProjectSchema(NamedSchema, table=True):
             The created `ProjectSchema`.
         """
         return cls(name=project.name, description=project.description)
+
+    def update(self, project_update: ProjectUpdateModel):
+        for field, value in project_update.dict(exclude_unset=True).items():
+            setattr(self, field, value)
+
+        self.updated = datetime.now()
+        return self
 
     def to_model(self) -> ProjectResponseModel:
         """Convert a `ProjectSchema` to a `ProjectResponseModel`.

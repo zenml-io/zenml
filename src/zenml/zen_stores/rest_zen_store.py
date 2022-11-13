@@ -72,6 +72,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel
 from zenml.models.server_models import ServerModel
+from zenml.new_models.project_models import ProjectUpdateModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.networking_utils import (
     replace_internal_hostname_with_localhost,
@@ -91,10 +92,12 @@ from zenml.new_models import (
     PipelineRunResponseModel,
     ProjectRequestModel,
     ProjectResponseModel,
+    ProjectUpdateModel,
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
+    RoleUpdateModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -1066,7 +1069,7 @@ class RestZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(
-        self, role_id: UUID, role_update: RoleRequestModel
+        self, role_id: UUID, role_update: RoleUpdateModel
     ) -> RoleResponseModel:
         """Update an existing role.
 
@@ -1215,7 +1218,7 @@ class RestZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_PROJECT)
     def update_project(
-        self, project_id: UUID, project_update: ProjectRequestModel
+        self, project_id: UUID, project_update: ProjectUpdateModel
     ) -> ProjectResponseModel:
         """Update an existing project.
 

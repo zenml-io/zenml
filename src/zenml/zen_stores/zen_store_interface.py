@@ -47,6 +47,7 @@ from zenml.new_models import (
     UserResponseModel,
     UserUpdateModel,
 )
+from zenml.new_models.project_models import ProjectUpdateModel
 from zenml.new_models.user_models import UserAuthModel
 
 if TYPE_CHECKING:
@@ -742,7 +743,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_project(
-        self, project_id: UUID, project_update: ProjectRequestModel
+        self, project_id: UUID, project_update: ProjectUpdateModel
     ) -> ProjectResponseModel:
         """Update an existing project.
 

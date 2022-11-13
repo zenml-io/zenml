@@ -414,11 +414,7 @@ def create_project(project_name: str, description: str) -> None:
     warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     try:
-        from zenml.models import ProjectModel
-
-        Client().zen_store.create_project(
-            ProjectModel(name=project_name, description=description)
-        )
+        Client().create_project(name=project_name, description=description)
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created project '{project_name}'.")
@@ -427,34 +423,36 @@ def create_project(project_name: str, description: str) -> None:
 @project.command("update", help="Update an existing project.", hidden=True)
 @click.argument("project_name", type=str, required=True)
 @click.option(
-    "--name", "-n", type=str, required=False, help="New project name."
+    "--name", "-n", "new_name", type=str, required=False, help="New project name."
 )
 @click.option(
     "--description",
     "-d",
+    "new_description",
     type=str,
     required=False,
     help="New project description.",
 )
 def update_project(
     project_name: str,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
+    new_name: Optional[str] = None,
+    new_description: Optional[str] = None,
 ) -> None:
     """Update an existing project.
 
     Args:
         project_name: The name of the project.
-        name: The new name of the project.
-        description: The new description of the project.
+        new_name: The new name of the project.
+        new_description: The new description of the project.
     """
     warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     try:
-        project = Client().zen_store.get_project(project_name)
-        project.name = name or project.name
-        project.description = description or project.description
-        Client().zen_store.update_project(project)
+        project = Client().update_project(
+            name=project_name,
+            new_name=new_name,
+            new_description=new_description
+        )
     except (EntityExistsError, KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Updated project '{project_name}'.")

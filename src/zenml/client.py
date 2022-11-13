@@ -45,6 +45,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.models import ProjectModel
 from zenml.new_models import (
     ComponentRequestModel,
     ComponentUpdateModel,
@@ -61,9 +62,10 @@ from zenml.new_models import (
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, RoleRequestModel,
+    UserUpdateModel, RoleRequestModel, ProjectRequestModel,
 )
 from zenml.new_models.base_models import BaseResponseModel
+from zenml.new_models.project_models import ProjectUpdateModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -827,6 +829,45 @@ class Client(metaclass=ClientMetaClass):
             )
         return project
 
+    def create_project(
+        self,
+        name: str,
+        description: str
+    ) -> "ProjectResponseModel":
+        """Create a new project.
+
+        Args:
+            name: Name of the project
+            description: Description of the project
+        """
+        return self.zen_store.create_project(
+            ProjectRequestModel(name=name, description=description)
+        )
+
+    def update_project(
+            self,
+            name: str,
+            new_name: str,
+            new_description: str
+    ) -> "ProjectResponseModel":
+        """Create a new project.
+
+        Args:
+            name: Name of the project
+            new_name: Name of the project
+            new_description: Description of the project
+        """
+        project = self._get_entity_by_id_or_name_or_prefix(
+            response_model=ProjectResponseModel,
+            get_method=self.zen_store.get_project,
+            list_method=self.zen_store.list_projects,
+            name_id_or_prefix=name
+        )
+        return self.zen_store.update_project(
+            project_id=project.id,
+            project_update=ProjectUpdateModel(name=new_name,
+                                              description=new_description)
+        )
     def delete_project(self, project_name_or_id: str) -> None:
         """Delete a project.
 

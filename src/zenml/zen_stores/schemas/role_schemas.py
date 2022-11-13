@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
@@ -20,7 +21,7 @@ from zenml.enums import PermissionType
 from zenml.new_models import (
     RoleAssignmentRequestModel,
     RoleRequestModel,
-    RoleResponseModel,
+    RoleResponseModel, RoleUpdateModel,
 )
 from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
@@ -62,6 +63,13 @@ class RoleSchema(NamedSchema, table=True):
             The created `RoleSchema`.
         """
         return cls(name=model.name)
+
+    def update(self, role_update: RoleUpdateModel):
+        for field, value in role_update.dict(exclude_unset=True).items():
+            setattr(self, field, value)
+
+        self.updated = datetime.now()
+        return self
 
     def to_model(self) -> RoleResponseModel:
         """Convert a `RoleSchema` to a `RoleResponseModel`.

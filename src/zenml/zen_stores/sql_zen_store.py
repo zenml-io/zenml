@@ -94,6 +94,7 @@ from zenml.new_models import (
     UserRequestModel,
     UserResponseModel,
 )
+from zenml.new_models.project_models import ProjectUpdateModel
 from zenml.new_models.user_models import UserAuthModel, UserUpdateModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -1946,15 +1947,9 @@ class SqlZenStore(BaseZenStore):
 
             if existing_role.name in [ADMIN_ROLE, GUEST_ROLE]:
                 raise IllegalOperationError(
-                    f"The built-in role '{role.name}' cannot be updated."
+                    f"The built-in role '{existing_role.name}' cannot be "
+                    f"updated."
                 )
-
-            # Update the role
-            existing_role.name = role_update.name
-            existing_role.updated = datetime.now()
-
-            session.add(existing_role)
-            session.commit()
 
             existing_permissions = {p.name for p in existing_role.permissions}
 
@@ -1977,6 +1972,11 @@ class SqlZenStore(BaseZenStore):
                             name=permission, role_id=existing_role.id
                         )
                     )
+
+            # Update the role
+            existing_role.update(role_update=role_update)
+            session.add(existing_role)
+            session.commit()
 
             session.commit()
 
@@ -2468,7 +2468,7 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_PROJECT)
     def update_project(
-        self, project_id: UUID, project_update: ProjectRequestModel
+        self, project_id: UUID, project_update: ProjectUpdateModel
     ) -> ProjectResponseModel:
         """Update an existing project.
 
@@ -2502,10 +2502,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Update the project
-            existing_project.name = project_update.name
-            existing_project.description = project_update.description
-            existing_project.updated = datetime.now()
-
+            existing_project.update(project_update=project_update)
             session.add(existing_project)
             session.commit()
 
