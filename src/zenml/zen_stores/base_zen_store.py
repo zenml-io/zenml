@@ -66,8 +66,8 @@ DEFAULT_PASSWORD = ""
 DEFAULT_PROJECT_NAME = "default"
 DEFAULT_STACK_NAME = "default"
 DEFAULT_STACK_COMPONENT_NAME = "default"
-ADMIN_ROLE = "admin"
-GUEST_ROLE = "guest"
+DEFAULT_ADMIN_ROLE = "admin"
+DEFAULT_GUEST_ROLE = "guest"
 
 
 class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
@@ -549,7 +549,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Returns:
             The default admin role.
         """
-        return self.get_role(ADMIN_ROLE)
+        return self.get_role(DEFAULT_ADMIN_ROLE)
 
     @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
     def _create_admin_role(self) -> RoleResponseModel:
@@ -558,10 +558,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Returns:
             The admin role
         """
-        logger.info(f"Creating '{ADMIN_ROLE}' role ...")
+        logger.info(f"Creating '{DEFAULT_ADMIN_ROLE}' role ...")
         return self.create_role(
             RoleRequestModel(
-                name=ADMIN_ROLE,
+                name=DEFAULT_ADMIN_ROLE,
                 permissions=[
                     PermissionType.READ.value,
                     PermissionType.WRITE.value,
@@ -577,7 +577,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Returns:
             The guest role.
         """
-        return self.get_role(GUEST_ROLE)
+        return self.get_role(DEFAULT_GUEST_ROLE)
 
     @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
     def _create_guest_role(self) -> RoleResponseModel:
@@ -586,10 +586,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Returns:
             The guest role
         """
-        logger.info(f"Creating '{GUEST_ROLE}' role ...")
+        logger.info(f"Creating '{DEFAULT_GUEST_ROLE}' role ...")
         return self.create_role(
             RoleRequestModel(
-                name=GUEST_ROLE,
+                name=DEFAULT_GUEST_ROLE,
                 permissions=[
                     PermissionType.READ.value,
                     PermissionType.ME.value,

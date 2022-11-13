@@ -16,9 +16,11 @@ from click.testing import CliRunner
 
 from zenml.cli.cli import cli
 from zenml.client import Client
-from zenml.zen_stores.base_zen_store import ADMIN_ROLE, DEFAULT_USERNAME
+from zenml.enums import PermissionType
+from zenml.zen_stores.base_zen_store import DEFAULT_ADMIN_ROLE, DEFAULT_USERNAME
 
 SAMPLE_USER = "aria"
+SAMPLE_ROLE = "cat_feeder"
 
 
 @pytest.fixture()
@@ -30,6 +32,19 @@ def client_with_sample_user(clean_client: Client) -> Client:
         clean_client: Clean client
     """
     clean_client.create_user(name=SAMPLE_USER, password="catnip")
+    return clean_client
+
+
+@pytest.fixture()
+def client_with_sample_role(clean_client: Client) -> Client:
+    """Fixture to get a global configuration with a  role.
+
+    Args:
+        clean_client: Clean client
+    """
+    clean_client.create_role(
+        name=SAMPLE_ROLE, permissions_list=[PermissionType.READ]
+    )
     return clean_client
 
 
@@ -51,6 +66,19 @@ def test_create_user_with_password_succeeds(
     assert result.exit_code == 0
 
 
+def test_create_user_that_exists_fails(
+    client_with_sample_user,
+) -> None:
+    """Test that creating a user which exists already, fails."""
+    user_create_command = cli.commands["user"].commands["create"]
+    runner = CliRunner()
+    result = runner.invoke(
+        user_create_command,
+        [SAMPLE_USER, "--password=thesupercat"],
+    )
+    result.exit_code == 1
+
+
 def test_create_user_with_initial_role_succeeds(
     clean_client,
 ) -> None:
@@ -59,7 +87,7 @@ def test_create_user_with_initial_role_succeeds(
     runner = CliRunner()
     result = runner.invoke(
         user_create_command,
-        ["aria", "--password=thesupercat", f"--role={ADMIN_ROLE}"],
+        ["aria", "--password=thesupercat", f"--role={DEFAULT_ADMIN_ROLE}"],
     )
     assert result.exit_code == 0
 
@@ -87,6 +115,7 @@ def test_update_user_with_new_full_name_succeeds(
         user_update_command,
         [SAMPLE_USER, "--full_name='Aria Vanquisher of Treats'"],
     )
+    assert result.exit_code == 0
 
 
 def test_update_user_with_new_email_succeeds(
@@ -99,6 +128,7 @@ def test_update_user_with_new_email_succeeds(
         user_update_command,
         [SAMPLE_USER, "--email='aria@catnip.io'"],
     )
+    assert result.exit_code == 0
 
 
 def test_update_default_user_name_fails(
@@ -111,21 +141,140 @@ def test_update_default_user_name_fails(
         user_update_command,
         [DEFAULT_USERNAME, "--name='blupus'"],
     )
-
     assert result.exit_code == 1
 
 
 def test_update_default_user_metadata_succeeds(
     clean_client,
 ) -> None:
-    """Test that updating the name of the default user fails."""
+    """Test that updating the metadata of the default user succeeds."""
     user_update_command = cli.commands["user"].commands["update"]
     runner = CliRunner()
     result = runner.invoke(
         user_update_command,
-        [DEFAULT_USERNAME,
-         "--full_name='De Fault'",
-         "--email=default@zenml.io"],
+        [
+            DEFAULT_USERNAME,
+            "--full_name='De Fault'",
+            "--email=default@zenml.io",
+        ],
     )
 
     assert result.exit_code == 0
+
+
+def test_delete_default_user_fails(
+    clean_client,
+) -> None:
+    """Test that the default user can't be deleted."""
+    user_delete_command = cli.commands["user"].commands["delete"]
+    runner = CliRunner()
+    result = runner.invoke(
+        user_delete_command,
+        [DEFAULT_USERNAME],
+    )
+
+    assert result.exit_code == 1
+
+
+def test_delete_sample_user_succeeds(
+    client_with_sample_user,
+) -> None:
+    """Test that deleting a user succeeds."""
+    user_delete_command = cli.commands["user"].commands["delete"]
+    runner = CliRunner()
+    result = runner.invoke(
+        user_delete_command,
+        [SAMPLE_USER],
+    )
+
+    assert result.exit_code == 0
+
+
+# ----- #
+# ROLES #
+# ----- #
+
+
+def test_create_role_succeeds(
+    clean_client,
+) -> None:
+    """Test that creating a new role succeeds."""
+    role_create_command = cli.commands["role"].commands["create"]
+    runner = CliRunner()
+    result = runner.invoke(
+        role_create_command,
+        [SAMPLE_ROLE, f"--permissions={PermissionType.READ}"],
+    )
+    assert result.exit_code == 0
+
+
+def test_create_existing_role_fails(
+    client_with_sample_role,
+) -> None:
+    """Test that creating a role that exists fails."""
+    role_create_command = cli.commands["role"].commands["create"]
+    runner = CliRunner()
+    result = runner.invoke(
+        role_create_command,
+        [SAMPLE_ROLE, "--permissions=read"],
+    )
+    assert result.exit_code == 1
+
+
+def test_update_role_permissions_succeeds(
+    client_with_sample_role,
+) -> None:
+    """Test that updating a role succeeds."""
+    role_update_command = cli.commands["role"].commands["update"]
+    runner = CliRunner()
+    result = runner.invoke(
+        role_update_command,
+        [SAMPLE_ROLE, f"--add-permission={PermissionType.WRITE.value}"],
+    )
+    assert result.exit_code == 0
+
+
+def test_rename_role_succeeds(
+    client_with_sample_role,
+) -> None:
+    """Test that updating a role succeeds."""
+    role_update_command = cli.commands["role"].commands["update"]
+    runner = CliRunner()
+    result = runner.invoke(
+        role_update_command,
+        [SAMPLE_ROLE, f"--name='cat_groomer'"],
+    )
+    assert result.exit_code == 0
+
+
+def test_update_role_conflicting_permissions_fails(
+    client_with_sample_role,
+) -> None:
+    """Test that updating a role succeeds."""
+    role_update_command = cli.commands["role"].commands["update"]
+    runner = CliRunner()
+    result = runner.invoke(
+        role_update_command,
+        [
+            SAMPLE_ROLE,
+            f"--add-permission={PermissionType.WRITE.value}",
+            f"--remove-permission={PermissionType.WRITE.value}",
+        ],
+    )
+    assert result.exit_code == 1
+
+
+def test_update_default_role_fails(
+    client_with_sample_role,
+) -> None:
+    """Test that updating a role succeeds."""
+    role_update_command = cli.commands["role"].commands["update"]
+    runner = CliRunner()
+    result = runner.invoke(
+        role_update_command,
+        [
+            DEFAULT_ADMIN_ROLE,
+            f"--remove-permission={PermissionType.WRITE.value}",
+        ],
+    )
+    assert result.exit_code == 1

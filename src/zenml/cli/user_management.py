@@ -453,7 +453,7 @@ def update_project(
     warn_unsupported_non_default_project()
     cli_utils.print_active_config()
     try:
-        project = Client().update_project(
+        Client().update_project(
             name=project_name,
             new_name=new_name,
             new_description=new_description,
@@ -527,7 +527,7 @@ def role() -> None:
 def list_roles() -> None:
     """List all roles."""
     cli_utils.print_active_config()
-    roles = Client().zen_store.roles
+    roles = Client().list_roles()
     if not roles:
         cli_utils.declare("No roles registered.")
         return

@@ -104,10 +104,10 @@ from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
 from zenml.zen_stores.base_zen_store import (
-    ADMIN_ROLE,
+    DEFAULT_ADMIN_ROLE,
+    DEFAULT_GUEST_ROLE,
     DEFAULT_STACK_COMPONENT_NAME,
     DEFAULT_STACK_NAME,
-    GUEST_ROLE,
     BaseZenStore,
 )
 from zenml.zen_stores.migrations.alembic import (
@@ -1946,33 +1946,41 @@ class SqlZenStore(BaseZenStore):
                     f"existing roles with this id."
                 )
 
-            if existing_role.name in [ADMIN_ROLE, GUEST_ROLE]:
+            if existing_role.name in [DEFAULT_ADMIN_ROLE, DEFAULT_GUEST_ROLE]:
                 raise IllegalOperationError(
                     f"The built-in role '{existing_role.name}' cannot be "
                     f"updated."
                 )
 
-            existing_permissions = {p.name for p in existing_role.permissions}
+            # The relationship table for roles behaves different from the other
+            #  ones. As such the required updates on the permissions have to be
+            #  done manually.
+            if "permissions" in role_update.__fields_set__:
+                existing_permissions = {
+                    p.name for p in existing_role.permissions
+                }
 
-            diff = existing_permissions.symmetric_difference(
-                role_update.permissions
-            )
+                diff = existing_permissions.symmetric_difference(
+                    role_update.permissions
+                )
 
-            for permission in diff:
-                if permission not in role_update.permissions:
-                    permission_to_delete = session.exec(
-                        select(RolePermissionSchema)
-                        .where(RolePermissionSchema.name == permission)
-                        .where(RolePermissionSchema.role_id == existing_role.id)
-                    ).one_or_none()
-                    session.delete(permission_to_delete)
+                for permission in diff:
+                    if permission not in role_update.permissions:
+                        permission_to_delete = session.exec(
+                            select(RolePermissionSchema)
+                            .where(RolePermissionSchema.name == permission)
+                            .where(
+                                RolePermissionSchema.role_id == existing_role.id
+                            )
+                        ).one_or_none()
+                        session.delete(permission_to_delete)
 
-                elif permission not in existing_permissions:
-                    session.add(
-                        RolePermissionSchema(
-                            name=permission, role_id=existing_role.id
+                    elif permission not in existing_permissions:
+                        session.add(
+                            RolePermissionSchema(
+                                name=permission, role_id=existing_role.id
+                            )
                         )
-                    )
 
             # Update the role
             existing_role.update(role_update=role_update)
@@ -1998,7 +2006,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             role = self._get_role_schema(role_name_or_id, session=session)
-            if role.name in [ADMIN_ROLE, GUEST_ROLE]:
+            if role.name in [DEFAULT_ADMIN_ROLE, DEFAULT_GUEST_ROLE]:
                 raise IllegalOperationError(
                     f"The built-in role '{role.name}' cannot be deleted."
                 )

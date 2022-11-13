@@ -649,10 +649,10 @@ class Client(metaclass=ClientMetaClass):
     # ----- #
 
     def get_role(self, name_id_or_prefix: str) -> RoleResponseModel:
-        """Gets a user.
+        """Gets a role.
 
         Args:
-            name_id_or_prefix: The name or ID of the user.
+            name_id_or_prefix: The name or ID of the role.
 
         Returns:
             The User
@@ -663,6 +663,17 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.zen_store.list_teams,
             name_id_or_prefix=name_id_or_prefix,
         )
+
+    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
+        """Gets a user.
+
+        Args:
+            name: The name of the roles.
+
+        Returns:
+            The User
+        """
+        return self.zen_store.list_roles(name=name)
 
     def create_role(
         self, name: str, permissions_list: List[str]
@@ -708,6 +719,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.zen_store.list_roles,
             name_id_or_prefix=name_id_or_prefix,
         )
+        role_update = RoleUpdateModel()
 
         role_permissions = None
         # Only if permissions are being added or removed will they need to be
@@ -726,13 +738,15 @@ class Client(metaclass=ClientMetaClass):
                         )
         if add_permission:
             for add_p in add_permission:
-                if add_p in PermissionType:
+                if add_p in PermissionType.values():
                     # Set won't throw an error if the item was already in it
                     role_permissions.add(PermissionType(add_p))
 
-        role_update = RoleUpdateModel(
-            name=new_name, permissions=role_permissions
-        )
+        if role_permissions:
+            role_update.permissions = set(role_permissions)
+        if new_name:
+            role_update.name = new_name
+
         return Client().zen_store.update_role(
             role_id=role.id, role_update=role_update
         )

@@ -66,7 +66,9 @@ class RoleSchema(NamedSchema, table=True):
         return cls(name=model.name)
 
     def update(self, role_update: RoleUpdateModel):
-        for field, value in role_update.dict(exclude_unset=True).items():
+        for field, value in role_update.dict(
+            exclude_unset=True, exclude={"permissions"}
+        ).items():
             setattr(self, field, value)
 
         self.updated = datetime.now()
