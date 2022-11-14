@@ -430,6 +430,11 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             pipeline_name=_clean_pipeline_name(deployment.pipeline.name),
         )
 
+        settings = cast(
+            VertexOrchestratorSettings,
+            self.get_settings(deployment) or VertexOrchestratorSettings(),
+        )
+
         # Using the Google Cloud AIPlatform client, upload and execute the
         # pipeline
         # on the Vertex AI Pipelines service.
@@ -437,6 +442,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             pipeline_name=deployment.pipeline.name,
             pipeline_file_path=pipeline_file_path,
             enable_cache=deployment.pipeline.enable_cache,
+            settings=settings,
         )
 
     def _upload_and_run_pipeline(
