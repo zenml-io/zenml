@@ -1144,10 +1144,30 @@ class RestZenStore(BaseZenStore):
     def get_role_assignment(
         self, role_assignment_id: UUID
     ) -> RoleAssignmentResponseModel:
-        """"""
+        """Get an existing role assignment by name or ID.
 
-    def delete_role_assignment(self, role_assignment_id: UUID) -> UUID:
-        """"""
+        Args:
+            role_assignment_id: Name or ID of the role assignment to get.
+
+        Returns:
+            The requested project.
+        """
+        return self._get_resource(
+            resource_id=role_assignment_id,
+            route=ROLES,
+            response_model=RoleAssignmentResponseModel,
+        )
+
+    def delete_role_assignment(self, role_assignment_id: UUID) -> None:
+        """Delete a specific role assignment
+
+        Args:
+            role_assignment_id: The Id of the specific role assignment
+        """
+        self._delete_resource(
+            resource_id=role_assignment_id,
+            route=ROLES,
+        )
 
     def create_role_assignment(
         self, role_assignment: RoleAssignmentRequestModel

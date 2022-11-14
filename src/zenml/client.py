@@ -57,6 +57,7 @@ from zenml.new_models import (
     ProjectResponseModel,
     ProjectUpdateModel,
     RoleAssignmentRequestModel,
+    RoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
@@ -66,7 +67,7 @@ from zenml.new_models import (
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, RoleAssignmentResponseModel,
+    UserUpdateModel,
 )
 from zenml.new_models.base_models import BaseResponseModel
 from zenml.utils import io_utils
@@ -770,18 +771,63 @@ class Client(metaclass=ClientMetaClass):
     # ROLE ASSIGNMENTS #
     # ---------------- #
 
-    def create_user_role_assignment(
+    def get_role_assignment(
         self,
         role_name_or_id: str,
-        user_name_or_id: str,
-        project_name_or_id: Optional[str],
+        user_or_team_name_or_id: str,
+        is_user: bool,
+        project_name_or_id: Optional[str] = None,
+    ) -> RoleAssignmentResponseModel:
+        """Get a role assignment.
+
+        Args:
+            role_name_or_id: Role to assign
+            user_or_team_name_or_id: team to assign the role to
+            is_user: Whether to interpret the user_or_team_name_or_id field as
+                user (=True) or team (=False)
+            project_name_or_id: project scope within which to assign the role
+        """
+        if is_user:
+            role_assignments = self.zen_store.list_role_assignments(
+                project_name_or_id=project_name_or_id,
+                user_name_or_id=user_or_team_name_or_id,
+                role_name_or_id=role_name_or_id,
+            )
+        else:
+            role_assignments = self.zen_store.list_role_assignments(
+                project_name_or_id=project_name_or_id,
+                user_name_or_id=user_or_team_name_or_id,
+                role_name_or_id=role_name_or_id,
+            )
+        # Implicit assumption is that maximally one such assignment can exists
+        if role_assignments:
+            return role_assignments[0]
+        else:
+            raise RuntimeError(
+                "No such role assignment could be found for "
+                f"user/team : {user_or_team_name_or_id} with "
+                f"role : {role_name_or_id} within "
+                f"project : {project_name_or_id}"
+            )
+
+    def create_role_assignment(
+        self,
+        role_name_or_id: str,
+        user_or_team_name_or_id: str,
+        is_user: bool,
+        project_name_or_id: Optional[str] = None,
     ):
-        user = self._get_entity_by_id_or_name_or_prefix(
-            response_model=UserResponseModel,
-            get_method=self.zen_store.get_user,
-            list_method=self.zen_store.list_users,
-            name_id_or_prefix=user_name_or_id,
-        )
+        """Create a role assignment.
+
+        Args:
+            role_name_or_id: Role to assign
+            user_or_team_name_or_id: team to assign the role to
+            is_user: Whether to interpret the user_or_team_name_or_id field as
+                user (=True) or team (=False)
+            project_name_or_id: project scope within which to assign the role
+
+        """
+
         role = self._get_entity_by_id_or_name_or_prefix(
             response_model=RoleResponseModel,
             get_method=self.zen_store.get_role,
@@ -796,15 +842,60 @@ class Client(metaclass=ClientMetaClass):
                 list_method=self.zen_store.list_projects,
                 name_id_or_prefix=project_name_or_id,
             )
-        role_assignment = RoleAssignmentRequestModel(
-            role=role.id,
-            user=user.id,
-            project=project,
-            is_user=True,
-        )
+        if is_user:
+            user = self._get_entity_by_id_or_name_or_prefix(
+                response_model=UserResponseModel,
+                get_method=self.zen_store.get_user,
+                list_method=self.zen_store.list_users,
+                name_id_or_prefix=user_or_team_name_or_id,
+            )
+            role_assignment = RoleAssignmentRequestModel(
+                role=role.id,
+                user=user.id,
+                project=project,
+                is_user=True,
+            )
+        else:
+            team = self._get_entity_by_id_or_name_or_prefix(
+                response_model=TeamResponseModel,
+                get_method=self.zen_store.get_team,
+                list_method=self.zen_store.list_teams,
+                name_id_or_prefix=user_or_team_name_or_id,
+            )
+            role_assignment = RoleAssignmentRequestModel(
+                role=role.id,
+                team=team.id,
+                project=project,
+                is_user=False,
+            )
+
         return self.zen_store.create_role_assignment(
             role_assignment=role_assignment
         )
+
+    def delete_role_assignment(
+        self,
+        role_name_or_id: str,
+        user_or_team_name_or_id: str,
+        is_user: bool,
+        project_name_or_id: Optional[str] = None,
+    ):
+        """Delete a role assignment.
+
+        Args:
+            role_name_or_id: Role to assign
+            user_or_team_name_or_id: team to assign the role to
+            is_user: Whether to interpret the user_or_team_name_or_id field as
+                user (=True) or team (=False)
+            project_name_or_id: project scope within which to assign the role
+        """
+        role_assignment = self.get_role_assignment(
+            role_name_or_id=role_name_or_id,
+            user_or_team_name_or_id=user_or_team_name_or_id,
+            is_user=is_user,
+            project_name_or_id=project_name_or_id,
+        )
+        self.zen_store.delete_role_assignment(role_assignment.id)
 
     def list_role_assignment(
         self,
@@ -819,7 +910,6 @@ class Client(metaclass=ClientMetaClass):
             user_name_or_id=user_name_or_id,
             team_name_or_id=team_name_or_id,
         )
-
 
     # ------- #
     # PROJECT #

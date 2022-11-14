@@ -152,7 +152,7 @@ def create_user(
         cli_utils.error(str(err))
     else:
         try:
-            client.create_user_role_assignment(
+            client.create_role_assignment(
                 role_name_or_id=initial_role,
                 user_name_or_id=str(new_user.id),
                 project_name_or_id=None,
@@ -393,5 +393,3 @@ def remove_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
             )
     except KeyError as err:
         cli_utils.error(str(err))
-
-

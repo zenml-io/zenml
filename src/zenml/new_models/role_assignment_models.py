@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, root_validator, validator
@@ -20,9 +20,11 @@ from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
 
 if TYPE_CHECKING:
     from zenml.new_models.project_models import ProjectResponseModel
-    from zenml.new_models.user_models import TeamResponseModel
-    from zenml.new_models.user_models import UserResponseModel
     from zenml.new_models.role_models import RoleResponseModel
+    from zenml.new_models.user_models import (
+        TeamResponseModel,
+        UserResponseModel,
+    )
 
 # ---- #
 # BASE #
@@ -44,15 +46,17 @@ class RoleAssignmentBaseModel(BaseModel):
 
     role: UUID = Field(title="The role.")
 
-    @validator('user', always=True)
+    @validator("user", always=True)
     @classmethod
     def check_team_or_user(cls, user, values):
-        if not values.get('team') and not user:
-            raise ValueError('Either team or user is required')
-        elif values.get('team') and user:
-            raise ValueError('A role assignment can not contain a user and '
-                             'team')
+        if not values.get("team") and not user:
+            raise ValueError("Either team or user is required")
+        elif values.get("team") and user:
+            raise ValueError(
+                "A role assignment can not contain a user and " "team"
+            )
         return user
+
 
 # ------- #
 # REQUEST #
@@ -91,6 +95,7 @@ class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
 
 class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
     """"""
+
     project: Optional["ProjectResponseModel"] = Field(
         title="The project scope of this role assignment.", default=None
     )
@@ -103,4 +108,3 @@ class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
     role: "RoleResponseModel" = Field(
         title="The team the role is assigned to.", default=None
     )
-

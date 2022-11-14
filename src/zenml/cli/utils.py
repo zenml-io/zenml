@@ -210,8 +210,9 @@ def print_pydantic_models(
         # Explicitly defined columns take precedence over exclude columns
         include_columns = []
         if not columns:
-            include_columns = [k for k in model.dict().keys()
-                               if k not in exclude_columns]
+            include_columns = [
+                k for k in model.dict().keys() if k not in exclude_columns
+            ]
         else:
             include_columns = columns
 
@@ -222,7 +223,7 @@ def print_pydantic_models(
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
             if isinstance(value, BaseResponseModel):
-                if 'name' in value.__fields__:
+                if "name" in value.__fields__:
                     items[k] = str(value.name)
                 else:
                     items[k] = str(value.id)

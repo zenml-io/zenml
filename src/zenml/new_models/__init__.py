@@ -84,7 +84,7 @@ RoleAssignmentResponseModel.update_forward_refs(
     RoleResponseModel=RoleResponseModel,
     TeamResponseModel=TeamResponseModel,
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel
+    ProjectResponseModel=ProjectResponseModel,
 )
 
 __all__ = [
