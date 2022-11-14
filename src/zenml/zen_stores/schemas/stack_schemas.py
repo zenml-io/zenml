@@ -43,6 +43,7 @@ class StackCompositionSchema(SQLModel, table=True):
         source_column="stack_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
         primary_key=True,
     )
     component_id: UUID = build_foreign_key_field(
@@ -51,6 +52,7 @@ class StackCompositionSchema(SQLModel, table=True):
         source_column="component_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
         primary_key=True,
     )
 

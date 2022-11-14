@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for SQLModel schemas."""
 
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field
@@ -43,7 +43,8 @@ def build_foreign_key_field(
     target: str,
     source_column: str,
     target_column: str,
-    ondelete: Optional[str] = None,
+    ondelete: str,
+    nullable: bool,
     **sa_column_kwargs: Any,
 ) -> Any:
     """Build a SQLModel foreign key field.
@@ -54,11 +55,16 @@ def build_foreign_key_field(
         source_column: Source column name.
         target_column: Target column name.
         ondelete: On delete behavior.
+        nullable: Whether the field is nullable.
         **sa_column_kwargs: Keyword arguments for the SQLAlchemy column.
 
     Returns:
         SQLModel foreign key field.
     """
+    if not nullable and ondelete == "SET NULL":
+        raise ValueError(
+            "Cannot set ondelete to SET NULL if the field is not nullable."
+        )
     constraint_name = foreign_key_constraint_name(
         source=source,
         target=target,
@@ -71,6 +77,7 @@ def build_foreign_key_field(
                 name=constraint_name,
                 ondelete=ondelete,
             ),
+            nullable=nullable,
             **sa_column_kwargs,
         ),
     )

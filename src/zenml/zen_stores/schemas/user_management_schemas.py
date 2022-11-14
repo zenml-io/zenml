@@ -44,6 +44,7 @@ class TeamAssignmentSchema(SQLModel, table=True):
         source_column="user_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
         primary_key=True,
     )
     team_id: UUID = build_foreign_key_field(
@@ -52,6 +53,7 @@ class TeamAssignmentSchema(SQLModel, table=True):
         source_column="team_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
         primary_key=True,
     )
 
@@ -219,6 +221,7 @@ class RolePermissionSchema(SQLModel, table=True):
         source_column="role_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
         primary_key=True,
     )
     roles: List["RoleSchema"] = Relationship(back_populates="permissions")

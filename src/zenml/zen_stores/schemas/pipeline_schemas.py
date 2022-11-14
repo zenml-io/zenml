@@ -365,6 +365,7 @@ class StepRunParentsSchema(SQLModel, table=True):
         source_column="parent_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
         primary_key=True,
     )
     child_id: UUID = build_foreign_key_field(
@@ -373,6 +374,7 @@ class StepRunParentsSchema(SQLModel, table=True):
         source_column="child_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
         primary_key=True,
     )
 
@@ -475,6 +477,7 @@ class StepRunArtifactSchema(SQLModel, table=True):
         source_column="step_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
         primary_key=True,
     )
     artifact_id: UUID = build_foreign_key_field(
@@ -483,6 +486,7 @@ class StepRunArtifactSchema(SQLModel, table=True):
         source_column="artifact_id",
         target_column="id",
         ondelete="CASCADE",
+        nullable=False,
         primary_key=True,
     )
     name: str  # Name of the input in the step
