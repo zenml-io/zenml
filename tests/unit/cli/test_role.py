@@ -177,7 +177,7 @@ def test_assign_role_to_user_twice_fails(
 def test_revoke_role_from_new_user_succeeds(
     clean_client,
 ) -> None:
-    """Test that deleting a role succeeds."""
+    """Test that deleting a role assignment succeeds."""
     user = create_sample_user(clean_client)
     role_assign_command = cli.commands["role"].commands["assign"]
     runner = CliRunner()
@@ -186,6 +186,7 @@ def test_revoke_role_from_new_user_succeeds(
         [DEFAULT_ADMIN_ROLE],
         f"--user={user.name}"
     )
+    assert result.exit_code == 0
     role_revoke_command = cli.commands["role"].commands["revoke"]
     runner = CliRunner()
     result = runner.invoke(
