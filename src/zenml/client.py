@@ -1392,10 +1392,12 @@ class Client(metaclass=ClientMetaClass):
                     step_mlmd_id_mapping[mlmd_parent_step_id]
                     for mlmd_parent_step_id in step.mlmd_parent_step_ids
                 ]
-                inputs, outputs = metadata_store.get_step_artifacts(
+                inputs = metadata_store.get_step_input_artifacts(
                     step_id=step.mlmd_id,
                     step_parent_step_ids=step.mlmd_parent_step_ids,
-                    step_name=step.name,
+                )
+                outputs = metadata_store.get_step_output_artifacts(
+                    step_id=step.mlmd_id
                 )
                 input_artifacts = {
                     input_name: artifact_mlmd_id_mapping[mlmd_artifact.mlmd_id]

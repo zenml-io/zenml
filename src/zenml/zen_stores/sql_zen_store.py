@@ -3716,9 +3716,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 self._sync_run_status(run_.to_model())
             except Exception as err:
-                logger.warning(
-                    f"Syncing run '{mlmd_run.name}' failed: {str(err)}"
-                )
+                logger.warning(f"Syncing run '{run_.name}' failed: {str(err)}")
 
         logger.debug("Pipeline runs sync complete.")
 
@@ -3819,10 +3817,9 @@ class SqlZenStore(BaseZenStore):
             The synced run step model.
         """
         # Build dict of input artifacts.
-        mlmd_inputs, _ = self.metadata_store.get_step_artifacts(
+        mlmd_inputs = self.metadata_store.get_step_input_artifacts(
             step_id=mlmd_step.mlmd_id,
             step_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
-            step_name=mlmd_step.entrypoint_name,
         )
         input_artifacts = {}
         for input_name, mlmd_artifact in mlmd_inputs.items():
@@ -3874,10 +3871,8 @@ class SqlZenStore(BaseZenStore):
             ).all()
 
         # Get all MLMD output artifacts.
-        _, mlmd_outputs = self.metadata_store.get_step_artifacts(
-            step_id=step_model.mlmd_id,
-            step_parent_step_ids=step_model.mlmd_parent_step_ids,
-            step_name=step_model.entrypoint_name,
+        mlmd_outputs = self.metadata_store.get_step_output_artifacts(
+            step_id=step_model.mlmd_id
         )
 
         # For each output in MLMD, sync it into ZenML if it doesn't exist yet.
