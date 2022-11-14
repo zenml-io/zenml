@@ -108,8 +108,9 @@ deployment with multiple replicas):
 - **ZENML_JWT_SECRET_KEY**:
     This is a secret key used to sign JWT tokens used for authentication. If
     not explicitly set, a random key is generated automatically by the server
-    and stored in the server's global configuration. This should be set to
-    a random string with a recommended length of at least 32 characters, e.g.:
+    on startup and stored in the server's global configuration. This should be
+    set to a random string with a recommended length of at least 32 characters,
+    e.g.:
   
      ```python
      from secrets import token_hex
@@ -139,8 +140,7 @@ docker run -it -d -p 8080:80 --name zenml zenmldocker/zenml-server
 > `zenmldocker/zenml-server:0.21.1` instead of `zenmldocker/zenml-server`).
 
 The above command will start a containerized ZenML server running on your
-machine that uses a temporary SQLite database file stored in the container,
-with all the limitations that this entails (see the earlier warning).
+machine that uses a temporary SQLite database file stored in the container.
 Temporary means that the database and all its contents (stacks, pipelines,
 pipeline runs etc.) will be lost when the container is removed with `docker rm`.
 
@@ -155,16 +155,14 @@ Password for user default (press ENTER for empty password) []:
 Updated the global store configuration.
 ```
 
-{% hint style="warning" %}
-The `localhost` URL will not work if you are using Docker based ZenML
-orchestrators in your stack. In this case, you need to
-[use an IP address that is reachable from other containers](#inter-container-communication)
-instead of `localhost` when you connect your client to the server, e.g.:
+{% hint style="info" %}
+The `localhost` URL **will** work, even if you are using Docker based ZenML
+orchestrators in your stack, like [the local Docker orchestrators](../../component-gallery/orchestrators/local-docker.md)
+or [a locally deployed Kubeflow orchestrator](../../component-gallery/orchestrators/kubeflow.md).
 
-```shell
-zenml connect --url http://172.17.0.1:8080
-```
-
+ZenML makes use of specialized DNS entries such as `host.docker.internal` and
+`host.k3d.internal` to make the ZenML server accessible from the pipeline
+steps running inside other Docker containers on the same machine.
 {% endhint %}
 
 You can manage the container with the usual Docker commands:
@@ -207,10 +205,7 @@ docker run -it -d -p 8080:80 --name zenml \
 ```
 
 This deployment has the advantage that the SQLite database file is persisted
-even when the container is removed with `docker rm`. However, it still suffers
-from the limitations incurred by using a SQLite database backend (see the
-earlier warning). The recommended way to deploy a containerized ZenML server
-is to use a MySQL database backend instead, as described in the next section.
+even when the container is removed with `docker rm`.
 
 ### Docker MySQL database
 
@@ -222,7 +217,7 @@ A command like the following can be run to start the containerized MySQL
 database service:
 
 ```shell
-docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:5.7
+docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:8.0
 ```
 
 If you also wish to persist the MySQL database data, you can mount a persistent
@@ -233,7 +228,7 @@ e.g.:
 mkdir mysql-data
 docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password \
     --mount type=bind,source=$PWD/mysql-data,target=/var/lib/mysql \
-    mysql:5.7
+    mysql:8.0
 ```
 
 Configuring the ZenML server container to connect to the MySQL database is just
@@ -267,7 +262,7 @@ As previously covered, the containerized MySQL database service can be started
 with a command like the following:
 
 ```shell
-docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:5.7
+docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:8.0
 ```
 
 The ZenML client on the host machine can then be configured to connect directly
@@ -299,7 +294,7 @@ version: "3.9"
 
 services:
   mysql:
-    image: mysql:5.7
+    image: mysql:8.0
     ports:
       - 3306:3306
     environment:
@@ -324,10 +319,7 @@ services:
 Note the following:
 
 - `ZENML_STORE_URL` is set to the special Docker `host.docker.internal` hostname
-to instruct the server to connect to the database over the Docker network. The
-ZenML client knows how to handle the `host.docker.internal` hostname
-differently depending on whether it is running on the host machine or in another
-Docker container.
+to instruct the server to connect to the database over the Docker network.
 - The `extra_hosts` section is needed on Linux to make the `host.docker.internal`
 hostname resolvable from the ZenML server container.
 - This example also uses the `ZENML_DEFAULT_USERNAME` and `ZENML_DEFAULT_PASSWORD`
@@ -349,7 +341,7 @@ docker-compose -f /path/to/docker-compose.yml -p zenml up -d
 Connecting your client to the ZenML server is the same as before:
 
 ```shell
-zenml connect --url http://localhost:8080 --username default --password ''
+zenml connect --url http://localhost:8080 --username admin --password zenml
 ```
 
 Tearing down the installation is as simple as running:
