@@ -3798,9 +3798,8 @@ class SqlZenStore(BaseZenStore):
                 step_model = self._run_step_schema_to_model(step_schema)
 
             # Sync artifacts and status of all unfinished steps.
-            if step_model.status == ExecutionStatus.RUNNING:
-                self._sync_run_step_artifacts(step_model)
-                self._sync_run_step_status(step_model)
+            self._sync_run_step_artifacts(step_model)
+            self._sync_run_step_status(step_model)
 
     def _sync_run_step(
         self, run_id: UUID, step_name: str, mlmd_step: "MLMDStepRunModel"
