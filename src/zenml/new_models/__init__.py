@@ -36,6 +36,7 @@ from zenml.new_models.pipeline_run_models import (
 from zenml.new_models.project_models import (
     ProjectRequestModel,
     ProjectResponseModel,
+    ProjectUpdateModel,
 )
 from zenml.new_models.role_assignment_models import (
     RoleAssignmentRequestModel,
@@ -79,6 +80,13 @@ FlavorResponseModel.update_forward_refs(
 UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
 TeamResponseModel.update_forward_refs(UserResponseModel=UserResponseModel)
 
+RoleAssignmentResponseModel.update_forward_refs(
+    RoleResponseModel=RoleResponseModel,
+    TeamResponseModel=TeamResponseModel,
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel
+)
+
 __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
@@ -93,6 +101,7 @@ __all__ = [
     "PipelineRunResponseModel",
     "ProjectRequestModel",
     "ProjectResponseModel",
+    "ProjectUpdateModel",
     "RoleAssignmentRequestModel",
     "RoleAssignmentResponseModel",
     "RoleRequestModel",

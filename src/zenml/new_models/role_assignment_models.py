@@ -11,12 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TYPE_CHECKING
 from uuid import UUID
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, root_validator, validator
 
 from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
+
+if TYPE_CHECKING:
+    from zenml.new_models.project_models import ProjectResponseModel
+    from zenml.new_models.user_models import TeamResponseModel
+    from zenml.new_models.user_models import UserResponseModel
+    from zenml.new_models.role_models import RoleResponseModel
 
 # ---- #
 # BASE #
@@ -25,8 +31,6 @@ from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
 
 class RoleAssignmentBaseModel(BaseModel):
     """Domain model for role assignments."""
-
-    role: UUID = Field(title="The role.")
 
     project: Optional[UUID] = Field(
         None, title="The project that the role is limited to."
@@ -38,6 +42,17 @@ class RoleAssignmentBaseModel(BaseModel):
         None, title="The user that the role is assigned to."
     )
 
+    role: UUID = Field(title="The role.")
+
+    @validator('user', always=True)
+    @classmethod
+    def check_team_or_user(cls, user, values):
+        if not values.get('team') and not user:
+            raise ValueError('Either team or user is required')
+        elif values.get('team') and user:
+            raise ValueError('A role assignment can not contain a user and '
+                             'team')
+        return user
 
 # ------- #
 # REQUEST #
@@ -76,3 +91,16 @@ class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
 
 class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
     """"""
+    project: Optional["ProjectResponseModel"] = Field(
+        title="The project scope of this role assignment.", default=None
+    )
+    team: Optional["TeamResponseModel"] = Field(
+        title="The team the role is assigned to.", default=None
+    )
+    user: Optional["UserResponseModel"] = Field(
+        title="The team the role is assigned to.", default=None
+    )
+    role: "RoleResponseModel" = Field(
+        title="The team the role is assigned to.", default=None
+    )
+

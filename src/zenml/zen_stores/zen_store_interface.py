@@ -36,6 +36,7 @@ from zenml.new_models import (
     RoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
+    RoleUpdateModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -47,6 +48,7 @@ from zenml.new_models import (
     UserResponseModel,
     UserUpdateModel,
 )
+from zenml.new_models.project_models import ProjectUpdateModel
 from zenml.new_models.user_models import UserAuthModel
 
 if TYPE_CHECKING:
@@ -622,7 +624,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_role(
-        self, role_id: UUID, role_update: RoleRequestModel
+        self, role_id: UUID, role_update: RoleUpdateModel
     ) -> RoleResponseModel:
         """Update an existing role.
 
@@ -671,6 +673,7 @@ class ZenStoreInterface(ABC):
     def list_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentResponseModel]:
@@ -679,6 +682,8 @@ class ZenStoreInterface(ABC):
         Args:
             project_name_or_id: If provided, only list assignments for the given
                 project
+            role_name_or_id: If provided, only list assignments of the given
+                role
             team_name_or_id: If provided, only list assignments for the given
                 team
             user_name_or_id: If provided, only list assignments for the given
@@ -739,7 +744,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_project(
-        self, project_id: UUID, project_update: ProjectRequestModel
+        self, project_id: UUID, project_update: ProjectUpdateModel
     ) -> ProjectResponseModel:
         """Update an existing project.
 

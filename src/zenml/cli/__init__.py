@@ -1036,8 +1036,8 @@ A role groups permissions to resources. Currently, there are the following
 globally scoped roles to choose from: 'write', 'read' and 'me'. To create
 a role, run one of the following commands:
 ```bash
-zenml role create ROLE_NAME --write --read --me
-zenml role create ROLE_NAME --read
+zenml role create ROLE_NAME -p write -p read -p me
+zenml role create ROLE_NAME -p read
 ```
 
 To delete a role run:
@@ -1176,6 +1176,8 @@ from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.pipeline import *  # noqa
+from zenml.cli.project import *  # noqa
+from zenml.cli.role import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.server import *  # noqa
 from zenml.cli.stack import *  # noqa

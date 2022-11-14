@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
@@ -21,6 +22,7 @@ from zenml.new_models import (
     RoleAssignmentRequestModel,
     RoleRequestModel,
     RoleResponseModel,
+    RoleUpdateModel,
 )
 from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
@@ -63,6 +65,15 @@ class RoleSchema(NamedSchema, table=True):
         """
         return cls(name=model.name)
 
+    def update(self, role_update: RoleUpdateModel):
+        for field, value in role_update.dict(
+            exclude_unset=True, exclude={"permissions"}
+        ).items():
+            setattr(self, field, value)
+
+        self.updated = datetime.now()
+        return self
+
     def to_model(self) -> RoleResponseModel:
         """Convert a `RoleSchema` to a `RoleResponseModel`.
 
@@ -74,7 +85,7 @@ class RoleSchema(NamedSchema, table=True):
             name=self.name,
             created=self.created,
             updated=self.updated,
-            permissions=[p.name for p in self.permissions],
+            permissions=[PermissionType(p.name) for p in self.permissions],
         )
 
 
@@ -112,9 +123,9 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
         """
         return RoleAssignmentResponseModel(
             id=self.id,
-            role=self.role_id,
-            user=self.user_id,
-            project=self.project_id,
+            project=self.project.to_model() if self.project else None,
+            user=self.user.to_model(_block_recursion=True),
+            role=self.role.to_model(),
             created=self.created,
             updated=self.updated,
         )
@@ -153,9 +164,9 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
         """
         return RoleAssignmentResponseModel(
             id=self.id,
-            role=self.role_id,
-            team=self.team_id,
-            project=self.project_id,
+            project=self.project.to_model(),
+            user=self.team.to_model(_block_recursion=True),
+            role=self.role.to_model(),
             created=self.created,
             updated=self.updated,
         )

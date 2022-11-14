@@ -65,8 +65,9 @@ DEFAULT_USERNAME = "default"
 DEFAULT_PASSWORD = ""
 DEFAULT_PROJECT_NAME = "default"
 DEFAULT_STACK_NAME = "default"
-ADMIN_ROLE = "admin"
-GUEST_ROLE = "guest"
+DEFAULT_STACK_COMPONENT_NAME = "default"
+DEFAULT_ADMIN_ROLE = "admin"
+DEFAULT_GUEST_ROLE = "guest"
 
 
 class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
@@ -146,6 +147,44 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                 f"No store implementation found for store type "
                 f"`{store_type.value}`."
             )
+
+    @staticmethod
+    def get_store_config_class(
+        store_type: StoreType,
+    ) -> Type["StoreConfiguration"]:
+        """Returns the store config class of the given store type.
+
+        Args:
+            store_type: The type of the store to get the class for.
+
+        Returns:
+            The config class of the given store type.
+        """
+        store_class = BaseZenStore.get_store_class(store_type)
+        return store_class.CONFIG_TYPE
+
+    @staticmethod
+    def get_store_type(url: str) -> StoreType:
+        """Returns the store type associated with a URL schema.
+
+        Args:
+            url: The store URL.
+
+        Returns:
+            The store type associated with the supplied URL schema.
+
+        Raises:
+            TypeError: If no store type was found to support the supplied URL.
+        """
+        from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
+
+        if SqlZenStoreConfiguration.supports_url_scheme(url):
+            return StoreType.SQL
+        elif RestZenStoreConfiguration.supports_url_scheme(url):
+            return StoreType.REST
+        else:
+            raise TypeError(f"No store implementation found for URL: {url}.")
 
     @staticmethod
     def create_store(
@@ -441,7 +480,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             component=ComponentRequestModel(
                 user=user.id,
                 project=project.id,
-                name="default",
+                name=DEFAULT_STACK_COMPONENT_NAME,
                 type=StackComponentType.ORCHESTRATOR,
                 flavor="local",
                 configuration={},
@@ -453,7 +492,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             component=ComponentRequestModel(
                 user=user.id,
                 project=project.id,
-                name="default",
+                name=DEFAULT_STACK_COMPONENT_NAME,
                 type=StackComponentType.ARTIFACT_STORE,
                 flavor="local",
                 configuration={},
@@ -463,7 +502,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         components = {c.type: [c.id] for c in [orchestrator, artifact_store]}
         # Register the default stack
         stack = StackRequestModel(
-            name="default",
+            name=DEFAULT_STACK_NAME,
             components=components,
             is_shared=False,
             project=project.id,
@@ -510,7 +549,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Returns:
             The default admin role.
         """
-        return self.get_role(ADMIN_ROLE)
+        return self.get_role(DEFAULT_ADMIN_ROLE)
 
     @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
     def _create_admin_role(self) -> RoleResponseModel:
@@ -519,10 +558,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Returns:
             The admin role
         """
-        logger.info(f"Creating '{ADMIN_ROLE}' role ...")
+        logger.info(f"Creating '{DEFAULT_ADMIN_ROLE}' role ...")
         return self.create_role(
             RoleRequestModel(
-                name=ADMIN_ROLE,
+                name=DEFAULT_ADMIN_ROLE,
                 permissions=[
                     PermissionType.READ.value,
                     PermissionType.WRITE.value,
@@ -538,7 +577,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Returns:
             The guest role.
         """
-        return self.get_role(GUEST_ROLE)
+        return self.get_role(DEFAULT_GUEST_ROLE)
 
     @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
     def _create_guest_role(self) -> RoleResponseModel:
@@ -547,10 +586,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Returns:
             The guest role
         """
-        logger.info(f"Creating '{GUEST_ROLE}' role ...")
+        logger.info(f"Creating '{DEFAULT_GUEST_ROLE}' role ...")
         return self.create_role(
             RoleRequestModel(
-                name=GUEST_ROLE,
+                name=DEFAULT_GUEST_ROLE,
                 permissions=[
                     PermissionType.READ.value,
                     PermissionType.ME.value,
@@ -731,6 +770,15 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     # --------
 
     @property
+    def _default_project_name(self) -> str:
+        """Get the default project name.
+
+        Returns:
+            The default project name.
+        """
+        return os.getenv(ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME)
+
+    @property
     def _default_project(self) -> ProjectResponseModel:
         """Get the default project.
 
@@ -740,9 +788,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Raises:
             KeyError: if the default project doesn't exist.
         """
-        project_name = os.getenv(
-            ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME
-        )
+        project_name = self._default_project_name
         try:
             return self.get_project(project_name)
         except KeyError:
@@ -757,9 +803,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Returns:
             The default project.
         """
-        project_name = os.getenv(
-            ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME
-        )
+        project_name = self._default_project_name
         logger.info(f"Creating default project '{project_name}' ...")
         return self.create_project(ProjectRequestModel(name=project_name))
 

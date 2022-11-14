@@ -18,6 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, Security
 
 from zenml.constants import API, ROLES, VERSION_1
+from zenml.enums import PermissionType
 from zenml.new_models import RoleRequestModel, RoleResponseModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -25,7 +26,6 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + ROLES,
     tags=["roles"],
-    dependencies=[Security(authorize, scopes=["read"])],
     responses={401: error_response},
 )
 
@@ -36,7 +36,9 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_roles() -> List[RoleResponseModel]:
+def list_roles(
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> List[RoleResponseModel]:
     """Returns a list of all roles.
 
     Returns:
@@ -53,7 +55,7 @@ def list_roles() -> List[RoleResponseModel]:
 @handle_exceptions
 def create_role(
     role: RoleRequestModel,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> RoleResponseModel:
     """Creates a role.
 
@@ -74,7 +76,10 @@ def create_role(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_role(role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
+def get_role(
+    role_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> RoleResponseModel:
     """Returns a specific role.
 
     Args:
@@ -95,7 +100,7 @@ def get_role(role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
 def update_role(
     role_name_or_id: Union[str, UUID],
     role_update: RoleRequestModel,
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> RoleResponseModel:
     """Updates a role.
 
@@ -120,7 +125,7 @@ def update_role(
 @handle_exceptions
 def delete_role(
     role_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize, scopes=["write"]),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Deletes a specific role.
 

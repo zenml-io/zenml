@@ -2,7 +2,7 @@ import json
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import TEXT, Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.enums import ExecutionStatus
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 class PipelineRunSchema(NamedSchema, table=True):
     """SQL Model for pipeline runs."""
 
-    pipeline_configuration: str = Field(max_length=4096)
+    pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     num_steps: int
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)

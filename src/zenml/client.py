@@ -22,10 +22,11 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Type,
     TypeVar,
     Union,
-    cast, Set,
+    cast,
 )
 from uuid import UUID
 
@@ -52,7 +53,11 @@ from zenml.new_models import (
     PipelineRequestModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
+    ProjectRequestModel,
+    ProjectResponseModel,
+    ProjectUpdateModel,
     RoleAssignmentRequestModel,
+    RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
     StackRequestModel,
@@ -61,7 +66,7 @@ from zenml.new_models import (
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, RoleRequestModel,
+    UserUpdateModel, RoleAssignmentResponseModel,
 )
 from zenml.new_models.base_models import BaseResponseModel
 from zenml.utils import io_utils
@@ -70,11 +75,7 @@ from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
-    from zenml.new_models import (
-        ComponentResponseModel,
-        FlavorResponseModel,
-        ProjectResponseModel,
-    )
+    from zenml.new_models import ComponentResponseModel, FlavorResponseModel
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -552,7 +553,7 @@ class Client(metaclass=ClientMetaClass):
     def create_user(
         self,
         name: str,
-        password: Optional[str],
+        password: Optional[str] = None,
     ):
         user = UserRequestModel(name=name, password=password or None)
         if self.zen_store.type != StoreType.REST:
@@ -608,9 +609,14 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.zen_store.list_users,
             name_id_or_prefix=user_name_or_id,
         )
-        user_update = UserUpdateModel(
-            name=updated_name, full_name=updated_full_name, email=updated_email
-        )
+
+        user_update = UserUpdateModel()
+        if updated_name:
+            user_update.name = updated_name
+        if updated_full_name:
+            user_update.full_name = updated_full_name
+        if updated_email:
+            user_update.email = updated_email
         return self.zen_store.update_user(
             user_name_or_id=user.id, user_update=user_update
         )
@@ -640,10 +646,10 @@ class Client(metaclass=ClientMetaClass):
     # ----- #
 
     def get_role(self, name_id_or_prefix: str) -> RoleResponseModel:
-        """Gets a user.
+        """Gets a role.
 
         Args:
-            name_id_or_prefix: The name or ID of the user.
+            name_id_or_prefix: The name or ID of the role.
 
         Returns:
             The User
@@ -655,10 +661,19 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
+    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
+        """Gets a user.
+
+        Args:
+            name: The name of the roles.
+
+        Returns:
+            The User
+        """
+        return self.zen_store.list_roles(name=name)
+
     def create_role(
-        self,
-        name: str,
-        permissions_list: List[str]
+        self, name: str, permissions_list: List[str]
     ) -> RoleResponseModel:
         """Gets a user.
 
@@ -674,10 +689,7 @@ class Client(metaclass=ClientMetaClass):
             if permission in PermissionType.values():
                 permissions.add(PermissionType(permission))
 
-        new_role = RoleRequestModel(
-            name=name,
-            permissions=permissions
-        )
+        new_role = RoleRequestModel(name=name, permissions=permissions)
         return self.zen_store.create_role(new_role)
 
     def update_role(
@@ -700,12 +712,23 @@ class Client(metaclass=ClientMetaClass):
         """
         role = self._get_entity_by_id_or_name_or_prefix(
             response_model=RoleResponseModel,
-            get_method=self.zen_store.get_team,
-            list_method=self.zen_store.list_teams,
+            get_method=self.zen_store.get_role,
+            list_method=self.zen_store.list_roles,
             name_id_or_prefix=name_id_or_prefix,
         )
+        role_update = RoleUpdateModel()
 
         role_permissions = None
+
+        union_add_rm = set(remove_permission) & set(add_permission)
+        if union_add_rm:
+            raise RuntimeError(
+                f"The `remove_permission` and `add_permission` "
+                f"options both contain the same value(s): "
+                f"`{union_add_rm}`. Please rerun command and make sure "
+                f"that the same role does not show up for "
+                f"`remove_permission` and `add_permission`."
+            )
         # Only if permissions are being added or removed will they need to be
         #  set for the update model
         if remove_permission or add_permission:
@@ -722,17 +745,17 @@ class Client(metaclass=ClientMetaClass):
                         )
         if add_permission:
             for add_p in add_permission:
-                if add_p in PermissionType:
+                if add_p in PermissionType.values():
                     # Set won't throw an error if the item was already in it
                     role_permissions.add(PermissionType(add_p))
 
-        role_update = RoleUpdateModel(
-            name=new_name,
-            permissions=role_permissions
-        )
+        if role_permissions:
+            role_update.permissions = set(role_permissions)
+        if new_name:
+            role_update.name = new_name
+
         return Client().zen_store.update_role(
-            role_id=role.id,
-            role_update=role_update
+            role_id=role.id, role_update=role_update
         )
 
     def delete_role(self, name_id_or_prefix: str) -> None:
@@ -783,6 +806,21 @@ class Client(metaclass=ClientMetaClass):
             role_assignment=role_assignment
         )
 
+    def list_role_assignment(
+        self,
+        role_name_or_id: Optional[str] = None,
+        user_name_or_id: Optional[str] = None,
+        team_name_or_id: Optional[str] = None,
+        project_name_or_id: Optional[str] = None,
+    ) -> List[RoleAssignmentResponseModel]:
+        return self.zen_store.list_role_assignments(
+            project_name_or_id=project_name_or_id,
+            role_name_or_id=role_name_or_id,
+            user_name_or_id=user_name_or_id,
+            team_name_or_id=team_name_or_id,
+        )
+
+
     # ------- #
     # PROJECT #
     # ------- #
@@ -826,6 +864,64 @@ class Client(metaclass=ClientMetaClass):
                 f"in the near future."
             )
         return project
+
+    def get_project(self, name_id_or_prefix: str) -> ProjectResponseModel:
+        """Gets a project.
+
+        Args:
+            name_id_or_prefix: The name or ID of the project.
+
+        Returns:
+            The Project
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            response_model=ProjectResponseModel,
+            get_method=self.zen_store.get_project,
+            list_method=self.zen_store.list_projects,
+            name_id_or_prefix=name_id_or_prefix,
+        )
+
+    def create_project(
+        self, name: str, description: str
+    ) -> "ProjectResponseModel":
+        """Create a new project.
+
+        Args:
+            name: Name of the project
+            description: Description of the project
+        """
+        return self.zen_store.create_project(
+            ProjectRequestModel(name=name, description=description)
+        )
+
+    def update_project(
+        self,
+        name: str,
+        new_name: Optional[str] = None,
+        new_description: Optional[str] = None,
+    ) -> "ProjectResponseModel":
+        """Create a new project.
+
+        Args:
+            name: Name of the project
+            new_name: Name of the project
+            new_description: Description of the project
+        """
+        project = self._get_entity_by_id_or_name_or_prefix(
+            response_model=ProjectResponseModel,
+            get_method=self.zen_store.get_project,
+            list_method=self.zen_store.list_projects,
+            name_id_or_prefix=name,
+        )
+        project_update = ProjectUpdateModel()
+        if new_name:
+            project_update.name = new_name
+        if new_description:
+            project_update.description = new_description
+        return self.zen_store.update_project(
+            project_id=project.id,
+            project_update=project_update,
+        )
 
     def delete_project(self, project_name_or_id: str) -> None:
         """Delete a project.
@@ -1742,7 +1838,7 @@ class Client(metaclass=ClientMetaClass):
             pipeline_run = PipelineRunModel.parse_obj(pipeline_run_dict)
             pipeline_run.updated = datetime.now()
             pipeline_run.user = self.active_user.id
-            pipeline_run.project = self.active_project.id
+            zenml.cli.project.project = self.active_project.id
             pipeline_run.stack_id = None
             pipeline_run.pipeline_id = None
             pipeline_run.mlmd_id = None

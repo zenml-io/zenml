@@ -44,6 +44,7 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.new_models.base_models import BaseResponseModel
 
 logger = get_logger(__name__)
 
@@ -206,15 +207,27 @@ def print_pydantic_models(
         Returns:
             Dict of model attributes.
         """
-        items = (
-            {
-                key: str(value)
-                for key, value in model.dict().items()
-                if key not in exclude_columns
-            }
-            if columns is None
-            else {key: str(model.dict()[key]) for key in columns}
-        )
+        # Explicitly defined columns take precedence over exclude columns
+        include_columns = []
+        if not columns:
+            include_columns = [k for k in model.dict().keys()
+                               if k not in exclude_columns]
+        else:
+            include_columns = columns
+
+        items = {}
+        for k in include_columns:
+            value = getattr(model, k)
+            # In case the response model contains nested BaseResponseModels
+            #  we want to attempt to represent them by name, if they contain
+            #  such a field, else the id is used
+            if isinstance(value, BaseResponseModel):
+                if 'name' in value.__fields__:
+                    items[k] = str(value.name)
+                else:
+                    items[k] = str(value.id)
+            else:
+                items[k] = str(value)
         # prepend an active marker if a function to mark active was passed
         marker = "active"
         if marker in items:
@@ -983,3 +996,13 @@ def print_pipeline_runs_table(
         }
         runs_dicts.append(run_dict)
     print_table(runs_dicts)
+
+
+def warn_unsupported_non_default_project() -> None:
+    """Warning for unsupported non-default project."""
+    warning(
+        "Currently the concept of `project` is not supported "
+        "within the Dashboard. The Project functionality will be "
+        "completed in the coming weeks. For the time being it "
+        "is recommended to stay within the `default` project."
+    )

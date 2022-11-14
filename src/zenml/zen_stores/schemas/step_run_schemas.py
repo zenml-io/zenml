@@ -2,6 +2,7 @@ import json
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, SQLModel
 
 from zenml.enums import ExecutionStatus
@@ -36,9 +37,9 @@ class StepRunSchema(NamedSchema, table=True):
     pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
 
     entrypoint_name: str
-    parameters: str = Field(max_length=4096)
-    step_configuration: str = Field(max_length=4096)
-    docstring: Optional[str] = Field(max_length=4096, nullable=True)
+    parameters: str = Field(sa_column=Column(TEXT, nullable=False))
+    step_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
+    docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     status: ExecutionStatus
 
     mlmd_id: Optional[int] = Field(default=None, nullable=True)

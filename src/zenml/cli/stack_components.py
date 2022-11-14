@@ -30,6 +30,7 @@ from zenml.cli.utils import _component_display_name
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
+from zenml.exceptions import IllegalOperationError
 from zenml.io import fileio
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -323,11 +324,14 @@ def generate_stack_component_share_command(
         with console.status(
             f"Updating {display_name} '{name_id_or_prefix}'...\n"
         ):
-            client.update_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-                is_shared=True,
-            )
+            try:
+                client.update_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                    is_shared=True,
+                )
+            except IllegalOperationError as err:
+                cli_utils.error(str(err))
 
             cli_utils.declare(
                 f"Successfully shared {display_name} " f"`{name_id_or_prefix}`."
@@ -373,11 +377,14 @@ def generate_stack_component_remove_attribute_command(
         with console.status(
             f"Updating {display_name} '{name_id_or_prefix}'...\n"
         ):
-            client.update_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-                configuration={k: None for k in args},
-            )
+            try:
+                client.update_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                    configuration={k: None for k in args},
+                )
+            except IllegalOperationError as err:
+                cli_utils.error(str(err))
 
             cli_utils.declare(
                 f"Successfully updated {display_name} `{name_id_or_prefix}`."
@@ -426,11 +433,14 @@ def generate_stack_component_rename_command(
         with console.status(
             f"Renaming {display_name} '{name_id_or_prefix}'...\n"
         ):
-            client.update_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-                name=new_name,
-            )
+            try:
+                client.update_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                    name=new_name,
+                )
+            except IllegalOperationError as err:
+                cli_utils.error(str(err))
 
             cli_utils.declare(
                 f"Successfully renamed {display_name} `{name_id_or_prefix}` to"
@@ -468,10 +478,13 @@ def generate_stack_component_delete_command(
         with console.status(
             f"Deleting {display_name} '{name_id_or_prefix}'...\n"
         ):
-            client.deregister_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
+            try:
+                client.deregister_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                )
+            except IllegalOperationError as err:
+                cli_utils.error(str(err))
             cli_utils.declare(f"Deleted {display_name}: {name_id_or_prefix}")
 
     return delete_stack_component_command
