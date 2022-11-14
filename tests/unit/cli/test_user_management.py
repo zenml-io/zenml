@@ -17,10 +17,12 @@ from click.testing import CliRunner
 from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.enums import PermissionType
-from zenml.zen_stores.base_zen_store import DEFAULT_ADMIN_ROLE, DEFAULT_USERNAME
+from zenml.zen_stores.base_zen_store import DEFAULT_ADMIN_ROLE, \
+    DEFAULT_USERNAME, DEFAULT_PROJECT_NAME
 
 SAMPLE_USER = "aria"
 SAMPLE_ROLE = "cat_feeder"
+SAMPLE_PROJECT = "cat_prj"
 
 
 @pytest.fixture()
@@ -44,6 +46,21 @@ def client_with_sample_role(clean_client: Client) -> Client:
     """
     clean_client.create_role(
         name=SAMPLE_ROLE, permissions_list=[PermissionType.READ]
+    )
+    return clean_client
+
+
+@pytest.fixture()
+def client_with_sample_project(clean_client: Client) -> Client:
+    """Fixture to get a global configuration with a  role.
+
+    Args:
+        clean_client: Clean client
+    """
+    clean_client.create_project(
+        name=SAMPLE_PROJECT,
+        description="This project aims to ensure world domination for all "
+                    "cat-kind."
     )
     return clean_client
 
@@ -302,5 +319,98 @@ def test_delete_default_role_fails(
     result = runner.invoke(
         role_update_command,
         [DEFAULT_ADMIN_ROLE],
+    )
+    assert result.exit_code == 1
+
+
+# -------- #
+# PROJECTS #
+# -------- #
+
+def test_create_project_succeeds(
+    clean_client,
+) -> None:
+    """Test that creating a new role succeeds."""
+    project_create_command = cli.commands["project"].commands["create"]
+    runner = CliRunner()
+    result = runner.invoke(
+        project_create_command,
+        [SAMPLE_PROJECT],
+    )
+    assert result.exit_code == 0
+
+
+def test_create_existing_project_fails(
+    client_with_sample_project,
+) -> None:
+    """Test that creating a new role succeeds."""
+    project_create_command = cli.commands["project"].commands["create"]
+    runner = CliRunner()
+    result = runner.invoke(
+        project_create_command,
+        [SAMPLE_PROJECT],
+    )
+    assert result.exit_code == 1
+
+
+def test_update_existing_project_succeeds(
+    client_with_sample_project,
+) -> None:
+    """Test that creating a new role succeeds."""
+    project_update_command = cli.commands["project"].commands["update"]
+    runner = CliRunner()
+    result = runner.invoke(
+        project_update_command,
+        [
+            SAMPLE_PROJECT,
+            f"--name=dog_prj",
+            f"--description='Project to ensure world domination for dog-kind.'"
+        ]
+    )
+    assert result.exit_code == 0
+
+
+def test_update_default_project_name_fails(
+    clean_client,
+) -> None:
+    """Test that creating a new role succeeds."""
+    project_update_command = cli.commands["project"].commands["update"]
+    runner = CliRunner()
+    result = runner.invoke(
+        project_update_command,
+        [
+            DEFAULT_PROJECT_NAME,
+            f"--name=doc_prj",
+        ]
+    )
+    assert result.exit_code == 1
+
+
+def test_delete_project_succeeds(
+    client_with_sample_project,
+) -> None:
+    """Test that creating a new role succeeds."""
+    project_delete_command = cli.commands["project"].commands["delete"]
+    runner = CliRunner()
+    result = runner.invoke(
+        project_delete_command,
+        [
+            SAMPLE_PROJECT,
+        ]
+    )
+    assert result.exit_code == 1
+
+
+def test_delete_default_project_fails(
+    clean_client,
+) -> None:
+    """Test that creating a new role succeeds."""
+    project_delete_command = cli.commands["project"].commands["delete"]
+    runner = CliRunner()
+    result = runner.invoke(
+        project_delete_command,
+        [
+            DEFAULT_PROJECT_NAME,
+        ]
     )
     assert result.exit_code == 1

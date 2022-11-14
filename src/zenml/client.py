@@ -53,6 +53,8 @@ from zenml.new_models import (
     PipelineRequestModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
+    ProjectResponseModel,
+    ProjectUpdateModel,
     ProjectRequestModel,
     RoleAssignmentRequestModel,
     RoleRequestModel,
@@ -67,7 +69,6 @@ from zenml.new_models import (
     UserUpdateModel,
 )
 from zenml.new_models.base_models import BaseResponseModel
-from zenml.new_models.project_models import ProjectUpdateModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -77,7 +78,6 @@ if TYPE_CHECKING:
     from zenml.new_models import (
         ComponentResponseModel,
         FlavorResponseModel,
-        ProjectResponseModel,
     )
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -857,7 +857,10 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def update_project(
-        self, name: str, new_name: str, new_description: str
+        self,
+        name: str,
+        new_name: Optional[str] = None,
+        new_description: Optional[str] = None
     ) -> "ProjectResponseModel":
         """Create a new project.
 
@@ -872,11 +875,14 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.zen_store.list_projects,
             name_id_or_prefix=name,
         )
+        project_update = ProjectUpdateModel()
+        if new_name:
+            project_update.name = new_name
+        if new_description:
+            project_update.description = new_description
         return self.zen_store.update_project(
             project_id=project.id,
-            project_update=ProjectUpdateModel(
-                name=new_name, description=new_description
-            ),
+            project_update=project_update,
         )
 
     def delete_project(self, project_name_or_id: str) -> None:
