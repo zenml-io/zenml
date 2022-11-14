@@ -20,13 +20,13 @@ from uuid import UUID
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import HydratedStackModel, StackModel
-from zenml.zen_stores.schemas.pipeline_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_management_schemas import UserSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
+    from zenml.zen_stores.schemas.pipeline_schemas import PipelineRunSchema
 
 
 class StackCompositionSchema(SQLModel, table=True):

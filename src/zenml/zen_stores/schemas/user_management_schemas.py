@@ -209,24 +209,6 @@ class TeamSchema(SQLModel, table=True):
         )
 
 
-class RolePermissionSchema(SQLModel, table=True):
-    """SQL Model for team assignments."""
-
-    __tablename__ = "role_permission"
-
-    name: PermissionType = Field(primary_key=True)
-    role_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target="role",  # TODO: how to reference `RoleSchema.__tablename__`?
-        source_column="role_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-        primary_key=True,
-    )
-    roles: List["RoleSchema"] = Relationship(back_populates="permissions")
-
-
 class RoleSchema(SQLModel, table=True):
     """SQL Model for roles."""
 
@@ -394,3 +376,21 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
             created=self.created,
             updated=self.updated,
         )
+
+
+class RolePermissionSchema(SQLModel, table=True):
+    """SQL Model for team assignments."""
+
+    __tablename__ = "role_permission"
+
+    name: PermissionType = Field(primary_key=True)
+    role_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=RoleSchema.__tablename__,
+        source_column="role_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    roles: List["RoleSchema"] = Relationship(back_populates="permissions")

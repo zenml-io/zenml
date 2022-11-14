@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -27,10 +27,8 @@ from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_management_schemas import UserSchema
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.stack_schemas import StackSchema
 
 
 class PipelineSchema(SQLModel, table=True):
@@ -154,7 +152,7 @@ class PipelineRunSchema(SQLModel, table=True):
 
     stack_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target="stack",  # TODO: how to reference `StackSchema.__tablename__`?
+        target=StackSchema.__tablename__,
         source_column="stack_id",
         target_column="id",
         ondelete="SET NULL",
