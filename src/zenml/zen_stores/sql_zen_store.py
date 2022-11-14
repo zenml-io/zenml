@@ -3706,15 +3706,16 @@ class SqlZenStore(BaseZenStore):
             "MLMD"
         )
         for run_ in unfinished_runs:
-            logger.debug(f"Syncing run steps for pipeline run '{run_.id}'")
-            self._sync_run_steps(run_.id)
-            logger.debug(f"Updating run status for pipeline run '{run_.id}'")
             try:
+                logger.debug(f"Syncing run steps for pipeline run '{run_.id}'")
+                self._sync_run_steps(run_.id)
+                logger.debug(
+                    f"Updating run status for pipeline run '{run_.id}'"
+                )
                 self._sync_run_status(run_.to_model())
             except Exception as err:
                 logger.warning(
-                    f"Syncing status for pipeline run '{run_.name}' failed: "
-                    f"{str(err)}"
+                    f"Syncing run '{mlmd_run.name}' failed: {str(err)}"
                 )
 
         logger.debug("Pipeline runs sync complete.")
@@ -3793,12 +3794,6 @@ class SqlZenStore(BaseZenStore):
                         f"exists: {str(exists_err)}. Skipping sync."
                     )
                     continue
-                except Exception as err:
-                    logger.warning(
-                        f"Syncing run step '{step_name}' failed: {str(err)}"
-                    )
-                    continue
-
             else:
                 step_schema = zenml_step_dict[step_name]
                 step_model = self._run_step_schema_to_model(step_schema)
@@ -3806,13 +3801,7 @@ class SqlZenStore(BaseZenStore):
             # Sync artifacts and status of all unfinished steps.
             if step_model.status == ExecutionStatus.RUNNING:
                 self._sync_run_step_artifacts(step_model)
-                try:
-                    self._sync_run_step_status(step_model)
-                except Exception as err:
-                    logger.warning(
-                        f"Syncing status for run step '{step_name}' failed: "
-                        f"{str(err)}"
-                    )
+                self._sync_run_step_status(step_model)
 
     def _sync_run_step(
         self, run_id: UUID, step_name: str, mlmd_step: "MLMDStepRunModel"
@@ -3898,11 +3887,6 @@ class SqlZenStore(BaseZenStore):
                     logger.debug(
                         f"Artifact {output_name} already exists: "
                         f"{str(exists_err)}. Skipping sync."
-                    )
-                    continue
-                except Exception as err:
-                    logger.warning(
-                        f"Syncing artifact '{output_name}' failed: {str(err)}"
                     )
                     continue
 
