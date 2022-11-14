@@ -100,7 +100,6 @@ class UserSchema(NamedSchema, table=True):
                 name=self.name,
                 active=self.active,
                 email_opted_in=self.email_opted_in,
-                teams=[t.to_model(_block_recursion=True) for t in self.teams],
                 full_name=self.full_name,
                 created=self.created,
                 updated=self.updated,
