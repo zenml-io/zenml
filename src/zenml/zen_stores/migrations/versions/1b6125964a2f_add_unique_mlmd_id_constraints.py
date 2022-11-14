@@ -18,7 +18,6 @@ depends_on = None
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-
     # SQLite disables all foreign key constraints by default, so we need to
     # explicitly enable them if we want cascading deletes to work as expected.
     engine_name = op.get_bind().engine.name
@@ -54,7 +53,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
-
     with op.batch_alter_table("step_run", schema=None) as batch_op:
         batch_op.drop_constraint("unique_step_run_mlmd_id", type_="unique")
 

@@ -2774,7 +2774,6 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If an identical pipeline run already exists.
-            KeyError: If the pipeline does not exist.
         """
         with Session(self.engine) as session:
 

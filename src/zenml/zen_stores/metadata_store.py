@@ -404,7 +404,6 @@ class MetadataStore:
 
         Args:
             artifact_proto: The proto of the artifact to get the model for.
-            artifact_name: The name of the artifact.
             parent_step_id: The ID of the parent step.
 
         Returns:
