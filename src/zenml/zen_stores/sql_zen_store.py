@@ -2823,10 +2823,12 @@ class SqlZenStore(BaseZenStore):
                     )
                 ).first()
                 if pipeline is None:
-                    raise KeyError(
-                        f"Unable to create pipeline run: {pipeline_run.name}: "
-                        f"No pipeline with ID {pipeline_run.pipeline_id} found."
+                    logger.warning(
+                        f"No pipeline with ID '{pipeline_run.pipeline_id}' "
+                        f"found. Creating pipeline run "
+                        f"'{pipeline_run.pipeline_id}' as unlisted run."
                     )
+                    pipeline_run.pipeline_id = None
                 new_run = PipelineRunSchema.from_create_model(
                     run=pipeline_run, pipeline=pipeline
                 )
