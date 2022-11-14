@@ -1238,6 +1238,7 @@ numpy
 nzf
 observability
 odbc
+ondelete
 onerror
 orch
 orchestr
