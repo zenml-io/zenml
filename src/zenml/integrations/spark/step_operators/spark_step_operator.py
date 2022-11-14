@@ -14,13 +14,14 @@
 """Implementation of the Spark Step Operator."""
 
 import subprocess
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, List, Optional, Type, cast
 
 from pyspark.conf import SparkConf
 
 from zenml.client import Client
 from zenml.integrations.spark.flavors.spark_step_operator_flavor import (
     SparkStepOperatorConfig,
+    SparkStepOperatorSettings,
 )
 from zenml.integrations.spark.step_operators.spark_entrypoint_configuration import (
     SparkEntrypointConfiguration,
@@ -31,6 +32,7 @@ from zenml.step_operators import BaseStepOperator
 logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.config import ResourceSettings
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.step_configurations import StepConfiguration
     from zenml.config.step_run_info import StepRunInfo
 
@@ -46,6 +48,15 @@ class SparkStepOperator(BaseStepOperator):
             The configuration.
         """
         return cast(SparkStepOperatorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Spark step operator.
+
+        Returns:
+            The settings class.
+        """
+        return SparkStepOperatorSettings
 
     @property
     def application_path(self) -> Optional[str]:
@@ -184,26 +195,33 @@ class SparkStepOperator(BaseStepOperator):
                 f"configuration."
             )
 
-    def _additional_configuration(self, spark_config: SparkConf) -> None:
+    def _additional_configuration(
+        self, spark_config: SparkConf, settings: SparkStepOperatorSettings
+    ) -> None:
         """Appends the user-defined configuration parameters.
 
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
+            settings: Step operator settings for the current step run.
         """
         # Add the additional parameters
-        if self.config.submit_kwargs:
-            for k, v in self.config.submit_kwargs.items():
+        if settings.submit_kwargs:
+            for k, v in settings.submit_kwargs.items():
                 spark_config.set(k, v)
 
     def _launch_spark_job(
-        self, spark_config: SparkConf, entrypoint_command: List[str]
+        self,
+        spark_config: SparkConf,
+        deploy_mode: str,
+        entrypoint_command: List[str],
     ) -> None:
         """Generates and executes a spark-submit command.
 
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
+            deploy_mode: The spark deploy mode to use.
             entrypoint_command: The entrypoint command to run.
 
         Raises:
@@ -213,7 +231,7 @@ class SparkStepOperator(BaseStepOperator):
         command = [
             f"spark-submit "
             f"--master {self.config.master} "
-            f"--deploy-mode {self.config.deploy_mode}"
+            f"--deploy-mode {deploy_mode}"
         ]
 
         # Add the configuration parameters
@@ -258,6 +276,10 @@ class SparkStepOperator(BaseStepOperator):
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
         """
+        settings = cast(
+            SparkStepOperatorSettings,
+            self.get_settings(info) or SparkStepOperatorSettings(),
+        )
         # Start off with an empty configuration
         conf = SparkConf()
 
@@ -276,12 +298,11 @@ class SparkStepOperator(BaseStepOperator):
         )
 
         # Add any additional configuration given by the user.
-        self._additional_configuration(
-            spark_config=conf,
-        )
+        self._additional_configuration(spark_config=conf, settings=settings)
 
         # Generate a spark-submit command given the configuration
         self._launch_spark_job(
             spark_config=conf,
+            deploy_mode=settings.deploy_mode,
             entrypoint_command=entrypoint_command,
         )
