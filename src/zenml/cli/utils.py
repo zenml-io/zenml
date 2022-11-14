@@ -983,3 +983,13 @@ def print_pipeline_runs_table(
         }
         runs_dicts.append(run_dict)
     print_table(runs_dicts)
+
+
+def warn_unsupported_non_default_project() -> None:
+    """Warning for unsupported non-default project."""
+    warning(
+        "Currently the concept of `project` is not supported "
+        "within the Dashboard. The Project functionality will be "
+        "completed in the coming weeks. For the time being it "
+        "is recommended to stay within the `default` project."
+    )

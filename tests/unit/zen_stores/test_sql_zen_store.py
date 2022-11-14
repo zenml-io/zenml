@@ -18,6 +18,8 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
+import zenml.cli.project
+import zenml.cli.role
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ExecutionStatus, PermissionType, StackComponentType
 from zenml.exceptions import (
@@ -47,14 +49,14 @@ DEFAULT_NAME = "default"
 
 def test_only_one_default_project(sql_store: BaseZenStore):
     """Tests that only one default project can be created."""
-    assert len(sql_store["store"].list_projects()) == 1
+    assert len(zenml.cli.project.list_projects()) == 1
 
 
 def test_project_creation(sql_store: BaseZenStore):
     """Tests project creation."""
     new_project = ProjectModel(name="arias_project")
-    sql_store["store"].create_project(new_project)
-    projects_list = sql_store["store"].list_projects()
+    zenml.cli.project.create_project(new_project)
+    projects_list = zenml.cli.project.list_projects()
     assert len(projects_list) == 2
     assert projects_list[1].name == "arias_project"
 
@@ -79,20 +81,20 @@ def test_updating_default_project_fails(sql_store: BaseZenStore):
     assert default_project.name == DEFAULT_NAME
     default_project.name = "aria"
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_project(default_project)
+        zenml.cli.project.update_project(default_project)
 
 
 def test_updating_project(sql_store: BaseZenStore):
     """Tests updating a project."""
     new_project = ProjectModel(name="arias_project")
-    new_project = sql_store["store"].create_project(new_project)
+    new_project = zenml.cli.project.create_project(new_project)
     with does_not_raise():
         updated_project = sql_store["store"].get_project(
             project_name_or_id="arias_project"
         )
     updated_project.name = "axls_project"
     with does_not_raise():
-        sql_store["store"].update_project(updated_project)
+        zenml.cli.project.update_project(updated_project)
     with does_not_raise():
         updated_project = sql_store["store"].get_project(
             project_name_or_id="axls_project"
@@ -105,22 +107,22 @@ def test_updating_nonexisting_project_raises_error(
     """Tests updating a nonexistent project raises an error."""
     new_project = ProjectModel(name="arias_project")
     with pytest.raises(KeyError):
-        sql_store["store"].update_project(new_project)
+        zenml.cli.project.update_project(new_project)
 
 
 def test_deleting_project_succeeds(sql_store: BaseZenStore):
     """Tests deleting a project."""
     new_project = ProjectModel(name="axls_project")
-    new_project = sql_store["store"].create_project(new_project)
+    new_project = zenml.cli.project.create_project(new_project)
     with does_not_raise():
-        sql_store["store"].delete_project("axls_project")
-    assert len(sql_store["store"].list_projects()) == 1
+        zenml.cli.project.delete_project("axls_project")
+    assert len(zenml.cli.project.list_projects()) == 1
 
 
 def test_deleting_default_project_fails(sql_store: BaseZenStore):
     """Tests deleting the default project."""
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].delete_project(DEFAULT_NAME)
+        zenml.cli.project.delete_project(DEFAULT_NAME)
 
 
 def test_deleting_nonexistent_project_raises_error(
@@ -128,7 +130,7 @@ def test_deleting_nonexistent_project_raises_error(
 ):
     """Tests deleting a nonexistent project raises an error."""
     with pytest.raises(KeyError):
-        sql_store["store"].delete_project("blupus_project")
+        zenml.cli.project.delete_project("blupus_project")
 
 
 #  .-----
@@ -416,7 +418,7 @@ def test_creating_role(sql_store: BaseZenStore):
         },
     )
     with pytest.raises(EntityExistsError):
-        sql_store["store"].create_role(new_role)
+        zenml.cli.role.create_role(new_role)
 
     new_role = RoleModel(
         name="cat",
@@ -426,7 +428,7 @@ def test_creating_role(sql_store: BaseZenStore):
             PermissionType.WRITE,
         },
     )
-    sql_store["store"].create_role(new_role)
+    zenml.cli.role.create_role(new_role)
     assert len(sql_store["store"].roles) == roles_before + 1
     assert sql_store["store"].get_role("admin") is not None
 
@@ -437,7 +439,7 @@ def test_creating_role_with_empty_permissions_succeeds(sql_store: BaseZenStore):
     roles_before = len(sql_store["store"].roles)
 
     new_role = RoleModel(name="cat", permissions=set())
-    sql_store["store"].create_role(new_role)
+    zenml.cli.role.create_role(new_role)
     assert len(sql_store["store"].roles) == roles_before + 1
     assert sql_store["store"].get_role("admin") is not None
 
@@ -453,7 +455,7 @@ def test_creating_role_with_existing_name_fails(sql_store: BaseZenStore):
         },
     )
     with pytest.raises(EntityExistsError):
-        sql_store["store"].create_role(new_role)
+        zenml.cli.role.create_role(new_role)
 
 
 def test_creating_existing_role_fails(sql_store: BaseZenStore):
@@ -468,7 +470,7 @@ def test_creating_existing_role_fails(sql_store: BaseZenStore):
         },
     )
     with pytest.raises(EntityExistsError):
-        sql_store["store"].create_role(new_role)
+        zenml.cli.role.create_role(new_role)
     assert len(sql_store["store"].roles) == roles_before
 
 
@@ -483,7 +485,7 @@ def test_getting_role_succeeds(sql_store: BaseZenStore):
         },
     )
 
-    sql_store["store"].create_role(new_role)
+    zenml.cli.role.create_role(new_role)
     assert sql_store["store"].get_role("cat_feeder") is not None
 
 
@@ -498,10 +500,10 @@ def test_deleting_role_succeeds(sql_store: BaseZenStore):
     roles_before = len(sql_store["store"].roles)
 
     new_role = RoleModel(name="cat_feeder", permissions={PermissionType.ME})
-    sql_store["store"].create_role(new_role)
+    zenml.cli.role.create_role(new_role)
     assert len(sql_store["store"].roles) == roles_before + 1
     new_role_id = str(sql_store["store"].get_role("cat_feeder").id)
-    sql_store["store"].delete_role(new_role_id)
+    zenml.cli.role.delete_role(new_role_id)
     assert len(sql_store["store"].roles) == roles_before
     with pytest.raises(KeyError):
         sql_store["store"].get_role(new_role_id)
@@ -510,16 +512,16 @@ def test_deleting_role_succeeds(sql_store: BaseZenStore):
 def test_deleting_nonexistent_role_fails(sql_store: BaseZenStore):
     """Tests deleting a nonexistent role fails."""
     with pytest.raises(KeyError):
-        sql_store["store"].delete_role(uuid.uuid4())
+        zenml.cli.role.delete_role(uuid.uuid4())
 
 
 def test_deleting_builtin_role_fails(sql_store: BaseZenStore):
     """Tests deleting a built-in role fails."""
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].delete_role("admin")
+        zenml.cli.role.delete_role("admin")
 
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].delete_role("guest")
+        zenml.cli.role.delete_role("guest")
 
 
 def test_updating_builtin_role_fails(sql_store: BaseZenStore):
@@ -527,12 +529,12 @@ def test_updating_builtin_role_fails(sql_store: BaseZenStore):
     role = sql_store["store"].get_role("admin")
     role.name = "new_name"
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_role(role)
+        zenml.cli.role.update_role(role)
 
     role = sql_store["store"].get_role("guest")
     role.name = "new_name"
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_role(role)
+        zenml.cli.role.update_role(role)
 
 
 #  .----------------
@@ -550,9 +552,9 @@ def test_assigning_role_to_user_succeeds(
     new_role = RoleModel(name="aria_feeder", permissions={PermissionType.ME})
     current_user_id = sql_store_with_team["active_user"].id
 
-    sql_store_with_team["store"].create_role(new_role)
+    zenml.cli.role.create_role(new_role)
     new_role_id = sql_store_with_team["store"].get_role("aria_feeder").id
-    sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
+    zenml.cli.role.assign_role(new_role_id, current_user_id)
 
     assert len(sql_store_with_team["store"].roles) == roles_before + 1
     assert (
@@ -570,11 +572,9 @@ def test_assigning_role_to_team_succeeds(
 
     team_id = sql_store_with_team["default_team"].id
     new_role = RoleModel(name="blupus_friend", permissions={PermissionType.ME})
-    sql_store_with_team["store"].create_role(new_role)
+    zenml.cli.role.create_role(new_role)
     new_role_id = sql_store_with_team["store"].get_role("blupus_friend").id
-    sql_store_with_team["store"].assign_role(
-        new_role_id, team_id, is_user=False
-    )
+    zenml.cli.role.assign_role(new_role_id, team_id, is_user=False)
 
     assert len(sql_store_with_team["store"].roles) == roles_before + 1
     assert (
@@ -583,7 +583,7 @@ def test_assigning_role_to_team_succeeds(
     )
     assert (
         len(
-            sql_store_with_team["store"].list_role_assignments(
+            zenml.cli.role.list_role_assignments(
                 user_name_or_id=sql_store_with_team["active_user"].id
             )
         )
@@ -607,11 +607,11 @@ def test_assigning_role_if_assignment_already_exists(
         },
     )
     current_user_id = sql_store_with_team["active_user"].id
-    sql_store_with_team["store"].create_role(new_role)
+    zenml.cli.role.create_role(new_role)
     new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
-    sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
+    zenml.cli.role.assign_role(new_role_id, current_user_id)
     with pytest.raises(EntityExistsError):
-        sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
+        zenml.cli.role.assign_role(new_role_id, current_user_id)
 
     assert len(sql_store_with_team["store"].roles) == roles_before + 1
     assert (
@@ -629,10 +629,10 @@ def test_revoking_role_for_user_succeeds(
 
     new_role = RoleModel(name="aria_feeder", permissions={PermissionType.ME})
     current_user_id = sql_store_with_team["active_user"].id
-    sql_store_with_team["store"].create_role(new_role)
+    zenml.cli.role.create_role(new_role)
     new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
-    sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
-    sql_store_with_team["store"].revoke_role(new_role_id, current_user_id)
+    zenml.cli.role.assign_role(new_role_id, current_user_id)
+    zenml.cli.role.revoke_role(new_role_id, current_user_id)
 
     assert len(sql_store_with_team["store"].roles) == roles_before + 1
     assert (
@@ -650,14 +650,10 @@ def test_revoking_role_for_team_succeeds(
 
     team_id = sql_store_with_team["default_team"].id
     new_role = RoleModel(name="blupus_friend", permissions={PermissionType.ME})
-    sql_store_with_team["store"].create_role(new_role)
+    zenml.cli.role.create_role(new_role)
     new_role_id = str(sql_store_with_team["store"].get_role("blupus_friend").id)
-    sql_store_with_team["store"].assign_role(
-        new_role_id, team_id, is_user=False
-    )
-    sql_store_with_team["store"].revoke_role(
-        new_role_id, team_id, is_user=False
-    )
+    zenml.cli.role.assign_role(new_role_id, team_id, is_user=False)
+    zenml.cli.role.revoke_role(new_role_id, team_id, is_user=False)
 
     assert len(sql_store_with_team["store"].roles) == roles_before + 1
     assert (
@@ -672,7 +668,7 @@ def test_revoking_nonexistent_role_fails(
     """Tests revoking a nonexistent role fails."""
     current_user_id = sql_store_with_team["active_user"].id
     with pytest.raises(KeyError):
-        sql_store_with_team["store"].revoke_role(uuid.uuid4(), current_user_id)
+        zenml.cli.role.revoke_role(uuid.uuid4(), current_user_id)
 
 
 def test_revoking_role_for_nonexistent_user_fails(
@@ -680,12 +676,12 @@ def test_revoking_role_for_nonexistent_user_fails(
 ):
     """Tests revoking a role for a nonexistent user fails."""
     new_role = RoleModel(name="aria_feeder", permissions={PermissionType.ME})
-    sql_store_with_team["store"].create_role(new_role)
+    zenml.cli.role.create_role(new_role)
     new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
     current_user_id = sql_store_with_team["active_user"].id
-    sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
+    zenml.cli.role.assign_role(new_role_id, current_user_id)
     with pytest.raises(KeyError):
-        sql_store_with_team["store"].revoke_role(new_role_id, uuid.uuid4())
+        zenml.cli.role.revoke_role(new_role_id, uuid.uuid4())
 
 
 #  .----------------.

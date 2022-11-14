@@ -53,9 +53,9 @@ from zenml.new_models import (
     PipelineRequestModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
+    ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
-    ProjectRequestModel,
     RoleAssignmentRequestModel,
     RoleRequestModel,
     RoleResponseModel,
@@ -75,10 +75,7 @@ from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
-    from zenml.new_models import (
-        ComponentResponseModel,
-        FlavorResponseModel,
-    )
+    from zenml.new_models import ComponentResponseModel, FlavorResponseModel
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -843,6 +840,22 @@ class Client(metaclass=ClientMetaClass):
             )
         return project
 
+    def get_project(self, name_id_or_prefix: str) -> ProjectResponseModel:
+        """Gets a project.
+
+        Args:
+            name_id_or_prefix: The name or ID of the project.
+
+        Returns:
+            The Project
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            response_model=ProjectResponseModel,
+            get_method=self.zen_store.get_project,
+            list_method=self.zen_store.list_projects,
+            name_id_or_prefix=name_id_or_prefix,
+        )
+
     def create_project(
         self, name: str, description: str
     ) -> "ProjectResponseModel":
@@ -860,7 +873,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         new_name: Optional[str] = None,
-        new_description: Optional[str] = None
+        new_description: Optional[str] = None,
     ) -> "ProjectResponseModel":
         """Create a new project.
 
@@ -1794,7 +1807,7 @@ class Client(metaclass=ClientMetaClass):
             pipeline_run = PipelineRunModel.parse_obj(pipeline_run_dict)
             pipeline_run.updated = datetime.now()
             pipeline_run.user = self.active_user.id
-            pipeline_run.project = self.active_project.id
+            zenml.cli.project.project = self.active_project.id
             pipeline_run.stack_id = None
             pipeline_run.pipeline_id = None
             pipeline_run.mlmd_id = None

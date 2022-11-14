@@ -15,7 +15,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlmodel import Relationship, Field
+from sqlmodel import Field, Relationship
 
 from zenml.new_models import (
     ProjectRequestModel,
