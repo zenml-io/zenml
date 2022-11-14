@@ -2814,7 +2814,23 @@ class SqlZenStore(BaseZenStore):
                         f"MLMD ID '{pipeline_run.mlmd_id}' already exists."
                     )
 
+            # Query stack
+            if pipeline_run.stack_id is not None:
+                stack = session.exec(
+                    select(StackSchema).where(
+                        StackSchema.id == pipeline_run.stack_id
+                    )
+                ).first()
+                if stack is None:
+                    logger.warning(
+                        f"No stack with ID '{pipeline_run.stack_id}' found. "
+                        f"Creating pipeline run '{pipeline_run.name}' without "
+                        "linked stack."
+                    )
+                    pipeline_run.stack_id = None
+
             # Query pipeline
+            pipeline = None
             if pipeline_run.pipeline_id is not None:
                 pipeline = session.exec(
                     select(PipelineSchema).where(
@@ -2824,15 +2840,14 @@ class SqlZenStore(BaseZenStore):
                 if pipeline is None:
                     logger.warning(
                         f"No pipeline with ID '{pipeline_run.pipeline_id}' "
-                        f"found. Creating pipeline run "
-                        f"'{pipeline_run.pipeline_id}' as unlisted run."
+                        f"found. Creating pipeline run '{pipeline_run.name}' "
+                        f"as unlisted run."
                     )
                     pipeline_run.pipeline_id = None
-                new_run = PipelineRunSchema.from_create_model(
-                    run=pipeline_run, pipeline=pipeline
-                )
-            else:
-                new_run = PipelineRunSchema.from_create_model(run=pipeline_run)
+
+            new_run = PipelineRunSchema.from_create_model(
+                run=pipeline_run, pipeline=pipeline
+            )
 
             # Create the pipeline run
             session.add(new_run)
