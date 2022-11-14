@@ -55,13 +55,13 @@ class StackComponentSchema(ShareableSchema, table=True):
     )
 
     def update(self, component_update: ComponentUpdateModel):
-        for field, value in component_update.dict(exclude_unset=True).items():
+        for field, value in component_update.dict(exclude_unset=True, exclude={'project', 'user'}).items():
             if field == "configuration":
                 self.configuration = base64.b64encode(
                     json.dumps(component_update.configuration).encode("utf-8")
                 )
             else:
-                setattr(self, field, value)
+                 setattr(self, field, value)
 
         self.updated = datetime.now()
         return self
@@ -77,7 +77,7 @@ class StackComponentSchema(ShareableSchema, table=True):
             name=self.name,
             type=self.type,
             flavor=self.flavor,
-            user=self.user.to_model(_block_recursion=True),
+            user=self.user.to_model(),
             project=self.project.to_model(),
             is_shared=self.is_shared,
             configuration=json.loads(

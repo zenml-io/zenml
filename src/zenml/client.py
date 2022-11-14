@@ -929,7 +929,7 @@ class Client(metaclass=ClientMetaClass):
         stack_components = dict()
 
         for c_type, c_name in components.items():
-            if name:
+            if c_name:
                 stack_components[c_type] = [
                     self.get_stack_component(
                         name_id_or_prefix=c_name,
@@ -974,7 +974,10 @@ class Client(metaclass=ClientMetaClass):
         stack = self.get_stack(name_id_or_prefix=name_id_or_prefix)
 
         # Create the update model
-        update_model = StackUpdateModel()
+        update_model = StackUpdateModel(
+            project=self.active_project.id,
+            user=self.active_user.id,
+        )
 
         if name:
             update_model.name = name
@@ -1269,7 +1272,10 @@ class Client(metaclass=ClientMetaClass):
             component_type=component_type,
         )
 
-        update_model = ComponentUpdateModel()
+        update_model = ComponentUpdateModel(
+            project=self.active_project.id,
+            user=self.active_user.id,
+        )
 
         if name is not None:
             update_model.name = name
@@ -1999,7 +2005,7 @@ class Client(metaclass=ClientMetaClass):
         """
         # First interpret as full UUID
         try:
-            component_id = UUID(name_id_or_prefix)
+            component_id = UUID(str(name_id_or_prefix))
             return self.zen_store.get_stack_component(component_id)
         except ValueError:
             pass
