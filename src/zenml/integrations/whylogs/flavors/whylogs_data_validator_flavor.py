@@ -42,7 +42,9 @@ class WhylogsDataValidatorSettings(BaseSettings):
 
 
 class WhylogsDataValidatorConfig(
-    BaseDataValidatorConfig, AuthenticationConfigMixin
+    BaseDataValidatorConfig,
+    AuthenticationConfigMixin,
+    WhylogsDataValidatorSettings,
 ):
     """Config for the whylogs data validator."""
 

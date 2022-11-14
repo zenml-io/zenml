@@ -16,13 +16,12 @@ from typing import TYPE_CHECKING, Type, TypeVar
 
 from pydantic import ValidationError
 
-from zenml.enums import StackComponentType
 from zenml.exceptions import SettingsResolvingError
 from zenml.utils import pydantic_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.stack import Stack
+    from zenml.stack import Stack, StackComponent
 
     T = TypeVar("T", bound="BaseSettings")
 
@@ -72,6 +71,18 @@ class SettingsResolver:
             target_class = self._resolve_stack_component_setting_class(
                 stack=stack
             )
+            stack_component = (
+                settings_utils.get_stack_component_for_settings_key(self._key)
+            )
+            default_settings = self._get_default_settings(
+                stack_component=stack_component
+            )
+            # Update the provided values with the default settings specified
+            # on the component
+            self._settings = pydantic_utils.update_model(
+                default_settings, self._settings
+            )
+
             self._update_with_stack_component_default_settings(stack=stack)
 
         return self._convert_settings(target_class=target_class)
@@ -132,14 +143,18 @@ class SettingsResolver:
                 f"class {target_class}."
             )
 
-    def _update_with_stack_component_default_settings(
-        self, stack: "Stack"
+    def _get_default_settings(
+        stack_component: "StackComponent",
     ) -> "BaseSettings":
-        component_type, _ = self._key.split(".", 1)
+        """Gets default settings configured on a stack component.
 
-        stack_component = stack.components[StackComponentType(component_type)]
+        Args:
+            stack_component: The stack component for which to get the settings.
+
+        Returns:
+            The settings configured on the stack component.
+        """
         assert stack_component.settings_class
-
         # Exclude additional config attributes that aren't part of the settings
         field_names = set(stack_component.settings_class.__fields__)
         default_settings = stack_component.settings_class.parse_obj(
@@ -147,6 +162,4 @@ class SettingsResolver:
                 include=field_names, exclude_unset=True, exclude_defaults=True
             )
         )
-        self._settings = pydantic_utils.update_model(
-            default_settings, self._settings
-        )
+        return default_settings

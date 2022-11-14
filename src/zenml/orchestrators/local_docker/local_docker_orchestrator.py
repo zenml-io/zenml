@@ -208,7 +208,9 @@ class LocalDockerOrchestratorSettings(BaseSettings):
     run_args: Dict[str, Any] = {}
 
 
-class LocalDockerOrchestratorConfig(BaseOrchestratorConfig):
+class LocalDockerOrchestratorConfig(
+    BaseOrchestratorConfig, LocalDockerOrchestratorSettings
+):
     """Local Docker orchestrator config."""
 
     @property

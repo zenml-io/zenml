@@ -37,7 +37,9 @@ class TektonOrchestratorSettings(BaseSettings):
     pod_settings: Optional[KubernetesPodSettings] = None
 
 
-class TektonOrchestratorConfig(BaseOrchestratorConfig):
+class TektonOrchestratorConfig(
+    BaseOrchestratorConfig, TektonOrchestratorSettings
+):
     """Configuration for the Tekton orchestrator.
 
     Attributes:

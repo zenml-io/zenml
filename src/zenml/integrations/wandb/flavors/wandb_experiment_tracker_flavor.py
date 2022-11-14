@@ -66,7 +66,9 @@ class WandbExperimentTrackerSettings(BaseSettings):
             return value
 
 
-class WandbExperimentTrackerConfig(BaseExperimentTrackerConfig):
+class WandbExperimentTrackerConfig(
+    BaseExperimentTrackerConfig, WandbExperimentTrackerSettings
+):
     """Config for the Wandb experiment tracker.
 
     Attributes:

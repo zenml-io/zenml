@@ -22,6 +22,7 @@ from zenml.integrations.gcp.google_credentials_mixin import (
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
+from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.gcp.orchestrators import VertexOrchestrator
@@ -54,6 +55,12 @@ class VertexOrchestratorSettings(BaseSettings):
     synchronous: bool = False
     node_selector_constraint: Optional[Tuple[str, str]] = None
     pod_settings: Optional[KubernetesPodSettings] = None
+
+    _node_selector_deprecation = (
+        deprecation_utils.deprecate_pydantic_attributes(
+            "node_selector_constraint"
+        )
+    )
 
 
 class VertexOrchestratorConfig(
@@ -110,6 +117,10 @@ class VertexOrchestratorConfig(
     cpu_limit: Optional[str] = None
     memory_limit: Optional[str] = None
     gpu_limit: Optional[int] = None
+
+    _resource_deprecation = deprecation_utils.deprecate_pydantic_attributes(
+        "cpu_limit", "memory_limit", "gpu_limit"
+    )
 
     @property
     def is_remote(self) -> bool:
