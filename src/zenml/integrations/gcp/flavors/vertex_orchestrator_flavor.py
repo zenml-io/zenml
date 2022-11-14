@@ -67,7 +67,7 @@ class VertexOrchestratorConfig(
     BaseOrchestratorConfig,
     GoogleCredentialsConfigMixin,
     VertexOrchestratorSettings,
-):
+):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     """Configuration for the Vertex orchestrator.
 
     Attributes:

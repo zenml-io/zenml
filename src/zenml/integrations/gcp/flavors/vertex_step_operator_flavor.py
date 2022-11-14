@@ -50,7 +50,7 @@ class VertexStepOperatorConfig(
     BaseStepOperatorConfig,
     GoogleCredentialsConfigMixin,
     VertexStepOperatorSettings,
-):
+):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     """Configuration for the Vertex step operator.
 
     Attributes:

@@ -82,7 +82,7 @@ class SparkStepOperatorSettings(BaseSettings):
 
 class SparkStepOperatorConfig(
     BaseStepOperatorConfig, SparkStepOperatorSettings
-):
+):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     """Spark step operator config.
 
     Attributes:

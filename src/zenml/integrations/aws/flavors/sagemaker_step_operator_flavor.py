@@ -44,7 +44,7 @@ class SagemakerStepOperatorSettings(BaseSettings):
 
 class SagemakerStepOperatorConfig(
     BaseStepOperatorConfig, SagemakerStepOperatorSettings
-):
+):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     """Config for the Sagemaker step operator.
 
     Attributes:

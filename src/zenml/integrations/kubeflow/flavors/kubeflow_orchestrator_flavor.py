@@ -117,7 +117,7 @@ class KubeflowOrchestratorSettings(BaseSettings):
 
 class KubeflowOrchestratorConfig(
     BaseOrchestratorConfig, KubeflowOrchestratorSettings
-):
+):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     """Configuration for the Kubeflow orchestrator.
 
     Attributes:

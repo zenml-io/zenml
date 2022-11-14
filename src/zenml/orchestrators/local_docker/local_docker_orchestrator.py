@@ -247,7 +247,7 @@ class LocalDockerOrchestratorSettings(BaseSettings):
 
 class LocalDockerOrchestratorConfig(
     BaseOrchestratorConfig, LocalDockerOrchestratorSettings
-):
+):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     """Local Docker orchestrator config."""
 
     @property

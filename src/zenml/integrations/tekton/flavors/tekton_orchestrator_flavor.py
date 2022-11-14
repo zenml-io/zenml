@@ -39,7 +39,7 @@ class TektonOrchestratorSettings(BaseSettings):
 
 class TektonOrchestratorConfig(
     BaseOrchestratorConfig, TektonOrchestratorSettings
-):
+):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     """Configuration for the Tekton orchestrator.
 
     Attributes:

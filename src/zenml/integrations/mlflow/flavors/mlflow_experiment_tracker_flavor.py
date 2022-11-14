@@ -74,7 +74,7 @@ class MLFlowExperimentTrackerSettings(BaseSettings):
 
 class MLFlowExperimentTrackerConfig(
     BaseExperimentTrackerConfig, MLFlowExperimentTrackerSettings
-):
+):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     """Config for the MLflow experiment tracker.
 
     Attributes:

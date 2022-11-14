@@ -45,7 +45,7 @@ class WhylogsDataValidatorConfig(
     BaseDataValidatorConfig,
     AuthenticationConfigMixin,
     WhylogsDataValidatorSettings,
-):
+):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     """Config for the whylogs data validator."""
 
 
