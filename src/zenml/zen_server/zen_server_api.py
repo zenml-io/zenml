@@ -33,6 +33,7 @@ from zenml.zen_server.routers import (
     pipelines_endpoints,
     projects_endpoints,
     roles_endpoints,
+    role_assignments_endpoints,
     runs_endpoints,
     server_endpoints,
     stack_components_endpoints,
@@ -135,6 +136,7 @@ app.include_router(pipelines_endpoints.router)
 app.include_router(projects_endpoints.router)
 app.include_router(flavors_endpoints.router)
 app.include_router(roles_endpoints.router)
+app.include_router(role_assignments_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(server_endpoints.router)
 app.include_router(stacks_endpoints.router)

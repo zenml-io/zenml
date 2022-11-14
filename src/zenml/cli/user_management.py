@@ -154,8 +154,9 @@ def create_user(
         try:
             client.create_role_assignment(
                 role_name_or_id=initial_role,
-                user_name_or_id=str(new_user.id),
+                user_or_team_name_or_id=str(new_user.id),
                 project_name_or_id=None,
+                is_user=True
             )
         except KeyError as err:
             cli_utils.error(str(err))

@@ -102,7 +102,8 @@ def token(
     )
 
     permissions = set().union(
-        *[zen_store().get_role(ra.role).permissions for ra in role_assignments]
+        *[zen_store().get_role(ra.role.id).permissions
+          for ra in role_assignments]
     )
 
     access_token = auth_context.user.generate_access_token(

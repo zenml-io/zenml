@@ -49,6 +49,7 @@ from zenml.constants import (
     METADATA_CONFIG,
     PIPELINES,
     PROJECTS,
+    ROLE_ASSIGNMENTS,
     ROLES,
     RUNS,
     STACK_COMPONENTS,
@@ -69,7 +70,6 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import RoleAssignmentModel
 from zenml.models.server_models import ServerModel
 from zenml.new_models import (
     ArtifactRequestModel,
@@ -1106,7 +1106,7 @@ class RestZenStore(BaseZenStore):
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentModel]:
+    ) -> List[RoleAssignmentResponseModel]:
         """List all role assignments.
 
         Args:
@@ -1122,24 +1122,14 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all role assignments.
         """
-        roles: List[RoleAssignmentModel] = []
-        if user_name_or_id:
-            roles.extend(
-                self._list_resources(
-                    route=f"{USERS}/{user_name_or_id}{ROLES}",
-                    resource_model=RoleAssignmentModel,
-                    project_name_or_id=project_name_or_id,
-                )
-            )
-        if team_name_or_id:
-            roles.extend(
-                self._list_resources(
-                    route=f"{TEAMS}/{team_name_or_id}{ROLES}",
-                    resource_model=RoleAssignmentModel,
-                    project_name_or_id=project_name_or_id,
-                )
-            )
-        return roles
+        return self._list_resources(
+            route=f"{ROLE_ASSIGNMENTS}",
+            project_name_or_id=project_name_or_id,
+            role_name_or_id=role_name_or_id,
+            team_name_or_id=team_name_or_id,
+            user_name_or_id=user_name_or_id,
+            response_model=RoleAssignmentResponseModel,
+        )
 
     def get_role_assignment(
         self, role_assignment_id: UUID
@@ -1154,7 +1144,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._get_resource(
             resource_id=role_assignment_id,
-            route=ROLES,
+            route=ROLE_ASSIGNMENTS,
             response_model=RoleAssignmentResponseModel,
         )
 
@@ -1166,13 +1156,25 @@ class RestZenStore(BaseZenStore):
         """
         self._delete_resource(
             resource_id=role_assignment_id,
-            route=ROLES,
+            route=ROLE_ASSIGNMENTS,
         )
 
     def create_role_assignment(
         self, role_assignment: RoleAssignmentRequestModel
     ) -> RoleAssignmentResponseModel:
-        """"""
+        """Creates a new role assignment.
+
+        Args:
+            role_assignment: The role assignment to create.
+
+        Returns:
+            The newly created project.
+        """
+        return self._create_resource(
+            resource=role_assignment,
+            route=ROLE_ASSIGNMENTS,
+            response_model=RoleAssignmentResponseModel,
+        )
 
     # --------
     # Projects
