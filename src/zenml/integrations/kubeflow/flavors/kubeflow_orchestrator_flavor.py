@@ -34,6 +34,11 @@ class KubeflowOrchestratorSettings(BaseSettings):
     """Settings for the Kubeflow orchestrator.
 
     Attributes:
+        synchronous: If `True`, running a pipeline using this orchestrator will
+            block until all steps finished running on KFP. This setting only
+            has an effect when specified on the pipeline and will be ignored if
+            specified on steps.
+        timeout: How many seconds to wait for syncronous runs.
         client_args: Arguments to pass when initializing the KFP client.
         user_namespace: The user namespace to use when creating experiments
             and runs.
@@ -41,6 +46,9 @@ class KubeflowOrchestratorSettings(BaseSettings):
         node_affinity: Deprecated: Node affinities to apply to KFP pods.
         pod_settings: Pod settings to apply.
     """
+
+    synchronous: bool = False
+    timeout: int = 1200
 
     client_args: Dict[str, Any] = {}
     user_namespace: Optional[str] = None
@@ -107,7 +115,9 @@ class KubeflowOrchestratorSettings(BaseSettings):
         return values
 
 
-class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
+class KubeflowOrchestratorConfig(
+    BaseOrchestratorConfig, KubeflowOrchestratorSettings
+):
     """Configuration for the Kubeflow orchestrator.
 
     Attributes:
@@ -120,8 +130,6 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
             Pipelines is deployed. Defaults to `kubeflow`.
         kubernetes_context: Optional name of a kubernetes context to run
             pipelines in. If not set, will try to spin up a local K3d cluster.
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on KFP.
         skip_local_validations: If `True`, the local validations will be
             skipped.
         skip_cluster_provisioning: If `True`, the k3d cluster provisioning will
@@ -134,7 +142,6 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
     kubernetes_context: Optional[str] = None  # TODO[1376]: Setting
-    synchronous: bool = False  # TODO[1376]: Setting
     skip_local_validations: bool = False  # TODO[1376]: Setting
     skip_cluster_provisioning: bool = False  # TODO[1376]: Setting
     skip_ui_daemon_provisioning: bool = False  # TODO[1376]: Setting

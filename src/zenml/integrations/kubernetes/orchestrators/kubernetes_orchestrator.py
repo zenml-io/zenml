@@ -347,13 +347,14 @@ class KubernetesOrchestrator(BaseOrchestrator):
         )
 
         # Wait for the orchestrator pod to finish and stream logs.
-        if self.config.synchronous:
+        if settings and settings.synchronous:
             logger.info("Waiting for Kubernetes orchestrator pod...")
             kube_utils.wait_pod(
                 core_api=self._k8s_core_api,
                 pod_name=pod_name,
                 namespace=self.config.kubernetes_namespace,
                 exit_condition_lambda=kube_utils.pod_is_done,
+                timeout_sec=settings.timeout,
                 stream_logs=True,
             )
         else:

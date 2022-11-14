@@ -30,13 +30,22 @@ class KubernetesOrchestratorSettings(BaseSettings):
     """Settings for the Kubernetes orchestrator.
 
     Attributes:
+        synchronous: If `True`, running a pipeline using this orchestrator will
+            block until all steps finished running on Kubernetes.
+        timeout: How many seconds to wait for syncronous runs. `0` means
+            to wait for an unlimited duration.
         pod_settings: Pod settings to apply.
     """
+
+    synchronous: bool = False
+    timeout: int = 0
 
     pod_settings: Optional[KubernetesPodSettings] = None
 
 
-class KubernetesOrchestratorConfig(BaseOrchestratorConfig):
+class KubernetesOrchestratorConfig(
+    BaseOrchestratorConfig, KubernetesOrchestratorSettings
+):
     """Configuration for the Kubernetes orchestrator.
 
     Attributes:
@@ -46,15 +55,12 @@ class KubernetesOrchestratorConfig(BaseOrchestratorConfig):
             current-context`.
         kubernetes_namespace: Name of the Kubernetes namespace to be used.
             If not provided, `zenml` namespace will be used.
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on Kubernetes.
         skip_config_loading: If `True`, don't load the Kubernetes context and
             clients. This is only useful for unit testing.
     """
 
     kubernetes_context: Optional[str] = None  # TODO[1376]: Setting
     kubernetes_namespace: str = "zenml"
-    synchronous: bool = False  # TODO[1376]: Setting
     skip_config_loading: bool = False  # TODO[1376]: Remove
 
     @property

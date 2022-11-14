@@ -713,11 +713,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     "Started one-off pipeline run with ID '%s'.", result.run_id
                 )
 
-                if self.config.synchronous:
-                    # TODO [ENG-698]: Allow configuration of the timeout as a
-                    #  setting
+                if settings and settings.synchronous:
                     client.wait_for_run_completion(
-                        run_id=result.run_id, timeout=1200
+                        run_id=result.run_id, timeout=settings.timeout
                     )
         except urllib3.exceptions.HTTPError as error:
             logger.warning(

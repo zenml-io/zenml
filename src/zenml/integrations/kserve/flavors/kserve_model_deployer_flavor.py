@@ -50,7 +50,7 @@ class KServeModelDeployerConfig(BaseModelDeployerConfig):
     kubernetes_context: Optional[str]  # TODO[1376]: Setting
     kubernetes_namespace: Optional[str]
     base_url: str  # TODO: unused?
-    secret: Optional[str]  # TODO[1376]: Update to secret
+    secret: Optional[str]
     custom_domain: Optional[str]  # TODO: unused?
 
 
