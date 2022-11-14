@@ -82,7 +82,7 @@ def test_rename_role_succeeds(
     runner = CliRunner()
     result = runner.invoke(
         role_update_command,
-        [SAMPLE_ROLE, f"--name='cat_groomer'"],
+        [SAMPLE_ROLE, "--name='cat_groomer'"],
     )
     assert result.exit_code == 0
 

@@ -72,8 +72,8 @@ def test_update_existing_project_succeeds(
         project_update_command,
         [
             SAMPLE_PROJECT,
-            f"--name=dog_prj",
-            f"--description='Project to ensure world domination for dog-kind.'",
+            "--name=dog_prj",
+            "--description='Project to ensure world domination for dog-kind.'",
         ],
     )
     assert result.exit_code == 0
@@ -89,7 +89,7 @@ def test_update_default_project_name_fails(
         project_update_command,
         [
             DEFAULT_PROJECT_NAME,
-            f"--name=doc_prj",
+            "--name=doc_prj",
         ],
     )
     assert result.exit_code == 1

@@ -75,7 +75,7 @@ current_user_router = APIRouter(
 @handle_exceptions
 def list_users(
     name: Optional[str] = None,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[UserResponseModel]:
     """Returns a list of all users.
 
