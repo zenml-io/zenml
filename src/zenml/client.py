@@ -66,7 +66,7 @@ from zenml.new_models import (
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, RoleAssignmentResponseModel,
 )
 from zenml.new_models.base_models import BaseResponseModel
 from zenml.utils import io_utils
@@ -719,6 +719,16 @@ class Client(metaclass=ClientMetaClass):
         role_update = RoleUpdateModel()
 
         role_permissions = None
+
+        union_add_rm = set(remove_permission) & set(add_permission)
+        if union_add_rm:
+            raise RuntimeError(
+                f"The `remove_permission` and `add_permission` "
+                f"options both contain the same value(s): "
+                f"`{union_add_rm}`. Please rerun command and make sure "
+                f"that the same role does not show up for "
+                f"`remove_permission` and `add_permission`."
+            )
         # Only if permissions are being added or removed will they need to be
         #  set for the update model
         if remove_permission or add_permission:
@@ -795,6 +805,21 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.create_role_assignment(
             role_assignment=role_assignment
         )
+
+    def list_role_assignment(
+        self,
+        role_name_or_id: Optional[str] = None,
+        user_name_or_id: Optional[str] = None,
+        team_name_or_id: Optional[str] = None,
+        project_name_or_id: Optional[str] = None,
+    ) -> List[RoleAssignmentResponseModel]:
+        return self.zen_store.list_role_assignments(
+            project_name_or_id=project_name_or_id,
+            role_name_or_id=role_name_or_id,
+            user_name_or_id=user_name_or_id,
+            team_name_or_id=team_name_or_id,
+        )
+
 
     # ------- #
     # PROJECT #

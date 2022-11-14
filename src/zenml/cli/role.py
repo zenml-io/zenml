@@ -102,16 +102,6 @@ def update_role(
     """
     cli_utils.print_active_config()
 
-    union_add_rm = set(remove_permission) & set(add_permission)
-    if union_add_rm:
-        cli_utils.error(
-            f"The `--remove-permission` and `--add-permission` "
-            f"options both contain the same value: "
-            f"`{union_add_rm}`. Please rerun command and make sure "
-            f"that the same role does not show up for "
-            f"`--remove-permission` and `--add-permission`."
-        )
-
     try:
         Client().update_role(
             name_id_or_prefix=role_name,
@@ -119,7 +109,8 @@ def update_role(
             remove_permission=remove_permission,
             add_permission=add_permission,
         )
-    except (EntityExistsError, KeyError, IllegalOperationError) as err:
+    except (EntityExistsError, KeyError,
+            RuntimeError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Updated role '{role_name}'.")
 
@@ -134,8 +125,8 @@ def delete_role(role_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        Client().zen_store.delete_role(
-            role_name_or_id=parse_name_or_uuid(role_name_or_id)
+        Client().delete_role(
+            name_id_or_prefix=role_name_or_id
         )
     except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
@@ -280,16 +271,9 @@ def assignment() -> None:
     type=str,
     required=False,
 )
-@click.option(
-    "--team",
-    "team_name_or_id",
-    type=str,
-    required=False,
-)
 def list_role_assignments(
     role_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
-    team_name_or_id: Optional[str] = None,
     project_name_or_id: Optional[str] = None,
 ) -> None:
     """List all role assignments.
@@ -297,26 +281,23 @@ def list_role_assignments(
     Args:
         role_name_or_id: Name or ID of a role to list role assignments for.
         user_name_or_id: Name or ID of a user to list role assignments for.
-        team_name_or_id: Name or ID of a team to list role assignments for.
         project_name_or_id: Name or ID of a project to list role assignments
             for.
     """
     cli_utils.print_active_config()
     # Hacky workaround while role assignments are scoped to the user endpoint
-    role_assignments = []
-    for user in Client().zen_store.users:
-        role_assignments.extend(
-            Client().zen_store.list_role_assignments(
-                user_name_or_id=user.id,
-                role_name_or_id=role_name_or_id,
-                team_name_or_id=team_name_or_id,
-                project_name_or_id=project_name_or_id,
-            )
-        )
+    role_assignments = Client().list_role_assignment(
+        role_name_or_id=role_name_or_id,
+        user_name_or_id=user_name_or_id,
+        project_name_or_id=project_name_or_id
+    )
     if not role_assignments:
         cli_utils.declare("No roles assigned.")
         return
-    cli_utils.print_pydantic_models(role_assignments)
+    cli_utils.print_pydantic_models(
+        role_assignments,
+        exclude_columns=['id', 'created', 'updated']
+    )
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)

@@ -80,6 +80,13 @@ FlavorResponseModel.update_forward_refs(
 UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
 TeamResponseModel.update_forward_refs(UserResponseModel=UserResponseModel)
 
+RoleAssignmentResponseModel.update_forward_refs(
+    RoleResponseModel=RoleResponseModel,
+    TeamResponseModel=TeamResponseModel,
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel
+)
+
 __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",

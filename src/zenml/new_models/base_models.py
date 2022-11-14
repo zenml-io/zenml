@@ -67,7 +67,7 @@ class BaseResponseModel(AnalyticsTrackedModelMixin):
             return False
 
 
-class UserOwnedResponseModel(BaseResponseModel):
+class UserScopedResponseModel(BaseResponseModel):
     """Base user-owned domain model.
 
     Used as a base class for all domain models that are "owned" by a user.
@@ -78,7 +78,7 @@ class UserOwnedResponseModel(BaseResponseModel):
     )
 
 
-class ProjectScopedResponseModel(UserOwnedResponseModel):
+class ProjectScopedResponseModel(UserScopedResponseModel):
     """Base project-scoped domain model.
 
     Used as a base class for all domain models that are project-scoped.

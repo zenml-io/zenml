@@ -123,9 +123,9 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
         """
         return RoleAssignmentResponseModel(
             id=self.id,
-            role=self.role_id,
-            user=self.user_id,
-            project=self.project_id,
+            project=self.project.to_model() if self.project else None,
+            user=self.user.to_model(_block_recursion=True),
+            role=self.role.to_model(),
             created=self.created,
             updated=self.updated,
         )
@@ -164,9 +164,9 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
         """
         return RoleAssignmentResponseModel(
             id=self.id,
-            role=self.role_id,
-            team=self.team_id,
-            project=self.project_id,
+            project=self.project.to_model(),
+            user=self.team.to_model(_block_recursion=True),
+            role=self.role.to_model(),
             created=self.created,
             updated=self.updated,
         )
