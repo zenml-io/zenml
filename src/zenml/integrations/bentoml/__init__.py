@@ -32,7 +32,7 @@ class BentoMLIntegration(Integration):
 
     NAME = BENTOML
     REQUIREMENTS = [
-        "bentoml>=1.0.0",
+        "bentoml>=1.0.10",
     ]
 
     @classmethod

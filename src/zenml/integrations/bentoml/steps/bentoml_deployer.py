@@ -67,7 +67,7 @@ class BentoMLDeployerParameters(BaseParameters):
     ssl_cert_reqs: Optional[str] = None
     ssl_ca_certs: Optional[str] = None
     ssl_ciphers: Optional[str] = None
-    timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT * 2
+    timeout: int = 30
 
 
 @step(enable_cache=True)

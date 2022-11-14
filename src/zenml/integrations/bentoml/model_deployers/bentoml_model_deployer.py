@@ -112,6 +112,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
         Returns:
             A dictionary containing the model server information.
         """
+        predictions_apis_urls = ""
         if service_instance.prediction_apis_urls is not None:
             predictions_apis_urls = ", ".join(
                 [
