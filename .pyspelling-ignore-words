@@ -138,6 +138,7 @@ ComponentWrapper
 ComputeTarget
 ConfigMap
 ConnectionConfig
+ConnectionConfig
 ConnectionError
 ConstrainedStrValue
 ContainerOp
@@ -416,6 +417,7 @@ MaterializerName
 Mattermost
 Mesos
 MetadataStore
+MetadataStoreClientConfig
 MetadataStoreClientConfig
 MiB
 Microsoft
@@ -1067,6 +1069,7 @@ graphviz
 grey
 gritty
 grpc
+grpc
 gserviceaccount
 gsutil
 hadoop
@@ -1244,6 +1247,7 @@ nzf
 observability
 odbc
 onerror
+openssl
 orch
 orchestr
 orchestrator
@@ -1372,6 +1376,7 @@ setFormatter
 setattr
 sha
 shutil
+signalled
 signum
 signup
 sklearn
@@ -1525,6 +1530,7 @@ yMzA
 yaml
 yml
 zenbytes
+zenconfig
 zenfiles
 zenml
 zenmldocker

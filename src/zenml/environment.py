@@ -44,6 +44,8 @@ def get_environment() -> str:
         return "kubernetes"
     elif Environment.in_docker():
         return "docker"
+    elif Environment.in_container():
+        return "container"
     elif Environment.in_google_colab():
         return "colab"
     elif Environment.in_paperspace_gradient():
@@ -150,6 +152,17 @@ class Environment(metaclass=SingletonMetaClass):
         return platform.python_version()
 
     @staticmethod
+    def in_container() -> bool:
+        """If the current python process is running in a container.
+
+        Returns:
+            `True` if the current python process is running in a
+            container, `False` otherwise.
+        """
+        # TODO [ENG-167]: Make this more reliable and add test.
+        return INSIDE_ZENML_CONTAINER
+
+    @staticmethod
     def in_docker() -> bool:
         """If the current python process is running in a docker container.
 
@@ -157,10 +170,6 @@ class Environment(metaclass=SingletonMetaClass):
             `True` if the current python process is running in a docker
             container, `False` otherwise.
         """
-        # TODO [ENG-167]: Make this more reliable and add test.
-        if INSIDE_ZENML_CONTAINER:
-            return True
-
         if os.path.exists("./dockerenv") or os.path.exists("/.dockerinit"):
             return True
 

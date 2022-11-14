@@ -27,6 +27,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from urllib.parse import urlparse
 from uuid import UUID
 
 import requests
@@ -87,6 +88,10 @@ from zenml.models import (
 from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
 from zenml.models.server_models import ServerModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.networking_utils import (
+    replace_internal_hostname_with_localhost,
+    replace_localhost_with_internal_hostname,
+)
 from zenml.zen_server.models.base_models import (
     CreateRequest,
     CreateResponse,
@@ -177,6 +182,11 @@ class RestZenStoreConfiguration(StoreConfiguration):
                 "https://hostname[:port] or http://hostname[:port]."
             )
 
+        # When running inside a container, if the URL uses localhost, the
+        # target service will not be available. We try to replace localhost
+        # with one of the special Docker or K3D internal hostnames.
+        url = replace_localhost_with_internal_hostname(url)
+
         return url
 
     @validator("verify_ssl")
@@ -212,6 +222,18 @@ class RestZenStoreConfiguration(StoreConfiguration):
         verify_ssl = str(file_path)
 
         return verify_ssl
+
+    @classmethod
+    def supports_url_scheme(cls, url: str) -> bool:
+        """Check if a URL scheme is supported by this store.
+
+        Args:
+            url: The URL to check.
+
+        Returns:
+            True if the URL scheme is supported, False otherwise.
+        """
+        return urlparse(url).scheme in ("http", "https")
 
     def expand_certificates(self) -> None:
         """Expands the certificates in the verify_ssl field."""
@@ -378,10 +400,21 @@ class RestZenStore(BaseZenStore):
             assert isinstance(default_store_cfg, SqlZenStoreConfiguration)
             return default_store_cfg.get_metadata_config()
 
-        if not expand_certs:
-            if metadata_config_pb.HasField(
-                "mysql"
-            ) and metadata_config_pb.mysql.HasField("ssl_options"):
+        if metadata_config_pb.HasField("mysql"):
+            # If the server returns a MySQL connection config with a hostname
+            # that is a Docker or K3D internal hostname that cannot be resolved
+            # locally, we need to replace it with localhost. We're assuming
+            # that we're running on the host machine and the MySQL server can
+            # be accessed via localhost.
+            metadata_config_pb.mysql.host = (
+                replace_internal_hostname_with_localhost(
+                    metadata_config_pb.mysql.host
+                )
+            )
+
+            if not expand_certs and metadata_config_pb.mysql.HasField(
+                "ssl_options"
+            ):
                 # Save the certificates in a secure location on disk
                 secret_folder = Path(
                     GlobalConfiguration().local_stores_path,
@@ -393,7 +426,8 @@ class RestZenStore(BaseZenStore):
                     ):
                         continue
                     content = getattr(
-                        metadata_config_pb.mysql.ssl_options, key.lstrip("ssl_")
+                        metadata_config_pb.mysql.ssl_options,
+                        key.lstrip("ssl_"),
                     )
                     if content and not os.path.isfile(content):
                         fileio.makedirs(str(secret_folder))
