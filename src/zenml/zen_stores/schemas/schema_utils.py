@@ -60,6 +60,9 @@ def build_foreign_key_field(
 
     Returns:
         SQLModel foreign key field.
+    
+    Raises:
+        ValueError: If the ondelete and nullable arguments are not compatible.
     """
     if not nullable and ondelete == "SET NULL":
         raise ValueError(
