@@ -667,7 +667,11 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def delete_role_assignment(self, role_assignment_id: UUID) -> UUID:
-        """"""
+        """Delete a specific role assignment
+
+        Args:
+            role_assignment_id: The Id of the specific role assignment
+        """
 
     @abstractmethod
     def list_role_assignments(

@@ -22,7 +22,6 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories, PermissionType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
-from zenml.utils.uuid_utils import parse_name_or_uuid
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -109,8 +108,12 @@ def update_role(
             remove_permission=remove_permission,
             add_permission=add_permission,
         )
-    except (EntityExistsError, KeyError,
-            RuntimeError, IllegalOperationError) as err:
+    except (
+        EntityExistsError,
+        KeyError,
+        RuntimeError,
+        IllegalOperationError,
+    ) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Updated role '{role_name}'.")
 
@@ -125,9 +128,7 @@ def delete_role(role_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        Client().delete_role(
-            name_id_or_prefix=role_name_or_id
-        )
+        Client().delete_role(name_id_or_prefix=role_name_or_id)
     except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Deleted role '{role_name_or_id}'.")
@@ -162,7 +163,7 @@ def assign_role(
     # Assign the role to users
     for user_name_or_id in user_names_or_ids:
         try:
-            Client().zen_store.assign_role(
+            Client().create_role_assignment(
                 role_name_or_id=role_name_or_id,
                 user_or_team_name_or_id=user_name_or_id,
                 is_user=True,
@@ -180,7 +181,7 @@ def assign_role(
     # Assign the role to teams
     for team_name_or_id in team_names_or_ids:
         try:
-            Client().zen_store.assign_role(
+            Client().create_role_assignment(
                 role_name_or_id=role_name_or_id,
                 user_or_team_name_or_id=team_name_or_id,
                 is_user=False,
@@ -225,7 +226,7 @@ def revoke_role(
     # Revoke the role from users
     for user_name_or_id in user_names_or_ids:
         try:
-            Client().zen_store.revoke_role(
+            Client().delete_role_assignment(
                 role_name_or_id=role_name_or_id,
                 user_or_team_name_or_id=user_name_or_id,
                 is_user=True,
@@ -242,7 +243,7 @@ def revoke_role(
     # Revoke the role from teams
     for team_name_or_id in team_names_or_ids:
         try:
-            Client().zen_store.revoke_role(
+            Client().delete_role_assignment(
                 role_name_or_id=role_name_or_id,
                 user_or_team_name_or_id=team_name_or_id,
                 is_user=False,
@@ -289,14 +290,13 @@ def list_role_assignments(
     role_assignments = Client().list_role_assignment(
         role_name_or_id=role_name_or_id,
         user_name_or_id=user_name_or_id,
-        project_name_or_id=project_name_or_id
+        project_name_or_id=project_name_or_id,
     )
     if not role_assignments:
         cli_utils.declare("No roles assigned.")
         return
     cli_utils.print_pydantic_models(
-        role_assignments,
-        exclude_columns=['id', 'created', 'updated']
+        role_assignments, exclude_columns=["id", "created", "updated"]
     )
 
 

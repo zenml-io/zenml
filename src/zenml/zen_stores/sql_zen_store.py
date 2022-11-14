@@ -41,7 +41,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlalchemy.sql.operators import is_, isnot
-from sqlmodel import Session, SQLModel, create_engine, or_, select
+from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.config.global_config import GlobalConfiguration
@@ -2295,14 +2295,17 @@ class SqlZenStore(BaseZenStore):
                 )
 
     def delete_role_assignment(self, role_assignment_id: UUID) -> None:
-        """"""
+        """Delete a specific role assignment
+
+        Args:
+            role_assignment_id: The Id of the specific role assignment
+        """
         with Session(self.engine) as session:
             user_role = session.exec(
                 select(UserRoleAssignmentSchema).where(
                     UserRoleAssignmentSchema.id == role_assignment_id
                 )
             ).one_or_none()
-
             if user_role:
                 session.delete(user_role)
 
@@ -2320,84 +2323,8 @@ class SqlZenStore(BaseZenStore):
                     f"RoleAssignment with ID {role_assignment_id} "
                     f"not found."
                 )
-
-    def revoke_role(
-        self,
-        role_name_or_id: Union[str, UUID],
-        user_or_team_name_or_id: Union[str, UUID],
-        is_user: bool = True,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> None:
-        """Revokes a role from a user or team for a given project.
-
-        Args:
-            project_name_or_id: Optional ID of a project in which to revoke the
-                role. If this is not provided, the role will be revoked
-                globally.
-            role_name_or_id: Name or ID of the role to revoke.
-            user_or_team_name_or_id: Name or ID of the user or team from which
-                to revoke the role.
-            is_user: Whether `user_or_team_name_or_id` refers to a user or a
-                team.
-
-        Raises:
-            KeyError: If the role, user, team, or project does not exists.
-        """
-        with Session(self.engine) as session:
-            project: Optional[ProjectSchema] = None
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-
-            role = self._get_role_schema(role_name_or_id, session=session)
-
-            role_assignment: Optional[SQLModel] = None
-
-            if is_user:
-                user = self._get_user_schema(
-                    user_or_team_name_or_id, session=session
-                )
-                assignee_name = user.name
-                user_role_query = (
-                    select(UserRoleAssignmentSchema)
-                    .where(UserRoleAssignmentSchema.user_id == user.id)
-                    .where(UserRoleAssignmentSchema.role_id == role.id)
-                )
-                if project:
-                    user_role_query = user_role_query.where(
-                        UserRoleAssignmentSchema.project_id == project.id
-                    )
-
-                role_assignment = session.exec(user_role_query).first()
             else:
-                team = self._get_team_schema(
-                    user_or_team_name_or_id, session=session
-                )
-                assignee_name = team.name
-                team_role_query = (
-                    select(TeamRoleAssignmentSchema)
-                    .where(TeamRoleAssignmentSchema.team_id == team.id)
-                    .where(TeamRoleAssignmentSchema.role_id == role.id)
-                )
-                if project:
-                    team_role_query = team_role_query.where(
-                        TeamRoleAssignmentSchema.project_id == project.id
-                    )
-
-                role_assignment = session.exec(team_role_query).first()
-
-            if role_assignment is None:
-                assignee = "user" if is_user else "team"
-                scope = f" in project '{project.name}'" if project else ""
-                raise KeyError(
-                    f"Unable to unassign role '{role.name}' from {assignee} "
-                    f"'{assignee_name}'{scope}: The role is currently not "
-                    f"assigned to the {assignee}."
-                )
-
-            session.delete(role_assignment)
-            session.commit()
+                session.commit()
 
     # --------
     # Projects
