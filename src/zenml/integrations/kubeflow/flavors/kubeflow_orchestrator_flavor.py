@@ -38,7 +38,7 @@ class KubeflowOrchestratorSettings(BaseSettings):
             block until all steps finished running on KFP. This setting only
             has an effect when specified on the pipeline and will be ignored if
             specified on steps.
-        timeout: How many seconds to wait for syncronous runs.
+        timeout: How many seconds to wait for synchronous runs.
         client_args: Arguments to pass when initializing the KFP client.
         user_namespace: The user namespace to use when creating experiments
             and runs.

@@ -32,7 +32,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     Attributes:
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Kubernetes.
-        timeout: How many seconds to wait for syncronous runs. `0` means
+        timeout: How many seconds to wait for synchronous runs. `0` means
             to wait for an unlimited duration.
         pod_settings: Pod settings to apply.
     """
