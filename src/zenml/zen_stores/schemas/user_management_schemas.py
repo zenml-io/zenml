@@ -20,13 +20,14 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import PermissionType
 from zenml.models import RoleAssignmentModel, RoleModel, TeamModel, UserModel
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         FlavorSchema,
         PipelineRunSchema,
         PipelineSchema,
-        ProjectSchema,
         StackComponentSchema,
         StackSchema,
     )
@@ -35,12 +36,32 @@ if TYPE_CHECKING:
 class TeamAssignmentSchema(SQLModel, table=True):
     """SQL Model for team assignments."""
 
-    user_id: UUID = Field(primary_key=True, foreign_key="userschema.id")
-    team_id: UUID = Field(primary_key=True, foreign_key="teamschema.id")
+    __tablename__ = "team_assignment"
+
+    user_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="user",  # TODO: how to reference `UserSchema.__tablename__`?
+        source_column="user_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    team_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="team",  # TODO: how to reference `TeamSchema.__tablename__`?
+        source_column="team_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
 
 
 class UserSchema(SQLModel, table=True):
     """SQL Model for users."""
+
+    __tablename__ = "user"
 
     id: UUID = Field(primary_key=True)
     name: str
@@ -135,6 +156,8 @@ class UserSchema(SQLModel, table=True):
 class TeamSchema(SQLModel, table=True):
     """SQL Model for teams."""
 
+    __tablename__ = "team"
+
     id: UUID = Field(primary_key=True)
     name: str
     created: datetime = Field(default_factory=datetime.now)
@@ -186,16 +209,10 @@ class TeamSchema(SQLModel, table=True):
         )
 
 
-class RolePermissionSchema(SQLModel, table=True):
-    """SQL Model for team assignments."""
-
-    name: PermissionType = Field(primary_key=True)
-    role_id: UUID = Field(primary_key=True, foreign_key="roleschema.id")
-    roles: List["RoleSchema"] = Relationship(back_populates="permissions")
-
-
 class RoleSchema(SQLModel, table=True):
     """SQL Model for roles."""
+
+    __tablename__ = "role"
 
     id: UUID = Field(primary_key=True)
     name: str
@@ -247,18 +264,39 @@ class RoleSchema(SQLModel, table=True):
             name=self.name,
             created=self.created,
             updated=self.updated,
-            permissions=[p.name for p in self.permissions],
+            permissions=[PermissionType(p.name) for p in self.permissions],
         )
 
 
 class UserRoleAssignmentSchema(SQLModel, table=True):
     """SQL Model for assigning roles to users for a given project."""
 
+    __tablename__ = "user_role_assignment"
+
     id: UUID = Field(primary_key=True, default_factory=uuid4)
-    role_id: UUID = Field(foreign_key="roleschema.id")
-    user_id: UUID = Field(foreign_key="userschema.id")
-    project_id: Optional[UUID] = Field(
-        foreign_key="projectschema.id", nullable=True
+    role_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=RoleSchema.__tablename__,
+        source_column="role_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    user_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    project_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
     )
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -288,11 +326,32 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
 class TeamRoleAssignmentSchema(SQLModel, table=True):
     """SQL Model for assigning roles to teams for a given project."""
 
+    __tablename__ = "team_role_assignment"
+
     id: UUID = Field(primary_key=True, default_factory=uuid4)
-    role_id: UUID = Field(foreign_key="roleschema.id")
-    team_id: UUID = Field(foreign_key="teamschema.id")
-    project_id: Optional[UUID] = Field(
-        foreign_key="projectschema.id", nullable=True
+    role_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=RoleSchema.__tablename__,
+        source_column="role_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    team_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=TeamSchema.__tablename__,
+        source_column="team_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    project_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
     )
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -317,3 +376,21 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
             created=self.created,
             updated=self.updated,
         )
+
+
+class RolePermissionSchema(SQLModel, table=True):
+    """SQL Model for team assignments."""
+
+    __tablename__ = "role_permission"
+
+    name: PermissionType = Field(primary_key=True)
+    role_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=RoleSchema.__tablename__,
+        source_column="role_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    roles: List["RoleSchema"] = Relationship(back_populates="permissions")

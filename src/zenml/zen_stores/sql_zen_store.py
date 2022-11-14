@@ -80,6 +80,9 @@ from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.networking_utils import (
+    replace_localhost_with_internal_hostname,
+)
 from zenml.zen_stores.base_zen_store import (
     ADMIN_ROLE,
     DEFAULT_STACK_COMPONENT_NAME,
@@ -100,8 +103,8 @@ from zenml.zen_stores.schemas import (
     RoleSchema,
     StackComponentSchema,
     StackSchema,
-    StepInputArtifactSchema,
-    StepRunOrderSchema,
+    StepRunArtifactSchema,
+    StepRunParentsSchema,
     StepRunSchema,
     TeamAssignmentSchema,
     TeamRoleAssignmentSchema,
@@ -165,8 +168,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             against the provided server certificate.
         pool_size: The maximum number of connections to keep in the SQLAlchemy
             pool.
-        pool_recycle: The number of seconds after which a connection should be
-            recycled.
+        max_overflow: The maximum number of connections to allow in the
+            SQLAlchemy pool in addition to the pool_size.
         grpc_metadata_host: The host to use for the gRPC metadata server.
         grpc_metadata_port: The port to use for the gRPC metadata server.
         grpc_metadata_ssl_ca: The certificate authority certificate to use for
@@ -219,6 +222,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         if url is None:
             return values
 
+        # When running inside a container, if the URL uses localhost, the
+        # target service will not be available. We try to replace localhost
+        # with one of the special Docker or K3D internal hostnames.
+        url = replace_localhost_with_internal_hostname(url)
+
         try:
             sql_url = make_url(url)
         except ArgumentError as e:
@@ -229,6 +237,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 url,
                 str(e),
             )
+
         if sql_url.drivername not in SQLDatabaseDriver.values():
             raise ValueError(
                 "Invalid SQL driver value `%s`: The driver must be one of: %s.",
@@ -334,6 +343,18 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             The local SQL url for the given path.
         """
         return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
+
+    @classmethod
+    def supports_url_scheme(cls, url: str) -> bool:
+        """Check if a URL scheme is supported by this store.
+
+        Args:
+            url: The URL to check.
+
+        Returns:
+            True if the URL scheme is supported, False otherwise.
+        """
+        return make_url(url).drivername in SQLDatabaseDriver.values()
 
     def expand_certificates(self) -> None:
         """Expands the certificates in the verify_ssl field."""
@@ -1086,14 +1107,10 @@ class SqlZenStore(BaseZenStore):
             .where(StackSchema.is_shared == stack.is_shared)
         ).first()
         if existing_shared_stack is not None:
-            owner_of_shared = self._get_user_schema(
-                existing_shared_stack.user_id, session=session
-            )
-
             raise StackExistsError(
                 f"Unable to share stack with name '{stack.name}': Found an "
-                f"existing stack with the same name in project "
-                f"'{project.name}' shared by '{owner_of_shared.name}'."
+                f"existing shared stack with the same name in project "
+                f"'{project.name}'."
             )
 
     # ----------------
@@ -1457,16 +1474,11 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.type == component.type)
         ).first()
         if existing_shared_component is not None:
-            owner_of_shared = self._get_user_schema(
-                existing_shared_component.user_id, session=session
-            )
-
             raise StackComponentExistsError(
                 f"Unable to shared component of type '{component.type.value}' "
-                f"with name '{component.name}': Found an "
-                f"existing component with the same name and type in project "
-                f"'{project.name}' shared by "
-                f"'{owner_of_shared.name}'."
+                f"with name '{component.name}': Found an existing shared "
+                f"component with the same name and type in project "
+                f"'{project.name}'."
             )
 
     # -----------------------
@@ -2166,6 +2178,7 @@ class SqlZenStore(BaseZenStore):
     def _list_user_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
         """List all user role assignments.
@@ -2174,6 +2187,8 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: If provided, only return role assignments for
                 this project.
             user_name_or_id: If provided, only list assignments for this user.
+            role_name_or_id: If provided, only list assignments of the given
+                role
 
         Returns:
             A list of user role assignments.
@@ -2187,6 +2202,9 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(
                     UserRoleAssignmentSchema.project_id == project.id
                 )
+            if role_name_or_id is not None:
+                role = self._get_role_schema(role_name_or_id, session=session)
+                query = query.where(UserRoleAssignmentSchema.role_id == role.id)
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(UserRoleAssignmentSchema.user_id == user.id)
@@ -2197,6 +2215,7 @@ class SqlZenStore(BaseZenStore):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
         """List all team role assignments.
 
@@ -2204,6 +2223,8 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: If provided, only return role assignments for
                 this project.
             team_name_or_id: If provided, only list assignments for this team.
+            role_name_or_id: If provided, only list assignments of the given
+                role
 
         Returns:
             A list of team role assignments.
@@ -2217,6 +2238,9 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(
                     TeamRoleAssignmentSchema.project_id == project.id
                 )
+            if role_name_or_id is not None:
+                role = self._get_role_schema(role_name_or_id, session=session)
+                query = query.where(TeamRoleAssignmentSchema.role_id == role.id)
             if team_name_or_id is not None:
                 team = self._get_team_schema(team_name_or_id, session=session)
                 query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
@@ -2226,6 +2250,7 @@ class SqlZenStore(BaseZenStore):
     def list_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
@@ -2234,6 +2259,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             project_name_or_id: If provided, only return role assignments for
                 this project.
+            role_name_or_id: If provided, only list assignments of the given
+                role
             team_name_or_id: If provided, only list assignments for this team.
             user_name_or_id: If provided, only list assignments for this user.
 
@@ -2243,10 +2270,12 @@ class SqlZenStore(BaseZenStore):
         user_role_assignments = self._list_user_role_assignments(
             project_name_or_id=project_name_or_id,
             user_name_or_id=user_name_or_id,
+            role_name_or_id=role_name_or_id,
         )
         team_role_assignments = self._list_team_role_assignments(
             project_name_or_id=project_name_or_id,
             team_name_or_id=team_name_or_id,
+            role_name_or_id=role_name_or_id,
         )
         return user_role_assignments + team_role_assignments
 
@@ -3092,15 +3121,15 @@ class SqlZenStore(BaseZenStore):
 
             # Check if the parent step is already set.
             assignment = session.exec(
-                select(StepRunOrderSchema)
-                .where(StepRunOrderSchema.child_id == child_id)
-                .where(StepRunOrderSchema.parent_id == parent_id)
+                select(StepRunParentsSchema)
+                .where(StepRunParentsSchema.child_id == child_id)
+                .where(StepRunParentsSchema.parent_id == parent_id)
             ).first()
             if assignment is not None:
                 return
 
             # Save the parent step assignment in the database.
-            assignment = StepRunOrderSchema(
+            assignment = StepRunParentsSchema(
                 child_id=child_id, parent_id=parent_id
             )
             session.add(assignment)
@@ -3143,15 +3172,15 @@ class SqlZenStore(BaseZenStore):
 
             # Check if the input is already set.
             assignment = session.exec(
-                select(StepInputArtifactSchema)
-                .where(StepInputArtifactSchema.step_id == step_id)
-                .where(StepInputArtifactSchema.artifact_id == artifact_id)
+                select(StepRunArtifactSchema)
+                .where(StepRunArtifactSchema.step_id == step_id)
+                .where(StepRunArtifactSchema.artifact_id == artifact_id)
             ).first()
             if assignment is not None:
                 return
 
             # Save the input assignment in the database.
-            assignment = StepInputArtifactSchema(
+            assignment = StepRunArtifactSchema(
                 step_id=step_id, artifact_id=artifact_id, name=name
             )
             session.add(assignment)
@@ -3197,8 +3226,8 @@ class SqlZenStore(BaseZenStore):
             # Get parent steps.
             parent_steps = session.exec(
                 select(StepRunSchema)
-                .where(StepRunOrderSchema.child_id == step.id)
-                .where(StepRunOrderSchema.parent_id == StepRunSchema.id)
+                .where(StepRunParentsSchema.child_id == step.id)
+                .where(StepRunParentsSchema.parent_id == StepRunSchema.id)
             ).all()
             parent_step_ids = [parent_step.id for parent_step in parent_steps]
             mlmd_parent_step_ids = [
@@ -3210,9 +3239,9 @@ class SqlZenStore(BaseZenStore):
             # Get input artifacts.
             input_artifact_list = session.exec(
                 select(
-                    StepInputArtifactSchema.artifact_id,
-                    StepInputArtifactSchema.name,
-                ).where(StepInputArtifactSchema.step_id == step.id)
+                    StepRunArtifactSchema.artifact_id,
+                    StepRunArtifactSchema.name,
+                ).where(StepRunArtifactSchema.step_id == step.id)
             ).all()
             input_artifacts = {
                 input_artifact[1]: input_artifact[0]
@@ -3341,9 +3370,9 @@ class SqlZenStore(BaseZenStore):
                     f"{step_id}: No step with this ID found."
                 )
             query_result = session.exec(
-                select(ArtifactSchema, StepInputArtifactSchema)
-                .where(ArtifactSchema.id == StepInputArtifactSchema.artifact_id)
-                .where(StepInputArtifactSchema.step_id == step_id)
+                select(ArtifactSchema, StepRunArtifactSchema)
+                .where(ArtifactSchema.id == StepRunArtifactSchema.artifact_id)
+                .where(StepRunArtifactSchema.step_id == step_id)
             ).all()
             return {
                 step_input_artifact.name: artifact.to_model()
