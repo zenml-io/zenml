@@ -79,7 +79,16 @@ from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.utils.networking_utils import (
+    replace_localhost_with_internal_hostname,
+)
+from zenml.zen_stores.base_zen_store import (
+    ADMIN_ROLE,
+    DEFAULT_STACK_COMPONENT_NAME,
+    DEFAULT_STACK_NAME,
+    GUEST_ROLE,
+    BaseZenStore,
+)
 from zenml.zen_stores.migrations.alembic import (
     ZENML_ALEMBIC_START_REVISION,
     Alembic,
@@ -93,8 +102,8 @@ from zenml.zen_stores.schemas import (
     RoleSchema,
     StackComponentSchema,
     StackSchema,
-    StepInputArtifactSchema,
-    StepRunOrderSchema,
+    StepRunArtifactSchema,
+    StepRunParentsSchema,
     StepRunSchema,
     TeamAssignmentSchema,
     TeamRoleAssignmentSchema,
@@ -103,6 +112,9 @@ from zenml.zen_stores.schemas import (
     UserSchema,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
+from zenml.zen_stores.schemas.user_management_schemas import (
+    RolePermissionSchema,
+)
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import (
@@ -155,8 +167,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             against the provided server certificate.
         pool_size: The maximum number of connections to keep in the SQLAlchemy
             pool.
-        pool_recycle: The number of seconds after which a connection should be
-            recycled.
+        max_overflow: The maximum number of connections to allow in the
+            SQLAlchemy pool in addition to the pool_size.
         grpc_metadata_host: The host to use for the gRPC metadata server.
         grpc_metadata_port: The port to use for the gRPC metadata server.
         grpc_metadata_ssl_ca: The certificate authority certificate to use for
@@ -209,6 +221,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         if url is None:
             return values
 
+        # When running inside a container, if the URL uses localhost, the
+        # target service will not be available. We try to replace localhost
+        # with one of the special Docker or K3D internal hostnames.
+        url = replace_localhost_with_internal_hostname(url)
+
         try:
             sql_url = make_url(url)
         except ArgumentError as e:
@@ -219,6 +236,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 url,
                 str(e),
             )
+
         if sql_url.drivername not in SQLDatabaseDriver.values():
             raise ValueError(
                 "Invalid SQL driver value `%s`: The driver must be one of: %s.",
@@ -324,6 +342,18 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             The local SQL url for the given path.
         """
         return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
+
+    @classmethod
+    def supports_url_scheme(cls, url: str) -> bool:
+        """Check if a URL scheme is supported by this store.
+
+        Args:
+            url: The URL to check.
+
+        Returns:
+            True if the URL scheme is supported, False otherwise.
+        """
+        return make_url(url).drivername in SQLDatabaseDriver.values()
 
     def expand_certificates(self) -> None:
         """Expands the certificates in the verify_ssl field."""
@@ -888,6 +918,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack doesn't exist.
+            IllegalOperationError: if the stack is a default stack.
         """
         with Session(self.engine) as session:
             # Check if stack with the domain key (name, project, owner) already
@@ -895,12 +926,15 @@ class SqlZenStore(BaseZenStore):
             existing_stack = session.exec(
                 select(StackSchema).where(StackSchema.id == stack.id)
             ).first()
-
             if existing_stack is None:
                 raise KeyError(
                     f"Unable to update stack with id "
                     f"'{stack.id}': Found no"
                     f"existing stack with this id."
+                )
+            if existing_stack.name == DEFAULT_STACK_NAME:
+                raise IllegalOperationError(
+                    "The default stack cannot be modified."
                 )
             # In case of a renaming update, make sure no stack already exists
             # with that name
@@ -954,12 +988,17 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack doesn't exist.
+            IllegalOperationError: if the stack is a default stack.
         """
         with Session(self.engine) as session:
             try:
                 stack = session.exec(
                     select(StackSchema).where(StackSchema.id == stack_id)
                 ).one()
+                if stack.name == DEFAULT_STACK_NAME:
+                    raise IllegalOperationError(
+                        "The default stack cannot be deleted."
+                    )
                 session.delete(stack)
             except NoResultFound as error:
                 raise KeyError from error
@@ -1050,14 +1089,10 @@ class SqlZenStore(BaseZenStore):
             .where(StackSchema.is_shared == stack.is_shared)
         ).first()
         if existing_shared_stack is not None:
-            owner_of_shared = self._get_user_schema(
-                existing_shared_stack.user_id, session=session
-            )
-
             raise StackExistsError(
                 f"Unable to share stack with name '{stack.name}': Found an "
-                f"existing stack with the same name in project "
-                f"'{project.name}' shared by '{owner_of_shared.name}'."
+                f"existing shared stack with the same name in project "
+                f"'{project.name}'."
             )
 
     # ----------------
@@ -1200,6 +1235,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack component doesn't exist.
+            IllegalOperationError: if the stack component is a default stack
+                component.
         """
         with Session(self.engine) as session:
             existing_component = session.exec(
@@ -1213,6 +1250,18 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update component with id "
                     f"'{component.id}': Found no"
                     f"existing component with this id."
+                )
+
+            if (
+                existing_component.name == DEFAULT_STACK_COMPONENT_NAME
+                and existing_component.type
+                in [
+                    StackComponentType.ORCHESTRATOR,
+                    StackComponentType.ARTIFACT_STORE,
+                ]
+            ):
+                raise IllegalOperationError(
+                    f"The default {existing_component.type} cannot be modified."
                 )
 
             # In case of a renaming update, make sure no component of the same
@@ -1258,7 +1307,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component doesn't exist.
             IllegalOperationError: if the stack component is part of one or
-                more stacks.
+                more stacks, or if it's a default stack component.
         """
         with Session(self.engine) as session:
             try:
@@ -1267,10 +1316,22 @@ class SqlZenStore(BaseZenStore):
                         StackComponentSchema.id == component_id
                     )
                 ).one()
+                if (
+                    stack_component.name == DEFAULT_STACK_COMPONENT_NAME
+                    and stack_component.type
+                    in [
+                        StackComponentType.ORCHESTRATOR,
+                        StackComponentType.ARTIFACT_STORE,
+                    ]
+                ):
+                    raise IllegalOperationError(
+                        f"The default {stack_component.type} cannot be deleted."
+                    )
+
                 if len(stack_component.stacks) > 0:
                     raise IllegalOperationError(
                         f"Stack Component `{stack_component.name}` of type "
-                        f"`{stack_component.type} can not be "
+                        f"`{stack_component.type} cannot be "
                         f"deleted as it is part of "
                         f"{len(stack_component.stacks)} stacks. "
                         f"Before deleting this stack "
@@ -1395,16 +1456,11 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.type == component.type)
         ).first()
         if existing_shared_component is not None:
-            owner_of_shared = self._get_user_schema(
-                existing_shared_component.user_id, session=session
-            )
-
             raise StackComponentExistsError(
                 f"Unable to shared component of type '{component.type.value}' "
-                f"with name '{component.name}': Found an "
-                f"existing component with the same name and type in project "
-                f"'{project.name}' shared by "
-                f"'{owner_of_shared.name}'."
+                f"with name '{component.name}': Found an existing shared "
+                f"component with the same name and type in project "
+                f"'{project.name}'."
             )
 
     # -----------------------
@@ -1570,7 +1626,7 @@ class SqlZenStore(BaseZenStore):
                 if len(components_of_flavor) > 0:
                     raise IllegalOperationError(
                         f"Stack Component `{flavor_in_db.name}` of type "
-                        f"`{flavor_in_db.type} can not be "
+                        f"`{flavor_in_db.type} cannot be "
                         f"deleted as it is used by"
                         f"{len(components_of_flavor)} "
                         f"components. Before deleting this "
@@ -1661,9 +1717,21 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated user.
+
+        Raises:
+            IllegalOperationError: If the request tries to update the username
+                for the default user account.
         """
         with Session(self.engine) as session:
             existing_user = self._get_user_schema(user.id, session=session)
+            if (
+                existing_user.name == self._default_user_name
+                and user.name != existing_user.name
+            ):
+                raise IllegalOperationError(
+                    "The username of the default user account cannot be "
+                    "changed."
+                )
             existing_user.from_update_model(user)
             session.add(existing_user)
             session.commit()
@@ -1680,15 +1748,16 @@ class SqlZenStore(BaseZenStore):
             user_name_or_id: The name or the ID of the user to delete.
 
         Raises:
-            KeyError: If no user with the given name exists.
+            IllegalOperationError: If the user is the default user account.
         """
         with Session(self.engine) as session:
-            try:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                session.delete(user)
-                session.commit()
-            except NoResultFound as error:
-                raise KeyError from error
+            user = self._get_user_schema(user_name_or_id, session=session)
+            if user.name == self._default_user_name:
+                raise IllegalOperationError(
+                    "The default user account cannot be deleted."
+                )
+            session.delete(user)
+            session.commit()
 
     def user_email_opt_in(
         self,
@@ -1706,23 +1775,16 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         with Session(self.engine) as session:
-            try:
-                user = self._get_user_schema(user_name_or_id, session=session)
-            except NoResultFound as error:
-                raise KeyError from error
-            else:
-                # TODO: In the future we might want to validate that the email
-                #  is non-empty and valid at this point if user_opt_in_response
-                #  is True
-                user.email = email
-                user.email_opted_in = user_opt_in_response
-                session.add(user)
-                session.commit()
+            user = self._get_user_schema(user_name_or_id, session=session)
+            # TODO: In the future we might want to validate that the email
+            #  is non-empty and valid at this point if user_opt_in_response
+            #  is True
+            user.email = email
+            user.email_opted_in = user_opt_in_response
+            session.add(user)
+            session.commit()
 
             return user.to_model()
 
@@ -1825,18 +1887,11 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_name_or_id: Name or ID of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given name exists.
         """
         with Session(self.engine) as session:
-            try:
-                team = self._get_team_schema(team_name_or_id, session=session)
-                session.delete(team)
-                session.commit()
-
-            except NoResultFound as error:
-                raise KeyError from error
+            team = self._get_team_schema(team_name_or_id, session=session)
+            session.delete(team)
+            session.commit()
 
     # ---------------
     # Team membership
@@ -1960,6 +2015,13 @@ class SqlZenStore(BaseZenStore):
             role_schema = RoleSchema.from_create_model(role)
             session.add(role_schema)
             session.commit()
+            # Add all permissions
+            for p in role.permissions:
+                session.add(
+                    RolePermissionSchema(name=p, role_id=role_schema.id)
+                )
+
+            session.commit()
             return role_schema.to_model()
 
     def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleModel:
@@ -1998,6 +2060,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the role does not exist.
+            IllegalOperationError: if the role is a system role.
         """
         with Session(self.engine) as session:
             existing_role = session.exec(
@@ -2011,10 +2074,37 @@ class SqlZenStore(BaseZenStore):
                     f"existing roles with this id."
                 )
 
+            if existing_role.name in [ADMIN_ROLE, GUEST_ROLE]:
+                raise IllegalOperationError(
+                    f"The built-in role '{role.name}' cannot be updated."
+                )
+
             # Update the role
             existing_role.from_update_model(role)
 
             session.add(existing_role)
+            session.commit()
+
+            existing_permissions = {p.name for p in existing_role.permissions}
+
+            diff = existing_permissions.symmetric_difference(role.permissions)
+
+            for permission in diff:
+                if permission not in role.permissions:
+                    permission_to_delete = session.exec(
+                        select(RolePermissionSchema)
+                        .where(RolePermissionSchema.name == permission)
+                        .where(RolePermissionSchema.role_id == existing_role.id)
+                    ).one_or_none()
+                    session.delete(permission_to_delete)
+
+                elif permission not in existing_permissions:
+                    session.add(
+                        RolePermissionSchema(
+                            name=permission, role_id=existing_role.id
+                        )
+                    )
+
             session.commit()
 
             # Refresh the Model that was just created
@@ -2029,39 +2119,39 @@ class SqlZenStore(BaseZenStore):
             role_name_or_id: Name or ID of the role to delete.
 
         Raises:
-            IllegalOperationError: If the role is still assigned to users.
-            KeyError: If the role does not exist.
+            IllegalOperationError: If the role is still assigned to users or
+                the role is one of the built-in roles.
         """
         with Session(self.engine) as session:
-            try:
-                role = self._get_role_schema(role_name_or_id, session=session)
+            role = self._get_role_schema(role_name_or_id, session=session)
+            if role.name in [ADMIN_ROLE, GUEST_ROLE]:
+                raise IllegalOperationError(
+                    f"The built-in role '{role.name}' cannot be deleted."
+                )
+            user_role = session.exec(
+                select(UserRoleAssignmentSchema).where(
+                    UserRoleAssignmentSchema.role_id == role.id
+                )
+            ).all()
+            team_role = session.exec(
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.role_id == role.id
+                )
+            ).all()
 
-                user_role = session.exec(
-                    select(UserRoleAssignmentSchema).where(
-                        UserRoleAssignmentSchema.role_id == role.id
-                    )
-                ).all()
-                team_role = session.exec(
-                    select(TeamRoleAssignmentSchema).where(
-                        TeamRoleAssignmentSchema.role_id == role.id
-                    )
-                ).all()
-
-                if len(user_role) > 0 or len(team_role) > 0:
-                    # TODO: Eventually we might want to allow this deletion
-                    #  and simply cascade
-                    raise IllegalOperationError(
-                        f"Role `{role.name}` of type can not be "
-                        f"deleted as it is in use by multiple users and teams. "
-                        f"Before deleting this role make sure to remove all "
-                        f"instances where this role is used."
-                    )
-                else:
-                    # Delete role
-                    session.delete(role)
-                    session.commit()
-            except NoResultFound as error:
-                raise KeyError from error
+            if len(user_role) > 0 or len(team_role) > 0:
+                # TODO: Eventually we might want to allow this deletion
+                #  and simply cascade
+                raise IllegalOperationError(
+                    f"Role `{role.name}` of type cannot be "
+                    f"deleted as it is in use by multiple users and teams. "
+                    f"Before deleting this role make sure to remove all "
+                    f"instances where this role is used."
+                )
+            else:
+                # Delete role
+                session.delete(role)
+                session.commit()
 
     # ----------------
     # Role assignments
@@ -2070,6 +2160,7 @@ class SqlZenStore(BaseZenStore):
     def _list_user_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
         """List all user role assignments.
@@ -2078,6 +2169,8 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: If provided, only return role assignments for
                 this project.
             user_name_or_id: If provided, only list assignments for this user.
+            role_name_or_id: If provided, only list assignments of the given
+                role
 
         Returns:
             A list of user role assignments.
@@ -2091,6 +2184,9 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(
                     UserRoleAssignmentSchema.project_id == project.id
                 )
+            if role_name_or_id is not None:
+                role = self._get_role_schema(role_name_or_id, session=session)
+                query = query.where(UserRoleAssignmentSchema.role_id == role.id)
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(UserRoleAssignmentSchema.user_id == user.id)
@@ -2101,6 +2197,7 @@ class SqlZenStore(BaseZenStore):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
         """List all team role assignments.
 
@@ -2108,6 +2205,8 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: If provided, only return role assignments for
                 this project.
             team_name_or_id: If provided, only list assignments for this team.
+            role_name_or_id: If provided, only list assignments of the given
+                role
 
         Returns:
             A list of team role assignments.
@@ -2121,6 +2220,9 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(
                     TeamRoleAssignmentSchema.project_id == project.id
                 )
+            if role_name_or_id is not None:
+                role = self._get_role_schema(role_name_or_id, session=session)
+                query = query.where(TeamRoleAssignmentSchema.role_id == role.id)
             if team_name_or_id is not None:
                 team = self._get_team_schema(team_name_or_id, session=session)
                 query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
@@ -2130,6 +2232,7 @@ class SqlZenStore(BaseZenStore):
     def list_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
@@ -2138,6 +2241,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             project_name_or_id: If provided, only return role assignments for
                 this project.
+            role_name_or_id: If provided, only list assignments of the given
+                role
             team_name_or_id: If provided, only list assignments for this team.
             user_name_or_id: If provided, only list assignments for this user.
 
@@ -2147,10 +2252,12 @@ class SqlZenStore(BaseZenStore):
         user_role_assignments = self._list_user_role_assignments(
             project_name_or_id=project_name_or_id,
             user_name_or_id=user_name_or_id,
+            role_name_or_id=role_name_or_id,
         )
         team_role_assignments = self._list_team_role_assignments(
             project_name_or_id=project_name_or_id,
             team_name_or_id=team_name_or_id,
+            role_name_or_id=role_name_or_id,
         )
         return user_role_assignments + team_role_assignments
 
@@ -2440,18 +2547,18 @@ class SqlZenStore(BaseZenStore):
             The updated project.
 
         Raises:
-            KeyError: if the project does not exist.
+            IllegalOperationError: if the project is the default project.
         """
         with Session(self.engine) as session:
-            existing_project = session.exec(
-                select(ProjectSchema).where(ProjectSchema.id == project.id)
-            ).first()
-
-            if existing_project is None:
-                raise KeyError(
-                    f"Unable to update project with id "
-                    f"'{project.id}': Found no"
-                    f"existing projects with this id."
+            existing_project = self._get_project_schema(
+                project.id, session=session
+            )
+            if (
+                existing_project.name == self._default_project_name
+                and project.name != existing_project.name
+            ):
+                raise IllegalOperationError(
+                    "The name of the default project cannot be changed."
                 )
 
             # Update the project
@@ -2472,19 +2579,20 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: Name or ID of the project to delete.
 
         Raises:
-            KeyError: If the project does not exist.
+            IllegalOperationError: If the project is the default project.
         """
         with Session(self.engine) as session:
-            try:
-                # Check if project with the given name exists
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
+            # Check if project with the given name exists
+            project = self._get_project_schema(
+                project_name_or_id, session=session
+            )
+            if project.name == self._default_project_name:
+                raise IllegalOperationError(
+                    "The default project cannot be deleted."
                 )
 
-                session.delete(project)
-                session.commit()
-            except NoResultFound as error:
-                raise KeyError from error
+            session.delete(project)
+            session.commit()
 
     # ------------
     # Repositories
@@ -2965,15 +3073,15 @@ class SqlZenStore(BaseZenStore):
 
             # Check if the parent step is already set.
             assignment = session.exec(
-                select(StepRunOrderSchema)
-                .where(StepRunOrderSchema.child_id == child_id)
-                .where(StepRunOrderSchema.parent_id == parent_id)
+                select(StepRunParentsSchema)
+                .where(StepRunParentsSchema.child_id == child_id)
+                .where(StepRunParentsSchema.parent_id == parent_id)
             ).first()
             if assignment is not None:
                 return
 
             # Save the parent step assignment in the database.
-            assignment = StepRunOrderSchema(
+            assignment = StepRunParentsSchema(
                 child_id=child_id, parent_id=parent_id
             )
             session.add(assignment)
@@ -3016,15 +3124,15 @@ class SqlZenStore(BaseZenStore):
 
             # Check if the input is already set.
             assignment = session.exec(
-                select(StepInputArtifactSchema)
-                .where(StepInputArtifactSchema.step_id == step_id)
-                .where(StepInputArtifactSchema.artifact_id == artifact_id)
+                select(StepRunArtifactSchema)
+                .where(StepRunArtifactSchema.step_id == step_id)
+                .where(StepRunArtifactSchema.artifact_id == artifact_id)
             ).first()
             if assignment is not None:
                 return
 
             # Save the input assignment in the database.
-            assignment = StepInputArtifactSchema(
+            assignment = StepRunArtifactSchema(
                 step_id=step_id, artifact_id=artifact_id, name=name
             )
             session.add(assignment)
@@ -3068,8 +3176,8 @@ class SqlZenStore(BaseZenStore):
             # Get parent steps.
             parent_steps = session.exec(
                 select(StepRunSchema)
-                .where(StepRunOrderSchema.child_id == step.id)
-                .where(StepRunOrderSchema.parent_id == StepRunSchema.id)
+                .where(StepRunParentsSchema.child_id == step.id)
+                .where(StepRunParentsSchema.parent_id == StepRunSchema.id)
             ).all()
             parent_step_ids = [parent_step.id for parent_step in parent_steps]
             mlmd_parent_step_ids = [
@@ -3081,9 +3189,9 @@ class SqlZenStore(BaseZenStore):
             # Get input artifacts.
             input_artifact_list = session.exec(
                 select(
-                    StepInputArtifactSchema.artifact_id,
-                    StepInputArtifactSchema.name,
-                ).where(StepInputArtifactSchema.step_id == step.id)
+                    StepRunArtifactSchema.artifact_id,
+                    StepRunArtifactSchema.name,
+                ).where(StepRunArtifactSchema.step_id == step.id)
             ).all()
             input_artifacts = {
                 input_artifact[1]: input_artifact[0]
@@ -3173,9 +3281,9 @@ class SqlZenStore(BaseZenStore):
                     f"{step_id}: No step with this ID found."
                 )
             query_result = session.exec(
-                select(ArtifactSchema, StepInputArtifactSchema)
-                .where(ArtifactSchema.id == StepInputArtifactSchema.artifact_id)
-                .where(StepInputArtifactSchema.step_id == step_id)
+                select(ArtifactSchema, StepRunArtifactSchema)
+                .where(ArtifactSchema.id == StepRunArtifactSchema.artifact_id)
+                .where(StepRunArtifactSchema.step_id == step_id)
             ).all()
             return {
                 step_input_artifact.name: artifact.to_model()

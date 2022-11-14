@@ -15,40 +15,53 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, StackSchema, UserSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.stack_schemas import StackSchema
+from zenml.zen_stores.schemas.user_management_schemas import UserSchema
 
 
 class PipelineSchema(SQLModel, table=True):
     """SQL Model for pipelines."""
 
+    __tablename__ = "pipeline"
+
     id: UUID = Field(primary_key=True)
 
     name: str
 
-    project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
     )
     project: "ProjectSchema" = Relationship(back_populates="pipelines")
 
-    user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
     )
     user: "UserSchema" = Relationship(back_populates="pipelines")
 
-    docstring: Optional[str] = Field(max_length=4096, nullable=True)
-    spec: str = Field(max_length=4096)
+    docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    spec: str = Field(sa_column=Column(TEXT, nullable=False))
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -112,6 +125,7 @@ class PipelineSchema(SQLModel, table=True):
 class PipelineRunSchema(SQLModel, table=True):
     """SQL Model for pipeline runs."""
 
+    __tablename__ = "pipeline_run"
     __table_args__ = (
         UniqueConstraint("mlmd_id", name="unique_pipeline_run_mlmd_id"),
     )
@@ -119,33 +133,50 @@ class PipelineRunSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     name: str
 
-    project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
     )
     project: "ProjectSchema" = Relationship(back_populates="runs")
 
-    user_id: UUID = Field(
-        nullable=False,
-        sa_column=Column(ForeignKey("userschema.id", ondelete="CASCADE")),
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
     )
     user: "UserSchema" = Relationship(back_populates="runs")
 
-    stack_id: Optional[UUID] = Field(
+    stack_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=StackSchema.__tablename__,
+        source_column="stack_id",
+        target_column="id",
+        ondelete="SET NULL",
         nullable=True,
-        sa_column=Column(ForeignKey("stackschema.id", ondelete="SET NULL")),
     )
     stack: "StackSchema" = Relationship(back_populates="runs")
 
-    pipeline_id: Optional[UUID] = Field(
+    pipeline_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineSchema.__tablename__,
+        source_column="pipeline_id",
+        target_column="id",
+        ondelete="SET NULL",
         nullable=True,
-        sa_column=Column(ForeignKey("pipelineschema.id", ondelete="SET NULL")),
     )
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
     orchestrator_run_id: Optional[str] = Field(nullable=True)
 
     status: ExecutionStatus
-    pipeline_configuration: str = Field(max_length=4096)
+    pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     num_steps: Optional[int]
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
@@ -229,6 +260,7 @@ class PipelineRunSchema(SQLModel, table=True):
 class StepRunSchema(SQLModel, table=True):
     """SQL Model for steps of pipeline runs."""
 
+    __tablename__ = "step_run"
     __table_args__ = (
         UniqueConstraint("mlmd_id", name="unique_step_run_mlmd_id"),
     )
@@ -236,13 +268,20 @@ class StepRunSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     name: str
 
-    pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
+    pipeline_run_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineRunSchema.__tablename__,
+        source_column="pipeline_run_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
 
     status: ExecutionStatus
     entrypoint_name: str
-    parameters: str = Field(max_length=4096)
-    step_configuration: str = Field(max_length=4096)
-    docstring: Optional[str] = Field(max_length=4096, nullable=True)
+    parameters: str = Field(sa_column=Column(TEXT, nullable=False))
+    step_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
+    docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     num_outputs: Optional[int]
 
     mlmd_id: Optional[int] = Field(default=None, nullable=True)
@@ -322,16 +361,35 @@ class StepRunSchema(SQLModel, table=True):
         )
 
 
-class StepRunOrderSchema(SQLModel, table=True):
+class StepRunParentsSchema(SQLModel, table=True):
     """SQL Model that defines the order of steps."""
 
-    parent_id: UUID = Field(foreign_key="steprunschema.id", primary_key=True)
-    child_id: UUID = Field(foreign_key="steprunschema.id", primary_key=True)
+    __tablename__ = "step_run_parents"
+
+    parent_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="parent_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    child_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="child_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
 
 
 class ArtifactSchema(SQLModel, table=True):
     """SQL Model for artifacts of steps."""
 
+    __tablename__ = "artifacts"
     __table_args__ = (
         UniqueConstraint(
             "mlmd_id", "mlmd_parent_step_id", name="unique_mlmd_output_artifact"
@@ -341,8 +399,22 @@ class ArtifactSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     name: str  # Name of the output in the parent step
 
-    parent_step_id: UUID = Field(foreign_key="steprunschema.id")
-    producer_step_id: UUID = Field(foreign_key="steprunschema.id")
+    parent_step_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="parent_step_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    producer_step_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="producer_step_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
 
     type: ArtifactType
     uri: str
@@ -406,9 +478,27 @@ class ArtifactSchema(SQLModel, table=True):
         )
 
 
-class StepInputArtifactSchema(SQLModel, table=True):
+class StepRunArtifactSchema(SQLModel, table=True):
     """SQL Model that defines which artifacts are inputs to which step."""
 
-    step_id: UUID = Field(foreign_key="steprunschema.id", primary_key=True)
-    artifact_id: UUID = Field(foreign_key="artifactschema.id", primary_key=True)
+    __tablename__ = "step_run_artifact"
+
+    step_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="step_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    artifact_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ArtifactSchema.__tablename__,
+        source_column="artifact_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
     name: str  # Name of the input in the step

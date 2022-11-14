@@ -79,7 +79,6 @@ class DockerServerProvider(BaseServerProvider):
             ),
             ContainerServiceEndpointConfig(
                 protocol=ServiceEndpointProtocol.HTTP,
-                ip_address=str(server_config.ip_address),
                 port=server_config.port,
                 allocate_port=False,
             ),

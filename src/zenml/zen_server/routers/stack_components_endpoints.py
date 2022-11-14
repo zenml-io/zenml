@@ -15,27 +15,25 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Security
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
-from zenml.enums import StackComponentType
+from zenml.enums import PermissionType, StackComponentType
 from zenml.models import ComponentModel
 from zenml.models.component_model import HydratedComponentModel
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models.component_models import UpdateComponentModel
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + STACK_COMPONENTS,
     tags=["stack_components"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
 types_router = APIRouter(
     prefix=API + VERSION_1 + COMPONENT_TYPES,
     tags=["stack_components"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
@@ -54,6 +52,7 @@ def list_stack_components(
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
     """Get a list of all stack components for a specific type.
 
@@ -91,7 +90,9 @@ def list_stack_components(
 )
 @handle_exceptions
 def get_stack_component(
-    component_id: UUID, hydrated: bool = False
+    component_id: UUID,
+    hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Returns the requested stack component.
 
@@ -120,6 +121,7 @@ def update_stack_component(
     component_id: UUID,
     component_update: UpdateComponentModel,
     hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Updates a stack component.
 
@@ -148,7 +150,10 @@ def update_stack_component(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def deregister_stack_component(component_id: UUID) -> None:
+def deregister_stack_component(
+    component_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
     """Deletes a stack component.
 
     Args:
@@ -163,7 +168,9 @@ def deregister_stack_component(component_id: UUID) -> None:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_stack_component_types() -> List[str]:
+def get_stack_component_types(
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> List[str]:
     """Get a list of all stack component types.
 
     Returns:

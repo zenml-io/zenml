@@ -22,12 +22,18 @@ from fastapi.security import (
     HTTPBasic,
     HTTPBasicCredentials,
     OAuth2PasswordBearer,
+    SecurityScopes,
 )
 from pydantic import BaseModel
 
 from zenml.constants import API, ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models.user_management_models import UserModel
+from zenml.models.user_management_models import (
+    JWTToken,
+    JWTTokenType,
+    UserModel,
+)
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
@@ -112,11 +118,13 @@ def authenticate_credentials(
 
 
 def http_authentication(
+    security_scopes: SecurityScopes,
     credentials: HTTPBasicCredentials = Depends(HTTPBasic()),
 ) -> AuthContext:
     """Authenticates any request to the ZenML Server with basic HTTP authentication.
 
     Args:
+        security_scopes: Security scope will be ignored for http_auth
         credentials: HTTP basic auth credentials passed to the request.
 
     Returns:
@@ -138,13 +146,22 @@ def http_authentication(
 
 
 def oauth2_password_bearer_authentication(
+    security_scopes: SecurityScopes,
     token: str = Depends(
-        OAuth2PasswordBearer(tokenUrl=ROOT_URL_PATH + API + VERSION_1 + LOGIN)
+        OAuth2PasswordBearer(
+            tokenUrl=ROOT_URL_PATH + API + VERSION_1 + LOGIN,
+            scopes={
+                "read": "Read permissions on all entities",
+                "write": "Write permissions on all entities",
+                "me": "Editing permissions to own user",
+            },
+        )
     ),
 ) -> AuthContext:
     """Authenticates any request to the ZenML server with OAuth2 password bearer JWT tokens.
 
     Args:
+        security_scopes: Security scope for this token
         token: The JWT bearer token to be authenticated.
 
     Returns:
@@ -153,7 +170,29 @@ def oauth2_password_bearer_authentication(
     Raises:
         HTTPException: If the JWT token could not be authorized.
     """
+    if security_scopes.scopes:
+        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
+    else:
+        authenticate_value = "Bearer"
     auth_context = authenticate_credentials(access_token=token)
+
+    try:
+        access_token = JWTToken.decode(
+            token_type=JWTTokenType.ACCESS_TOKEN, token=token
+        )
+    except AuthorizationException:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    for scope in security_scopes.scopes:
+        if scope not in access_token.permissions:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions",
+                headers={"WWW-Authenticate": authenticate_value},
+            )
     if auth_context is None:
         # We have to return an additional WWW-Authenticate header here with the
         # value Bearer to be compliant with the OAuth2 spec.
@@ -162,18 +201,20 @@ def oauth2_password_bearer_authentication(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
     return auth_context
 
 
-def no_authentication() -> AuthContext:
+def no_authentication(security_scopes: SecurityScopes) -> AuthContext:
     """Doesn't authenticate requests to the ZenML server.
 
-    Raises:
-        HTTPException: If the default user is not available.
+    Args:
+        security_scopes: Security scope will be ignored for http_auth
 
     Returns:
         The authentication context reflecting the default user.
+
+    Raises:
+        HTTPException: If the default user is not available.
     """
     auth_context = authenticate_credentials(user_name_or_id=DEFAULT_USERNAME)
 

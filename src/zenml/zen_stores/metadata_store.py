@@ -267,8 +267,8 @@ class MetadataStore:
             mlmd_parent_step_ids=list(parents_step_ids),
             entrypoint_name=impl_name,
             name=step_name,
-            parameters=step_parameters,
-            step_configuration=step_configuration,
+            parameters=step_parameters or {},
+            step_configuration=step_configuration or {},
             docstring=docstring,
             num_outputs=num_outputs,
         )
@@ -293,10 +293,10 @@ class MetadataStore:
                         MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME
                     ).string_value
                 )
-                project = model_ids["project_id"]
-                user = model_ids["user_id"]
-                pipeline_id = model_ids["pipeline_id"]
-                stack_id = model_ids["stack_id"]
+                project = model_ids.get("project_id")
+                user = model_ids.get("user_id")
+                pipeline_id = model_ids.get("pipeline_id")
+                stack_id = model_ids.get("stack_id")
 
             if MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME in context_properties:
                 pipeline_configuration = json.loads(
@@ -319,7 +319,7 @@ class MetadataStore:
             user=user,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
-            pipeline_configuration=pipeline_configuration,
+            pipeline_configuration=pipeline_configuration or {},
             num_steps=num_steps,
         )
 
