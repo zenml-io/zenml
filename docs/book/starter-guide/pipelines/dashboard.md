@@ -38,6 +38,13 @@ default:
 
 ![ZenML Dashboard Preview](../../assets/migration/zenml-dashboard.png)
 
+{% hint style="info" %}
+The ZenML Server is a [FastAPI application](https://fastapi.tiangolo.com/),
+so can be run also directly with FastAPI using
+`uvicorn zenml.zen_server.zen_server_api:app --reload`
+after [cloning the repository](https://github.com/zenml-io/zenml).
+{% endhint %}
+
 ### Deployed dashboard
 
 For more details on other possible deployment options, see the
