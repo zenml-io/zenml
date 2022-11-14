@@ -14,7 +14,7 @@ If you're going to use a remote deployment of Airflow, you'll also need a[remote
 
 You should use the Airflow orchestrator if
 * you're looking for a proven production-grade orchestrator.
-* you're already using Airflow
+* you're already using Airflow.
 * you want to run your pipelines locally.
 * you're willing to deploy and maintain Airflow.
 
@@ -23,14 +23,21 @@ You should use the Airflow orchestrator if
 The Airflow orchestrator can be used to run pipelines locally as well as remotely.
 In the local case, no additional setup is necessary.
 
-There are many options to deploy Airflow and we'll only cover a few here.
-Check out the official [Airflow docs](https://airflow.apache.org/docs/apache-airflow/stable/production-deployment.html) for more information.
+There are many options to use a deployed Airflow server:
+- Use one of [ZenML's Airflow stack recipes](https://github.com/zenml-io/mlops-stacks). This is the simplest solution to
+get ZenML working with Airflow, as the recipe also takes care of additional steps such
+as installing required Python dependencies in your Airflow server environment.
+- Use a managed deployment of Airflow such as [Google Cloud Composer](https://cloud.google.com/composer), [Amazon MWAA](https://aws.amazon.com/managed-workflows-for-apache-airflow/) or [Astronomer](https://www.astronomer.io/).
+- Deploy Airflow manually. Check out the official [Airflow docs](https://airflow.apache.org/docs/apache-airflow/stable/production-deployment.html) for more information.
 
-{% tabs %}
-{% tab title="Cloud composer" %}
 
-{% endtab %}
-{% endtabs %}
+If you're not using a stack recipe to deploy Airflow, there are some additional python packages that you'll need
+to install in the Python environment of your Airflow server: 
+- `pydantic~=1.9.2`: The Airflow DAG files that ZenML creates for you require Pydantic to parse and validate
+configuration file.
+- `apache-airflow-providers-docker` or `apache-airflow-providers-cncf-kubernetes`, depending in which Airflow operator you'll be using to run your pipeline steps. Check out [this section](#using-different-airflow-operators)
+for more information on supported operators.
+
 ## How to use it
 
 To use the Airflow orchestrator, we need:
@@ -38,6 +45,7 @@ To use the Airflow orchestrator, we need:
     ```shell
     zenml integration install airflow
     ```
+* [Docker](https://www.docker.com) installed and running.
 * The orchestrator registered and part of our active stack:
 ```shell
 zenml orchestrator register <NAME> \
@@ -121,3 +129,59 @@ Note that if you wish to use this orchestrator to run steps on a GPU, you will
 need to follow [the instructions on this page](../../advanced-guide/pipelines/gpu-hardware.md) to ensure that it works. It
 requires adding some extra settings customization and is essential to enable
 CUDA for the GPU to give its full acceleration.
+
+### Using different Airflow operators
+
+Airflow operators specify how a step in your pipeline gets executed.
+As ZenML relies on Docker images to run pipeline steps, only operators that support
+executing a Docker image work in combination with ZenML. Airflow comes with two
+operators that support this:
+* the `DockerOperator` runs the Docker images for executing your pipeline steps
+on the same machine that your Airflow server is running on. For this to work, the
+server environment needs to have the `apache-airflow-providers-docker` package
+installed. 
+* the `KubernetesPodOperator` runs the Docker image on a pod in the Kubernetes
+cluster that the Airflow server is deployed to. For this to work, the
+server environment needs to have the `apache-airflow-providers-cncf-kubernetes` package
+installed.
+
+You can specify which operator to use and additional arguments to it as follows:
+```python
+from zenml.pipelines import pipeline
+from zenml.steps import step
+from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import AirflowOrchestratorSettings
+
+airflow_settings = AirflowOrchestratorSettings(
+    operator="docker"  # or "kubernetes_pod"
+    # Dictionary of arguments to pass to the operator __init__ method
+    operator_args={}
+)
+
+
+# Using the operator for a single step
+@step(settings={"orchestrator.airflow": airflow_settings})
+def my_step(...)
+
+
+# Using the operator for all steps in your pipeline
+@pipeline(settings={"orchestrator.airflow": airflow_settings})
+def my_pipeline(...)
+```
+
+#### Custom operators
+
+If you want to use any other operator to run your steps, you can specify
+the `operator` in your `AirflowSettings` as a path to the python operator
+class:
+```python
+from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import AirflowOrchestratorSettings
+
+airflow_settings = AirflowOrchestratorSettings(
+    # This could also be a reference to one of your custom classes.
+    # e.g. `my_module.MyCustomOperatorClass` as long as the class
+    # is importable in your Airflow server environment
+    operator="airflow.providers.docker.operators.docker.DockerOperator"
+    # Dictionary of arguments to pass to the operator __init__ method
+    operator_args={}
+)
+```
