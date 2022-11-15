@@ -372,21 +372,21 @@ class AirflowOrchestrator(BaseOrchestrator):
                     datetime.datetime.now() - datetime.timedelta(7)
                 )
                 return {
-                    "schedule_interval": schedule.cron_expression,
+                    "schedule": schedule.cron_expression,
                     "start_date": start_time,
                     "end_date": schedule.end_time,
                     "catchup": schedule.catchup,
                 }
             else:
                 return {
-                    "schedule_interval": schedule.interval_second,
+                    "schedule": schedule.interval_second,
                     "start_date": schedule.start_time,
                     "end_date": schedule.end_time,
                     "catchup": schedule.catchup,
                 }
 
         return {
-            "schedule_interval": "@once",
+            "schedule": "@once",
             # set the a start time in the past and disable catchup so airflow
             # runs the dag immediately
             "start_date": datetime.datetime.now() - datetime.timedelta(7),
@@ -489,6 +489,8 @@ class AirflowOrchestrator(BaseOrchestrator):
             self._log_webserver_credentials()
             return
 
+        self._check_local_server_requirements()
+
         if not fileio.exists(self.dags_directory):
             io_utils.create_dir_recursive_if_not_exists(self.dags_directory)
 
@@ -525,6 +527,32 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         fileio.rmtree(self.airflow_home)
         logger.info("Airflow spun down.")
+
+    @staticmethod
+    def _check_local_server_requirements() -> None:
+        """Checks that all packages for a local Airflow server are installed.
+
+        When running a local Airflow server, we require the
+        `apache-airflow-providers-docker` to run steps locally in Docker
+        containers in addition to the basic integration requirements.
+
+        Raises:
+            RuntimeError: If the `apache-airflow-providers-docker` is not
+                installed in the active Python environment.
+        """
+        try:
+            from airflow.providers.docker.operators.docker import (  # noqa
+                DockerOperator,
+            )
+        except ImportError:
+            raise RuntimeError(
+                "Unable to import Airflow `DockerOperator` in the active "
+                "Python environment. Spinning up a local Airflow server to "
+                "run ZenML pipelines requires the `DockerOperator` to be "
+                "available. Please run "
+                "`pip install apache-airflow-providers-docker` to install it "
+                "and try again."
+            )
 
     def _log_webserver_credentials(self) -> None:
         """Logs URL and credentials to log in to the airflow webserver.

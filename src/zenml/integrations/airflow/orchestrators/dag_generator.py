@@ -36,7 +36,7 @@ class DagConfiguration(BaseModel):
 
     local_stores_path: Optional[str] = None
 
-    schedule_interval: Union[str, datetime.timedelta]
+    schedule: Union[datetime.timedelta, str]
     start_date: datetime.datetime
     end_date: Optional[datetime.datetime] = None
     catchup: bool = False
@@ -119,6 +119,7 @@ def get_docker_operator_init_kwargs(
         The init keyword arguments.
     """
     mounts = []
+    extra_hosts = {}
     environment = {ENV_ZENML_AIRFLOW_RUN_ID: "{{run_id}}"}
 
     if dag_config.local_stores_path:
@@ -132,11 +133,13 @@ def get_docker_operator_init_kwargs(
                 type="bind",
             )
         ]
+        extra_hosts = {"host.docker.internal": "host-gateway"}
     return {
         "image": dag_config.docker_image,
         "command": task_config.command + task_config.arguments,
         "mounts": mounts,
         "environment": environment,
+        "extra_hosts": extra_hosts,
     }
 
 
@@ -184,7 +187,7 @@ else:
         dag_id=dag_config.id,
         is_paused_upon_creation=False,
         tags=dag_config.tags,
-        schedule_interval=dag_config.schedule_interval,
+        schedule=dag_config.schedule,
         start_date=dag_config.start_date,
         end_date=dag_config.end_date,
         catchup=dag_config.catchup,
