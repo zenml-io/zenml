@@ -59,7 +59,7 @@ class KServeDeploymentConfig(ServiceConfig):
             should use the same model name.
         secret_name: the name of the secret containing the model.
         predictor: the KServe predictor used to serve the model. The
-        predictor type can be one of the following: `tensorflow`, `pytorch`, 
+        predictor type can be one of the following: `tensorflow`, `pytorch`,
         `sklearn`, `xgboost`, `custom`.
         replicas: number of replicas to use for the prediction service.
         resources: the Kubernetes resources to allocate for the prediction service.
