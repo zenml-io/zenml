@@ -1793,7 +1793,9 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
-        self, team_id: UUID, team_update: TeamUpdateModel
+        self,
+        team_id: UUID,
+        team_update: TeamUpdateModel
     ) -> TeamResponseModel:
         """Update an existing team.
 
@@ -1821,6 +1823,15 @@ class SqlZenStore(BaseZenStore):
 
             # Update the team
             existing_team.update(team_update=team_update)
+            if 'users' in team_update.dict(exclude_unset=True).items():
+                filters = [
+                    (UserSchema.id == user_id)
+                    for user_id in team_update.users
+                ]
+
+                existing_team.users = session.exec(
+                    select(UserSchema).where(or_(*filters))
+                ).all()
             session.add(existing_team)
             session.commit()
 

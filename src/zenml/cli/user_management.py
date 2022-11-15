@@ -315,25 +315,55 @@ def create_team(
 
 @team.command("update", help="Update an existing team.")
 @click.argument("team_name", type=str, required=True)
-@click.option("--name", "-n", type=str, required=False, help="New team name.")
+@click.option(
+    "--name",
+    "-n",
+    "new_name",
+    type=str,
+    required=False,
+    help="New team name."
+)
+@click.option(
+    "--remove-user",
+    "-r",
+    "remove_users",
+    type=str,
+    multiple=True,
+    help="Name or Id of users to remove.",
+)
+@click.option(
+    "--add-user",
+    "-a",
+    "add_users",
+    type=str,
+    multiple=True,
+    help="Name or Id of users to add.",
+)
 def update_team(
     team_name: str,
-    name: Optional[str] = None,
+    new_name: Optional[str] = None,
+    remove_users: Optional[List[str]] = None,
+    add_users: Optional[List[str]] = None,
 ) -> None:
     """Update an existing team.
 
     Args:
         team_name: The name of the team.
-        name: The new name of the team.
+        new_name: The new name of the team.
+        remove_users: Users to remove from the team
+        add_users: Users to add to the team.
     """
     cli_utils.print_active_config()
     try:
-        team = Client().zen_store.get_team(team_name)
-        team.name = name or team.name
-        Client().zen_store.update_team(team)
+        Client().update_team(
+            team_name_or_id=team_name,
+            new_name=new_name,
+            remove_users=remove_users,
+            add_users=add_users
+        )
     except (EntityExistsError, KeyError) as err:
         cli_utils.error(str(err))
-    cli_utils.declare(f"Updated team '{team_name}'.")
+    cli_utils.declare(f"Updated team '{new_name}'.")
 
 
 @team.command("delete", help="Delete a team.")
@@ -350,57 +380,3 @@ def delete_team(team_name_or_id: str) -> None:
     except KeyError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Deleted team '{team_name_or_id}'.")
-
-
-@team.command("add", help="Add users to a team.")
-@click.argument("team_name_or_id", type=str, required=True)
-@click.option(
-    "--user", "user_names_or_ids", type=str, required=True, multiple=True
-)
-def add_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
-    """Add users to a team.
-
-    Args:
-        team_name_or_id: Name or ID of the team.
-        user_names_or_ids: The names or IDs of the users to add to the team.
-    """
-    cli_utils.print_active_config()
-
-    try:
-        for user_name_or_id in user_names_or_ids:
-            Client().zen_store.add_user_to_team(
-                user_name_or_id=parse_name_or_uuid(user_name_or_id),
-                team_name_or_id=parse_name_or_uuid(team_name_or_id),
-            )
-            cli_utils.declare(
-                f"Added user '{user_name_or_id}' to team '{team_name_or_id}'."
-            )
-    except (KeyError, EntityExistsError) as err:
-        cli_utils.error(str(err))
-
-
-@team.command("remove", help="Remove users from a team.")
-@click.argument("team_name_or_id", type=str, required=True)
-@click.option(
-    "--user", "user_names_or_ids", type=str, required=True, multiple=True
-)
-def remove_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
-    """Remove users from a team.
-
-    Args:
-        team_name_or_id: Name or ID of the team.
-        user_names_or_ids: Names or IDS of the users.
-    """
-    cli_utils.print_active_config()
-
-    try:
-        for user_name_or_id in user_names_or_ids:
-            Client().zen_store.remove_user_from_team(
-                user_name_or_id=parse_name_or_uuid(user_name_or_id),
-                team_name_or_id=parse_name_or_uuid(team_name_or_id),
-            )
-            cli_utils.declare(
-                f"Removed user '{user_name_or_id}' from team '{team_name_or_id}'."
-            )
-    except KeyError as err:
-        cli_utils.error(str(err))

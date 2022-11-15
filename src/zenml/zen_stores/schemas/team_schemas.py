@@ -15,7 +15,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List
 from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlalchemy import or_
+from sqlmodel import Field, Relationship, SQLModel, select, Session
 
 from zenml.new_models import TeamRequestModel, TeamResponseModel
 from zenml.new_models.team_models import TeamUpdateModel
@@ -43,9 +44,12 @@ class TeamSchema(NamedSchema, table=True):
         back_populates="team", sa_relationship_kwargs={"cascade": "delete"}
     )
 
-    def update(self, user_update: TeamUpdateModel):
-        for field, value in user_update.dict(exclude_unset=True).items():
-            setattr(self, field, value)
+    def update(self, team_update: TeamUpdateModel):
+        for field, value in team_update.dict(exclude_unset=True).items():
+            if field == "users":
+                pass
+            else:
+                setattr(self, field, value)
 
         self.updated = datetime.now()
         return self

@@ -16,7 +16,7 @@ from click.testing import CliRunner
 from tests.unit.cli.test_utils import SAMPLE_USER, create_sample_user, \
     create_sample_team, team_create_command, team_list_command, \
     team_describe_command, user_create_command, user_update_command, \
-    user_delete_command, team_delete_command
+    user_delete_command, team_delete_command, team_update_command
 from zenml.zen_stores.base_zen_store import DEFAULT_ADMIN_ROLE, DEFAULT_USERNAME
 
 # ----- #
@@ -209,6 +209,24 @@ def test_list_team_succeeds(
         team_list_command,
     )
     assert result.exit_code == 0
+
+
+def test_update_team_name_succeeds(
+    clean_client,
+) -> None:
+    """Test that creating a new team with users succeeds."""
+    team = create_sample_team(clean_client)
+    new_name = "lupines"
+    runner = CliRunner()
+    result = runner.invoke(
+        team_update_command,
+        [
+            team.name,
+            f"-n={new_name}"
+        ]
+    )
+    assert result.exit_code == 0
+    assert clean_client.get_team(new_name)
 
 
 def test_delete_team_succeeds(

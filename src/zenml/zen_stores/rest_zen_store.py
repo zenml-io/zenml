@@ -917,7 +917,9 @@ class RestZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
-        self, team_id: UUID, team_update: TeamUpdateModel
+        self,
+        team_id: UUID,
+        team_update: TeamUpdateModel
     ) -> TeamResponseModel:
         """Update an existing team.
 
@@ -925,9 +927,11 @@ class RestZenStore(BaseZenStore):
             team_id: The ID of the team to be updated.
             team_update: The update to be applied to the team.
 
-
         Returns:
             The updated team.
+
+        Raises:
+            KeyError: if the team does not exist.
         """
         return self._update_resource(
             resource_id=team_id,
