@@ -1374,7 +1374,7 @@ class Client(metaclass=ClientMetaClass):
         else:
             # set the active stack globally only if the client doesn't use
             # a local configuration
-            GlobalConfiguration().active_stack_id = stack.id
+            GlobalConfiguration().set_active_stack(stack=stack)
 
     def _validate_stack_configuration(self, stack: "StackRequestModel") -> None:
         """Validates the configuration of a stack.
@@ -1505,7 +1505,7 @@ class Client(metaclass=ClientMetaClass):
         flavor: str,
         component_type: StackComponentType,
         configuration: Dict[str, str],
-        is_shared: bool,
+        is_shared: bool = False,
     ) -> "ComponentResponseModel":
         """Registers a stack component.
 
