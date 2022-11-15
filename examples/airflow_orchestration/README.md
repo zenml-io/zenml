@@ -34,8 +34,8 @@ ZenML repository:
 pip install "zenml[server]"
 
 # install ZenML integrations
-zenml integration install airflow
-pip install apache-airflow-providers-docker
+zenml integration install airflow pytorch
+pip install apache-airflow-providers-docker torchvision
 
 # pull example
 zenml example pull airflow_orchestration

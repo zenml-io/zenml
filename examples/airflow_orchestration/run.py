@@ -27,7 +27,7 @@ if __name__ == "__main__":
     pipeline_instance.run()
 
     # In case you want to run this on a schedule uncomment the following lines.
-    # Note that airflow schedules need to be set in the past:
+    # Note that Airflow schedules need to be set in the past:
 
     # from datetime import datetime, timedelta
 

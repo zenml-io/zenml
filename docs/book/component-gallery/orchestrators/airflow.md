@@ -57,9 +57,13 @@ zenml stack update -o <NAME>
 {% tabs %}
 {% tab title="Local" %}
 
-Once the orchestrator is part of the active stack, we can start the
-local Airflow server by running:
+In the local case, we need to install one additional Python package
+that is needed for the local Airflow server:
+```bash
+pip install apache-airflow-providers-docker
+```
 
+Once that is installed, we can start the local Airflow server by running:
 ```shell
 zenml stack up
 ```
