@@ -164,7 +164,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> None:
-        """Checks Airflow is running and copies DAG file to the DAGs directory.
+        """Builds a Docker image to run pipeline steps.
 
         Args:
             deployment: The pipeline deployment configuration.
