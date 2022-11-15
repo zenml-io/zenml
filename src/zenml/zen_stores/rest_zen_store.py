@@ -44,6 +44,7 @@ from zenml.constants import (
     EMAIL_ANALYTICS,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
+    GET_OR_CREATE,
     INFO,
     INPUTS,
     LOGIN,
@@ -1401,6 +1402,25 @@ class RestZenStore(BaseZenStore):
             resource_id=run_name_or_id,
             route=RUNS,
             resource_model=PipelineRunModel,
+        )
+
+    def get_or_create_run(
+        self, pipeline_run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID already exists, it is returned. Otherwise, a
+        new run is created.
+
+        Args:
+            pipeline_run: The pipeline run to get or create.
+
+        Returns:
+            The pipeline run.
+        """
+        return self._create_project_scoped_resource(
+            resource=pipeline_run,
+            route=f"{RUNS}{GET_OR_CREATE}",
         )
 
     def list_runs(

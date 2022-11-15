@@ -20,6 +20,7 @@ from fastapi import APIRouter, Security
 from zenml.constants import (
     API,
     FLAVORS,
+    GET_OR_CREATE,
     PIPELINES,
     PROJECTS,
     ROLES,
@@ -558,6 +559,37 @@ def create_pipeline_run(
         user=auth_context.user.id,
     )
     return zen_store().create_run(pipeline_run=pipeline_run_model)
+
+
+@router.post(
+    "/{project_name_or_id}" + RUNS + GET_OR_CREATE,
+    response_model=PipelineRunModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_or_create_pipeline_run(
+    project_name_or_id: Union[str, UUID],
+    pipeline_run: CreatePipelineRunRequest,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> PipelineRunModel:
+    """Creates a pipeline run.
+
+    Args:
+        project_name_or_id: Name or ID of the project.
+        pipeline_run: Pipeline run to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created pipeline run.
+    """
+    project = zen_store().get_project(project_name_or_id)
+    pipeline_run_model = pipeline_run.to_model(
+        project=project.id,
+        user=auth_context.user.id,
+    )
+    return zen_store().get_or_create_run(pipeline_run=pipeline_run_model)
 
 
 @router.get(
