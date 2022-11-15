@@ -1442,17 +1442,8 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             user_name_or_id: The name or ID of the user to delete.
-
-        Raises:
-            IllegalOperationError: If the user to delete is the active user.
         """
-        user = self.zen_store.get_user(user_name_or_id)
-        if self.zen_store.active_user_name == user.name:
-            raise IllegalOperationError(
-                "You cannot delete yourself. If you wish to delete your active "
-                "user account, please contact your ZenML administrator."
-            )
-        Client().zen_store.delete_user(user_name_or_id=user.name)
+        Client().zen_store.delete_user(user_name_or_id=user_name_or_id)
 
     def delete_project(self, project_name_or_id: str) -> None:
         """Delete a project.

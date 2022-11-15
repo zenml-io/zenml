@@ -1238,6 +1238,7 @@ numpy
 nzf
 observability
 odbc
+ondelete
 onerror
 orch
 orchestr
@@ -1529,3 +1530,6 @@ zenserver
 ConnectionConfig
 MetadataStoreClientConfig
 grpc
+openssl
+signalled
+zenconfig
