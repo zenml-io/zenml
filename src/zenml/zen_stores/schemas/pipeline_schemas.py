@@ -21,7 +21,8 @@ from sqlalchemy import TEXT, Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.new_models.pipeline_models import PipelineResponseModel
+from zenml.new_models.pipeline_models import PipelineResponseModel, \
+    PipelineRequestModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:

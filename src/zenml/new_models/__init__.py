@@ -91,6 +91,11 @@ RoleAssignmentResponseModel.update_forward_refs(
     ProjectResponseModel=ProjectResponseModel,
 )
 
+PipelineResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel,
+)
+
 __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
