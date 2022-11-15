@@ -115,21 +115,3 @@ def clean_kubeflow_repo(
     cleanup_active_repo()
 
     yield shared_kubeflow_repo
-
-
-@pytest.fixture
-def clean_base_repo(
-    base_client,
-) -> Generator[Client, None, None]:
-    """Creates a clean environment with an empty artifact store and metadata
-    store out of the shared base repository.
-
-    Args:
-        base_repo: A repository shared by all tests in the current module.
-
-    Yields:
-        A repository with an empty artifact store and metadata store.
-    """
-    cleanup_active_repo()
-
-    yield base_client

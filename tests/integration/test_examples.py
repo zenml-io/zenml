@@ -80,7 +80,7 @@ examples = [
     ExampleIntegrationTestConfiguration(
         name="airflow_orchestration",
         validation_function=generate_basic_validation_function(
-            pipeline_name="airflow_example_pipeline", step_count=3
+            pipeline_name="fashion_mnist_pipeline", step_count=3
         ),
     ),
     # TODO: re-add data validation test when we understand why they
