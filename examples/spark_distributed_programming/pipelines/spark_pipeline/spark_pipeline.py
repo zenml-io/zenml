@@ -14,9 +14,13 @@
 
 
 from zenml.pipelines import pipeline
+from zenml.config import DockerSettings
+import os
+
+docker_settings = DockerSettings(parent_image=os.getenv("BASE_IMAGE_NAME")) 
 
 
-@pipeline
+@pipeline(enable_cache=True, settings={"docker": docker_settings})
 def spark_pipeline(
     importer,
     analyzer,

@@ -149,13 +149,20 @@ and put them in the `jars` folder within your Spark installation. Once that
 is set up, you can build the image as follows:
 
 ```bash
-cd $SPARK_HOME
+cd $SPARK_HOME # If this empty for you then you need to set the SPARK_HOME variable which points to your Spark installation
 
 SPARK_IMAGE_TAG=<SPARK_IMAGE_TAG>
 
 ./bin/docker-image-tool.sh -t $SPARK_IMAGE_TAG -p kubernetes/dockerfiles/spark/bindings/python/Dockerfile -u 0 build
 
 BASE_IMAGE_NAME=spark-py:$SPARK_IMAGE_TAG
+```
+
+If you are working on an M1 Mac, you will need to build the image for the amd64 architecture, by using the prefix `-X`
+on the previous command. For example:
+
+```bash
+./bin/docker-image-tool.sh -X -t $SPARK_IMAGE_TAG -p kubernetes/dockerfiles/spark/bindings/python/Dockerfile -u 0 build
 ```
 
 ### Configuring RBAC
