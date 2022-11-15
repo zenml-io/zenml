@@ -83,6 +83,8 @@ from zenml.new_models import (
     PipelineResponseModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
+    PipelineRunUpdateModel,
+    PipelineUpdateModel,
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
@@ -96,6 +98,7 @@ from zenml.new_models import (
     StackUpdateModel,
     StepRunRequestModel,
     StepRunResponseModel,
+    StepRunUpdateModel,
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
@@ -192,7 +195,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
     def validate_verify_ssl(
         cls, verify_ssl: Union[bool, str]
     ) -> Union[bool, str]:
-        """Validates that the verify_ssl field either points to a file or is a bool.
+        """Validates that the verify_ssl either points to a file or is a bool.
 
         Args:
             verify_ssl: The verify_ssl value to be validated.
@@ -495,7 +498,6 @@ class RestZenStore(BaseZenStore):
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
-            hydrated: Flag to decide whether to return hydrated models.
 
         Returns:
             A list of all stacks matching the filter criteria.
@@ -754,7 +756,6 @@ class RestZenStore(BaseZenStore):
             response_model=UserResponseModel,
         )
 
-    # TODO: Should this be name or id?
     def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
         """Gets a specific user.
 
@@ -1198,7 +1199,6 @@ class RestZenStore(BaseZenStore):
             response_model=ProjectResponseModel,
         )
 
-    # TODO: Should this be just the id?
     def get_project(
         self, project_name_or_id: Union[UUID, str]
     ) -> ProjectResponseModel:
@@ -1331,7 +1331,7 @@ class RestZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
-        self, pipeline_id: UUID, pipeline_update: PipelineResponseModel
+        self, pipeline_id: UUID, pipeline_update: PipelineUpdateModel
     ) -> PipelineResponseModel:
         """Updates a pipeline.
 
@@ -1378,10 +1378,13 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_project_scoped_resource(
             resource=pipeline_run,
+            response_model=PipelineRunResponseModel,
             route=RUNS,
         )
 
-    def get_run(self, run_id: UUID) -> PipelineRunResponseModel:
+    def get_run(
+        self, run_name_or_id: Union[UUID, str]
+    ) -> PipelineRunResponseModel:
         """Gets a pipeline run.
 
         Args:
@@ -1391,7 +1394,7 @@ class RestZenStore(BaseZenStore):
             The pipeline run.
         """
         return self._get_resource(
-            resource_id=run_id,
+            resource_id=run_name_or_id,
             route=RUNS,
             response_model=PipelineRunResponseModel,
         )
@@ -1431,33 +1434,24 @@ class RestZenStore(BaseZenStore):
         )
 
     def update_run(
-        self, run: PipelineRunRequestModel
+        self, run_id: UUID, run_update: PipelineRunUpdateModel
     ) -> PipelineRunResponseModel:
         """Updates a pipeline run.
 
         Args:
-            run: The pipeline run to use for the update.
+            run_id: The ID of the pipeline run to update.
+            run_update: The update to be applied to the pipeline run.
+
 
         Returns:
             The updated pipeline run.
         """
         return self._update_resource(
-            resource=run,
+            resource_id=run_id,
+            resource_update=run_update,
+            response_model=PipelineRunResponseModel,
             route=RUNS,
         )
-
-    # TODO: Figure out what exactly gets returned from this
-    def get_run_component_side_effects(
-        self,
-        run_id: UUID,
-        component_id: Optional[UUID] = None,
-    ) -> Dict[str, Any]:
-        """Gets the side effects for a component in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-            component_id: The ID of the component to get.
-        """
 
     # ------------------
     # Pipeline run steps
@@ -1476,6 +1470,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=step,
+            response_model=StepRunResponseModel,
             route=STEPS,
         )
 
@@ -1514,18 +1509,23 @@ class RestZenStore(BaseZenStore):
         )
 
     def update_run_step(
-        self, step: StepRunRequestModel
+        self,
+        step_id: UUID,
+        step_update: StepRunUpdateModel,
     ) -> StepRunResponseModel:
         """Updates a step.
 
         Args:
-            step: The step to update.
+            step_id: The ID of the step to update.
+            step_update: The update to be applied to the step.
 
         Returns:
             The updated step.
         """
         return self._update_resource(
-            resource=step,
+            resource_id=step_id,
+            resource_update=step_update,
+            response_model=StepRunResponseModel,
             route=STEPS,
         )
 
@@ -1570,6 +1570,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=artifact,
+            response_model=ArtifactResponseModel,
             route=ARTIFACTS,
         )
 
@@ -1608,7 +1609,8 @@ class RestZenStore(BaseZenStore):
             The authentication token.
 
         Raises:
-            ValueError: if the response from the server isn't in the right format.
+            ValueError: if the response from the server isn't in the right
+                format.
         """
         if self._api_token is None:
             response = self._handle_response(

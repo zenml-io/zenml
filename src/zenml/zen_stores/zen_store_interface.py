@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 from uuid import UUID
 
 from zenml.enums import StackComponentType
@@ -216,7 +216,6 @@ class ZenStoreInterface(ABC):
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
-            hydrated: Flag to decide whether to return hydrated models
 
 
         Returns:
@@ -427,7 +426,6 @@ class ZenStoreInterface(ABC):
     # -----
     # Users
     # -----
-    # TODO: Should it be moved to the BaseZenStore?
     @property
     @abstractmethod
     def active_user_name(self) -> str:
@@ -822,7 +820,8 @@ class ZenStoreInterface(ABC):
         """List all pipelines in the project.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this project.
+            project_name_or_id: If provided, only list pipelines in this
+                project.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
 
@@ -940,26 +939,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The updated pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    # TODO: Figure out what exactly gets returned from this
-    @abstractmethod
-    def get_run_component_side_effects(
-        self,
-        run_id: UUID,
-        component_id: Optional[UUID] = None,
-    ) -> Dict[str, Any]:
-        """Gets the side effects for a component in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-            component_id: The ID of the component to get.
-
-        Returns:
-            The side effects for the component in the pipeline run.
 
         Raises:
             KeyError: if the pipeline run doesn't exist.
