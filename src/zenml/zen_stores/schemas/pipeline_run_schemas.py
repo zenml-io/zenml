@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
@@ -10,6 +11,7 @@ from zenml.new_models import PipelineRunResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
+    from zenml.new_models import PipelineRunUpdateModel
     from zenml.zen_stores.schemas import (
         PipelineSchema,
         ProjectSchema,
@@ -91,3 +93,13 @@ class PipelineRunSchema(NamedSchema, table=True):
                 created=self.created,
                 updated=self.updated,
             )
+
+    def update(self, run_update: "PipelineRunUpdateModel"):
+        """ """
+        if run_update.mlmd_id:
+            self.mlmd_id = run_update.mlmd_id
+
+        if run_update.status:
+            self.status = run_update.status
+
+        self.updated = datetime.now()

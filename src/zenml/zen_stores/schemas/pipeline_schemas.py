@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
@@ -24,6 +25,7 @@ from zenml.new_models.pipeline_models import PipelineResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
+    from zenml.new_models import PipelineUpdateModel
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.project_schemas import ProjectSchema
     from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -82,3 +84,17 @@ class PipelineSchema(NamedSchema, table=True):
                 created=self.created,
                 updated=self.updated,
             )
+
+    def update(self, pipeline_update: PipelineUpdateModel) -> "PipelineSchema":
+        """"""
+        if pipeline_update.name:
+            self.name = pipeline_update.name
+
+        if pipeline_update.docstring:
+            self.docstring = pipeline_update.docstring
+
+        if pipeline_update.spec:
+            self.spec = pipeline_update.spec.json(sort_keys=True)
+
+        self.updated = datetime.now()
+        return self
