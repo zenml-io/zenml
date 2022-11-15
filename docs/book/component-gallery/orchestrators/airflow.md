@@ -7,7 +7,7 @@ provided with the ZenML `airflow` integration that uses
 [Airflow](https://airflow.apache.org/) to run your pipelines.
 
 {% hint style="warning" %}
-If you're going to use a remote deployment of Airflow, you'll also need a[remote ZenML deployment](../../getting-started/deploying-zenml/deploying-zenml.md).
+If you're going to use a remote deployment of Airflow, you'll also need a [remote ZenML deployment](../../getting-started/deploying-zenml/deploying-zenml.md).
 {% endhint %}
 
 ## When to use it
