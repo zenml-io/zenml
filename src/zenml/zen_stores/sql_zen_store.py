@@ -18,6 +18,7 @@ import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path, PurePath
+from threading import Lock, get_ident
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -571,6 +572,7 @@ class SqlZenStore(BaseZenStore):
     _metadata_store: Optional["MetadataStore"] = None
     _highest_synced_run_mlmd_id: int = 0
     _alembic: Optional[Alembic] = None
+    _sync_lock: Optional[Lock] = None
 
     @property
     def engine(self) -> Engine:
@@ -625,6 +627,20 @@ class SqlZenStore(BaseZenStore):
             raise ValueError("Store not initialized")
         return self._alembic
 
+    @property
+    def sync_lock(self) -> Lock:
+        """The mutex used to synchronize pipeline runs.
+
+        Returns:
+            The mutex used to synchronize pipeline runs.
+
+        Raises:
+            ValueError: If the store is not initialized.
+        """
+        if not self._sync_lock:
+            raise ValueError("Store not initialized")
+        return self._sync_lock
+
     # ====================================
     # ZenML Store interface implementation
     # ====================================
@@ -652,6 +668,8 @@ class SqlZenStore(BaseZenStore):
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
+
+        self._sync_lock = Lock()
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the current python package."""
@@ -3638,27 +3656,65 @@ class SqlZenStore(BaseZenStore):
         This queries all runs from MLMD, checks for each whether it already
         exists in the database, and if not, creates it.
         """
-        logger.debug("Syncing pipeline runs...")
+        from zenml.zen_stores.migrations.alembic import AlembicVersion
+        from zenml.zen_stores.rest_zen_store import DEFAULT_HTTP_TIMEOUT
 
+        # This is to synchronize the locally running threads so that only
+        # one thread attempts to sync the runs at any given time.
+        # The timeout is set to be shorter than the default REST client
+        # timeout, so that we don't block the client for too long.
+        logger.debug(f"[{get_ident()}] Trying to acquire sync lock...")
+        if not self.sync_lock.acquire(timeout=DEFAULT_HTTP_TIMEOUT - 10):
+            logger.warning(
+                f"[{get_ident()}] Timed out waiting to acquire pipeline "
+                f"run sync lock. Skipping the sync this time around."
+            )
+            return
+
+        logger.debug(f"[{get_ident()}] Pipeline run sync lock acquired.")
+        try:
+            with Session(self.engine) as session:
+                logger.debug("Syncing pipeline runs...")
+                if self.config.driver != SQLDatabaseDriver.SQLITE:
+                    # This is to synchronize all server processes trying to
+                    # sync the pipeline runs at the same time. We use the
+                    # alembic version table as a shared resource that we can
+                    # lock to prevent multiple processes from syncing runs
+                    # at the same time.
+                    session.query(AlembicVersion).with_for_update().all()
+                self._sync_runs_with_lock(session)
+                logger.debug("Pipeline runs sync complete")
+        except Exception:
+            logger.exception("Failed to sync pipeline runs.")
+        finally:
+            self.sync_lock.release()
+
+    def _sync_runs_with_lock(self, session: Session) -> None:
+        """Sync runs from MLMD into the database while the DB is locked.
+
+        This queries all runs from MLMD, checks for each whether it already
+        exists in the database, and if not, creates it.
+
+        Args:
+            session: The database session to use.
+        """
         # Find all runs that already have an MLMD ID. These are already
         # synced and connected to MLMD, so we don't need to query them from
         # MLMD again.
-        with Session(self.engine) as session:
-            synced_mlmd_ids = session.exec(
-                select(PipelineRunSchema.mlmd_id).where(
-                    isnot(PipelineRunSchema.mlmd_id, None)
-                )
-            ).all()
+        synced_mlmd_ids = session.exec(
+            select(PipelineRunSchema.mlmd_id).where(
+                isnot(PipelineRunSchema.mlmd_id, None)
+            )
+        ).all()
         logger.debug(f"Found {len(synced_mlmd_ids)} pipeline runs with MLMD ID")
 
         # Find all runs that have no MLMD ID. These might need to be
         # connected.
-        with Session(self.engine) as session:
-            runs_without_mlmd_id = session.exec(
-                select(PipelineRunSchema).where(
-                    is_(PipelineRunSchema.mlmd_id, None)
-                )
-            ).all()
+        runs_without_mlmd_id = session.exec(
+            select(PipelineRunSchema).where(
+                is_(PipelineRunSchema.mlmd_id, None)
+            )
+        ).all()
         logger.debug(
             f"Found {len(runs_without_mlmd_id)} pipeline runs without MLMD ID"
         )
@@ -3708,15 +3764,13 @@ class SqlZenStore(BaseZenStore):
         # Sync steps and status of all unfinished runs.
         # We also filter out anything older than 1 week to prevent old broken
         # unfinished runs from being synced over and over again.
-        with Session(self.engine) as session:
-            unfinished_runs = session.exec(
-                select(PipelineRunSchema)
-                .where(PipelineRunSchema.status == ExecutionStatus.RUNNING)
-                .where(
-                    PipelineRunSchema.updated
-                    >= datetime.now() - timedelta(weeks=1)
-                )
-            ).all()
+        unfinished_runs = session.exec(
+            select(PipelineRunSchema)
+            .where(PipelineRunSchema.status == ExecutionStatus.RUNNING)
+            .where(
+                PipelineRunSchema.updated >= datetime.now() - timedelta(weeks=1)
+            )
+        ).all()
         logger.debug(
             f"Updating {len(unfinished_runs)} unfinished pipeline runs from "
             "MLMD"
