@@ -37,9 +37,9 @@ class TektonOrchestratorSettings(BaseSettings):
     pod_settings: Optional[KubernetesPodSettings] = None
 
 
-class TektonOrchestratorConfig(
+class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseOrchestratorConfig, TektonOrchestratorSettings
-):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+):
     """Configuration for the Tekton orchestrator.
 
     Attributes:

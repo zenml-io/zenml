@@ -42,9 +42,9 @@ class SagemakerStepOperatorSettings(BaseSettings):
     experiment_name: Optional[str] = None
 
 
-class SagemakerStepOperatorConfig(
+class SagemakerStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseStepOperatorConfig, SagemakerStepOperatorSettings
-):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+):
     """Config for the Sagemaker step operator.
 
     Attributes:

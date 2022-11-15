@@ -46,11 +46,11 @@ class VertexStepOperatorSettings(BaseSettings):
     machine_type: str = "n1-standard-4"
 
 
-class VertexStepOperatorConfig(
+class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseStepOperatorConfig,
     GoogleCredentialsConfigMixin,
     VertexStepOperatorSettings,
-):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+):
     """Configuration for the Vertex step operator.
 
     Attributes:

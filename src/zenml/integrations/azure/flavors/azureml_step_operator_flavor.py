@@ -38,9 +38,9 @@ class AzureMLStepOperatorSettings(BaseSettings):
     environment_name: Optional[str] = None
 
 
-class AzureMLStepOperatorConfig(
+class AzureMLStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseStepOperatorConfig, AzureMLStepOperatorSettings
-):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+):
     """Config for the AzureML step operator.
 
     Attributes:

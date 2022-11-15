@@ -245,9 +245,9 @@ class LocalDockerOrchestratorSettings(BaseSettings):
             raise TypeError(f"{value} is not a json string or a dictionary.")
 
 
-class LocalDockerOrchestratorConfig(
+class LocalDockerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseOrchestratorConfig, LocalDockerOrchestratorSettings
-):  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+):
     """Local Docker orchestrator config."""
 
     @property
