@@ -290,7 +290,7 @@ class Environment(metaclass=SingletonMetaClass):
             CI, `False` otherwise.
         """
         return "BITBUCKET_BUILD_NUMBER" in os.environ
-    
+
     @staticmethod
     def in_ci() -> bool:
         """If the current Python process is running in any CI.
