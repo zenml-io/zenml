@@ -139,7 +139,6 @@ ComponentWrapper
 ComputeTarget
 ConfigMap
 ConnectionConfig
-ConnectionConfig
 ConnectionError
 ConstrainedStrValue
 ContainerOp
