@@ -31,10 +31,21 @@
 """Implementation of Airflow orchestrator integration."""
 
 import datetime
+import importlib
 import os
 import time
 import zipfile
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
@@ -59,12 +70,52 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.integrations.airflow.orchestrators.dag_generator import (
         DagConfiguration,
+        TaskConfiguration,
     )
     from zenml.pipelines import Schedule
     from zenml.stack import Stack
 
 
 logger = get_logger(__name__)
+
+# Environment variable to set a custom DAG generator module. This module
+# must contain the same classes and constants as the
+# `zenml.integrations.airflow.orchestrators.dag_generator` module
+ENV_ZENML_AIRFLOW_CUSTOM_DAG_GENERATOR = "ZENML_AIRFLOW_CUSTOM_DAG_GENERATOR"
+
+
+class DagGeneratorValues(NamedTuple):
+    """Values from the DAG generator module."""
+
+    file: str
+    config_file_name: str
+    run_id_env_variable_name: str
+    dag_configuration_class: Type["DagConfiguration"]
+    task_configuration_class: Type["TaskConfiguration"]
+
+
+def get_dag_generator_values() -> DagGeneratorValues:
+    """Gets values from the DAG generator module.
+
+    Returns:
+        DAG generator module values.
+    """
+    if ENV_ZENML_AIRFLOW_CUSTOM_DAG_GENERATOR in os.environ:
+        module_name = os.environ[ENV_ZENML_AIRFLOW_CUSTOM_DAG_GENERATOR]
+        module = importlib.import_module(module_name)
+    else:
+        from zenml.integrations.airflow.orchestrators import dag_generator
+
+        module = dag_generator
+
+    assert module.__file__
+    return DagGeneratorValues(
+        file=module.__file__,
+        config_file_name=module.CONFIG_FILENAME,
+        run_id_env_variable_name=module.ENV_ZENML_AIRFLOW_RUN_ID,
+        dag_configuration_class=module.DagConfiguration,
+        task_configuration_class=module.TaskConfiguration,
+    )
 
 
 class AirflowOrchestrator(BaseOrchestrator):
@@ -229,7 +280,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
         """
-        from zenml.integrations.airflow.orchestrators import dag_generator
+        dag_generator = get_dag_generator_values()
 
         command = StepEntrypointConfiguration.get_entrypoint_command()
 
@@ -239,7 +290,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name
             )
-            task = dag_generator.TaskConfiguration(
+            task = dag_generator.task_configuration_class(
                 id=step_name,
                 zenml_step_name=step.config.name,
                 upstream_steps=step.spec.upstream_steps,
@@ -260,7 +311,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         dag_id = pipeline_settings.dag_id or get_orchestrator_run_name(
             pipeline_name=deployment.pipeline.name
         )
-        dag_config = dag_generator.DagConfiguration(
+        dag_config = dag_generator.dag_configuration_class(
             id=dag_id,
             docker_image=docker_image,
             local_stores_path=local_stores_path,
@@ -284,7 +335,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             dag_config: Configuration of the DAG to write.
             output_dir: The directory in which to write the DAG.
         """
-        from zenml.integrations.airflow.orchestrators import dag_generator
+        dag_generator = get_dag_generator_values()
 
         io_utils.create_dir_recursive_if_not_exists(output_dir)
 
@@ -300,8 +351,8 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         def _write_zip(path: str) -> None:
             with zipfile.ZipFile(path, mode="w") as z:
-                z.write(dag_generator.__file__, arcname="dag.py")
-                z.writestr(dag_generator.CONFIG_FILENAME, dag_config.json())
+                z.write(dag_generator.file, arcname="dag.py")
+                z.writestr(dag_generator.config_file_name, dag_config.json())
 
             logger.info("Writing DAG definition to `%s`.", path)
 
@@ -337,16 +388,14 @@ class AirflowOrchestrator(BaseOrchestrator):
         Returns:
             The orchestrator run id.
         """
-        from zenml.integrations.airflow.orchestrators.dag_generator import (
-            ENV_ZENML_AIRFLOW_RUN_ID,
-        )
+        dag_generator = get_dag_generator_values()
 
         try:
-            return os.environ[ENV_ZENML_AIRFLOW_RUN_ID]
+            return os.environ[dag_generator.run_id_env_variable_name]
         except KeyError:
             raise RuntimeError(
                 "Unable to read run id from environment variable "
-                f"{ENV_ZENML_AIRFLOW_RUN_ID}."
+                f"{dag_generator.run_id_env_variable_name}."
             )
 
     @staticmethod
