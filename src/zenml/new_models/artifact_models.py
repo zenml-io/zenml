@@ -16,7 +16,11 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from zenml.enums import ArtifactType
-from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.new_models.base_models import (
+    BaseRequestModel, BaseResponseModel,
+    update
+)
+
 
 # ---- #
 # BASE #
@@ -45,8 +49,7 @@ class ArtifactBaseModel(BaseModel):
 # RESPONSE #
 # -------- #
 
-
-class ArtifactRequestModel(ArtifactBaseModel, BaseRequestModel):
+class ArtifactResponseModel(ArtifactBaseModel, BaseResponseModel):
     """Domain Model representing an artifact."""
 
 
@@ -54,6 +57,14 @@ class ArtifactRequestModel(ArtifactBaseModel, BaseRequestModel):
 # REQUEST #
 # ------- #
 
-
-class ArtifactResponseModel(ArtifactBaseModel, BaseResponseModel):
+class ArtifactRequestModel(ArtifactBaseModel, BaseRequestModel):
     """Domain Model representing an artifact."""
+
+
+# ------ #
+# UPDATE #
+# ------ #
+
+@update
+class ArtifactUpdateModel(ArtifactRequestModel):
+    """"""
