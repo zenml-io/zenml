@@ -47,11 +47,13 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.new_models import (
+    ArtifactRequestModel,
     ComponentRequestModel,
     ComponentUpdateModel,
     FlavorRequestModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunRequestModel,
     PipelineRunResponseModel,
     ProjectRequestModel,
     ProjectResponseModel,
@@ -61,6 +63,7 @@ from zenml.new_models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    StepRunRequestModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -2016,18 +2019,18 @@ class Client(metaclass=ClientMetaClass):
         for pipeline_run_dict in yaml_data:
             steps = pipeline_run_dict.pop("steps")
             pipeline_run_dict.pop("id")
-            pipeline_run = PipelineRunModel.parse_obj(pipeline_run_dict)
+            pipeline_run = PipelineRunRequestModel.parse_obj(pipeline_run_dict)
             pipeline_run.updated = datetime.now()
             pipeline_run.user = self.active_user.id
             pipeline_run.project = self.active_project.id
-            pipeline_run.stack_id = None
-            pipeline_run.pipeline_id = None
+            pipeline_run.stack = None
+            pipeline_run.pipeline = None
             pipeline_run.mlmd_id = None
             pipeline_run = self.zen_store.create_run(pipeline_run)
             for step_dict in steps:
                 artifacts = step_dict.pop("output_artifacts")
                 step_id = step_dict.pop("id")
-                step = StepRunModel.parse_obj(step_dict)
+                step = StepRunRequestModel.parse_obj(step_dict)
                 step.pipeline_run_id = pipeline_run.id
                 step.parent_step_ids = [
                     step_id_mapping[str(parent_step_id)]
@@ -2044,7 +2047,7 @@ class Client(metaclass=ClientMetaClass):
                 step_id_mapping[str(step_id)] = step.id
                 for artifact_dict in artifacts:
                     artifact_id = artifact_dict.pop("id")
-                    artifact = ArtifactModel.parse_obj(artifact_dict)
+                    artifact = ArtifactRequestModel.parse_obj(artifact_dict)
                     artifact.parent_step_id = step.id
                     artifact.producer_step_id = step_id_mapping[
                         str(artifact.producer_step_id)
@@ -2141,12 +2144,12 @@ class Client(metaclass=ClientMetaClass):
                 step_statuses.append(status)
 
             num_steps = len(steps)
-            pipeline_run = PipelineRunModel(
+            pipeline_run = PipelineRunRequestModel(
                 user=self.active_user.id,  # Old user might not exist.
                 project=self.active_project.id,  # Old project might not exist.
                 name=mlmd_run.name,
-                stack_id=None,  # Stack might not exist in new DB.
-                pipeline_id=None,  # Pipeline might not exist in new DB.
+                stack=None,  # Stack might not exist in new DB.
+                pipeline=None,  # Pipeline might not exist in new DB.
                 status=ExecutionStatus.run_status(step_statuses, num_steps),
                 pipeline_configuration=mlmd_run.pipeline_configuration,
                 num_steps=num_steps,
@@ -2169,7 +2172,7 @@ class Client(metaclass=ClientMetaClass):
                     input_name: artifact_mlmd_id_mapping[mlmd_artifact.mlmd_id]
                     for input_name, mlmd_artifact in inputs.items()
                 }
-                step_run = StepRunModel(
+                step_run = StepRunRequestModel(
                     name=step.name,
                     pipeline_run_id=new_run.id,
                     parent_step_ids=parent_step_ids,
@@ -2188,7 +2191,7 @@ class Client(metaclass=ClientMetaClass):
                     producer_step_id = step_mlmd_id_mapping[
                         mlmd_artifact.mlmd_producer_step_id
                     ]
-                    artifact = ArtifactModel(
+                    artifact = ArtifactRequestModel(
                         name=output_name,
                         parent_step_id=new_step.id,
                         producer_step_id=producer_step_id,
