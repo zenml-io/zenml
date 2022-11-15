@@ -184,7 +184,7 @@ def get_kubernetes_pod_operator_init_kwargs(
 
 try:
     archive = zipfile.ZipFile(os.path.dirname(__file__), "r")
-except IsADirectoryError:
+except (IsADirectoryError, PermissionError):
     # Not inside a zip, this happens if we import this file outside of an
     # airflow dag zip
     pass
