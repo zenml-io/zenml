@@ -1789,7 +1789,7 @@ class Client(metaclass=ClientMetaClass):
                 # pipeline.
                 if pipeline_spec == existing_pipeline.spec:
                     logger.debug(
-                        "Did not register pipeline since it already " "exists."
+                        "Did not register pipeline since it already exists."
                     )
                     return existing_pipeline.id
 
@@ -1820,7 +1820,8 @@ class Client(metaclass=ClientMetaClass):
         """List pipelines.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this project.
+            project_name_or_id: If provided, only list pipelines in this
+                project.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
 
@@ -1911,11 +1912,6 @@ class Client(metaclass=ClientMetaClass):
         """
         from datetime import datetime
 
-        from zenml.models.pipeline_models import (
-            ArtifactModel,
-            PipelineRunModel,
-            StepRunModel,
-        )
         from zenml.utils.yaml_utils import read_yaml
 
         step_id_mapping: Dict[str, UUID] = {}
@@ -1996,11 +1992,6 @@ class Client(metaclass=ClientMetaClass):
         from tfx.orchestration import metadata
 
         from zenml.enums import ExecutionStatus
-        from zenml.models.pipeline_models import (
-            ArtifactModel,
-            PipelineRunModel,
-            StepRunModel,
-        )
         from zenml.zen_stores.metadata_store import MetadataStore
 
         # Define MLMD connection config based on the database type.
