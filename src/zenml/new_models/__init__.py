@@ -15,6 +15,7 @@
 from zenml.new_models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
+    ArtifactUpdateModel,
 )
 from zenml.new_models.component_models import (
     ComponentRequestModel,
@@ -98,6 +99,7 @@ PipelineResponseModel.update_forward_refs(
 __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
+    "ArtifactUpdateModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",

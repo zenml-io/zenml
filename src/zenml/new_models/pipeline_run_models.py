@@ -55,6 +55,9 @@ class PipelineRunBaseModel(BaseModel):
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
 
+    orchestrator_run_id: Optional[str] = None
+    status: ExecutionStatus
+
     pipeline_configuration: Dict[str, Any]
     num_steps: int
     zenml_version: Optional[str] = current_zenml_version

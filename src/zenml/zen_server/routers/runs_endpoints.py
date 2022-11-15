@@ -204,9 +204,7 @@ def get_run_component_side_effects(
     Returns:
         The component side effects for a given pipeline run.
     """
-    return zen_store().get_run_component_side_effects(
-        run_id=run_id, component_id=component_id
-    )
+    return {}
 
 
 @router.get(
