@@ -30,6 +30,8 @@ from zenml.new_models import (
     PipelineResponseModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
+    PipelineRunUpdateModel,
+    PipelineUpdateModel,
     ProjectRequestModel,
     ProjectResponseModel,
     RoleAssignmentRequestModel,
@@ -42,6 +44,7 @@ from zenml.new_models import (
     StackUpdateModel,
     StepRunRequestModel,
     StepRunResponseModel,
+    StepRunUpdateModel,
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
@@ -832,7 +835,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_pipeline(
-        self, pipeline_id: UUID, pipeline_update: PipelineRequestModel
+        self,
+        pipeline_id: UUID,
+        pipeline_update: PipelineUpdateModel,
     ) -> PipelineResponseModel:
         """Updates a pipeline.
 
@@ -925,12 +930,13 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_run(
-        self, run: PipelineRunRequestModel
+        self, run_id: UUID, run_update: PipelineRunUpdateModel
     ) -> PipelineRunResponseModel:
         """Updates a pipeline run.
 
         Args:
-            run: The pipeline run to use for the update.
+            run_id: The ID of the pipeline run to update.
+            run_update: The update to be applied to the pipeline run.
 
         Returns:
             The updated pipeline run.
@@ -1020,12 +1026,15 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_run_step(
-        self, step: StepRunRequestModel
+        self,
+        step_id: UUID,
+        step_update: StepRunUpdateModel,
     ) -> StepRunResponseModel:
         """Updates a step.
 
         Args:
-            step: The step to update.
+            step_id: The ID of the step to update.
+            step_update: The update to be applied to the step.
 
         Returns:
             The updated step.
