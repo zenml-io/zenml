@@ -215,7 +215,9 @@ def register_stack(
             is_shared=share,
         )
 
-        cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
+        cli_utils.declare(
+            f"Stack '{created_stack.name}' successfully registered!"
+        )
 
     if set_stack:
         client.activate_stack(created_stack.id)
@@ -349,7 +351,7 @@ def update_stack(
     """
     client = Client()
 
-    with console.status(f"Updating stack `{stack_name_or_id}`...\n"):
+    with console.status(f"Updating stack...\n"):
 
         updates = dict()
         if artifact_store_name:
@@ -380,7 +382,7 @@ def update_stack(
             updates[StackComponentType.STEP_OPERATOR] = [step_operator_name]
 
         try:
-            client.update_stack(
+            updated_stack = client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
                 component_updates=updates,
             )
@@ -388,7 +390,7 @@ def update_stack(
             cli_utils.error(str(err))
 
         cli_utils.declare(
-            f"Stack `{stack_name_or_id}` successfully " f"updated!"
+            f"Stack `{updated_stack.name}` successfully " f"updated!"
         )
 
 
@@ -409,15 +411,15 @@ def share_stack(
 
     client = Client()
 
-    with console.status(f"Sharing stack `{stack_name_or_id}` ...\n"):
+    with console.status(f"Sharing the stack...\n"):
         try:
-            client.update_stack(
+            updated_stack = client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
                 is_shared=True,
             )
         except (IllegalOperationError, StackExistsError) as err:
             cli_utils.error(str(err))
-        cli_utils.declare(f"Stack `{stack_name_or_id}` successfully shared!")
+        cli_utils.declare(f"Stack `{updated_stack.name}` successfully shared!")
 
 
 @stack.command(
@@ -529,7 +531,7 @@ def remove_stack_component(
 
     client = Client()
 
-    with console.status(f"Updating stack `{stack_name_or_id}`...\n"):
+    with console.status(f"Updating the stack...\n"):
         stack_component_update = dict()
 
         if container_registry_flag:
@@ -560,13 +562,15 @@ def remove_stack_component(
             stack_component_update[StackComponentType.DATA_VALIDATOR] = []
 
         try:
-            client.update_stack(
+            updated_stack = client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
                 component_updates=stack_component_update,
             )
         except IllegalOperationError as err:
             cli_utils.error(str(err))
-        cli_utils.declare(f"Stack `{stack_name_or_id}` successfully updated!")
+        cli_utils.declare(
+            f"Stack `{updated_stack.name}` successfully updated!"
+        )
 
 
 @stack.command("rename", help="Rename a stack.")
@@ -585,7 +589,7 @@ def rename_stack(
 
     client = Client()
 
-    with console.status(f"Renaming stack `{stack_name_or_id}`...\n"):
+    with console.status(f"Renaming stack...\n"):
         try:
             client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
@@ -683,14 +687,14 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
         stack_name_or_id: Name of the stack to set as active.
     """
     client = Client()
-    scope = " repository" if client.root else " global"
+    scope = "repository" if client.root else " global"
 
     with console.status(
-        f"Setting the{scope} active stack to '{stack_name_or_id}'..."
+        f"Setting the {scope} active stack to '{stack_name_or_id}'..."
     ):
         client.activate_stack(stack_name_id_or_prefix=stack_name_or_id)
         cli_utils.declare(
-            f"Active{scope} stack set to: "
+            f"Active {scope} stack set to: "
             f"'{client.active_stack_model.name}'"
         )
 

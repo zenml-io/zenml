@@ -360,7 +360,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                 )
                 active_stack = self._get_or_create_default_stack(active_project)
             else:
-                if active_stack.project != active_project.id:
+                if active_stack.project.id != active_project.id:
                     logger.warning(
                         "The current %s active stack is not part of the active "
                         "project. Resetting the active stack to default.",
@@ -371,7 +371,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                     )
                 elif (
                     not active_stack.is_shared
-                    and active_stack.user != self.active_user.id
+                    and active_stack.user.id != self.active_user.id
                 ):
                     logger.warning(
                         "The current %s active stack is not shared and not "
