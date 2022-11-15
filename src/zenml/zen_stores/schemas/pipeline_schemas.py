@@ -20,7 +20,8 @@ from sqlalchemy import TEXT, Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.new_models.pipeline_models import PipelineResponseModel
+from zenml.new_models.pipeline_models import PipelineResponseModel, \
+    PipelineRequestModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
@@ -47,6 +48,27 @@ class PipelineSchema(NamedSchema, table=True):
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
     )
+
+    @classmethod
+    def from_create_model(
+        cls,
+        pipeline: PipelineRequestModel
+    ) -> "PipelineSchema":
+        """Create a `PipelineSchema` from a `PipelineModel`.
+
+        Args:
+            pipeline: The `PipelineModel` to create the schema from.
+
+        Returns:
+            The created `PipelineSchema`.
+        """
+        return cls(
+            name=pipeline.name,
+            project_id=pipeline.project,
+            user_id=pipeline.user,
+            docstring=pipeline.docstring,
+            spec=pipeline.spec.json(sort_keys=True),
+        )
 
     def to_model(
         self, _block_recursion: bool = False

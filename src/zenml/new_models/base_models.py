@@ -152,9 +152,8 @@ class ShareableRequestModel(ProjectScopedRequestModel):
 
 def update(_cls):
     for field in _cls.__fields__:
-        if field not in ["user", "project"]:
-            new_field = _cls.__fields__[field]
-            new_field.required = False
-            new_field.allow_none = True
+        new_field = _cls.__fields__[field]
+        new_field.required = False
+        new_field.allow_none = True
 
     return _cls

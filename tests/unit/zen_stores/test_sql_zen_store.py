@@ -26,7 +26,6 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
-from zenml.models.pipeline_models import PipelineModel
 from zenml.new_models import (
     ComponentRequestModel,
     FlavorRequestModel,
@@ -35,8 +34,10 @@ from zenml.new_models import (
     RoleRequestModel,
     StackRequestModel,
     TeamRequestModel,
-    UserRequestModel, StackUpdateModel,
+    UserRequestModel, StackUpdateModel, PipelineRequestModel,
+    ComponentUpdateModel,
 )
+from zenml.new_models.team_models import TeamUpdateModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 DEFAULT_NAME = "default"
@@ -57,7 +58,7 @@ def test_project_creation(sql_store: BaseZenStore):
     sql_store["store"].create_project(new_project)
     projects_list = sql_store["store"].list_projects()
     assert len(projects_list) == 2
-    assert projects_list[1].name == "arias_project"
+    assert "arias_project" in [p.name for p in projects_list]
 
 
 def test_getting_project(sql_store: BaseZenStore):
@@ -190,23 +191,19 @@ def test_adding_user_to_team(sql_store: BaseZenStore):
     assert len(sql_store["store"].teams) == 0
     team_name = "arias_team"
     new_team = TeamRequestModel(name=team_name)
-    sql_store["store"].create_team(new_team)
+    new_team = sql_store["store"].create_team(new_team)
     current_user_id = sql_store["active_user"].id
-    sql_store["store"].add_user_to_team(
-        user_name_or_id=DEFAULT_NAME, team_name_or_id=team_name
+    team_update = TeamUpdateModel(users=[current_user_id])
+    sql_store["store"].update_team(
+        team_id=new_team.id, team_update=team_update
     )
     assert (
-        sql_store["store"].get_users_for_team(team_name)[0].id
-        == current_user_id
+        current_user_id in sql_store["store"].get_team(new_team.id).user_ids
     )
-
-
-def test_adding_nonexistent_user_to_nonexistent_team_raises_error(
-    sql_store: BaseZenStore,
-):
-    """Tests adding a nonexistent user to a team raises an error."""
-    with pytest.raises(KeyError):
-        sql_store["store"].add_user_to_team(uuid.uuid4(), uuid.uuid4())
+    # Make sure the team name has not been inadvertently changed
+    assert (
+        sql_store["store"].get_team(new_team.id).name == team_name
+    )
 
 
 def test_adding_nonexistent_user_to_real_team_raises_error(
@@ -214,10 +211,13 @@ def test_adding_nonexistent_user_to_real_team_raises_error(
 ):
     """Tests adding a nonexistent user to a team raises an error."""
     new_team = TeamRequestModel(name="arias_team")
-    sql_store["store"].create_team(new_team)
-    new_team_id = sql_store["store"].get_team("arias_team").id
+    new_team = sql_store["store"].create_team(new_team)
+    nonexistent_id = uuid.uuid4()
+    team_update = TeamUpdateModel(users=[nonexistent_id])
     with pytest.raises(KeyError):
-        sql_store["store"].add_user_to_team(uuid.uuid4(), new_team_id)
+        sql_store["store"].update_team(
+            team_id=new_team.id, team_update=team_update
+        )
 
 
 def test_adding_real_user_to_nonexistent_team_raises_error(
@@ -278,11 +278,12 @@ def test_getting_team_for_user(sql_store: BaseZenStore):
     new_team = TeamRequestModel(name="arias_team")
     sql_store["store"].create_team(new_team)
     current_user_id = sql_store["active_user"].id
-    new_team_id = sql_store["store"].get_team("arias_team").id
-    sql_store["store"].add_user_to_team(current_user_id, new_team_id)
-    teams_for_user = sql_store["store"].get_teams_for_user(current_user_id)
-    assert len(teams_for_user) == 1
-    assert teams_for_user[0].id == new_team_id
+    new_team = sql_store["store"].get_team("arias_team")
+    team_update = TeamUpdateModel(users=[current_user_id])
+    updated_team = sql_store["store"].update_team(
+        team_id=new_team.id, team_update=team_update
+    )
+    assert len(updated_team.users) == 1
 
 
 #  .------.
@@ -344,13 +345,12 @@ def test_getting_user_by_name_and_id_succeeds(
 ):
     """Tests getting a user by name and id."""
     new_user = UserRequestModel(name="aria")
-    sql_store["store"].create_user(new_user)
-    users = sql_store["store"].users
-    new_user_id = str(users[1].id)
+    new_user = sql_store["store"].create_user(new_user)
+    new_user_id = str(new_user.id)
     user_by_name = sql_store["store"].get_user("aria")
     user_by_id = sql_store["store"].get_user(new_user_id)
     assert user_by_id == user_by_name
-    assert len(users) == 2
+    assert len(sql_store["store"].users) == 2
 
 
 def test_updating_user_succeeds(sql_store: BaseZenStore):
@@ -790,6 +790,7 @@ def test_updating_stack_succeeds(
     """Tests updating stack."""
     new_stack = StackRequestModel(
         name="arias_stack",
+        description="Aria likes her stacks.",
         components={},
         project=sql_store["default_project"].id,
         user=sql_store["active_user"].id,
@@ -804,7 +805,8 @@ def test_updating_stack_succeeds(
     assert sql_store["store"].get_stack(new_stack.id) is not None
     assert sql_store["store"].get_stack(new_stack.id).name == new_stack_name
     # Ensure unset fields of the UpdateModel are not changed
-    assert sql_store["store"].get_stack(new_stack.id).active == new_stack.active
+    assert (sql_store["store"]
+            .get_stack(new_stack.id).description == new_stack.description)
 
 
 def test_updating_default_stack_fails(
@@ -813,9 +815,11 @@ def test_updating_default_stack_fails(
     """Tests that updating the default stack is prohibited."""
     default_stack_id = sql_store["default_stack"].id
     default_stack = sql_store["store"].get_stack(default_stack_id)
-    default_stack.name = "axl"
+    new_stack_name = "axls_stack"
+    stack_update = StackUpdateModel(name=new_stack_name)
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_stack(default_stack)
+        sql_store["store"].update_stack(stack_id=default_stack.id,
+                                        stack_update=stack_update)
 
 
 def test_updating_nonexistent_stack_fails(
@@ -823,16 +827,14 @@ def test_updating_nonexistent_stack_fails(
 ):
     """Tests updating nonexistent stack fails."""
     current_stack_id = sql_store["default_stack"].id
-    new_stack = StackRequestModel(
-        name="arias_stack",
-        components={},
-        project=sql_store["default_project"].id,
-        user=sql_store["active_user"].id,
-    )
+    new_stack_name = "axls_stack"
+    stack_update = StackUpdateModel(name=new_stack_name)
+    nonexistent_id = uuid.uuid4()
     with pytest.raises(KeyError):
-        sql_store["store"].update_stack(new_stack)
+        sql_store["store"].update_stack(stack_id=nonexistent_id,
+                                        stack_update=stack_update)
     with pytest.raises(KeyError):
-        sql_store["store"].get_stack(new_stack.id)
+        sql_store["store"].get_stack(nonexistent_id)
     assert sql_store["store"].get_stack(current_stack_id).name != "arias_stack"
 
 
@@ -921,7 +923,7 @@ def test_create_pipeline_succeeds(
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
@@ -940,7 +942,7 @@ def test_creating_identical_pipeline_fails(
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
@@ -960,7 +962,7 @@ def test_get_pipeline_succeeds(
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
@@ -988,7 +990,7 @@ def test_get_pipeline_in_project_succeeds(
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
@@ -1020,7 +1022,7 @@ def test_list_pipelines_succeeds(
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
@@ -1039,7 +1041,7 @@ def test_update_pipeline_succeeds(
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
@@ -1047,7 +1049,7 @@ def test_update_pipeline_succeeds(
     )
     sql_store["store"].create_pipeline(pipeline=new_pipeline)
     pipeline_id = sql_store["store"].list_pipelines()[0].id
-    updated_pipeline = PipelineModel(
+    updated_pipeline = PipelineRequestModel(
         id=pipeline_id,
         name="blupus_ka_pipeline",
         project=project_id,
@@ -1067,7 +1069,7 @@ def test_updating_nonexistent_pipeline_fails(
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    updated_pipeline = PipelineModel(
+    updated_pipeline = PipelineRequestModel(
         name="blupus_ka_pipeline",
         project=project_id,
         user=user_id,
@@ -1084,7 +1086,7 @@ def test_deleting_pipeline_succeeds(
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
@@ -1400,13 +1402,13 @@ def test_update_stack_component_succeeds(
         )
 
     updated_orchestrator_name = "axl"
-    orchestrator.name = updated_orchestrator_name
+    component_update = ComponentUpdateModel(name=updated_orchestrator_name)
     with does_not_raise():
-        sql_store["store"].update_stack_component(component=orchestrator)
-        updated_stack_component = sql_store["store"].get_stack_component(
-            component_id=orchestrator.id
+        updated_component = sql_store["store"].update_stack_component(
+            component_id=orchestrator.id,
+            component_update=component_update
         )
-        assert updated_stack_component.name == updated_orchestrator_name
+        assert updated_component.name == updated_orchestrator_name
 
 
 def test_update_default_stack_component_fails(
@@ -1470,12 +1472,6 @@ def test_delete_stack_component_succeeds(
     created_component = sql_store["store"].create_stack_component(
         component=stack_component
     )
-    print(created_component.name)
-    created_stack_component_id = (
-        sql_store["store"]
-        .get_stack_component(component_id=created_component.id)
-        .id
-    )
     orchestrators = sql_store["store"].list_stack_components(
         project_name_or_id=sql_store["default_project"].name,
         type=StackComponentType.ORCHESTRATOR,
@@ -1483,15 +1479,15 @@ def test_delete_stack_component_succeeds(
     assert len(orchestrators) == 2
     with does_not_raise():
         sql_store["store"].delete_stack_component(
-            component_id=created_stack_component_id
+            component_id=created_component.id
         )
         orchestrators = sql_store["store"].list_stack_components(
             project_name_or_id=sql_store["default_project"].name,
             type=StackComponentType.ORCHESTRATOR,
         )
-        assert len(orchestrators) == 1
+    assert len(orchestrators) == 1
     with pytest.raises(KeyError):
-        assert sql_store["store"].get_stack_component(
+        sql_store["store"].get_stack_component(
             component_id=created_component.id
         )
 
