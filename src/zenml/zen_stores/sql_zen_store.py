@@ -2882,7 +2882,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
-        self._sync_runs()
+        if not self.runs_inside_server:
+            self._sync_runs()
         with Session(self.engine) as session:
             run = self._get_run_schema(run_name_or_id, session=session)
             return run.to_model()
@@ -2913,7 +2914,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
-        self._sync_runs()  # Sync with MLMD
+        if not self.runs_inside_server:
+            self._sync_runs()
         with Session(self.engine) as session:
             query = select(PipelineRunSchema)
             if project_name_or_id is not None:
@@ -3184,7 +3186,8 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step doesn't exist.
         """
-        self._sync_runs()
+        if not self.runs_inside_server:
+            self._sync_runs()
         with Session(self.engine) as session:
             step = session.exec(
                 select(StepRunSchema).where(StepRunSchema.id == step_id)
@@ -3250,7 +3253,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all run steps.
         """
-        self._sync_runs()
+        if not self.runs_inside_server:
+            self._sync_runs()
         query = select(StepRunSchema)
         if run_id is not None:
             query = query.where(StepRunSchema.pipeline_run_id == run_id)
@@ -3393,7 +3397,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all artifacts.
         """
-        self._sync_runs()
+        if not self.runs_inside_server:
+            self._sync_runs()
         with Session(self.engine) as session:
             query = select(ArtifactSchema)
             if artifact_uri is not None:
