@@ -28,18 +28,27 @@ from zenml.exceptions import (
 )
 from zenml.new_models import (
     ComponentRequestModel,
+    ComponentUpdateModel,
     FlavorRequestModel,
+    PipelineRequestModel,
     ProjectRequestModel,
     ProjectUpdateModel,
     RoleRequestModel,
+    RoleUpdateModel,
     StackRequestModel,
+    StackUpdateModel,
     TeamRequestModel,
-    UserRequestModel, StackUpdateModel, PipelineRequestModel,
-    ComponentUpdateModel, UserUpdateModel, RoleUpdateModel,
+    UserRequestModel,
+    UserUpdateModel,
 )
 from zenml.new_models.team_models import TeamUpdateModel
-from zenml.zen_stores.base_zen_store import BaseZenStore, DEFAULT_USERNAME, \
-    DEFAULT_PROJECT_NAME, DEFAULT_ADMIN_ROLE, DEFAULT_GUEST_ROLE
+from zenml.zen_stores.base_zen_store import (
+    DEFAULT_ADMIN_ROLE,
+    DEFAULT_GUEST_ROLE,
+    DEFAULT_PROJECT_NAME,
+    DEFAULT_USERNAME,
+    BaseZenStore,
+)
 
 DEFAULT_NAME = "default"
 
@@ -80,12 +89,14 @@ def test_updating_default_project_fails(sql_store: BaseZenStore):
     """Tests updating the default project."""
     default_project = sql_store["store"].get_project(DEFAULT_PROJECT_NAME)
     assert default_project.name == DEFAULT_NAME
-    project_update = ProjectUpdateModel(name="aria_project",
-                                        description="Aria has taken possession "
-                                                    "of this project.")
+    project_update = ProjectUpdateModel(
+        name="aria_project",
+        description="Aria has taken possession " "of this project.",
+    )
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_project(project_id=default_project.id,
-                                          project_update=project_update)
+        sql_store["store"].update_project(
+            project_id=default_project.id, project_update=project_update
+        )
 
 
 def test_updating_project(sql_store: BaseZenStore):
@@ -101,9 +112,7 @@ def test_updating_project(sql_store: BaseZenStore):
             project_id=new_project.id, project_update=project_update
         )
     with does_not_raise():
-        sql_store["store"].get_project(
-            project_name_or_id=new_name
-        )
+        sql_store["store"].get_project(project_name_or_id=new_name)
 
 
 def test_updating_nonexisting_project_raises_error(
@@ -200,16 +209,10 @@ def test_adding_user_to_team(sql_store: BaseZenStore):
 
     current_user_id = sql_store["active_user"].id
     team_update = TeamUpdateModel(users=[current_user_id])
-    sql_store["store"].update_team(
-        team_id=new_team.id, team_update=team_update
-    )
-    assert (
-        current_user_id in sql_store["store"].get_team(new_team.id).user_ids
-    )
+    sql_store["store"].update_team(team_id=new_team.id, team_update=team_update)
+    assert current_user_id in sql_store["store"].get_team(new_team.id).user_ids
     # Make sure the team name has not been inadvertently changed
-    assert (
-        sql_store["store"].get_team(new_team.id).name == team_name
-    )
+    assert sql_store["store"].get_team(new_team.id).name == team_name
 
 
 def test_adding_nonexistent_user_to_real_team_raises_error(
@@ -363,9 +366,10 @@ def test_updating_user_succeeds(sql_store: BaseZenStore):
     new_user = sql_store["store"].get_user("aria")
 
     new_user_name = "blupus"
-    user_update = UserUpdateModel(name = new_user_name)
-    sql_store["store"].update_user(user_name_or_id=new_user.id,
-                                   user_update=user_update)
+    user_update = UserUpdateModel(name=new_user_name)
+    sql_store["store"].update_user(
+        user_name_or_id=new_user.id, user_update=user_update
+    )
 
     assert sql_store["store"].get_user(new_user_name) is not None
     with pytest.raises(KeyError):
@@ -380,8 +384,7 @@ def test_updating_default_user_fails(sql_store: BaseZenStore):
     user_update.name = "axl"
     with pytest.raises(IllegalOperationError):
         sql_store["store"].update_user(
-            user_name_or_id=DEFAULT_USERNAME,
-            user_update=user_update
+            user_name_or_id=DEFAULT_USERNAME, user_update=user_update
         )
 
 
@@ -390,8 +393,9 @@ def test_updating_nonexistent_user_fails(sql_store: BaseZenStore):
     new_user = UserUpdateModel(name="demonic_aria")
 
     with pytest.raises(KeyError):
-        sql_store["store"].update_user(user_name_or_id=uuid.uuid4(),
-                                       user_update=new_user)
+        sql_store["store"].update_user(
+            user_name_or_id=uuid.uuid4(), user_update=new_user
+        )
 
 
 def test_deleting_user_succeeds(sql_store: BaseZenStore):
@@ -548,13 +552,11 @@ def test_updating_builtin_role_fails(sql_store: BaseZenStore):
     role_update = RoleUpdateModel(name="cat_feeder")
 
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_role(role_id=role.id,
-                                       role_update=role_update)
+        sql_store["store"].update_role(role_id=role.id, role_update=role_update)
 
     role = sql_store["store"].get_role(DEFAULT_GUEST_ROLE)
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_role(role_id=role.id,
-                                       role_update=role_update)
+        sql_store["store"].update_role(role_id=role.id, role_update=role_update)
 
 
 #  .----------------
@@ -597,7 +599,9 @@ def test_assigning_role_to_team_succeeds(
         name="blupus_friend", permissions={PermissionType.ME}
     )
     new_role = sql_store_with_team["store"].create_role(new_role)
-    sql_store_with_team["store"].assign_role(new_role.id, team_id, is_user=False)
+    sql_store_with_team["store"].assign_role(
+        new_role.id, team_id, is_user=False
+    )
 
     assert len(sql_store_with_team["store"].roles) == roles_before + 1
     assert (
@@ -673,7 +677,7 @@ def test_revoking_role_for_team_succeeds(
     roles_before = len(sql_store_with_team["store"].roles)
     role_assignments_before = len(sql_store_with_team["store"].role_assignments)
 
-    team_id = sql_store_with_team["default_team"].id
+    sql_store_with_team["default_team"].id
     new_role = RoleRequestModel(
         name="blupus_friend", permissions={PermissionType.ME}
     )
@@ -814,13 +818,16 @@ def test_updating_stack_succeeds(
     )
     new_stack_name = "axls_stack"
     stack_update = StackUpdateModel(name=new_stack_name)
-    sql_store["store"].update_stack(stack_id=new_stack.id,
-                                    stack_update=stack_update)
+    sql_store["store"].update_stack(
+        stack_id=new_stack.id, stack_update=stack_update
+    )
     assert sql_store["store"].get_stack(new_stack.id) is not None
     assert sql_store["store"].get_stack(new_stack.id).name == new_stack_name
     # Ensure unset fields of the UpdateModel are not changed
-    assert (sql_store["store"]
-            .get_stack(new_stack.id).description == new_stack.description)
+    assert (
+        sql_store["store"].get_stack(new_stack.id).description
+        == new_stack.description
+    )
 
 
 def test_updating_default_stack_fails(
@@ -832,8 +839,9 @@ def test_updating_default_stack_fails(
     new_stack_name = "axls_stack"
     stack_update = StackUpdateModel(name=new_stack_name)
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_stack(stack_id=default_stack.id,
-                                        stack_update=stack_update)
+        sql_store["store"].update_stack(
+            stack_id=default_stack.id, stack_update=stack_update
+        )
 
 
 def test_updating_nonexistent_stack_fails(
@@ -845,8 +853,9 @@ def test_updating_nonexistent_stack_fails(
     stack_update = StackUpdateModel(name=new_stack_name)
     nonexistent_id = uuid.uuid4()
     with pytest.raises(KeyError):
-        sql_store["store"].update_stack(stack_id=nonexistent_id,
-                                        stack_update=stack_update)
+        sql_store["store"].update_stack(
+            stack_id=nonexistent_id, stack_update=stack_update
+        )
     with pytest.raises(KeyError):
         sql_store["store"].get_stack(nonexistent_id)
     assert sql_store["store"].get_stack(current_stack_id).name != "arias_stack"
@@ -1387,8 +1396,7 @@ def test_update_stack_component_succeeds(
     component_update = ComponentUpdateModel(name=updated_orchestrator_name)
     with does_not_raise():
         updated_component = sql_store["store"].update_stack_component(
-            component_id=orchestrator.id,
-            component_update=component_update
+            component_id=orchestrator.id, component_update=component_update
         )
         assert updated_component.name == updated_orchestrator_name
 
@@ -1436,8 +1444,7 @@ def test_update_stack_component_fails_when_component_does_not_exist(
     )
     with pytest.raises(KeyError):
         sql_store["store"].update_stack_component(
-            component_id=uuid.uuid4(),
-            component_update=stack_component
+            component_id=uuid.uuid4(), component_update=stack_component
         )
 
 

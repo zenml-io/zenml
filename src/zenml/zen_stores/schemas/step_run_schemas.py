@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
@@ -12,7 +13,6 @@ from zenml.new_models.step_run_models import (
     StepRunUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
-from datetime import datetime
 
 if TYPE_CHECKING:
     pass

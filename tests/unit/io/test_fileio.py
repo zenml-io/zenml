@@ -130,6 +130,7 @@ def test_listdir_returns_empty_list_when_dir_doesnt_exist(
 ):
     """list_dir should return an empty list when the directory doesn't exist"""
     from tfx.dsl.io.filesystem import NotFoundError
+
     with pytest.raises(NotFoundError):
         not_a_real_dir = os.path.join(tmp_path, sample_file)
         fileio.listdir(not_a_real_dir)
@@ -142,6 +143,7 @@ def test_open_returns_error_when_file_nonexistent(
 ) -> None:
     """Test that open returns a file object"""
     from tfx.dsl.io.filesystem import NotFoundError
+
     with pytest.raises(NotFoundError):
         fileio.open(os.path.join(tmp_path, not_a_file), "rb")
 
@@ -217,6 +219,7 @@ def test_mkdir_function(tmp_path) -> None:
 def test_mkdir_function_when_parent_doesnt_exist(tmp_path) -> None:
     """Test that mkdir creates a directory"""
     from tfx.dsl.io.filesystem import NotFoundError
+
     with pytest.raises(NotFoundError):
         fileio.mkdir(os.path.join(tmp_path, "not_a_dir/still_not_a_dir"))
 

@@ -568,9 +568,7 @@ def remove_stack_component(
             )
         except IllegalOperationError as err:
             cli_utils.error(str(err))
-        cli_utils.declare(
-            f"Stack `{updated_stack.name}` successfully updated!"
-        )
+        cli_utils.declare(f"Stack `{updated_stack.name}` successfully updated!")
 
 
 @stack.command("rename", help="Rename a stack.")
