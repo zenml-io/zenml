@@ -85,7 +85,10 @@ class PipelineSchema(NamedSchema, table=True):
                 updated=self.updated,
             )
 
-    def update(self, pipeline_update: PipelineUpdateModel) -> "PipelineSchema":
+    def update(
+        self,
+        pipeline_update: "PipelineUpdateModel"
+    ) -> "PipelineSchema":
         """"""
         if pipeline_update.name:
             self.name = pipeline_update.name

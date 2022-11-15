@@ -1338,8 +1338,8 @@ class Client(metaclass=ClientMetaClass):
     ) -> List["StackResponseModel"]:
         """"""
         return self.zen_store.list_stacks(
-            project_name_or_id=self.active_project.id,
-            user_name_or_id=self.active_user.id,
+            project_name_or_id=project_name_or_id or self.active_project.id,
+            user_name_or_id=user_name_or_id or self.active_user.id,
             component_id=component_id,
             name=name,
             is_shared=is_shared,
@@ -1471,8 +1471,8 @@ class Client(metaclass=ClientMetaClass):
     ) -> List["ComponentResponseModel"]:
         """"""
         return self.zen_store.list_stack_components(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id,
+            project_name_or_id=project_name_or_id or self.active_project.id,
+            user_name_or_id=user_name_or_id or self.active_user.id,
             type=component_type,
             flavor_name=flavor_name,
             name=name,

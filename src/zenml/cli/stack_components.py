@@ -101,16 +101,25 @@ def generate_stack_component_describe_command(
         client = Client()
 
         with console.status(f"Describing component '{name_id_or_prefix}'..."):
-            component_ = client.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
 
+            active_component_id = None
             active_components = client.active_stack_model.components.get(
                 component_type, None
             )
             if active_components:
                 active_component_id = active_components[0].id
+
+            if active_component_id is None and name_id_or_prefix is None:
+                cli_utils.error(
+                    f"You did not provide a specific name and in the current "
+                    f"active stack, there is no active "
+                    f"{_component_display_name(component_type)} to describe."
+                )
+
+            component_ = client.get_stack_component(
+                name_id_or_prefix=name_id_or_prefix or active_component_id,
+                component_type=component_type,
+            )
 
             cli_utils.print_stack_component_configuration(
                 component=component_,
