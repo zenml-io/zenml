@@ -15,7 +15,7 @@
 from zenml.new_models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
-ArtifactUpdateModel,
+    ArtifactUpdateModel,
 )
 from zenml.new_models.component_models import (
     ComponentRequestModel,

@@ -17,10 +17,10 @@ from pydantic import BaseModel
 
 from zenml.enums import ArtifactType
 from zenml.new_models.base_models import (
-    BaseRequestModel, BaseResponseModel,
-    update
+    BaseRequestModel,
+    BaseResponseModel,
+    update,
 )
-
 
 # ---- #
 # BASE #
@@ -49,6 +49,7 @@ class ArtifactBaseModel(BaseModel):
 # RESPONSE #
 # -------- #
 
+
 class ArtifactResponseModel(ArtifactBaseModel, BaseResponseModel):
     """Domain Model representing an artifact."""
 
@@ -57,6 +58,7 @@ class ArtifactResponseModel(ArtifactBaseModel, BaseResponseModel):
 # REQUEST #
 # ------- #
 
+
 class ArtifactRequestModel(ArtifactBaseModel, BaseRequestModel):
     """Domain Model representing an artifact."""
 
@@ -64,6 +66,7 @@ class ArtifactRequestModel(ArtifactBaseModel, BaseRequestModel):
 # ------ #
 # UPDATE #
 # ------ #
+
 
 @update
 class ArtifactUpdateModel(ArtifactRequestModel):
