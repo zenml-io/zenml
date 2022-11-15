@@ -1185,13 +1185,15 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If the name_id_or_prefix does not uniquely identify one
                 stack
         """
-
-        return self._get_entity_by_id_or_name_or_prefix(
-            response_model=StackResponseModel,
-            get_method=self.zen_store.get_stack,
-            list_method=self.zen_store.list_stacks,
-            name_id_or_prefix=name_id_or_prefix,
-        )
+        if name_id_or_prefix is not None:
+            return self._get_entity_by_id_or_name_or_prefix(
+                response_model=StackResponseModel,
+                get_method=self.zen_store.get_stack,
+                list_method=self.zen_store.list_stacks,
+                name_id_or_prefix=name_id_or_prefix,
+            )
+        else:
+            return self.active_stack_model
 
     def register_stack(
         self,
@@ -1443,22 +1445,39 @@ class Client(metaclass=ClientMetaClass):
     # '------------'
     def get_stack_component(
         self,
-        name_id_or_prefix: Union[str, UUID],
         component_type: StackComponentType,
+        name_id_or_prefix: Optional[Union[str, UUID]] = None,
     ) -> "ComponentResponseModel":
         """Fetches a registered stack component.
 
+        If the name_id_or_prefix is provided, it will try to fetch the component
+        with the corresponding identifier. If not, it will try to fetch the
+        active component of the given type.
+
         Args:
+            component_type: The type of the component to fetch
             name_id_or_prefix: The id of the component to fetch.
-            component_type:
 
         Returns:
             The registered stack component.
         """
-        return self._get_component_by_id_or_name_or_prefix(
-            name_id_or_prefix=name_id_or_prefix,
-            component_type=component_type,
-        )
+        if name_id_or_prefix is not None:
+            return self._get_component_by_id_or_name_or_prefix(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+            )
+        else:
+            components = self.active_stack_model.components.get(
+                component_type, None
+            )
+            if components is None:
+                raise KeyError(
+                    "No name_id_or_prefix provided and there is no active "
+                    f"{component_type} in the current active stack."
+
+                )
+
+            return components[0]
 
     def list_stack_components(
         self,

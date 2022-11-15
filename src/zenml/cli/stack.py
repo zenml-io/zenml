@@ -42,6 +42,7 @@ from zenml.utils.yaml_utils import read_yaml, write_yaml
 )
 def stack() -> None:
     """Stacks to define various environments."""
+    cli_utils.print_active_config()
 
 
 @stack.command(
@@ -186,7 +187,6 @@ def register_stack(
         set_stack: Immediately set this stack as active.
         share: Share the stack with other users.
     """
-    cli_utils.print_active_config()
 
     with console.status(f"Registering stack '{stack_name}'...\n"):
         client = Client()
@@ -347,8 +347,6 @@ def update_stack(
         annotator_name: Name of the new annotator for this stack.
         data_validator_name: Name of the new data validator for this stack.
     """
-    cli_utils.print_active_config()
-
     client = Client()
 
     with console.status(f"Updating stack `{stack_name_or_id}`...\n"):
@@ -408,7 +406,6 @@ def share_stack(
     Args:
         stack_name_or_id: Name or id of the stack to share.
     """
-    cli_utils.print_active_config()
 
     client = Client()
 
@@ -529,7 +526,6 @@ def remove_stack_component(
         annotator_flag: To remove the annotator from this stack.
         data_validator_flag: To remove the data validator from this stack.
     """
-    cli_utils.print_active_config()
 
     client = Client()
 
@@ -586,7 +582,6 @@ def rename_stack(
         stack_name_or_id: Name of the stack to rename.
         new_stack_name: New name of the stack.
     """
-    cli_utils.print_active_config()
 
     client = Client()
 
@@ -612,7 +607,6 @@ def list_stacks(just_mine: bool = False) -> None:
     Args:
         just_mine: To list only the stacks that the current user has created.
     """
-    cli_utils.print_active_config()
 
     client = Client()
     with console.status("Listing stacks...\n"):
@@ -639,7 +633,6 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
     Args:
         stack_name_or_id: Name of the stack to describe.
     """
-    cli_utils.print_active_config()
 
     client = Client()
 
@@ -663,7 +656,6 @@ def delete_stack(stack_name_or_id: str, yes: bool = False) -> None:
         yes: Stack will be deleted without prompting for
             confirmation.
     """
-    cli_utils.print_active_config()
     confirmation = yes or cli_utils.confirmation(
         f"This will delete stack '{stack_name_or_id}'. \n"
         "Are you sure you want to proceed?"
@@ -690,7 +682,6 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
     Args:
         stack_name_or_id: Name of the stack to set as active.
     """
-    cli_utils.print_active_config()
     client = Client()
     scope = " repository" if client.root else " global"
 
@@ -707,7 +698,6 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
 @stack.command("get")
 def get_active_stack() -> None:
     """Gets the active stack."""
-    cli_utils.print_active_config()
 
     scope = "repository" if Client().uses_local_configuration else "global"
 
@@ -721,10 +711,8 @@ def get_active_stack() -> None:
 @stack.command("up")
 def up_stack() -> None:
     """Provisions resources for the active stack."""
-    cli_utils.print_active_config()
-
-    # TODO[Server]: Make this call a function in the Client
     stack_ = Client().active_stack
+
     cli_utils.declare(
         f"Provisioning resources for active stack '{stack_.name}'."
     )
@@ -751,9 +739,6 @@ def down_stack(force: bool = False) -> None:
     Args:
         force: Deprovisions local resources instead of suspending them.
     """
-    cli_utils.print_active_config()
-
-    # TODO[Server]: Make this call a function in repo
     stack_ = Client().active_stack
 
     if force:
