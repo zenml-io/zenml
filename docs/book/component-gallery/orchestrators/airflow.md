@@ -33,7 +33,7 @@ as installing required Python dependencies in your Airflow server environment.
 If you're not using a stack recipe to deploy Airflow, there are some additional python packages that you'll need
 to install in the Python environment of your Airflow server: 
 - `pydantic~=1.9.2`: The Airflow DAG files that ZenML creates for you require Pydantic to parse and validate
-configuration file.
+configuration files.
 - `apache-airflow-providers-docker` or `apache-airflow-providers-cncf-kubernetes`, depending on which Airflow operator you'll be using to run your pipeline steps. Check out [this section](#using-different-airflow-operators)
 for more information on supported operators.
 
