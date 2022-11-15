@@ -112,6 +112,7 @@ from zenml.new_models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
+from zenml.new_models.team_models import TeamUpdateModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.networking_utils import (
     replace_internal_hostname_with_localhost,
@@ -917,7 +918,7 @@ class RestZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
-        self, team_id: UUID, team_update: TeamRequestModel
+        self, team_id: UUID, team_update: TeamUpdateModel
     ) -> TeamResponseModel:
         """Update an existing team.
 
@@ -925,9 +926,11 @@ class RestZenStore(BaseZenStore):
             team_id: The ID of the team to be updated.
             team_update: The update to be applied to the team.
 
-
         Returns:
             The updated team.
+
+        Raises:
+            KeyError: if the team does not exist.
         """
         return self._update_resource(
             resource_id=team_id,

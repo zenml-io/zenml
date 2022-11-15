@@ -14,11 +14,14 @@
 import pytest
 from click.testing import CliRunner
 
-from tests.unit.cli.test_utils import SAMPLE_ROLE, create_sample_role, \
-    create_sample_user
+from tests.unit.cli.test_utils import (
+    SAMPLE_ROLE,
+    create_sample_role,
+    create_sample_user,
+)
 from zenml.cli.cli import cli
 from zenml.enums import PermissionType
-from zenml.zen_stores.base_zen_store import DEFAULT_ADMIN_ROLE, DEFAULT_USERNAME
+from zenml.zen_stores.base_zen_store import DEFAULT_ADMIN_ROLE
 
 
 def test_create_role_succeeds(
@@ -146,11 +149,14 @@ def test_assign_default_role_to_new_user_succeeds(
     role_assign_command = cli.commands["role"].commands["assign"]
     runner = CliRunner()
     result = runner.invoke(
-        role_assign_command,
-        [DEFAULT_ADMIN_ROLE],
-        f"--user={user.name}"
+        role_assign_command, [DEFAULT_ADMIN_ROLE, f"--user={user.id}"]
     )
     assert result.exit_code == 0
+    assert clean_client.get_role_assignment(
+        role_name_or_id=DEFAULT_ADMIN_ROLE,
+        user_or_team_name_or_id=str(user.id),
+        is_user=True,
+    )
 
 
 def test_assign_role_to_user_twice_fails(
@@ -160,16 +166,14 @@ def test_assign_role_to_user_twice_fails(
     user = create_sample_user(clean_client)
     role_assign_command = cli.commands["role"].commands["assign"]
     runner = CliRunner()
-    result = runner.invoke(
-        role_assign_command,
-        [DEFAULT_ADMIN_ROLE],
-        f"--user={user.name}"
+    clean_client.create_role_assignment(
+        role_name_or_id=DEFAULT_ADMIN_ROLE,
+        user_or_team_name_or_id=str(user.id),
+        is_user=True,
     )
-    assert result.exit_code == 0
+
     result = runner.invoke(
-        role_assign_command,
-        [DEFAULT_ADMIN_ROLE],
-        f"--user={user.name}"
+        role_assign_command, [DEFAULT_ADMIN_ROLE, f"--user={user.name}"]
     )
     assert result.exit_code == 1
 
@@ -182,16 +186,23 @@ def test_revoke_role_from_new_user_succeeds(
     role_assign_command = cli.commands["role"].commands["assign"]
     runner = CliRunner()
     result = runner.invoke(
-        role_assign_command,
-        [DEFAULT_ADMIN_ROLE],
-        f"--user={user.name}"
+        role_assign_command, [DEFAULT_ADMIN_ROLE, f"--user={user.name}"]
     )
     assert result.exit_code == 0
+    assert clean_client.get_role_assignment(
+        role_name_or_id=DEFAULT_ADMIN_ROLE,
+        user_or_team_name_or_id=str(user.id),
+        is_user=True,
+    )
     role_revoke_command = cli.commands["role"].commands["revoke"]
     runner = CliRunner()
     result = runner.invoke(
-        role_revoke_command,
-        [DEFAULT_ADMIN_ROLE],
-        f"--user={user.name}"
+        role_revoke_command, [DEFAULT_ADMIN_ROLE, f"--user={user.name}"]
     )
     assert result.exit_code == 0
+    with pytest.raises(RuntimeError):
+        clean_client.get_role_assignment(
+            role_name_or_id=DEFAULT_ADMIN_ROLE,
+            user_or_team_name_or_id=str(user.id),
+            is_user=True,
+        )

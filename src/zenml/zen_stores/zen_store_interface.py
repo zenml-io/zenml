@@ -52,6 +52,7 @@ from zenml.new_models import (
     UserUpdateModel,
 )
 from zenml.new_models.project_models import ProjectUpdateModel
+from zenml.new_models.team_models import TeamUpdateModel
 from zenml.new_models.user_models import UserAuthModel
 
 if TYPE_CHECKING:
@@ -554,12 +555,12 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_team(
-        self, team_name_or_id: UUID, team_update: TeamRequestModel
+        self, team_id: UUID, team_update: TeamUpdateModel
     ) -> TeamResponseModel:
         """Update an existing team.
 
         Args:
-            team_name_or_id: The ID or the of the team to be updated.
+            team_id: The ID of the team to be updated.
             team_update: The update to be applied to the team.
 
         Returns:

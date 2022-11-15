@@ -17,10 +17,6 @@ from uuid import UUID
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ExecutionStatus
 from zenml.models import PipelineRunModel, ProjectModel, UserModel
-from zenml.zen_server.models.pipeline_models import (
-    HydratedPipelineModel,
-    PipelineModel,
-)
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 

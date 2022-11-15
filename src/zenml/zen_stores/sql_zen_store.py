@@ -98,6 +98,7 @@ from zenml.new_models import (
     UserResponseModel,
 )
 from zenml.new_models.project_models import ProjectUpdateModel
+from zenml.new_models.team_models import TeamUpdateModel
 from zenml.new_models.user_models import UserAuthModel, UserUpdateModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -1153,7 +1154,7 @@ class SqlZenStore(BaseZenStore):
                     f"Stack component with ID {component_id} not found."
                 )
 
-        return stack_component.to_model()
+                return stack_component.to_model()
 
     def list_stack_components(
         self,
@@ -1352,18 +1353,13 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.type == component.type)
         ).first()
         if existing_domain_component is not None:
-            project = self._get_project_schema(
-                project_name_or_id=component.project, session=session
-            )
-            user = self._get_user_schema(
-                user_name_or_id=component.user, session=session
-            )
             raise StackComponentExistsError(
                 f"Unable to register '{component.type.value}' component "
                 f"with name '{component.name}': Found an existing "
                 f"component with the same name and type in the same "
-                f" project, '{project.name}', owned by the same "
-                f" user, '{user.name}'."
+                f" project, '{existing_domain_component.project.name}', "
+                f"owned by the same user, "
+                f"'{existing_domain_component.user.name}'."
             )
         return None
 
@@ -1742,8 +1738,17 @@ class SqlZenStore(BaseZenStore):
                     f"Found existing team with this name."
                 )
 
+            defined_users = []
+            if team.users:
+                # Get the Schemas of all users mentioned
+                filters = [(UserSchema.id == user_id) for user_id in team.users]
+
+                defined_users = session.exec(
+                    select(UserSchema).where(or_(*filters))
+                ).all()
+
             # Create the team
-            new_team = TeamSchema.from_request(team)
+            new_team = TeamSchema(name=team.name, users=defined_users)
             session.add(new_team)
             session.commit()
 
@@ -1760,7 +1765,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             team = self._get_team_schema(team_name_or_id, session=session)
-        return team.to_model()
+            return team.to_model()
 
     def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
         """List all teams.
@@ -1781,7 +1786,7 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
-        self, team_id: UUID, team_update: TeamRequestModel
+        self, team_id: UUID, team_update: TeamUpdateModel
     ) -> TeamResponseModel:
         """Update an existing team.
 
@@ -1808,8 +1813,15 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Update the team
-            existing_team.name = team_update.name
-            existing_team.updated = datetime.now()
+            existing_team.update(team_update=team_update)
+            if "users" in team_update.__fields_set__:
+                filters = [
+                    (UserSchema.id == user_id) for user_id in team_update.users
+                ]
+
+                existing_team.users = session.exec(
+                    select(UserSchema).where(or_(*filters))
+                ).all()
 
             session.add(existing_team)
             session.commit()

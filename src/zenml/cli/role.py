@@ -172,7 +172,7 @@ def assign_role(
         except KeyError as err:
             cli_utils.error(str(err))
         except EntityExistsError as err:
-            cli_utils.warning(str(err))
+            cli_utils.error(str(err))
         else:
             cli_utils.declare(
                 f"Assigned role '{role_name_or_id}' to user '{user_name_or_id}'."

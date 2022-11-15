@@ -64,12 +64,14 @@ from zenml.new_models import (
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
+    TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
 )
 from zenml.new_models.base_models import BaseResponseModel
+from zenml.new_models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -627,19 +629,113 @@ class Client(metaclass=ClientMetaClass):
     # ---- #
 
     def get_team(self, name_id_or_prefix: str) -> TeamResponseModel:
-        """Gets a user.
+        """Gets a team.
 
         Args:
-            name_id_or_prefix: The name or ID of the user.
+            name_id_or_prefix: The name or ID of the team.
 
         Returns:
-            The User
+            The Team
         """
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=TeamResponseModel,
             get_method=self.zen_store.get_team,
             list_method=self.zen_store.list_teams,
             name_id_or_prefix=name_id_or_prefix,
+        )
+
+    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+        """List all teams.
+
+        Args:
+            name: The name to filter by
+
+        Returns:
+            The Team
+        """
+        return self.zen_store.list_teams(name=name)
+
+    def create_team(
+        self, name: str, users: Optional[List[str]] = None
+    ) -> TeamResponseModel:
+        """Create a team.
+
+        Args:
+            name: Name of the new team
+            users: Users of the new team
+        """
+        user_list = []
+        if users:
+            for user_name_or_id in users:
+                user_list.append(
+                    self.get_user(name_id_or_prefix=user_name_or_id).id
+                )
+
+        team = TeamRequestModel(name=name, users=user_list)
+
+        return self.zen_store.create_team(team=team)
+
+    def delete_team(self, team_name_or_id: str) -> None:
+        """Delete a team.
+
+        Args:
+            team_name_or_id: The name or ID of the team to delete.
+        """
+        team = self.get_team(team_name_or_id)
+        self.zen_store.delete_team(team_name_or_id=team.name)
+
+    def update_team(
+        self,
+        team_name_or_id: str,
+        new_name: Optional[str] = None,
+        remove_users: Optional[List[str]] = None,
+        add_users: Optional[List[str]] = None,
+    ) -> TeamResponseModel:
+        team = self._get_entity_by_id_or_name_or_prefix(
+            response_model=TeamResponseModel,
+            get_method=self.zen_store.get_team,
+            list_method=self.zen_store.list_teams,
+            name_id_or_prefix=team_name_or_id,
+        )
+
+        team_update = TeamUpdateModel()
+        if new_name:
+            team_update.name = new_name
+
+        team_users: Optional[List[UUID]] = None
+
+        union_add_rm = set(remove_users) & set(add_users)
+        if union_add_rm:
+            raise RuntimeError(
+                f"The `remove_user` and `add_user` "
+                f"options both contain the same value(s): "
+                f"`{union_add_rm}`. Please rerun command and make sure "
+                f"that the same user does not show up for "
+                f"`remove_user` and `add_user`."
+            )
+        # Only if permissions are being added or removed will they need to be
+        #  set for the update model
+        if remove_users or add_users:
+            team_users = [u.id for u in team.users]
+        if remove_users:
+            for rm_p in remove_users:
+                user = self.get_user(rm_p)
+                try:
+                    team_users.remove(user.id)
+                except KeyError:
+                    logger.warning(
+                        f"Role {remove_users} was already not "
+                        f"part of the '{team.name}' Team."
+                    )
+        if add_users:
+            for add_u in add_users:
+                team_users.append(self.get_user(add_u).id)
+
+        if team_users:
+            team_update.users = team_users
+
+        return self.zen_store.update_team(
+            team_id=team.id, team_update=team_update
         )
 
     # ----- #

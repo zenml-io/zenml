@@ -18,7 +18,11 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
-from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.new_models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update,
+)
 
 if TYPE_CHECKING:
     from zenml.new_models import UserResponseModel
@@ -50,6 +54,14 @@ class TeamResponseModel(TeamBaseModel, BaseResponseModel):
         title="The list of users within this team."
     )
 
+    @property
+    def user_ids(self) -> List[UUID]:
+        return [u.id for u in self.users]
+
+    @property
+    def user_names(self) -> List[str]:
+        return [u.name for u in self.users]
+
 
 # ------- #
 # REQUEST #
@@ -62,3 +74,13 @@ class TeamRequestModel(TeamBaseModel, BaseRequestModel):
     users: Optional[List[UUID]] = Field(
         title="The list of users within this team."
     )
+
+
+# ------ #
+# UPDATE #
+# ------ #
+
+
+@update
+class TeamUpdateModel(TeamRequestModel):
+    """"""
