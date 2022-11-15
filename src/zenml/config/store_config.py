@@ -73,6 +73,21 @@ class StoreConfiguration(BaseModel):
         """
         return config.copy()
 
+    @classmethod
+    def supports_url_scheme(cls, url: str) -> bool:
+        """Check if a URL scheme is supported by this store.
+
+        Concrete store configuration classes should override this method to
+        check if a URL scheme is supported by the store.
+
+        Args:
+            url: The URL to check.
+
+        Returns:
+            True if the URL scheme is supported, False otherwise.
+        """
+        return True
+
     class Config:
         """Pydantic configuration class."""
 

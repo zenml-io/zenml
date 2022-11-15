@@ -20,7 +20,7 @@ from fastapi.param_functions import Form
 
 from zenml.constants import API, LOGIN, VERSION_1
 from zenml.zen_server.auth import authenticate_credentials
-from zenml.zen_server.utils import error_response
+from zenml.zen_server.utils import error_response, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1,
@@ -98,8 +98,16 @@ def token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token = auth_context.user.generate_access_token()
+    role_assignments = zen_store().list_role_assignments(
+        user_name_or_id=auth_context.user.id, project_name_or_id=None
+    )
+    permissions = set().union(
+        *[zen_store().get_role(ra.role).permissions for ra in role_assignments]
+    )
 
+    access_token = auth_context.user.generate_access_token(
+        permissions=[p.value for p in permissions]
+    )
     # The response of the token endpoint must be a JSON object with the
     # following fields:
     #

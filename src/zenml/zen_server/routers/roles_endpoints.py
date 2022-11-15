@@ -15,11 +15,12 @@
 from typing import List, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Security
 
 from zenml.constants import API, ROLES, VERSION_1
+from zenml.enums import PermissionType
 from zenml.models import RoleModel
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models.user_management_models import (
     CreateRoleRequest,
     UpdateRoleRequest,
@@ -29,7 +30,6 @@ from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 router = APIRouter(
     prefix=API + VERSION_1 + ROLES,
     tags=["roles"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
@@ -40,7 +40,9 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_roles() -> List[RoleModel]:
+def list_roles(
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> List[RoleModel]:
     """Returns a list of all roles.
 
     Returns:
@@ -55,7 +57,10 @@ def list_roles() -> List[RoleModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_role(role: CreateRoleRequest) -> RoleModel:
+def create_role(
+    role: CreateRoleRequest,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> RoleModel:
     """Creates a role.
 
     # noqa: DAR401
@@ -75,7 +80,10 @@ def create_role(role: CreateRoleRequest) -> RoleModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
+def get_role(
+    role_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> RoleModel:
     """Returns a specific role.
 
     Args:
@@ -94,7 +102,9 @@ def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
 )
 @handle_exceptions
 def update_role(
-    role_name_or_id: Union[str, UUID], role_update: UpdateRoleRequest
+    role_name_or_id: Union[str, UUID],
+    role_update: UpdateRoleRequest,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> RoleModel:
     """Updates a role.
 
@@ -116,7 +126,10 @@ def update_role(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_role(role_name_or_id: Union[str, UUID]) -> None:
+def delete_role(
+    role_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
     """Deletes a specific role.
 
     Args:

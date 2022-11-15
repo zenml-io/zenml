@@ -996,6 +996,12 @@ or
 zenml user delete USER_NAME
 ```
 
+A freshly created user will by default be assigned the admin role. This
+behavior can be overwritten:
+```bash
+zenml user create USER_NAME --role guest
+```
+
 To see a list of all users, run:
 ```bash
 zenml user list
@@ -1026,16 +1032,27 @@ To see a list of all teams, run:
 zenml team list
 ```
 
-A role groups permissions and can be assigned to users or teams. To create or
-delete a role, run one of the following commands:
+A role groups permissions to resources. Currently, there are the following
+globally scoped roles to choose from: 'write', 'read' and 'me'. To create
+a role, run one of the following commands:
 ```bash
-zenml role create ROLE_NAME
+zenml role create ROLE_NAME --write --read --me
+zenml role create ROLE_NAME --read
+```
+
+To delete a role run:
+```bash
 zenml role delete ROLE_NAME
 ```
 
 To see a list of all roles, run:
 ```bash
 zenml role list
+```
+
+You can also update the role name and the attached permissions of a role:
+```bash
+zenml role update [-n <NEW_NAME>| -r <PERMISSION_TO_REMOVE>| -a <PERMISSION_TO_ADD>]
 ```
 
 If you want to assign or revoke a role from users or teams, you can run
@@ -1056,6 +1073,10 @@ You can see a list of all current role assignments by running:
 zenml role assignment list
 ```
 
+At any point you may inspect all available permissions:
+```bash
+zenml permission list
+```
 
 Deploying ZenML to the cloud
 ----------------------------

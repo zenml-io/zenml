@@ -28,7 +28,12 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import ProvisioningError
+from zenml.exceptions import (
+    IllegalOperationError,
+    ProvisioningError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -237,9 +242,9 @@ def register_stack(
                             "You attempted to create a shared stack containing "
                             f"a private component {c_type}: {name}. This "
                             f"is not supported. Set the {c_type} to "
-                            f"shared like this and then try re-sharing your stack: "
-                            f"zenml {c_type.replace('_', '-')} share "
-                            f"{component.id}"
+                            f"shared like this and then try re-sharing your "
+                            f"stack: \n `zenml {c_type.replace('_', '-')} "
+                            f"share`{component.id}`\n."
                         )
 
         # click<8.0.0 gives flags a default of None
@@ -437,15 +442,18 @@ def update_stack(
                         f"{c_type}:{name} to a shared stack. This "
                         f"is not supported. Set the {c_type} to"
                         f"shared like this and then re-share your stack: "
-                        f"zenml {c_type.replace('_', '-')} share "
-                        f"{component.id}"
+                        f"\n `zenml {c_type.replace('_', '-')} "
+                        f"share`{component.id}`\n."
                     )
                 else:
                     stack_components[c_type] = [component.id]
 
         stack_to_update.components = stack_components
 
-        client.update_stack(stack_to_update)
+        try:
+            client.update_stack(stack_to_update)
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(
             f"Stack `{stack_to_update.name}` successfully " f"updated!"
         )
@@ -499,22 +507,30 @@ def share_stack(
                     f"A Stack can only be shared when all its "
                     f"components are also shared. Component "
                     f"{c_t}:{only_component.name} is not shared. Set the "
-                    f"{c_t} to shared like this and then try re-sharing your stack: "
-                    f"zenml {c_t.replace('_', '-')} share "
-                    f"{only_component.id}"
+                    f"{c_t} to shared like this and then try re-sharing your "
+                    f"stack:\n `zenml {c_t.replace('_', '-')} share`\n"
+                    f"{only_component.id}. Alternatively, you can rerun your"
+                    f"command with `-r` to recursively share."
                 )
-            else:
-                with console.status(
-                    f"Sharing component `{only_component.name}`" f"...\n"
-                ):
-                    only_component.is_shared = True
+            with console.status(
+                f"Sharing component `{only_component.name}`" f"...\n"
+            ):
+                only_component.is_shared = True
+                try:
                     client.update_stack_component(component=only_component)
+                except (
+                    IllegalOperationError,
+                    StackComponentExistsError,
+                ) as err:
+                    cli_utils.error(str(err))
 
         with console.status(f"Sharing stack `{stack_to_share.name}` ...\n"):
 
             stack_to_share.is_shared = True
-
-            client.update_stack(stack_to_share)
+            try:
+                client.update_stack(stack_to_share)
+            except (IllegalOperationError, StackExistsError) as err:
+                cli_utils.error(str(err))
             cli_utils.declare(
                 f"Stack `{stack_to_share.name}` successfully shared!"
             )
@@ -685,7 +701,10 @@ def remove_stack_component(
                 StackComponentType.DATA_VALIDATOR, None
             )
 
-        client.update_stack(stack_to_update)
+        try:
+            client.update_stack(stack_to_update)
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(f"Stack `{stack_name_or_id}` successfully updated!")
 
 
@@ -726,7 +745,10 @@ def rename_stack(
             pass
 
         stack_to_rename.name = new_stack_name
-        client.update_stack(stack_to_rename)
+        try:
+            client.update_stack(stack_to_rename)
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(
             f"Stack `{current_stack_name_or_id}` successfully renamed to `"
             f"{new_stack_name}`!"
@@ -842,8 +864,10 @@ def delete_stack(
                 f"active. Please choose a different active stack first by "
                 f"running 'zenml stack set STACK'."
             )
-
-    Client().deregister_stack(stack_to_delete)
+    try:
+        Client().deregister_stack(stack_to_delete)
+    except IllegalOperationError as err:
+        cli_utils.error(str(err))
     cli_utils.declare(f"Deleted stack '{stack_to_delete.name}'.")
 
 
