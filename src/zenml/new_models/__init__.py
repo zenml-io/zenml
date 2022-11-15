@@ -28,10 +28,12 @@ from zenml.new_models.flavor_models import (
 from zenml.new_models.pipeline_models import (
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineUpdateModel,
 )
 from zenml.new_models.pipeline_run_models import (
     PipelineRunRequestModel,
     PipelineRunResponseModel,
+    PipelineRunUpdateModel,
 )
 from zenml.new_models.project_models import (
     ProjectRequestModel,
@@ -55,6 +57,7 @@ from zenml.new_models.stack_models import (
 from zenml.new_models.step_run_models import (
     StepRunRequestModel,
     StepRunResponseModel,
+    StepRunUpdateModel,
 )
 from zenml.new_models.team_models import TeamRequestModel, TeamResponseModel
 from zenml.new_models.user_models import (
@@ -97,8 +100,10 @@ __all__ = [
     "FlavorResponseModel",
     "PipelineRequestModel",
     "PipelineResponseModel",
+    "PipelineUpdateModel",
     "PipelineRunRequestModel",
     "PipelineRunResponseModel",
+    "PipelineRunUpdateModel",
     "ProjectRequestModel",
     "ProjectResponseModel",
     "ProjectUpdateModel",
@@ -112,6 +117,7 @@ __all__ = [
     "StackUpdateModel",
     "StepRunRequestModel",
     "StepRunResponseModel",
+    "StepRunUpdateModel",
     "TeamRequestModel",
     "TeamResponseModel",
     "EmailOptInModel",
