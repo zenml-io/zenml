@@ -395,7 +395,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         config_path: str,
         load_config_path: Optional[PurePath] = None,
     ) -> "StoreConfiguration":
-        """Create a copy of the store config using a different configuration path.
+        """Copy the store config using a different configuration path.
 
         This method is used to create a copy of the store configuration that can
         be loaded using a different configuration path or in the context of a
@@ -583,8 +583,8 @@ class SqlZenStore(BaseZenStore):
         CONFIG_TYPE: The type of the store configuration.
         _engine: The SQLAlchemy engine.
         _metadata_store: The metadata store.
-        _lock: A thread mutex used to ensure thread safety during the pipeline
-            run synchronization.
+        _sync_lock: A thread mutex used to ensure thread safety during the
+            pipeline run synchronization.
     """
 
     config: SqlZenStoreConfiguration
@@ -1154,7 +1154,7 @@ class SqlZenStore(BaseZenStore):
                     f"Stack component with ID {component_id} not found."
                 )
 
-                return stack_component.to_model()
+            return stack_component.to_model()
 
     def list_stack_components(
         self,
@@ -1325,12 +1325,12 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
+    @staticmethod
     def _fail_if_component_with_name_type_exists_for_user(
-        self,
         component: ComponentRequestModel,
         session: Session,
     ) -> None:
-        """Raise an exception if a Component with same name/type exists for user.
+        """Raise an exception if a Component with same name/type exists.
 
         Args:
             component: The Component
@@ -2036,8 +2036,6 @@ class SqlZenStore(BaseZenStore):
             ).all()
 
             if len(user_role) > 0 or len(team_role) > 0:
-                # TODO: Eventually we might want to allow this deletion
-                #  and simply cascade
                 raise IllegalOperationError(
                     f"Role `{role.name}` of type cannot be "
                     f"deleted as it is in use by multiple users and teams. "
@@ -3101,14 +3099,7 @@ class SqlZenStore(BaseZenStore):
             A list of all run steps.
         """
         self._sync_runs()
-
-        query = select(StepRunSchema)
-        if run_id is not None:
-            query = query.where(StepRunSchema.pipeline_run_id == run_id)
-
-        with Session(self.engine) as session:
-            steps = session.exec(query).all()
-            return [self.get_run_step(step.id) for step in steps]
+        return self._list_run_steps_without_sync(run_id)
 
     def update_run_step(
         self,
@@ -3564,8 +3555,10 @@ class SqlZenStore(BaseZenStore):
             # MLMD ID set in the DB, we need to set it to connect the two.
             if mlmd_run.name in runs_without_mlmd_id_dict:
                 run_model = runs_without_mlmd_id_dict[mlmd_run.name].to_model()
-                run_model.mlmd_id = mlmd_run.mlmd_id
-                self.update_run(run_model)
+                self.update_run(
+                    run_id=run_model.id,
+                    run_update=PipelineRunUpdateModel(mlmld_id=mlmd_run.mlmd_id)
+                )
 
             # Create runs that are in MLMD but not in the DB.
             else:
@@ -3877,8 +3870,10 @@ class SqlZenStore(BaseZenStore):
             num_steps=num_steps,
         )
         if run_model.status != status:
-            run_model.status = status
-            self.update_run(run_model)
+            self.update_run(
+                run_id=run_model.id,
+                run_update=PipelineRunUpdateModel(status=status)
+            )
         return run_model
 
     def _update_run_step_status(
@@ -3905,6 +3900,24 @@ class SqlZenStore(BaseZenStore):
 
         status = self.metadata_store.get_step_status(step_model.mlmd_id)
         if step_model.status != status:
-            step_model.status = status
-            self.update_run_step(step_model)
+            self.update_run_step(
+                step_id=step_model.id,
+                step_update=StepRunUpdateModel(status=status)
+            )
         return step_model
+
+    def _list_run_steps_without_sync(
+        self, run_id: Optional[UUID] = None
+    ) -> List[StepRunResponseModel]:
+        """Get all run steps without synchronizing the runs.
+        Args:
+            run_id: If provided, only return steps for this pipeline run.
+        Returns:
+            A list of all run steps.
+        """
+        query = select(StepRunSchema)
+        if run_id is not None:
+            query = query.where(StepRunSchema.pipeline_run_id == run_id)
+        with Session(self.engine) as session:
+            steps = session.exec(query).all()
+            return [self.get_run_step(step.id) for step in steps]
