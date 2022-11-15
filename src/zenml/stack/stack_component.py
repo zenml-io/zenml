@@ -352,24 +352,6 @@ class StackComponent:
             updated=component_model.updated,
         )
 
-    def to_model(self) -> "ComponentResponseModel":
-        """Converts a stack component to a model.
-
-        Returns:
-            The model representation of the stack component.
-        """
-        return ComponentResponseModel(
-            user=self.user,
-            project=self.project,
-            id=self.id,
-            type=self.type,
-            flavor=self.flavor,
-            name=self.name,
-            configuration=self.config.dict(),
-            created=self.created,
-            updated=self.updated,
-        )
-
     @property
     def config(self) -> StackComponentConfig:
         """Returns the configuration of the stack component.

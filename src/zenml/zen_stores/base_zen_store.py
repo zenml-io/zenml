@@ -687,61 +687,12 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     # Teams
     # -----
 
-    @property
-    def teams(self) -> List[TeamResponseModel]:
-        """List all teams.
-
-        Returns:
-            A list of all teams.
-        """
-        return self.list_teams()
-
     def get_users_for_team(
         self, team_name_or_id: Union[str, UUID]
     ) -> List[UserResponseModel]:
         """"""
         team = self.get_team(team_name_or_id=team_name_or_id)
         return team.users
-
-    def add_user_to_team(
-        self,
-        user_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Adds a user to a team.
-        Args:
-            user_name_or_id: Name or ID of the user to add to the team.
-            team_name_or_id: Name or ID of the team to which to add the user to.
-        Raises:
-            EntityExistsError: If the user is already a member of the team.
-        """
-
-        team = self.get_team(team_name_or_id=team_name_or_id)
-        user = self.get_user(user_name_or_id=user_name_or_id)
-
-        update_model = TeamRequestModel(
-            users=[u.id for u in team.users] + [user.id]
-        )
-        self.update_team(team_name_or_id=team.id, team_update=update_model)
-
-    def remove_user_from_team(
-        self,
-        user_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Removes a user from a team.
-        Args:
-            user_name_or_id: Name or ID of the user to remove from the team.
-            team_name_or_id: Name or ID of the team from which to remove the
-                user.
-        """
-        team = self.get_team(team_name_or_id=team_name_or_id)
-        user = self.get_user(user_name_or_id=user_name_or_id)
-
-        update_model = TeamRequestModel(
-            users=[u.id for u in team.users if u.id == user.id]
-        )
-        self.update_team(team_name_or_id=team.id, team_update=update_model)
 
     # -----
     # Roles

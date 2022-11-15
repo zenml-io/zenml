@@ -501,7 +501,11 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
 ):
     """Tests that deregistering a stack component that is part of a registered
     stack fails."""
-    component = clean_client.active_stack.orchestrator.to_model()
+    component = (clean_client.active_stack_model
+                 .components[StackComponentType.ORCHESTRATOR][0])
 
     with pytest.raises(IllegalOperationError):
-        clean_client.deregister_stack_component(component)
+        clean_client.deregister_stack_component(
+            name_id_or_prefix=component.id,
+            component_type=StackComponentType.ORCHESTRATOR
+        )
