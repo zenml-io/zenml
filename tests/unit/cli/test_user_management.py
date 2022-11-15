@@ -11,27 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import pytest
 from click.testing import CliRunner
 
+from tests.unit.cli.test_utils import SAMPLE_USER, create_sample_user
 from zenml.cli.cli import cli
-from zenml.client import Client
 from zenml.zen_stores.base_zen_store import DEFAULT_ADMIN_ROLE, DEFAULT_USERNAME
-
-SAMPLE_USER = "aria"
-
-
-@pytest.fixture()
-def client_with_sample_user(clean_client: Client) -> Client:
-    """Fixture to get a clean global configuration and repository for an
-    individual test.
-
-    Args:
-        clean_client: Clean client
-    """
-    clean_client.create_user(name=SAMPLE_USER, password="catnip")
-    return clean_client
-
 
 # ----- #
 # USERS #
@@ -52,9 +36,10 @@ def test_create_user_with_password_succeeds(
 
 
 def test_create_user_that_exists_fails(
-    client_with_sample_user,
+    clean_client,
 ) -> None:
     """Test that creating a user which exists already, fails."""
+    create_sample_user(clean_client)
     user_create_command = cli.commands["user"].commands["create"]
     runner = CliRunner()
     result = runner.invoke(
@@ -78,9 +63,10 @@ def test_create_user_with_initial_role_succeeds(
 
 
 def test_update_user_with_new_name_succeeds(
-    client_with_sample_user,
+    clean_client,
 ) -> None:
     """Test that creating a new user succeeds."""
+    create_sample_user(clean_client)
     user_update_command = cli.commands["user"].commands["update"]
     runner = CliRunner()
     result = runner.invoke(
@@ -91,9 +77,10 @@ def test_update_user_with_new_name_succeeds(
 
 
 def test_update_user_with_new_full_name_succeeds(
-    client_with_sample_user,
+    clean_client,
 ) -> None:
     """Test that creating a new user succeeds."""
+    create_sample_user(clean_client)
     user_update_command = cli.commands["user"].commands["update"]
     runner = CliRunner()
     result = runner.invoke(
@@ -104,9 +91,10 @@ def test_update_user_with_new_full_name_succeeds(
 
 
 def test_update_user_with_new_email_succeeds(
-    client_with_sample_user,
+    clean_client,
 ) -> None:
     """Test that creating a new user succeeds."""
+    create_sample_user(clean_client)
     user_update_command = cli.commands["user"].commands["update"]
     runner = CliRunner()
     result = runner.invoke(
@@ -162,9 +150,10 @@ def test_delete_default_user_fails(
 
 
 def test_delete_sample_user_succeeds(
-    client_with_sample_user,
+    clean_client,
 ) -> None:
     """Test that deleting a user succeeds."""
+    create_sample_user(clean_client)
     user_delete_command = cli.commands["user"].commands["delete"]
     runner = CliRunner()
     result = runner.invoke(

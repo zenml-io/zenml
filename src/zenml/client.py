@@ -657,8 +657,8 @@ class Client(metaclass=ClientMetaClass):
         """
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=RoleResponseModel,
-            get_method=self.zen_store.get_team,
-            list_method=self.zen_store.list_teams,
+            get_method=self.zen_store.get_role,
+            list_method=self.zen_store.list_roles,
             name_id_or_prefix=name_id_or_prefix,
         )
 
@@ -827,7 +827,6 @@ class Client(metaclass=ClientMetaClass):
             project_name_or_id: project scope within which to assign the role
 
         """
-
         role = self._get_entity_by_id_or_name_or_prefix(
             response_model=RoleResponseModel,
             get_method=self.zen_store.get_role,
@@ -1928,7 +1927,7 @@ class Client(metaclass=ClientMetaClass):
             pipeline_run = PipelineRunModel.parse_obj(pipeline_run_dict)
             pipeline_run.updated = datetime.now()
             pipeline_run.user = self.active_user.id
-            zenml.cli.project.project = self.active_project.id
+            pipeline_run.project = self.active_project.id
             pipeline_run.stack_id = None
             pipeline_run.pipeline_id = None
             pipeline_run.mlmd_id = None

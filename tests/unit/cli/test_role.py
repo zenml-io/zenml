@@ -14,25 +14,11 @@
 import pytest
 from click.testing import CliRunner
 
+from tests.unit.cli.test_utils import SAMPLE_ROLE, create_sample_role, \
+    create_sample_user
 from zenml.cli.cli import cli
-from zenml.client import Client
 from zenml.enums import PermissionType
-from zenml.zen_stores.base_zen_store import DEFAULT_ADMIN_ROLE
-
-SAMPLE_ROLE = "cat_feeder"
-
-
-@pytest.fixture()
-def client_with_sample_role(clean_client: Client) -> Client:
-    """Fixture to get a global configuration with a  role.
-
-    Args:
-        clean_client: Clean client
-    """
-    clean_client.create_role(
-        name=SAMPLE_ROLE, permissions_list=[PermissionType.READ]
-    )
-    return clean_client
+from zenml.zen_stores.base_zen_store import DEFAULT_ADMIN_ROLE, DEFAULT_USERNAME
 
 
 def test_create_role_succeeds(
@@ -49,9 +35,10 @@ def test_create_role_succeeds(
 
 
 def test_create_existing_role_fails(
-    client_with_sample_role,
+    clean_client,
 ) -> None:
     """Test that creating a role that exists fails."""
+    create_sample_role(clean_client)
     role_create_command = cli.commands["role"].commands["create"]
     runner = CliRunner()
     result = runner.invoke(
@@ -62,9 +49,10 @@ def test_create_existing_role_fails(
 
 
 def test_update_role_permissions_succeeds(
-    client_with_sample_role,
+    clean_client,
 ) -> None:
     """Test that updating a role succeeds."""
+    create_sample_role(clean_client)
     role_update_command = cli.commands["role"].commands["update"]
     runner = CliRunner()
     result = runner.invoke(
@@ -75,22 +63,24 @@ def test_update_role_permissions_succeeds(
 
 
 def test_rename_role_succeeds(
-    client_with_sample_role,
+    clean_client,
 ) -> None:
     """Test that updating a role succeeds."""
+    create_sample_role(clean_client)
     role_update_command = cli.commands["role"].commands["update"]
     runner = CliRunner()
     result = runner.invoke(
         role_update_command,
-        [SAMPLE_ROLE, f"--name='cat_groomer'"],
+        [SAMPLE_ROLE, "--name='cat_groomer'"],
     )
     assert result.exit_code == 0
 
 
 def test_update_role_conflicting_permissions_fails(
-    client_with_sample_role,
+    clean_client,
 ) -> None:
     """Test that updating a role succeeds."""
+    create_sample_role(clean_client)
     role_update_command = cli.commands["role"].commands["update"]
     runner = CliRunner()
     result = runner.invoke(
@@ -105,9 +95,10 @@ def test_update_role_conflicting_permissions_fails(
 
 
 def test_update_default_role_fails(
-    client_with_sample_role,
+    clean_client,
 ) -> None:
     """Test that updating a role succeeds."""
+    create_sample_role(clean_client)
     role_update_command = cli.commands["role"].commands["update"]
     runner = CliRunner()
     result = runner.invoke(
@@ -121,9 +112,10 @@ def test_update_default_role_fails(
 
 
 def test_delete_role_succeeds(
-    client_with_sample_role,
+    clean_client,
 ) -> None:
     """Test that deleting a role succeeds."""
+    create_sample_role(clean_client)
     role_update_command = cli.commands["role"].commands["delete"]
     runner = CliRunner()
     result = runner.invoke(
@@ -144,3 +136,62 @@ def test_delete_default_role_fails(
         [DEFAULT_ADMIN_ROLE],
     )
     assert result.exit_code == 1
+
+
+def test_assign_default_role_to_new_user_succeeds(
+    clean_client,
+) -> None:
+    """Test that deleting a role succeeds."""
+    user = create_sample_user(clean_client)
+    role_assign_command = cli.commands["role"].commands["assign"]
+    runner = CliRunner()
+    result = runner.invoke(
+        role_assign_command,
+        [DEFAULT_ADMIN_ROLE],
+        f"--user={user.name}"
+    )
+    assert result.exit_code == 0
+
+
+def test_assign_role_to_user_twice_fails(
+    clean_client,
+) -> None:
+    """Test that deleting a role succeeds."""
+    user = create_sample_user(clean_client)
+    role_assign_command = cli.commands["role"].commands["assign"]
+    runner = CliRunner()
+    result = runner.invoke(
+        role_assign_command,
+        [DEFAULT_ADMIN_ROLE],
+        f"--user={user.name}"
+    )
+    assert result.exit_code == 0
+    result = runner.invoke(
+        role_assign_command,
+        [DEFAULT_ADMIN_ROLE],
+        f"--user={user.name}"
+    )
+    assert result.exit_code == 1
+
+
+def test_revoke_role_from_new_user_succeeds(
+    clean_client,
+) -> None:
+    """Test that deleting a role assignment succeeds."""
+    user = create_sample_user(clean_client)
+    role_assign_command = cli.commands["role"].commands["assign"]
+    runner = CliRunner()
+    result = runner.invoke(
+        role_assign_command,
+        [DEFAULT_ADMIN_ROLE],
+        f"--user={user.name}"
+    )
+    assert result.exit_code == 0
+    role_revoke_command = cli.commands["role"].commands["revoke"]
+    runner = CliRunner()
+    result = runner.invoke(
+        role_revoke_command,
+        [DEFAULT_ADMIN_ROLE],
+        f"--user={user.name}"
+    )
+    assert result.exit_code == 0
