@@ -917,9 +917,7 @@ class RestZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
-        self,
-        team_id: UUID,
-        team_update: TeamUpdateModel
+        self, team_id: UUID, team_update: TeamUpdateModel
     ) -> TeamResponseModel:
         """Update an existing team.
 

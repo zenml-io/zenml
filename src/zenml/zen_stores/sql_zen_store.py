@@ -1741,21 +1741,17 @@ class SqlZenStore(BaseZenStore):
                     f"Found existing team with this name."
                 )
 
-            # Get the Schemas of all users mentioned
-            filters = [
-                (UserSchema.id == user_id)
-                for user_id in team.users
-            ]
+            defined_users = []
+            if team.users:
+                # Get the Schemas of all users mentioned
+                filters = [(UserSchema.id == user_id) for user_id in team.users]
 
-            defined_users = session.exec(
-                select(UserSchema).where(or_(*filters))
-            ).all()
+                defined_users = session.exec(
+                    select(UserSchema).where(or_(*filters))
+                ).all()
 
             # Create the team
-            new_team = TeamSchema(
-                name=team.name,
-                users=defined_users
-            )
+            new_team = TeamSchema(name=team.name, users=defined_users)
             session.add(new_team)
             session.commit()
 
@@ -1772,7 +1768,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             team = self._get_team_schema(team_name_or_id, session=session)
-        return team.to_model()
+            return team.to_model()
 
     def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
         """List all teams.
@@ -1793,9 +1789,7 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
-        self,
-        team_id: UUID,
-        team_update: TeamUpdateModel
+        self, team_id: UUID, team_update: TeamUpdateModel
     ) -> TeamResponseModel:
         """Update an existing team.
 
@@ -1823,15 +1817,15 @@ class SqlZenStore(BaseZenStore):
 
             # Update the team
             existing_team.update(team_update=team_update)
-            if 'users' in team_update.dict(exclude_unset=True).items():
+            if "users" in team_update.__fields_set__:
                 filters = [
-                    (UserSchema.id == user_id)
-                    for user_id in team_update.users
+                    (UserSchema.id == user_id) for user_id in team_update.users
                 ]
 
                 existing_team.users = session.exec(
                     select(UserSchema).where(or_(*filters))
                 ).all()
+
             session.add(existing_team)
             session.commit()
 

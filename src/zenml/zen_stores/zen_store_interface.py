@@ -554,9 +554,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_team(
-        self,
-        team_id: UUID,
-        team_update: TeamUpdateModel
+        self, team_id: UUID, team_update: TeamUpdateModel
     ) -> TeamResponseModel:
         """Update an existing team.
 

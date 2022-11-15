@@ -15,10 +15,9 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List
 from uuid import UUID
 
-from sqlalchemy import or_
-from sqlmodel import Field, Relationship, SQLModel, select, Session
+from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.new_models import TeamRequestModel, TeamResponseModel
+from zenml.new_models import TeamResponseModel
 from zenml.new_models.team_models import TeamUpdateModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 

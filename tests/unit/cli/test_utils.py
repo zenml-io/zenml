@@ -18,7 +18,8 @@ from zenml.enums import PermissionType
 from zenml.new_models import (
     ProjectResponseModel,
     RoleResponseModel,
-    UserResponseModel, TeamResponseModel,
+    TeamResponseModel,
+    UserResponseModel,
 )
 
 SAMPLE_CUSTOM_ARGUMENTS = [

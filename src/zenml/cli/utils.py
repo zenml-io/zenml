@@ -230,8 +230,9 @@ def print_pydantic_models(
 
             # If it is a list of BaseResponseModels access each Model within
             #  the list and extract either name or id
-            elif (isinstance(value, list) and
-                    issubclass(model.__fields__[k].type_, BaseResponseModel)):
+            elif isinstance(value, list) and issubclass(
+                model.__fields__[k].type_, BaseResponseModel
+            ):
                 for v in value:
                     if "name" in v.__fields__:
                         items.setdefault(k, []).append(str(v.name))

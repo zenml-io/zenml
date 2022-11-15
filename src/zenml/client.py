@@ -64,10 +64,11 @@ from zenml.new_models import (
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
+    TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, TeamRequestModel,
+    UserUpdateModel,
 )
 from zenml.new_models.base_models import BaseResponseModel
 from zenml.new_models.team_models import TeamUpdateModel
@@ -643,10 +644,19 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
+    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+        """List all teams.
+
+        Args:
+            name: The name to filter by
+
+        Returns:
+            The Team
+        """
+        return self.zen_store.list_teams(name=name)
+
     def create_team(
-        self,
-        name: str,
-        users: Optional[List[str]] = None
+        self, name: str, users: Optional[List[str]] = None
     ) -> TeamResponseModel:
         """Create a team.
 
@@ -692,7 +702,7 @@ class Client(metaclass=ClientMetaClass):
         if new_name:
             team_update.name = new_name
 
-        team_users: Optional[List[UUID]]  = None
+        team_users: Optional[List[UUID]] = None
 
         union_add_rm = set(remove_users) & set(add_users)
         if union_add_rm:
@@ -706,7 +716,7 @@ class Client(metaclass=ClientMetaClass):
         # Only if permissions are being added or removed will they need to be
         #  set for the update model
         if remove_users or add_users:
-            team_users= [u.id for u in team.users]
+            team_users = [u.id for u in team.users]
         if remove_users:
             for rm_p in remove_users:
                 user = self.get_user(rm_p)
@@ -716,7 +726,7 @@ class Client(metaclass=ClientMetaClass):
                     logger.warning(
                         f"Role {remove_users} was already not "
                         f"part of the '{team.name}' Team."
-                        )
+                    )
         if add_users:
             for add_u in add_users:
                 team_users.append(self.get_user(add_u).id)
@@ -725,8 +735,7 @@ class Client(metaclass=ClientMetaClass):
             team_update.users = team_users
 
         return self.zen_store.update_team(
-            team_id=team.id,
-            team_update=team_update
+            team_id=team.id, team_update=team_update
         )
 
     # ----- #

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from typing import Optional, Tuple, List
+from typing import List, Optional
 
 import click
 
@@ -22,8 +22,6 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
-from zenml.new_models import TeamRequestModel
-from zenml.utils.uuid_utils import parse_name_or_uuid
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -295,10 +293,7 @@ def describe_team(team_name_or_id: str) -> None:
     multiple=True,
     help="Name of users to add to this team.",
 )
-def create_team(
-    team_name: str,
-    users: Optional[List[str]] = None
-) -> None:
+def create_team(team_name: str, users: Optional[List[str]] = None) -> None:
     """Create a new team.
 
     Args:
@@ -316,12 +311,7 @@ def create_team(
 @team.command("update", help="Update an existing team.")
 @click.argument("team_name", type=str, required=True)
 @click.option(
-    "--name",
-    "-n",
-    "new_name",
-    type=str,
-    required=False,
-    help="New team name."
+    "--name", "-n", "new_name", type=str, required=False, help="New team name."
 )
 @click.option(
     "--remove-user",
@@ -355,15 +345,16 @@ def update_team(
     """
     cli_utils.print_active_config()
     try:
-        Client().update_team(
+        team = Client().update_team(
             team_name_or_id=team_name,
             new_name=new_name,
             remove_users=remove_users,
-            add_users=add_users
+            add_users=add_users,
         )
     except (EntityExistsError, KeyError) as err:
         cli_utils.error(str(err))
-    cli_utils.declare(f"Updated team '{new_name}'.")
+    else:
+        cli_utils.declare(f"Updated team '{team.name}'.")
 
 
 @team.command("delete", help="Delete a team.")
