@@ -1471,9 +1471,9 @@ class SqlZenStore(BaseZenStore):
             flavor_in_db = session.exec(
                 select(FlavorSchema).where(FlavorSchema.id == flavor_id)
             ).first()
-        if flavor_in_db is None:
-            raise KeyError(f"Flavor with ID {flavor_id} not found.")
-        return flavor_in_db.to_model()
+            if flavor_in_db is None:
+                raise KeyError(f"Flavor with ID {flavor_id} not found.")
+            return flavor_in_db.to_model()
 
     def list_flavors(
         self,
@@ -1515,7 +1515,7 @@ class SqlZenStore(BaseZenStore):
 
             list_of_flavors_in_db = session.exec(query).all()
 
-        return [flavor.to_model() for flavor in list_of_flavors_in_db]
+            return [flavor.to_model() for flavor in list_of_flavors_in_db]
 
     @track(AnalyticsEvent.DELETED_FLAVOR)
     def delete_flavor(self, flavor_id: UUID) -> None:

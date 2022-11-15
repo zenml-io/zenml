@@ -118,10 +118,12 @@ def get_pipeline(
     active_project_id = client.active_project.id
     assert active_project_id is not None
     try:
-        pipeline_model = client.zen_store.get_pipeline_in_project(
-            pipeline_name=pipeline_name,
+        # TODO: Here the assumption is made that one pipeline with the name
+        #  exists for the given project
+        pipeline_model = client.list_pipelines(
+            name=pipeline_name,
             project_name_or_id=active_project_id,
-        )
+        )[0]
         return PipelineView(pipeline_model)
     except KeyError:
         return None
