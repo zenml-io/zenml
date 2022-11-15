@@ -10,6 +10,7 @@ from zenml.new_models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
+from zenml.new_models.base_models import update
 
 if TYPE_CHECKING:
     from zenml.new_models import PipelineResponseModel, StackResponseModel
@@ -93,3 +94,12 @@ class PipelineRunRequestModel(PipelineRunBaseModel, ProjectScopedRequestModel):
 
     stack: Optional[UUID]  # Might become None if the stack is deleted.
     pipeline: Optional[UUID]  # Unlisted runs have this as None.
+
+
+# ------ #
+# UPDATE #
+# ------ #
+
+@update
+class PipelineRunUpdateModel(PipelineRunRequestModel):
+    """"""

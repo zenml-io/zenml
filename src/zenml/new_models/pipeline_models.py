@@ -10,7 +10,7 @@ from zenml.new_models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.new_models.pipeline_run_models import PipelineRunResponseModel
-
+from zenml.new_models.base_models import update
 
 # ---- #
 # BASE #
@@ -48,3 +48,13 @@ class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
 
 class PipelineRequestModel(PipelineBaseModel, ProjectScopedRequestModel):
     """Domain model representing a pipeline."""
+
+
+
+# ------ #
+# UPDATE #
+# ------ #
+
+@update
+class PipelineUpdateModel(PipelineRequestModel):
+    """"""
