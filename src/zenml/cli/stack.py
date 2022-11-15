@@ -237,7 +237,7 @@ def register_stack(
                             "You attempted to create a shared stack containing "
                             f"a private component {c_type}: {name}. This "
                             f"is not supported. Set the {c_type} to "
-                            f"shared like this to create a stack: "
+                            f"shared like this and then try re-sharing your stack: "
                             f"zenml {c_type.replace('_', '-')} share "
                             f"{component.id}"
                         )
@@ -436,7 +436,7 @@ def update_stack(
                         "You attempted to add a private component"
                         f"{c_type}:{name} to a shared stack. This "
                         f"is not supported. Set the {c_type} to"
-                        f"shared shared like this to create a stack: "
+                        f"shared like this and then re-share your stack: "
                         f"zenml {c_type.replace('_', '-')} share "
                         f"{component.id}"
                     )
@@ -499,7 +499,7 @@ def share_stack(
                     f"A Stack can only be shared when all its "
                     f"components are also shared. Component "
                     f"{c_t}:{only_component.name} is not shared. Set the "
-                    f"{c_t} to shared like this to share this stack: "
+                    f"{c_t} to shared like this and then try re-sharing your stack: "
                     f"zenml {c_t.replace('_', '-')} share "
                     f"{only_component.id}"
                 )
