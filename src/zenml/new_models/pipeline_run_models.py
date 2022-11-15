@@ -9,8 +9,8 @@ from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.new_models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
+    update,
 )
-from zenml.new_models.base_models import update
 
 if TYPE_CHECKING:
     from zenml.new_models import PipelineResponseModel, StackResponseModel
@@ -99,6 +99,7 @@ class PipelineRunRequestModel(PipelineRunBaseModel, ProjectScopedRequestModel):
 # ------ #
 # UPDATE #
 # ------ #
+
 
 @update
 class PipelineRunUpdateModel(PipelineRunRequestModel):

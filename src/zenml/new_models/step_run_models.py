@@ -10,7 +10,6 @@ from zenml.new_models.base_models import (
     update,
 )
 
-
 # ---- #
 # BASE #
 # ---- #

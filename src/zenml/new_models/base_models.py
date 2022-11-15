@@ -156,4 +156,5 @@ def update(_cls):
             new_field = _cls.__fields__[field]
             new_field.required = False
             new_field.allow_none = True
+
     return _cls

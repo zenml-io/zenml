@@ -8,9 +8,10 @@ from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.new_models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
+    update,
 )
 from zenml.new_models.pipeline_run_models import PipelineRunResponseModel
-from zenml.new_models.base_models import update
+
 
 # ---- #
 # BASE #
@@ -50,10 +51,10 @@ class PipelineRequestModel(PipelineBaseModel, ProjectScopedRequestModel):
     """Domain model representing a pipeline."""
 
 
-
 # ------ #
 # UPDATE #
 # ------ #
+
 
 @update
 class PipelineUpdateModel(PipelineRequestModel):

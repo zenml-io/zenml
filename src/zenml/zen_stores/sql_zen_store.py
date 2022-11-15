@@ -1152,7 +1152,7 @@ class SqlZenStore(BaseZenStore):
                     f"Stack component with ID {component_id} not found."
                 )
 
-        return stack_component.to_model()
+                return stack_component.to_model()
 
     def list_stack_components(
         self,
@@ -1351,18 +1351,13 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.type == component.type)
         ).first()
         if existing_domain_component is not None:
-            project = self._get_project_schema(
-                project_name_or_id=component.project, session=session
-            )
-            user = self._get_user_schema(
-                user_name_or_id=component.user, session=session
-            )
             raise StackComponentExistsError(
                 f"Unable to register '{component.type.value}' component "
                 f"with name '{component.name}': Found an existing "
                 f"component with the same name and type in the same "
-                f" project, '{project.name}', owned by the same "
-                f" user, '{user.name}'."
+                f" project, '{existing_domain_component.project.name}', "
+                f"owned by the same user, "
+                f"'{existing_domain_component.user.name}'."
             )
         return None
 
