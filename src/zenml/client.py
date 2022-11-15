@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Client implementation."""
 import os
+import uuid
 from abc import ABCMeta
 from pathlib import Path
 from typing import (
@@ -2354,7 +2355,7 @@ class Client(metaclass=ClientMetaClass):
         response_model: Type[AnyResponseModel],
         get_method: Callable,
         list_method: Callable,
-        name_id_or_prefix: str,
+        name_id_or_prefix: Union[str, UUID],
     ) -> "AnyResponseModel":
         """Fetches an entity using the name, id or partial id.
 
@@ -2370,8 +2371,11 @@ class Client(metaclass=ClientMetaClass):
         """
         # First interpret as full UUID
         try:
-            entity_id = UUID(name_id_or_prefix)
-            return get_method(entity_id)
+            if isinstance(name_id_or_prefix, UUID):
+                return get_method(name_id_or_prefix)
+            else:
+                entity_id = UUID(name_id_or_prefix)
+                return get_method(entity_id)
         except ValueError:
             pass
 
