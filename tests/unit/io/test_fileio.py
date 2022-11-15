@@ -22,7 +22,6 @@ from types import GeneratorType
 import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis.strategies import text
-from tfx.dsl.io.filesystem import NotFoundError
 
 from zenml.constants import REMOTE_FS_PREFIX
 from zenml.io import fileio
@@ -130,6 +129,7 @@ def test_listdir_returns_empty_list_when_dir_doesnt_exist(
     sample_file, tmp_path
 ):
     """list_dir should return an empty list when the directory doesn't exist"""
+    from tfx.dsl.io.filesystem import NotFoundError
     with pytest.raises(NotFoundError):
         not_a_real_dir = os.path.join(tmp_path, sample_file)
         fileio.listdir(not_a_real_dir)
@@ -141,6 +141,7 @@ def test_open_returns_error_when_file_nonexistent(
     tmp_path, not_a_file: str
 ) -> None:
     """Test that open returns a file object"""
+    from tfx.dsl.io.filesystem import NotFoundError
     with pytest.raises(NotFoundError):
         fileio.open(os.path.join(tmp_path, not_a_file), "rb")
 
@@ -215,12 +216,13 @@ def test_mkdir_function(tmp_path) -> None:
 
 def test_mkdir_function_when_parent_doesnt_exist(tmp_path) -> None:
     """Test that mkdir creates a directory"""
+    from tfx.dsl.io.filesystem import NotFoundError
     with pytest.raises(NotFoundError):
         fileio.mkdir(os.path.join(tmp_path, "not_a_dir/still_not_a_dir"))
 
 
 def test_rename_function(tmp_path) -> None:
-    """Test that rename renames a file"""
+    """Test that renames a file"""
     io_utils.create_file_if_not_exists(os.path.join(tmp_path, "test_file.txt"))
     fileio.rename(
         os.path.join(tmp_path, "test_file.txt"),
@@ -263,6 +265,8 @@ def test_stat_returns_a_stat_result_object(tmp_path) -> None:
 
 def test_stat_raises_error_when_file_doesnt_exist(tmp_path) -> None:
     """Test that stat raises an error when the file doesn't exist"""
+    from tfx.dsl.io.filesystem import NotFoundError
+
     with pytest.raises(NotFoundError):
         fileio.stat(os.path.join(tmp_path, "not_a_file.txt"))
 
