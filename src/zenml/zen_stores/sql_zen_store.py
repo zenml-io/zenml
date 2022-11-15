@@ -973,7 +973,23 @@ class SqlZenStore(BaseZenStore):
                         stack=stack_update, session=session
                     )
 
-            existing_stack.update(stack_update=stack_update, session=session)
+            components = None
+            if stack_update.components:
+                filters = [
+                    (StackComponentSchema.id == component_id)
+                    for list_of_component_ids
+                    in stack_update.components.values()
+                    for component_id
+                    in list_of_component_ids
+                ]
+                components = session.exec(
+                    select(StackComponentSchema).where(or_(*filters))
+                ).all()
+
+            existing_stack.update(
+                stack_update=stack_update,
+                components=components,
+            )
 
             session.add(existing_stack)
             session.commit()

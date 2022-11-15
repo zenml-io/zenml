@@ -688,7 +688,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
     with console.status(
         f"Setting the{scope} active stack to '{stack_name_or_id}'..."
     ):
-        client.activate_stack(stack_name_or_id=stack_name_or_id)
+        client.activate_stack(stack_name_id_or_prefix=stack_name_or_id)
         cli_utils.declare(
             f"Active{scope} stack set to: "
             f"'{client.active_stack_model.name}'"

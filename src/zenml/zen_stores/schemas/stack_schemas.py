@@ -62,18 +62,21 @@ class StackSchema(ShareableSchema, table=True):
     )
     runs: List["PipelineRunSchema"] = Relationship(back_populates="stack")
 
-    def update(self, stack_update: StackUpdateModel, session: Session):
+    def update(
+        self,
+        stack_update: StackUpdateModel,
+        components: List["StackComponentSchema"],
+    ):
         for field, value in stack_update.dict(exclude_unset=True).items():
             if field == "components":
-                filters = [
-                    (StackComponentSchema.id == component_id)
-                    for list_of_component_ids in stack_update.components.values()
-                    for component_id in list_of_component_ids
-                ]
+                self.components = components
 
-                self.components = session.exec(
-                    select(StackComponentSchema).where(or_(*filters))
-                ).all()
+            elif field == "user":
+                assert self.user_id == value
+
+            elif field == "project":
+                assert self.project_id == value
+
             else:
                 setattr(self, field, value)
 
