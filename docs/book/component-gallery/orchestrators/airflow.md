@@ -82,7 +82,7 @@ as calling:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
-This call will write a `.zip` file containing a representation of your ZenML
+This call will produce a `.zip` file containing a representation of your ZenML
 pipeline to the Airflow DAGs directory. From there, the local Airflow server
 will load it and run your pipeline (It might take a few seconds until the pipeline
 shows up in the Airflow UI).
