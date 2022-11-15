@@ -30,12 +30,11 @@ as installing required Python dependencies in your Airflow server environment.
 - Use a managed deployment of Airflow such as [Google Cloud Composer](https://cloud.google.com/composer), [Amazon MWAA](https://aws.amazon.com/managed-workflows-for-apache-airflow/) or [Astronomer](https://www.astronomer.io/).
 - Deploy Airflow manually. Check out the official [Airflow docs](https://airflow.apache.org/docs/apache-airflow/stable/production-deployment.html) for more information.
 
-
 If you're not using a stack recipe to deploy Airflow, there are some additional python packages that you'll need
 to install in the Python environment of your Airflow server: 
 - `pydantic~=1.9.2`: The Airflow DAG files that ZenML creates for you require Pydantic to parse and validate
 configuration file.
-- `apache-airflow-providers-docker` or `apache-airflow-providers-cncf-kubernetes`, depending in which Airflow operator you'll be using to run your pipeline steps. Check out [this section](#using-different-airflow-operators)
+- `apache-airflow-providers-docker` or `apache-airflow-providers-cncf-kubernetes`, depending on which Airflow operator you'll be using to run your pipeline steps. Check out [this section](#using-different-airflow-operators)
 for more information on supported operators.
 
 ## How to use it
