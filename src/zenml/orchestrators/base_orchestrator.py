@@ -55,7 +55,6 @@ from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import (
     data_types,
-    launcher,
     outputs_utils,
     runtime_parameter_utils,
 )
@@ -77,6 +76,7 @@ from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import PipelineRunModel
+from zenml.orchestrators.launcher.portable import launcher
 from zenml.orchestrators.utils import get_cache_status
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.utils import proto_utils, source_utils, string_utils, uuid_utils

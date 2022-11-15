@@ -2924,7 +2924,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
-        self._sync_runs()  # Sync with MLMD
+        # self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
             query = select(PipelineRunSchema)
             if project_name_or_id is not None:
@@ -3310,7 +3310,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all run steps.
         """
-        self._sync_runs()
+        # self._sync_runs()
         return self._list_run_steps_without_sync(run_id)
 
     def update_run_step(self, step: StepRunModel) -> StepRunModel:
@@ -3430,7 +3430,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all artifacts.
         """
-        self._sync_runs()
+        # self._sync_runs()
         with Session(self.engine) as session:
             query = select(ArtifactSchema)
             if artifact_uri is not None:

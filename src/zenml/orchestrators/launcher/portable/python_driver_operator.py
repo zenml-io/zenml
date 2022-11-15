@@ -15,44 +15,46 @@
 
 from typing import cast
 
-from tfx.orchestration import metadata
-from tfx.orchestration.portable import base_driver_operator
-from tfx.orchestration.portable import data_types
-from tfx.proto.orchestration import driver_output_pb2
-from tfx.proto.orchestration import executable_spec_pb2
-from tfx.proto.orchestration import pipeline_pb2
-from tfx.utils import import_utils
-
 from google.protobuf import message
+from tfx.orchestration import metadata
+from tfx.orchestration.portable import base_driver_operator, data_types
+from tfx.proto.orchestration import (
+    driver_output_pb2,
+    executable_spec_pb2,
+    pipeline_pb2,
+)
+from tfx.utils import import_utils
 
 
 class PythonDriverOperator(base_driver_operator.BaseDriverOperator):
-  """PythonDriverOperator handles python class based driver's init and execution."""
+    """PythonDriverOperator handles python class based driver's init and execution."""
 
-  SUPPORTED_EXECUTABLE_SPEC_TYPE = [
-      executable_spec_pb2.PythonClassExecutableSpec
-  ]
+    SUPPORTED_EXECUTABLE_SPEC_TYPE = [
+        executable_spec_pb2.PythonClassExecutableSpec
+    ]
 
-  def __init__(self, driver_spec: message.Message,
-               mlmd_connection: metadata.Metadata):
-    """Constructor.
+    def __init__(
+        self, driver_spec: message.Message, mlmd_connection: metadata.Metadata
+    ):
+        """Constructor.
 
-    Args:
-      driver_spec: The specification of how to initialize the driver.
-      mlmd_connection: ML metadata connection.
+        Args:
+          driver_spec: The specification of how to initialize the driver.
+          mlmd_connection: ML metadata connection.
 
-    Raises:
-      RuntimeError: if the driver_spec is not supported.
-    """
-    super().__init__(driver_spec, mlmd_connection)
+        Raises:
+          RuntimeError: if the driver_spec is not supported.
+        """
+        super().__init__(driver_spec, mlmd_connection)
 
-    python_class_driver_spec = cast(
-        pipeline_pb2.ExecutorSpec.PythonClassExecutorSpec, driver_spec)
-    self._driver = import_utils.import_class_by_path(
-        python_class_driver_spec.class_path)(
-            self._mlmd_connection)
+        python_class_driver_spec = cast(
+            pipeline_pb2.ExecutorSpec.PythonClassExecutorSpec, driver_spec
+        )
+        self._driver = import_utils.import_class_by_path(
+            python_class_driver_spec.class_path
+        )(self._mlmd_connection)
 
-  def run_driver(
-      self, execution_info: data_types.ExecutionInfo
-  ) -> driver_output_pb2.DriverOutput:
-    return self._driver.run(execution_info)
+    def run_driver(
+        self, execution_info: data_types.ExecutionInfo
+    ) -> driver_output_pb2.DriverOutput:
+        return self._driver.run(execution_info)

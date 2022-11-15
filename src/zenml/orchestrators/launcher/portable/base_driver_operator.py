@@ -15,47 +15,47 @@
 
 import abc
 
+from google.protobuf import message
 from tfx.orchestration import metadata
 from tfx.orchestration.portable import data_types
 from tfx.proto.orchestration import driver_output_pb2
 from tfx.utils import abc_utils
 
-from google.protobuf import message
-
 
 class BaseDriverOperator(abc.ABC):
-  """The base class of all executor operators."""
+    """The base class of all executor operators."""
 
-  SUPPORTED_EXECUTABLE_SPEC_TYPE = abc_utils.abstract_property()
+    SUPPORTED_EXECUTABLE_SPEC_TYPE = abc_utils.abstract_property()
 
-  def __init__(self, driver_spec: message.Message,
-               mlmd_connection: metadata.Metadata):
-    """Constructor.
+    def __init__(
+        self, driver_spec: message.Message, mlmd_connection: metadata.Metadata
+    ):
+        """Constructor.
 
-    Args:
-      driver_spec: The specification of how to initialize the driver.
-      mlmd_connection: ML metadata connection.
+        Args:
+          driver_spec: The specification of how to initialize the driver.
+          mlmd_connection: ML metadata connection.
 
-    Raises:
-      RuntimeError: if the driver_spec is not supported.
-    """
-    if not isinstance(driver_spec,
-                      tuple(t for t in self.SUPPORTED_EXECUTABLE_SPEC_TYPE)):
-      raise RuntimeError('Driver spec not supported: %s' % driver_spec)
-    self._driver_spec = driver_spec
-    self._mlmd_connection = mlmd_connection
+        Raises:
+          RuntimeError: if the driver_spec is not supported.
+        """
+        if not isinstance(
+            driver_spec, tuple(t for t in self.SUPPORTED_EXECUTABLE_SPEC_TYPE)
+        ):
+            raise RuntimeError("Driver spec not supported: %s" % driver_spec)
+        self._driver_spec = driver_spec
+        self._mlmd_connection = mlmd_connection
 
-  @abc.abstractmethod
-  def run_driver(
-      self, execution_info: data_types.ExecutionInfo
-  ) -> driver_output_pb2.DriverOutput:
-    """Invokes the driver with inputs provided by the Launcher.
+    @abc.abstractmethod
+    def run_driver(
+        self, execution_info: data_types.ExecutionInfo
+    ) -> driver_output_pb2.DriverOutput:
+        """Invokes the driver with inputs provided by the Launcher.
 
-    Args:
-      execution_info: data_types.ExecutionInfo containing information needed for
-        driver execution.
+        Args:
+          execution_info: data_types.ExecutionInfo containing information needed for
+            driver execution.
 
-    Returns:
-      An DriverOutput instance.
-    """
-    pass
+        Returns:
+          An DriverOutput instance.
+        """

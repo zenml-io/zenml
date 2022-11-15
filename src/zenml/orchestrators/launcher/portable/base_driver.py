@@ -21,27 +21,26 @@ from tfx.proto.orchestration import driver_output_pb2
 
 
 class BaseDriver(abc.ABC):
-  """The base class of all drivers."""
+    """The base class of all drivers."""
 
-  def __init__(self, mlmd_connection: metadata.Metadata):
-    """Constructor.
+    def __init__(self, mlmd_connection: metadata.Metadata):
+        """Constructor.
 
-    Args:
-      mlmd_connection: ML metadata connection.
-    """
-    self._mlmd_connection = mlmd_connection
+        Args:
+          mlmd_connection: ML metadata connection.
+        """
+        self._mlmd_connection = mlmd_connection
 
-  @abc.abstractmethod
-  def run(
-      self, execution_info: data_types.ExecutionInfo
-  ) -> driver_output_pb2.DriverOutput:
-    """Invokes the driver with inputs provided by the Launcher.
+    @abc.abstractmethod
+    def run(
+        self, execution_info: data_types.ExecutionInfo
+    ) -> driver_output_pb2.DriverOutput:
+        """Invokes the driver with inputs provided by the Launcher.
 
-    Args:
-      execution_info: a `data_types.ExecutionInfo` instance representing the
-        execution info needed for the driver execution.
+        Args:
+          execution_info: a `data_types.ExecutionInfo` instance representing the
+            execution info needed for the driver execution.
 
-    Returns:
-      An DriverOutput instance.
-    """
-    pass
+        Returns:
+          An DriverOutput instance.
+        """
