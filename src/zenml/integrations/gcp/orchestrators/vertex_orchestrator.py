@@ -30,7 +30,7 @@
 """Implementation of the VertexAI orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 
 import kfp
 from google.api_core import exceptions as google_exceptions
@@ -48,10 +48,12 @@ from zenml.integrations.gcp.constants import (
 )
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
     VertexOrchestratorConfig,
+    VertexOrchestratorSettings,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
+from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
@@ -61,6 +63,7 @@ from zenml.utils.io_utils import get_global_config_directory
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
@@ -94,6 +97,15 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             The configuration.
         """
         return cast(VertexOrchestratorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Vertex orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return VertexOrchestratorSettings
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -373,6 +385,16 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                         upstream_step_name
                     ]
                     container_op.after(upstream_container_op)
+
+                settings = cast(
+                    Optional[VertexOrchestratorSettings],
+                    self.get_settings(step),
+                )
+                if settings and settings.pod_settings:
+                    apply_pod_settings(
+                        container_op=container_op,
+                        settings=settings.pod_settings,
+                    )
 
                 self._configure_container_resources(
                     container_op=container_op,

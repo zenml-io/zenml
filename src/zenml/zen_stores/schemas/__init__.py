@@ -19,8 +19,8 @@ from zenml.zen_stores.schemas.pipeline_schemas import (
     ArtifactSchema,
     PipelineRunSchema,
     PipelineSchema,
-    StepInputArtifactSchema,
-    StepRunOrderSchema,
+    StepRunArtifactSchema,
+    StepRunParentsSchema,
     StepRunSchema,
 )
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -48,7 +48,7 @@ __all__ = [
     "UserRoleAssignmentSchema",
     "UserSchema",
     "ArtifactSchema",
-    "StepInputArtifactSchema",
-    "StepRunOrderSchema",
+    "StepRunArtifactSchema",
+    "StepRunParentsSchema",
     "StepRunSchema",
 ]

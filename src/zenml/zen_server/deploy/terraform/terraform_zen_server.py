@@ -99,6 +99,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
         ingress_controller_hostname: The ingress controller hostname to use for
             the ingress self-signed certificate and to compute the ZenML server
             URL.
+        deploy_db: Whether to create a SQL database service as part of the recipe.
         database_username: The username for the database.
         database_password: The password for the database.
         database_url: The URL of the RDS instance to use for the ZenML server.
@@ -118,7 +119,8 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     username: str
     password: str
     helm_chart: str = get_helm_chart_path()
-    zenmlserver_image_tag: str = ""
+    zenmlserver_image_tag: str = "latest"
+    zenmlinit_image_tag: str = "latest"
     namespace: str = "zenmlserver"
     kubectl_config_path: str = os.path.join(str(Path.home()), ".kube", "config")
     ingress_tls: bool = True
@@ -127,7 +129,8 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     ingress_path: str = ""
     create_ingress_controller: bool = True
     ingress_controller_hostname: str = ""
-    database_username: str = "admin"
+    deploy_db: bool = True
+    database_username: str = "user"
     database_password: str = ""
     database_url: str = ""
     database_ssl_ca: str = ""

@@ -201,6 +201,7 @@ DeleteObject
 Deprovision
 Deprovisions
 Deregisters
+Deserializes
 Deterministically
 DevOps
 DockerConfiguration
@@ -691,6 +692,7 @@ Terraform
 TheMatrix
 Tokenize
 Tokenizer
+Tolerations
 TorchServe
 TorchServe's
 TorchServeParameters
@@ -1200,6 +1202,7 @@ mobilenetv
 modelFormat
 modelUri
 msi
+mutex
 mvq
 mybucket
 mypy
@@ -1235,6 +1238,7 @@ numpy
 nzf
 observability
 odbc
+ondelete
 onerror
 orch
 orchestr
@@ -1368,6 +1372,7 @@ signum
 signup
 sklearn
 sklearnserver
+sku
 sm
 sourcery
 splitext
@@ -1525,3 +1530,6 @@ zenserver
 ConnectionConfig
 MetadataStoreClientConfig
 grpc
+openssl
+signalled
+zenconfig
