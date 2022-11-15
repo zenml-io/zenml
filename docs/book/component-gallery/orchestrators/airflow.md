@@ -100,7 +100,7 @@ your stack.
 * A [remote container registry](../container-registries/container-registries.md) 
 as part of your stack.
 
-In the remote case, the Airflow orchestrator works different than other ZenML orchestrators.
+In the remote case, the Airflow orchestrator works differently than other ZenML orchestrators.
 Executing a python file which runs a pipeline by calling `pipeline.run()` will not actually run
 the pipeline, but instead will create a `.zip` file containing an Airflow representation of your
 ZenML pipeline. In one additional step, you need to make sure this zip file ends up in the
