@@ -67,9 +67,10 @@ from zenml.new_models import (
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, TeamRequestModel,
 )
 from zenml.new_models.base_models import BaseResponseModel
+from zenml.new_models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -627,19 +628,68 @@ class Client(metaclass=ClientMetaClass):
     # ---- #
 
     def get_team(self, name_id_or_prefix: str) -> TeamResponseModel:
-        """Gets a user.
+        """Gets a team.
 
         Args:
-            name_id_or_prefix: The name or ID of the user.
+            name_id_or_prefix: The name or ID of the team.
 
         Returns:
-            The User
+            The Team
         """
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=TeamResponseModel,
             get_method=self.zen_store.get_team,
             list_method=self.zen_store.list_teams,
             name_id_or_prefix=name_id_or_prefix,
+        )
+
+    def create_team(
+        self,
+        name: str,
+        users: Optional[List[str]] = None
+    ) -> TeamResponseModel:
+        """Create a team.
+
+        Args:
+            name: Name of the new team
+            users: Users of the new team
+        """
+        user_list = []
+        if users:
+            for user_name_or_id in users:
+                user_list.append(
+                    self.get_user(name_id_or_prefix=user_name_or_id).id
+                )
+
+        team = TeamRequestModel(name=name, users=user_list)
+
+        return self.zen_store.create_team(team=team)
+
+    def delete_team(self, team_name_or_id: str) -> None:
+        """Delete a team.
+
+        Args:
+            team_name_or_id: The name or ID of the team to delete.
+        """
+        team = self.get_team(team_name_or_id)
+        self.zen_store.delete_team(team_name_or_id=team.name)
+
+    def update_team(
+        self,
+        team_name_or_id: str,
+    ) -> TeamResponseModel:
+        team = self._get_entity_by_id_or_name_or_prefix(
+            response_model=TeamResponseModel,
+            get_method=self.zen_store.get_team,
+            list_method=self.zen_store.list_teams,
+            name_id_or_prefix=team_name_or_id,
+        )
+
+        team_update = TeamUpdateModel()
+
+        return self.zen_store.update_team(
+            team_name_or_id=team_name_or_id,
+            team_update=team_update
         )
 
     # ----- #

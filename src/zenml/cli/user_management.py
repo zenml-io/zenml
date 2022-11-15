@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import click
 
@@ -22,6 +22,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
+from zenml.new_models import TeamRequestModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 
 
@@ -271,33 +272,42 @@ def describe_team(team_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        users = Client().zen_store.get_users_for_team(
-            team_name_or_id=parse_name_or_uuid(team_name_or_id)
-        )
+        team = Client().get_team(name_id_or_prefix=team_name_or_id)
     except KeyError as err:
         cli_utils.error(str(err))
-    if not users:
-        cli_utils.declare(f"Team '{team_name_or_id}' has no users.")
-        return
-    user_names = set([user.name for user in users])
-    cli_utils.declare(
-        f"Team '{team_name_or_id}' has the following users: {user_names}"
-    )
+    else:
+        cli_utils.print_pydantic_models(
+            [team],
+            exclude_columns=[
+                "created",
+                "updated",
+            ],
+        )
 
 
 @team.command("create", help="Create a new team.")
 @click.argument("team_name", type=str, required=True)
-def create_team(team_name: str) -> None:
+@click.option(
+    "--user",
+    "-u",
+    "users",
+    type=str,
+    multiple=True,
+    help="Name of users to add to this team.",
+)
+def create_team(
+    team_name: str,
+    users: Optional[List[str]] = None
+) -> None:
     """Create a new team.
 
     Args:
         team_name: Name of the team to create.
+        users: Users to add to this team
     """
     cli_utils.print_active_config()
     try:
-        from zenml.models import TeamModel
-
-        Client().zen_store.create_team(TeamModel(name=team_name))
+        Client().create_team(name=team_name, users=users)
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created team '{team_name}'.")
@@ -336,7 +346,7 @@ def delete_team(team_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        Client().zen_store.delete_team(parse_name_or_uuid(team_name_or_id))
+        Client().delete_team(team_name_or_id)
     except KeyError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Deleted team '{team_name_or_id}'.")

@@ -208,7 +208,6 @@ def print_pydantic_models(
             Dict of model attributes.
         """
         # Explicitly defined columns take precedence over exclude columns
-        include_columns = []
         if not columns:
             include_columns = [
                 k for k in model.dict().keys() if k not in exclude_columns
@@ -216,7 +215,8 @@ def print_pydantic_models(
         else:
             include_columns = columns
 
-        items = {}
+        items: Dict[str, Any] = {}
+
         for k in include_columns:
             value = getattr(model, k)
             # In case the response model contains nested BaseResponseModels
@@ -227,6 +227,17 @@ def print_pydantic_models(
                     items[k] = str(value.name)
                 else:
                     items[k] = str(value.id)
+
+            # If it is a list of BaseResponseModels access each Model within
+            #  the list and extract either name or id
+            elif (isinstance(value, list) and
+                    issubclass(model.__fields__[k].type_, BaseResponseModel)):
+                for v in value:
+                    if "name" in v.__fields__:
+                        items.setdefault(k, []).append(str(v.name))
+                    else:
+                        items.setdefault(k, []).append(str(v.id))
+
             else:
                 items[k] = str(value)
         # prepend an active marker if a function to mark active was passed

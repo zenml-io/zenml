@@ -96,6 +96,7 @@ from zenml.new_models import (
     UserResponseModel,
 )
 from zenml.new_models.project_models import ProjectUpdateModel
+from zenml.new_models.team_models import TeamUpdateModel
 from zenml.new_models.user_models import UserAuthModel, UserUpdateModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -1740,8 +1741,21 @@ class SqlZenStore(BaseZenStore):
                     f"Found existing team with this name."
                 )
 
+            # Get the Schemas of all users mentioned
+            filters = [
+                (UserSchema.id == user_id)
+                for user_id in team.users
+            ]
+
+            defined_users = session.exec(
+                select(UserSchema).where(or_(*filters))
+            ).all()
+
             # Create the team
-            new_team = TeamSchema.from_request(team)
+            new_team = TeamSchema(
+                name=team.name,
+                users=defined_users
+            )
             session.add(new_team)
             session.commit()
 
@@ -1779,7 +1793,7 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
-        self, team_id: UUID, team_update: TeamRequestModel
+        self, team_id: UUID, team_update: TeamUpdateModel
     ) -> TeamResponseModel:
         """Update an existing team.
 
@@ -1806,9 +1820,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Update the team
-            existing_team.name = team_update.name
-            existing_team.updated = datetime.now()
-
+            existing_team.update(team_update=team_update)
             session.add(existing_team)
             session.commit()
 

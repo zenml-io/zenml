@@ -11,12 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from datetime import datetime
 from typing import TYPE_CHECKING, List
 from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.new_models import TeamRequestModel, TeamResponseModel
+from zenml.new_models.team_models import TeamUpdateModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
@@ -41,17 +43,12 @@ class TeamSchema(NamedSchema, table=True):
         back_populates="team", sa_relationship_kwargs={"cascade": "delete"}
     )
 
-    @classmethod
-    def from_request(cls, model: TeamRequestModel) -> "TeamSchema":
-        """Create a `TeamSchema` from a `TeamModel`.
+    def update(self, user_update: TeamUpdateModel):
+        for field, value in user_update.dict(exclude_unset=True).items():
+            setattr(self, field, value)
 
-        Args:
-            model: The `TeamModel` from which to create the schema.
-
-        Returns:
-            The created `TeamSchema`.
-        """
-        return cls(name=model.name)
+        self.updated = datetime.now()
+        return self
 
     def to_model(self, _block_recursion: bool = False) -> TeamResponseModel:
         """Convert a `TeamSchema` to a `TeamResponseModel`.
