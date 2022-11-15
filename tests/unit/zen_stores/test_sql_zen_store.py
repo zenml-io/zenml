@@ -35,10 +35,10 @@ from zenml.new_models import (
     StackRequestModel,
     TeamRequestModel,
     UserRequestModel, StackUpdateModel, PipelineRequestModel,
-    ComponentUpdateModel,
+    ComponentUpdateModel, UserUpdateModel,
 )
 from zenml.new_models.team_models import TeamUpdateModel
-from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.base_zen_store import BaseZenStore, DEFAULT_USERNAME
 
 DEFAULT_NAME = "default"
 
@@ -233,13 +233,20 @@ def test_removing_user_from_team_succeeds(sql_store: BaseZenStore):
     """Tests removing a user from a team."""
     assert len(sql_store["store"].teams) == 0
     new_team = TeamRequestModel(name="arias_team")
-    sql_store["store"].create_team(new_team)
+    new_team = sql_store["store"].create_team(new_team)
+
     current_user_id = sql_store["active_user"].id
-    new_team_id = sql_store["store"].get_team("arias_team").id
-    sql_store["store"].add_user_to_team(current_user_id, new_team_id)
-    assert len(sql_store["store"].get_users_for_team(new_team_id)) == 1
-    sql_store["store"].remove_user_from_team(current_user_id, new_team_id)
-    assert len(sql_store["store"].get_users_for_team(new_team_id)) == 0
+
+    team_update = TeamUpdateModel(users=[current_user_id])
+    updated_team = sql_store["store"].update_team(
+        team_id=new_team.id, team_update=team_update
+    )
+    assert current_user_id in updated_team.user_ids
+    team_update = TeamUpdateModel(users=[])
+    updated_team = sql_store["store"].update_team(
+        team_id=new_team.id, team_update=team_update
+    )
+    assert current_user_id not in updated_team.user_ids
 
 
 def test_removing_nonexistent_user_from_team_fails(
@@ -367,10 +374,15 @@ def test_updating_user_succeeds(sql_store: BaseZenStore):
 
 def test_updating_default_user_fails(sql_store: BaseZenStore):
     """Tests that updating the default user is prohibited."""
-    default_user = sql_store["store"].get_user("default")
-    default_user.name = "axl"
+    default_user = sql_store["store"].get_user(DEFAULT_USERNAME)
+    assert default_user
+    user_update = UserUpdateModel()
+    user_update.name = "axl"
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_user(default_user)
+        sql_store["store"].update_user(
+            user_name_or_id=DEFAULT_USERNAME,
+            user_update=user_update
+        )
 
 
 def test_updating_nonexistent_user_fails(sql_store: BaseZenStore):
