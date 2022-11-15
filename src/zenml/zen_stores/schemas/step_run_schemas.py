@@ -9,8 +9,10 @@ from zenml.enums import ExecutionStatus
 from zenml.new_models.step_run_models import (
     StepRunRequestModel,
     StepRunResponseModel,
+    StepRunUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from datetime import datetime
 
 if TYPE_CHECKING:
     pass
@@ -57,13 +59,17 @@ class StepRunSchema(NamedSchema, table=True):
         )
 
     def to_model(
-        self, parent_step_ids: List[UUID], mlmd_parent_step_ids: List[int]
+        self,
+        parent_step_ids: List[UUID],
+        mlmd_parent_step_ids: List[int],
+        input_artifacts,
     ) -> StepRunResponseModel:
         """Convert a `StepRunSchema` to a `StepRunModel`.
 
         Args:
             parent_step_ids: The parent step ids to link to the step.
             mlmd_parent_step_ids: The parent step ids in MLMD.
+            input_artifacts:
 
         Returns:
             The created StepRunModel.
@@ -82,4 +88,14 @@ class StepRunSchema(NamedSchema, table=True):
             mlmd_parent_step_ids=mlmd_parent_step_ids,
             created=self.created,
             updated=self.updated,
+            input_artifacts=input_artifacts,
         )
+
+    def update(self, step_update: StepRunUpdateModel):
+        """"""
+        if step_update.status:
+            self.status = step_update.status
+
+        self.updated = datetime.now()
+
+        return self
