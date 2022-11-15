@@ -13,11 +13,12 @@
 #  permissions and limitations under the License.
 
 
-from zenml.pipelines import pipeline
-from zenml.config import DockerSettings
 import os
 
-docker_settings = DockerSettings(parent_image=os.getenv("BASE_IMAGE_NAME")) 
+from zenml.config import DockerSettings
+from zenml.pipelines import pipeline
+
+docker_settings = DockerSettings(parent_image=os.getenv("BASE_IMAGE_NAME"))
 
 
 @pipeline(enable_cache=True, settings={"docker": docker_settings})
