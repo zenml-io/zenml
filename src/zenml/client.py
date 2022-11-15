@@ -1948,7 +1948,11 @@ class Client(metaclass=ClientMetaClass):
                 pipeline
         """
 
-        return self.zen_store.list_pipelines(**locals())
+        return self.zen_store.list_pipelines(
+            project_name_or_id=project_name_or_id,
+            user_name_or_id=user_name_or_id,
+            name=name
+        )
 
     def get_pipeline(self, name_id_or_prefix: str) -> PipelineResponseModel:
         """List pipelines.
