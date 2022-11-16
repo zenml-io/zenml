@@ -71,7 +71,7 @@ python file_that_runs_a_zenml_pipeline.py
 ### Additional configuration
 
 For additional configuration of the Vertex orchestrator, you can pass
-`VertexOrchestratorSettings` which allows you to configure the following attributes:
+`VertexOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
 * `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
 your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
@@ -118,6 +118,11 @@ vertex_settings = VertexOrchestratorSettings(
 )
   ...
 ```
+
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex_orchestrator_flavor.VertexOrchestratorSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
 
 A concrete example of using the Vertex orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/vertex_ai_orchestration).

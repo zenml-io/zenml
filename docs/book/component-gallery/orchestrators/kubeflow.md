@@ -200,7 +200,7 @@ python file_that_runs_a_zenml_pipeline.py
 ### Additional configuration
 
 For additional configuration of the Kubeflow orchestrator, you can pass
-`KubeflowOrchestratorSettings` which allows you to configure the following attributes:
+`KubeflowOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
 * `client_args`: Arguments to pass when initializing the KFP client.
 * `user_namespace`: The user namespace to use when creating experiments and runs.
@@ -251,6 +251,11 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 )
     ...
 ```
+
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor.KubeflowOrchestratorSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
 
 ### Enabling CUDA for GPU-backed hardware
 
