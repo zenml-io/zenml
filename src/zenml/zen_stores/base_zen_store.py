@@ -345,8 +345,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
         active_stack: StackResponseModel
 
-        # TODO: To behaviour here is to always create a default stack if
-        #   something goes wrong. Should we change that?
         # Sanitize the active stack
         if active_stack_id:
             # Ensure that the active stack is still valid
