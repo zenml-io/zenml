@@ -667,13 +667,15 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self.active_stack_id = stack.id
 
     @property
-    def active_project(self):
-        if not self._active_project:
+    def active_project(self) -> "ProjectResponseModel":
+        if not self._active_project and self.active_project_name:
             project = self.zen_store.get_project(
                 project_name_or_id=self.active_project_name,
             )
             self.set_active_project(project)
-        return self._active_project
+            return self._active_project
+        else:
+            raise RuntimeError("No active project configured.")
 
     def record_email_opt_in_out(
         self, opted_in: bool, email: Optional[str], source: AnalyticsEventSource

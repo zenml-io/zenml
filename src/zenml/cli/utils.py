@@ -224,7 +224,7 @@ def print_pydantic_models(
             #  such a field, else the id is used
             if isinstance(value, BaseResponseModel):
                 if "name" in value.__fields__:
-                    items[k] = str(value.name)
+                    items[k] = str(value.name)  # type: ignore[attr-defined]
                 else:
                     items[k] = str(value.id)
 

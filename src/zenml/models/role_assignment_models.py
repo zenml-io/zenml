@@ -46,12 +46,12 @@ class RoleAssignmentBaseModel(BaseModel):
 
     @validator("user", always=True)
     @classmethod
-    def check_team_or_user(cls, user, values):
+    def check_team_or_user(cls, user, values) -> UUID:
         if not values.get("team") and not user:
             raise ValueError("Either team or user is required")
         elif values.get("team") and user:
             raise ValueError(
-                "A role assignment can not contain a user and " "team"
+                "A role assignment can not contain a user and team"
             )
         return user
 
