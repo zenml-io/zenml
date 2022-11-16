@@ -17,15 +17,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
-from zenml.new_models.base_models import (
-    BaseRequestModel,
-    BaseResponseModel,
-    update,
-)
 
 if TYPE_CHECKING:
-    from zenml.new_models import UserResponseModel
+    from zenml.models.user_models import UserResponseModel
 
 
 # ---- #

@@ -20,7 +20,7 @@ from uuid import UUID
 from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.new_models.stack_models import StackResponseModel, StackUpdateModel
+from zenml.models.stack_models import StackResponseModel, StackUpdateModel
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
 
 if TYPE_CHECKING:

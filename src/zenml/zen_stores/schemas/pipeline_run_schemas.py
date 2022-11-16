@@ -7,11 +7,11 @@ from sqlalchemy import TEXT, Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.enums import ExecutionStatus
-from zenml.new_models import PipelineRunResponseModel
+from zenml.models import PipelineRunResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
-    from zenml.new_models import PipelineRunUpdateModel
+    from zenml.models import PipelineRunUpdateModel
     from zenml.zen_stores.schemas import (
         PipelineSchema,
         ProjectSchema,

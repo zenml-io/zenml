@@ -23,7 +23,7 @@ from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
-from zenml.new_models.component_models import (
+from zenml.models.component_models import (
     ComponentResponseModel,
     ComponentUpdateModel,
 )

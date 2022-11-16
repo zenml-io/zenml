@@ -17,14 +17,14 @@ from uuid import uuid4
 import pytest
 
 from zenml.enums import ArtifactType
-from zenml.models.pipeline_models import ArtifactModel
+from zenml.models import ArtifactResponseModel
 from zenml.post_execution.artifact import ArtifactView
 
 
 def _create_artifact_view(materializer: str, data_type: str) -> ArtifactView:
     """Creates an artifact view with the given materializer and data type."""
     return ArtifactView(
-        ArtifactModel(
+        ArtifactResponseModel(
             id=uuid4(),
             type=ArtifactType.DATA,
             uri="",

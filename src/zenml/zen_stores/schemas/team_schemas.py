@@ -17,8 +17,8 @@ from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.new_models import TeamResponseModel
-from zenml.new_models.team_models import TeamUpdateModel
+from zenml.models import TeamResponseModel
+from zenml.models.team_models import TeamUpdateModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:

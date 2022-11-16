@@ -12,23 +12,37 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base domain model definitions."""
-
 from datetime import datetime
-from typing import Any
-from uuid import UUID, uuid4
+from typing import Any, ForwardRef
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
+
+ProjectResponseModel = ForwardRef("ProjectResponseModel")
+UserResponseModel = ForwardRef("UserResponseModel")
 
 
-class DomainModel(BaseModel):
+# --------------- #
+# RESPONSE MODELS #
+# --------------- #
+
+
+class BaseResponseModel(AnalyticsTrackedModelMixin):
     """Base domain model.
 
     Used as a base class for all domain models that have the following common
     characteristics:
 
-      * are uniquely identified by an UUID
+      * are uniquely identified by a UUID
       * have a creation timestamp and a last modified timestamp
     """
+
+    id: UUID = Field(title="The unique resource id.")
+
+    created: datetime = Field(title="Time when this resource was created.")
+    updated: datetime = Field(title="Time when this resource was last updated.")
 
     def __hash__(self) -> int:
         """Implementation of hash magic method.
@@ -47,31 +61,66 @@ class DomainModel(BaseModel):
         Returns:
             True if the other object is of the same type and has the same UUID.
         """
-        return self.id == other.id if isinstance(other, DomainModel) else False
-
-    id: UUID = Field(default_factory=uuid4, title="The unique resource id.")
-    created: datetime = Field(
-        default_factory=datetime.now,
-        title="Time when this resource was created.",
-    )
-    updated: datetime = Field(
-        default_factory=datetime.now,
-        title="Time when this resource was last updated.",
-    )
+        if isinstance(other, BaseResponseModel):
+            return self.id == other.id
+        else:
+            return False
 
 
-class UserOwnedDomainModel(DomainModel):
+class UserScopedResponseModel(BaseResponseModel):
     """Base user-owned domain model.
 
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: UUID = Field(
-        title="The id of the user that created this resource.",
+    user: UserResponseModel = Field(
+        title="The user that created this resource."
     )
 
 
-class ProjectScopedDomainModel(UserOwnedDomainModel):
+class ProjectScopedResponseModel(UserScopedResponseModel):
+    """Base project-scoped domain model.
+
+    Used as a base class for all domain models that are project-scoped.
+    """
+
+    project: ProjectResponseModel = Field(title="The project of this resource.")
+
+
+class ShareableResponseModel(ProjectScopedResponseModel):
+    """Base shareable project-scoped domain model.
+
+    Used as a base class for all domain models that are project-scoped and are
+    shareable.
+    """
+
+    is_shared: bool = Field(
+        title=(
+            "Flag describing if this resource is shared with other users in "
+            "the same project."
+        ),
+    )
+
+
+# -------------- #
+# REQUEST MODELS #
+# -------------- #
+
+
+class BaseRequestModel(AnalyticsTrackedModelMixin):
+    """ """
+
+
+class UserOwnedRequestModel(BaseRequestModel):
+    """Base user-owned domain model.
+
+    Used as a base class for all domain models that are "owned" by a user.
+    """
+
+    user: UUID = Field(title="The id of the user that created this resource.")
+
+
+class ProjectScopedRequestModel(UserOwnedRequestModel):
     """Base project-scoped domain model.
 
     Used as a base class for all domain models that are project-scoped.
@@ -80,7 +129,7 @@ class ProjectScopedDomainModel(UserOwnedDomainModel):
     project: UUID = Field(title="The project to which this resource belongs.")
 
 
-class ShareableProjectScopedDomainModel(ProjectScopedDomainModel):
+class ShareableRequestModel(ProjectScopedRequestModel):
     """Base shareable project-scoped domain model.
 
     Used as a base class for all domain models that are project-scoped and are
@@ -94,3 +143,17 @@ class ShareableProjectScopedDomainModel(ProjectScopedDomainModel):
             "the same project."
         ),
     )
+
+
+# ------------- #
+# UPDATE MODELS #
+# ------------- #
+
+
+def update(_cls):
+    for field in _cls.__fields__:
+        new_field = _cls.__fields__[field]
+        new_field.required = False
+        new_field.allow_none = True
+
+    return _cls

@@ -18,13 +18,13 @@ from uuid import UUID
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import PermissionType
-from zenml.new_models import (
+from zenml.models import (
     RoleAssignmentRequestModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
 )
-from zenml.new_models.role_assignment_models import RoleAssignmentResponseModel
+from zenml.models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 
 if TYPE_CHECKING:

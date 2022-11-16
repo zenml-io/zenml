@@ -34,6 +34,7 @@ from zenml.cli.stack import (
 )
 from zenml.client import Client
 from zenml.enums import StackComponentType
+from zenml.models import UserRequestModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
@@ -464,7 +465,7 @@ def test_share_stack_that_is_already_shared_by_other_user_fails(
     )
     clean_client.register_stack(stack_model)
 
-    other_user = UserModel(name="Arias_Evil_Twin")
+    other_user = UserRequestModel(name="Arias_Evil_Twin")
     other_user = clean_client.zen_store.create_user(other_user)
 
     other_orchestrator = _create_local_orchestrator(
@@ -521,7 +522,7 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
     )
     clean_client.register_stack(stack_model)
 
-    other_user = UserModel(name="Arias_Evil_Twin")
+    other_user = UserRequestModel(name="Arias_Evil_Twin")
     other_user = clean_client.zen_store.create_user(other_user)
 
     other_orchestrator = _create_local_orchestrator(

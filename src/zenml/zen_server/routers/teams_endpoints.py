@@ -19,7 +19,7 @@ from fastapi import APIRouter, Security
 
 from zenml.constants import API, ROLES, TEAMS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.new_models import (
+from zenml.models import (
     RoleAssignmentResponseModel,
     TeamRequestModel,
     TeamResponseModel,

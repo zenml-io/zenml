@@ -20,7 +20,7 @@ from fastapi import APIRouter, Security
 
 from zenml.constants import API, ARTIFACTS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.new_models import ArtifactRequestModel, ArtifactResponseModel
+from zenml.models import ArtifactRequestModel, ArtifactResponseModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 

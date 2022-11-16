@@ -17,11 +17,7 @@ from typing import List, Optional
 
 from sqlmodel import Field, Relationship
 
-from zenml.new_models import (
-    UserRequestModel,
-    UserResponseModel,
-    UserUpdateModel,
-)
+from zenml.models import UserRequestModel, UserResponseModel, UserUpdateModel
 from zenml.zen_stores.schemas import (
     FlavorSchema,
     PipelineRunSchema,

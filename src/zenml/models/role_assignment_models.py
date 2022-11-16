@@ -16,15 +16,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, root_validator, validator
 
-from zenml.new_models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 
 if TYPE_CHECKING:
-    from zenml.new_models.project_models import ProjectResponseModel
-    from zenml.new_models.role_models import RoleResponseModel
-    from zenml.new_models.user_models import (
-        TeamResponseModel,
-        UserResponseModel,
-    )
+    from zenml.models.project_models import ProjectResponseModel
+    from zenml.models.role_models import RoleResponseModel
+    from zenml.models.team_models import TeamResponseModel
+    from zenml.models.user_models import UserResponseModel
 
 # ---- #
 # BASE #

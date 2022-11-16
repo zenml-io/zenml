@@ -40,18 +40,16 @@ from zenml.container_registries.base_container_registry import (
 )
 from zenml.enums import ArtifactType, ExecutionStatus, PermissionType
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models.pipeline_models import (
-    ArtifactModel,
-    PipelineRunModel,
-    StepRunModel,
-)
-from zenml.new_models import (
+from zenml.models import (
+    ArtifactResponseModel,
+    PipelineRunResponseModel,
     ProjectRequestModel,
     RoleRequestModel,
+    StepRunResponseModel,
     TeamRequestModel,
     UserRequestModel,
 )
-from zenml.new_models.base_models import BaseResponseModel
+from zenml.models.base_models import BaseResponseModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
@@ -640,9 +638,9 @@ def step_context_with_two_outputs():
 
 
 @pytest.fixture
-def sample_step_model() -> StepRunModel:
+def sample_step_model() -> StepRunResponseModel:
     """Return a sample step model for testing purposes"""
-    return StepRunModel(
+    return StepRunResponseModel(
         id=uuid4(),
         name="sample_step",
         parents_step_ids=[0],
@@ -664,9 +662,9 @@ def sample_step_view(sample_step_model) -> StepView:
 
 
 @pytest.fixture
-def sample_pipeline_run_model() -> PipelineRunModel:
+def sample_pipeline_run_model() -> PipelineRunResponseModel:
     """Return sample pipeline run view for testing purposes"""
-    return PipelineRunModel(
+    return PipelineRunResponseModel(
         id=uuid4(),
         name="sample_run_name",
         user=uuid4(),
@@ -692,9 +690,9 @@ def sample_pipeline_run_view(
 
 
 @pytest.fixture
-def sample_artifact_model() -> ArtifactModel:
+def sample_artifact_model() -> ArtifactResponseModel:
     """Return a sample artifact model for testing purposes"""
-    return ArtifactModel(
+    return ArtifactResponseModel(
         id=uuid4(),
         name="sample_artifact",
         uri="sample_uri",

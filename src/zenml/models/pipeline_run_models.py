@@ -5,15 +5,16 @@ from pydantic import BaseModel, Field
 
 from zenml import __version__ as current_zenml_version
 from zenml.enums import ExecutionStatus
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
-from zenml.new_models.base_models import (
+from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
     update,
 )
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
-    from zenml.new_models import PipelineResponseModel, StackResponseModel
+    from zenml.models.pipeline_models import PipelineResponseModel
+    from zenml.models.stack_models import StackResponseModel
 
 
 def get_git_sha(clean: bool = True) -> Optional[str]:

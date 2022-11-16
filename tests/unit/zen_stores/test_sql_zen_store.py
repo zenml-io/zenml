@@ -27,7 +27,7 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
-from zenml.new_models import (
+from zenml.models import (
     ComponentRequestModel,
     ComponentUpdateModel,
     FlavorRequestModel,
@@ -44,8 +44,8 @@ from zenml.new_models import (
     UserRequestModel,
     UserUpdateModel,
 )
-from zenml.new_models.base_models import BaseResponseModel
-from zenml.new_models.team_models import TeamUpdateModel
+from zenml.models.base_models import BaseResponseModel
+from zenml.models.team_models import TeamUpdateModel
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,

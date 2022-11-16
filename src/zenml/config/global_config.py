@@ -45,7 +45,7 @@ from zenml.utils.analytics_utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.new_models import ProjectResponseModel, StackResponseModel
+    from zenml.models import ProjectResponseModel, StackResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)

@@ -17,8 +17,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Union
 from uuid import UUID
 
 from zenml.enums import StackComponentType
-from zenml.models.server_models import ServerModel
-from zenml.new_models import (
+from zenml.models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
     ComponentRequestModel,
@@ -34,6 +33,7 @@ from zenml.new_models import (
     PipelineUpdateModel,
     ProjectRequestModel,
     ProjectResponseModel,
+    ProjectUpdateModel,
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     RoleRequestModel,
@@ -47,13 +47,13 @@ from zenml.new_models import (
     StepRunUpdateModel,
     TeamRequestModel,
     TeamResponseModel,
+    TeamUpdateModel,
+    UserAuthModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
 )
-from zenml.new_models.project_models import ProjectUpdateModel
-from zenml.new_models.team_models import TeamUpdateModel
-from zenml.new_models.user_models import UserAuthModel
+from zenml.models.server_models import ServerModel
 
 if TYPE_CHECKING:
     from ml_metadata.proto.metadata_store_pb2 import (

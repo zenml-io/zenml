@@ -7,7 +7,7 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, SQLModel
 
 from zenml.enums import ExecutionStatus
-from zenml.new_models.step_run_models import (
+from zenml.models.step_run_models import (
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,

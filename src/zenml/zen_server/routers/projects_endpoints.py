@@ -30,7 +30,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import PermissionType, StackComponentType
-from zenml.new_models import (
+from zenml.models import (
     ComponentRequestModel,
     ComponentResponseModel,
     FlavorRequestModel,

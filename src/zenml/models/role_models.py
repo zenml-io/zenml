@@ -11,35 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Set
 
 from pydantic import BaseModel, Field
 
-from zenml.models.constants import (
-    MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
-    MODEL_NAME_FIELD_MAX_LENGTH,
-)
-from zenml.new_models.base_models import (
-    BaseRequestModel,
-    BaseResponseModel,
-    update,
-)
-
+from zenml.enums import PermissionType
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 
 # ---- #
 # BASE #
 # ---- #
-class ProjectBaseModel(BaseModel):
+
+
+class RoleBaseModel(BaseModel):
     """"""
 
     name: str = Field(
-        title="The unique name of the project.",
+        title="The unique name of the role.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    description: str = Field(
-        default="",
-        title="The description of the project.",
-        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
-    )
+    permissions: Set[PermissionType]
 
 
 # -------- #
@@ -47,7 +39,7 @@ class ProjectBaseModel(BaseModel):
 # -------- #
 
 
-class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
+class RoleResponseModel(RoleBaseModel, BaseResponseModel):
     """"""
 
 
@@ -56,7 +48,7 @@ class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
 # ------- #
 
 
-class ProjectRequestModel(ProjectBaseModel, BaseRequestModel):
+class RoleRequestModel(RoleBaseModel, BaseRequestModel):
     """"""
 
 
@@ -66,5 +58,5 @@ class ProjectRequestModel(ProjectBaseModel, BaseRequestModel):
 
 
 @update
-class ProjectUpdateModel(ProjectRequestModel):
+class RoleUpdateModel(RoleRequestModel):
     """"""
