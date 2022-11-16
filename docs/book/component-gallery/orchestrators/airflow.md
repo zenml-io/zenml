@@ -47,11 +47,12 @@ To use the Airflow orchestrator, we need:
 * [Docker](https://www.docker.com) installed and running.
 * The orchestrator registered and part of our active stack:
 ```shell
-zenml orchestrator register <NAME> \
-    --flavor=airflow
+zenml orchestrator register <ORCHESTRATOR_NAME> \
+    --flavor=airflow \
+    --local=True  # set this to `False` if using a remote Airflow deployment
 
-# Add the orchestrator to the active stack
-zenml stack update -o <NAME>
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% tabs %}
@@ -188,3 +189,23 @@ airflow_settings = AirflowOrchestratorSettings(
     operator_args={}
 )
 ```
+
+#### Custom DAG generator file
+
+To run a pipeline in Airflow, ZenML creates a Zip archive which contains two files:
+* A Json configuration file that the orchestrator creates. This file contains all
+the information required to create the Airflow DAG to run the pipeline.
+* A Python file which reads this configuration file and actually creates the Airflow
+DAG. We call this file the `DAG generator` and you can find the implementation
+[here](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/airflow/orchestrators/dag_generator.py).
+
+If you need more control over how the Airflow DAG is generated, you can provide a
+custom DAG generator file using the setting `custom_dag_generator`. This setting
+will need to reference a Python module that can be imported in your active Python environment.
+It will additionally need to contain the same classes (`DagConfiguration` and `TaskConfiguration`)
+and constants (`ENV_ZENML_AIRFLOW_RUN_ID`, `ENV_ZENML_LOCAL_STORES_PATH` and `CONFIG_FILENAME`) as the
+[original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/airflow/orchestrators/dag_generator.py).
+For this reason we suggest to start by copying the original and modifying it
+according to your needs.
+
+Check out our docs on how to apply settings to your pipelines [here](../../advanced-guide/pipelines/settings.md).
