@@ -149,7 +149,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
     _active_project: Optional["ProjectResponseModel"] = None
-    _active_stack: Optional["StackResponseModel"] = None
 
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
@@ -666,15 +665,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
     def set_active_stack(self, stack: "StackResponseModel") -> None:
         self.active_stack_id = stack.id
-        self._active_stack = stack
-
-    @property
-    def active_stack(self):
-        if not self._active_stack:
-            stack = self.zen_store.get_stack(stack_id=self.active_stack_id)
-            self.set_active_stack(stack)
-
-        return self._active_stack
 
     @property
     def active_project(self):

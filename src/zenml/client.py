@@ -93,11 +93,9 @@ AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 class ClientConfiguration(FileSyncModel):
     """Pydantic object used for serializing client configuration options."""
 
-    _active_stack: Optional["StackResponseModel"] = None
-    active_stack_id: Optional[UUID]
-
     _active_project: Optional["ProjectResponseModel"] = None
     active_project_id: Optional[UUID]
+    active_stack_id: Optional[UUID]
 
     def set_active_project(self, project: "ProjectResponseModel") -> None:
         """Set the project for the local client.
@@ -114,30 +112,8 @@ class ClientConfiguration(FileSyncModel):
         Args:
             stack: The stack to set active.
         """
-        self._active_stack = stack
         self.active_stack_id = stack.id
 
-    @property
-    def active_project(self) -> "ProjectResponseModel":
-        """"""
-        if self._active_project:
-            return self._active_project
-        else:
-            raise RuntimeError(
-                "No active project configured. You will need"
-                "to configure an active project to continue."
-            )
-
-    @property
-    def active_stack(self) -> "StackResponseModel":
-        """"""
-        if self._active_stack:
-            return self._active_stack
-        else:
-            raise RuntimeError(
-                "No active project configured. You will need"
-                "to configure an active project to continue."
-            )
 
     class Config:
         """Pydantic configuration class."""
@@ -1133,18 +1109,6 @@ class Client(metaclass=ClientMetaClass):
     # ------ #
     # STACKS #
     # ------ #
-
-    @property
-    def active_stack(self) -> "Stack":
-        """The active stack for this client.
-
-        Returns:
-            The active stack for this client.
-        """
-        from zenml.stack.stack import Stack
-
-        return Stack.from_model(self.active_stack_model)
-
     @property
     def active_stack_model(self) -> "StackResponseModel":
         """The model of the active stack for this client.
@@ -1159,11 +1123,12 @@ class Client(metaclass=ClientMetaClass):
             RuntimeError: If the active stack is not set.
         """
         stack: Optional["StackResponseModel"] = None
+
         if self._config:
-            stack = self._config.active_stack
+            stack = self.get_stack(self._config.active_stack_id)
 
         if not stack:
-            stack = GlobalConfiguration().active_stack
+            stack = self.get_stack(GlobalConfiguration().active_stack_id)
 
         if not stack:
             raise RuntimeError(
@@ -1174,8 +1139,19 @@ class Client(metaclass=ClientMetaClass):
 
         return stack
 
+    @property
+    def active_stack(self) -> "Stack":
+        """The active stack for this client.
+
+        Returns:
+            The active stack for this client.
+        """
+        from zenml.stack.stack import Stack
+
+        return Stack.from_model(self.active_stack_model)
+
     def get_stack(
-        self, name_id_or_prefix: Optional[str] = None
+        self, name_id_or_prefix: Optional[Union[UUID,str]] = None
     ) -> "StackResponseModel":
         """Get Stack.
 
