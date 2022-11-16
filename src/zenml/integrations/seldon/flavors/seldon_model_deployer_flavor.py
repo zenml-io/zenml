@@ -49,7 +49,7 @@ class SeldonModelDeployerConfig(BaseModelDeployerConfig):
             https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials).
     """
 
-    kubernetes_context: Optional[str]  # TODO[1376]: Setting
+    kubernetes_context: Optional[str]  # TODO: Potential setting
     kubernetes_namespace: Optional[str]
     base_url: str  # TODO: unused?
     secret: Optional[str]

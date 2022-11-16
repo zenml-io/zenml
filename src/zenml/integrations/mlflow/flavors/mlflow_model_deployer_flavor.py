@@ -33,7 +33,7 @@ class MLFlowModelDeployerConfig(BaseModelDeployerConfig):
             configuration, PID and log files are stored.
     """
 
-    service_path: str = ""  # TODO[1376]: Setting
+    service_path: str = ""
 
     @property
     def is_local(self) -> bool:

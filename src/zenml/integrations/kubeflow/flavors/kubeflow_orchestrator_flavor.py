@@ -138,13 +138,13 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
             will be skipped.
     """
 
-    kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT  # TODO[1376]: Setting
+    kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
-    kubernetes_context: Optional[str] = None  # TODO[1376]: Setting
-    skip_local_validations: bool = False  # TODO[1376]: Setting
-    skip_cluster_provisioning: bool = False  # TODO[1376]: Setting
-    skip_ui_daemon_provisioning: bool = False  # TODO[1376]: Setting
+    kubernetes_context: Optional[str] = None  # TODO: Potential setting
+    skip_local_validations: bool = False
+    skip_cluster_provisioning: bool = False
+    skip_ui_daemon_provisioning: bool = False
 
     @property
     def is_remote(self) -> bool:

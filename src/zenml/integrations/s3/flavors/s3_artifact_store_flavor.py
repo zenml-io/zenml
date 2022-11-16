@@ -61,9 +61,9 @@ class S3ArtifactStoreConfig(BaseArtifactStoreConfig, AuthenticationConfigMixin):
     key: Optional[str] = SecretField()
     secret: Optional[str] = SecretField()
     token: Optional[str] = SecretField()
-    client_kwargs: Optional[Dict[str, Any]] = None  # TODO[1376]: Setting
-    config_kwargs: Optional[Dict[str, Any]] = None  # TODO[1376]: Setting
-    s3_additional_kwargs: Optional[Dict[str, Any]] = None  # TODO[1376]: Setting
+    client_kwargs: Optional[Dict[str, Any]] = None
+    config_kwargs: Optional[Dict[str, Any]] = None
+    s3_additional_kwargs: Optional[Dict[str, Any]] = None
 
     @validator(
         "client_kwargs", "config_kwargs", "s3_additional_kwargs", pre=True

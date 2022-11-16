@@ -52,7 +52,7 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
             daemon will be skipped.
     """
 
-    kubernetes_context: str  # TODO[1376]: Setting
+    kubernetes_context: str  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
     tekton_ui_port: int = DEFAULT_TEKTON_UI_PORT
     skip_ui_daemon_provisioning: bool = False

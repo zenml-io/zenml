@@ -59,9 +59,9 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
             clients. This is only useful for unit testing.
     """
 
-    kubernetes_context: Optional[str] = None  # TODO[1376]: Setting
+    kubernetes_context: Optional[str] = None  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
-    skip_config_loading: bool = False  # TODO[1376]: Remove
+    skip_config_loading: bool = False  # TODO: Remove?
 
     @property
     def is_remote(self) -> bool:

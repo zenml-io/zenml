@@ -63,8 +63,8 @@ class VaultSecretsManagerConfig(BaseSecretsManagerConfig):
     url: str
     token: str
     mount_point: str
-    cert: Optional[str]  # TODO[1376]: Setting, unused
-    verify: Optional[str]  # TODO[1376]: Setting, unused
+    cert: Optional[str]  # TODO: unused
+    verify: Optional[str]  # TODO: unused
 
     @classmethod
     def _validate_scope(
