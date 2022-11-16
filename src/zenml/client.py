@@ -2108,7 +2108,7 @@ class Client(metaclass=ClientMetaClass):
                     artifact.mlmd_id = None
                     artifact.mlmd_parent_step_id = None
                     artifact.mlmd_producer_step_id = None
-                    self.zen_store.create_artifact(artifact)
+                    artifact = self.zen_store.create_artifact(artifact)
                     artifact_id_mapping[str(artifact_id)] = artifact.id
         logger.info(f"Imported {len(yaml_data)} pipeline runs from {filename}.")
 
@@ -2416,12 +2416,12 @@ class Client(metaclass=ClientMetaClass):
             pass
 
         if "project" in response_model.__fields__:
-            entities = list_method(
+            entities: List[AnyResponseModel] = list_method(
                 name=name_id_or_prefix,
                 project_name_or_id=self.active_project.id,
             )
         else:
-            entities = list_method(
+            entities: List[AnyResponseModel] = list_method(
                 name=name_id_or_prefix,
             )
 
@@ -2443,7 +2443,7 @@ class Client(metaclass=ClientMetaClass):
             filtered_entities = [
                 entity
                 for entity in entities
-                if str(entity.id).startswith(name_id_or_prefix)
+                if str(entity.id).startswith(name_id_or_prefix)  # type: ignore[arg-type]
             ]
             if len(filtered_entities) > 1:
                 raise KeyError(

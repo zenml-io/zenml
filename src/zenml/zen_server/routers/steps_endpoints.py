@@ -32,6 +32,7 @@ from zenml.models import (
     ArtifactResponseModel,
     StepRunRequestModel,
     StepRunResponseModel,
+    StepRunUpdateModel,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -114,7 +115,7 @@ def get_step(
 @handle_exceptions
 def update_step(
     step_id: UUID,
-    step_model: StepRunRequestModel,
+    step_model: StepRunUpdateModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> StepRunResponseModel:
     """Updates a step.
@@ -126,9 +127,7 @@ def update_step(
     Returns:
         The updated step model.
     """
-    step_model.id = step_id
-    updated_step = zen_store().update_run_step(step=step_model)
-    return updated_step
+    return zen_store().update_run_step(step_id=step_id, step_update=step_model)
 
 
 @router.get(

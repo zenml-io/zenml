@@ -23,6 +23,7 @@ from zenml.models import (
     RoleAssignmentResponseModel,
     TeamRequestModel,
     TeamResponseModel,
+    TeamUpdateModel,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -96,14 +97,14 @@ def get_team(
 
 
 @router.put(
-    "/{team_name_or_id}",
+    "/{team_id}",
     response_model=TeamResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_team(
-    team_name_or_id: Union[str, UUID],
-    team_update: TeamRequestModel,
+    team_id: UUID,
+    team_update: TeamUpdateModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> TeamResponseModel:
     """Updates a team.
@@ -117,9 +118,7 @@ def update_team(
     Returns:
         The created team.
     """
-    return zen_store().update_team(
-        team_name_or_id=team_name_or_id, team_update=team_update
-    )
+    return zen_store().update_team(team_id=team_id, team_update=team_update)
 
 
 @router.delete(

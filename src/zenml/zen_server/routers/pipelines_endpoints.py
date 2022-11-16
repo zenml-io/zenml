@@ -21,9 +21,9 @@ from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
-    PipelineRequestModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
+    PipelineUpdateModel,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -93,7 +93,7 @@ def get_pipeline(
 @handle_exceptions
 def update_pipeline(
     pipeline_id: UUID,
-    pipeline_update: PipelineRequestModel,
+    pipeline_update: PipelineUpdateModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> PipelineResponseModel:
     """Updates the attribute on a specific pipeline using its unique id.

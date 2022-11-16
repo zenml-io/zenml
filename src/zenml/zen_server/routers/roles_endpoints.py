@@ -93,13 +93,13 @@ def get_role(
 
 
 @router.put(
-    "/{role_name_or_id}",
+    "/{role_id}",
     response_model=RoleResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_role(
-    role_name_or_id: Union[str, UUID],
+    role_id: UUID,
     role_update: RoleUpdateModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> RoleResponseModel:
@@ -114,9 +114,7 @@ def update_role(
     Returns:
         The created role.
     """
-    return zen_store().update_role(
-        role_id=role_name_or_id, role_update=role_update
-    )
+    return zen_store().update_role(role_id=role_id, role_update=role_update)
 
 
 @router.delete(

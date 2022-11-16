@@ -352,61 +352,6 @@ def get_role_assignments_for_user(
     )
 
 
-@router.post(
-    "/{user_name_or_id}" + ROLES,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@handle_exceptions
-def assign_role(
-    user_name_or_id: Union[str, UUID],
-    role_name_or_id: Union[str, UUID],
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> None:
-    """Assign a role to a user for all resources within a given project or globally.
-
-    Args:
-        role_name_or_id: The name or ID of the role to assign to the user.
-        user_name_or_id: Name or ID of the user to which to assign the role.
-        project_name_or_id: Name or ID of the project in which to assign the
-            role to the user. If this is not provided, the role will be
-            assigned globally.
-    """
-    zen_store().assign_role(
-        role_name_or_id=role_name_or_id,
-        user_or_team_name_or_id=user_name_or_id,
-        is_user=True,
-        project_name_or_id=project_name_or_id,
-    )
-
-
-@router.delete(
-    "/{user_name_or_id}" + ROLES + "/{role_name_or_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def unassign_role(
-    user_name_or_id: Union[str, UUID],
-    role_name_or_id: Union[str, UUID],
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> None:
-    """Remove a users role within a project or globally.
-
-    Args:
-        user_name_or_id: Name or ID of the user.
-        role_name_or_id: Name or ID of the role.
-        project_name_or_id: Name or ID of the project. If this is not
-            provided, the role will be revoked globally.
-    """
-    zen_store().revoke_role(
-        role_name_or_id=role_name_or_id,
-        user_or_team_name_or_id=user_name_or_id,
-        is_user=True,
-        project_name_or_id=project_name_or_id,
-    )
-
-
 @current_user_router.get(
     "/current-user",
     response_model=UserResponseModel,

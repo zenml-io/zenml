@@ -29,8 +29,8 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
-    PipelineRunRequestModel,
     PipelineRunResponseModel,
+    PipelineRunUpdateModel,
     StepRunResponseModel,
 )
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
@@ -114,7 +114,7 @@ def get_run(
 @handle_exceptions
 def update_run(
     run_id: UUID,
-    run_model: PipelineRunRequestModel,
+    run_model: PipelineRunUpdateModel,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
@@ -133,7 +133,7 @@ def update_run(
     run_model.user = auth_context.user.id
 
     # TODO use id as well
-    return zen_store().update_run(run_id=run_id, run=run_model)
+    return zen_store().update_run(run_id=run_id, run_update=run_model)
 
 
 @router.get(
