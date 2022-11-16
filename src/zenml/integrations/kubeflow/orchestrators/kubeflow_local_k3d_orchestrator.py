@@ -31,10 +31,8 @@
 """Implementation of the Kubeflow orchestrator."""
 import os
 import sys
-from typing import Optional, cast
+from typing import cast
 from uuid import UUID
-
-import kfp
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.client import Client
@@ -42,7 +40,6 @@ from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
     DEFAULT_KFP_UI_PORT,
     KubeflowLocalK3DOrchestratorConfig,
-    KubeflowOrchestratorSettings,
 )
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (
@@ -122,34 +119,6 @@ class KubeflowLocalK3DOrchestrator(KubeflowOrchestrator):
             The name of the kubernetes context associated with the k3d
         """
         return self._get_k3d_kubernetes_context(self.id)
-
-    def _get_kfp_client(
-        self,
-        settings: Optional[KubeflowOrchestratorSettings] = None,
-    ) -> kfp.Client:
-        """Creates a KFP client instance.
-
-        Args:
-            settings: Optional settings which can be used to
-                configure the client instance.
-
-        Returns:
-            A KFP client instance.
-        """
-        client_args = {
-            "kube_context": self.config.kubernetes_context,
-        }
-
-        if settings:
-            client_args.update(settings.client_args)
-
-        # The host and namespace are stack component configurations that refer
-        # to the Kubeflow deployment. We don't want these overwritten on a
-        # run by run basis by user settings
-        client_args["host"] = self.config.kubeflow_hostname
-        client_args["namespace"] = self.config.kubeflow_namespace
-
-        return kfp.Client(**client_args)
 
     @property
     def _pid_file_path(self) -> str:
