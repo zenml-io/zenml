@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 import getpass
-import json
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 import click
@@ -789,7 +788,7 @@ def export_stack(
 
 
 def _import_stack_component(
-    component_type: StackComponentType, component_config: Dict[str, str]
+    component_type: StackComponentType, component_config: Dict[str, Any]
 ) -> UUID:
     """Import a single stack component with given type/config.
 
@@ -848,7 +847,7 @@ def _import_stack_component(
     registered_component = client.register_stack_component(
         name=component_name,
         flavor=component_flavor,
-        configuration=json.loads(component_config["configuration"]),
+        configuration=component_config["configuration"],
         component_type=component_type,
         is_shared=component_shared == "True",
     )
