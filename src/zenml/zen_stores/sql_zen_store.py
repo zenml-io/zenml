@@ -2919,7 +2919,7 @@ class SqlZenStore(BaseZenStore):
         except EntityExistsError:
             # Currently, an `EntityExistsError` is raised if either the run ID
             # or the run name already exists. Therefore, we need to have another
-            # try block since getting the run by ID might still fa
+            # try block since getting the run by ID might still fail.
             try:
                 return self.get_run(pipeline_run.id)
             except KeyError:
