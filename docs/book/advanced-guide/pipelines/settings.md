@@ -45,9 +45,19 @@ Settings are categorized into two types:
   - [`WandbExperimentTrackerSettings`](../../component-gallery/experiment-trackers/wandb.md) to specify W&B settings.
   - [`WhylogsDataValidatorSettings`](../../component-gallery/data-validators/whylogs.md) to specify Whylogs settings.
 
-For stack component specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register name --param1=paramvalue --param2=paramvalue` etc. The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change. 
+For stack component specific settings, you might be wondering what the difference is between these and the configuration passed in while doing `zenml stack-component register <NAME> --config1=configvalue --config2=configvalue` etc.
+The answer is that the configuration passed in at registration time is static and fixed throughout all pipeline runs, while the settings can change.
 
 A good example of this is the [`MLflow Experiment Tracker`](../../component-gallery/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
+
+{% hint style="info" %}
+All ZenML default stack components however also allow you to specify default values for settings in their configuration. For example,
+you could set a default value for the `nested` setting of your MLflow experiment tracker:
+`zenml experiment-tracker register <NAME> --flavor=mlflow --nested=True`
+
+This means that all pipelines that run using this experiment tracker use nested MLflow runs unless overwritten by specifying settings
+for the pipeline.
+{% endhint %}
 
 #### Using objects or dicts
 
@@ -62,7 +72,7 @@ settings={'docker': DockerSettings(requirements=['pandas'])}
 Or like this:
 
 ```python
-settings={'docker': {'requirements': ['pandas'])}
+settings={'docker': {'requirements': ['pandas']}}
 ```
 
 ### How to use settings
