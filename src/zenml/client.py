@@ -113,7 +113,6 @@ class ClientConfiguration(FileSyncModel):
         """
         self.active_stack_id = stack.id
 
-
     class Config:
         """Pydantic configuration class."""
 
@@ -1150,7 +1149,7 @@ class Client(metaclass=ClientMetaClass):
         return Stack.from_model(self.active_stack_model)
 
     def get_stack(
-        self, name_id_or_prefix: Optional[Union[UUID,str]] = None
+        self, name_id_or_prefix: Optional[Union[UUID, str]] = None
     ) -> "StackResponseModel":
         """Get Stack.
 

@@ -1832,9 +1832,10 @@ class SqlZenStore(BaseZenStore):
             if "users" in team_update.__fields_set__:
                 for user in team_update.users:
                     existing_team.users.append(
-                        self._get_user_schema(user_name_or_id=user,
-                                              session=session)
-                                 )
+                        self._get_user_schema(
+                            user_name_or_id=user, session=session
+                        )
+                    )
 
             session.add(existing_team)
             session.commit()

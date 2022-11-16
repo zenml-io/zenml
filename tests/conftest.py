@@ -338,8 +338,9 @@ def sql_store_with_team() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
 
 
 @pytest.fixture
-def sql_store_with_user_team_role(
-) -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
+def sql_store_with_user_team_role() -> Dict[
+    str, Union[BaseZenStore, BaseResponseModel]
+]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
 
     store = SqlZenStore(

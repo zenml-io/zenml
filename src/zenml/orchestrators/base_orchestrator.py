@@ -76,8 +76,11 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.new_models import PipelineRunRequestModel, PipelineRunResponseModel, \
-    PipelineRunUpdateModel
+from zenml.new_models import (
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
+    PipelineRunUpdateModel,
+)
 from zenml.orchestrators.utils import get_cache_status
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.utils import proto_utils, source_utils, string_utils, uuid_utils
@@ -503,7 +506,7 @@ class BaseOrchestrator(StackComponent, ABC):
         run.status = ExecutionStatus.FAILED
         client.zen_store.update_run(
             run_id=run.id,
-            run_update=PipelineRunUpdateModel(status=ExecutionStatus.FAILED)
+            run_update=PipelineRunUpdateModel(status=ExecutionStatus.FAILED),
         )
 
     @staticmethod

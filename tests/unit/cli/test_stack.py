@@ -24,6 +24,7 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
     LocalArtifactStoreConfig,
 )
+from zenml.cli.cli import cli
 from zenml.cli.stack import (
     delete_stack,
     export_stack,
@@ -40,9 +41,8 @@ from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManagerConfig,
 )
 from zenml.stack import Stack
-from zenml.cli.cli import cli
-NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 
+NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 
 
 def _create_local_orchestrator(
@@ -158,7 +158,7 @@ def test_update_stack_active_stack_succeeds(clean_client) -> None:
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ORCHESTRATOR: orchestrator_name,
-        }
+        },
     )
 
     clean_client.activate_stack(stack_name_id_or_prefix=new_stack.id)
@@ -178,9 +178,12 @@ def test_update_stack_active_stack_succeeds(clean_client) -> None:
     result = runner.invoke(update_command, ["-a", new_artifact_store.name])
     assert result.exit_code == 0
 
-    assert clean_client.active_stack_model.components[
-               StackComponentType.ARTIFACT_STORE
-           ][0].name == new_artifact_store.name
+    assert (
+        clean_client.active_stack_model.components[
+            StackComponentType.ARTIFACT_STORE
+        ][0].name
+        == new_artifact_store.name
+    )
 
 
 def test_updating_non_active_stack_succeeds(clean_client) -> None:
@@ -200,7 +203,7 @@ def test_updating_non_active_stack_succeeds(clean_client) -> None:
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ORCHESTRATOR: orchestrator_name,
-        }
+        },
     )
 
     orchestrator = _create_local_orchestrator(clean_client)
@@ -221,9 +224,12 @@ def test_updating_non_active_stack_succeeds(clean_client) -> None:
     )
     assert result.exit_code == 0
 
-    assert clean_client.get_stack(str(new_stack.id)).components.get(
-        StackComponentType.ORCHESTRATOR
-    )[0].name == new_orchestrator.name
+    assert (
+        clean_client.get_stack(str(new_stack.id))
+        .components.get(StackComponentType.ORCHESTRATOR)[0]
+        .name
+        == new_orchestrator.name
+    )
 
 
 def test_update_stack_adding_component_succeeds(clean_client) -> None:
@@ -245,7 +251,7 @@ def test_update_stack_adding_component_succeeds(clean_client) -> None:
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ORCHESTRATOR: orchestrator_name,
-        }
+        },
     )
     clean_client.activate_stack(new_stack.id)
 
@@ -266,9 +272,7 @@ def test_update_stack_adding_component_succeeds(clean_client) -> None:
 
     assert result.exit_code == 0
     assert StackComponentType.SECRETS_MANAGER in new_stack.components.keys()
-    assert (
-        new_stack.components[StackComponentType.SECRETS_MANAGER] is not None
-    )
+    assert new_stack.components[StackComponentType.SECRETS_MANAGER] is not None
     assert (
         new_stack.components[StackComponentType.SECRETS_MANAGER][0].id
         == local_secrets_manager_model.id
@@ -294,7 +298,7 @@ def test_update_stack_adding_to_default_stack_fails(clean_client) -> None:
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ORCHESTRATOR: orchestrator_name,
-        }
+        },
     )
     clean_client.activate_stack(new_stack.id)
 
@@ -314,7 +318,7 @@ def test_update_stack_adding_to_default_stack_fails(clean_client) -> None:
     )
     assert result.exit_code == 1
 
-    default_stack = clean_client.get_stack('default')
+    default_stack = clean_client.get_stack("default")
     assert (
         StackComponentType.SECRETS_MANAGER
         not in default_stack.components.keys()
@@ -363,7 +367,7 @@ def test_rename_stack_default_stack_fails(clean_client) -> None:
     rename_command = cli.commands["stack"].commands["rename"]
     result = runner.invoke(rename_command, ["default", "axls_new_stack"])
     assert result.exit_code == 1
-    assert len(clean_client.list_stacks(name='default')) == 1
+    assert len(clean_client.list_stacks(name="default")) == 1
 
 
 def test_rename_stack_active_stack_succeeds(clean_client) -> None:
@@ -384,7 +388,7 @@ def test_rename_stack_active_stack_succeeds(clean_client) -> None:
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ORCHESTRATOR: orchestrator_name,
-        }
+        },
     )
     clean_client.activate_stack(new_stack.id)
 
@@ -412,7 +416,7 @@ def test_rename_stack_non_active_stack_succeeds(clean_client) -> None:
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ORCHESTRATOR: orchestrator_name,
-        }
+        },
     )
 
     runner = CliRunner()
@@ -436,7 +440,7 @@ def test_sharing_default_stack_fails(clean_client: Client) -> None:
     result = runner.invoke(share_command, ["default"])
     assert result.exit_code == 1
 
-    default_stack = clean_client.get_stack('default')
+    default_stack = clean_client.get_stack("default")
     assert default_stack.is_shared is False
 
 
