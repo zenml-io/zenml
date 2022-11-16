@@ -37,7 +37,7 @@ from zenml.cli.stack import (
 )
 from zenml.client import Client
 from zenml.enums import StackComponentType
-from zenml.models import UserModel
+from zenml.models import StackModel, UserModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
@@ -481,10 +481,26 @@ def test_add_private_component_to_shared_stack_fails(
     runner = CliRunner()
     local_secrets_manager = _create_local_secrets_manager(clean_client)
     clean_client.register_stack_component(local_secrets_manager.to_model())
-    result = runner.invoke(share_stack, ["default", "-r"])
+    local_orchestrator = _create_local_orchestrator(clean_client)
+    clean_client.register_stack_component(local_orchestrator.to_model())
+    local_artifact_store = _create_local_artifact_store(clean_client)
+    clean_client.register_stack_component(local_artifact_store.to_model())
+
+    clean_client.register_stack(
+        stack=StackModel(
+            name="axls_stack",
+            components={
+                StackComponentType.ORCHESTRATOR: [local_orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [local_artifact_store.id],
+            },
+            user=clean_client.active_user.id,
+            project=clean_client.active_project.id,
+        )
+    )
+    result = runner.invoke(share_stack, ["axls_stack", "-r"])
     assert result.exit_code == 0
     result = runner.invoke(
-        update_stack, ["default", "-x", "arias_secrets_manager"]
+        update_stack, ["axls_stack", "-x", "arias_secrets_manager"]
     )
     assert result.exit_code == 1
 
