@@ -265,7 +265,6 @@ You can now jump straight to the [section on running the pipeline](#e296b6efb88f
 
 To run our pipeline on Kubeflow Pipelines deployed to GCP, we will create a new stack with these components:
 * The **artifact store** stores step outputs in a GCP Bucket. 
-* The **metadata store** stores metadata inside the Kubeflow Pipelines internal MySQL database.
 * The docker images that are created to run your pipeline are stored in GCP **container registry**.
 * The **Kubeflow orchestrator** is responsible for running your ZenML pipeline in Kubeflow Pipelines. 
   We need to configure it with the right kubernetes context so ZenML can run pipelines in your GCP cluster. 

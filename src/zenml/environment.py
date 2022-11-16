@@ -35,13 +35,22 @@ logger = get_logger(__name__)
 def get_environment() -> str:
     """Returns a string representing the execution environment of the pipeline.
 
-    Currently, one of `docker`, `paperspace`, 'colab', or `native`.
-
     Returns:
         str: the execution environment
     """
+    # Order is important here
     if Environment.in_kubernetes():
         return "kubernetes"
+    elif Environment.in_github_actions():
+        return "github_action"
+    elif Environment.in_gitlab_ci():
+        return "gitlab_ci"
+    elif Environment.in_circle_ci():
+        return "circle_ci"
+    elif Environment.in_bitbucket_ci():
+        return "bitbucket_ci"
+    elif Environment.in_ci():
+        return "generic_ci"
     elif Environment.in_docker():
         return "docker"
     elif Environment.in_container():
@@ -241,6 +250,56 @@ class Environment(metaclass=SingletonMetaClass):
             Gradient, `False` otherwise.
         """
         return "PAPERSPACE_NOTEBOOK_REPO_ID" in os.environ
+
+    @staticmethod
+    def in_github_actions() -> bool:
+        """If the current Python process is running in GitHub Actions.
+
+        Returns:
+            `True` if the current Python process is running in GitHub
+            Actions, `False` otherwise.
+        """
+        return "GITHUB_ACTIONS" in os.environ
+
+    @staticmethod
+    def in_gitlab_ci() -> bool:
+        """If the current Python process is running in GitLab CI.
+
+        Returns:
+            `True` if the current Python process is running in GitLab
+            CI, `False` otherwise.
+        """
+        return "GITLAB_CI" in os.environ
+
+    @staticmethod
+    def in_circle_ci() -> bool:
+        """If the current Python process is running in Circle CI.
+
+        Returns:
+            `True` if the current Python process is running in Circle
+            CI, `False` otherwise.
+        """
+        return "CIRCLECI" in os.environ
+
+    @staticmethod
+    def in_bitbucket_ci() -> bool:
+        """If the current Python process is running in Bitbucket CI.
+
+        Returns:
+            `True` if the current Python process is running in Bitbucket
+            CI, `False` otherwise.
+        """
+        return "BITBUCKET_BUILD_NUMBER" in os.environ
+
+    @staticmethod
+    def in_ci() -> bool:
+        """If the current Python process is running in any CI.
+
+        Returns:
+            `True` if the current Python process is running in any
+            CI, `False` otherwise.
+        """
+        return "CI" in os.environ
 
     def register_component(
         self, component: "BaseEnvironmentComponent"
