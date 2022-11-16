@@ -32,7 +32,6 @@
 import os
 import sys
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
-from uuid import UUID
 
 import kfp
 import urllib3
@@ -118,7 +117,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """
         if self.config.kubernetes_context:
             return self.config.kubernetes_context
-        _ , active_context = self.get_kubernetes_contexts()
+        _, active_context = self.get_kubernetes_contexts()
         return active_context if active_context else None
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:
@@ -167,16 +166,16 @@ class KubeflowOrchestrator(BaseOrchestrator):
             contexts, active_context = self.get_kubernetes_contexts()
 
             if self.kubernetes_context not in contexts:
-                    return False, (
-                        f"Could not find a Kubernetes context named "
-                        f"'{self.kubernetes_context}' in the local Kubernetes "
-                        f"configuration. Please make sure that the Kubernetes "
-                        f"cluster is running and that the kubeconfig file is "
-                        f"configured correctly. To list all configured "
-                        f"contexts, run:\n\n"
-                        f"  `kubectl config get-contexts`\n"
-                    )
-            if not self.config.skip_local_validations :
+                return False, (
+                    f"Could not find a Kubernetes context named "
+                    f"'{self.kubernetes_context}' in the local Kubernetes "
+                    f"configuration. Please make sure that the Kubernetes "
+                    f"cluster is running and that the kubeconfig file is "
+                    f"configured correctly. To list all configured "
+                    f"contexts, run:\n\n"
+                    f"  `kubectl config get-contexts`\n"
+                )
+            if not self.config.skip_local_validations:
 
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
