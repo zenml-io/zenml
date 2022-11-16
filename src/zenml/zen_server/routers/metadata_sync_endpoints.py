@@ -14,6 +14,7 @@
 """Endpoint definitions for metadata config."""
 
 from asyncio.log import logger
+
 from fastapi import APIRouter, Security
 
 from zenml.constants import API, METADATA_SYNC, VERSION_1
