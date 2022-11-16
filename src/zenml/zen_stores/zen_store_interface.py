@@ -987,6 +987,22 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def get_or_create_run(
+        self, pipeline_run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
+
+        Args:
+            pipeline_run: The pipeline run to get or create.
+
+        Returns:
+            The pipeline run.
+        """
+
+    @abstractmethod
     def list_runs(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,

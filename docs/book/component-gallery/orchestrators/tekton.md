@@ -110,12 +110,12 @@ as part of your stack.
 We can then register the orchestrator and use it in our active stack:
 
 ```shell
-zenml orchestrator register <NAME> \
+zenml orchestrator register <ORCHESTRATOR_NAME> \
     --flavor=tekton \
     --kubernetes_context=<KUBERNETES_CONTEXT>
 
-# Add the orchestrator to the active stack
-zenml stack update -o <NAME>
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
