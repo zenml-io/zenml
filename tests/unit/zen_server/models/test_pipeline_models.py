@@ -17,6 +17,7 @@ from uuid import UUID
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ExecutionStatus
 from zenml.models import PipelineRunModel, ProjectModel, UserModel
+from zenml.new_models import PipelineResponseModel
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
@@ -66,12 +67,11 @@ def test_pipeline_model_hydration(mocker):
         "get_run",
         return_value=runs[0],
     )
-    model = PipelineModel(
+    model = PipelineResponseModel(
         user=user.id,
         project=project.id,
         name="my_pipeline",
         spec=PipelineSpec(steps=[]),
     )
 
-    hydrated_model = HydratedPipelineModel.from_model(model)
-    assert hydrated_model.runs == runs[-3:]
+    assert model.runs == runs[-3:]

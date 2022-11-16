@@ -22,6 +22,7 @@ from zenml.integrations.scipy.materializers.sparse_materializer import (
 
 from zenml.post_execution.pipeline import PipelineRunView
 
+
 def test_scipy_sparse_matrix_materializer(clean_client):
     """Tests whether the steps work for the SciPy sparse matrix materializer."""
     with does_not_raise():

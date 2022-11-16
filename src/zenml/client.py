@@ -2255,7 +2255,15 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of all pipeline runs.
         """
-        return self.zen_store.list_runs(**locals())
+        return self.zen_store.list_runs(
+            project_name_or_id=project_name_or_id,
+            stack_id=stack_id,
+            component_id=component_id,
+            run_name=run_name,
+            user_name_or_id=user_name_or_id,
+            pipeline_id=pipeline_id,
+            unlisted=unlisted
+        )
 
     def get_pipeline_run(
         self, name_id_or_prefix: str

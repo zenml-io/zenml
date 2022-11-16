@@ -37,7 +37,7 @@ from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
 )
-from zenml.enums import ArtifactType, ExecutionStatus
+from zenml.enums import ArtifactType, ExecutionStatus, PermissionType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.pipeline_models import (
     ArtifactModel,
@@ -45,6 +45,8 @@ from zenml.models.pipeline_models import (
     StepRunModel,
 )
 from zenml.models.user_management_models import TeamModel
+from zenml.new_models import TeamRequestModel, RoleRequestModel, \
+    UserRequestModel, ProjectRequestModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
@@ -315,7 +317,7 @@ def sql_store_with_team() -> BaseZenStore:
         ),
         track_analytics=False,
     )
-    new_team = TeamModel(name="arias_team")
+    new_team = TeamRequestModel(name="arias_team")
     store.create_team(new_team)
     default_project = store.list_projects()[0]
     default_stack = store.list_stacks()[0]
@@ -327,6 +329,41 @@ def sql_store_with_team() -> BaseZenStore:
         "default_stack": default_stack,
         "active_user": active_user,
         "default_team": default_team,
+    }
+
+
+@pytest.fixture
+def sql_store_with_user_team_role() -> BaseZenStore:
+    temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
+
+    store = SqlZenStore(
+        config=SqlZenStoreConfiguration(
+            url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
+        ),
+        track_analytics=False,
+    )
+
+    new_team = TeamRequestModel(name="axls_team")
+    new_team = store.create_team(new_team)
+
+    new_role = RoleRequestModel(
+        name="axl_feeder",
+        permissions={PermissionType.ME}
+    )
+    new_role = store.create_role(new_role)
+
+    new_user = UserRequestModel(name="axl")
+    new_user = store.create_user(new_user)
+
+    new_project = ProjectRequestModel(name="axl_prj")
+    new_project = store.create_project(new_project)
+
+    yield {
+        "store": store,
+        "user": new_user,
+        "team": new_team,
+        "role": new_role,
+        "project": new_project
     }
 
 

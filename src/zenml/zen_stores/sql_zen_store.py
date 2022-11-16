@@ -2448,6 +2448,12 @@ class SqlZenStore(BaseZenStore):
             existing_project = session.exec(
                 select(ProjectSchema).where(ProjectSchema.id == project_id)
             ).first()
+            if existing_project is None:
+                raise KeyError(
+                    f"Unable to update project with id "
+                    f"'{project_id}': Found no"
+                    f"existing projects with this id."
+                )
             if (
                 existing_project.name == self._default_project_name
                 and "name" in project_update.__fields_set__
@@ -2455,12 +2461,6 @@ class SqlZenStore(BaseZenStore):
             ):
                 raise IllegalOperationError(
                     "The name of the default project cannot be changed."
-                )
-            if existing_project is None:
-                raise KeyError(
-                    f"Unable to update project with id "
-                    f"'{project_id}': Found no"
-                    f"existing projects with this id."
                 )
 
             # Update the project

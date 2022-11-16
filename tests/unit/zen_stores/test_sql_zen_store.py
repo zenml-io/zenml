@@ -14,6 +14,7 @@
 
 import uuid
 from contextlib import ExitStack as does_not_raise
+from typing import Union, Dict
 
 import pytest
 from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
@@ -39,8 +40,9 @@ from zenml.new_models import (
     StackUpdateModel,
     TeamRequestModel,
     UserRequestModel,
-    UserUpdateModel,
+    UserUpdateModel, RoleAssignmentRequestModel,
 )
+from zenml.new_models.base_models import BaseResponseModel
 from zenml.new_models.team_models import TeamUpdateModel
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
@@ -57,13 +59,14 @@ DEFAULT_NAME = "default"
 # '---------
 
 
-def test_only_one_default_project(sql_store: BaseZenStore):
+def test_only_one_default_project_present(sql_store: BaseZenStore):
     """Tests that only one default project can be created."""
     assert len(sql_store["store"].list_projects()) == 1
 
 
-def test_project_creation(sql_store: BaseZenStore):
+def test_project_creation_succeeds(sql_store: BaseZenStore):
     """Tests project creation."""
+    assert len(sql_store["store"].list_projects()) == 1
     new_project = ProjectRequestModel(name="arias_project")
     sql_store["store"].create_project(new_project)
     projects_list = sql_store["store"].list_projects()
@@ -71,13 +74,15 @@ def test_project_creation(sql_store: BaseZenStore):
     assert "arias_project" in [p.name for p in projects_list]
 
 
-def test_getting_project(sql_store: BaseZenStore):
+def test_get_project_succeeds(sql_store: BaseZenStore):
     """Tests getting a project."""
-    assert sql_store["default_project"].name == DEFAULT_NAME
-    assert type(sql_store["default_project"].id) == uuid.UUID
+    assert sql_store["default_project"].name == DEFAULT_PROJECT_NAME
+    with does_not_raise():
+        sql_store["store"].get_project(DEFAULT_PROJECT_NAME)
+        sql_store["store"].get_project(sql_store["default_project"].id)
 
 
-def test_getting_nonexistent_project_raises_error(
+def test_getting_nonexistent_project_fails(
     sql_store: BaseZenStore,
 ):
     """Tests getting a nonexistent project raises an error."""
@@ -88,10 +93,10 @@ def test_getting_nonexistent_project_raises_error(
 def test_updating_default_project_fails(sql_store: BaseZenStore):
     """Tests updating the default project."""
     default_project = sql_store["store"].get_project(DEFAULT_PROJECT_NAME)
-    assert default_project.name == DEFAULT_NAME
+    assert default_project.name == DEFAULT_PROJECT_NAME
     project_update = ProjectUpdateModel(
         name="aria_project",
-        description="Aria has taken possession " "of this project.",
+        description="Aria has taken possession of this project.",
     )
     with pytest.raises(IllegalOperationError):
         sql_store["store"].update_project(
@@ -99,13 +104,16 @@ def test_updating_default_project_fails(sql_store: BaseZenStore):
         )
 
 
-def test_updating_project(sql_store: BaseZenStore):
+def test_updating_project_succeeds(sql_store: BaseZenStore):
     """Tests updating a project."""
     new_project = ProjectRequestModel(name="arias_project")
     new_project = sql_store["store"].create_project(new_project)
 
     new_name = "axls_project"
-    project_update = ProjectUpdateModel(name=new_name)
+    project_update = ProjectUpdateModel(
+        name=new_name,
+        description="Axl has taken possession of this project."
+    )
 
     with does_not_raise():
         sql_store["store"].update_project(
@@ -119,9 +127,12 @@ def test_updating_nonexisting_project_raises_error(
     sql_store: BaseZenStore,
 ):
     """Tests updating a nonexistent project raises an error."""
-    new_project = ProjectRequestModel(name="arias_project")
+    project_update = ProjectUpdateModel(name="arias_project")
     with pytest.raises(KeyError):
-        sql_store["store"].update_project(new_project)
+        sql_store["store"].update_project(
+            project_id=uuid.uuid4(),
+            project_update=project_update
+        )
 
 
 def test_deleting_project_succeeds(sql_store: BaseZenStore):
@@ -171,7 +182,7 @@ def test_create_team(sql_store: BaseZenStore):
 
 def test_get_team(sql_store: BaseZenStore):
     """Tests getting a team."""
-    assert len(sql_store["store"].teams) == 0
+    assert len(sql_store["store"].get_teams()) == 0
     new_team = TeamRequestModel(name="arias_team")
     sql_store["store"].create_team(new_team)
     assert sql_store["store"].get_team("arias_team").name == "arias_team"
@@ -565,155 +576,105 @@ def test_updating_builtin_role_fails(sql_store: BaseZenStore):
 
 
 def test_assigning_role_to_user_succeeds(
-    sql_store_with_team: BaseZenStore,
+    sql_store_with_user_team_role: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests assigning a role to a user."""
-    roles_before = len(sql_store_with_team["store"].roles)
-    role_assignments_before = len(sql_store_with_team["store"].role_assignments)
-
-    new_role = RoleRequestModel(
-        name="aria_feeder", permissions={PermissionType.ME}
+    role_assignment = RoleAssignmentRequestModel(
+        role=sql_store_with_user_team_role["role"].id,
+        user=sql_store_with_user_team_role["user"].id,
+        is_user=True,
+        project=None
     )
-    current_user_id = sql_store_with_team["active_user"].id
-
-    sql_store_with_team["store"].create_role(new_role)
-    new_role_id = sql_store_with_team["store"].get_role("aria_feeder").id
-    sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
-
-    assert len(sql_store_with_team["store"].roles) == roles_before + 1
-    assert (
-        len(sql_store_with_team["store"].role_assignments)
-        == role_assignments_before + 1
-    )
+    with does_not_raise():
+        (sql_store_with_user_team_role["store"]
+         .create_role_assignment(role_assignment))
 
 
 def test_assigning_role_to_team_succeeds(
-    sql_store_with_team: BaseZenStore,
+    sql_store_with_user_team_role: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests assigning a role to a team."""
-    roles_before = len(sql_store_with_team["store"].roles)
-    role_assignments_before = len(sql_store_with_team["store"].role_assignments)
-
-    team_id = sql_store_with_team["default_team"].id
-    new_role = RoleRequestModel(
-        name="blupus_friend", permissions={PermissionType.ME}
+    role_assignment = RoleAssignmentRequestModel(
+        role=sql_store_with_user_team_role["role"].id,
+        team=sql_store_with_user_team_role["team"].id,
+        is_user=True,
+        project=None
     )
-    new_role = sql_store_with_team["store"].create_role(new_role)
-    sql_store_with_team["store"].assign_role(
-        new_role.id, team_id, is_user=False
-    )
-
-    assert len(sql_store_with_team["store"].roles) == roles_before + 1
-    assert (
-        len(sql_store_with_team["store"].role_assignments)
-        == role_assignments_before + 1
-    )
-    assert (
-        len(
-            sql_store_with_team["store"].list_role_assignments(
-                user_name_or_id=sql_store_with_team["active_user"].id
-            )
-        )
-        == 2
-    )
+    with does_not_raise():
+        (sql_store_with_user_team_role["store"]
+         .create_role_assignment(role_assignment))
 
 
-def test_assigning_role_if_assignment_already_exists(
-    sql_store_with_team: BaseZenStore,
+def test_assigning_role_if_assignment_already_exists_fails(
+    sql_store_with_user_team_role: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests assigning a role to a user if the assignment already exists."""
-    roles_before = len(sql_store_with_team["store"].roles)
-    role_assignments_before = len(sql_store_with_team["store"].role_assignments)
-
-    new_role = RoleRequestModel(
-        name="aria_feeder",
-        permissions={
-            PermissionType.ME,
-            PermissionType.READ,
-            PermissionType.WRITE,
-        },
+    role_assignment = RoleAssignmentRequestModel(
+        role=sql_store_with_user_team_role["role"].id,
+        user=sql_store_with_user_team_role["user"].id,
+        is_user=True,
+        project=None
     )
-    current_user_id = sql_store_with_team["active_user"].id
-    sql_store_with_team["store"].create_role(new_role)
-    new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
-    sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
+    with does_not_raise():
+        (sql_store_with_user_team_role["store"]
+         .create_role_assignment(role_assignment))
     with pytest.raises(EntityExistsError):
-        sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
-
-    assert len(sql_store_with_team["store"].roles) == roles_before + 1
-    assert (
-        len(sql_store_with_team["store"].role_assignments)
-        == role_assignments_before + 1
-    )
+        (sql_store_with_user_team_role["store"]
+         .create_role_assignment(role_assignment))
 
 
 def test_revoking_role_for_user_succeeds(
-    sql_store_with_team: BaseZenStore,
+    sql_store_with_user_team_role: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests revoking a role for a user."""
-    roles_before = len(sql_store_with_team["store"].roles)
-    role_assignments_before = len(sql_store_with_team["store"].role_assignments)
-
-    new_role = RoleRequestModel(
-        name="aria_feeder", permissions={PermissionType.ME}
+    role_assignment = RoleAssignmentRequestModel(
+        role=sql_store_with_user_team_role["role"].id,
+        user=sql_store_with_user_team_role["user"].id,
+        is_user=True,
+        project=None
     )
-    current_user_id = sql_store_with_team["active_user"].id
-    sql_store_with_team["store"].create_role(new_role)
-    new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
-    sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
-    sql_store_with_team["store"].revoke_role(new_role_id, current_user_id)
-
-    assert len(sql_store_with_team["store"].roles) == roles_before + 1
-    assert (
-        len(sql_store_with_team["store"].role_assignments)
-        == role_assignments_before
-    )
+    with does_not_raise():
+        role_assignment = (sql_store_with_user_team_role["store"]
+                           .create_role_assignment(role_assignment))
+        sql_store_with_user_team_role["store"].delete_role_assignment(
+            role_assignment_id=role_assignment.id
+        )
+    with pytest.raises(KeyError):
+        sql_store_with_user_team_role["store"].get_role_assignment(
+            role_assignment_id=role_assignment.id
+        )
 
 
 def test_revoking_role_for_team_succeeds(
-    sql_store_with_team: BaseZenStore,
+    sql_store_with_user_team_role: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests revoking a role for a team."""
-    roles_before = len(sql_store_with_team["store"].roles)
-    role_assignments_before = len(sql_store_with_team["store"].role_assignments)
-
-    sql_store_with_team["default_team"].id
-    new_role = RoleRequestModel(
-        name="blupus_friend", permissions={PermissionType.ME}
+    role_assignment = RoleAssignmentRequestModel(
+        role=sql_store_with_user_team_role["role"].id,
+        team=sql_store_with_user_team_role["team"].id,
+        is_user=True,
+        project=None
     )
-    new_role = sql_store_with_team["store"].create_role(new_role)
-
-    RoleAssignmentUpdateModel()
-
-    assert len(sql_store_with_team["store"].roles) == roles_before + 1
-    assert (
-        len(sql_store_with_team["store"].role_assignments)
-        == role_assignments_before
-    )
+    with does_not_raise():
+        role_assignment = (sql_store_with_user_team_role["store"]
+                           .create_role_assignment(role_assignment))
+        sql_store_with_user_team_role["store"].delete_role_assignment(
+            role_assignment_id=role_assignment.id
+        )
+    with pytest.raises(KeyError):
+        sql_store_with_user_team_role["store"].get_role_assignment(
+            role_assignment_id=role_assignment.id
+        )
 
 
 def test_revoking_nonexistent_role_fails(
-    sql_store_with_team: BaseZenStore,
+    sql_store_with_user_team_role: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests revoking a nonexistent role fails."""
-    current_user_id = sql_store_with_team["active_user"].id
     with pytest.raises(KeyError):
-        sql_store_with_team["store"].revoke_role(uuid.uuid4(), current_user_id)
-
-
-def test_revoking_role_for_nonexistent_user_fails(
-    sql_store_with_team: BaseZenStore,
-):
-    """Tests revoking a role for a nonexistent user fails."""
-    new_role = RoleRequestModel(
-        name="aria_feeder", permissions={PermissionType.ME}
-    )
-    sql_store_with_team["store"].create_role(new_role)
-    new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
-    current_user_id = sql_store_with_team["active_user"].id
-    sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
-    with pytest.raises(KeyError):
-        sql_store_with_team["store"].revoke_role(new_role_id, uuid.uuid4())
+        sql_store_with_user_team_role["store"].delete_role_assignment(
+            role_assignment_id=uuid.uuid4()
+        )
 
 
 #  .----------------.
