@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 class ProjectSchema(SQLModel, table=True):
     """SQL Model for projects."""
 
-    __tablename__ = "project"
+    __tablename__ = "workspace"
 
     id: UUID = Field(primary_key=True)
     name: str

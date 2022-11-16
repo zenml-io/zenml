@@ -80,8 +80,11 @@ examples = [
     ExampleIntegrationTestConfiguration(
         name="airflow_orchestration",
         validation_function=generate_basic_validation_function(
-            pipeline_name="airflow_example_pipeline", step_count=3
+            pipeline_name="fashion_mnist_pipeline", step_count=3
         ),
+        # skip due to installation issues, re-enable once the integration
+        # test PRD is implemented
+        skip_on_windows=True,
     ),
     # TODO: re-add data validation test when we understand why they
     # intermittently break some of the other test cases
