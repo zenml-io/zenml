@@ -21,7 +21,7 @@ import pytest
 from pydantic import ValidationError, validator
 
 from zenml.enums import StackComponentType
-from zenml.new_models import ComponentRequestModel
+from zenml.models import ComponentRequestModel
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestrator,
     BaseOrchestratorConfig,

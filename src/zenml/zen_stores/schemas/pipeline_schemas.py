@@ -21,11 +21,11 @@ from sqlalchemy import TEXT, Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.new_models.pipeline_models import PipelineResponseModel
+from zenml.models.pipeline_models import PipelineResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
-    from zenml.new_models import PipelineUpdateModel
+    from zenml.models import PipelineUpdateModel
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.project_schemas import ProjectSchema
     from zenml.zen_stores.schemas.user_schemas import UserSchema

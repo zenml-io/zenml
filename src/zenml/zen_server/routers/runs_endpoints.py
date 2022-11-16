@@ -28,7 +28,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus, PermissionType
-from zenml.new_models import (
+from zenml.models import (
     PipelineRunRequestModel,
     PipelineRunResponseModel,
     StepRunResponseModel,

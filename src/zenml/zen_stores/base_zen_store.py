@@ -31,12 +31,7 @@ from zenml.constants import (
 from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.exceptions import StackExistsError
 from zenml.logger import get_logger
-from zenml.models.server_models import (
-    ServerDatabaseType,
-    ServerDeploymentType,
-    ServerModel,
-)
-from zenml.new_models import (
+from zenml.models import (
     ComponentRequestModel,
     ProjectRequestModel,
     ProjectResponseModel,
@@ -49,6 +44,11 @@ from zenml.new_models import (
     TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
+)
+from zenml.models.server_models import (
+    ServerDatabaseType,
+    ServerDeploymentType,
+    ServerModel,
 )
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,

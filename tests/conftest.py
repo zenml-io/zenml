@@ -40,18 +40,18 @@ from zenml.container_registries.base_container_registry import (
 )
 from zenml.enums import ArtifactType, ExecutionStatus, PermissionType
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models.pipeline_models import (
-    ArtifactModel,
-    PipelineRunModel,
-    StepRunModel,
-)
-from zenml.new_models import (
+from zenml.models import (
+    ArtifactResponseModel,
+    PipelineRunResponseModel,
     ProjectRequestModel,
     RoleRequestModel,
+    StepRunResponseModel,
     TeamRequestModel,
     UserRequestModel,
+    UserResponseModel,
+    ProjectResponseModel
 )
-from zenml.new_models.base_models import BaseResponseModel
+from zenml.models.base_models import BaseResponseModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
@@ -640,9 +640,34 @@ def step_context_with_two_outputs():
 
 
 @pytest.fixture
-def sample_step_model() -> StepRunModel:
+def sample_user_model() -> UserResponseModel:
+    """Return a sample user model for testing purposes"""
+    return UserResponseModel(
+        id=uuid4(),
+        name="axl",
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def sample_project_model() -> ProjectResponseModel:
+    """Return a sample project model for testing purposes"""
+    return ProjectResponseModel(
+        id=uuid4(),
+        name="axl",
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def sample_step_model(
+        sample_user_model: UserResponseModel,
+        sample_project_model: ProjectResponseModel
+) -> StepRunResponseModel:
     """Return a sample step model for testing purposes"""
-    return StepRunModel(
+    return StepRunResponseModel(
         id=uuid4(),
         name="sample_step",
         parents_step_ids=[0],
@@ -654,6 +679,12 @@ def sample_step_model() -> StepRunModel:
         input_artifacts={},
         step_configuration={},
         status=ExecutionStatus.COMPLETED,
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        project=sample_project_model,
+        docstring="",
+        mlmd_id=0
     )
 
 
@@ -664,16 +695,21 @@ def sample_step_view(sample_step_model) -> StepView:
 
 
 @pytest.fixture
-def sample_pipeline_run_model() -> PipelineRunModel:
+def sample_pipeline_run_model(
+        sample_user_model: UserResponseModel,
+        sample_project_model: ProjectResponseModel
+) -> PipelineRunResponseModel:
     """Return sample pipeline run view for testing purposes"""
-    return PipelineRunModel(
+    return PipelineRunResponseModel(
         id=uuid4(),
         name="sample_run_name",
-        user=uuid4(),
-        project=uuid4(),
         pipeline_configuration={},
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        project=sample_project_model,
     )
 
 
@@ -692,9 +728,9 @@ def sample_pipeline_run_view(
 
 
 @pytest.fixture
-def sample_artifact_model() -> ArtifactModel:
+def sample_artifact_model() -> ArtifactResponseModel:
     """Return a sample artifact model for testing purposes"""
-    return ArtifactModel(
+    return ArtifactResponseModel(
         id=uuid4(),
         name="sample_artifact",
         uri="sample_uri",

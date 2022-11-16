@@ -44,7 +44,7 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
-from zenml.new_models.base_models import BaseResponseModel
+from zenml.models.base_models import BaseResponseModel
 
 logger = get_logger(__name__)
 
@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     from zenml.enums import ExecutionStatus
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
-    from zenml.new_models import (
+    from zenml.models import (
         ComponentResponseModel,
         FlavorResponseModel,
         PipelineRunResponseModel,

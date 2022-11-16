@@ -19,7 +19,7 @@ from uuid import UUID
 from sqlmodel import Field, SQLModel
 
 from zenml.enums import ArtifactType
-from zenml.new_models import ArtifactRequestModel, ArtifactResponseModel
+from zenml.models import ArtifactRequestModel, ArtifactResponseModel
 
 
 class ArtifactSchema(SQLModel, table=True):

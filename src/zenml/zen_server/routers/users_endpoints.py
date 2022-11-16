@@ -30,7 +30,7 @@ from zenml.constants import (
 from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
-from zenml.new_models import (
+from zenml.models import (
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     UserRequestModel,

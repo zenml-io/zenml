@@ -22,7 +22,7 @@ from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.new_models import FlavorRequestModel, FlavorResponseModel
+from zenml.models import FlavorRequestModel, FlavorResponseModel
 
 logger = get_logger(__name__)
 

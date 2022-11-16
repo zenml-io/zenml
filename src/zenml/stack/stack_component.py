@@ -26,7 +26,7 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
-from zenml.new_models import ComponentResponseModel
+from zenml.models import ComponentResponseModel
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:

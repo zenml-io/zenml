@@ -29,7 +29,7 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.io import fileio
-from zenml.new_models import ComponentResponseModel, StackResponseModel
+from zenml.models import ComponentResponseModel, StackResponseModel
 from zenml.utils import io_utils
 
 

@@ -29,9 +29,9 @@ from pydantic import BaseModel
 from zenml.constants import API, ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
+from zenml.models import UserResponseModel
 from zenml.models.user_management_models import JWTToken, JWTTokenType
-from zenml.new_models import UserResponseModel
-from zenml.new_models.user_models import UserAuthModel
+from zenml.models.user_models import UserAuthModel
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME

@@ -20,7 +20,7 @@ from sqlalchemy import Column, ForeignKey, String
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
-from zenml.new_models.flavor_models import FlavorResponseModel
+from zenml.models.flavor_models import FlavorResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:

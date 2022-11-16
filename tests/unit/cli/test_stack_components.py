@@ -24,7 +24,7 @@ import zenml.cli.utils as cli_utils
 from tests.unit.test_flavor import AriaOrchestratorFlavor
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
-from zenml.models import FlavorModel
+from zenml.models import FlavorRequestModel
 from zenml.stack.flavor_registry import flavor_registry
 from zenml.stack.stack_component import StackComponent
 
@@ -178,7 +178,7 @@ def test_updating_stack_component_with_non_configured_property_fails(
 
 
 @pytest.fixture
-def test_flavor() -> Iterator[FlavorModel]:
+def test_flavor() -> Iterator[FlavorRequestModel]:
     """Create a flavor for testing."""
 
     aria_flavor = AriaOrchestratorFlavor()

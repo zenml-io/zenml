@@ -64,8 +64,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
-from zenml.models.server_models import ServerDatabaseType, ServerModel
-from zenml.new_models import (
+from zenml.models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
     ComponentRequestModel,
@@ -81,6 +80,7 @@ from zenml.new_models import (
     PipelineUpdateModel,
     ProjectRequestModel,
     ProjectResponseModel,
+    ProjectUpdateModel,
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     RoleRequestModel,
@@ -94,12 +94,13 @@ from zenml.new_models import (
     StepRunUpdateModel,
     TeamRequestModel,
     TeamResponseModel,
+    TeamUpdateModel,
+    UserAuthModel,
     UserRequestModel,
     UserResponseModel,
+    UserUpdateModel,
 )
-from zenml.new_models.project_models import ProjectUpdateModel
-from zenml.new_models.team_models import TeamUpdateModel
-from zenml.new_models.user_models import UserAuthModel, UserUpdateModel
+from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum

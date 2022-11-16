@@ -1,38 +1,22 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
-#
-#       https://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
-"""Model definitions for stack component flavors."""
+from typing import Optional
 
-from typing import ClassVar, List, Optional
-
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
-from zenml.models.base_models import ProjectScopedDomainModel
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
+from zenml.models.base_models import (
+    ProjectScopedRequestModel,
+    ProjectScopedResponseModel,
+)
+from zenml.models.constants import MODEL_CONFIG_SCHEMA_MAX_LENGTH
+
+# TODO: Add example schemas and analytics fields
+
+# ---- #
+# BASE #
+# ---- #
 
 
-class FlavorModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
-    """Domain model representing the custom implementation of a flavor."""
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "id",
-        "type",
-        "integration",
-        "project",
-        "user",
-    ]
-
+class FlavorBaseModel(BaseModel):
     name: str = Field(
         title="The name of the Flavor.",
     )
@@ -40,7 +24,8 @@ class FlavorModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
         title="The type of the Flavor.",
     )
     config_schema: str = Field(
-        title="The JSON schema of this flavor's corresponding configuration."
+        title="The JSON schema of this flavor's corresponding configuration.",
+        max_length=MODEL_CONFIG_SCHEMA_MAX_LENGTH,
     )
     source: str = Field(
         title="The path to the module which contains this Flavor."
@@ -48,3 +33,21 @@ class FlavorModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
     integration: Optional[str] = Field(
         title="The name of the integration that the Flavor belongs to."
     )
+
+
+# -------- #
+# RESPONSE #
+# -------- #
+
+
+class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
+    """Domain model representing the custom implementation of a flavor."""
+
+
+# ------- #
+# REQUEST #
+# ------- #
+
+
+class FlavorRequestModel(FlavorBaseModel, ProjectScopedRequestModel):
+    """ """

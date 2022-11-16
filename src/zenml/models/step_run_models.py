@@ -4,12 +4,12 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.enums import ExecutionStatus
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
-from zenml.new_models.base_models import (
+from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
     update,
 )
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 
 # ---- #
 # BASE #

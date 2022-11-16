@@ -70,9 +70,9 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models.server_models import ServerModel
-from zenml.new_models import (
+from zenml.models import (
     ArtifactRequestModel,
+    ArtifactResponseModel,
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
@@ -105,14 +105,14 @@ from zenml.new_models import (
     UserResponseModel,
     UserUpdateModel,
 )
-from zenml.new_models.artifact_models import ArtifactResponseModel
-from zenml.new_models.base_models import (
+from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.new_models.team_models import TeamUpdateModel
+from zenml.models.server_models import ServerModel
+from zenml.models.team_models import TeamUpdateModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.networking_utils import (
     replace_internal_hostname_with_localhost,
@@ -128,7 +128,7 @@ if TYPE_CHECKING:
         MetadataStoreClientConfig,
     )
 
-    from zenml.new_models import UserAuthModel
+    from zenml.models import UserAuthModel
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]

@@ -11,31 +11,41 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Set
+
+from typing import Any, Dict
 
 from pydantic import BaseModel, Field
 
-from zenml.enums import PermissionType
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
-from zenml.new_models.base_models import (
-    BaseRequestModel,
-    BaseResponseModel,
+from zenml.enums import StackComponentType
+from zenml.models.base_models import (
+    ShareableRequestModel,
+    ShareableResponseModel,
     update,
 )
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+
+# TODO: Add example schemas and analytics fields
+
 
 # ---- #
 # BASE #
 # ---- #
-
-
-class RoleBaseModel(BaseModel):
-    """"""
-
+class ComponentBaseModel(BaseModel):
     name: str = Field(
-        title="The unique name of the role.",
+        title="The name of the stack component.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    permissions: Set[PermissionType]
+    type: StackComponentType = Field(
+        title="The type of the stack component.",
+    )
+
+    flavor: str = Field(
+        title="The flavor of the stack component.",
+    )
+
+    configuration: Dict[str, Any] = Field(
+        title="The stack component configuration.",
+    )
 
 
 # -------- #
@@ -43,8 +53,8 @@ class RoleBaseModel(BaseModel):
 # -------- #
 
 
-class RoleResponseModel(RoleBaseModel, BaseResponseModel):
-    """"""
+class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
+    """Model describing the Component."""
 
 
 # ------- #
@@ -52,8 +62,8 @@ class RoleResponseModel(RoleBaseModel, BaseResponseModel):
 # ------- #
 
 
-class RoleRequestModel(RoleBaseModel, BaseRequestModel):
-    """"""
+class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
+    """ """
 
 
 # ------ #
@@ -62,5 +72,5 @@ class RoleRequestModel(RoleBaseModel, BaseRequestModel):
 
 
 @update
-class RoleUpdateModel(RoleRequestModel):
+class ComponentUpdateModel(ComponentRequestModel):
     """"""

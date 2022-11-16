@@ -15,7 +15,7 @@ from zenml.cli import cli
 from zenml.cli.utils import parse_name_and_extra_arguments
 from zenml.client import Client
 from zenml.enums import PermissionType
-from zenml.new_models import (
+from zenml.models import (
     ProjectResponseModel,
     RoleResponseModel,
     TeamResponseModel,

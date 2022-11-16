@@ -20,7 +20,7 @@ from fastapi import APIRouter, Security
 
 from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
-from zenml.new_models import FlavorResponseModel
+from zenml.models import FlavorResponseModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
