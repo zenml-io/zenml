@@ -68,6 +68,12 @@ class AirflowOrchestratorSettings(BaseSettings):
             (e.g. `airflow.providers.docker.operators.docker.DockerOperator`)
         operator_args: Arguments for initializing the Airflow
             operator.
+        custom_dag_generator: Source string of a module to use for generating
+            Airflow DAGs. This module must contain the same classes and
+            constants as the
+            `zenml.integrations.airflow.orchestrators.dag_generator` module.
+            This value is only applied if the settings are defined on a ZenML
+            pipeline and ignored if defined on a step.
     """
 
     dag_output_dir: Optional[str] = None
@@ -78,6 +84,8 @@ class AirflowOrchestratorSettings(BaseSettings):
 
     operator: str = OperatorType.DOCKER.source
     operator_args: Dict[str, Any] = {}
+
+    custom_dag_generator: Optional[str] = None
 
     @validator("operator", always=True)
     def _convert_operator(
