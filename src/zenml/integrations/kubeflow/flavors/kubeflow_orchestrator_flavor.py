@@ -18,13 +18,19 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from pydantic import root_validator
 
 from zenml.config.base_settings import BaseSettings
-from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
+from zenml.integrations.kubeflow import (
+    KUBEFLOW_LOACAL_K3D_ORCHESTRATOR_FLAVOR,
+    KUBEFLOW_ORCHESTRATOR_FLAVOR,
+)
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils.deprecation_utils import deprecate_pydantic_attributes
 
 if TYPE_CHECKING:
-    from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
+    from zenml.integrations.kubeflow.orchestrators import (
+        KubeflowLocalK3DOrchestrator,
+        KubeflowOrchestrator,
+    )
 
 
 DEFAULT_KFP_UI_PORT = 8080
@@ -124,8 +130,6 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
             block until all steps finished running on KFP.
         skip_local_validations: If `True`, the local validations will be
             skipped.
-        skip_cluster_provisioning: If `True`, the k3d cluster provisioning will
-            be skipped.
         skip_ui_daemon_provisioning: If `True`, provisioning the KFP UI daemon
             will be skipped.
     """
@@ -136,7 +140,6 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
     kubernetes_context: Optional[str] = None
     synchronous: bool = False
     skip_local_validations: bool = False
-    skip_cluster_provisioning: bool = False
     skip_ui_daemon_provisioning: bool = False
 
     @property
@@ -150,12 +153,7 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        if (
-            self.kubernetes_context is not None
-            and not self.kubernetes_context.startswith("k3d-zenml-kubeflow-")
-        ):
-            return True
-        return False
+        return True
 
     @property
     def is_local(self) -> bool:
@@ -173,6 +171,42 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
         ):
             return True
         return False
+
+
+class KubeflowLocalK3DOrchestratorConfig(KubeflowOrchestratorConfig):
+    """Configuration for the Kubeflow Local K3D orchestrator.
+
+    Attributes:
+        skip_cluster_provisioning: If `True`, the k3d cluster provisioning will
+            be skipped.
+    """
+
+    skip_cluster_provisioning: bool = False
+
+    @property
+    def is_remote(self) -> bool:
+        """Checks if this stack component is running remotely.
+
+        This designation is used to determine if the stack component can be
+        used with a local ZenML database or if it requires a remote ZenML
+        server.
+
+        Returns:
+            True if this config is for a remote component, False otherwise.
+        """
+        return False
+
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        return True
 
 
 class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
@@ -208,3 +242,38 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
         )
 
         return KubeflowOrchestrator
+
+
+class KubeflowLocalK3DOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Kubeflow Local K3D orchestrator flavor."""
+
+    @property
+    def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
+        return KUBEFLOW_LOACAL_K3D_ORCHESTRATOR_FLAVOR
+
+    @property
+    def config_class(self) -> Type[KubeflowLocalK3DOrchestratorConfig]:
+        """Returns `KubeflowLocalK3DOrchestratorConfig` config class.
+
+        Returns:
+                The config class.
+        """
+        return KubeflowLocalK3DOrchestratorConfig
+
+    @property
+    def implementation_class(self) -> Type["KubeflowLocalK3DOrchestrator"]:
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
+        from zenml.integrations.kubeflow.orchestrators import (
+            KubeflowLocalK3DOrchestrator,
+        )
+
+        return KubeflowLocalK3DOrchestrator

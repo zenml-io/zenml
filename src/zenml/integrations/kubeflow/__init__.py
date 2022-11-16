@@ -24,6 +24,7 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 KUBEFLOW_ORCHESTRATOR_FLAVOR = "kubeflow"
+KUBEFLOW_LOACAL_K3D_ORCHESTRATOR_FLAVOR = "kubeflow_local_k3d"
 
 
 class KubeflowIntegration(Integration):
@@ -40,10 +41,11 @@ class KubeflowIntegration(Integration):
             List of stack component flavors for this integration.
         """
         from zenml.integrations.kubeflow.flavors import (
+            KubeflowLocalK3DOrchestratorFlavor,
             KubeflowOrchestratorFlavor,
         )
 
-        return [KubeflowOrchestratorFlavor]
+        return [KubeflowOrchestratorFlavor, KubeflowLocalK3DOrchestratorFlavor]
 
 
 KubeflowIntegration.check_installation()

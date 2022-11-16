@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 """Initialization of the Kubeflow ZenML orchestrator."""
 
+from zenml.integrations.kubeflow.orchestrators.kubeflow_local_k3d_orchestrator import (  # noqa
+    KubeflowLocalK3DOrchestrator,
+)
 from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (  # noqa
     KubeflowOrchestrator,
 )
 
-__all__ = ["KubeflowOrchestrator"]
+__all__ = ["KubeflowOrchestrator", "KubeflowLocalK3DOrchestrator"]

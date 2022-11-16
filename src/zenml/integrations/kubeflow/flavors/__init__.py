@@ -14,6 +14,8 @@
 """Kubeflow integration flavors."""
 
 from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
+    KubeflowLocalK3DOrchestratorConfig,
+    KubeflowLocalK3DOrchestratorFlavor,
     KubeflowOrchestratorConfig,
     KubeflowOrchestratorFlavor,
 )
@@ -21,4 +23,6 @@ from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
 __all__ = [
     "KubeflowOrchestratorFlavor",
     "KubeflowOrchestratorConfig",
+    "KubeflowLocalK3DOrchestratorFlavor",
+    "KubeflowLocalK3DOrchestratorConfig",
 ]
