@@ -434,7 +434,7 @@ class BaseOrchestrator(StackComponent, ABC):
         run_id_seed = f"{self.id}-{orchestrator_run_id}"
         return uuid_utils.generate_uuid_from_string(run_id_seed)
 
-    def _create_or_reuse_run(self) -> PipelineRunModel:
+    def _create_or_reuse_run(self) -> PipelineRunResponseModel:
         """Creates a run or reuses an existing one.
 
         Returns:
