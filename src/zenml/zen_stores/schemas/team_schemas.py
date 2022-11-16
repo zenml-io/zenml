@@ -68,7 +68,7 @@ class TeamSchema(NamedSchema, table=True):
                 name=self.name,
                 created=self.created,
                 updated=self.updated,
-                users=None,
+                users=[],
             )
         else:
             return TeamResponseModel(
