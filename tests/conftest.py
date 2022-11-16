@@ -48,6 +48,8 @@ from zenml.models import (
     StepRunResponseModel,
     TeamRequestModel,
     UserRequestModel,
+    UserResponseModel,
+    ProjectResponseModel
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
@@ -638,7 +640,32 @@ def step_context_with_two_outputs():
 
 
 @pytest.fixture
-def sample_step_model() -> StepRunResponseModel:
+def sample_user_model() -> UserResponseModel:
+    """Return a sample user model for testing purposes"""
+    return UserResponseModel(
+        id=uuid4(),
+        name="axl",
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def sample_project_model() -> ProjectResponseModel:
+    """Return a sample project model for testing purposes"""
+    return ProjectResponseModel(
+        id=uuid4(),
+        name="axl",
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def sample_step_model(
+        sample_user_model: UserResponseModel,
+        sample_project_model: ProjectResponseModel
+) -> StepRunResponseModel:
     """Return a sample step model for testing purposes"""
     return StepRunResponseModel(
         id=uuid4(),
@@ -652,6 +679,12 @@ def sample_step_model() -> StepRunResponseModel:
         input_artifacts={},
         step_configuration={},
         status=ExecutionStatus.COMPLETED,
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        project=sample_project_model,
+        docstring="",
+        mlmd_id=0
     )
 
 
@@ -662,16 +695,21 @@ def sample_step_view(sample_step_model) -> StepView:
 
 
 @pytest.fixture
-def sample_pipeline_run_model() -> PipelineRunResponseModel:
+def sample_pipeline_run_model(
+        sample_user_model: UserResponseModel,
+        sample_project_model: ProjectResponseModel
+) -> PipelineRunResponseModel:
     """Return sample pipeline run view for testing purposes"""
     return PipelineRunResponseModel(
         id=uuid4(),
         name="sample_run_name",
-        user=uuid4(),
-        project=uuid4(),
         pipeline_configuration={},
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        project=sample_project_model,
     )
 
 

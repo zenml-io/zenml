@@ -104,6 +104,10 @@ PipelineRunResponseModel.update_forward_refs(
     PipelineResponseModel=PipelineResponseModel,
     StackResponseModel=StackResponseModel,
 )
+StepRunResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel
+)
 
 __all__ = [
     "ArtifactRequestModel",

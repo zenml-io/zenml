@@ -476,6 +476,8 @@ def test_share_stack_that_is_already_shared_fails(
     assert arias_stack.is_shared is True
 
 
+# This test will only be relevant once the rest_zen_store is used as backend
+@pytest.skip()
 def test_share_stack_when_component_is_already_shared_by_other_user_fails(
     clean_client: Client,
 ) -> None:
