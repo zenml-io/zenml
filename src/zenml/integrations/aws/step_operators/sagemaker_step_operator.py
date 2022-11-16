@@ -156,10 +156,7 @@ class SagemakerStepOperator(BaseStepOperator):
         image_name = info.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY]
         environment = {_ENTRYPOINT_ENV_VARIABLE: " ".join(entrypoint_command)}
 
-        settings = cast(
-            SagemakerStepOperatorSettings,
-            self.get_settings(info) or SagemakerStepOperatorSettings(),
-        )
+        settings = cast(SagemakerStepOperatorSettings, self.get_settings(info))
 
         session = sagemaker.Session(default_bucket=self.config.bucket)
         instance_type = settings.instance_type or "ml.t3.medium"

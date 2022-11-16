@@ -362,7 +362,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     def _configure_container_op(
         self,
         container_op: dsl.ContainerOp,
-        settings: Optional[KubeflowOrchestratorSettings] = None,
+        settings: KubeflowOrchestratorSettings,
     ) -> None:
         """Makes changes in place to the configuration of the container op.
 
@@ -372,7 +372,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         Args:
             container_op: The kubeflow container operation to configure.
-            settings: Optional orchestrator settings for this step.
+            settings: Orchestrator settings for this step.
         """
         # Path to a metadata file that will be displayed in the KFP UI
         # This metadata file needs to be in a mounted emptyDir to avoid
@@ -444,7 +444,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         for k, v in KFP_POD_LABELS.items():
             container_op.add_pod_label(k, v)
 
-        if settings and settings.pod_settings:
+        if settings.pod_settings:
             apply_pod_settings(
                 container_op=container_op, settings=settings.pod_settings
             )
@@ -582,8 +582,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
 
                 settings = cast(
-                    Optional[KubeflowOrchestratorSettings],
-                    self.get_settings(step),
+                    KubeflowOrchestratorSettings, self.get_settings(step)
                 )
                 self._configure_container_op(
                     container_op=container_op,
@@ -644,10 +643,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
         )
         enable_cache = deployment.pipeline.enable_cache
         settings = cast(
-            Optional[KubeflowOrchestratorSettings],
-            self.get_settings(deployment),
+            KubeflowOrchestratorSettings, self.get_settings(deployment)
         )
-        user_namespace = settings.user_namespace if settings else None
+        user_namespace = settings.user_namespace
 
         try:
             logger.info(
@@ -713,7 +711,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     "Started one-off pipeline run with ID '%s'.", result.run_id
                 )
 
-                if settings and settings.synchronous:
+                if settings.synchronous:
                     client.wait_for_run_completion(
                         run_id=result.run_id, timeout=settings.timeout
                     )
@@ -746,12 +744,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     def _get_kfp_client(
         self,
-        settings: Optional[KubeflowOrchestratorSettings] = None,
+        settings: KubeflowOrchestratorSettings,
     ) -> kfp.Client:
         """Creates a KFP client instance.
 
         Args:
-            settings: Optional settings which can be used to
+            settings: Settings which can be used to
                 configure the client instance.
 
         Returns:
@@ -761,8 +759,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             "kube_context": self.config.kubernetes_context,
         }
 
-        if settings:
-            client_args.update(settings.client_args)
+        client_args.update(settings.client_args)
 
         # The host and namespace are stack component configurations that refer
         # to the Kubeflow deployment. We don't want these overwritten on a

@@ -196,10 +196,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                 "--machine_type=<MACHINE_TYPE>`",
                 self.name,
             )
-        settings = cast(
-            VertexStepOperatorSettings,
-            self.get_settings(info) or VertexStepOperatorSettings(),
-        )
+        settings = cast(VertexStepOperatorSettings, self.get_settings(info))
         validate_accelerator_type(settings.accelerator_type)
 
         job_labels = {"source": f"zenml-{__version__.replace('.', '_')}"}

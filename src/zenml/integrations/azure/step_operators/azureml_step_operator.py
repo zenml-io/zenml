@@ -284,10 +284,7 @@ class AzureMLStepOperator(BaseStepOperator):
                 ignored_docker_fields,
             )
 
-        settings = cast(
-            AzureMLStepOperatorSettings,
-            self.get_settings(info) or AzureMLStepOperatorSettings(),
-        )
+        settings = cast(AzureMLStepOperatorSettings, self.get_settings(info))
 
         workspace = Workspace.get(
             subscription_id=self.config.subscription_id,

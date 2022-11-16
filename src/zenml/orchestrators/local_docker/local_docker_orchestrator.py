@@ -168,7 +168,7 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             )
 
             settings = cast(
-                Optional[LocalDockerOrchestratorSettings],
+                LocalDockerOrchestratorSettings,
                 self.get_settings(step),
             )
 
@@ -185,7 +185,7 @@ class LocalDockerOrchestrator(BaseOrchestrator):
                 environment=environment,
                 stream=True,
                 extra_hosts={"host.docker.internal": "host-gateway"},
-                **(settings.run_args if settings else {}),
+                **settings.run_args,
             )
 
             for line in logs:

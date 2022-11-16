@@ -287,8 +287,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         )
 
         settings = cast(
-            Optional[KubernetesOrchestratorSettings],
-            self.get_settings(deployment),
+            KubernetesOrchestratorSettings, self.get_settings(deployment)
         )
 
         # Authorize pod to run Kubernetes commands inside the cluster.
@@ -347,7 +346,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         )
 
         # Wait for the orchestrator pod to finish and stream logs.
-        if settings and settings.synchronous:
+        if settings.synchronous:
             logger.info("Waiting for Kubernetes orchestrator pod...")
             kube_utils.wait_pod(
                 core_api=self._k8s_core_api,

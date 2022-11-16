@@ -389,22 +389,19 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                     container_op.after(upstream_container_op)
 
                 settings = cast(
-                    Optional[VertexOrchestratorSettings],
+                    VertexOrchestratorSettings,
                     self.get_settings(step),
                 )
-                if settings and settings.pod_settings:
+                if settings.pod_settings:
                     apply_pod_settings(
                         container_op=container_op,
                         settings=settings.pod_settings,
                     )
 
-                node_selector_constraint = (
-                    settings.node_selector_constraint if settings else None
-                )
                 self._configure_container_resources(
                     container_op=container_op,
                     resource_settings=step.config.resource_settings,
-                    node_selector_constraint=node_selector_constraint,
+                    node_selector_constraint=settings.node_selector_constraint,
                 )
 
                 step_name_to_container_op[step.config.name] = container_op
@@ -431,8 +428,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         )
 
         settings = cast(
-            VertexOrchestratorSettings,
-            self.get_settings(deployment) or VertexOrchestratorSettings(),
+            VertexOrchestratorSettings, self.get_settings(deployment)
         )
 
         # Using the Google Cloud AIPlatform client, upload and execute the

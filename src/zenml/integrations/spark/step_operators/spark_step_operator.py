@@ -276,10 +276,7 @@ class SparkStepOperator(BaseStepOperator):
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
         """
-        settings = cast(
-            SparkStepOperatorSettings,
-            self.get_settings(info) or SparkStepOperatorSettings(),
-        )
+        settings = cast(SparkStepOperatorSettings, self.get_settings(info))
         # Start off with an empty configuration
         conf = SparkConf()
 
