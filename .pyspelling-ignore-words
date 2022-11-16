@@ -137,6 +137,7 @@ ComponentSpecs
 ComponentWrapper
 ComputeTarget
 ConfigMap
+ConnectionConfig
 ConnectionError
 ConstrainedStrValue
 ContainerOp
@@ -374,6 +375,7 @@ LocalDaemonService
 LocalDaemonServiceConfig
 LocalDockerOrchestrator
 LocalExample
+LocalFilesystem
 LocalOrchestrator
 LocalStack
 LocalZenServer
@@ -413,6 +415,7 @@ MaterializerName
 Mattermost
 Mesos
 MetadataStore
+MetadataStoreClientConfig
 MiB
 Microsoft
 MinIO
@@ -1062,6 +1065,7 @@ gpu
 graphviz
 grey
 gritty
+grpc
 gserviceaccount
 gsutil
 hadoop
@@ -1240,6 +1244,7 @@ observability
 odbc
 ondelete
 onerror
+openssl
 orch
 orchestr
 orchestrator
@@ -1368,6 +1373,7 @@ setFormatter
 setattr
 sha
 shutil
+signalled
 signum
 signup
 sklearn
@@ -1521,15 +1527,10 @@ yMzA
 yaml
 yml
 zenbytes
+zenconfig
 zenfiles
 zenml
 zenmldocker
 zenmlregistry
 zenmlserver
 zenserver
-ConnectionConfig
-MetadataStoreClientConfig
-grpc
-openssl
-signalled
-zenconfig
