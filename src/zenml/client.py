@@ -1245,6 +1245,16 @@ class Client(metaclass=ClientMetaClass):
             update_model.name = name
 
         if is_shared:
+            if stack.is_shared:
+                raise ValueError("The stack is already shared.")
+
+            for component_type, components in stack.components.items():
+                for c in components:
+                    self.update_stack_component(
+                        name_id_or_prefix=c.id,
+                        component_type=component_type,
+                        is_shared=True,
+                    )
             update_model.is_shared = is_shared
 
         if description:
