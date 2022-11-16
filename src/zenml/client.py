@@ -1574,6 +1574,10 @@ class Client(metaclass=ClientMetaClass):
             existing_configuration = existing_component.configuration
             existing_configuration.update(configuration)
 
+            existing_configuration = {
+                k: v for k, v in existing_configuration.items() if v is not None
+            }
+
             flavor_model = self.get_flavor_by_name_and_type(
                 name=existing_component.flavor,
                 component_type=existing_component.type,
@@ -1587,6 +1591,7 @@ class Client(metaclass=ClientMetaClass):
             self._validate_stack_component_configuration(
                 existing_component.type, configuration=configuration_obj
             )
+            update_model.configuration = existing_configuration
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
