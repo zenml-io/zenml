@@ -94,7 +94,7 @@ def get_dag_generator_values(
 ) -> DagGeneratorValues:
     """Gets values from the DAG generator module.
 
-    Attributes:
+    Args:
         custom_dag_generator_source: Source of a custom DAG generator module.
 
     Returns:
