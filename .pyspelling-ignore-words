@@ -368,6 +368,7 @@ LocalDaemonService
 LocalDaemonServiceConfig
 LocalDockerOrchestrator
 LocalExample
+LocalFilesystem
 LocalOrchestrator
 LocalStack
 LocalZenServer
