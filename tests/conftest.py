@@ -18,6 +18,7 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, Union
 from uuid import uuid4
 
 import pytest
@@ -44,9 +45,13 @@ from zenml.models.pipeline_models import (
     PipelineRunModel,
     StepRunModel,
 )
-from zenml.models.user_management_models import TeamModel
-from zenml.new_models import TeamRequestModel, RoleRequestModel, \
-    UserRequestModel, ProjectRequestModel
+from zenml.new_models import (
+    ProjectRequestModel,
+    RoleRequestModel,
+    TeamRequestModel,
+    UserRequestModel,
+)
+from zenml.new_models.base_models import BaseResponseModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
@@ -205,7 +210,7 @@ def clean_client(
 
 
 @pytest.fixture
-def sql_store() -> BaseZenStore:
+def sql_store() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
     store = SqlZenStore(
         config=SqlZenStoreConfiguration(
@@ -225,7 +230,7 @@ def sql_store() -> BaseZenStore:
 
 
 @pytest.fixture
-def sql_store_with_run() -> BaseZenStore:
+def sql_store_with_run() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
 
     GlobalConfiguration().set_store(
@@ -267,7 +272,7 @@ def sql_store_with_run() -> BaseZenStore:
 
 
 @pytest.fixture
-def sql_store_with_runs() -> BaseZenStore:
+def sql_store_with_runs() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
 
     GlobalConfiguration().set_store(
@@ -309,7 +314,7 @@ def sql_store_with_runs() -> BaseZenStore:
 
 
 @pytest.fixture
-def sql_store_with_team() -> BaseZenStore:
+def sql_store_with_team() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
     store = SqlZenStore(
         config=SqlZenStoreConfiguration(
@@ -333,7 +338,8 @@ def sql_store_with_team() -> BaseZenStore:
 
 
 @pytest.fixture
-def sql_store_with_user_team_role() -> BaseZenStore:
+def sql_store_with_user_team_role(
+) -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
 
     store = SqlZenStore(
@@ -347,8 +353,7 @@ def sql_store_with_user_team_role() -> BaseZenStore:
     new_team = store.create_team(new_team)
 
     new_role = RoleRequestModel(
-        name="axl_feeder",
-        permissions={PermissionType.ME}
+        name="axl_feeder", permissions={PermissionType.ME}
     )
     new_role = store.create_role(new_role)
 
@@ -363,7 +368,7 @@ def sql_store_with_user_team_role() -> BaseZenStore:
         "user": new_user,
         "team": new_team,
         "role": new_role,
-        "project": new_project
+        "project": new_project,
     }
 
 

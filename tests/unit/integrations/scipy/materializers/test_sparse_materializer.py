@@ -19,7 +19,6 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.scipy.materializers.sparse_materializer import (
     SparseMaterializer,
 )
-
 from zenml.post_execution.pipeline import PipelineRunView
 
 

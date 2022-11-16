@@ -1828,14 +1828,13 @@ class SqlZenStore(BaseZenStore):
 
             # Update the team
             existing_team.update(team_update=team_update)
+            existing_team.users = []
             if "users" in team_update.__fields_set__:
-                filters = [
-                    (UserSchema.id == user_id) for user_id in team_update.users
-                ]
-
-                existing_team.users = session.exec(
-                    select(UserSchema).where(or_(*filters))
-                ).all()
+                for user in team_update.users:
+                    existing_team.users.append(
+                        self._get_user_schema(user_name_or_id=user,
+                                              session=session)
+                                 )
 
             session.add(existing_team)
             session.commit()

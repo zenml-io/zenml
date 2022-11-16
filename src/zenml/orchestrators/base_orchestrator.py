@@ -76,7 +76,6 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import PipelineRunModel
 from zenml.new_models import PipelineRunRequestModel, PipelineRunResponseModel
 from zenml.orchestrators.utils import get_cache_status
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig

@@ -86,7 +86,8 @@ class PipelineRunSchema(NamedSchema, table=True):
                 status=self.status,
                 pipeline=(
                     self.pipeline.to_model(not _block_recursion)
-                    if self.pipeline else None
+                    if self.pipeline
+                    else None
                 ),
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,

@@ -2262,7 +2262,7 @@ class Client(metaclass=ClientMetaClass):
             run_name=run_name,
             user_name_or_id=user_name_or_id,
             pipeline_id=pipeline_id,
-            unlisted=unlisted
+            unlisted=unlisted,
         )
 
     def get_pipeline_run(

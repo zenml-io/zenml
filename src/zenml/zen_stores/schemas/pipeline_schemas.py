@@ -48,7 +48,7 @@ class PipelineSchema(NamedSchema, table=True):
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
-        sa_relationship_kwargs={"order_by": "desc(PipelineRunSchema.created)"}
+        sa_relationship_kwargs={"order_by": "desc(PipelineRunSchema.created)"},
     )
 
     def to_model(
@@ -79,7 +79,7 @@ class PipelineSchema(NamedSchema, table=True):
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,
                 updated=self.updated,
-                status=status_last_x_runs
+                status=status_last_x_runs,
             )
         else:
             return PipelineResponseModel(
@@ -92,7 +92,7 @@ class PipelineSchema(NamedSchema, table=True):
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,
                 updated=self.updated,
-                status=status_last_x_runs
+                status=status_last_x_runs,
             )
 
     def update(

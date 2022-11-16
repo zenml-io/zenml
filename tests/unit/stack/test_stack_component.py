@@ -173,9 +173,7 @@ def test_stack_component_secret_reference_resolving(
 ):
     """Tests that the stack component resolves secrets if possible."""
 
-    from zenml.artifact_stores import (
-        LocalArtifactStoreConfig,
-    )
+    from zenml.artifact_stores import LocalArtifactStoreConfig
 
     artifact_store = ComponentRequestModel(
         name="local",
@@ -194,7 +192,7 @@ def test_stack_component_secret_reference_resolving(
         repo=clean_client,
         attribute_without_validator="{{secret.key}}",
     )
-    registered_orchestrator = clean_client.register_stack_component(component)
+    clean_client.register_stack_component(component)
     with pytest.raises(RuntimeError):
         # not part of the active stack
         _ = component.configuration.attribute_without_validator
