@@ -106,7 +106,7 @@ PipelineRunResponseModel.update_forward_refs(
 )
 StepRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel
+    ProjectResponseModel=ProjectResponseModel,
 )
 
 __all__ = [
