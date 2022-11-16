@@ -14,7 +14,6 @@
 
 
 import json
-import os
 
 from zenml.client import Client
 from zenml.orchestrators.utils import get_cache_status
@@ -112,9 +111,6 @@ def test_pipeline_storing_context_in_the_metadata_store():
         stack=client.active_stack,
         run_configuration=PipelineRunConfiguration(),
     )
-    dag_filepath = os.path.abspath(__file__)
-    compiled.pipeline.extra["dag_filepath"] = dag_filepath
-    compiled.steps["step_"].config.extra["dag_filepath"] = dag_filepath
 
     expected_pipeline_config = compiled.pipeline.json(sort_keys=True)
     assert (
