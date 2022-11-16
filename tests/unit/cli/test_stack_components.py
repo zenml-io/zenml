@@ -31,20 +31,8 @@ from zenml.stack.stack_component import StackComponent
 NOT_STACK_COMPONENTS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 
 
-def test_stack_component_update_for_nonexistent_stack_fails(
-    clean_client,
-) -> None:
-    """Test stack update of nonexistent stack fails."""
-    update_command = cli.commands["orchestrator"].commands["update"]
-    runner = CliRunner()
-    result = runner.invoke(
-        update_command,
-        ["not_an_orchestrator", "--some_property=123"],
-    )
-    assert result.exit_code == 1
 
-
-def test_valid_stack_component_update_succeeds(clean_client) -> None:
+def test_update_stack_component_succeeds(clean_client) -> None:
     """Test that valid stack component update succeeds."""
     register_command = cli.commands["container-registry"].commands["register"]
     update_command = cli.commands["container-registry"].commands["update"]
@@ -89,7 +77,19 @@ def test_valid_stack_component_update_succeeds(clean_client) -> None:
     )
 
 
-def test_updating_stack_component_name_or_uuid_fails(clean_client) -> None:
+def test_update_stack_component_for_nonexistent_component_fails(
+    clean_client,
+) -> None:
+    """Test stack update of nonexistent stack fails."""
+    update_command = cli.commands["orchestrator"].commands["update"]
+    runner = CliRunner()
+    result = runner.invoke(
+        update_command,
+        ["not_an_orchestrator", "--some_property=123"],
+    )
+    assert result.exit_code == 1
+
+def test_update_stack_component_with_name_or_uuid_fails(clean_client) -> None:
     """Test that updating stack component name or uuid fails."""
     register_container_registry_command = cli.commands[
         "container-registry"
@@ -139,7 +139,7 @@ def test_updating_stack_component_name_or_uuid_fails(clean_client) -> None:
         )
 
 
-def test_updating_stack_component_with_non_configured_property_fails(
+def test_update_stack_component_with_non_configured_property_fails(
     clean_client,
 ) -> None:
     """Updating stack component with aa non-configured property fails."""
@@ -187,7 +187,7 @@ def test_flavor() -> Iterator[FlavorRequestModel]:
     flavor_registry._flavors[aria_flavor.type].pop(aria_flavor.name)
 
 
-def test_removing_attributes_from_stack_component_works(
+def test_remove_attribute_component_succeeds(
     clean_client, test_flavor
 ) -> None:
     """Removing an optional attribute from a stack component succeeds."""
@@ -277,18 +277,41 @@ def test_remove_attribute_component_nonexistent_component_fails(
     assert remove_attribute.exit_code != 0
 
 
-def test_removing_required_attribute_fails(clean_client) -> None:
+def test_remove_attribute_component_required_attribute_fails(
+    clean_client, test_flavor
+) -> None:
     """Removing a required attribute from a stack component fails."""
-    runner = CliRunner()
+    orchestrator = test_flavor.implementation_class(
+        name="arias_orchestrator",
+        id=uuid4(),
+        config=test_flavor.config_class(
+            favorite_orchestration_language="arn:arias:aws:iam",
+            favorite_orchestration_language_version="a1.big.cat",
+        ),
+        flavor=test_flavor.name,
+        type=test_flavor.type,
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
 
-    remove_attribute_command = cli.commands["artifact-store"].commands[
+    orchestrator_response = clean_client.register_stack_component(
+        name=orchestrator.name,
+        component_type=orchestrator.type,
+        flavor=orchestrator.flavor,
+        configuration=orchestrator.config.dict(),
+    )
+
+    runner = CliRunner()
+    remove_attribute_command = cli.commands["orchestrator"].commands[
         "remove-attribute"
     ]
     remove_attribute = runner.invoke(
         remove_attribute_command,
         [
-            "default",
-            "--uri",
+            f"{orchestrator_response.name}",
+            "favorite_orchestration_language",
         ],
     )
     assert remove_attribute.exit_code != 0
