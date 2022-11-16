@@ -1408,8 +1408,8 @@ class RestZenStore(BaseZenStore):
     ) -> PipelineRunModel:
         """Gets or creates a pipeline run.
 
-        If a run with the same ID already exists, it is returned. Otherwise, a
-        new run is created.
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
 
         Args:
             pipeline_run: The pipeline run to get or create.
