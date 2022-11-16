@@ -33,7 +33,43 @@ jobs:
 
   integration-test:
     needs: poetry-install
+    # Exit if its a commit from Gitbook
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
+        test_environment: [ "default", "docker-server-docker-orchestrator", "default-kubeflow-orchestrator"]
+        exclude:
+          # kubeflow is not supported on windows
+          - os: windows-latest
+            test_environment: default-kubeflow-orchestrator
+          # docker (hence also k3d/kubeflow) is not supported on macos
+          - os: macos-latest
+            test_environment: default-kubeflow-orchestrator
+          - os: macos-latest
+            test_environment: docker-server-docker-orchestrator
+          # kubeflow is time-consuming to run, so we only run it on 3.8
+          - test_environment: default-kubeflow-orchestrator
+            python-version: '3.7'
+          - test_environment: default-kubeflow-orchestrator
+            python-version: '3.9'
+          - test_environment: default-kubeflow-orchestrator
+            python-version: '3.10'
+          # docker is time-consuming to run, so we only run it on 3.8
+          - test_environment: docker-server-docker-orchestrator
+            python-version: '3.7'
+          - test_environment: docker-server-docker-orchestrator
+            python-version: '3.9'
+          - test_environment: docker-server-docker-orchestrator
+            python-version: '3.10'
+      fail-fast: false
+
     uses: ./.github/workflows/integration-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+      test_environment: ${{ matrix.test_environment }}
     secrets: inherit
 
   check_comments:
@@ -52,12 +88,12 @@ jobs:
       - run: "echo Found LTKF! in the comments!"
         if: steps.check.outputs.triggered == 'true'
 
-  kubeflow-tests:
-    needs: [poetry-install, check_comments]
-    # Run this one automatically if 'LTKF! is in the PR comments
-    if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
-    uses: ./.github/workflows/kubeflow.yml
-    secrets: inherit
+  # kubeflow-tests:
+  #   needs: [poetry-install, check_comments]
+  #   # Run this one automatically if 'LTKF! is in the PR comments
+  #   if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
+  #   uses: ./.github/workflows/kubeflow.yml
+  #   secrets: inherit
 
   spell-check:
     uses: ./.github/workflows/spellcheck.yml

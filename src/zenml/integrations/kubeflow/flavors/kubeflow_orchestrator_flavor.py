@@ -170,6 +170,9 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
             be skipped.
         skip_ui_daemon_provisioning: If `True`, provisioning the KFP UI daemon
             will be skipped.
+        container_registry_name: The name of the container registry stack
+            component to use. If not specified, the container registry
+            in the active stack is used.
     """
 
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
@@ -179,6 +182,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     skip_local_validations: bool = False
     skip_cluster_provisioning: bool = False
     skip_ui_daemon_provisioning: bool = False
+    container_registry_name: Optional[str] = None
 
     @property
     def is_remote(self) -> bool:

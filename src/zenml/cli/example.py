@@ -164,6 +164,29 @@ class LocalExample:
         """
         return fileio.exists(str(self.path)) and fileio.isdir(str(self.path))
 
+    def run_example_directly(self, *args: str) -> None:
+        """Runs the example directly without going through setup/teardown.
+
+        Args:
+            *args: Arguments to pass to the example.
+
+        Raises:
+            RuntimeError: If running the example fails.
+        """
+        call = [sys.executable, self.executable_python_example, *args]
+        try:
+            subprocess.check_call(
+                call,
+                cwd=str(self.path),
+                shell=click._compat.WIN,
+                env=os.environ.copy(),
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to run example {self.name}.") from e
+
+        # Telemetry
+        track_event(AnalyticsEvent.RUN_EXAMPLE, {"example_name": self.name})
+
     def run_example(
         self,
         example_runner: List[str],
