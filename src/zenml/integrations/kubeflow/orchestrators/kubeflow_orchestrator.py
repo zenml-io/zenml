@@ -606,10 +606,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 # Update dictionary of container ops with the current one
                 step_name_to_container_op[step.config.name] = container_op
 
+        orchestrator_run_name = get_orchestrator_run_name(
+            pipeline_name=deployment.pipeline.name
+        )
+
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{deployment.run_name}.yaml"
+            self.pipeline_directory, f"{orchestrator_run_name}.yaml"
         )
 
         # write the argo pipeline yaml
@@ -618,29 +622,32 @@ class KubeflowOrchestrator(BaseOrchestrator):
             pipeline_name=deployment.pipeline.name,
             package_path=pipeline_file_path,
         )
+        logger.info(
+            "Writing Kubeflow workflow definition to `%s`.", pipeline_file_path
+        )
 
         # using the kfp client uploads the pipeline to kubeflow pipelines and
         # runs it there
         self._upload_and_run_pipeline(
             deployment=deployment,
             pipeline_file_path=pipeline_file_path,
+            run_name=orchestrator_run_name,
         )
 
     def _upload_and_run_pipeline(
         self,
         deployment: "PipelineDeployment",
         pipeline_file_path: str,
+        run_name: str,
     ) -> None:
         """Tries to upload and run a KFP pipeline.
 
         Args:
             deployment: The pipeline deployment.
             pipeline_file_path: Path to the pipeline definition file.
+            run_name: The Kubeflow run name.
         """
         pipeline_name = deployment.pipeline.name
-        orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=pipeline_name
-        )
         enable_cache = deployment.pipeline.enable_cache
         settings = cast(
             KubeflowOrchestratorSettings, self.get_settings(deployment)
@@ -685,7 +692,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
                 result = client.create_recurring_run(
                     experiment_id=experiment.id,
-                    job_name=orchestrator_run_name,
+                    job_name=run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=enable_cache,
                     cron_expression=deployment.schedule.cron_expression,
@@ -703,7 +710,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 result = client.create_run_from_pipeline_package(
                     pipeline_file_path,
                     arguments={},
-                    run_name=orchestrator_run_name,
+                    run_name=run_name,
                     enable_caching=enable_cache,
                     namespace=user_namespace,
                 )
