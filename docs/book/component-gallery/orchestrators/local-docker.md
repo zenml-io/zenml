@@ -23,10 +23,10 @@ To use the local Docker orchestrator, we can register it and use it in our
 active stack:
 
 ```shell
-zenml orchestrator register <NAME> --flavor=local_docker
+zenml orchestrator register <ORCHESTRATOR_NAME> --flavor=local_docker
 
-# Add the orchestrator to the active stack
-zenml stack update -o <NAME>
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 You can now run any ZenML pipeline using the local Docker orchestrator:

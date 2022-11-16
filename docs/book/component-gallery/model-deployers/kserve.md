@@ -218,6 +218,17 @@ pytorch_model_deployer = kserve_model_deployer_step(
 )
 ```
 
+Within the `KServeDeploymentConfig` you can configure:
+   * `model_name`: the name of the model in the KServe cluster and in ZenML.
+   * `replicas`: the number of replicas with which to deploy the model
+   * `predictor`: the type of predictor to use for the model. The
+    predictor type can be one of the following: `tensorflow`, `pytorch`, `sklearn`, `xgboost`, `custom`.
+   * `resources`: This can be configured by passing a dictionary with the
+    `requests` and `limits` keys. The values for these keys can be a dictionary
+    with the `cpu` and `memory` keys. The values for these keys can be a string
+    with the amount of CPU and memory to be allocated to the model.
+
+
 A concrete example of using the KServe Model Deployer can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment).
 

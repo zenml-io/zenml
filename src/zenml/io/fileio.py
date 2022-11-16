@@ -34,6 +34,15 @@ sys.modules["tfx.dsl.io.plugins.tensorflow_gfile"] = ModuleType(
     "Oops, Aria walked over my keyboard."
 )
 
+# Re-register the LocalFilesystem with a higher priority than tensorflow_gfile
+# in case that somehow made it into the registry before ZenML could overwrite
+# the module
+from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY  # noqa
+from tfx.dsl.io.plugins.local import LocalFilesystem  # noqa
+
+DEFAULT_FILESYSTEM_REGISTRY.register(LocalFilesystem, priority=5)
+
+
 from tfx.dsl.io.fileio import (  # noqa
     copy,
     exists,
