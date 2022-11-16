@@ -249,7 +249,7 @@ def team() -> None:
 def list_teams() -> None:
     """List all teams."""
     cli_utils.print_active_config()
-    teams = Client().zen_store.teams
+    teams = Client().list_teams()
     if not teams:
         cli_utils.declare("No teams registered.")
         return
