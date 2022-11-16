@@ -44,7 +44,6 @@ from zenml.constants import (
     EMAIL_ANALYTICS,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
-    GET_OR_CREATE,
     INFO,
     INPUTS,
     LOGIN,
@@ -1419,8 +1418,7 @@ class RestZenStore(BaseZenStore):
             The pipeline run.
         """
         return self._create_project_scoped_resource(
-            resource=pipeline_run,
-            route=f"{RUNS}{GET_OR_CREATE}",
+            resource=pipeline_run, route=RUNS, params={"get_if_exists": True}
         )
 
     def list_runs(
@@ -1901,6 +1899,7 @@ class RestZenStore(BaseZenStore):
         route: str,
         request_model: Optional[Type[CreateRequest[AnyModel]]] = None,
         response_model: Optional[Type[CreateResponse[AnyModel]]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyModel:
         """Create a new resource.
 
@@ -1911,6 +1910,7 @@ class RestZenStore(BaseZenStore):
                 If not provided, the resource object itself will be used.
             response_model: Optional model to use to deserialize the response
                 body. If not provided, the resource class itself will be used.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The created resource.
@@ -1918,7 +1918,7 @@ class RestZenStore(BaseZenStore):
         request: BaseModel = resource
         if request_model is not None:
             request = request_model.from_model(resource)
-        response_body = self.post(f"{route}", body=request)
+        response_body = self.post(f"{route}", body=request, params=params)
         if response_model is not None:
             response = response_model.parse_obj(response_body)
             created_resource = response.to_model()
@@ -1936,6 +1936,7 @@ class RestZenStore(BaseZenStore):
         response_model: Optional[
             Type[CreateResponse[AnyProjectScopedModel]]
         ] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyProjectScopedModel:
         """Create a new project scoped resource.
 
@@ -1946,6 +1947,7 @@ class RestZenStore(BaseZenStore):
                 If not provided, the resource object itself will be used.
             response_model: Optional model to use to deserialize the response
                 body. If not provided, the resource class itself will be used.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The created resource.
@@ -1955,6 +1957,7 @@ class RestZenStore(BaseZenStore):
             route=f"{PROJECTS}/{str(resource.project)}{route}",
             request_model=request_model,
             response_model=response_model,
+            params=params,
         )
 
     def _get_resource(
