@@ -105,6 +105,7 @@ BaseVisualizer
 BaseZenStore
 BentoML
 Bing
+Bitbucket
 BluePill
 CIDR
 CLI
@@ -1249,6 +1250,7 @@ odbc
 ondelete
 onerror
 openssl
+openssl
 orch
 orchestr
 orchestrator
@@ -1377,6 +1379,7 @@ setFormatter
 setattr
 sha
 shutil
+signalled
 signalled
 signum
 signup
@@ -1531,6 +1534,7 @@ yMzA
 yaml
 yml
 zenbytes
+zenconfig
 zenconfig
 zenfiles
 zenml
