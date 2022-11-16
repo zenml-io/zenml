@@ -79,7 +79,7 @@ input. Even when running model performance comparison analyses, no model
 needs to be present. However, that does mean that the input data needs to
 include additional `target` and `prediction` columns for some profiling reports
 and, you have to include additional information about the dataset columns in the
-form of [column mappings](https://docs.evidentlyai.com/features/dashboards/column_mapping).
+form of [column mappings](https://docs.evidentlyai.com/user-guide/tests-and-reports/column-mapping).
 Depending on how your data is structured, you may also need to include additional
 steps in your pipeline before the data validation step to insert the additional
 `target` and `prediction` columns into your data. This may also require
