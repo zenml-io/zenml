@@ -31,7 +31,6 @@ class FlavorSchema(NamedSchema, table=True):
     """SQL Model for flavors.
 
     Attributes:
-        name: The name of the flavor.
         type: The type of the flavor.
         source: The source of the flavor.
         config_schema: The config schema of the flavor.
