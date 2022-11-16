@@ -989,15 +989,15 @@ def print_pipeline_runs_table(
     """
     runs_dicts = []
     for pipeline_run in pipeline_runs:
-        if pipeline_run.pipeline_id is None:
+        if pipeline_run.pipeline is None:
             pipeline_name = "unlisted"
         else:
-            pipeline_name = client.get_pipeline(pipeline_run.pipeline_id).name
-        if pipeline_run.stack_id is None:
+            pipeline_name = pipeline_run.pipeline.name
+        if pipeline_run.stack is None:
             stack_name = "[DELETED]"
         else:
-            stack_name = client.zen_store.get_stack(pipeline_run.stack_id).name
-        status = client.zen_store.get_run(pipeline_run.id).status
+            stack_name = pipeline_run.stack.name
+        status = pipeline_run.status
         status_emoji = get_execution_status_emoji(status)
         run_dict = {
             "PIPELINE NAME": pipeline_name,
@@ -1005,7 +1005,7 @@ def print_pipeline_runs_table(
             "RUN ID": pipeline_run.id,
             "STATUS": status_emoji,
             "STACK": stack_name,
-            "OWNER": client.zen_store.get_user(pipeline_run.user).name,
+            "OWNER": pipeline_run.user.name,
         }
         runs_dicts.append(run_dict)
     print_table(runs_dicts)

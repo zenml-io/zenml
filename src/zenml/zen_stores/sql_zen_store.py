@@ -977,10 +977,8 @@ class SqlZenStore(BaseZenStore):
             if stack_update.components:
                 filters = [
                     (StackComponentSchema.id == component_id)
-                    for list_of_component_ids
-                    in stack_update.components.values()
-                    for component_id
-                    in list_of_component_ids
+                    for list_of_component_ids in stack_update.components.values()
+                    for component_id in list_of_component_ids
                 ]
                 components = session.exec(
                     select(StackComponentSchema).where(or_(*filters))
@@ -1830,14 +1828,13 @@ class SqlZenStore(BaseZenStore):
 
             # Update the team
             existing_team.update(team_update=team_update)
+            existing_team.users = []
             if "users" in team_update.__fields_set__:
-                filters = [
-                    (UserSchema.id == user_id) for user_id in team_update.users
-                ]
-
-                existing_team.users = session.exec(
-                    select(UserSchema).where(or_(*filters))
-                ).all()
+                for user in team_update.users:
+                    existing_team.users.append(
+                        self._get_user_schema(user_name_or_id=user,
+                                              session=session)
+                                 )
 
             session.add(existing_team)
             session.commit()
@@ -2450,6 +2447,12 @@ class SqlZenStore(BaseZenStore):
             existing_project = session.exec(
                 select(ProjectSchema).where(ProjectSchema.id == project_id)
             ).first()
+            if existing_project is None:
+                raise KeyError(
+                    f"Unable to update project with id "
+                    f"'{project_id}': Found no"
+                    f"existing projects with this id."
+                )
             if (
                 existing_project.name == self._default_project_name
                 and "name" in project_update.__fields_set__
@@ -2457,12 +2460,6 @@ class SqlZenStore(BaseZenStore):
             ):
                 raise IllegalOperationError(
                     "The name of the default project cannot be changed."
-                )
-            if existing_project is None:
-                raise KeyError(
-                    f"Unable to update project with id "
-                    f"'{project_id}': Found no"
-                    f"existing projects with this id."
                 )
 
             # Update the project
@@ -2717,6 +2714,7 @@ class SqlZenStore(BaseZenStore):
             configuration = json.dumps(pipeline_run.pipeline_configuration)
 
             new_run = PipelineRunSchema(
+                id=pipeline_run.id,
                 name=pipeline_run.name,
                 orchestrator_run_id=pipeline_run.orchestrator_run_id,
                 stack_id=pipeline_run.stack,
@@ -3573,7 +3571,9 @@ class SqlZenStore(BaseZenStore):
                 run_model = runs_without_mlmd_id_dict[mlmd_run.name].to_model()
                 self.update_run(
                     run_id=run_model.id,
-                    run_update=PipelineRunUpdateModel(mlmld_id=mlmd_run.mlmd_id)
+                    run_update=PipelineRunUpdateModel(
+                        mlmld_id=mlmd_run.mlmd_id
+                    ),
                 )
 
             # Create runs that are in MLMD but not in the DB.
@@ -3625,8 +3625,7 @@ class SqlZenStore(BaseZenStore):
                     self._sync_run_steps(run_.id)
 
     def _sync_run(
-        self,
-        mlmd_run: "MLMDPipelineRunModel"
+        self, mlmd_run: "MLMDPipelineRunModel"
     ) -> PipelineRunResponseModel:
         """Sync a single run from MLMD into the database.
 
@@ -3888,12 +3887,13 @@ class SqlZenStore(BaseZenStore):
         if run_model.status != status:
             self.update_run(
                 run_id=run_model.id,
-                run_update=PipelineRunUpdateModel(status=status)
+                run_update=PipelineRunUpdateModel(status=status),
             )
         return run_model
 
     def _update_run_step_status(
-        self, step_model: StepRunResponseModel,
+        self,
+        step_model: StepRunResponseModel,
     ) -> StepRunResponseModel:
         """Updates the status of a step run model.
 
@@ -3918,7 +3918,7 @@ class SqlZenStore(BaseZenStore):
         if step_model.status != status:
             self.update_run_step(
                 step_id=step_model.id,
-                step_update=StepRunUpdateModel(status=status)
+                step_update=StepRunUpdateModel(status=status),
             )
         return step_model
 

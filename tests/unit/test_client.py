@@ -15,16 +15,11 @@ import os
 import random
 import string
 from contextlib import ExitStack as does_not_raise
-from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
 import pytest
 
-from zenml.artifact_stores.local_artifact_store import (
-    LocalArtifactStore,
-    LocalArtifactStoreConfig,
-)
 from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.exceptions import (
@@ -34,37 +29,33 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.io import fileio
-from zenml.new_models import StackResponseModel, ComponentRequestModel, \
-    StackRequestModel, ComponentResponseModel, StackUpdateModel
-from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
-from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
-from zenml.stack import Stack
+from zenml.new_models import ComponentResponseModel, StackResponseModel
 from zenml.utils import io_utils
 
 
 def _create_local_orchestrator(
     client: Client,
-    orchestrator_name: str = 'OrchesTraitor',
+    orchestrator_name: str = "OrchesTraitor",
 ) -> ComponentResponseModel:
     return client.register_stack_component(
         name=orchestrator_name,
         flavor="local",
         component_type=StackComponentType.ORCHESTRATOR,
         configuration={},
-        is_shared=False
+        is_shared=False,
     )
 
 
 def _create_local_artifact_store(
     client: Client,
-    artifact_store_name: str = 'Art-E-Fact',
+    artifact_store_name: str = "Art-E-Fact",
 ) -> ComponentResponseModel:
     return client.register_stack_component(
         name=artifact_store_name,
         flavor="local",
         component_type=StackComponentType.ARTIFACT_STORE,
         configuration={},
-        is_shared=False
+        is_shared=False,
     )
 
 
@@ -81,19 +72,19 @@ def _create_local_stack(
         return "".join(random.choices(string.ascii_letters, k=10))
 
     orchestrator = _create_local_orchestrator(
-        client=client,
-        orchestrator_name=orchestrator_name or _random_name()
+        client=client, orchestrator_name=orchestrator_name or _random_name()
     )
 
     artifact_store = _create_local_artifact_store(
-        client=client,
-        artifact_store_name=artifact_store_name or _random_name()
+        client=client, artifact_store_name=artifact_store_name or _random_name()
     )
 
     return client.register_stack(
         name=stack_name,
-        components={StackComponentType.ORCHESTRATOR: str(orchestrator.id),
-                    StackComponentType.ARTIFACT_STORE: str(artifact_store.id)}
+        components={
+            StackComponentType.ORCHESTRATOR: str(orchestrator.id),
+            StackComponentType.ARTIFACT_STORE: str(artifact_store.id),
+        },
     )
 
 
@@ -119,10 +110,14 @@ def test_initializing_repo_creates_directory_and_uses_default_stack(
     assert len(client.list_stacks()) == 1
 
     stack = client.active_stack_model
-    assert isinstance(stack.components[StackComponentType.ORCHESTRATOR][0],
-                      ComponentResponseModel)
-    assert isinstance(stack.components[StackComponentType.ARTIFACT_STORE][0],
-                      ComponentResponseModel)
+    assert isinstance(
+        stack.components[StackComponentType.ORCHESTRATOR][0],
+        ComponentResponseModel,
+    )
+    assert isinstance(
+        stack.components[StackComponentType.ARTIFACT_STORE][0],
+        ComponentResponseModel,
+    )
     with pytest.raises(KeyError):
         assert stack.components[StackComponentType.CONTAINER_REGISTRY]
 
@@ -249,8 +244,8 @@ def test_registering_a_stack(clean_client):
         name=new_stack_name,
         components={
             StackComponentType.ORCHESTRATOR: str(orch.id),
-            StackComponentType.ARTIFACT_STORE: str(art.id)
-        }
+            StackComponentType.ARTIFACT_STORE: str(art.id),
+        },
     )
 
     Client(clean_client.root)
@@ -260,48 +255,20 @@ def test_registering_a_stack(clean_client):
 
 def test_registering_a_stack_with_existing_name(clean_client):
     """Tests that registering a stack for an existing name fails."""
-    stack = _create_local_stack(
-        client=clean_client, stack_name=clean_client.active_stack_model.name
+    _create_local_stack(
+        client=clean_client,
+        stack_name="axels_super_awesome_stack_of_fluffyness",
     )
-    clean_client.register_stack_component(stack.orchestrator.to_model())
-    clean_client.register_stack_component(stack.artifact_store.to_model())
+    orchestrator = _create_local_orchestrator(clean_client)
+    artifact_store = _create_local_artifact_store(clean_client)
 
     with pytest.raises(StackExistsError):
         clean_client.register_stack(
-            stack.to_model(
-                user=clean_client.active_user.id,
-                project=clean_client.active_project.id,
-            )
-        )
-
-
-def test_registering_a_new_stack_with_already_registered_components(
-    clean_client,
-):
-    """Tests that registering a new stack with already registered components
-    registers the stacks and does NOT register the components."""
-    stack = clean_client.active_stack.to_model(
-        user=clean_client.active_user.id,
-        project=clean_client.active_project.id,
-    )
-    new_name = "some_new_stack_name"
-
-    registered_orchestrators = clean_client.list_stack_components(
-        component_type=StackComponentType.ORCHESTRATOR
-    )
-    registered_artifact_stores = clean_client.list_stack_components(
-        component_type=StackComponentType.ARTIFACT_STORE
-    )
-
-    with does_not_raise():
-        clean_client.register_stack(
-            name=new_name,
+            name="axels_super_awesome_stack_of_fluffyness",
             components={
-                StackComponentType.ORCHESTRATOR:
-                    registered_orchestrators[0].name,
-                StackComponentType.ARTIFACT_STORE:
-                    registered_artifact_stores[0].name
-            }
+                StackComponentType.ORCHESTRATOR: str(orchestrator.id),
+                StackComponentType.ARTIFACT_STORE: str(artifact_store.id),
+            },
         )
 
 
@@ -316,21 +283,23 @@ def test_updating_a_stack_with_new_component_succeeds(clean_client):
     old_orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
     old_artifact_store = stack.components[StackComponentType.ARTIFACT_STORE][0]
     orchestrator = _create_local_orchestrator(
-        client=clean_client,
-        orchestrator_name="different_orchestrator")
+        client=clean_client, orchestrator_name="different_orchestrator"
+    )
 
     with does_not_raise():
-        clean_client.update_stack(
+        updated_stack = clean_client.update_stack(
             name_id_or_prefix=stack.name,
             component_updates={
                 StackComponentType.ORCHESTRATOR: [str(orchestrator.id)],
-            }
+            },
         )
 
-    active_orchestrator = (clean_client.active_stack_model
-                           .components[StackComponentType.ORCHESTRATOR][0])
-    active_artifact_store = (clean_client.active_stack_model
-                             .components[StackComponentType.ARTIFACT_STORE][0])
+    active_orchestrator = updated_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0]
+    active_artifact_store = updated_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0]
     assert active_orchestrator != old_orchestrator
     assert active_orchestrator == orchestrator
     assert active_artifact_store == old_artifact_store
@@ -347,35 +316,27 @@ def test_renaming_stack_with_update_method_succeeds(clean_client):
 
     with does_not_raise():
         clean_client.update_stack(
-            name_id_or_prefix=stack.id,
-            name=new_stack_name
+            name_id_or_prefix=stack.id, name=new_stack_name
         )
-    assert new_stack_name == clean_client.active_stack_model.name
+    assert clean_client.get_stack(name_id_or_prefix=new_stack_name)
 
 
 def test_register_a_stack_with_unregistered_component_fails(clean_client):
     """Tests that registering a stack with an unregistered component fails."""
-
-    new_stack = _create_local_stack(
-        client=clean_client, stack_name="some_new_stack_name"
-    )
-    # Don't register orchestrator or artifact store
-
     with pytest.raises(KeyError):
         clean_client.register_stack(
-            new_stack.to_model(
-                user=clean_client.active_user.id,
-                project=clean_client.active_project.id,
-            )
+            name="axels_empty_stack_of_disappoint",
+            components={
+                StackComponentType.ORCHESTRATOR: "orchestrator_doesnt_exist",
+                StackComponentType.ARTIFACT_STORE: "this_also_doesnt",
+            },
         )
 
 
 def test_deregistering_the_active_stack(clean_client):
     """Tests that deregistering the active stack fails."""
     with pytest.raises(ValueError):
-        clean_client.deregister_stack(
-            clean_client.active_stack_model.id
-        )
+        clean_client.deregister_stack(clean_client.active_stack_model.id)
 
 
 def test_deregistering_a_non_active_stack(clean_client):
@@ -390,12 +351,12 @@ def test_deregistering_a_non_active_stack(clean_client):
 
 def test_getting_a_stack_component(clean_client):
     """Tests that getting a stack component returns the correct component."""
-    component = (clean_client.active_stack_model
-                 .components[StackComponentType.ORCHESTRATOR][0])
+    component = clean_client.active_stack_model.components[
+        StackComponentType.ORCHESTRATOR
+    ][0]
     with does_not_raise():
         registered_component = clean_client.get_stack_component(
-            component_type=component.type,
-            name_id_or_prefix=component.id
+            component_type=component.type, name_id_or_prefix=component.id
         )
 
     assert component == registered_component
@@ -410,9 +371,16 @@ def test_getting_a_nonexisting_stack_component(clean_client):
 
 def test_registering_a_stack_component_with_existing_name(clean_client):
     """Tests that registering a stack component for an existing name fails."""
+    _create_local_orchestrator(
+        client=clean_client, orchestrator_name="axels_orchestration_laboratory"
+    )
     with pytest.raises(StackComponentExistsError):
         clean_client.register_stack_component(
-            clean_client.active_stack.orchestrator.to_model()
+            name="axels_orchestration_laboratory",
+            flavor="local",
+            component_type=StackComponentType.ORCHESTRATOR,
+            configuration={},
+            is_shared=False,
         )
 
 
@@ -425,7 +393,7 @@ def test_registering_a_new_stack_component_succeeds(clean_client):
     with does_not_raise():
         registered_artifact_store = new_client.get_stack_component(
             component_type=new_artifact_store.type,
-            name_id_or_prefix=new_artifact_store.id
+            name_id_or_prefix=new_artifact_store.id,
         )
 
     assert registered_artifact_store == new_artifact_store
@@ -440,7 +408,8 @@ def test_deregistering_a_stack_component_in_stack_fails(clean_client):
     with pytest.raises(IllegalOperationError):
         clean_client.deregister_stack_component(
             component_type=StackComponentType.ORCHESTRATOR,
-            name_id_or_prefix=str(component.id))
+            name_id_or_prefix=str(component.id),
+        )
 
 
 def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
@@ -448,11 +417,12 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
 ):
     """Tests that deregistering a stack component that is part of a registered
     stack fails."""
-    component = (clean_client.active_stack_model
-                 .components[StackComponentType.ORCHESTRATOR][0])
+    component = clean_client.active_stack_model.components[
+        StackComponentType.ORCHESTRATOR
+    ][0]
 
     with pytest.raises(IllegalOperationError):
         clean_client.deregister_stack_component(
             name_id_or_prefix=component.id,
-            component_type=StackComponentType.ORCHESTRATOR
+            component_type=StackComponentType.ORCHESTRATOR,
         )

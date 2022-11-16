@@ -351,7 +351,7 @@ def update_stack(
     """
     client = Client()
 
-    with console.status(f"Updating stack...\n"):
+    with console.status("Updating stack...\n"):
 
         updates = dict()
         if artifact_store_name:
@@ -411,7 +411,7 @@ def share_stack(
 
     client = Client()
 
-    with console.status(f"Sharing the stack...\n"):
+    with console.status("Sharing the stack...\n"):
         try:
             updated_stack = client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
@@ -531,7 +531,7 @@ def remove_stack_component(
 
     client = Client()
 
-    with console.status(f"Updating the stack...\n"):
+    with console.status("Updating the stack...\n"):
         stack_component_update = dict()
 
         if container_registry_flag:
@@ -568,9 +568,7 @@ def remove_stack_component(
             )
         except IllegalOperationError as err:
             cli_utils.error(str(err))
-        cli_utils.declare(
-            f"Stack `{updated_stack.name}` successfully updated!"
-        )
+        cli_utils.declare(f"Stack `{updated_stack.name}` successfully updated!")
 
 
 @stack.command("rename", help="Rename a stack.")
@@ -589,7 +587,7 @@ def rename_stack(
 
     client = Client()
 
-    with console.status(f"Renaming stack...\n"):
+    with console.status("Renaming stack...\n"):
         try:
             client.update_stack(
                 name_id_or_prefix=stack_name_or_id,

@@ -37,7 +37,7 @@ class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
     runs: Optional[List["PipelineRunResponseModel"]] = Field(
         title="A list of the last x Pipeline Runs."
     )
-    status: List[ExecutionStatus] = Field(
+    status: Optional[List[ExecutionStatus]] = Field(
         title="The status of the last x Pipeline Runs."
     )
 

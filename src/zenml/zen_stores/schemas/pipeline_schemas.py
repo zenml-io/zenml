@@ -21,8 +21,7 @@ from sqlalchemy import TEXT, Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.new_models.pipeline_models import PipelineResponseModel, \
-    PipelineRequestModel
+from zenml.new_models.pipeline_models import PipelineResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
@@ -49,19 +48,27 @@ class PipelineSchema(NamedSchema, table=True):
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
+        sa_relationship_kwargs={"order_by": "desc(PipelineRunSchema.created)"},
     )
 
     def to_model(
-        self, _block_recursion: bool = False
+        self,
+        _block_recursion: bool = False,
+        last_x_runs: int = 3,
     ) -> "PipelineResponseModel":
         """Convert a `PipelineSchema` to a `PipelineModel`.
 
         Args:
             _block_recursion: Don't recursively fill attributes
+            last_x_runs: How many runs to use for the execution status
 
         Returns:
             The created PipelineModel.
         """
+        x_runs = self.runs[:last_x_runs]
+        status_last_x_runs = []
+        for run in x_runs:
+            status_last_x_runs.append(run.status)
         if _block_recursion:
             return PipelineResponseModel(
                 id=self.id,
@@ -72,6 +79,7 @@ class PipelineSchema(NamedSchema, table=True):
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,
                 updated=self.updated,
+                status=status_last_x_runs,
             )
         else:
             return PipelineResponseModel(
@@ -84,11 +92,11 @@ class PipelineSchema(NamedSchema, table=True):
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,
                 updated=self.updated,
+                status=status_last_x_runs,
             )
 
     def update(
-        self,
-        pipeline_update: "PipelineUpdateModel"
+        self, pipeline_update: "PipelineUpdateModel"
     ) -> "PipelineSchema":
         """"""
         if pipeline_update.name:

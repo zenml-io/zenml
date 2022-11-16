@@ -95,6 +95,7 @@ class PipelineRunResponseModel(
 class PipelineRunRequestModel(PipelineRunBaseModel, ProjectScopedRequestModel):
     """Domain Model representing a pipeline run."""
 
+    id: UUID
     stack: Optional[UUID]  # Might become None if the stack is deleted.
     pipeline: Optional[UUID]  # Unlisted runs have this as None.
 

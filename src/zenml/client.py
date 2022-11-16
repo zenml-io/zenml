@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Client implementation."""
 import os
-import uuid
 from abc import ABCMeta
 from pathlib import Path
 from typing import (
@@ -64,10 +63,10 @@ from zenml.new_models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
-    StepRunRequestModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
+    StepRunRequestModel,
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
@@ -1175,7 +1174,7 @@ class Client(metaclass=ClientMetaClass):
     def register_stack(
         self,
         name: str,
-        components: Dict[StackComponentType, Optional[str]],
+        components: Dict[StackComponentType, Optional[Union[UUID, str]]],
         is_shared: bool = False,
     ) -> "StackResponseModel":
         """Registers a stack and its components.
@@ -1451,7 +1450,6 @@ class Client(metaclass=ClientMetaClass):
                 raise KeyError(
                     "No name_id_or_prefix provided and there is no active "
                     f"{component_type} in the current active stack."
-
                 )
 
             return components[0]
@@ -1928,7 +1926,7 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.list_pipelines(
             project_name_or_id=project_name_or_id,
             user_name_or_id=user_name_or_id,
-            name=name
+            name=name,
         )
 
     def get_pipeline(self, name_id_or_prefix: str) -> PipelineResponseModel:
@@ -2233,7 +2231,15 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of all pipeline runs.
         """
-        return self.zen_store.list_runs(**locals())
+        return self.zen_store.list_runs(
+            project_name_or_id=project_name_or_id,
+            stack_id=stack_id,
+            component_id=component_id,
+            run_name=run_name,
+            user_name_or_id=user_name_or_id,
+            pipeline_id=pipeline_id,
+            unlisted=unlisted,
+        )
 
     def get_pipeline_run(
         self, name_id_or_prefix: str
