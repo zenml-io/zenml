@@ -82,9 +82,9 @@ examples = [
         validation_function=generate_basic_validation_function(
             pipeline_name="fashion_mnist_pipeline", step_count=3
         ),
-        # skip due to installation issues, re-enable once the integration 
+        # skip due to installation issues, re-enable once the integration
         # test PRD is implemented
-        skip_on_windows=True
+        skip_on_windows=True,
     ),
     # TODO: re-add data validation test when we understand why they
     # intermittently break some of the other test cases
