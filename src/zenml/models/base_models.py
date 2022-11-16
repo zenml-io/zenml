@@ -13,16 +13,16 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import Any, ForwardRef
+from typing import TYPE_CHECKING, Any, ForwardRef, Type, TypeVar
 from uuid import UUID
 
 from pydantic import Field
 
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
-ProjectResponseModel = ForwardRef("ProjectResponseModel")
-UserResponseModel = ForwardRef("UserResponseModel")
-
+if TYPE_CHECKING:
+    from zenml.models.project_models import ProjectResponseModel
+    from zenml.models.user_models import UserResponseModel
 
 # --------------- #
 # RESPONSE MODELS #
@@ -73,7 +73,7 @@ class UserScopedResponseModel(BaseResponseModel):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: UserResponseModel = Field(
+    user: ForwardRef("UserResponseModel") = Field(
         title="The user that created this resource."
     )
 
@@ -84,7 +84,9 @@ class ProjectScopedResponseModel(UserScopedResponseModel):
     Used as a base class for all domain models that are project-scoped.
     """
 
-    project: ProjectResponseModel = Field(title="The project of this resource.")
+    project: ForwardRef("ProjectResponseModel") = Field(
+        title="The project of this resource."
+    )
 
 
 class ShareableResponseModel(ProjectScopedResponseModel):
@@ -148,9 +150,10 @@ class ShareableRequestModel(ProjectScopedRequestModel):
 # ------------- #
 # UPDATE MODELS #
 # ------------- #
+T = TypeVar("T", bound="BaseRequestModel")
 
 
-def update(_cls):
+def update(_cls: Type[T]) -> Type[T]:
     for field in _cls.__fields__:
         new_field = _cls.__fields__[field]
         new_field.required = False

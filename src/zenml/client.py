@@ -535,7 +535,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         password: Optional[str] = None,
-    ):
+    ) -> UserResponseModel:
         user = UserRequestModel(name=name, password=password or None)
         if self.zen_store.type != StoreType.REST:
             user.active = password != ""

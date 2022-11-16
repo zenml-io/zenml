@@ -46,17 +46,23 @@ class TeamBaseModel(BaseModel):
 class TeamResponseModel(TeamBaseModel, BaseResponseModel):
     """"""
 
-    users: Optional[List["UserResponseModel"]] = Field(
+    users: List["UserResponseModel"] = Field(
         title="The list of users within this team."
     )
 
     @property
     def user_ids(self) -> List[UUID]:
-        return [u.id for u in self.users]
+        if self.users:
+            return [u.id for u in self.users]
+        else:
+            return []
 
     @property
     def user_names(self) -> List[str]:
-        return [u.name for u in self.users]
+        if self.users:
+            return [u.name for u in self.users]
+        else:
+            return []
 
 
 # ------- #

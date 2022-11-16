@@ -190,7 +190,7 @@ def register_stack(
     with console.status(f"Registering stack '{stack_name}'...\n"):
         client = Client()
 
-        component_mapping: Dict[StackComponentType, Optional[str]] = {
+        component_mapping = {
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
             StackComponentType.ALERTER: alerter_name,
             StackComponentType.ANNOTATOR: annotator_name,

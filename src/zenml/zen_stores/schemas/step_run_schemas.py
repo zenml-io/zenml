@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -62,7 +62,7 @@ class StepRunSchema(NamedSchema, table=True):
         self,
         parent_step_ids: List[UUID],
         mlmd_parent_step_ids: List[int],
-        input_artifacts,
+        input_artifacts: Dict[str, UUID],
     ) -> StepRunResponseModel:
         """Convert a `StepRunSchema` to a `StepRunModel`.
 
@@ -91,7 +91,7 @@ class StepRunSchema(NamedSchema, table=True):
             input_artifacts=input_artifacts,
         )
 
-    def update(self, step_update: StepRunUpdateModel):
+    def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":
         """"""
         if step_update.status:
             self.status = step_update.status
