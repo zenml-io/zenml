@@ -76,6 +76,16 @@ which includes your code and use it to run your steps in AzureML. Check out
 learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
+### Additional configuration
+
+For additional configuration of the AzureML step operator, you can pass
+`AzureMLStepOperatorSettings` when defining or running your pipeline.
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml_step_operator_flavor.AzureMLStepOperatorSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
+
+
 A concrete example of using the AzureML step operator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training).
 
