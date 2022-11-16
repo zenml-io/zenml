@@ -44,12 +44,12 @@ from zenml.models import (
     ArtifactResponseModel,
     PipelineRunResponseModel,
     ProjectRequestModel,
+    ProjectResponseModel,
     RoleRequestModel,
     StepRunResponseModel,
     TeamRequestModel,
     UserRequestModel,
     UserResponseModel,
-    ProjectResponseModel
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
@@ -663,8 +663,8 @@ def sample_project_model() -> ProjectResponseModel:
 
 @pytest.fixture
 def sample_step_model(
-        sample_user_model: UserResponseModel,
-        sample_project_model: ProjectResponseModel
+    sample_user_model: UserResponseModel,
+    sample_project_model: ProjectResponseModel,
 ) -> StepRunResponseModel:
     """Return a sample step model for testing purposes"""
     return StepRunResponseModel(
@@ -684,7 +684,7 @@ def sample_step_model(
         user=sample_user_model,
         project=sample_project_model,
         docstring="",
-        mlmd_id=0
+        mlmd_id=0,
     )
 
 
@@ -696,8 +696,8 @@ def sample_step_view(sample_step_model) -> StepView:
 
 @pytest.fixture
 def sample_pipeline_run_model(
-        sample_user_model: UserResponseModel,
-        sample_project_model: ProjectResponseModel
+    sample_user_model: UserResponseModel,
+    sample_project_model: ProjectResponseModel,
 ) -> PipelineRunResponseModel:
     """Return sample pipeline run view for testing purposes"""
     return PipelineRunResponseModel(

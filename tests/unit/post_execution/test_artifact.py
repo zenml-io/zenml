@@ -39,7 +39,7 @@ def _create_artifact_view(materializer: str, data_type: str) -> ArtifactView:
             parent_step_id=uuid4(),
             producer_step_id=uuid4(),
             created=datetime.datetime.now(),
-            updated=datetime.datetime.now()
+            updated=datetime.datetime.now(),
         )
     )
 
