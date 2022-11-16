@@ -21,6 +21,7 @@ import pytest
 from pydantic import ValidationError, validator
 
 from zenml.enums import StackComponentType
+from zenml.new_models import ComponentRequestModel
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestrator,
     BaseOrchestratorConfig,
@@ -124,11 +125,10 @@ class StubOrchestratorFlavor(BaseOrchestratorFlavor):
         return StubOrchestrator
 
 
-def _get_stub_orchestrator(name, repo=None, **kwargs):
-    return StubOrchestrator(
+def _get_stub_orchestrator(name, repo=None, **kwargs) -> ComponentRequestModel:
+    return ComponentRequestModel(
         name=name,
-        id=uuid4(),
-        config=StubOrchestratorConfig(**kwargs),
+        configuration=StubOrchestratorConfig(**kwargs),
         flavor="TEST",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4() if repo is None else repo.active_user.id,
@@ -174,13 +174,11 @@ def test_stack_component_secret_reference_resolving(
     """Tests that the stack component resolves secrets if possible."""
 
     from zenml.artifact_stores import (
-        LocalArtifactStore,
         LocalArtifactStoreConfig,
     )
 
-    artifact_store = LocalArtifactStore(
+    artifact_store = ComponentRequestModel(
         name="local",
-        id=uuid4(),
         config=LocalArtifactStoreConfig(),
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
@@ -189,17 +187,17 @@ def test_stack_component_secret_reference_resolving(
         created=datetime.now(),
         updated=datetime.now(),
     )
-    clean_client.register_stack_component(artifact_store.to_model())
+    clean_client.register_stack_component(artifact_store)
 
     component = _get_stub_orchestrator(
         name="stub_orchestrator",
         repo=clean_client,
         attribute_without_validator="{{secret.key}}",
     )
-    clean_client.register_stack_component(component.to_model())
+    registered_orchestrator = clean_client.register_stack_component(component)
     with pytest.raises(RuntimeError):
         # not part of the active stack
-        _ = component.config.attribute_without_validator
+        _ = component.configuration.attribute_without_validator
 
     stack = Stack(
         id=uuid4(),

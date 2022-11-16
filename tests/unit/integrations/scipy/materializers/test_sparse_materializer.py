@@ -19,8 +19,8 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.scipy.materializers.sparse_materializer import (
     SparseMaterializer,
 )
-from zenml.post_execution.pipeline import PipelineRunView
 
+from zenml.post_execution.pipeline import PipelineRunView
 
 def test_scipy_sparse_matrix_materializer(clean_client):
     """Tests whether the steps work for the SciPy sparse matrix materializer."""
@@ -32,7 +32,7 @@ def test_scipy_sparse_matrix_materializer(clean_client):
             materializer=SparseMaterializer,
         )
 
-    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
+    last_run = PipelineRunView(clean_client.list_runs()[-1])
     sparse_matrix = last_run.steps[-1].output.read()
     assert isinstance(sparse_matrix, spmatrix)
     assert sparse_matrix.format == "coo"

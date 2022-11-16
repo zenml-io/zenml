@@ -77,6 +77,7 @@ from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import PipelineRunModel
+from zenml.new_models import PipelineRunRequestModel, PipelineRunResponseModel
 from zenml.orchestrators.utils import get_cache_status
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.utils import proto_utils, source_utils, string_utils, uuid_utils
@@ -456,7 +457,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def _create_run(
         self, run_id: UUID, orchestrator_run_id: str
-    ) -> PipelineRunModel:
+    ) -> PipelineRunResponseModel:
         """Creates a run in the ZenStore.
 
         Args:
@@ -475,7 +476,7 @@ class BaseOrchestrator(StackComponent, ABC):
         logger.debug("Creating run with ID: %s, name: %s", run_id, run_name)
 
         client = Client()
-        run_model = PipelineRunModel(
+        run_model = PipelineRunRequestModel(
             id=run_id,
             name=run_name,
             orchestrator_run_id=orchestrator_run_id,

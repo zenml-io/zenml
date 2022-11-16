@@ -2715,6 +2715,7 @@ class SqlZenStore(BaseZenStore):
             configuration = json.dumps(pipeline_run.pipeline_configuration)
 
             new_run = PipelineRunSchema(
+                id=pipeline_run.id,
                 name=pipeline_run.name,
                 orchestrator_run_id=pipeline_run.orchestrator_run_id,
                 stack_id=pipeline_run.stack,

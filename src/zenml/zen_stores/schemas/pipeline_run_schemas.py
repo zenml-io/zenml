@@ -62,7 +62,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             return PipelineRunResponseModel(
                 id=self.id,
                 name=self.name,
-                stack_id=self.stack.to_model(),
+                stack=self.stack.to_model() if self.stack else None,
                 project=self.project.to_model(),
                 user=self.user.to_model(),
                 orchestrator_run_id=self.orchestrator_run_id,
@@ -79,12 +79,15 @@ class PipelineRunSchema(NamedSchema, table=True):
             return PipelineRunResponseModel(
                 id=self.id,
                 name=self.name,
-                stack_id=self.stack.to_model(),
+                stack=self.stack.to_model() if self.stack else None,
                 project=self.project.to_model(),
                 user=self.user.to_model(),
                 orchestrator_run_id=self.orchestrator_run_id,
                 status=self.status,
-                pipeline=self.pipeline.to_model(not _block_recursion),
+                pipeline=(
+                    self.pipeline.to_model(not _block_recursion)
+                    if self.pipeline else None
+                ),
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
