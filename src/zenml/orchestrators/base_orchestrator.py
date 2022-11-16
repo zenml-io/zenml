@@ -444,30 +444,6 @@ class BaseOrchestrator(StackComponent, ABC):
 
         run_id = self.get_run_id_for_orchestrator_run_id(orchestrator_run_id)
 
-        try:
-            run_model = Client().zen_store.get_run(run_id)
-        except KeyError:
-            run_model = self._create_run(
-                run_id=run_id,
-                orchestrator_run_id=orchestrator_run_id,
-            )
-
-        return run_model
-
-    def _create_run(
-        self, run_id: UUID, orchestrator_run_id: str
-    ) -> PipelineRunModel:
-        """Creates a run in the ZenStore.
-
-        Args:
-            run_id: The id of the run to create.
-            orchestrator_run_id: The orchestrator id of the run to create.
-
-        Returns:
-            The created run.
-        """
-        assert self._active_deployment
-
         date = datetime.now().strftime("%Y_%m_%d")
         time = datetime.now().strftime("%H_%M_%S_%f")
         run_name = self._active_deployment.run_name.format(date=date, time=time)
@@ -488,7 +464,7 @@ class BaseOrchestrator(StackComponent, ABC):
             num_steps=len(self._active_deployment.steps),
         )
 
-        return client.zen_store.create_run(run_model)
+        return client.zen_store.get_or_create_run(run_model)
 
     @staticmethod
     def _publish_failed_run(run_name_or_id: Union[str, UUID]) -> None:
