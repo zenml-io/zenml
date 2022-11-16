@@ -541,6 +541,7 @@ def create_pipeline_run(
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
+    get_if_exists: bool = False,
 ) -> PipelineRunModel:
     """Creates a pipeline run.
 
@@ -548,6 +549,8 @@ def create_pipeline_run(
         project_name_or_id: Name or ID of the project.
         pipeline_run: Pipeline run to create.
         auth_context: Authentication context.
+        get_if_exists: If a similar pipeline run already exists, return it
+            instead of raising an error.
 
     Returns:
         The created pipeline run.
@@ -557,6 +560,8 @@ def create_pipeline_run(
         project=project.id,
         user=auth_context.user.id,
     )
+    if get_if_exists:
+        return zen_store().get_or_create_run(pipeline_run=pipeline_run_model)
     return zen_store().create_run(pipeline_run=pipeline_run_model)
 
 
