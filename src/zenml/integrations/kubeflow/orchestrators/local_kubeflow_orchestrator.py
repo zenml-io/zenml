@@ -73,6 +73,7 @@ from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import KubeflowOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, networking_utils
@@ -93,58 +94,36 @@ KFP_POD_LABELS = {
 
 ENV_KFP_RUN_ID = "KFP_RUN_ID"
 
+class LocalKubeflowOrchestrator(KubeflowOrchestrator):
+    """Orchestrator responsible for running pipelines using Kubeflow locally with K3D."""
 
-class KubeflowOrchestrator(BaseOrchestrator):
-    """Orchestrator responsible for running pipelines using Kubeflow."""
+    @staticmethod
+    def _get_k3d_cluster_name(uuid: UUID) -> str:
+        """Returns the k3d cluster name corresponding to the orchestrator UUID.
 
-    @property
-    def config(self) -> KubeflowOrchestratorConfig:
-        """Returns the `KubeflowOrchestratorConfig` config.
-
-        Returns:
-            The configuration.
-        """
-        return cast(KubeflowOrchestratorConfig, self._config)
-
-    @property
-    def kubernetes_context(self) -> Optional[str]:
-        """Gets the kubernetes context associated with the orchestrator.
-
-        This sets the default `kubernetes_context` value to the active
-        kubernetes context if it is set.
+        Args:
+            uuid: The UUID of the orchestrator.
 
         Returns:
-            The kubernetes context associated with the orchestrator.
+            The k3d cluster name.
         """
-        if self.config.kubernetes_context:
-            return self.config.kubernetes_context
-        _ , active_context = self.get_kubernetes_contexts()
-        return active_context if active_context else None
+        # k3d only allows cluster names with up to 32 characters; use the
+        # first 8 chars of the orchestrator UUID as identifier
+        return f"zenml-kubeflow-{str(uuid)[:8]}"
 
-    def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:
-        """Get the list of configured Kubernetes contexts and the active context.
+    @staticmethod
+    def _get_k3d_kubernetes_context(uuid: UUID) -> str:
+        """Gets the k3d kubernetes context.
+
+        Args:
+            uuid: The UUID of the orchestrator.
 
         Returns:
-            A tuple containing the list of configured Kubernetes contexts and
-            the active context.
+            The name of the kubernetes context associated with the k3d
+                cluster managed locally by ZenML corresponding to the orchestrator UUID.
         """
-        try:
-            contexts, active_context = k8s_config.list_kube_config_contexts()
-        except k8s_config.config_exception.ConfigException:
-            return [], None
+        return f"k3d-{KubeflowOrchestrator._get_k3d_cluster_name(uuid)}"
 
-        context_names = [c["name"] for c in contexts]
-        active_context_name = active_context["name"]
-        return context_names, active_context_name
-
-    @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
-        """Settings class for the Kubeflow orchestrator.
-
-        Returns:
-            The settings class.
-        """
-        return KubeflowOrchestratorSettings
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -167,6 +146,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             contexts, active_context = self.get_kubernetes_contexts()
 
             if self.kubernetes_context not in contexts:
+                if not self.is_local:
                     return False, (
                         f"Could not find a Kubernetes context named "
                         f"'{self.kubernetes_context}' in the local Kubernetes "
@@ -176,7 +156,34 @@ class KubeflowOrchestrator(BaseOrchestrator):
                         f"contexts, run:\n\n"
                         f"  `kubectl config get-contexts`\n"
                     )
-            if not self.config.skip_local_validations :
+            elif active_context and self.kubernetes_context != active_context:
+                logger.warning(
+                    f"The Kubernetes context '{self.kubernetes_context}' "
+                    f"configured for the Kubeflow orchestrator is not the "
+                    f"same as the active context in the local Kubernetes "
+                    f"configuration. If this is not deliberate, you should "
+                    f"update the orchestrator's `kubernetes_context` field by "
+                    f"running:\n\n"
+                    f"  `zenml orchestrator update {self.name} "
+                    f"--kubernetes_context={active_context}`\n"
+                    f"To list all configured contexts, run:\n\n"
+                    f"  `kubectl config get-contexts`\n"
+                    f"To set the active context to be the same as the one "
+                    f"configured in the Kubeflow orchestrator and silence "
+                    f"this warning, run:\n\n"
+                    f"  `kubectl config use-context "
+                    f"{self.kubernetes_context}`\n"
+                )
+
+            silence_local_validations_msg = (
+                f"To silence this warning, set the "
+                f"`skip_local_validations` attribute to True in the "
+                f"orchestrator configuration by running:\n\n"
+                f"  'zenml orchestrator update {self.name} "
+                f"--skip_local_validations=True'\n"
+            )
+
+            if not self.config.skip_local_validations and not self.is_local:
 
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
@@ -205,6 +212,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                         f"problems. You should use a flavor of "
                         f"{stack_comp.type.value} other than "
                         f"'{stack_comp.flavor}'.\n"
+                        + silence_local_validations_msg
                     )
 
                 # if the orchestrator is remote, the container registry must
@@ -223,7 +231,29 @@ class KubeflowOrchestrator(BaseOrchestrator):
                         f"run into problems. You should use a flavor of "
                         f"container registry other than "
                         f"'{container_registry.flavor}'.\n"
+                        + silence_local_validations_msg
                     )
+
+            if not self.config.skip_local_validations and self.is_local:
+
+                # if the orchestrator is local, the container registry must
+                # also be local.
+                if not container_registry.config.is_local:
+                    return False, (
+                        f"The Kubeflow orchestrator is configured to run "
+                        f"pipelines in a local k3d Kubernetes cluster "
+                        f"designated by the '{self.kubernetes_context}' "
+                        f"configuration context, but the container registry "
+                        f"URI '{container_registry.config.uri}' doesn't "
+                        f"match the expected format 'localhost:$PORT'. "
+                        f"The local Kubeflow orchestrator only works with a "
+                        f"local container registry because it cannot "
+                        f"currently authenticate to external container "
+                        f"registries. You should use a flavor of container "
+                        f"registry other than '{container_registry.flavor}'.\n"
+                        + silence_local_validations_msg
+                    )
+
             return True, ""
 
         return StackValidator(
