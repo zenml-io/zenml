@@ -425,8 +425,10 @@ class StackComponent:
             else container.pipeline.settings
         )
 
-        settings_or_dict = all_settings.get(key, {})
-        return self.settings_class.parse_obj(settings_or_dict)
+        if key in all_settings:
+            return self.settings_class.parse_obj(all_settings[key])
+        else:
+            return self.settings_class()
 
     @property
     def log_file(self) -> Optional[str]:
