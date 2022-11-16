@@ -14,17 +14,17 @@
 """SQL Model Implementations for Flavors."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy import Column, String
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import StackComponentType
 from zenml.models import FlavorModel
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.user_management_schemas import UserSchema
 
 
 class FlavorSchema(SQLModel, table=True):
@@ -43,6 +43,8 @@ class FlavorSchema(SQLModel, table=True):
         updated: The last update time of the flavor.
     """
 
+    __tablename__ = "flavor"
+
     id: UUID = Field(primary_key=True)
     type: StackComponentType
     source: str
@@ -50,13 +52,23 @@ class FlavorSchema(SQLModel, table=True):
     integration: Optional[str] = Field(default="")
     config_schema: str = Field(sa_column=Column(String(4096)), nullable=False)
 
-    project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
     )
     project: "ProjectSchema" = Relationship(back_populates="flavors")
 
-    user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
     )
     user: "UserSchema" = Relationship(back_populates="flavors")
 
