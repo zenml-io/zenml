@@ -1241,11 +1241,26 @@ class Client(metaclass=ClientMetaClass):
         )
 
         if name:
+            shared_status = is_shared or stack.is_shared
+
+            existing_stacks = self.list_stacks(
+                name=name, is_shared=shared_status
+            )
+            if existing_stacks:
+                raise ValueError(
+                    "There are already existing stacks with the name "
+                    f"'{name}'."
+                )
+
             update_model.name = name
 
         if is_shared:
-            if stack.is_shared:
-                raise ValueError("The stack is already shared.")
+            existing_stacks = self.list_stacks(name=name, is_shared=True)
+            if existing_stacks:
+                raise ValueError(
+                    "There are already existing shared stacks with the name "
+                    f"'{name}'."
+                )
 
             for component_type, components in stack.components.items():
                 for c in components:
@@ -1554,7 +1569,7 @@ class Client(metaclass=ClientMetaClass):
             The updated component.
         """
         # Get the existing component model
-        existing_component = self.get_stack_component(
+        component = self.get_stack_component(
             name_id_or_prefix=name_id_or_prefix,
             component_type=component_type,
         )
@@ -1565,13 +1580,34 @@ class Client(metaclass=ClientMetaClass):
         )
 
         if name is not None:
+            shared_status = is_shared or component.is_shared
+
+            existing_components = self.list_stack_components(
+                name=name,
+                is_shared=shared_status,
+                component_type=component_type,
+            )
+            if existing_components:
+                raise ValueError(
+                    f"There are already existing "
+                    f"{'shared' if shared_status else 'unshared'} components "
+                    f"with the name '{name}'."
+                )
             update_model.name = name
 
         if is_shared is not None:
+            existing_components = self.list_stack_components(
+                name=name, is_shared=True, component_type=component_type
+            )
+            if existing_components:
+                raise ValueError(
+                    f"There are already existing shared components with "
+                    f"the name '{name}'"
+                )
             update_model.is_shared = is_shared
 
         if configuration is not None:
-            existing_configuration = existing_component.configuration
+            existing_configuration = component.configuration
             existing_configuration.update(configuration)
 
             existing_configuration = {
@@ -1579,8 +1615,8 @@ class Client(metaclass=ClientMetaClass):
             }
 
             flavor_model = self.get_flavor_by_name_and_type(
-                name=existing_component.flavor,
-                component_type=existing_component.type,
+                name=component.flavor,
+                component_type=component.type,
             )
 
             from zenml.stack import Flavor
@@ -1589,13 +1625,13 @@ class Client(metaclass=ClientMetaClass):
             configuration_obj = flavor.config_class(**existing_configuration)
 
             self._validate_stack_component_configuration(
-                existing_component.type, configuration=configuration_obj
+                component.type, configuration=configuration_obj
             )
             update_model.configuration = existing_configuration
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
-            component_id=existing_component.id,
+            component_id=component.id,
             component_update=update_model,
         )
 
