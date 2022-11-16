@@ -96,6 +96,10 @@ class ClientConfiguration(FileSyncModel):
     active_project_id: Optional[UUID]
     active_stack_id: Optional[UUID]
 
+    @property
+    def active_project(self):
+        return self._active_project
+
     def set_active_project(self, project: "ProjectResponseModel") -> None:
         """Set the project for the local client.
 
