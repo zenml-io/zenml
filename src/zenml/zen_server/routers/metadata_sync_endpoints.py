@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for metadata config."""
 
+from asyncio.log import logger
 from fastapi import APIRouter, Security
 
 from zenml.constants import API, METADATA_SYNC, VERSION_1
@@ -34,7 +35,10 @@ router = APIRouter(
 )
 @handle_exceptions
 def sync_runs(
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
 ) -> None:
     """Sync pipeline runs."""
-    zen_store()._sync_runs()
+    try:
+        zen_store()._sync_runs()
+    except Exception:
+        logger.exception("Failed to sync pipeline runs.")
