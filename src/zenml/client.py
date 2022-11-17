@@ -594,7 +594,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_user(
         self,
-        user_name_or_id: str,
+        user_name_or_id: Union[str, UUID],
         updated_name: Optional[str] = None,
         updated_full_name: Optional[str] = None,
         updated_email: Optional[str] = None,
@@ -2310,7 +2310,8 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def get_pipeline_run(
-        self, name_id_or_prefix: str
+        self,
+        name_id_or_prefix: Union[str, UUID],
     ) -> PipelineRunResponseModel:
         """List pipelines.
 

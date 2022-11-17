@@ -185,7 +185,7 @@ class PipelineRunView:
         """
         # Query the run again since the status might have changed since this
         # object was created.
-        return Client().get_run(self.id).status
+        return Client().get_pipeline_run(self.id).status
 
     @property
     def steps(self) -> List[StepView]:

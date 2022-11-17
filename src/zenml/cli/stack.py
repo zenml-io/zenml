@@ -178,7 +178,7 @@ def register_stack(
         secrets_manager: Name of the secrets manager for this stack.
         step_operator: Name of the step operator for this stack.
         feature_store: Name of the feature store for this stack.
-        model_deployee: Name of the model deployer for this stack.
+        model_deployer: Name of the model deployer for this stack.
         experiment_tracker: Name of the experiment tracker for this stack.
         alerter: Name of the alerter for this stack.
         annotator: Name of the annotator for this stack.
@@ -190,7 +190,7 @@ def register_stack(
     with console.status(f"Registering stack '{stack_name}'...\n"):
         client = Client()
 
-        components = {}
+        components = dict()
 
         components[StackComponentType.ARTIFACT_STORE] = artifact_store
         components[StackComponentType.ORCHESTRATOR] = orchestrator
