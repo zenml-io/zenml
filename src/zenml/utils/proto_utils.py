@@ -33,6 +33,7 @@ MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME = "pipeline_configuration"
 MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME = "step_configuration"
 MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME = "model_ids"
 MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME = "num_steps"
+MLMD_CONTEXT_NUM_OUTPUTS_PROPERTY_NAME = "num_outputs"
 
 
 def add_pipeline_node_context(
@@ -97,6 +98,7 @@ def add_mlmd_contexts(
         MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME: step_config,
         MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME: model_ids,
         MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME: str(len(deployment.steps)),
+        MLMD_CONTEXT_NUM_OUTPUTS_PROPERTY_NAME: str(len(step.config.outputs)),
     }
 
     properties_json = json.dumps(context_properties, sort_keys=True)
