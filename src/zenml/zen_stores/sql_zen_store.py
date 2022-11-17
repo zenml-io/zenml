@@ -3510,6 +3510,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A list of all artifacts.
+
+        Raises:
+            KeyError: if the producer step of an artifact doesn't exist.
         """
         if not self.runs_inside_server:
             self._sync_runs()
@@ -3525,7 +3528,7 @@ class SqlZenStore(BaseZenStore):
                 ).where(
                     StepRunOutputArtifactSchema.step_run_id == parent_step_id
                 )
-                artifacts = session.exec(query).all()
+            artifacts = session.exec(query).all()
 
             artifact_models: List[ArtifactModel] = []
             for artifact in artifacts:
