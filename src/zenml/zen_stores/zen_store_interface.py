@@ -1010,7 +1010,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_run_steps(self, run_id: UUID) -> List[StepRunResponseModel]:
+    def list_run_steps(
+        self, run_id: Optional[UUID] = None
+    ) -> List[StepRunResponseModel]:
         """Gets all steps in a pipeline run.
 
         Args:

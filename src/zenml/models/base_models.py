@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ForwardRef, Type, TypeVar
+from typing import TYPE_CHECKING, Any, ForwardRef, Type, TypeVar, Optional
 from uuid import UUID
 
 from pydantic import Field
@@ -73,8 +73,9 @@ class UserScopedResponseModel(BaseResponseModel):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: ForwardRef("UserResponseModel") = Field(
-        title="The user that created this resource."
+    user: Optional[ForwardRef("UserResponseModel")] = Field(
+        title="The user that created this resource.",
+        nullable=True
     )
 
 

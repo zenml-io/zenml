@@ -3643,7 +3643,7 @@ class SqlZenStore(BaseZenStore):
                     self.update_run(
                         run_id=run_model.id,
                         run_update=PipelineRunUpdateModel(
-                            mlmld_id=mlmd_run.mlmd_id
+                            mlmd_id=mlmd_run.mlmd_id
                         ),
                     )
                 except Exception as err:
@@ -3763,7 +3763,9 @@ class SqlZenStore(BaseZenStore):
             if step_name not in zenml_step_dict:
                 try:
                     step_model = self._sync_run_step(
-                        run_id, step_name, mlmd_step
+                        run_id=run_id,
+                        step_name=step_name,
+                        mlmd_step=mlmd_step
                     )
                 except EntityExistsError as exists_err:
                     logger.debug(
@@ -3780,7 +3782,10 @@ class SqlZenStore(BaseZenStore):
             self._sync_run_step_status(step_model)
 
     def _sync_run_step(
-        self, run_id: UUID, step_name: str, mlmd_step: "MLMDStepRunModel"
+        self,
+        run_id: UUID,
+        step_name: str,
+        mlmd_step: "MLMDStepRunModel"
     ) -> StepRunResponseModel:
         """Sync a single run step from MLMD into the database.
 
