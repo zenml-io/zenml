@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -26,31 +26,26 @@ from zenml.models import (
 )
 from zenml.models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-    from zenml.zen_stores.schemas.team_schemas import TeamSchema, UserSchema
-
-
-class RolePermissionSchema(SQLModel, table=True):
-    """SQL Model for team assignments."""
-
-    name: PermissionType = Field(primary_key=True)
-    role_id: UUID = Field(primary_key=True, foreign_key="roleschema.id")
-    roles: List["RoleSchema"] = Relationship(back_populates="permissions")
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.team_schemas import TeamSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class RoleSchema(NamedSchema, table=True):
     """SQL Model for roles."""
 
+    __tablename__ = "role"
+
+    permissions: List["RolePermissionSchema"] = Relationship(
+        back_populates="roles", sa_relationship_kwargs={"cascade": "delete"}
+    )
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="role", sa_relationship_kwargs={"cascade": "delete"}
     )
     team_role_assignments: List["TeamRoleAssignmentSchema"] = Relationship(
         back_populates="role", sa_relationship_kwargs={"cascade": "delete"}
-    )
-    permissions: List["RolePermissionSchema"] = Relationship(
-        back_populates="roles", sa_relationship_kwargs={"cascade": "delete"}
     )
 
     @classmethod
@@ -92,10 +87,32 @@ class RoleSchema(NamedSchema, table=True):
 class UserRoleAssignmentSchema(BaseSchema, table=True):
     """SQL Model for assigning roles to users for a given project."""
 
-    role_id: UUID = Field(foreign_key="roleschema.id")
-    user_id: UUID = Field(foreign_key="userschema.id")
-    project_id: Optional[UUID] = Field(
-        foreign_key="projectschema.id", nullable=True
+    __tablename__ = "user_role_assignment"
+
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    role_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=RoleSchema.__tablename__,
+        source_column="role_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    user_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    project_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
     )
 
     role: RoleSchema = Relationship(back_populates="user_role_assignments")
@@ -134,10 +151,32 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
 class TeamRoleAssignmentSchema(BaseSchema, table=True):
     """SQL Model for assigning roles to teams for a given project."""
 
-    role_id: UUID = Field(foreign_key="roleschema.id")
-    team_id: UUID = Field(foreign_key="teamschema.id")
-    project_id: Optional[UUID] = Field(
-        foreign_key="projectschema.id", nullable=True
+    __tablename__ = "team_role_assignment"
+
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    role_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=RoleSchema.__tablename__,
+        source_column="role_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    team_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=TeamSchema.__tablename__,
+        source_column="team_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    project_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
     )
     role: RoleSchema = Relationship(back_populates="team_role_assignments")
     team: "TeamSchema" = Relationship(back_populates="assigned_roles")
@@ -170,3 +209,21 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
             created=self.created,
             updated=self.updated,
         )
+
+
+class RolePermissionSchema(SQLModel, table=True):
+    """SQL Model for team assignments."""
+
+    __tablename__ = "role_permission"
+
+    name: PermissionType = Field(primary_key=True)
+    role_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=RoleSchema.__tablename__,
+        source_column="role_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    roles: List["RoleSchema"] = Relationship(back_populates="permissions")

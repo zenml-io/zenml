@@ -39,6 +39,8 @@ if TYPE_CHECKING:
 class ProjectSchema(NamedSchema, table=True):
     """SQL Model for projects."""
 
+    __tablename__ = "workspace"
+
     description: Optional[str] = Field(nullable=True)
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(

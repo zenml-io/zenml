@@ -58,4 +58,4 @@ A concrete example of using the HashiCorp Vault secrets manager can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/cloud_secrets_manager).
 
 For more information and a full list of configurable attributes of the HashiCorp
-Vault secrets manager, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-vault/#zenml.integrations.vault.secrets_manager.vault_secrets_manager.VaultSecretsManager).
+Vault secrets manager, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-vault/#zenml.integrations.vault.secrets_manager.vault_secrets_manager.VaultSecretsManager).

@@ -3,49 +3,73 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, ForeignKey
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import ExecutionStatus
 from zenml.models import PipelineRunResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.stack_schemas import StackSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunUpdateModel
-    from zenml.zen_stores.schemas import (
-        PipelineSchema,
-        ProjectSchema,
-        StackSchema,
-        UserSchema,
-    )
 
 
 class PipelineRunSchema(NamedSchema, table=True):
     """SQL Model for pipeline runs."""
 
+    __tablename__ = "pipeline_run"
+
     pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
-    num_steps: int
+    num_steps: Optional[int]
+
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
     mlmd_id: Optional[int] = Field(default=None, nullable=True)
-    stack_id: Optional[UUID] = Field(
+    stack_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=StackSchema.__tablename__,
+        source_column="stack_id",
+        target_column="id",
+        ondelete="SET NULL",
         nullable=True,
-        sa_column=Column(ForeignKey("stackschema.id", ondelete="SET NULL")),
     )
-    pipeline_id: Optional[UUID] = Field(
+    stack: "StackSchema" = Relationship(back_populates="runs")
+
+    pipeline_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineSchema.__tablename__,
+        source_column="pipeline_id",
+        target_column="id",
+        ondelete="SET NULL",
         nullable=True,
-        sa_column=Column(ForeignKey("pipelineschema.id", ondelete="SET NULL")),
     )
-    user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    pipeline: "PipelineSchema" = Relationship(back_populates="runs")
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
     )
-    project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    user: "UserSchema" = Relationship(back_populates="runs")
+
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
     )
     project: "ProjectSchema" = Relationship(back_populates="runs")
-    user: "UserSchema" = Relationship(back_populates="runs")
-    stack: "StackSchema" = Relationship(back_populates="runs")
-    pipeline: "PipelineSchema" = Relationship(back_populates="runs")
+
     orchestrator_run_id: Optional[str] = Field(nullable=True)
 
     status: ExecutionStatus

@@ -12,37 +12,34 @@ from zenml.models.step_run_models import (
     StepRunResponseModel,
     StepRunUpdateModel,
 )
+from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
     pass
 
 
-class StepRunOrderSchema(SQLModel, table=True):
-    """SQL Model that defines the order of steps."""
-
-    parent_id: UUID = Field(foreign_key="steprunschema.id", primary_key=True)
-    child_id: UUID = Field(foreign_key="steprunschema.id", primary_key=True)
-
-
-class StepInputArtifactSchema(SQLModel, table=True):
-    """SQL Model that defines which artifacts are inputs to which step."""
-
-    step_id: UUID = Field(foreign_key="steprunschema.id", primary_key=True)
-    artifact_id: UUID = Field(foreign_key="artifactschema.id", primary_key=True)
-    name: str  # Name of the input in the step
-
-
 class StepRunSchema(NamedSchema, table=True):
     """SQL Model for steps of pipeline runs."""
 
-    pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
+    __tablename__ = "step_run"
 
+    pipeline_run_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineRunSchema.__tablename__,
+        source_column="pipeline_run_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    status: ExecutionStatus
     entrypoint_name: str
+
     parameters: str = Field(sa_column=Column(TEXT, nullable=False))
     step_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    status: ExecutionStatus
+    num_outputs: Optional[int]
 
     mlmd_id: Optional[int] = Field(default=None, nullable=True)
 
@@ -56,6 +53,7 @@ class StepRunSchema(NamedSchema, table=True):
             step_configuration=json.dumps(request.step_configuration),
             docstring=request.docstring,
             mlmd_id=request.mlmd_id,
+            num_outputs=request.num_outputs,
         )
 
     def to_model(
@@ -89,13 +87,65 @@ class StepRunSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             input_artifacts=input_artifacts,
+            num_outputs=self.num_outputs,
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":
-        """"""
-        if step_update.status:
+        """For steps only the execution status is mutable"""
+        if "status" in step_update.__fields_set__ and step_update.status:
             self.status = step_update.status
 
         self.updated = datetime.now()
 
         return self
+
+
+class StepRunParentsSchema(SQLModel, table=True):
+    """SQL Model that defines the order of steps."""
+
+    __tablename__ = "step_run_parents"
+
+    parent_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="parent_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    child_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="child_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+
+
+class StepRunArtifactSchema(SQLModel, table=True):
+    """SQL Model that defines which artifacts are inputs to which step."""
+
+    __tablename__ = "step_run_artifact"
+
+    step_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="step_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    artifact_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="artifacts",  # ArtifactSchema.__tablename__,
+        source_column="artifact_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    name: str  # Name of the input in the step

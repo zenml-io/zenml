@@ -62,8 +62,11 @@ def create_role(role_name: str, permissions: List[str]) -> None:
     """
     cli_utils.print_active_config()
 
-    Client().create_role(name=role_name, permissions_list=permissions)
-    cli_utils.declare(f"Created role '{role_name}'.")
+    try:
+        Client().create_role(name=role_name, permissions_list=permissions)
+        cli_utils.declare(f"Created role '{role_name}'.")
+    except EntityExistsError as e:
+        cli_utils.error(str(e))
 
 
 @role.command("update", help="Update an existing role.")

@@ -145,9 +145,7 @@ def create_user(
 
     try:
         new_user = client.create_user(
-            name=user_name,
-            password=password,
-            initial_role=initial_role
+            name=user_name, password=password, initial_role=initial_role
         )
 
         cli_utils.declare(f"Created user '{new_user.name}'.")

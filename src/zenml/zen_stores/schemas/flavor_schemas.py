@@ -16,15 +16,16 @@
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy import Column, String
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
 from zenml.models.flavor_models import FlavorResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class FlavorSchema(NamedSchema, table=True):
@@ -37,18 +38,31 @@ class FlavorSchema(NamedSchema, table=True):
         integration: The integration associated with the flavor.
     """
 
+    __tablename__ = "flavor"
+
     type: StackComponentType
     source: str
     config_schema: str = Field(sa_column=Column(String(4096)), nullable=False)
     integration: Optional[str] = Field(default="")
 
-    user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
-    )
-    project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
     )
     project: "ProjectSchema" = Relationship(back_populates="flavors")
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
     user: "UserSchema" = Relationship(back_populates="flavors")
 
     def to_model(self) -> FlavorResponseModel:

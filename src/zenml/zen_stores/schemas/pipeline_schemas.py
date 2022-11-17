@@ -17,18 +17,19 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, ForeignKey
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.models.pipeline_models import PipelineResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
     from zenml.models import PipelineUpdateModel
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
-    from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-    from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class PipelineSchema(NamedSchema, table=True):
@@ -37,14 +38,28 @@ class PipelineSchema(NamedSchema, table=True):
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     spec: str = Field(sa_column=Column(TEXT, nullable=False))
 
-    user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    __tablename__ = "pipeline"
+
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
     )
-    project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
-    )
-    user: "UserSchema" = Relationship(back_populates="pipelines")
     project: "ProjectSchema" = Relationship(back_populates="pipelines")
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+
+    user: "UserSchema" = Relationship(back_populates="pipelines")
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
