@@ -68,14 +68,9 @@ underlying infrastructure. Secret references allow you to configure these compon
 a secure way by not specifying the value directly but instead referencing a secret by providing
 the secret name and key.
 Referencing a secret for the value of any string attribute of your stack components, simply specify
-the attribute using the following syntax:
-
-```shell
-{{<SECRET_NAME>.<SECRET_KEY>}}
-```
+the attribute using the following syntax: `{{<SECRET_NAME>.<SECRET_KEY>}}`
 
 For example:
-
 ```shell
 # Register a secret called `mlflow_secret` with key-value pairs for the
 # username and password to authenticate with the MLflow tracking server
@@ -91,11 +86,10 @@ zenml experiment-tracker register mlflow \
     ...
 ```
 
-#### Secret validation
-
-Before running a pipeline, ZenML will validate your stack and make sure that all secrets
-and keys referenced in your stack components exist. This helps us fail early so your 
-pipeline doesn't fail after running for some time due to some missing secret.
+When using secret references in your stack, ZenML will validate that all secrets
+and keys referenced in your stack components exist before running a pipeline.
+This helps us fail early so your pipeline doesn't fail after running for some
+time due to some missing secret.
 
 This validation by default needs to fetch and read every secret to make sure that
 both the secret and the specified key-value pair exist. This can take quite some time and
