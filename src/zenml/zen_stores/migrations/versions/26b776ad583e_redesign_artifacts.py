@@ -201,16 +201,40 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
-    # Create old columns and drop new one
     with op.batch_alter_table("artifacts", schema=None) as batch_op:
 
         # Create old parent and producer step columns
         batch_op.add_column(
-            sa.Column("producer_step_id", sa.CHAR(length=32), nullable=False)
+            sa.Column("producer_step_id", sa.CHAR(length=32), nullable=True)
         )
         batch_op.add_column(
-            sa.Column("parent_step_id", sa.CHAR(length=32), nullable=False)
+            sa.Column("parent_step_id", sa.CHAR(length=32), nullable=True)
         )
+
+        # Drop new artifact store link column
+        batch_op.drop_constraint(
+            "fk_artifacts_artifact_store_id_stack_component", type_="foreignkey"
+        )
+        batch_op.drop_column("artifact_store_id")
+
+    # Migrate data
+    # TODO
+
+    with op.batch_alter_table("artifacts", schema=None) as batch_op:
+
+        # Change producer step and parent step to not nullable
+        batch_op.alter_column(
+            "producer_step_id",
+            existing_type=sa.CHAR(length=32),
+            nullable=False,
+        )
+        batch_op.alter_column(
+            "parent_step_id",
+            existing_type=sa.CHAR(length=32),
+            nullable=False,
+        )
+
+        # Add foreign key constraints back
         batch_op.create_foreign_key(
             "fk_artifacts_parent_step_id_step_run",
             "step_run",
@@ -225,12 +249,6 @@ def downgrade() -> None:
             ["id"],
             ondelete="CASCADE",
         )
-
-        # Drop new artifact store link column
-        batch_op.drop_constraint(
-            "fk_artifacts_artifact_store_id_stack_component", type_="foreignkey"
-        )
-        batch_op.drop_column("artifact_store_id")
 
     # Rename `step_run_id` back to `step_id` in `step_run_input_artifact`
     with op.batch_alter_table(
@@ -257,9 +275,6 @@ def downgrade() -> None:
             ["id"],
             ondelete="CASCADE",
         )
-
-    # Migrate data
-    # TODO
 
     # Drop new table
     op.drop_table("step_run_output_artifact")
