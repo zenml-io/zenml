@@ -33,12 +33,17 @@ class VertexStepOperatorSettings(BaseSettings):
     """Settings for the Vertex step operator.
 
     Attributes:
-        accelerator_type: Accelerator type from list
-            https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
+        accelerator_type: Defines which accelerator (GPU, TPU) is used for the
+            job. Check out out this table to see which accelerator 
+            type and count are compatible with your chosen machine type:
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.
         accelerator_count: Defines number of accelerators to be used for the
-            job.
+            job. Check out out this table to see which accelerator 
+            type and count are compatible with your chosen machine type:
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.
         machine_type: Machine type specified here
-            https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types.
+            
     """
 
     accelerator_type: Optional[str] = None
