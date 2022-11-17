@@ -64,9 +64,7 @@ def test_initializing_a_stack_with_wrong_components(local_orchestrator):
 
     with pytest.raises(TypeError):
         Stack.from_components(
-            id=uuid4(),
-            name="",
-            components=components
+            id=uuid4(), name="", components=components
         ).validate()
 
 

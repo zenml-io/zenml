@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ForwardRef, Type, TypeVar, Optional
+from typing import TYPE_CHECKING, Any, ForwardRef, Optional, Type, TypeVar
 from uuid import UUID
 
 from pydantic import Field
@@ -74,8 +74,7 @@ class UserScopedResponseModel(BaseResponseModel):
     """
 
     user: Optional[ForwardRef("UserResponseModel")] = Field(
-        title="The user that created this resource.",
-        nullable=True
+        title="The user that created this resource.", nullable=True
     )
 
 

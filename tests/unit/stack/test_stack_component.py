@@ -11,9 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
 from contextlib import ExitStack as does_not_raise
-from datetime import datetime
 from typing import Type
 from uuid import uuid4
 
@@ -31,7 +29,6 @@ from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManagerConfig,
 )
 from zenml.stack.flavor_registry import flavor_registry
-from zenml.stack.stack import Stack
 
 
 def test_stack_component_default_method_implementations(stub_component):
@@ -177,23 +174,23 @@ def test_stack_component_secret_reference_resolving(
         name="local",
         configuration=LocalArtifactStoreConfig().dict(),
         flavor="local",
-        component_type=StackComponentType.ARTIFACT_STORE
+        component_type=StackComponentType.ARTIFACT_STORE,
     )
     new_orchestrator = clean_client.register_stack_component(
-        name='stub_orchestrator',
+        name="stub_orchestrator",
         component_type=StackComponentType.ORCHESTRATOR,
         configuration=StubOrchestratorConfig(
             attribute_without_validator="{{secret.key}}"
-            ).dict(),
-        flavor="TEST"
+        ).dict(),
+        flavor="TEST",
     )
 
     new_stack = clean_client.register_stack(
         name="new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store.name,
-            StackComponentType.ORCHESTRATOR: new_orchestrator.name
-        }
+            StackComponentType.ORCHESTRATOR: new_orchestrator.name,
+        },
     )
 
     with pytest.raises(RuntimeError):
@@ -213,7 +210,7 @@ def test_stack_component_secret_reference_resolving(
     new_secrets_manager = clean_client.register_stack_component(
         name="new_secrets_manager",
         component_type=StackComponentType.SECRETS_MANAGER,
-        flavor='local',
+        flavor="local",
         configuration=LocalSecretsManagerConfig().dict(),
     )
 
@@ -221,7 +218,7 @@ def test_stack_component_secret_reference_resolving(
         name_id_or_prefix=new_stack.id,
         component_updates={
             StackComponentType.SECRETS_MANAGER: [new_secrets_manager.name]
-        }
+        },
     )
 
     with pytest.raises(KeyError):
@@ -259,12 +256,14 @@ def test_stack_component_serialization_does_not_resolve_secrets(
     secret_ref = "{{name.key}}"
 
     new_orchestrator = clean_client.register_stack_component(
-        name='stub_orchestrator',
+        name="stub_orchestrator",
         component_type=StackComponentType.ORCHESTRATOR,
         configuration=StubOrchestratorConfig(
             attribute_without_validator=secret_ref,
-            ).dict(),
-        flavor="TEST"
+        ).dict(),
+        flavor="TEST",
     )
-    assert new_orchestrator.configuration["attribute_without_validator"] == secret_ref
-
+    assert (
+        new_orchestrator.configuration["attribute_without_validator"]
+        == secret_ref
+    )
