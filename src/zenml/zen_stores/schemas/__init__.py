@@ -27,8 +27,8 @@ from zenml.zen_stores.schemas.role_schemas import (
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.step_run_schemas import (
     StepRunArtifactSchema,
-    StepRunParentsSchema,
     StepRunOrderSchema,
+    StepRunParentsSchema,
     StepRunSchema,
 )
 from zenml.zen_stores.schemas.team_schemas import (

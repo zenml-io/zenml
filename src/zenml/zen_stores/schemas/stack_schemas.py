@@ -24,9 +24,9 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
-        StackComponentSchema,
         PipelineRunSchema,
-        UserSchema
+        StackComponentSchema,
+        UserSchema,
     )
 
 

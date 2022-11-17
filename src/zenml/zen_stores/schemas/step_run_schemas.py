@@ -53,7 +53,7 @@ class StepRunSchema(NamedSchema, table=True):
             step_configuration=json.dumps(request.step_configuration),
             docstring=request.docstring,
             mlmd_id=request.mlmd_id,
-            num_outputs=request.num_outputs
+            num_outputs=request.num_outputs,
         )
 
     def to_model(
@@ -87,12 +87,12 @@ class StepRunSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             input_artifacts=input_artifacts,
-            num_outputs=self.num_outputs
+            num_outputs=self.num_outputs,
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":
         """For steps only the execution status is mutable"""
-        if 'status' in step_update.__fields_set__ and step_update.status:
+        if "status" in step_update.__fields_set__ and step_update.status:
             self.status = step_update.status
 
         self.updated = datetime.now()
@@ -149,4 +149,3 @@ class StepRunArtifactSchema(SQLModel, table=True):
         primary_key=True,
     )
     name: str  # Name of the input in the step
-

@@ -16,10 +16,9 @@
 import base64
 import json
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
@@ -34,9 +33,9 @@ from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ProjectSchema,
-        StackSchema,
         StackCompositionSchema,
-        UserSchema
+        StackSchema,
+        UserSchema,
     )
 
 

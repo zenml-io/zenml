@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Flavors."""
-from datetime import datetime
 
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
@@ -25,10 +24,9 @@ from zenml.models.flavor_models import FlavorResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
-
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-    from zenml.zen_stores.schemas.user_schemas import  UserSchema
+    from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class FlavorSchema(NamedSchema, table=True):

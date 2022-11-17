@@ -12,11 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
 from zenml.enums import ArtifactType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel

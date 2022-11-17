@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, ForeignKey
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import ExecutionStatus

@@ -15,7 +15,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List
 from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Relationship, SQLModel
 
 from zenml.models import TeamResponseModel
 from zenml.models.team_models import TeamUpdateModel

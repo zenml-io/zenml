@@ -3660,7 +3660,7 @@ class SqlZenStore(BaseZenStore):
                         run_id=run_model.id,
                         run_update=PipelineRunUpdateModel(
                             mlmld_id=mlmd_run.mlmd_id
-                        )
+                        ),
                     )
                 except Exception as err:
                     logger.warning(
@@ -3841,7 +3841,9 @@ class SqlZenStore(BaseZenStore):
         )
         return self.create_run_step(new_step)
 
-    def _sync_run_step_artifacts(self, step_model: StepRunResponseModel) -> None:
+    def _sync_run_step_artifacts(
+        self, step_model: StepRunResponseModel
+    ) -> None:
         """Sync run step artifacts from MLMD into the database.
 
         Since we do not allow to create artifacts in the database directly, this
@@ -3911,8 +3913,7 @@ class SqlZenStore(BaseZenStore):
         return self.create_artifact(new_artifact)
 
     def _sync_run_step_status(
-        self,
-        step_model: StepRunResponseModel
+        self, step_model: StepRunResponseModel
     ) -> StepRunResponseModel:
         """Updates the status of a step run model.
 
@@ -3951,9 +3952,7 @@ class SqlZenStore(BaseZenStore):
         if is_failed or (is_done and all_synced):
             self.update_run_step(
                 step_id=step_model.id,
-                step_update=StepUpdateModel(
-                    status=status
-                )
+                step_update=StepUpdateModel(status=status),
             )
 
         return step_model
