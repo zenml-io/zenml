@@ -243,5 +243,14 @@ def preprocess(...) -> ...:
     # This step will be executed with Spark on Kubernetes.
 ```
 
+### Additional configuration
+
+For additional configuration of the Spark step operator, you can pass
+`SparkStepOperatorSettings` when defining or running your pipeline.
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-spark/#zenml.integrations.spark.flavors.spark_step_operator_flavor.SparkStepOperatorSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
+
 A concrete example of using the Spark step operator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/spark_distributed_programming).

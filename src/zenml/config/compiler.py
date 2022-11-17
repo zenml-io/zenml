@@ -28,12 +28,17 @@ from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
-from zenml.utils import source_utils, string_utils
+from zenml.utils import (
+    pydantic_utils,
+    settings_utils,
+    source_utils,
+    string_utils,
+)
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.steps import BaseStep
-    from zenml.stack import Stack
+    from zenml.stack import Stack, StackComponent
 
 from zenml.logger import get_logger
 
@@ -66,6 +71,7 @@ class Compiler:
         self._apply_run_configuration(
             pipeline=pipeline, config=run_configuration
         )
+        self._apply_stack_default_settings(pipeline=pipeline, stack=stack)
         self._verify_distinct_step_names(pipeline=pipeline)
         if run_configuration.run_name:
             self._verify_run_name(run_configuration.run_name)
@@ -147,6 +153,58 @@ class Compiler:
                 raise KeyError(f"No step with name {step_name}.")
             pipeline.steps[step_name]._apply_configuration(step_config)
 
+    def _apply_stack_default_settings(
+        self, pipeline: "BasePipeline", stack: "Stack"
+    ) -> None:
+        """Applies stack default settings to a pipeline.
+
+        Args:
+            pipeline: The pipeline to which to apply the default settings.
+            stack: The stack containing potential default settings.
+        """
+        pipeline_settings = pipeline.configuration.settings
+
+        for component in stack.components.values():
+            if not component.settings_class:
+                continue
+
+            settings_key = settings_utils.get_stack_component_setting_key(
+                component
+            )
+            default_settings = self._get_default_settings(component)
+
+            if settings_key in pipeline_settings:
+                combined_settings = pydantic_utils.update_model(
+                    default_settings, update=pipeline_settings[settings_key]
+                )
+                pipeline_settings[settings_key] = combined_settings
+            else:
+                pipeline_settings[settings_key] = default_settings
+
+        pipeline.configure(settings=pipeline_settings, merge=False)
+
+    def _get_default_settings(
+        self,
+        stack_component: "StackComponent",
+    ) -> "BaseSettings":
+        """Gets default settings configured on a stack component.
+
+        Args:
+            stack_component: The stack component for which to get the settings.
+
+        Returns:
+            The settings configured on the stack component.
+        """
+        assert stack_component.settings_class
+        # Exclude additional config attributes that aren't part of the settings
+        field_names = set(stack_component.settings_class.__fields__)
+        default_settings = stack_component.settings_class.parse_obj(
+            stack_component.config.dict(
+                include=field_names, exclude_unset=True, exclude_defaults=True
+            )
+        )
+        return default_settings
+
     def _verify_distinct_step_names(self, pipeline: "BasePipeline") -> None:
         """Verifies that all steps inside the pipeline have separate names.
 
@@ -224,6 +282,7 @@ class Compiler:
                 logger.info(
                     "Not including stack component settings with key `%s`.", key
                 )
+                continue
 
             if configuration_level not in settings_instance.LEVEL:
                 raise TypeError(

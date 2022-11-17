@@ -108,7 +108,7 @@ class AirflowOrchestratorSettings(BaseSettings):
             return value
 
 
-class AirflowOrchestratorConfig(
+class AirflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseOrchestratorConfig, AirflowOrchestratorSettings
 ):
     """Configuration for the Airflow orchestrator.

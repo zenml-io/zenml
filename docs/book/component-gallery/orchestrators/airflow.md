@@ -107,10 +107,8 @@ the pipeline, but instead will create a `.zip` file containing an Airflow repres
 ZenML pipeline. In one additional step, you need to make sure this zip file ends up in the
 [DAGs directoy](https://airflow.apache.org/docs/apache-airflow/stable/concepts/overview.html#architecture-overview) of your Airflow deployment.
 
-
 {% endtab %}
 {% endtabs %}
-
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
@@ -120,12 +118,14 @@ if you want to learn more about how ZenML builds these images and how you can
 customize them.
 {% endhint %}
 
+### Additional configuration
 
-A concrete example of using the Airflow orchestrator can be found 
-[here](https://github.com/zenml-io/zenml/tree/main/examples/airflow_orchestration).
-
-For more information and a full list of configurable attributes of the Airflow 
-orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow_orchestrator.AirflowOrchestrator).
+For additional configuration of the Airflow orchestrator, you can pass
+`AirflowOrchestratorSettings` when defining or running your pipeline.
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow_orchestrator_flavor.AirflowOrchestratorSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
 
 ### Enabling CUDA for GPU-backed hardware
 
@@ -209,3 +209,10 @@ For this reason we suggest to start by copying the original and modifying it
 according to your needs.
 
 Check out our docs on how to apply settings to your pipelines [here](../../advanced-guide/pipelines/settings.md).
+
+
+A concrete example of using the Airflow orchestrator can be found 
+[here](https://github.com/zenml-io/zenml/tree/main/examples/airflow_orchestration).
+
+For more information and a full list of configurable attributes of the Airflow 
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow_orchestrator.AirflowOrchestrator).
