@@ -1099,6 +1099,7 @@ def _import_stack_component(
 
     registered_component = client.register_stack_component(
         ComponentModel(
+            id=UUID(component_id),
             user=client.active_user.id,
             project=client.active_project.id,
             type=component_type,

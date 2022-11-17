@@ -66,7 +66,9 @@ class WandbExperimentTrackerSettings(BaseSettings):
             return value
 
 
-class WandbExperimentTrackerConfig(BaseExperimentTrackerConfig):
+class WandbExperimentTrackerConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseExperimentTrackerConfig, WandbExperimentTrackerSettings
+):
     """Config for the Wandb experiment tracker.
 
     Attributes:

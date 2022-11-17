@@ -97,12 +97,7 @@ class HydratedPipelineModel(PipelineModel):
         user = zen_store.get_user(pipeline_model.user)
         runs = zen_store.list_runs(pipeline_id=pipeline_model.id)
         last_x_runs = runs[-num_runs:]
-        status_last_x_runs = []
-        for run in last_x_runs:
-            status_last_x_runs.append(
-                zen_store.get_run(run_name_or_id=run.id).status
-            )
-
+        status_last_x_runs = [run.status for run in last_x_runs]
         return cls(
             id=pipeline_model.id,
             name=pipeline_model.name,
@@ -165,8 +160,6 @@ class HydratedPipelineRunModel(PipelineRunModel):
         """
         zen_store = GlobalConfiguration().zen_store
 
-        status = zen_store.get_run(run_name_or_id=run_model.id).status
-
         pipeline = None
         stack = None
         user = None
@@ -179,9 +172,8 @@ class HydratedPipelineRunModel(PipelineRunModel):
             user = zen_store.get_user(run_model.user)
 
         return cls(
-            **run_model.dict(exclude={"user", "pipeline", "stack", "status"}),
+            **run_model.dict(exclude={"user", "pipeline", "stack"}),
             pipeline=pipeline,
             stack=stack,
             user=user,
-            status=status
         )

@@ -362,7 +362,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     def _configure_container_op(
         self,
         container_op: dsl.ContainerOp,
-        settings: Optional[KubeflowOrchestratorSettings] = None,
+        settings: KubeflowOrchestratorSettings,
     ) -> None:
         """Makes changes in place to the configuration of the container op.
 
@@ -372,7 +372,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         Args:
             container_op: The kubeflow container operation to configure.
-            settings: Optional orchestrator settings for this step.
+            settings: Orchestrator settings for this step.
         """
         # Path to a metadata file that will be displayed in the KFP UI
         # This metadata file needs to be in a mounted emptyDir to avoid
@@ -444,7 +444,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         for k, v in KFP_POD_LABELS.items():
             container_op.add_pod_label(k, v)
 
-        if settings and settings.pod_settings:
+        if settings.pod_settings:
             apply_pod_settings(
                 container_op=container_op, settings=settings.pod_settings
             )
@@ -582,8 +582,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
 
                 settings = cast(
-                    Optional[KubeflowOrchestratorSettings],
-                    self.get_settings(step),
+                    KubeflowOrchestratorSettings, self.get_settings(step)
                 )
                 self._configure_container_op(
                     container_op=container_op,
@@ -607,10 +606,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 # Update dictionary of container ops with the current one
                 step_name_to_container_op[step.config.name] = container_op
 
+        orchestrator_run_name = get_orchestrator_run_name(
+            pipeline_name=deployment.pipeline.name
+        )
+
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{deployment.run_name}.yaml"
+            self.pipeline_directory, f"{orchestrator_run_name}.yaml"
         )
 
         # write the argo pipeline yaml
@@ -619,35 +622,37 @@ class KubeflowOrchestrator(BaseOrchestrator):
             pipeline_name=deployment.pipeline.name,
             package_path=pipeline_file_path,
         )
+        logger.info(
+            "Writing Kubeflow workflow definition to `%s`.", pipeline_file_path
+        )
 
         # using the kfp client uploads the pipeline to kubeflow pipelines and
         # runs it there
         self._upload_and_run_pipeline(
             deployment=deployment,
             pipeline_file_path=pipeline_file_path,
+            run_name=orchestrator_run_name,
         )
 
     def _upload_and_run_pipeline(
         self,
         deployment: "PipelineDeployment",
         pipeline_file_path: str,
+        run_name: str,
     ) -> None:
         """Tries to upload and run a KFP pipeline.
 
         Args:
             deployment: The pipeline deployment.
             pipeline_file_path: Path to the pipeline definition file.
+            run_name: The Kubeflow run name.
         """
         pipeline_name = deployment.pipeline.name
-        orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=pipeline_name
-        )
         enable_cache = deployment.pipeline.enable_cache
         settings = cast(
-            Optional[KubeflowOrchestratorSettings],
-            self.get_settings(deployment),
+            KubeflowOrchestratorSettings, self.get_settings(deployment)
         )
-        user_namespace = settings.user_namespace if settings else None
+        user_namespace = settings.user_namespace
 
         try:
             logger.info(
@@ -687,7 +692,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
                 result = client.create_recurring_run(
                     experiment_id=experiment.id,
-                    job_name=orchestrator_run_name,
+                    job_name=run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=enable_cache,
                     cron_expression=deployment.schedule.cron_expression,
@@ -705,7 +710,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 result = client.create_run_from_pipeline_package(
                     pipeline_file_path,
                     arguments={},
-                    run_name=orchestrator_run_name,
+                    run_name=run_name,
                     enable_caching=enable_cache,
                     namespace=user_namespace,
                 )
@@ -713,11 +718,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     "Started one-off pipeline run with ID '%s'.", result.run_id
                 )
 
-                if self.config.synchronous:
-                    # TODO [ENG-698]: Allow configuration of the timeout as a
-                    #  setting
+                if settings.synchronous:
                     client.wait_for_run_completion(
-                        run_id=result.run_id, timeout=1200
+                        run_id=result.run_id, timeout=settings.timeout
                     )
         except urllib3.exceptions.HTTPError as error:
             logger.warning(
@@ -748,12 +751,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     def _get_kfp_client(
         self,
-        settings: Optional[KubeflowOrchestratorSettings] = None,
+        settings: KubeflowOrchestratorSettings,
     ) -> kfp.Client:
         """Creates a KFP client instance.
 
         Args:
-            settings: Optional settings which can be used to
+            settings: Settings which can be used to
                 configure the client instance.
 
         Returns:
@@ -763,8 +766,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             "kube_context": self.config.kubernetes_context,
         }
 
-        if settings:
-            client_args.update(settings.client_args)
+        client_args.update(settings.client_args)
 
         # The host and namespace are stack component configurations that refer
         # to the Kubeflow deployment. We don't want these overwritten on a
