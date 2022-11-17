@@ -98,6 +98,7 @@
   * [MLflow](./component-gallery/model-deployers/mlflow.md)
   * [Seldon](./component-gallery/model-deployers/seldon.md)
   * [KServe](./component-gallery/model-deployers/kserve.md)
+  * [BentoML](./component-gallery/model-deployers/bentoml.md)
   * [Develop a Custom Model Deployer](./component-gallery/model-deployers/custom.md)
 * [Step Operators](./component-gallery/step-operators/step-operators.md)
   * [Amazon SageMaker](./component-gallery/step-operators/amazon-sagemaker.md)
