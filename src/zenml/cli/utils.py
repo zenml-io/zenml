@@ -928,10 +928,6 @@ def print_components_table(
             "FLAVOR": component.flavor,
             "SHARED": get_shared_emoji(component.is_shared),
             "OWNER": component.user.name,
-            # **{
-            #     key.upper(): str(value)
-            #     for key, value in component.configuration.items()
-            # },
         }
         configurations.append(component_config)
     print_table(configurations)
