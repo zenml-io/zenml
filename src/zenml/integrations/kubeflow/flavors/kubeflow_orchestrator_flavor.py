@@ -72,8 +72,8 @@ class KubeflowOrchestratorSettings(BaseSettings):
 
         if has_old_settings:
             logger.warning(
-                f"The attributes `node_selectors` and `node_affinity` of class "
-                f"`{cls.__name__}` will be deprecated soon. Use the "
+                f"The attributes `node_selectors` and `node_affinity` of the "
+                f"Kubeflow settings will be deprecated soon. Use the "
                 f"attribute `pod_settings` instead.",
             )
 
