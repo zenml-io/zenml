@@ -4105,34 +4105,43 @@ class SqlZenStore(BaseZenStore):
 
     def _sync_run_step_artifact(
         self, output_name: str, mlmd_artifact: "MLMDArtifactModel"
-    ) -> ArtifactModel:
+    ) -> None:
         """Sync a single run step artifact from MLMD into the database.
 
         Args:
             output_name: The name of the output artifact.
             mlmd_artifact: The MLMD artifact model to sync.
-
-        Returns:
-            The synced artifact model.
         """
-        new_artifact = ArtifactModel(
-            name=output_name,
-            mlmd_id=mlmd_artifact.mlmd_id,
-            type=mlmd_artifact.type,
-            uri=mlmd_artifact.uri,
-            materializer=mlmd_artifact.materializer,
-            data_type=mlmd_artifact.data_type,
-            mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
-            mlmd_producer_step_id=mlmd_artifact.mlmd_producer_step_id,
-            is_cached=mlmd_artifact.is_cached,
-            parent_step_id=self._resolve_mlmd_step_id(
+        if not mlmd_artifact.is_cached:
+            new_artifact = ArtifactModel(
+                name=output_name,
+                mlmd_id=mlmd_artifact.mlmd_id,
+                type=mlmd_artifact.type,
+                uri=mlmd_artifact.uri,
+                materializer=mlmd_artifact.materializer,
+                data_type=mlmd_artifact.data_type,
+                mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
+                mlmd_producer_step_id=mlmd_artifact.mlmd_producer_step_id,
+                is_cached=False,
+                parent_step_id=self._resolve_mlmd_step_id(
+                    mlmd_artifact.mlmd_parent_step_id
+                ),
+                producer_step_id=self._resolve_mlmd_step_id(
+                    mlmd_artifact.mlmd_producer_step_id
+                ),
+            )
+            new_artifact = self.create_artifact(new_artifact)
+        else:
+            artifact_id = self._resolve_mlmd_artifact_id(mlmd_artifact.mlmd_id)
+            step_run_id = self._resolve_mlmd_step_id(
                 mlmd_artifact.mlmd_parent_step_id
-            ),
-            producer_step_id=self._resolve_mlmd_step_id(
-                mlmd_artifact.mlmd_producer_step_id
-            ),
-        )
-        return self.create_artifact(new_artifact)
+            )
+            self._set_run_step_output_artifact(
+                artifact_id=artifact_id,
+                step_run_id=step_run_id,
+                name=output_name,
+                is_cached=True,
+            )
 
     def _sync_run_step_status(self, step_model: StepRunModel) -> StepRunModel:
         """Updates the status of a step run model.
