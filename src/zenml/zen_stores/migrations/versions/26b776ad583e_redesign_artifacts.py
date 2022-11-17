@@ -11,6 +11,7 @@ import sqlalchemy as sa
 import sqlmodel
 from alembic import op
 from sqlalchemy import select
+from sqlalchemy.sql.expression import false, true
 
 if TYPE_CHECKING:
     from sqlalchemy.engine.row import Row
@@ -71,7 +72,7 @@ def upgrade() -> None:
             artifacts.c.name,
             artifacts.c.parent_step_id,
             artifacts.c.producer_step_id,
-        ).where(artifacts.c.is_cached == False)
+        ).where(artifacts.c.is_cached == false())
     ).fetchall()
 
     # Get all cached artifacts, these are all copies of some produced artifacts.
@@ -81,7 +82,7 @@ def upgrade() -> None:
             artifacts.c.name,
             artifacts.c.parent_step_id,
             artifacts.c.producer_step_id,
-        ).where(artifacts.c.is_cached == True)
+        ).where(artifacts.c.is_cached == true())
     ).fetchall()
 
     def _find_produced_artifact(cached_artifact: "Row") -> "Row":
@@ -118,7 +119,7 @@ def upgrade() -> None:
         )
 
     # Delete all cached artifacts from the artifacts table
-    conn.execute(artifacts.delete().where(artifacts.c.is_cached == True))
+    conn.execute(artifacts.delete().where(artifacts.c.is_cached == true()))
 
     # Insert all produced and cached artifacts into the output artifact table
     produced_output_artifacts = [
