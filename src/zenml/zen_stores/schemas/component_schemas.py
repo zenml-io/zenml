@@ -33,7 +33,7 @@ from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, StackSchema, UserSchema
+    from zenml.zen_stores.schemas import StackSchema
 
 
 class StackComponentSchema(ShareableSchema, table=True):

@@ -535,8 +535,8 @@ def create_pipeline_run(
     assert pipeline_run.user == auth_context.user.id
 
     if get_if_exists:
-        return zen_store().get_or_create_run(pipeline_run=pipeline_run_model)
-    return zen_store().create_run(pipeline_run=pipeline_run_model)
+        return zen_store().get_or_create_run(pipeline_run=pipeline_run)
+    return zen_store().create_run(pipeline_run=pipeline_run)
 
 
 @router.get(

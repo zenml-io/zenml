@@ -28,7 +28,6 @@ if TYPE_CHECKING:
         PipelineSchema,
         StackComponentSchema,
         StackSchema,
-        TeamAssignmentSchema,
         TeamSchema,
         UserRoleAssignmentSchema,
     )
