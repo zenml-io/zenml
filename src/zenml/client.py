@@ -905,7 +905,7 @@ class Client(metaclass=ClientMetaClass):
         user_or_team_name_or_id: Union[str, UUID],
         is_user: bool,
         project_name_or_id: Optional[Union[str, UUID]] = None,
-    ):
+    ) -> RoleAssignmentResponseModel:
         """Create a role assignment.
 
         Args:
@@ -967,7 +967,7 @@ class Client(metaclass=ClientMetaClass):
         user_or_team_name_or_id: str,
         is_user: bool,
         project_name_or_id: Optional[str] = None,
-    ):
+    ) -> None:
         """Delete a role assignment.
 
         Args:
@@ -1188,7 +1188,7 @@ class Client(metaclass=ClientMetaClass):
     def register_stack(
         self,
         name: str,
-        components: Dict[StackComponentType, Optional[Union[UUID, str]]],
+        components: Dict[StackComponentType, str],
         is_shared: bool = False,
     ) -> "StackResponseModel":
         """Registers a stack and its components.

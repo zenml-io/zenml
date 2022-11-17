@@ -32,7 +32,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 from uuid import UUID
 
@@ -1378,8 +1377,8 @@ class SqlZenStore(BaseZenStore):
             )
         return None
 
+    @staticmethod
     def _fail_if_component_with_name_type_already_shared(
-        self,
         component: ComponentRequestModel,
         session: Session,
     ) -> None:
@@ -1407,7 +1406,7 @@ class SqlZenStore(BaseZenStore):
                 f"Unable to shared component of type '{component.type.value}' "
                 f"with name '{component.name}': Found an existing shared "
                 f"component with the same name and type in project "
-                f"'{project.name}'."
+                f"'{component.project}'."
             )
 
     # -----------------------
@@ -3484,14 +3483,11 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The run schema.
         """
-        return cast(
-            PipelineRunSchema,
-            self._get_schema_by_name_or_id(
-                object_name_or_id=run_name_or_id,
-                schema_class=PipelineRunSchema,
-                schema_name="run",
-                session=session,
-            ),
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=run_name_or_id,
+            schema_class=PipelineRunSchema,
+            schema_name="run",
+            session=session,
         )
 
     # MLMD Stuff

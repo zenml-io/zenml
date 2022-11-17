@@ -154,17 +154,17 @@ def stack() -> None:
 )
 def register_stack(
     stack_name: str,
-    artifact_store_name: str,
-    orchestrator_name: str,
-    container_registry_name: Optional[str] = None,
-    secrets_manager_name: Optional[str] = None,
-    step_operator_name: Optional[str] = None,
-    feature_store_name: Optional[str] = None,
-    model_deployer_name: Optional[str] = None,
-    experiment_tracker_name: Optional[str] = None,
-    alerter_name: Optional[str] = None,
-    annotator_name: Optional[str] = None,
-    data_validator_name: Optional[str] = None,
+    artifact_store: str,
+    orchestrator: str,
+    container_registry: Optional[str] = None,
+    secrets_manager: Optional[str] = None,
+    step_operator: Optional[str] = None,
+    feature_store: Optional[str] = None,
+    model_deployer: Optional[str] = None,
+    experiment_tracker: Optional[str] = None,
+    alerter: Optional[str] = None,
+    annotator: Optional[str] = None,
+    data_validator: Optional[str] = None,
     set_stack: bool = False,
     share: bool = False,
 ) -> None:
@@ -172,17 +172,17 @@ def register_stack(
 
     Args:
         stack_name: Unique name of the stack
-        artifact_store_name: Name of the artifact store for this stack.
-        orchestrator_name: Name of the orchestrator for this stack.
-        container_registry_name: Name of the container registry for this stack.
-        secrets_manager_name: Name of the secrets manager for this stack.
-        step_operator_name: Name of the step operator for this stack.
-        feature_store_name: Name of the feature store for this stack.
-        model_deployer_name: Name of the model deployer for this stack.
-        experiment_tracker_name: Name of the experiment tracker for this stack.
-        alerter_name: Name of the alerter for this stack.
-        annotator_name: Name of the annotator for this stack.
-        data_validator_name: Name of the data validator for this stack.
+        artifact_store: Name of the artifact store for this stack.
+        orchestrator: Name of the orchestrator for this stack.
+        container_registry: Name of the container registry for this stack.
+        secrets_manager: Name of the secrets manager for this stack.
+        step_operator: Name of the step operator for this stack.
+        feature_store: Name of the feature store for this stack.
+        model_deployee: Name of the model deployer for this stack.
+        experiment_tracker: Name of the experiment tracker for this stack.
+        alerter: Name of the alerter for this stack.
+        annotator: Name of the annotator for this stack.
+        data_validator: Name of the data validator for this stack.
         set_stack: Immediately set this stack as active.
         share: Share the stack with other users.
     """
@@ -190,19 +190,33 @@ def register_stack(
     with console.status(f"Registering stack '{stack_name}'...\n"):
         client = Client()
 
-        component_mapping = {
-            StackComponentType.ARTIFACT_STORE: artifact_store_name,
-            StackComponentType.ALERTER: alerter_name,
-            StackComponentType.ANNOTATOR: annotator_name,
-            StackComponentType.CONTAINER_REGISTRY: container_registry_name,
-            StackComponentType.DATA_VALIDATOR: data_validator_name,
-            StackComponentType.EXPERIMENT_TRACKER: experiment_tracker_name,
-            StackComponentType.FEATURE_STORE: feature_store_name,
-            StackComponentType.MODEL_DEPLOYER: model_deployer_name,
-            StackComponentType.ORCHESTRATOR: orchestrator_name,
-            StackComponentType.SECRETS_MANAGER: secrets_manager_name,
-            StackComponentType.STEP_OPERATOR: step_operator_name,
-        }
+        components = {}
+
+        components[StackComponentType.ARTIFACT_STORE] = artifact_store
+        components[StackComponentType.ORCHESTRATOR] = orchestrator
+
+        if alerter:
+            components[StackComponentType.ALERTER] = alerter
+        if annotator:
+            components[StackComponentType.ANNOTATOR] = annotator
+        if data_validator:
+            components[StackComponentType.DATA_VALIDATOR] = data_validator
+        if feature_store:
+            components[StackComponentType.FEATURE_STORE] = feature_store
+        if model_deployer:
+            components[StackComponentType.MODEL_DEPLOYER] = model_deployer
+        if secrets_manager:
+            components[StackComponentType.SECRETS_MANAGER] = secrets_manager
+        if step_operator:
+            components[StackComponentType.STEP_OPERATOR] = step_operator
+        if experiment_tracker:
+            components[
+                StackComponentType.EXPERIMENT_TRACKER
+            ] = experiment_tracker
+        if container_registry:
+            components[
+                StackComponentType.CONTAINER_REGISTRY
+            ] = container_registry
 
         # click<8.0.0 gives flags a default of None
         if share is None:
@@ -210,7 +224,7 @@ def register_stack(
 
         created_stack = client.register_stack(
             name=stack_name,
-            components=component_mapping,
+            components=components,
             is_shared=share,
         )
 

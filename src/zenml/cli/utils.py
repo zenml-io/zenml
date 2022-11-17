@@ -25,7 +25,6 @@ from typing import (
     List,
     NoReturn,
     Optional,
-    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -181,9 +180,9 @@ M = TypeVar("M", bound=BaseModel)
 
 
 def print_pydantic_models(
-    models: Sequence[M],
-    columns: Optional[Sequence[str]] = None,
-    exclude_columns: Sequence[str] = (),
+    models: List[M],
+    columns: Optional[List[str]] = None,
+    exclude_columns: List[str] = (),
     is_active: Optional[Callable[[M], bool]] = None,
 ) -> None:
     """Prints the list of Pydantic models in a table.

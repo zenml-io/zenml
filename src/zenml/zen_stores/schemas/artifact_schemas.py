@@ -57,7 +57,9 @@ class ArtifactSchema(NamedSchema, table=True):
     mlmd_producer_step_id: Optional[int] = Field(default=None, nullable=True)
 
     @classmethod
-    def from_request(cls, artifact_request: ArtifactRequestModel):
+    def from_request(
+        cls, artifact_request: ArtifactRequestModel
+    ) -> "ArtifactSchema":
         return cls(
             name=artifact_request.name,
             parent_step_id=artifact_request.parent_step_id,
