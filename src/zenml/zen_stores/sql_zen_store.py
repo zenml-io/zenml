@@ -3941,7 +3941,9 @@ class SqlZenStore(BaseZenStore):
 
         return step_model
 
-    def _sync_run_status(self, run_model: PipelineRunResponseModel) -> PipelineRunResponseModel:
+    def _sync_run_status(
+        self, run_model: PipelineRunResponseModel
+    ) -> PipelineRunResponseModel:
         """Updates the status of a pipeline run model.
 
         In contrast to other update methods, this does not use the status of the

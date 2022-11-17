@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlmodel import Field, Relationship
 
 from zenml.models import UserRequestModel, UserResponseModel, UserUpdateModel
-from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
+
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         FlavorSchema,
@@ -29,8 +30,9 @@ if TYPE_CHECKING:
         StackSchema,
         TeamAssignmentSchema,
         TeamSchema,
-        UserRoleAssignmentSchema
+        UserRoleAssignmentSchema,
     )
+
 
 class UserSchema(NamedSchema, table=True):
     """SQL Model for users."""

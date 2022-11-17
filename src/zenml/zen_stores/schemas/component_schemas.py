@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlmodel import Field, Relationship
+from sqlmodel import Relationship
 
 from zenml.enums import StackComponentType
 from zenml.models.component_models import (
@@ -28,16 +28,12 @@ from zenml.models.component_models import (
 )
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import (
-        ProjectSchema,
-        StackSchema,
-        UserSchema,
-    )
+    from zenml.zen_stores.schemas import ProjectSchema, StackSchema, UserSchema
 
 
 class StackComponentSchema(ShareableSchema, table=True):
