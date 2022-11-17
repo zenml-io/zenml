@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Flavors."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import Column, String
@@ -22,9 +22,8 @@ from sqlmodel import Field, Relationship
 from zenml.enums import StackComponentType
 from zenml.models.flavor_models import FlavorResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
-
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 

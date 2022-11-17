@@ -17,19 +17,20 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Relationship, SQLModel
 
 from zenml.models import StackResponseModel
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         PipelineRunSchema,
         StackComponentSchema,
-)
+        StackUpdateModel,
+    )
 
 
 class StackCompositionSchema(SQLModel, table=True):
@@ -64,7 +65,6 @@ class StackSchema(ShareableSchema, table=True):
     """SQL Model for stacks."""
 
     __tablename__ = "stack"
-
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
