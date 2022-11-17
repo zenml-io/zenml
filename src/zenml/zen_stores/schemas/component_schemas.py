@@ -35,7 +35,6 @@ from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ProjectSchema,
-        StackCompositionSchema,
         StackSchema,
         UserSchema,
     )
@@ -45,11 +44,6 @@ class StackComponentSchema(ShareableSchema, table=True):
     """SQL Model for stack components."""
 
     __tablename__ = "stack_component"
-
-    id: UUID = Field(primary_key=True)
-
-    name: str
-    is_shared: bool
 
     type: StackComponentType
     flavor: str

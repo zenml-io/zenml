@@ -65,12 +65,6 @@ class StackSchema(ShareableSchema, table=True):
 
     __tablename__ = "stack"
 
-    id: UUID = Field(primary_key=True)
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
-
-    name: str
-    is_shared: bool
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
