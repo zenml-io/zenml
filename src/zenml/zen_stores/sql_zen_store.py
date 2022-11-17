@@ -2718,34 +2718,18 @@ class SqlZenStore(BaseZenStore):
                     )
 
             # Query stack
-            if pipeline_run.stack_id is not None:
-                stack = session.exec(
-                    select(StackSchema).where(
-                        StackSchema.id == pipeline_run.stack_id
-                    )
-                ).first()
-                if stack is None:
-                    logger.warning(
-                        f"No stack with ID '{pipeline_run.stack_id}' found. "
-                        f"Creating pipeline run '{pipeline_run.name}' without "
-                        "linked stack."
-                    )
-                    pipeline_run.stack_id = None
+            if pipeline_run.stack is None:
+                logger.warning(
+                    f"No stack found for this run. "
+                    f"Creating pipeline run '{pipeline_run.name}' without "
+                    "linked stack."
+                )
 
-            # Query pipeline
-            pipeline = None
-            if pipeline_run.pipeline is not None:
-                pipeline = session.exec(
-                    select(PipelineSchema).where(
-                        PipelineSchema.id == pipeline_run.pipeline
-                    )
-                ).first()
-                if pipeline is None:
-                    logger.warning(
-                        f"No pipeline found. Creating pipeline run "
-                        f"'{pipeline_run.name}' as unlisted run."
-                    )
-                    pipeline_run.pipeline = None
+            if pipeline_run.pipeline is None:
+                logger.warning(
+                    f"No pipeline found. Creating pipeline run "
+                    f"'{pipeline_run.name}' as unlisted run."
+                )
 
             configuration = json.dumps(pipeline_run.pipeline_configuration)
 
