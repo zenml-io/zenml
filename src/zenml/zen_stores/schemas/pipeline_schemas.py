@@ -25,6 +25,7 @@ from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
@@ -37,7 +38,6 @@ class PipelineSchema(SQLModel, table=True):
     __tablename__ = "pipeline"
 
     id: UUID = Field(primary_key=True)
-
     name: str
 
     project_id: UUID = build_foreign_key_field(
@@ -385,21 +385,16 @@ class ArtifactSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     name: str  # Name of the output in the parent step
 
-    parent_step_id: UUID = build_foreign_key_field(
+    artifact_store_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=StepRunSchema.__tablename__,
-        source_column="parent_step_id",
+        target=StackComponentSchema.__tablename__,
+        source_column="artifact_store_id",
         target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
+        ondelete="SET NULL",
+        nullable=True,
     )
-    producer_step_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=StepRunSchema.__tablename__,
-        source_column="producer_step_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
+    artifact_store: "StackComponentSchema" = Relationship(
+        back_populates="artifacts"
     )
 
     type: ArtifactType
@@ -428,8 +423,7 @@ class ArtifactSchema(SQLModel, table=True):
         return cls(
             id=model.id,
             name=model.name,
-            parent_step_id=model.parent_step_id,
-            producer_step_id=model.producer_step_id,
+            artifact_store_id=model.artifact_store_id,
             type=model.type,
             uri=model.uri,
             materializer=model.materializer,
@@ -440,8 +434,16 @@ class ArtifactSchema(SQLModel, table=True):
             mlmd_producer_step_id=model.mlmd_producer_step_id,
         )
 
-    def to_model(self) -> ArtifactModel:
+    def to_model(
+        self,
+        parent_step_id: UUID,
+        producer_step_id: UUID,
+    ) -> ArtifactModel:
         """Convert an `ArtifactSchema` to an `ArtifactModel`.
+
+        Args:
+            parent_step_id: The parent step id to link to the artifact.
+            producer_step_id: The producer step id to link to the artifact.
 
         Returns:
             The created `ArtifactModel`.
@@ -449,8 +451,9 @@ class ArtifactSchema(SQLModel, table=True):
         return ArtifactModel(
             id=self.id,
             name=self.name,
-            parent_step_id=self.parent_step_id,
-            producer_step_id=self.producer_step_id,
+            parent_step_id=parent_step_id,
+            producer_step_id=producer_step_id,
+            artifact_store_id=self.artifact_store_id,
             type=self.type,
             uri=self.uri,
             materializer=self.materializer,
@@ -464,15 +467,15 @@ class ArtifactSchema(SQLModel, table=True):
         )
 
 
-class StepRunArtifactSchema(SQLModel, table=True):
+class StepRunInputArtifactSchema(SQLModel, table=True):
     """SQL Model that defines which artifacts are inputs to which step."""
 
-    __tablename__ = "step_run_artifact"
+    __tablename__ = "step_run_input_artifact"
 
-    step_id: UUID = build_foreign_key_field(
+    step_run_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=StepRunSchema.__tablename__,
-        source_column="step_id",
+        source_column="step_run_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
@@ -487,4 +490,31 @@ class StepRunArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
-    name: str  # Name of the input in the step
+    name: str
+
+
+class StepRunOutputArtifactSchema(SQLModel, table=True):
+    """SQL Model that defines which artifacts are outputs of which step."""
+
+    __tablename__ = "step_run_output_artifact"
+
+    step_run_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="step_run_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    artifact_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ArtifactSchema.__tablename__,
+        source_column="artifact_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    name: str
+    is_cached: bool

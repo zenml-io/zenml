@@ -19,13 +19,18 @@ from zenml.zen_stores.schemas.pipeline_schemas import (
     ArtifactSchema,
     PipelineRunSchema,
     PipelineSchema,
-    StepRunArtifactSchema,
+    StepRunInputArtifactSchema,
+    StepRunOutputArtifactSchema,
     StepRunParentsSchema,
     StepRunSchema,
 )
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.stack_schemas import StackSchema
+from zenml.zen_stores.schemas.stack_schemas import (
+    StackCompositionSchema,
+    StackSchema,
+)
 from zenml.zen_stores.schemas.user_management_schemas import (
+    RolePermissionSchema,
     RoleSchema,
     TeamAssignmentSchema,
     TeamRoleAssignmentSchema,
@@ -36,19 +41,22 @@ from zenml.zen_stores.schemas.user_management_schemas import (
 
 __all__ = [
     "StackComponentSchema",
+    "StackCompositionSchema",
     "FlavorSchema",
     "PipelineRunSchema",
     "PipelineSchema",
     "ProjectSchema",
     "StackSchema",
     "RoleSchema",
+    "RolePermissionSchema",
     "TeamAssignmentSchema",
     "TeamRoleAssignmentSchema",
     "TeamSchema",
     "UserRoleAssignmentSchema",
     "UserSchema",
     "ArtifactSchema",
-    "StepRunArtifactSchema",
+    "StepRunInputArtifactSchema",
+    "StepRunOutputArtifactSchema",
     "StepRunParentsSchema",
     "StepRunSchema",
 ]

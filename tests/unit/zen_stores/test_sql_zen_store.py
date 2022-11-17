@@ -1171,7 +1171,7 @@ def test_get_run_step_succeeds(
     """Tests getting run step."""
     pipeline_step = sql_store_with_run["step"]
     run_step = sql_store_with_run["store"].get_run_step(
-        step_id=pipeline_step.id
+        step_run_id=pipeline_step.id
     )
     assert run_step is not None
     assert run_step.id == pipeline_step.id
@@ -1183,7 +1183,7 @@ def test_get_run_step_fails_when_step_does_not_exist(
 ):
     """Tests getting run step fails when step does not exist."""
     with pytest.raises(KeyError):
-        sql_store["store"].get_run_step(step_id=uuid.uuid4())
+        sql_store["store"].get_run_step(step_run_id=uuid.uuid4())
 
 
 def test_get_run_step_outputs_succeeds(
@@ -1203,7 +1203,7 @@ def test_get_run_step_inputs_succeeds(
     """Tests getting run step inputs."""
     pipeline_step = sql_store_with_run["step"]
     run_step_inputs = sql_store_with_run["store"].get_run_step_inputs(
-        step_id=pipeline_step.id
+        step_run_id=pipeline_step.id
     )
     assert len(run_step_inputs) == 1
 
@@ -1213,7 +1213,7 @@ def test_get_run_step_inputs_fails_when_step_does_not_exist(
 ):
     """Tests getting run step inputs fails when step does not exist."""
     with pytest.raises(KeyError):
-        sql_store["store"].get_run_step_inputs(step_id=uuid.uuid4())
+        sql_store["store"].get_run_step_inputs(step_run_id=uuid.uuid4())
 
 
 def test_get_run_step_status_succeeds(
@@ -1223,7 +1223,7 @@ def test_get_run_step_status_succeeds(
     pipeline_step = sql_store_with_run["step"]
     run_step_status = (
         sql_store_with_run["store"]
-        .get_run_step(step_id=pipeline_step.id)
+        .get_run_step(step_run_id=pipeline_step.id)
         .status
     )
     assert run_step_status is not None
