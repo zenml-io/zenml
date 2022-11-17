@@ -109,7 +109,7 @@ def _get_changes() -> Tuple[
     # Define all the tables that should be renamed
     table_name_mapping: Dict[str, str] = {
         "roleschema": "role",
-        "stepinputartifactschema": "step_run_artifact",
+        "stepinputartifactschema": "step_run_input_artifact",
         "userroleassignmentschema": "user_role_assignment",
         "steprunorderschema": "step_run_parents",
         "teamschema": "team",
@@ -159,9 +159,15 @@ def _get_changes() -> Tuple[
         ("pipeline_run", "pipeline", "pipeline_id", "id", "SET NULL"),  # 13
         ("pipeline_run", "stack", "stack_id", "id", "SET NULL"),  # 14
         ("step_run", "pipeline_run", "pipeline_run_id", "id", "CASCADE"),  # 15
-        ("step_run_artifact", "step_run", "step_id", "id", "CASCADE"),  # 16
         (
-            "step_run_artifact",
+            "step_run_input_artifact",
+            "step_run",
+            "step_id",
+            "id",
+            "CASCADE",
+        ),  # 16
+        (
+            "step_run_input_artifact",
             "artifacts",
             "artifact_id",
             "id",
