@@ -50,14 +50,10 @@ The answer is that the configuration passed in at registration time is static an
 
 A good example of this is the [`MLflow Experiment Tracker`](../../component-gallery/experiment-trackers/mlflow.md), where configuration which remains static such as the `tracking_url` is sent through at registration time, while runtime configuration such as the `experiment_name` (which might change every pipeline run) is sent through as runtime settings.
 
-{% hint style="info" %}
-All ZenML default stack components however also allow you to specify default values for settings in their configuration. For example,
-you could set a default value for the `nested` setting of your MLflow experiment tracker:
+Even though settings can be overriden at runtime, you can also specify *default* values for settings while configuring a stack component. For example, you could set a default value for the `nested` setting of your MLflow experiment tracker:
 `zenml experiment-tracker register <NAME> --flavor=mlflow --nested=True`
 
-This means that all pipelines that run using this experiment tracker use nested MLflow runs unless overwritten by specifying settings
-for the pipeline.
-{% endhint %}
+This means that all pipelines that run using this experiment tracker use nested MLflow runs unless overwritten by specifying settings for the pipeline at runtime.
 
 #### Using objects or dicts
 
