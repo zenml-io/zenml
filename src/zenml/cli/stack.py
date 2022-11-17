@@ -239,11 +239,11 @@ def register_stack(
                 if share:
                     if not component.is_shared:
                         cli_utils.error(
-                            "You attempted to create a shared stack containing "
-                            f"a private component {c_type}: {name}. This "
+                            "You attempted to include a private component"
+                            f"{c_type}:{name} in a shared stack. This "
                             f"is not supported. Set the {c_type} to "
-                            f"shared like this and then try re-sharing your "
-                            f"stack: \n `zenml {c_type.replace('_', '-')} "
+                            f"shared like this before creating this stack with "
+                            f"`--share`: \n `zenml {c_type.replace('_', '-')} "
                             f"share`{component.id}`\n."
                         )
 
@@ -438,11 +438,11 @@ def update_stack(
                 )
                 if stack_to_update.is_shared and not component.is_shared:
                     cli_utils.error(
-                        "You attempted to add a private component"
-                        f"{c_type}:{name} to a shared stack. This "
-                        f"is not supported. Set the {c_type} to"
-                        f"shared like this and then re-share your stack: "
-                        f"\n `zenml {c_type.replace('_', '-')} "
+                        "You attempted to include a private component"
+                        f"{c_type}:{name} in a shared stack. This "
+                        f"is not supported. Set the {c_type} to "
+                        f"shared like this before updating this stack with "
+                        f"`--share`: \n `zenml {c_type.replace('_', '-')} "
                         f"share`{component.id}`\n."
                     )
                 else:
