@@ -20,12 +20,13 @@ from pydantic import root_validator
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
-from zenml.utils.deprecation_utils import deprecate_pydantic_attributes
 
 if TYPE_CHECKING:
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 
+logger = get_logger(__name__)
 
 DEFAULT_KFP_UI_PORT = 8080
 
@@ -56,10 +57,6 @@ class KubeflowOrchestratorSettings(BaseSettings):
     node_affinity: Dict[str, List[str]] = {}
     pod_settings: Optional[KubernetesPodSettings] = None
 
-    _deprecation_validator = deprecate_pydantic_attributes(
-        "node_selectors", "node_affinity"
-    )
-
     @root_validator
     def _migrate_pod_settings(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         has_pod_settings = bool(values.get("pod_settings"))
@@ -72,6 +69,13 @@ class KubeflowOrchestratorSettings(BaseSettings):
         )
 
         has_old_settings = any([node_selectors, node_affinity])
+
+        if has_old_settings:
+            logger.warning(
+                f"The attributes `node_selectors` and `node_affinity` of class "
+                f"`{cls.__name__}` will be deprecated soon. Use the "
+                f"attribute `pod_settings` instead.",
+            )
 
         if has_pod_settings and has_old_settings:
             raise AssertionError(
