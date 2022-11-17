@@ -305,42 +305,24 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         """
         active_project: ProjectResponseModel
 
-        # Figure out a project to use if one isn't configured or
-        # available:
-        #   1. If the default project is configured, use that.
-        #   2. If the default project is not configured, use the first
-        #      project in the store.
-        #   3. If there are no projects in the store, create the default
-        #      project and use that
-        try:
-            default_project = self._default_project
-        except KeyError:
-            projects = self.list_projects()
-            if len(projects) == 0:
-                self._create_default_project()
-                default_project = self._default_project
-            else:
-                default_project = projects[0]
-
-        # Ensure that the current active project is still valid
         if active_project_name_or_id:
             try:
                 active_project = self.get_project(active_project_name_or_id)
             except KeyError:
+                active_project = self._get_or_create_default_project()
+
                 logger.warning(
-                    "The current %s active project is no longer available. "
-                    "Resetting the active project to '%s'.",
-                    config_name,
-                    default_project.name,
+                    f"The current {config_name} active project is no longer "
+                    f"available. Resetting the active project to "
+                    f"'{active_project.name}'."
                 )
-                active_project = default_project
         else:
+            active_project = self._get_or_create_default_project()
+
             logger.info(
-                "Setting the %s active project to '%s'.",
-                config_name,
-                default_project.name,
+                f"Setting the {config_name} active project "
+                f"to '{active_project.name}'."
             )
-            active_project = default_project
 
         active_stack: StackResponseModel
 
@@ -404,7 +386,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         )
 
     def is_local_store(self) -> bool:
-        """Check if the store is a local store or connected to a locally deployed ZenML server.
+        """Check if the store is local or connected to a local ZenML server.
 
         Returns:
             True if the store is local, False otherwise.
@@ -424,6 +406,12 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                 project_name_or_id=project.id,
                 user_name_or_id=self.active_user.id,
             )
+
+    def _get_or_create_default_project(self) -> "ProjectResponseModel":
+        try:
+            return self._default_project
+        except KeyError:
+            return self._create_default_project()
 
     # ------
     # Stacks
