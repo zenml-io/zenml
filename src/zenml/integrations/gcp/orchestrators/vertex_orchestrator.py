@@ -337,8 +337,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 "AI Pipelines does not support scheduling yet. Creating "
                 "a one-time run instead."
             )
-        # Build the Docker image that will be used to run the steps of the
-        # pipeline.
+
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         def _construct_kfp_pipeline() -> None:
@@ -403,6 +402,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                     resource_settings=step.config.resource_settings,
                     node_selector_constraint=settings.node_selector_constraint,
                 )
+                container_op.set_caching_options(enable_caching=False)
 
                 step_name_to_container_op[step.config.name] = container_op
 
@@ -416,15 +416,13 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         # Compile the pipeline using the Kubeflow SDK V2 compiler that allows
         # to generate a JSON representation of the pipeline that can be later
         # upload to Vertex AI Pipelines service.
-        logger.debug(
-            "Compiling pipeline using Kubeflow SDK V2 compiler and saving it "
-            "to `%s`",
-            pipeline_file_path,
-        )
         KFPV2Compiler().compile(
             pipeline_func=_construct_kfp_pipeline,
             package_path=pipeline_file_path,
             pipeline_name=_clean_pipeline_name(deployment.pipeline.name),
+        )
+        logger.info(
+            "Writing Vertex workflow definition to `%s`.", pipeline_file_path
         )
 
         settings = cast(
@@ -437,7 +435,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         self._upload_and_run_pipeline(
             pipeline_name=deployment.pipeline.name,
             pipeline_file_path=pipeline_file_path,
-            enable_cache=deployment.pipeline.enable_cache,
+            run_name=orchestrator_run_name,
             settings=settings,
         )
 
@@ -445,7 +443,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         self,
         pipeline_name: str,
         pipeline_file_path: str,
-        enable_cache: bool,
+        run_name: str,
         settings: VertexOrchestratorSettings,
     ) -> None:
         """Uploads and run the pipeline on the Vertex AI Pipelines service.
@@ -454,15 +452,13 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             pipeline_name: Name of the pipeline.
             pipeline_file_path: Path of the JSON file containing the compiled
                 Kubeflow pipeline (compiled with Kubeflow SDK v2).
-            enable_cache: Whether caching is enabled for this pipeline run.
+            run_name: Orchestrator run name.
             settings: Pipeline level settings for this orchestrator.
         """
-        # We have to replace the hyphens in the pipeline name with underscores
+        # We have to replace the hyphens in the run name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
         # requires this format.
-        job_id = _clean_pipeline_name(
-            get_orchestrator_run_name(pipeline_name=pipeline_name)
-        )
+        job_id = _clean_pipeline_name(run_name)
 
         # Get the credentials that would be used to create the Vertex AI
         # Pipelines
@@ -487,7 +483,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             job_id=job_id,
             pipeline_root=self._pipeline_root,
             parameter_values=None,
-            enable_caching=enable_cache,
+            enable_caching=False,
             encryption_spec_key_name=self.config.encryption_spec_key_name,
             labels=settings.labels,
             credentials=credentials,
