@@ -19,6 +19,8 @@ from uuid import UUID
 
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.models.pipeline_models import PipelineResponseModel
@@ -28,8 +30,6 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 if TYPE_CHECKING:
     from zenml.models import PipelineUpdateModel
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
-    from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-    from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class PipelineSchema(NamedSchema, table=True):

@@ -27,6 +27,8 @@ from zenml.models.component_models import (
     ComponentUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 

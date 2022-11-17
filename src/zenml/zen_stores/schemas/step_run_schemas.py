@@ -12,7 +12,6 @@ from zenml.models.step_run_models import (
     StepRunResponseModel,
     StepRunUpdateModel,
 )
-from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -142,7 +141,7 @@ class StepRunArtifactSchema(SQLModel, table=True):
     )
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ArtifactSchema.__tablename__,
+        target="artifacts",  # ArtifactSchema.__tablename__,
         source_column="artifact_id",
         target_column="id",
         ondelete="CASCADE",

@@ -24,9 +24,8 @@ from zenml.models.flavor_models import FlavorResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-    from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class FlavorSchema(NamedSchema, table=True):

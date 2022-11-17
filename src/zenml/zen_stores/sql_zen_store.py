@@ -3952,12 +3952,12 @@ class SqlZenStore(BaseZenStore):
         if is_failed or (is_done and all_synced):
             self.update_run_step(
                 step_id=step_model.id,
-                step_update=StepUpdateModel(status=status),
+                step_update=StepRunUpdateModel(status=status),
             )
 
         return step_model
 
-    def _sync_run_status(self, run_model: PipelineRunModel) -> PipelineRunModel:
+    def _sync_run_status(self, run_model: PipelineRunResponseModel) -> PipelineRunResponseModel:
         """Updates the status of a pipeline run model.
 
         In contrast to other update methods, this does not use the status of the

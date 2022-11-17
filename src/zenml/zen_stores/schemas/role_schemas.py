@@ -28,10 +28,9 @@ from zenml.models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-    from zenml.zen_stores.schemas.team_schemas import TeamSchema
-    from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.team_schemas import TeamSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class RoleSchema(NamedSchema, table=True):

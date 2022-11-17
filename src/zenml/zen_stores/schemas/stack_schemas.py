@@ -19,15 +19,17 @@ from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from zenml.models import StackResponseModel
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         PipelineRunSchema,
         StackComponentSchema,
-        UserSchema,
-    )
+)
 
 
 class StackCompositionSchema(SQLModel, table=True):
@@ -98,7 +100,7 @@ class StackSchema(ShareableSchema, table=True):
 
     def update(
         self,
-        stack_update: StackUpdateModel,
+        stack_update: "StackUpdateModel",
         components: List["StackComponentSchema"],
     ):
         for field, value in stack_update.dict(exclude_unset=True).items():
@@ -117,7 +119,7 @@ class StackSchema(ShareableSchema, table=True):
         self.updated = datetime.now()
         return self
 
-    def to_model(self) -> StackResponseModel:
+    def to_model(self) -> "StackResponseModel":
         """Creates a `HydratedStackModel` from an instance of a 'StackSchema'.
 
         Returns:
