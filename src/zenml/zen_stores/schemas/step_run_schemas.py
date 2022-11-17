@@ -54,6 +54,7 @@ class StepRunSchema(NamedSchema, table=True):
             docstring=request.docstring,
             mlmd_id=request.mlmd_id,
             num_outputs=request.num_outputs,
+            status=request.status
         )
 
     def to_model(
@@ -87,7 +88,7 @@ class StepRunSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             input_artifacts=input_artifacts,
-            num_outputs=self.num_outputs,
+            num_outputs=self.num_outputs
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":

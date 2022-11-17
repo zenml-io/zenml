@@ -7,7 +7,7 @@ from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
-    update,
+    update, BaseResponseModel,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 
@@ -42,7 +42,7 @@ class StepRunBaseModel(BaseModel):
 # -------- #
 
 
-class StepRunResponseModel(StepRunBaseModel, ProjectScopedResponseModel):
+class StepRunResponseModel(StepRunBaseModel, BaseResponseModel):
     """Domain Model representing a step in a pipeline run."""
 
 
@@ -51,7 +51,7 @@ class StepRunResponseModel(StepRunBaseModel, ProjectScopedResponseModel):
 # ------- #
 
 
-class StepRunRequestModel(StepRunBaseModel, ProjectScopedRequestModel):
+class StepRunRequestModel(StepRunBaseModel, BaseResponseModel):
     """Domain Model representing a step in a pipeline run."""
 
 
