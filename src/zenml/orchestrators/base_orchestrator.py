@@ -459,6 +459,7 @@ class BaseOrchestrator(StackComponent, ABC):
             project=client.active_project.id,
             stack_id=self._active_deployment.stack_id,
             pipeline_id=self._active_deployment.pipeline_id,
+            schedule_id=self._active_deployment.schedule_id,
             status=ExecutionStatus.RUNNING,
             pipeline_configuration=self._active_deployment.pipeline.dict(),
             num_steps=len(self._active_deployment.steps),

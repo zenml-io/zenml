@@ -108,6 +108,45 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
 
 
 @pipeline.group()
+def schedules() -> None:
+    """Commands for pipeline run schedules."""
+
+
+@click.option("--pipeline", "-p", type=str, required=False)
+@click.option("--user", "-u", type=str, required=False)
+@click.option("--name", "-n", type=str, required=False)
+@schedules.command("list", help="List all pipeline run schedules.")
+def list_schedules(pipeline: str, user: str, name: str) -> None:
+    """List all pipeline run schedules.
+
+    Args:
+        pipeline: Filter by pipeline name or ID.
+        user: Filter by user name or ID.
+        name: Filter by schedule name.
+    """
+    cli_utils.print_active_config()
+    pipeline_id, user_id = None, None
+    client = Client()
+    if pipeline:
+        pipeline_id = client.get_pipeline_by_name(pipeline).id
+    if user:
+        user_id = client.zen_store.get_user(user).id
+    schedules = client.zen_store.list_schedules(
+        project_name_or_id=client.active_project.id,
+        user_name_or_id=user_id,
+        pipeline_id=pipeline_id,
+        name=name,
+    )
+    if not schedules:
+        cli_utils.declare("No schedules registered.")
+        return
+    cli_utils.print_pydantic_models(
+        schedules,
+        exclude_columns=["id", "created", "updated", "user", "project"],
+    )
+
+
+@pipeline.group()
 def runs() -> None:
     """Commands for pipeline runs."""
 

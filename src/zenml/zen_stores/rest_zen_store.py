@@ -53,6 +53,7 @@ from zenml.constants import (
     PROJECTS,
     ROLES,
     RUNS,
+    SCHEDULES,
     STACK_COMPONENTS,
     STACKS,
     STEPS,
@@ -81,6 +82,7 @@ from zenml.models import (
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
+    ScheduleModel,
     StackModel,
     StepRunModel,
     TeamModel,
@@ -1369,6 +1371,79 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=pipeline_id,
             route=PIPELINES,
+        )
+
+    # ---------
+    # Schedules
+    # ---------
+
+    def create_schedule(self, schedule: ScheduleModel) -> ScheduleModel:
+        """Creates a new schedule.
+
+        Args:
+            schedule: The schedule to create.
+
+        Returns:
+            The newly created schedule.
+        """
+        return self._create_project_scoped_resource(
+            resource=schedule,
+            route=SCHEDULES,
+        )
+
+    def get_schedule(self, schedule_id: UUID) -> ScheduleModel:
+        """Get a schedule with a given ID.
+
+        Args:
+            schedule_id: ID of the schedule.
+
+        Returns:
+            The schedule.
+        """
+        return self._get_resource(
+            resource_id=schedule_id,
+            route=SCHEDULES,
+            resource_model=ScheduleModel,
+        )
+
+    def list_schedules(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+    ) -> List[ScheduleModel]:
+        """List all schedules in the project.
+
+        Args:
+            project_name_or_id: If provided, only list schedules in this project.
+            user_name_or_id: If provided, only list schedules from this user.
+            pipeline_id: If provided, only list schedules for this pipeline.
+            name: If provided, only list schedules with this name.
+
+        Returns:
+            A list of schedules.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=SCHEDULES,
+            resource_model=ScheduleModel,
+            **filters,
+        )
+
+    def update_schedule(self, schedule: ScheduleModel) -> ScheduleModel:
+        """Updates a schedule.
+
+        Args:
+            schedule: The schedule to use for the update.
+
+        Returns:
+            The updated schedule.
+        """
+        return self._update_resource(
+            resource=schedule,
+            route=SCHEDULES,
         )
 
     # --------------

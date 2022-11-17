@@ -14,7 +14,7 @@
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from uuid import UUID
 
@@ -25,6 +25,7 @@ from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+from zenml.models.schedule_model import ScheduleModel
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
@@ -66,6 +67,7 @@ class PipelineSchema(SQLModel, table=True):
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
 
+    schedules: List["ScheduleSchema"] = Relationship(back_populates="pipeline")
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
     )
@@ -122,6 +124,139 @@ class PipelineSchema(SQLModel, table=True):
         )
 
 
+class ScheduleSchema(SQLModel, table=True):
+    """SQL Model for schedules."""
+
+    __tablename__ = "schedule"
+
+    id: UUID = Field(primary_key=True)
+
+    name: str
+
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    project: "ProjectSchema" = Relationship(back_populates="schedules")
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: "UserSchema" = Relationship(back_populates="schedules")
+
+    pipeline_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineSchema.__tablename__,
+        source_column="pipeline_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
+    )
+    pipeline: "PipelineSchema" = Relationship(back_populates="schedules")
+
+    active: bool
+    cron_expression: Optional[str] = Field(nullable=True)
+    start_time: Optional[datetime] = Field(nullable=True)
+    end_time: Optional[datetime] = Field(nullable=True)
+    interval_second: Optional[float] = Field(nullable=True)
+    catchup: bool
+
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
+
+    runs: List["PipelineRunSchema"] = Relationship(
+        back_populates="schedule",
+    )
+
+    @classmethod
+    def from_create_model(cls, model: ScheduleModel) -> "ScheduleSchema":
+        """Create a `ScheduleSchema` from a `ScheduleModel`.
+
+        Args:
+            model: The `ScheduleModel` to create the schema from.
+
+        Returns:
+            The created `ScheduleSchema`.
+        """
+        if model.interval_second is not None:
+            interval_second = model.interval_second.total_seconds()
+        else:
+            interval_second = None
+        return cls(
+            id=model.id,
+            name=model.name,
+            project_id=model.project,
+            user_id=model.user,
+            pipeline_id=model.pipeline_id,
+            active=model.active,
+            cron_expression=model.cron_expression,
+            start_time=model.start_time,
+            end_time=model.end_time,
+            interval_second=interval_second,
+            catchup=model.catchup,
+            created=model.created,
+            updated=model.updated,
+        )
+
+    def from_update_model(self, model: ScheduleModel) -> "ScheduleSchema":
+        """Update a `ScheduleSchema` from a `ScheduleModel`.
+
+        Args:
+            model: The `ScheduleModel` to update the schema from.
+
+        Returns:
+            The updated `ScheduleSchema`.
+        """
+        if model.interval_second is not None:
+            interval_second = model.interval_second.total_seconds()
+        else:
+            interval_second = None
+        self.name = model.name
+        self.active = model.active
+        self.cron_expression = model.cron_expression
+        self.start_time = model.start_time
+        self.end_time = model.end_time
+        self.interval_second = interval_second
+        self.catchup = model.catchup
+        self.updated = datetime.now()
+        return self
+
+    def to_model(self) -> "ScheduleModel":
+        """Convert a `ScheduleSchema` to a `ScheduleModel`.
+
+        Returns:
+            The created `ScheduleModel`.
+        """
+        if self.interval_second is not None:
+            interval_second = timedelta(seconds=self.interval_second)
+        else:
+            interval_second = None
+        return ScheduleModel(
+            id=self.id,
+            name=self.name,
+            project=self.project_id,
+            user=self.user_id,
+            pipeline=self.pipeline_id,
+            active=self.active,
+            cron_expression=self.cron_expression,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            interval_second=interval_second,
+            catchup=self.catchup,
+            created=self.created,
+            updated=self.updated,
+        )
+
+
 class PipelineRunSchema(SQLModel, table=True):
     """SQL Model for pipeline runs."""
 
@@ -170,6 +305,16 @@ class PipelineRunSchema(SQLModel, table=True):
     )
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
+    schedule_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ScheduleSchema.__tablename__,
+        source_column="schedule_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    schedule: ScheduleSchema = Relationship(back_populates="runs")
+
     orchestrator_run_id: Optional[str] = Field(nullable=True)
 
     status: ExecutionStatus
@@ -206,6 +351,7 @@ class PipelineRunSchema(SQLModel, table=True):
             project_id=run.project,
             user_id=run.user,
             pipeline_id=run.pipeline_id,
+            schedule_id=run.schedule_id,
             status=run.status,
             pipeline_configuration=json.dumps(run.pipeline_configuration),
             num_steps=run.num_steps,
@@ -243,6 +389,7 @@ class PipelineRunSchema(SQLModel, table=True):
             project=self.project_id,
             user=self.user_id,
             pipeline_id=self.pipeline_id,
+            schedule_id=self.schedule_id,
             status=self.status,
             pipeline_configuration=json.loads(self.pipeline_configuration),
             num_steps=self.num_steps,

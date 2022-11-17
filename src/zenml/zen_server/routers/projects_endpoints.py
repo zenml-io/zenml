@@ -24,6 +24,7 @@ from zenml.constants import (
     PROJECTS,
     ROLES,
     RUNS,
+    SCHEDULES,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
@@ -35,6 +36,7 @@ from zenml.models import (
     FlavorModel,
     PipelineModel,
     ProjectModel,
+    ScheduleModel,
     StackModel,
 )
 from zenml.models.component_model import HydratedComponentModel
@@ -527,6 +529,35 @@ def create_pipeline(
         return HydratedPipelineModel.from_model(created_pipeline)
     else:
         return created_pipeline
+
+
+@router.post(
+    "/{project_name_or_id}" + SCHEDULES,
+    response_model=ScheduleModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_schedule(
+    project_name_or_id: Union[str, UUID],
+    schedule: ScheduleModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ScheduleModel:
+    """Creates a schedule.
+
+    Args:
+        project_name_or_id: Name or ID of the project.
+        schedule: Schedule to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created schedule.
+    """
+    project = zen_store().get_project(project_name_or_id)
+    schedule.project = project.id
+    schedule.user = auth_context.user.id
+    return zen_store().create_schedule(schedule=schedule)
 
 
 @router.post(

@@ -31,6 +31,7 @@ class PipelineDeployment(StrictBaseModel):
     zenml_version: str = zenml.__version__
     run_name: str
     schedule: Optional[Schedule] = None
+    schedule_id: Optional[UUID] = None
     stack_id: UUID
     pipeline: PipelineConfiguration
     pipeline_id: Optional[UUID] = None

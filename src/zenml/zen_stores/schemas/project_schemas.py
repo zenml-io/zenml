@@ -26,6 +26,7 @@ if TYPE_CHECKING:
         FlavorSchema,
         PipelineRunSchema,
         PipelineSchema,
+        ScheduleSchema,
         StackComponentSchema,
         StackSchema,
         TeamRoleAssignmentSchema,
@@ -61,6 +62,9 @@ class ProjectSchema(SQLModel, table=True):
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
     pipelines: List["PipelineSchema"] = Relationship(
+        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    schedules: List["ScheduleSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
     runs: List["PipelineRunSchema"] = Relationship(

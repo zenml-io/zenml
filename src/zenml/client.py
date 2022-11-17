@@ -1379,6 +1379,7 @@ class Client(metaclass=ClientMetaClass):
                 name=mlmd_run.name,
                 stack_id=None,  # Stack might not exist in new DB.
                 pipeline_id=None,  # Pipeline might not exist in new DB.
+                schedule_id=None,  # Schedule might not exist in new DB.
                 status=ExecutionStatus.run_status(step_statuses),
                 pipeline_configuration=mlmd_run.pipeline_configuration,
                 num_steps=len(steps),

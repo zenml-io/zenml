@@ -19,6 +19,7 @@ from zenml.zen_stores.schemas.pipeline_schemas import (
     ArtifactSchema,
     PipelineRunSchema,
     PipelineSchema,
+    ScheduleSchema,
     StepRunInputArtifactSchema,
     StepRunParentsSchema,
     StepRunSchema,
@@ -51,4 +52,5 @@ __all__ = [
     "StepRunInputArtifactSchema",
     "StepRunParentsSchema",
     "StepRunSchema",
+    "ScheduleSchema",
 ]

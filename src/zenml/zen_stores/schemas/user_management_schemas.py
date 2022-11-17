@@ -28,6 +28,7 @@ if TYPE_CHECKING:
         FlavorSchema,
         PipelineRunSchema,
         PipelineSchema,
+        ScheduleSchema,
         StackComponentSchema,
         StackSchema,
     )
@@ -91,6 +92,9 @@ class UserSchema(SQLModel, table=True):
         back_populates="user",
     )
     pipelines: List["PipelineSchema"] = Relationship(
+        back_populates="user",
+    )
+    schedules: List["ScheduleSchema"] = Relationship(
         back_populates="user",
     )
     runs: List["PipelineRunSchema"] = Relationship(

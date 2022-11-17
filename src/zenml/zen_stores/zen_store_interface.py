@@ -27,6 +27,7 @@ from zenml.models import (
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
+    ScheduleModel,
     StackModel,
     StepRunModel,
     TeamModel,
@@ -875,6 +876,7 @@ class ZenStoreInterface(ABC):
     # ---------
     # Pipelines
     # ---------
+
     @abstractmethod
     def create_pipeline(
         self,
@@ -951,6 +953,69 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the pipeline doesn't exist.
+        """
+
+    # ---------
+    # Schedules
+    # ---------
+
+    @abstractmethod
+    def create_schedule(self, schedule: ScheduleModel) -> ScheduleModel:
+        """Creates a new schedule.
+
+        Args:
+            schedule: The schedule to create.
+
+        Returns:
+            The newly created schedule.
+        """
+
+    @abstractmethod
+    def get_schedule(self, schedule_id: UUID) -> ScheduleModel:
+        """Get a schedule with a given ID.
+
+        Args:
+            schedule_id: ID of the schedule.
+
+        Returns:
+            The schedule.
+
+        Raises:
+            KeyError: if the schedule does not exist.
+        """
+
+    @abstractmethod
+    def list_schedules(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+    ) -> List[ScheduleModel]:
+        """List all schedules in the project.
+
+        Args:
+            project_name_or_id: If provided, only list schedules in this project.
+            user_name_or_id: If provided, only list schedules from this user.
+            pipeline_id: If provided, only list schedules for this pipeline.
+            name: If provided, only list schedules with this name.
+
+        Returns:
+            A list of schedules.
+        """
+
+    @abstractmethod
+    def update_schedule(self, schedule: ScheduleModel) -> ScheduleModel:
+        """Updates a schedule.
+
+        Args:
+            schedule: The schedule to use for the update.
+
+        Returns:
+            The updated schedule.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
         """
 
     # --------------
