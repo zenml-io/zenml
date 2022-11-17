@@ -175,7 +175,7 @@ The next sections cover how to setup the GCP Artifact Store credentials for the 
 Please look up the variables relevant to your use case in the
 [official KServe Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
 and set them accordingly for your ZenML secrets schemas already built for each storage_type.
-You can find the relevant variables in the [Kserve integration secret schemas docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kserve.secret_schemas.secret_schemas).
+You can find the relevant variables in the [Kserve integration secret schemas docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kserve/#zenml.integrations.kserve.secret_schemas.secret_schemas).
 
 #### GCP Authentication with kserve_gs secret schema
 
@@ -392,7 +392,7 @@ The next sections cover how to set GCP Artifact Store credentials for the Seldon
 Please look up the variables relevant to your use case in the
 [official Seldon Core Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
 and set them accordingly for your ZenML secrets schemas already built for each storage_type.
-You can find the relevant variables in the [Seldon Integration secret schema](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.seldon.secret_schemas.secret_schemas).
+You can find the relevant variables in the [Seldon Integration secret schema](https://apidocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.secret_schemas.secret_schemas).
 
 #### GCP Authentication with seldon_s3 secret schema
 
