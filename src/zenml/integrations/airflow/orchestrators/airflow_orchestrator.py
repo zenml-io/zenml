@@ -43,7 +43,6 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    Union,
     cast,
 )
 
@@ -66,8 +65,6 @@ from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
-    from zenml.config.step_configurations import Step
-    from zenml.config.step_run_info import StepRunInfo
     from zenml.integrations.airflow.orchestrators.dag_generator import (
         DagConfiguration,
         TaskConfiguration,
@@ -243,31 +240,6 @@ class AirflowOrchestrator(BaseOrchestrator):
                 ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name
             )
 
-    # TODO: Remove this method as soon as the Settings/Config PR is merged which
-    # handles this automatically
-    def get_settings(
-        self, container: Union["Step", "StepRunInfo", "PipelineDeployment"]
-    ) -> AirflowOrchestratorSettings:
-        """Gets settings for the Airflow orchestrator.
-
-        Args:
-            container: The `Step`, `StepRunInfo` or `PipelineDeployment` from
-                which to get the settings.
-
-        Returns:
-            The settings.
-        """
-        default_settings = AirflowOrchestratorSettings.parse_obj(self.config)
-        settings = super().get_settings(container)
-        if settings:
-            from zenml.utils import pydantic_utils
-
-            return pydantic_utils.update_model(
-                default_settings, update=settings
-            )
-        else:
-            return default_settings
-
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
@@ -279,7 +251,9 @@ class AirflowOrchestrator(BaseOrchestrator):
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
         """
-        pipeline_settings = self.get_settings(deployment)
+        pipeline_settings = cast(
+            AirflowOrchestratorSettings, self.get_settings(deployment)
+        )
 
         dag_generator_values = get_dag_generator_values(
             custom_dag_generator_source=pipeline_settings.custom_dag_generator
@@ -289,7 +263,9 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         tasks = []
         for step_name, step in deployment.steps.items():
-            settings = self.get_settings(step)
+            settings = cast(
+                AirflowOrchestratorSettings, self.get_settings(step)
+            )
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name
             )

@@ -173,7 +173,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         self.configure_mlflow()
         settings = cast(
             MLFlowExperimentTrackerSettings,
-            self.get_settings(info) or MLFlowExperimentTrackerSettings(),
+            self.get_settings(info),
         )
 
         experiment_name = settings.experiment_name or info.pipeline.name

@@ -265,10 +265,9 @@ class TektonOrchestrator(BaseOrchestrator):
                 )
 
                 settings = cast(
-                    Optional[TektonOrchestratorSettings],
-                    self.get_settings(step),
+                    TektonOrchestratorSettings, self.get_settings(step)
                 )
-                if settings and settings.pod_settings:
+                if settings.pod_settings:
                     apply_pod_settings(
                         container_op=container_op,
                         settings=settings.pod_settings,
