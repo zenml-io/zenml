@@ -110,12 +110,12 @@ as part of your stack.
 We can then register the orchestrator and use it in our active stack:
 
 ```shell
-zenml orchestrator register <NAME> \
+zenml orchestrator register <ORCHESTRATOR_NAME> \
     --flavor=tekton \
     --kubernetes_context=<KUBERNETES_CONTEXT>
 
-# Add the orchestrator to the active stack
-zenml stack update -o <NAME>
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
@@ -190,7 +190,7 @@ A concrete example of using the Tekton orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/tekton_pipelines_orchestration).
 
 For more information and a full list of configurable attributes of the Tekton 
-orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-tekton/#zenml.integrations.tekton.orchestrators.tekton_orchestrator.TektonOrchestrator).
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-tekton/#zenml.integrations.tekton.orchestrators.tekton_orchestrator.TektonOrchestrator).
 
 ### Enabling CUDA for GPU-backed hardware
 

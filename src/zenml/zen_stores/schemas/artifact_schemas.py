@@ -20,16 +20,32 @@ from sqlmodel import Field, SQLModel
 
 from zenml.enums import ArtifactType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
+from zenml.zen_stores.schemas import StepRunSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 
-class ArtifactSchema(SQLModel, table=True):
+class ArtifactSchema(NamedSchema, table=True):
     """SQL Model for artifacts of steps."""
 
-    id: UUID = Field(primary_key=True)
-    name: str  # Name of the output in the parent step
+    __tablename__ = "artifacts"
 
-    parent_step_id: UUID = Field(foreign_key="steprunschema.id")
-    producer_step_id: UUID = Field(foreign_key="steprunschema.id")
+    parent_step_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="parent_step_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    producer_step_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=StepRunSchema.__tablename__,
+        source_column="producer_step_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
 
     type: ArtifactType
     uri: str
@@ -40,9 +56,6 @@ class ArtifactSchema(SQLModel, table=True):
     mlmd_id: Optional[int] = Field(default=None, nullable=True)
     mlmd_parent_step_id: Optional[int] = Field(default=None, nullable=True)
     mlmd_producer_step_id: Optional[int] = Field(default=None, nullable=True)
-
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     @classmethod
     def from_request(cls, artifact_request: ArtifactRequestModel):

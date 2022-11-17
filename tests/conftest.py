@@ -865,5 +865,5 @@ def pytest_generate_tests(metafunc):
         if metafunc.config.getoption("on_kubeflow"):
             repos = ["clean_kubeflow_repo"]
         else:
-            repos = ["clean_base_repo"]
+            repos = ["clean_client"]
         metafunc.parametrize("repo_fixture_name", repos)

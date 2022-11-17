@@ -34,6 +34,8 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 class UserSchema(NamedSchema, table=True):
     """SQL Model for users."""
 
+    __tablename__ = "user"
+
     full_name: str
     email: Optional[str] = Field(nullable=True)
     active: bool
@@ -48,13 +50,21 @@ class UserSchema(NamedSchema, table=True):
     assigned_roles: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="user", sa_relationship_kwargs={"cascade": "delete"}
     )
-    stacks: List["StackSchema"] = Relationship(back_populates="user")
+    stacks: List["StackSchema"] = Relationship(
+        back_populates="user",
+    )
     components: List["StackComponentSchema"] = Relationship(
         back_populates="user",
     )
-    flavors: List["FlavorSchema"] = Relationship(back_populates="user")
-    pipelines: List["PipelineSchema"] = Relationship(back_populates="user")
-    runs: List["PipelineRunSchema"] = Relationship(back_populates="user")
+    flavors: List["FlavorSchema"] = Relationship(
+        back_populates="user",
+    )
+    pipelines: List["PipelineSchema"] = Relationship(
+        back_populates="user",
+    )
+    runs: List["PipelineRunSchema"] = Relationship(
+        back_populates="user",
+    )
 
     @classmethod
     def from_request(cls, model: UserRequestModel) -> "UserSchema":

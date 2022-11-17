@@ -14,22 +14,20 @@
 """SQL Model Implementations for Stacks."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.models.stack_models import StackResponseModel, StackUpdateModel
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
+        StackComponentSchema,
         PipelineRunSchema,
-        ProjectSchema,
-        UserSchema,
+        UserSchema
     )
-    from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 
 
 class StackCompositionSchema(SQLModel, table=True):
@@ -38,22 +36,58 @@ class StackCompositionSchema(SQLModel, table=True):
     Join table between Stacks and StackComponents.
     """
 
-    stack_id: UUID = Field(primary_key=True, foreign_key="stackschema.id")
-    component_id: UUID = Field(
-        primary_key=True, foreign_key="stackcomponentschema.id"
+    __tablename__ = "stack_composition"
+
+    stack_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="stack",  # TODO: how to reference `StackSchema.__tablename__`?
+        source_column="stack_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    component_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="stack_component",  # TODO: how to reference `StackComponentSchema.__tablename__`?
+        source_column="component_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
     )
 
 
 class StackSchema(ShareableSchema, table=True):
     """SQL Model for stacks."""
 
-    user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
-    )
-    project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    __tablename__ = "stack"
+
+    id: UUID = Field(primary_key=True)
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
+
+    name: str
+    is_shared: bool
+
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
     )
     project: "ProjectSchema" = Relationship(back_populates="stacks")
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
     user: "UserSchema" = Relationship(back_populates="stacks")
 
     components: List["StackComponentSchema"] = Relationship(

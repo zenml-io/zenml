@@ -47,6 +47,7 @@ from zenml.constants import (
     INPUTS,
     LOGIN,
     METADATA_CONFIG,
+    METADATA_SYNC,
     PIPELINES,
     PROJECTS,
     ROLE_ASSIGNMENTS,
@@ -1396,10 +1397,29 @@ class RestZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
+        self._sync_runs()
         return self._get_resource(
             resource_id=run_name_or_id,
             route=RUNS,
             response_model=PipelineRunResponseModel,
+        )
+
+    def get_or_create_run(
+        self, pipeline_run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
+
+        Args:
+            pipeline_run: The pipeline run to get or create.
+
+        Returns:
+            The pipeline run.
+        """
+        return self._create_project_scoped_resource(
+            resource=pipeline_run, route=RUNS, params={"get_if_exists": True}
         )
 
     def list_runs(
@@ -1428,6 +1448,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
+        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1486,6 +1507,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The step.
         """
+        self._sync_runs()
         return self._get_resource(
             resource_id=step_id,
             route=STEPS,
@@ -1503,6 +1525,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all run steps.
         """
+        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1593,6 +1616,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all artifacts.
         """
+        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1890,6 +1914,7 @@ class RestZenStore(BaseZenStore):
         resource: BaseRequestModel,
         response_model: Type[AnyResponseModel],
         route: str,
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyResponseModel:
         """Create a new resource.
 
@@ -1898,11 +1923,12 @@ class RestZenStore(BaseZenStore):
             route: The resource REST API route to use.
             response_model: Optional model to use to deserialize the response
                 body. If not provided, the resource class itself will be used.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The created resource.
         """
-        response_body = self.post(f"{route}", body=resource)
+        response_body = self.post(f"{route}", body=resource, params=params)
         return response_model.parse_obj(response_body)
 
     def _create_project_scoped_resource(
@@ -1910,6 +1936,7 @@ class RestZenStore(BaseZenStore):
         resource: ProjectScopedRequestModel,
         response_model: Type[AnyProjestResponseModel],
         route: str,
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyProjestResponseModel:
         """Create a new project scoped resource.
 
@@ -1918,6 +1945,7 @@ class RestZenStore(BaseZenStore):
             route: The resource REST API route to use.
             response_model: Optional model to use to deserialize the response
                 body. If not provided, the resource class itself will be used.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The created resource.
@@ -1926,6 +1954,7 @@ class RestZenStore(BaseZenStore):
             resource=resource,
             response_model=response_model,
             route=f"{PROJECTS}/{str(resource.project)}{route}",
+            params=params,
         )
 
     def _get_resource(
@@ -2012,10 +2041,5 @@ class RestZenStore(BaseZenStore):
         self.delete(f"{route}/{str(resource_id)}")
 
     def _sync_runs(self) -> None:
-        """Syncs runs from MLMD.
-
-        Raises:
-            NotImplementedError: This internal method may not be called on a
-                `RestZenStore`.
-        """
-        raise NotImplementedError
+        """Syncs runs from MLMD."""
+        self.get(METADATA_SYNC)

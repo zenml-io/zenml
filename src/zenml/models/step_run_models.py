@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -30,6 +30,7 @@ class StepRunBaseModel(BaseModel):
     parameters: Dict[str, str]
     step_configuration: Dict[str, Any]
     docstring: str
+    num_outputs: Optional[int]
 
     # IDs in MLMD - needed for some metadata store methods
     mlmd_id: int

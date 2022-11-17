@@ -20,6 +20,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from zenml.models import TeamResponseModel
 from zenml.models.team_models import TeamUpdateModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.role_schemas import TeamRoleAssignmentSchema
@@ -29,12 +30,32 @@ if TYPE_CHECKING:
 class TeamAssignmentSchema(SQLModel, table=True):
     """SQL Model for team assignments."""
 
-    user_id: UUID = Field(primary_key=True, foreign_key="userschema.id")
-    team_id: UUID = Field(primary_key=True, foreign_key="teamschema.id")
+    __tablename__ = "team_assignment"
+
+    user_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="user",  # TODO: how to reference `UserSchema.__tablename__`?
+        source_column="user_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    team_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="team",  # TODO: how to reference `TeamSchema.__tablename__`?
+        source_column="team_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
 
 
 class TeamSchema(NamedSchema, table=True):
     """SQL Model for teams."""
+
+    __tablename__ = "team"
 
     users: List["UserSchema"] = Relationship(
         back_populates="teams", link_model=TeamAssignmentSchema

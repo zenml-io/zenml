@@ -248,7 +248,7 @@ pipeline runs. For that you need to set up a ZenML Server (see section below).
 
 ![Multi-user setting](../../assets/core_concepts/04_architecture.png)
 
-To unleash the real power of ZenML, one must [deploy it in the cloud](../../getting-started/deploying-zenml/).
+To unleash the real power of ZenML, one must [deploy it in the cloud](../../getting-started/deploying-zenml/deploying-zenml.md).
 Once you have a deployed ZenML in the cloud, you can connect your client to it locally.
 Entities such as Stacks, Stack Components, Stack Component Flavors, Pipelines, Pipeline Runs, 
 and Artifacts are scoped to a Project and owned by the User that creates them. Only the objects

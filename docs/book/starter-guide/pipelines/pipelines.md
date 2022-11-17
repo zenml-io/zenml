@@ -190,21 +190,13 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run `zenml up` to see
 ```
 
 We will dive deeper into how to inspect the finished run within the chapter on
-[Accessing Pipeline Runs](./inspecting-pipeline-runs.md).
+[Accessing Pipeline Runs](./fetching-pipelines.md).
 
 ### Inspect your pipeline in the dashboard
 
-Notice the last log, that indicates running a command to view the dashboard. Let's go ahead and do that:
-
-```
-zenml up
-```
-
-![ZenML Up](../../assets/getting_started/zenml-up.gif)
-
-The dashboard serves as a visual interface to see pipelines and pipeline runs.
-
-![ZenML Up](../../assets/starter_guide/pipelines/pipeline_visualization.png)
+Notice the last log, that indicates running a command to view the dashboard.
+Check out the dashboard guide [in the next section](./dashboard.md) to inspect
+your pipeline there.
 
 ### Give each pipeline run a name
 
