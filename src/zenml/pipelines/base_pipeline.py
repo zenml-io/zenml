@@ -48,6 +48,7 @@ from zenml.config.pipeline_configurations import (
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.enums import StackComponentType
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.models.schedule_model import ScheduleModel
@@ -512,10 +513,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 pipeline_deployment = pipeline_deployment.copy(
                     update={"schedule": schedule}
                 )
+            components = Client().active_stack_model.components
+            orchestrator = components[StackComponentType.ORCHESTRATOR][0]
             schedule_model = ScheduleModel(
                 project=Client().active_project.id,
                 user=Client().active_user.id,
                 pipeline_id=pipeline_id,
+                orchestrator_id=orchestrator.id,
                 name=schedule.name,
                 active=True,
                 cron_expression=schedule.cron_expression,

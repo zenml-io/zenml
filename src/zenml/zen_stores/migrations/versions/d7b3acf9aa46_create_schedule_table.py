@@ -24,6 +24,9 @@ def upgrade() -> None:
         sa.Column("project_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column("pipeline_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
+        sa.Column(
+            "orchestrator_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+        ),
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("active", sa.Boolean(), nullable=False),
@@ -41,6 +44,12 @@ def upgrade() -> None:
             ["pipeline.id"],
             name="fk_schedule_pipeline_id_pipeline",
             ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["orchestrator_id"],
+            ["stack_component.id"],
+            name="fk_schedule_orchestrator_id_stack_component",
+            ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(
             ["project_id"],

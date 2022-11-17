@@ -30,4 +30,5 @@ class ScheduleModel(
 
     name: str
     active: bool
+    orchestrator_id: Optional[UUID]
     pipeline_id: Optional[UUID]

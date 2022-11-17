@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
@@ -30,6 +30,9 @@ from zenml.zen_stores.schemas.stack_schemas import (
     StackSchema,
 )
 from zenml.zen_stores.schemas.user_management_schemas import UserSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import ScheduleSchema
 
 
 class StackComponentSchema(SQLModel, table=True):
@@ -72,6 +75,9 @@ class StackComponentSchema(SQLModel, table=True):
 
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
+    )
+    schedules: List["ScheduleSchema"] = Relationship(
+        back_populates="orchestrator",
     )
 
     @classmethod

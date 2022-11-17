@@ -26,6 +26,7 @@ from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 from zenml.models.schedule_model import ScheduleModel
+from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
@@ -163,6 +164,18 @@ class ScheduleSchema(SQLModel, table=True):
     )
     pipeline: "PipelineSchema" = Relationship(back_populates="schedules")
 
+    orchestrator_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=StackComponentSchema.__tablename__,
+        source_column="orchestrator_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    orchestrator: "StackComponentSchema" = Relationship(
+        back_populates="schedules"
+    )
+
     active: bool
     cron_expression: Optional[str] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
@@ -197,6 +210,7 @@ class ScheduleSchema(SQLModel, table=True):
             project_id=model.project,
             user_id=model.user,
             pipeline_id=model.pipeline_id,
+            orchestrator_id=model.orchestrator_id,
             active=model.active,
             cron_expression=model.cron_expression,
             start_time=model.start_time,
@@ -245,7 +259,8 @@ class ScheduleSchema(SQLModel, table=True):
             name=self.name,
             project=self.project_id,
             user=self.user_id,
-            pipeline=self.pipeline_id,
+            pipeline_id=self.pipeline_id,
+            orchestrator_id=self.orchestrator_id,
             active=self.active,
             cron_expression=self.cron_expression,
             start_time=self.start_time,
