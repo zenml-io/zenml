@@ -128,7 +128,7 @@ A concrete example of using the Kubernetes orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubernetes_orchestration).
 
 For more information and a full list of configurable attributes of the 
-Kubernetes orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator).
+Kubernetes orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator).
 
 ### Enabling CUDA for GPU-backed hardware
 

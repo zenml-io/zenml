@@ -97,7 +97,7 @@ A concrete example of using the SageMaker step operator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training).
 
 For more information and a full list of configurable attributes of the 
-SageMaker step operator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-aws/#zenml.integrations.aws.step_operators.sagemaker_step_operator.SagemakerStepOperator).
+SageMaker step operator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.step_operators.sagemaker_step_operator.SagemakerStepOperator).
 
 ### Enabling CUDA for GPU-backed hardware
 
