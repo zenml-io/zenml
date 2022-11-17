@@ -47,7 +47,7 @@ class KServeModelDeployerConfig(BaseModelDeployerConfig):
             KServe inference services.
     """
 
-    kubernetes_context: Optional[str]
+    kubernetes_context: Optional[str]  # TODO: Potential setting
     kubernetes_namespace: Optional[str]
     base_url: str  # TODO: unused?
     secret: Optional[str]

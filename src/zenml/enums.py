@@ -41,24 +41,18 @@ class ExecutionStatus(StrEnum):
     CACHED = "cached"
 
     @staticmethod
-    def run_status(
-        step_statuses: List["ExecutionStatus"], num_steps: int
-    ) -> "ExecutionStatus":
+    def run_status(step_statuses: List["ExecutionStatus"]) -> "ExecutionStatus":
         """Returns the overall run status based on the list of step statuses.
 
         Args:
             step_statuses: A list of step statuses.
-            num_steps: The number of steps in the pipeline.
 
         Returns:
             The overall run status.
         """
         if ExecutionStatus.FAILED in step_statuses:
             return ExecutionStatus.FAILED
-        if (
-            len(step_statuses) < num_steps
-            or ExecutionStatus.RUNNING in step_statuses
-        ):
+        if ExecutionStatus.RUNNING in step_statuses:
             return ExecutionStatus.RUNNING
         return ExecutionStatus.COMPLETED
 

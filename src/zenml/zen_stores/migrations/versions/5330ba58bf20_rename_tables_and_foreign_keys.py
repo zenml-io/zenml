@@ -109,7 +109,7 @@ def _get_changes() -> Tuple[
     # Define all the tables that should be renamed
     table_name_mapping: Dict[str, str] = {
         "roleschema": "role",
-        "stepinputartifactschema": "step_run_artifact",
+        "stepinputartifactschema": "step_run_input_artifact",
         "userroleassignmentschema": "user_role_assignment",
         "steprunorderschema": "step_run_parents",
         "teamschema": "team",
@@ -117,7 +117,7 @@ def _get_changes() -> Tuple[
         "pipelinerunschema": "pipeline_run",
         "steprunschema": "step_run",
         "teamassignmentschema": "team_assignment",
-        "projectschema": "project",
+        "projectschema": "workspace",
         "flavorschema": "flavor",
         "userschema": "user",
         "stackcomponentschema": "stack_component",
@@ -141,7 +141,7 @@ def _get_changes() -> Tuple[
     ]
     new_fk_constraints: List[Tuple[str, str, str, str, str]] = [
         *[
-            (source, "project", "project_id", "id", "CASCADE")
+            (source, "workspace", "project_id", "id", "CASCADE")
             for source in project_user_fk_tables
         ],  # 5
         *[
@@ -159,9 +159,15 @@ def _get_changes() -> Tuple[
         ("pipeline_run", "pipeline", "pipeline_id", "id", "SET NULL"),  # 13
         ("pipeline_run", "stack", "stack_id", "id", "SET NULL"),  # 14
         ("step_run", "pipeline_run", "pipeline_run_id", "id", "CASCADE"),  # 15
-        ("step_run_artifact", "step_run", "step_id", "id", "CASCADE"),  # 16
         (
-            "step_run_artifact",
+            "step_run_input_artifact",
+            "step_run",
+            "step_id",
+            "id",
+            "CASCADE",
+        ),  # 16
+        (
+            "step_run_input_artifact",
             "artifacts",
             "artifact_id",
             "id",
@@ -177,7 +183,7 @@ def _get_changes() -> Tuple[
         ("team_role_assignment", "role", "role_id", "id", "CASCADE"),  # 25
         (
             "team_role_assignment",
-            "project",
+            "workspace",
             "project_id",
             "id",
             "CASCADE",
@@ -186,7 +192,7 @@ def _get_changes() -> Tuple[
         ("user_role_assignment", "role", "role_id", "id", "CASCADE"),  # 28
         (
             "user_role_assignment",
-            "project",
+            "workspace",
             "project_id",
             "id",
             "CASCADE",

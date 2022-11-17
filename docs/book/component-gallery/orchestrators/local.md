@@ -25,10 +25,10 @@ The local orchestrator comes with ZenML and works without any additional setup.
 To use the local orchestrator, we can register it and use it in our active stack:
 
 ```shell
-zenml orchestrator register <NAME> --flavor=local
+zenml orchestrator register <ORCHESTRATOR_NAME> --flavor=local
 
-# Add the orchestrator to the active stack
-zenml stack update -o <NAME>
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 You can now run any ZenML pipeline using the local orchestrator:
