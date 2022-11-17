@@ -538,6 +538,7 @@ class Client(metaclass=ClientMetaClass):
     def create_user(
         self,
         name: str,
+        initial_role: Optional[str] = None,
         password: Optional[str] = None,
     ) -> UserResponseModel:
         user = UserRequestModel(name=name, password=password or None)
@@ -546,7 +547,17 @@ class Client(metaclass=ClientMetaClass):
         else:
             user.active = True
 
-        return self.zen_store.create_user(user=user)
+        created_user = self.zen_store.create_user(user=user)
+
+        if initial_role:
+            self.create_role_assignment(
+                role_name_or_id=initial_role,
+                user_or_team_name_or_id=created_user.id,
+                project_name_or_id=None,
+                is_user=True,
+            )
+
+        return created_user
 
     def get_user(self, name_id_or_prefix: str) -> UserResponseModel:
         """Gets a user.
@@ -890,10 +901,10 @@ class Client(metaclass=ClientMetaClass):
 
     def create_role_assignment(
         self,
-        role_name_or_id: str,
-        user_or_team_name_or_id: str,
+        role_name_or_id: Union[str, UUID],
+        user_or_team_name_or_id: Union[str, UUID],
         is_user: bool,
-        project_name_or_id: Optional[str] = None,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
     ):
         """Create a role assignment.
 

@@ -144,22 +144,16 @@ def create_user(
     cli_utils.print_active_config()
 
     try:
-        new_user = client.create_user(name=user_name, password=password)
+        new_user = client.create_user(
+            name=user_name,
+            password=password,
+            initial_role=initial_role
+        )
 
         cli_utils.declare(f"Created user '{new_user.name}'.")
     except EntityExistsError as err:
         cli_utils.error(str(err))
     else:
-        try:
-            client.create_role_assignment(
-                role_name_or_id=initial_role,
-                user_or_team_name_or_id=str(new_user.id),
-                project_name_or_id=None,
-                is_user=True,
-            )
-        except KeyError as err:
-            cli_utils.error(str(err))
-
         if not new_user.active and new_user.activation_token is not None:
             cli_utils.declare(
                 f"The created user account is currently inactive. You can "

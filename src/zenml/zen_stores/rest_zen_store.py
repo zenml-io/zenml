@@ -753,7 +753,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=user,
-            route=USERS,
+            route=USERS + "?assign_default_role=False",
             response_model=UserResponseModel,
         )
 
