@@ -1260,7 +1260,7 @@ def copy_stack(
 
         copied_stack = StackModel.parse_obj(
             stack_to_copy.dict(
-                exclude={"id", "created", "updated", "is_shared"}
+                exclude={"id", "created", "updated"}
             )
         )
         client.register_stack(copied_stack)
