@@ -239,12 +239,16 @@ def register_stack(
                 if share:
                     if not component.is_shared:
                         cli_utils.error(
-                            "You attempted to include a private component"
-                            f"{c_type}:{name} in a shared stack. This "
-                            f"is not supported. Set the {c_type} to "
-                            f"shared like this before creating this stack with "
-                            f"`--share`: \n `zenml {c_type.replace('_', '-')} "
-                            f"share`{component.id}`\n."
+                            "You attempted to include a private "
+                            f"{c_type} {name} in a shared stack. This "
+                            f"is not supported. You can either share"
+                            f" the {c_type} with the following "
+                            f"command: \n `zenml {c_type.replace('_', '-')} "
+                            f"share`{component.id}`\n "
+                            f"or create the stack privately and "
+                            f"then share it and all of its components using: "
+                            f"\n `zenml stack share {stack_name} -r`"
+
                         )
 
         # click<8.0.0 gives flags a default of None
@@ -438,12 +442,12 @@ def update_stack(
                 )
                 if stack_to_update.is_shared and not component.is_shared:
                     cli_utils.error(
-                        "You attempted to include a private component"
-                        f"{c_type}:{name} in a shared stack. This "
+                        "You attempted to include a private {c_type} "
+                        "`{name}` in a shared stack. This "
                         f"is not supported. Set the {c_type} to "
-                        f"shared like this before updating this stack with "
-                        f"`--share`: \n `zenml {c_type.replace('_', '-')} "
-                        f"share`{component.id}`\n."
+                        f"shared like this before updating this stack "
+                        f" \n `zenml {c_type.replace('_', '-')} "
+                        f"share {component.id}`\n."
                     )
                 else:
                     stack_components[c_type] = [component.id]
@@ -508,9 +512,9 @@ def share_stack(
                     f"components are also shared. Component "
                     f"{c_t}:{only_component.name} is not shared. Set the "
                     f"{c_t} to shared like this and then try re-sharing your "
-                    f"stack:\n `zenml {c_t.replace('_', '-')} share`\n"
-                    f"{only_component.id}. Alternatively, you can rerun your"
-                    f"command with `-r` to recursively share."
+                    f"stack:\n `zenml {c_t.replace('_', '-')} share {only_component.id}`\n. "
+                    f"Alternatively, you can rerun your command with `-r` to recursively "
+                    f"share all components within the stack."
                 )
             with console.status(
                 f"Sharing component `{only_component.name}`" f"...\n"
