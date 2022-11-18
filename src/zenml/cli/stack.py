@@ -248,7 +248,6 @@ def register_stack(
                             f"or create the stack privately and "
                             f"then share it and all of its components using: "
                             f"\n `zenml stack share {stack_name} -r`"
-
                         )
 
         # click<8.0.0 gives flags a default of None
@@ -1263,9 +1262,7 @@ def copy_stack(
         from zenml.models import StackModel
 
         copied_stack = StackModel.parse_obj(
-            stack_to_copy.dict(
-                exclude={"id", "created", "updated"}
-            )
+            stack_to_copy.dict(exclude={"id", "created", "updated"})
         )
         client.register_stack(copied_stack)
 
