@@ -76,7 +76,11 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import PipelineRunModel
+from zenml.models import (
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
+    PipelineRunUpdateModel,
+)
 from zenml.orchestrators.utils import get_cache_status
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.utils import proto_utils, source_utils, string_utils, uuid_utils
@@ -433,7 +437,7 @@ class BaseOrchestrator(StackComponent, ABC):
         run_id_seed = f"{self.id}-{orchestrator_run_id}"
         return uuid_utils.generate_uuid_from_string(run_id_seed)
 
-    def _create_or_reuse_run(self) -> PipelineRunModel:
+    def _create_or_reuse_run(self) -> PipelineRunResponseModel:
         """Creates a run or reuses an existing one.
 
         Returns:
@@ -444,30 +448,6 @@ class BaseOrchestrator(StackComponent, ABC):
 
         run_id = self.get_run_id_for_orchestrator_run_id(orchestrator_run_id)
 
-        try:
-            run_model = Client().zen_store.get_run(run_id)
-        except KeyError:
-            run_model = self._create_run(
-                run_id=run_id,
-                orchestrator_run_id=orchestrator_run_id,
-            )
-
-        return run_model
-
-    def _create_run(
-        self, run_id: UUID, orchestrator_run_id: str
-    ) -> PipelineRunModel:
-        """Creates a run in the ZenStore.
-
-        Args:
-            run_id: The id of the run to create.
-            orchestrator_run_id: The orchestrator id of the run to create.
-
-        Returns:
-            The created run.
-        """
-        assert self._active_deployment
-
         date = datetime.now().strftime("%Y_%m_%d")
         time = datetime.now().strftime("%H_%M_%S_%f")
         run_name = self._active_deployment.run_name.format(date=date, time=time)
@@ -475,7 +455,7 @@ class BaseOrchestrator(StackComponent, ABC):
         logger.debug("Creating run with ID: %s, name: %s", run_id, run_name)
 
         client = Client()
-        run_model = PipelineRunModel(
+        run_model = PipelineRunRequestModel(
             id=run_id,
             name=run_name,
             orchestrator_run_id=orchestrator_run_id,
@@ -488,7 +468,7 @@ class BaseOrchestrator(StackComponent, ABC):
             num_steps=len(self._active_deployment.steps),
         )
 
-        return client.zen_store.create_run(run_model)
+        return client.zen_store.get_or_create_run(run_model)
 
     @staticmethod
     def _publish_failed_run(run_name_or_id: Union[str, UUID]) -> None:
@@ -500,7 +480,10 @@ class BaseOrchestrator(StackComponent, ABC):
         client = Client()
         run = client.zen_store.get_run(run_name_or_id)
         run.status = ExecutionStatus.FAILED
-        client.zen_store.update_run(run)
+        client.zen_store.update_run(
+            run_id=run.id,
+            run_update=PipelineRunUpdateModel(status=ExecutionStatus.FAILED),
+        )
 
     @staticmethod
     def _ensure_artifact_classes_loaded(

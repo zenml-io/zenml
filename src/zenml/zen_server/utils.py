@@ -25,6 +25,7 @@ from zenml.constants import ENV_ZENML_SERVER_ROOT_URL_PATH
 from zenml.enums import StoreType
 from zenml.exceptions import (
     EntityExistsError,
+    IllegalOperationError,
     NotAuthorizedError,
     StackComponentExistsError,
     StackExistsError,
@@ -63,6 +64,8 @@ def initialize_zen_store() -> None:
         ValueError: If the ZenML Store is using a REST back-end.
     """
     global _zen_store
+
+    logger.debug("Initializing ZenML Store for FastAPI...")
     _zen_store = GlobalConfiguration().zen_store
 
     # We override track_analytics=False because we do not
@@ -108,6 +111,18 @@ def not_authorized(error: Exception) -> HTTPException:
         HTTPException with status code 401.
     """
     return HTTPException(status_code=401, detail=error_detail(error))
+
+
+def forbidden(error: Exception) -> HTTPException:
+    """Convert an Exception to a HTTP 403 response.
+
+    Args:
+        error: Exception to convert.
+
+    Returns:
+        HTTPException with status code 403.
+    """
+    return HTTPException(status_code=403, detail=error_detail(error))
 
 
 def not_found(error: Exception) -> HTTPException:
@@ -176,6 +191,9 @@ def handle_exceptions(func: F) -> F:
         ) as error:
             logger.exception("Entity already exists")
             raise conflict(error) from error
+        except IllegalOperationError as error:
+            logger.exception("Illegal operation")
+            raise forbidden(error) from error
         except ValueError as error:
             logger.exception("Validation error")
             raise unprocessable(error) from error

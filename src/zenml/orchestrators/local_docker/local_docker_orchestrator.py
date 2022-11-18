@@ -16,10 +16,11 @@
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 from uuid import uuid4
 
 from zenml.client import Client
+from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
@@ -50,6 +51,15 @@ class LocalDockerOrchestrator(BaseOrchestrator):
     This orchestrator does not allow for concurrent execution of steps and also
     does not support running on a schedule.
     """
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Local Docker orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return LocalDockerOrchestratorSettings
 
     def prepare_pipeline_deployment(
         self,
@@ -153,6 +163,12 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name
             )
+
+            settings = cast(
+                Optional[LocalDockerOrchestratorSettings],
+                self.get_settings(step),
+            )
+
             user = None
             if sys.platform != "win32":
                 user = os.getuid()
@@ -165,6 +181,8 @@ class LocalDockerOrchestrator(BaseOrchestrator):
                 volumes=volumes,
                 environment=environment,
                 stream=True,
+                extra_hosts={"host.docker.internal": "host-gateway"},
+                **(settings.run_args if settings else {}),
             )
 
             for line in logs:
@@ -178,6 +196,16 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             run_model.name,
             string_utils.get_human_readable_time(run_duration),
         )
+
+
+class LocalDockerOrchestratorSettings(BaseSettings):
+    """Local Docker orchestrator settings.
+
+    Attributes:
+        run_args: Arguments to pass to the `docker run` call.
+    """
+
+    run_args: Dict[str, Any] = {}
 
 
 class LocalDockerOrchestratorConfig(BaseOrchestratorConfig):

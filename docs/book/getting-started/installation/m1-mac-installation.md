@@ -201,6 +201,7 @@ Finally, you can install ZenML in the virtual environment with pip:
 
 ```
 pip install zenml
+# or `pip install zenml[server]` if you want the sever installed as well
 ```
 
 And that's it, you have successfully installed ZenML in Python 3.9 under Rosetta.

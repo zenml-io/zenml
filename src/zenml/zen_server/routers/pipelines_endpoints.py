@@ -15,41 +15,31 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Security, Depends
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.constants import (
-    API,
-    LIMIT_DEFAULT,
-    LIMIT_MAX,
-    OFFSET,
-    PIPELINE_SPEC,
-    PIPELINES,
-    RUNS,
-    VERSION_1,
+from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
+from zenml.enums import PermissionType
+from zenml.models import (
+    PipelineResponseModel,
+    PipelineRunResponseModel,
+    PipelineUpdateModel,
 )
-from zenml.models import PipelineRunModel
-from zenml.models.page_model import Params
-from zenml.models.pipeline_models import PipelineModel
-from zenml.zen_server.auth import authorize
-from zenml.zen_server.models import UpdatePipelineRequest
-from zenml.zen_server.models.pipeline_models import (
-    HydratedPipelineModel,
-    HydratedPipelineRunModel,
-)
+from zenml.models.page_model import Params, Page
+
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINES,
     tags=["pipelines"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
 
 @router.get(
     "",
-    response_model=Page[PipelineModel],  # type: ignore[arg-type]
+    response_model=Page[PipelineResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -57,94 +47,72 @@ def list_pipelines(
     project_name_or_id: Optional[Union[str, UUID]] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
-    hydrated: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
     params: Params = Depends(),
-) -> Page[PipelineModel]:
+) -> Page[PipelineResponseModel]:
     """Gets a list of pipelines.
 
     Args:
         project_name_or_id: Name or ID of the project to get pipelines for.
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by pipeline name
-        hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
         params: Parameters for pagination (page and size)
 
     Returns:
         List of pipeline objects.
     """
-    pipelines_list = zen_store().list_pipelines(
+    return zen_store().list_pipelines(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         name=name,
         params=params
     )
-    if hydrated:
-        return [
-            HydratedPipelineModel.from_model(pipeline)
-            for pipeline in pipelines_list
-        ]
-    else:
-        return pipelines_list
 
 
 @router.get(
     "/{pipeline_id}",
-    response_model=Union[HydratedPipelineModel, PipelineModel],  # type: ignore[arg-type]
+    response_model=PipelineResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_pipeline(
-    pipeline_id: UUID, hydrated: bool = False
-) -> Union[HydratedPipelineModel, PipelineModel]:
+    pipeline_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> PipelineResponseModel:
     """Gets a specific pipeline using its unique id.
 
     Args:
         pipeline_id: ID of the pipeline to get.
-        hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         A specific pipeline object.
     """
-    pipeline = zen_store().get_pipeline(pipeline_id=pipeline_id)
-    if hydrated:
-        return HydratedPipelineModel.from_model(pipeline)
-    else:
-        return pipeline
+    return zen_store().get_pipeline(pipeline_id=pipeline_id)
 
 
 @router.put(
     "/{pipeline_id}",
-    response_model=Union[HydratedPipelineModel, PipelineModel],  # type: ignore[arg-type]
+    response_model=PipelineResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_pipeline(
     pipeline_id: UUID,
-    pipeline_update: UpdatePipelineRequest,
-    hydrated: bool = False,
-) -> Union[HydratedPipelineModel, PipelineModel]:
+    pipeline_update: PipelineUpdateModel,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> PipelineResponseModel:
     """Updates the attribute on a specific pipeline using its unique id.
 
     Args:
         pipeline_id: ID of the pipeline to get.
         pipeline_update: the model containing the attributes to update.
-        hydrated: Defines if stack components, users and projects will be
-            included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The updated pipeline object.
     """
-    pipeline_in_db = zen_store().get_pipeline(pipeline_id)
-
-    updated_pipeline = zen_store().update_pipeline(
-        pipeline=pipeline_update.apply_to_model(pipeline_in_db)
+    return zen_store().update_pipeline(
+        pipeline_id=pipeline_id, pipeline_update=pipeline_update
     )
-    if hydrated:
-        return HydratedPipelineModel.from_model(updated_pipeline)
-    else:
-        return updated_pipeline
 
 
 @router.delete(
@@ -152,7 +120,10 @@ def update_pipeline(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_pipeline(pipeline_id: UUID) -> None:
+def delete_pipeline(
+    pipeline_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
     """Deletes a specific pipeline.
 
     Args:
@@ -163,9 +134,7 @@ def delete_pipeline(pipeline_id: UUID) -> None:
 
 @router.get(
     "/{pipeline_id}" + RUNS,
-    response_model=Union[  # type: ignore[arg-type]
-        List[HydratedPipelineRunModel], List[PipelineRunModel]
-    ],
+    response_model=PipelineRunResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -176,8 +145,8 @@ def list_pipeline_runs(
     run_name: Optional[str] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[UUID] = None,
-    hydrated: bool = False,
-) -> Union[List[HydratedPipelineRunModel], List[PipelineRunModel]]:
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> List[PipelineRunResponseModel]:
     """Get pipeline runs according to query filters.
 
     Args:
@@ -187,13 +156,11 @@ def list_pipeline_runs(
         run_name: Filter by run name if provided
         user_name_or_id: If provided, only return runs for this user.
         component_id: Filter by ID of a component that was used in the run.
-        hydrated: Defines if stack, user and pipeline will be
-                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The pipeline runs according to query filters.
     """
-    runs = zen_store().list_runs(
+    return zen_store().list_runs(
         project_name_or_id=project_name_or_id,
         run_name=run_name,
         stack_id=stack_id,
@@ -201,10 +168,6 @@ def list_pipeline_runs(
         user_name_or_id=user_name_or_id,
         pipeline_id=pipeline_id,
     )
-    if hydrated:
-        return [HydratedPipelineRunModel.from_model(run) for run in runs]
-    else:
-        return runs
 
 
 @router.get(
@@ -213,7 +176,10 @@ def list_pipeline_runs(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_pipeline_spec(pipeline_id: UUID) -> PipelineSpec:
+def get_pipeline_spec(
+    pipeline_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> PipelineSpec:
     """Gets the spec of a specific pipeline using its unique id.
 
     Args:

@@ -20,43 +20,24 @@ from uuid import uuid4
 import pytest
 from click.testing import CliRunner
 
-import zenml.cli.utils as cli_utils
 from tests.unit.test_flavor import AriaOrchestratorFlavor
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
-from zenml.models import FlavorModel
+from zenml.models import FlavorRequestModel
 from zenml.stack.flavor_registry import flavor_registry
 from zenml.stack.stack_component import StackComponent
 
 NOT_STACK_COMPONENTS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 
-# TODO [ENG-829]: Add tests for these commands using REST, SQL and local options
 
-
-def test_stack_component_update_for_nonexistent_stack_fails(
-    clean_client,
-) -> None:
-    """Test stack update of nonexistent stack fails."""
-    orchestrator_update_command = cli.commands["orchestrator"].commands[
-        "update"
-    ]
-    runner = CliRunner()
-    result = runner.invoke(
-        orchestrator_update_command,
-        ["not_an_orchestrator", "--some_property=123"],
-    )
-    assert result.exit_code == 1
-
-
-def test_valid_stack_component_update_succeeds(clean_client) -> None:
+def test_update_stack_component_succeeds(clean_client) -> None:
     """Test that valid stack component update succeeds."""
-    register_container_registry_command = cli.commands[
-        "container-registry"
-    ].commands["register"]
+    register_command = cli.commands["container-registry"].commands["register"]
+    update_command = cli.commands["container-registry"].commands["update"]
 
     runner = CliRunner()
     register_result = runner.invoke(
-        register_container_registry_command,
+        register_command,
         [
             "new_container_registry",
             "--flavor",
@@ -67,20 +48,16 @@ def test_valid_stack_component_update_succeeds(clean_client) -> None:
     assert register_result.exit_code == 0
     assert (
         StackComponent.from_model(
-            cli_utils.get_component_by_id_or_name_or_prefix(
-                client=clean_client,
+            clean_client.get_stack_component(
+                name_id_or_prefix="new_container_registry",
                 component_type=StackComponentType.CONTAINER_REGISTRY,
-                id_or_name_or_prefix="new_container_registry",
             )
         ).config.uri
         == "some_random_uri.com"
     )
 
-    update_container_registry_command = cli.commands[
-        "container-registry"
-    ].commands["update"]
     update_result = runner.invoke(
-        update_container_registry_command,
+        update_command,
         [
             "new_container_registry",
             "--uri=another_random_uri.com",
@@ -89,17 +66,29 @@ def test_valid_stack_component_update_succeeds(clean_client) -> None:
     assert update_result.exit_code == 0
     assert (
         StackComponent.from_model(
-            cli_utils.get_component_by_id_or_name_or_prefix(
-                client=clean_client,
+            clean_client.get_stack_component(
+                name_id_or_prefix="new_container_registry",
                 component_type=StackComponentType.CONTAINER_REGISTRY,
-                id_or_name_or_prefix="new_container_registry",
             )
         ).config.uri
         == "another_random_uri.com"
     )
 
 
-def test_updating_stack_component_name_or_uuid_fails(clean_client) -> None:
+def test_update_stack_component_for_nonexistent_component_fails(
+    clean_client,
+) -> None:
+    """Test stack update of nonexistent stack fails."""
+    update_command = cli.commands["orchestrator"].commands["update"]
+    runner = CliRunner()
+    result = runner.invoke(
+        update_command,
+        ["not_an_orchestrator", "--some_property=123"],
+    )
+    assert result.exit_code == 1
+
+
+def test_update_stack_component_with_name_or_uuid_fails(clean_client) -> None:
     """Test that updating stack component name or uuid fails."""
     register_container_registry_command = cli.commands[
         "container-registry"
@@ -129,10 +118,9 @@ def test_updating_stack_component_name_or_uuid_fails(clean_client) -> None:
     )
     assert update_result1.exit_code == 1
     with does_not_raise():
-        cli_utils.get_component_by_id_or_name_or_prefix(
-            client=clean_client,
+        clean_client.get_stack_component(
+            name_id_or_prefix="new_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
-            id_or_name_or_prefix="new_container_registry",
         )
 
     update_result2 = runner.invoke(
@@ -144,17 +132,16 @@ def test_updating_stack_component_name_or_uuid_fails(clean_client) -> None:
     )
     assert update_result2.exit_code == 1
     with does_not_raise():
-        cli_utils.get_component_by_id_or_name_or_prefix(
-            client=clean_client,
+        clean_client.get_stack_component(
+            name_id_or_prefix="new_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
-            id_or_name_or_prefix="new_container_registry",
         )
 
 
-def test_updating_stack_component_with_unconfigured_property_fails(
+def test_update_stack_component_with_non_configured_property_fails(
     clean_client,
 ) -> None:
-    """Test that updating stack component with an unconfigured property fails."""
+    """Updating stack component with aa non-configured property fails."""
     register_container_registry_command = cli.commands[
         "container-registry"
     ].commands["register"]
@@ -183,15 +170,14 @@ def test_updating_stack_component_with_unconfigured_property_fails(
     )
     assert update_result.exit_code == 1
     with pytest.raises(AttributeError):
-        cli_utils.get_component_by_id_or_name_or_prefix(
-            client=clean_client,
+        clean_client.get_stack_component(
+            name_id_or_prefix="new_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
-            id_or_name_or_prefix="new_container_registry",
-        ).favorite_cat
+        ).__getattribute__("favorite_cat")
 
 
 @pytest.fixture
-def test_flavor() -> Iterator[FlavorModel]:
+def test_flavor() -> Iterator[FlavorRequestModel]:
     """Create a flavor for testing."""
 
     aria_flavor = AriaOrchestratorFlavor()
@@ -200,12 +186,10 @@ def test_flavor() -> Iterator[FlavorModel]:
     flavor_registry._flavors[aria_flavor.type].pop(aria_flavor.name)
 
 
-def test_removing_attributes_from_stack_component_works(
-    clean_client, test_flavor
-) -> None:
-    """Test that removing an optional attribute from a stack component succeeds."""
+def test_remove_attribute_component_succeeds(clean_client, test_flavor) -> None:
+    """Removing an optional attribute from a stack component succeeds."""
 
-    new_orchestrator = test_flavor.implementation_class(
+    orchestrator = test_flavor.implementation_class(
         name="arias_orchestrator",
         id=uuid4(),
         config=test_flavor.config_class(
@@ -219,11 +203,17 @@ def test_removing_attributes_from_stack_component_works(
         created=datetime.now(),
         updated=datetime.now(),
     )
-    clean_client.register_stack_component(new_orchestrator.to_model())
-    orchestrator = clean_client.get_stack_component_by_id(new_orchestrator.id)
-    orchestrator = StackComponent.from_model(orchestrator.to_hydrated_model())
+
+    orchestrator_response = clean_client.register_stack_component(
+        name=orchestrator.name,
+        component_type=orchestrator.type,
+        flavor=orchestrator.flavor,
+        configuration=orchestrator.config.dict(),
+    )
+
     assert (
-        orchestrator.config.favorite_orchestration_language_version is not None
+        "favorite_orchestration_language_version"
+        in orchestrator_response.configuration
     )
 
     runner = CliRunner()
@@ -233,18 +223,27 @@ def test_removing_attributes_from_stack_component_works(
     remove_attribute = runner.invoke(
         remove_attribute_command,
         [
-            f"{new_orchestrator.name}",
-            "--favorite_orchestration_language_version",
+            f"{orchestrator_response.name}",
+            "favorite_orchestration_language_version",
         ],
     )
     assert remove_attribute.exit_code == 0
-    orchestrator = clean_client.get_stack_component_by_id(new_orchestrator.id)
-    orchestrator = StackComponent.from_model(orchestrator.to_hydrated_model())
-    assert orchestrator.config.favorite_orchestration_language_version is None
+
+    orchestrator_response = clean_client.get_stack_component(
+        name_id_or_prefix=orchestrator_response.id,
+        component_type=StackComponentType.ORCHESTRATOR,
+    )
+
+    assert (
+        "favorite_orchestration_language_version"
+        not in orchestrator_response.configuration
+    )
 
 
-def test_removing_nonexistent_component_attributes_fails(clean_client) -> None:
-    """Test that removing a a nonexistent component attribute fails."""
+def test_remove_attribute_component_non_existent_attributes_fail(
+    clean_client,
+) -> None:
+    """Removing a nonexistent component attribute fails."""
     runner = CliRunner()
 
     remove_attribute_command = cli.commands["orchestrator"].commands[
@@ -260,10 +259,10 @@ def test_removing_nonexistent_component_attributes_fails(clean_client) -> None:
     assert remove_attribute.exit_code != 0
 
 
-def test_removing_attribute_from_nonexistent_component_fails(
+def test_remove_attribute_component_nonexistent_component_fails(
     clean_client,
 ) -> None:
-    """Test that removing an attribute from a nonexistent stack component fails."""
+    """Removing an attribute from a nonexistent stack component fails."""
     runner = CliRunner()
 
     remove_attribute_command = cli.commands["orchestrator"].commands[
@@ -279,28 +278,50 @@ def test_removing_attribute_from_nonexistent_component_fails(
     assert remove_attribute.exit_code != 0
 
 
-def test_removing_required_attribute_fails(clean_client) -> None:
-    """Test that removing a required attribute from a stack component fails."""
-    runner = CliRunner()
+def test_remove_attribute_component_required_attribute_fails(
+    clean_client, test_flavor
+) -> None:
+    """Removing a required attribute from a stack component fails."""
+    orchestrator = test_flavor.implementation_class(
+        name="arias_orchestrator",
+        id=uuid4(),
+        config=test_flavor.config_class(
+            favorite_orchestration_language="arn:arias:aws:iam",
+            favorite_orchestration_language_version="a1.big.cat",
+        ),
+        flavor=test_flavor.name,
+        type=test_flavor.type,
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
 
-    remove_attribute_command = cli.commands["artifact-store"].commands[
+    orchestrator_response = clean_client.register_stack_component(
+        name=orchestrator.name,
+        component_type=orchestrator.type,
+        flavor=orchestrator.flavor,
+        configuration=orchestrator.config.dict(),
+    )
+
+    runner = CliRunner()
+    remove_attribute_command = cli.commands["orchestrator"].commands[
         "remove-attribute"
     ]
     remove_attribute = runner.invoke(
         remove_attribute_command,
         [
-            "default",
-            "--uri",
+            f"{orchestrator_response.name}",
+            "favorite_orchestration_language",
         ],
     )
     assert remove_attribute.exit_code != 0
 
 
-def test_renaming_stack_component_to_preexisting_name_fails(
+def test_rename_stack_component_to_preexisting_name_fails(
     clean_client,
 ) -> None:
-    """Test that renaming a component to a name that already is occupied
-    fails."""
+    """Renaming a component to a name that already is occupied fails."""
     register_orchestrator_command = cli.commands["orchestrator"].commands[
         "register"
     ]
@@ -326,15 +347,16 @@ def test_renaming_stack_component_to_preexisting_name_fails(
     )
     assert result.exit_code == 1
     with does_not_raise():
-        cli_utils.get_component_by_id_or_name_or_prefix(
-            client=clean_client,
+        clean_client.get_stack_component(
+            name_id_or_prefix="new_orchestrator",
             component_type=StackComponentType.ORCHESTRATOR,
-            id_or_name_or_prefix="new_orchestrator",
         )
 
 
-def test_renaming_nonexistent_stack_component_fails(clean_client) -> None:
-    """Test that renaming nonexistent stack component fails."""
+def test_rename_stack_component_nonexistent_component_fails(
+    clean_client,
+) -> None:
+    """Renaming nonexistent stack component fails."""
     rename_container_registry_command = cli.commands[
         "container-registry"
     ].commands["rename"]
@@ -345,16 +367,14 @@ def test_renaming_nonexistent_stack_component_fails(clean_client) -> None:
     )
     assert result.exit_code == 1
     with pytest.raises(KeyError):
-        cli_utils.get_component_by_id_or_name_or_prefix(
-            client=clean_client,
+        clean_client.get_stack_component(
+            name_id_or_prefix="arias_container_registry",
             component_type=StackComponentType.ORCHESTRATOR,
-            id_or_name_or_prefix="arias_container_registry",
         )
     with pytest.raises(KeyError):
-        cli_utils.get_component_by_id_or_name_or_prefix(
-            client=clean_client,
+        clean_client.get_stack_component(
+            name_id_or_prefix="arias_container_registry",
             component_type=StackComponentType.ORCHESTRATOR,
-            id_or_name_or_prefix="arias_container_registry",
         )
 
 
@@ -387,21 +407,36 @@ def test_renaming_non_core_component_succeeds(clean_client) -> None:
     )
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        cli_utils.get_component_by_id_or_name_or_prefix(
-            client=clean_client,
+        clean_client.get_stack_component(
+            name_id_or_prefix="some_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
-            id_or_name_or_prefix="some_container_registry",
         )
     with does_not_raise():
-        cli_utils.get_component_by_id_or_name_or_prefix(
-            client=clean_client,
+        clean_client.get_stack_component(
+            name_id_or_prefix=new_component_name,
             component_type=StackComponentType.CONTAINER_REGISTRY,
-            id_or_name_or_prefix=new_component_name,
         )
 
 
 def test_renaming_core_component_succeeds(clean_client) -> None:
     """Test renaming a core stack component succeeds."""
+
+    new_component_name = "arias_orchestrator"
+    register_orchestrator_command = cli.commands["orchestrator"].commands[
+        "register"
+    ]
+
+    runner = CliRunner()
+    register_result = runner.invoke(
+        register_orchestrator_command,
+        [
+            "some_orchestrator",
+            "--flavor",
+            "local",
+        ],
+    )
+    assert register_result.exit_code == 0
+
     new_component_name = "arias_orchestrator"
 
     rename_orchestrator_command = cli.commands["orchestrator"].commands[
@@ -410,18 +445,83 @@ def test_renaming_core_component_succeeds(clean_client) -> None:
     runner = CliRunner()
     result = runner.invoke(
         rename_orchestrator_command,
-        ["default", new_component_name],
+        ["some_orchestrator", new_component_name],
     )
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        cli_utils.get_component_by_id_or_name_or_prefix(
-            client=clean_client,
+        clean_client.get_stack_component(
+            name_id_or_prefix="some_orchestrator",
             component_type=StackComponentType.ORCHESTRATOR,
-            id_or_name_or_prefix="default",
         )
     with does_not_raise():
-        cli_utils.get_component_by_id_or_name_or_prefix(
-            client=clean_client,
+        clean_client.get_stack_component(
+            name_id_or_prefix=new_component_name,
             component_type=StackComponentType.ORCHESTRATOR,
-            id_or_name_or_prefix=new_component_name,
+        )
+
+
+def test_renaming_default_component_fails(clean_client) -> None:
+    """Test renaming a default stack component fails."""
+    new_component_name = "aria"
+
+    runner = CliRunner()
+    rename_command = cli.commands["orchestrator"].commands["rename"]
+    result = runner.invoke(
+        rename_command,
+        ["default", new_component_name],
+    )
+    assert result.exit_code == 1
+    with does_not_raise():
+        clean_client.get_stack_component(
+            name_id_or_prefix="default",
+            component_type=StackComponentType.ORCHESTRATOR,
+        )
+    with pytest.raises(KeyError):
+        clean_client.get_stack_component(
+            name_id_or_prefix=new_component_name,
+            component_type=StackComponentType.ORCHESTRATOR,
+        )
+
+    rename_command = cli.commands["artifact-store"].commands["rename"]
+    result = runner.invoke(
+        rename_command,
+        ["default", new_component_name],
+    )
+    assert result.exit_code == 1
+    with does_not_raise():
+        clean_client.get_stack_component(
+            name_id_or_prefix="default",
+            component_type=StackComponentType.ARTIFACT_STORE,
+        )
+    with pytest.raises(KeyError):
+        clean_client.get_stack_component(
+            name_id_or_prefix=new_component_name,
+            component_type=StackComponentType.ARTIFACT_STORE,
+        )
+
+
+def test_delete_default_component_fails(clean_client) -> None:
+    """Test deleting a default stack component fails."""
+    runner = CliRunner()
+    delete_command = cli.commands["orchestrator"].commands["delete"]
+    result = runner.invoke(
+        delete_command,
+        ["default"],
+    )
+    assert result.exit_code == 1
+    with does_not_raise():
+        clean_client.get_stack_component(
+            name_id_or_prefix="default",
+            component_type=StackComponentType.ORCHESTRATOR,
+        )
+    delete_command = cli.commands["artifact-store"].commands["delete"]
+    result = runner.invoke(
+        delete_command,
+        ["default"],
+    )
+    assert result.exit_code == 1
+    with does_not_raise():
+        clean_client.get_stack_component(
+            name_id_or_prefix="default",
+            component_type=StackComponentType.ARTIFACT_STORE,
         )

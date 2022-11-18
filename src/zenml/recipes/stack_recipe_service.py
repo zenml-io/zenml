@@ -186,11 +186,6 @@ class StackRecipeService(TerraformService):
         Returns:
             A dictionary of variables to use for the stack recipes
             derived from the tfvars.json file.
-
-        Raises:
-            FileNotFoundError: if the values.tfvars.json file is not
-                found in the stack recipe.
-            TypeError: if the file doesn't contain a dictionary of variables.
         """
         vars = super().get_vars()
         # update zenml version to current version
@@ -225,4 +220,4 @@ class StackRecipeService(TerraformService):
                 PROJECT_ID_OUTPUT, full_value=True
             )
 
-        return yaml.dump(config)
+        return cast(str, yaml.dump(config))

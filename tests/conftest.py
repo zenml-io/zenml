@@ -18,6 +18,7 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, Union
 from uuid import uuid4
 
 import pytest
@@ -37,14 +38,20 @@ from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
 )
-from zenml.enums import ArtifactType, ExecutionStatus
+from zenml.enums import ArtifactType, ExecutionStatus, PermissionType
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models.pipeline_models import (
-    ArtifactModel,
-    PipelineRunModel,
-    StepRunModel,
+from zenml.models import (
+    ArtifactResponseModel,
+    PipelineRunResponseModel,
+    ProjectRequestModel,
+    ProjectResponseModel,
+    RoleRequestModel,
+    StepRunResponseModel,
+    TeamRequestModel,
+    UserRequestModel,
+    UserResponseModel,
 )
-from zenml.models.user_management_models import TeamModel
+from zenml.models.base_models import BaseResponseModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
@@ -203,7 +210,7 @@ def clean_client(
 
 
 @pytest.fixture
-def sql_store() -> BaseZenStore:
+def sql_store() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
     store = SqlZenStore(
         config=SqlZenStoreConfiguration(
@@ -223,7 +230,7 @@ def sql_store() -> BaseZenStore:
 
 
 @pytest.fixture
-def sql_store_with_run() -> BaseZenStore:
+def sql_store_with_run() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
 
     GlobalConfiguration().set_store(
@@ -265,7 +272,7 @@ def sql_store_with_run() -> BaseZenStore:
 
 
 @pytest.fixture
-def sql_store_with_runs() -> BaseZenStore:
+def sql_store_with_runs() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
 
     GlobalConfiguration().set_store(
@@ -307,7 +314,7 @@ def sql_store_with_runs() -> BaseZenStore:
 
 
 @pytest.fixture
-def sql_store_with_team() -> BaseZenStore:
+def sql_store_with_team() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
     store = SqlZenStore(
         config=SqlZenStoreConfiguration(
@@ -315,7 +322,7 @@ def sql_store_with_team() -> BaseZenStore:
         ),
         track_analytics=False,
     )
-    new_team = TeamModel(name="arias_team")
+    new_team = TeamRequestModel(name="arias_team")
     store.create_team(new_team)
     default_project = store.list_projects()[0]
     default_stack = store.list_stacks()[0]
@@ -327,6 +334,42 @@ def sql_store_with_team() -> BaseZenStore:
         "default_stack": default_stack,
         "active_user": active_user,
         "default_team": default_team,
+    }
+
+
+@pytest.fixture
+def sql_store_with_user_team_role() -> Dict[
+    str, Union[BaseZenStore, BaseResponseModel]
+]:
+    temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
+
+    store = SqlZenStore(
+        config=SqlZenStoreConfiguration(
+            url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
+        ),
+        track_analytics=False,
+    )
+
+    new_team = TeamRequestModel(name="axls_team")
+    new_team = store.create_team(new_team)
+
+    new_role = RoleRequestModel(
+        name="axl_feeder", permissions={PermissionType.ME}
+    )
+    new_role = store.create_role(new_role)
+
+    new_user = UserRequestModel(name="axl")
+    new_user = store.create_user(new_user)
+
+    new_project = ProjectRequestModel(name="axl_prj")
+    new_project = store.create_project(new_project)
+
+    yield {
+        "store": store,
+        "user": new_user,
+        "team": new_team,
+        "role": new_role,
+        "project": new_project,
     }
 
 
@@ -597,9 +640,34 @@ def step_context_with_two_outputs():
 
 
 @pytest.fixture
-def sample_step_model() -> StepRunModel:
+def sample_user_model() -> UserResponseModel:
+    """Return a sample user model for testing purposes"""
+    return UserResponseModel(
+        id=uuid4(),
+        name="axl",
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def sample_project_model() -> ProjectResponseModel:
+    """Return a sample project model for testing purposes"""
+    return ProjectResponseModel(
+        id=uuid4(),
+        name="axl",
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def sample_step_model(
+    sample_user_model: UserResponseModel,
+    sample_project_model: ProjectResponseModel,
+) -> StepRunResponseModel:
     """Return a sample step model for testing purposes"""
-    return StepRunModel(
+    return StepRunResponseModel(
         id=uuid4(),
         name="sample_step",
         parents_step_ids=[0],
@@ -611,6 +679,12 @@ def sample_step_model() -> StepRunModel:
         input_artifacts={},
         step_configuration={},
         status=ExecutionStatus.COMPLETED,
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        project=sample_project_model,
+        docstring="",
+        mlmd_id=0,
     )
 
 
@@ -621,16 +695,21 @@ def sample_step_view(sample_step_model) -> StepView:
 
 
 @pytest.fixture
-def sample_pipeline_run_model() -> PipelineRunModel:
+def sample_pipeline_run_model(
+    sample_user_model: UserResponseModel,
+    sample_project_model: ProjectResponseModel,
+) -> PipelineRunResponseModel:
     """Return sample pipeline run view for testing purposes"""
-    return PipelineRunModel(
+    return PipelineRunResponseModel(
         id=uuid4(),
         name="sample_run_name",
-        user=uuid4(),
-        project=uuid4(),
         pipeline_configuration={},
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        project=sample_project_model,
     )
 
 
@@ -649,9 +728,9 @@ def sample_pipeline_run_view(
 
 
 @pytest.fixture
-def sample_artifact_model() -> ArtifactModel:
+def sample_artifact_model() -> ArtifactResponseModel:
     """Return a sample artifact model for testing purposes"""
-    return ArtifactModel(
+    return ArtifactResponseModel(
         id=uuid4(),
         name="sample_artifact",
         uri="sample_uri",
@@ -786,5 +865,5 @@ def pytest_generate_tests(metafunc):
         if metafunc.config.getoption("on_kubeflow"):
             repos = ["clean_kubeflow_repo"]
         else:
-            repos = ["clean_base_repo"]
+            repos = ["clean_client"]
         metafunc.parametrize("repo_fixture_name", repos)

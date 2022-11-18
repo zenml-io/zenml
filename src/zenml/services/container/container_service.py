@@ -419,7 +419,7 @@ class ContainerService(BaseService):
                     group_add=[os.getgid()],
                 )
 
-            self.docker_client.containers.run(
+            container = self.docker_client.containers.run(
                 name=self.container_id,
                 image=self.config.image,
                 entrypoint=command,
@@ -433,8 +433,10 @@ class ContainerService(BaseService):
                     "zenml-service-uuid": str(self.uuid),
                 },
                 working_dir=SERVICE_CONTAINER_PATH,
+                extra_hosts={"host.docker.internal": "host-gateway"},
                 **uid_args,
             )
+
             logger.debug(
                 "Docker container for service '%s' started with ID: %s",
                 self,

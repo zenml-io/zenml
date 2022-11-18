@@ -407,7 +407,7 @@ class GitStackRecipesHandler(object):
         """Copies a stack recipe to the destination_dir.
 
         Args:
-            stack_recipe: The stack recipe to copy.
+            stack_recipe_instance: The stack recipe to copy.
             destination_dir: The destination directory to copy the recipe to.
         """
         io_utils.create_dir_if_not_exists(destination_dir)
@@ -776,7 +776,7 @@ def deploy(
         skip_check: Skip the checking of locals.tf file before executing the recipe.
         no_server: Don't deploy ZenML even if there's no active cloud deployment.
     """
-    import python_terraform  # type: ignore
+    import python_terraform
 
     cli_utils.warning(ALPHA_MESSAGE)
     stack_recipes_dir = Path(os.getcwd()) / path
@@ -1000,7 +1000,6 @@ def zen_server_exists() -> bool:
     Returns:
         True if active, false otherwise.
     """
-
     return not GlobalConfiguration().zen_store.is_local_store()
 
 

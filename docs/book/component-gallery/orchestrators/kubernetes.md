@@ -47,12 +47,12 @@ to see a list of available contexts.
 
 We can then register the orchestrator and use it in our active stack:
 ```shell
-zenml orchestrator register <NAME> \
+zenml orchestrator register <ORCHESTRATOR_NAME> \
     --flavor=kubernetes \
     --kubernetes_context=<KUBERNETES_CONTEXT>
 
-# Add the orchestrator to the active stack
-zenml stack update -o <NAME>
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
@@ -68,41 +68,47 @@ You can now run any ZenML pipeline using the Kubernetes orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+### Additional configuration
+
 For additional configuration of the Kubernetes orchestrator, you can pass
 `KubernetesOrchestratorSettings` which allows you to configure the following attributes:
 
-* `affinity`: Affinity constraints (`spec.affinity`) that can be defined to a pod.
-* `tolerations`: Toleration (`spec.tolerations`) so the pod can be scheduled.
+* `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
+your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
-from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
+from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings
+from kubernetes.client.models import V1Toleration
+
 
 kubernetes_settings = KubernetesOrchestratorSettings(
-    affinity={
-        "nodeAffinity": {
-            "requiredDuringSchedulingIgnoredDuringExecution": {
-                "nodeSelectorTerms": [
-                    {
-                        "matchExpressions": [
-                            {
-                                "key": "node.kubernetes.io/name",
-                                "operator": "In",
-                                "values": ["my_powerful_node_group"],
-                            }
-                        ]
-                    }
-                ]
+    pod_settings={
+        "affinity": {
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchExpressions": [
+                                {
+                                    "key": "node.kubernetes.io/name",
+                                    "operator": "In",
+                                    "values": ["my_powerful_node_group"],
+                                }
+                            ]
+                        }
+                    ]
+                }
             }
-        }
-    },
-    tolerations=[
-        {
-            "key": "node.kubernetes.io/name",
-            "operator": "Exists",
-            "value": "",
-            "effect": "NoSchedule",
-        }
-    ],
+        },
+        "tolerations": [
+            V1Toleration(
+                key="node.kubernetes.io/name",
+                operator="Equal",
+                value="",
+                effect="NoSchedule"
+            )
+        ]
+    }
 )
 
 @pipeline(
@@ -117,7 +123,7 @@ A concrete example of using the Kubernetes orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubernetes_orchestration).
 
 For more information and a full list of configurable attributes of the 
-Kubernetes orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator).
+Kubernetes orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator).
 
 ### Enabling CUDA for GPU-backed hardware
 

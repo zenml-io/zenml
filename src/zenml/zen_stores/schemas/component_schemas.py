@@ -15,103 +15,86 @@
 
 import base64
 import json
-from typing import TYPE_CHECKING, List
+from datetime import datetime
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey
-from sqlmodel import Field, Relationship
+from sqlmodel import Relationship
 
 from zenml.enums import StackComponentType
-from zenml.models import ComponentModel
-from zenml.zen_stores.schemas.base_schemas import SharableSchema
+from zenml.models.component_models import (
+    ComponentResponseModel,
+    ComponentUpdateModel,
+)
+from zenml.zen_stores.schemas.base_schemas import ShareableSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
-    from zenml.zen_stores.schemas.stack_schemas import StackSchema
+    from zenml.zen_stores.schemas import StackSchema
 
 
-class StackComponentSchema(SharableSchema, table=True):
+class StackComponentSchema(ShareableSchema, table=True):
     """SQL Model for stack components."""
+
+    __tablename__ = "stack_component"
 
     type: StackComponentType
     flavor: str
+    configuration: bytes
 
-    project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
     )
     project: "ProjectSchema" = Relationship(back_populates="components")
 
-    user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
     )
     user: "UserSchema" = Relationship(back_populates="components")
-
-    configuration: bytes
-
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
     )
 
-    @classmethod
-    def from_create_model(
-        cls, component: ComponentModel
-    ) -> "StackComponentSchema":
-        """Create a `StackComponentSchema`.
+    def update(self, component_update: ComponentUpdateModel):
+        for field, value in component_update.dict(
+            exclude_unset=True, exclude={"project", "user"}
+        ).items():
+            if field == "configuration":
+                self.configuration = base64.b64encode(
+                    json.dumps(component_update.configuration).encode("utf-8")
+                )
+            else:
+                setattr(self, field, value)
 
-        Args:
-            component: The component model from which to create the schema.
-
-        Returns:
-            The created `StackComponentSchema`.
-        """
-        return cls(
-            id=component.id,
-            name=component.name,
-            project_id=component.project,
-            user_id=component.user,
-            is_shared=component.is_shared,
-            type=component.type,
-            flavor=component.flavor,
-            configuration=base64.b64encode(
-                json.dumps(component.configuration).encode("utf-8")
-            ),
-            created=component.created,
-            updated=component.updated,
-        )
-
-    def from_update_model(
-        self,
-        component: ComponentModel,
-    ) -> "StackComponentSchema":
-        """Update the updatable fields on an existing `StackSchema`.
-
-        Args:
-            component: The component model from which to update the schema.
-
-        Returns:
-            A `StackSchema`
-        """
-        self.name = component.name
-        self.is_shared = component.is_shared
-        self.configuration = base64.b64encode(
-            json.dumps(component.configuration).encode("utf-8")
-        )
+        self.updated = datetime.now()
         return self
 
-    def to_model(self) -> "ComponentModel":
+    def to_model(self) -> "ComponentResponseModel":
         """Creates a `ComponentModel` from an instance of a `StackSchema`.
 
         Returns:
             A `ComponentModel`
         """
-        return ComponentModel(
+        return ComponentResponseModel(
             id=self.id,
             name=self.name,
             type=self.type,
             flavor=self.flavor,
-            user=self.user_id,
-            project=self.project_id,
+            user=self.user.to_model(),
+            project=self.project.to_model(),
             is_shared=self.is_shared,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()

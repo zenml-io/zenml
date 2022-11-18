@@ -15,14 +15,26 @@
 
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.gcp import GCP_VERTEX_ORCHESTRATOR_FLAVOR
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
     from zenml.integrations.gcp.orchestrators import VertexOrchestrator
+
+
+class VertexOrchestratorSettings(BaseSettings):
+    """Settings for the Vertex orchestrator.
+
+    Attributes:
+        pod_settings: Pod settings to apply.
+    """
+
+    pod_settings: Optional[KubernetesPodSettings] = None
 
 
 class VertexOrchestratorConfig(

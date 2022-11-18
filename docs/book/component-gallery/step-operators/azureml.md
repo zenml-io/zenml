@@ -80,7 +80,7 @@ A concrete example of using the AzureML step operator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training).
 
 For more information and a full list of configurable attributes of the AzureML 
-step operator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-azure/#zenml.integrations.azure.step_operators.azureml_step_operator.AzureMLStepOperator).
+step operator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-azure/#zenml.integrations.azure.step_operators.azureml_step_operator.AzureMLStepOperator).
 
 ### Enabling CUDA for GPU-backed hardware
 

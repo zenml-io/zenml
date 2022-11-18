@@ -28,7 +28,6 @@ from typing import (
     Optional,
     Sequence,
     Union,
-    cast,
 )
 
 from alembic.config import Config
@@ -152,7 +151,7 @@ class Alembic:
         """
         # Check the existence of any of the SQLModel tables
         return not self.engine.dialect.has_table(
-            self.engine.connect(), cast(str, schemas.StackSchema.__tablename__)
+            self.engine.connect(), schemas.StackSchema.__tablename__
         )
 
     def run_migrations(

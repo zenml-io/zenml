@@ -20,7 +20,7 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
-from zenml.models import PipelineRunModel
+from zenml.models import PipelineRunResponseModel
 from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)
@@ -79,7 +79,7 @@ class PipelineRunView:
     pipeline execution.
     """
 
-    def __init__(self, model: PipelineRunModel):
+    def __init__(self, model: PipelineRunResponseModel):
         """Initializes a post-execution pipeline run object.
 
         In most cases `PipelineRunView` objects should not be created manually
@@ -185,7 +185,7 @@ class PipelineRunView:
         """
         # Query the run again since the status might have changed since this
         # object was created.
-        return Client().zen_store.get_run(self.id).status
+        return Client().get_run(self.id).status
 
     @property
     def steps(self) -> List[StepView]:

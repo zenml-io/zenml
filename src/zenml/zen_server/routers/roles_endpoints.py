@@ -12,56 +12,58 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for roles and role assignment."""
-from typing import List, Union
+from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Security, Depends
 
 from zenml.constants import API, ROLES, VERSION_1
-from zenml.models import RoleModel
+from zenml.enums import PermissionType
 from zenml.models.page_model import Params, Page
-from zenml.zen_server.auth import authorize
-from zenml.zen_server.models.user_management_models import (
-    CreateRoleRequest,
-    UpdateRoleRequest,
-)
+from zenml.models import RoleRequestModel, RoleResponseModel, RoleUpdateModel
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + ROLES,
     tags=["roles"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
 
 @router.get(
     "",
-    response_model=Page[RoleModel],
+    response_model=Page[RoleResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_roles(
+    name: Optional[str] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
     params: Params = Depends(),
-) -> Page[RoleModel]:
+) -> Page[RoleResponseModel]:
     """Returns a list of all roles.
 
     Args:
+        name: Name to filter with
         params: Parameters for pagination (page and size)
 
     Returns:
         List of all roles.
     """
-    return zen_store().list_roles(params=params)
+    return zen_store().list_roles(name=name, params=params)
 
 
 @router.post(
     "",
-    response_model=RoleModel,
+    response_model=RoleResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_role(role: CreateRoleRequest) -> RoleModel:
+def create_role(
+    role: RoleRequestModel,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> RoleResponseModel:
     """Creates a role.
 
     # noqa: DAR401
@@ -72,16 +74,19 @@ def create_role(role: CreateRoleRequest) -> RoleModel:
     Returns:
         The created role.
     """
-    return zen_store().create_role(role=role.to_model())
+    return zen_store().create_role(role=role)
 
 
 @router.get(
     "/{role_name_or_id}",
-    response_model=RoleModel,
+    response_model=RoleResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
+def get_role(
+    role_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> RoleResponseModel:
     """Returns a specific role.
 
     Args:
@@ -94,14 +99,16 @@ def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
 
 
 @router.put(
-    "/{role_name_or_id}",
-    response_model=RoleModel,
+    "/{role_id}",
+    response_model=RoleResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_role(
-    role_name_or_id: Union[str, UUID], role_update: UpdateRoleRequest
-) -> RoleModel:
+    role_id: UUID,
+    role_update: RoleUpdateModel,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> RoleResponseModel:
     """Updates a role.
 
     # noqa: DAR401
@@ -113,8 +120,7 @@ def update_role(
     Returns:
         The created role.
     """
-    role_in_db = zen_store().get_role(role_name_or_id)
-    return zen_store().update_role(role=role_update.apply_to_model(role_in_db))
+    return zen_store().update_role(role_id=role_id, role_update=role_update)
 
 
 @router.delete(
@@ -122,7 +128,10 @@ def update_role(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_role(role_name_or_id: Union[str, UUID]) -> None:
+def delete_role(
+    role_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
     """Deletes a specific role.
 
     Args:

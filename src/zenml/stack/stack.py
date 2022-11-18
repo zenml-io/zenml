@@ -31,7 +31,7 @@ from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
-from zenml.models.stack_models import HydratedStackModel, StackModel
+from zenml.models import StackResponseModel
 from zenml.utils import settings_utils
 
 if TYPE_CHECKING:
@@ -122,7 +122,7 @@ class Stack:
         self._annotator = annotator
         self._data_validator = data_validator
 
-    def to_model(self, user: UUID, project: UUID) -> "StackModel":
+    def to_model(self, user: UUID, project: UUID) -> "StackResponseModel":
         """Creates a StackModel from an actual Stack instance.
 
         Args:
@@ -132,7 +132,7 @@ class Stack:
         Returns:
             A StackModel
         """
-        return StackModel(
+        return StackResponseModel(
             id=self.id,
             name=self.name,
             user=user,
@@ -144,7 +144,7 @@ class Stack:
         )
 
     @classmethod
-    def from_model(cls, stack_model: HydratedStackModel) -> "Stack":
+    def from_model(cls, stack_model: StackResponseModel) -> "Stack":
         """Creates a Stack instance from a StackModel.
 
         Args:
