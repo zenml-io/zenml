@@ -5,14 +5,13 @@ from neptune.new.integrations.tensorflow_keras import NeptuneCallback
 from zenml.integrations.neptune.experiment_trackers import (
     NeptuneExperimentTrackerSettings,
 )
-from zenml.integrations.neptune.experiment_trackers.run_state import (
-    get_neptune_run,
-    neptune_step,
-)
+from zenml.integrations.neptune.experiment_trackers.run_state import get_neptune_run
+
 from zenml.integrations.tensorflow.materializers.keras_materializer import (
     KerasMaterializer,
 )
 from zenml.steps import BaseParameters, step
+from zenml.client import Client
 
 
 class TrainerParameters(BaseParameters):
@@ -25,9 +24,9 @@ class TrainerParameters(BaseParameters):
 settings = NeptuneExperimentTrackerSettings(tags={"keras", "mnist"})
 
 
-@neptune_step
 @step(
     enable_cache=False,
+    experiment_tracker=Client().active_stack.experiment_tracker.name,
     output_materializers=KerasMaterializer,
     settings={"experiment_tracker.neptune": settings},
 )

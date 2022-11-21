@@ -1,4 +1,3 @@
-import functools
 import hashlib
 from typing import List
 
@@ -6,7 +5,6 @@ import neptune.new as neptune
 
 from zenml.client import Client
 from zenml.integrations.constants import NEPTUNE
-from zenml.steps.base_step import BaseStepMeta
 from zenml.utils.singleton import SingletonMetaClass
 
 
@@ -82,14 +80,3 @@ def get_neptune_run() -> neptune.metadata_containers.Run:
         "experiment tracker selected. Current selection is %s"
         % experiment_tracker.flavor
     )
-
-
-def neptune_step(step: BaseStepMeta):
-    client = Client()
-    experiment_tracker = client.active_stack.experiment_tracker.name
-
-    @functools.wraps(step)
-    def wrapper(*args, **kwargs):
-        return step(*args, experiment_tracker=experiment_tracker, **kwargs)
-
-    return wrapper
