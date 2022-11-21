@@ -598,6 +598,7 @@ class Client(metaclass=ClientMetaClass):
         updated_name: Optional[str] = None,
         updated_full_name: Optional[str] = None,
         updated_email: Optional[str] = None,
+        updated_email_opt_in: Optional[bool] = None,
     ) -> UserResponseModel:
         user = self._get_entity_by_id_or_name_or_prefix(
             response_model=UserResponseModel,
@@ -611,8 +612,14 @@ class Client(metaclass=ClientMetaClass):
             user_update.name = updated_name
         if updated_full_name:
             user_update.full_name = updated_full_name
-        if updated_email:
+        if updated_email is not None:
             user_update.email = updated_email
+            user_update.email_opted_in = (
+                updated_email_opt_in or user.email_opted_in
+            )
+        if updated_email_opt_in is not None:
+            user_update.email_opted_in = updated_email_opt_in
+
         return self.zen_store.update_user(
             user_name_or_id=user.id, user_update=user_update
         )

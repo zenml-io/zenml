@@ -1413,7 +1413,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             StackComponentExistsError: If a component with the given name and
-                                       type is already shared by a user
+                type is already shared by a user
         """
         # Check if component with the same name, type is already shared
         # within the project

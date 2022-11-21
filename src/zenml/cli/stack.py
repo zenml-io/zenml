@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 import getpass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 import click
@@ -563,7 +563,7 @@ def remove_stack_component(
     client = Client()
 
     with console.status("Updating the stack...\n"):
-        stack_component_update = dict()
+        stack_component_update: Dict[StackComponentType, List[Any]] = dict()
 
         if container_registry_flag:
             stack_component_update[StackComponentType.CONTAINER_REGISTRY] = []

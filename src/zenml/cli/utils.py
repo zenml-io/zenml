@@ -311,8 +311,8 @@ def print_stack_configuration(
     ]
     console.print(rich_table)
     declare(
-        f"Stack '{stack.name}' with id '{stack.id}' is owned by "
-        f"user '{stack.user.name}' and is "
+        f"Stack '{stack.name}' with id '{stack.id}' is "
+        f"{f'owned by user {stack.user.name} and is ' if stack.user else ''}"
         f"'{'shared' if stack.is_shared else 'private'}'."
     )
 

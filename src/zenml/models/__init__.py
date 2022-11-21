@@ -62,7 +62,6 @@ from zenml.models.team_models import (
     TeamUpdateModel,
 )
 from zenml.models.user_models import (
-    EmailOptInModel,
     UserAuthModel,
     UserRequestModel,
     UserResponseModel,
@@ -140,7 +139,6 @@ __all__ = [
     "StepRunUpdateModel",
     "TeamRequestModel",
     "TeamResponseModel",
-    "EmailOptInModel",
     "UserRequestModel",
     "UserResponseModel",
     "UserUpdateModel",
