@@ -1,7 +1,7 @@
 """Redesign Artifacts [26b776ad583e].
 
 Revision ID: 26b776ad583e
-Revises: 8a64fbfecda0
+Revises: 0.22.0
 Create Date: 2022-11-17 08:00:24.936750
 
 """
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 # revision identifiers, used by Alembic.
 revision = "26b776ad583e"
-down_revision = "8a64fbfecda0"
+down_revision = "0.22.0"
 branch_labels = None
 depends_on = None
 
