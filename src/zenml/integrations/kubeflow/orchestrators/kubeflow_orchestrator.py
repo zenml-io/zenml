@@ -452,6 +452,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
         # Mounts configmap containing Metadata gRPC server configuration.
         container_op.apply(utils.mount_config_map_op("metadata-grpc-configmap"))
 
+        # Disable caching in KFP v1 only works like this, replace by the second
+        # line in the future
+        container_op.execution_options.caching_strategy.max_cache_staleness = (
+            "P0D"
+        )
+        # container_op.set_caching_options(enable_caching=False)
+
     @staticmethod
     def _configure_container_resources(
         container_op: dsl.ContainerOp,
@@ -648,7 +655,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
             run_name: The Kubeflow run name.
         """
         pipeline_name = deployment.pipeline.name
-        enable_cache = deployment.pipeline.enable_cache
         settings = cast(
             KubeflowOrchestratorSettings, self.get_settings(deployment)
         )
@@ -694,7 +700,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     experiment_id=experiment.id,
                     job_name=run_name,
                     pipeline_package_path=pipeline_file_path,
-                    enable_caching=enable_cache,
+                    enable_caching=False,
                     cron_expression=deployment.schedule.cron_expression,
                     start_time=deployment.schedule.utc_start_time,
                     end_time=deployment.schedule.utc_end_time,
@@ -711,7 +717,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     pipeline_file_path,
                     arguments={},
                     run_name=run_name,
-                    enable_caching=enable_cache,
+                    enable_caching=False,
                     namespace=user_namespace,
                 )
                 logger.info(
