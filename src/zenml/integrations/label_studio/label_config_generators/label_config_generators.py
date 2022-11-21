@@ -117,6 +117,7 @@ def generate_basic_ocr_label_config(
 
     This is based on the basic config example shown at
     https://labelstud.io/templates/optical_character_recognition.html
+
     Args:
         labels: A list of labels to be used in the label config.
 
