@@ -50,7 +50,6 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     LIMIT_DEFAULT,
-    OFFSET,
 )
 from zenml.enums import (
     ExecutionStatus,
@@ -1949,7 +1948,7 @@ class SqlZenStore(BaseZenStore):
     def list_roles(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT)
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
     ) -> Page[RoleResponseModel]:
         """List all roles.
 
@@ -2191,13 +2190,13 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id=project_name_or_id,
             user_name_or_id=user_name_or_id,
             role_name_or_id=role_name_or_id,
-            params=params
+            params=params,
         )
         team_role_assignments = self._list_team_role_assignments(
             project_name_or_id=project_name_or_id,
             team_name_or_id=team_name_or_id,
             role_name_or_id=role_name_or_id,
-            params=params
+            params=params,
         )
         return user_role_assignments + team_role_assignments
 
@@ -2442,7 +2441,8 @@ class SqlZenStore(BaseZenStore):
         return project.to_model()
 
     def list_projects(
-        self, name: Optional[str] = None,
+        self,
+        name: Optional[str] = None,
         params: Params = Params(page=1, size=LIMIT_DEFAULT),
     ) -> Page[ProjectResponseModel]:
         """List all projects.

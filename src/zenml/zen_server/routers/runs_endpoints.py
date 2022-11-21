@@ -15,7 +15,7 @@
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
@@ -27,13 +27,13 @@ from zenml.constants import (
     STEPS,
     VERSION_1,
 )
-from zenml.models.page_model import Params, Page
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     StepRunResponseModel,
 )
+from zenml.models.page_model import Page, Params
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -86,7 +86,7 @@ def list_runs(
         user_name_or_id=user_name_or_id,
         pipeline_id=pipeline_id,
         unlisted=unlisted,
-        params=params
+        params=params,
     )
 
 

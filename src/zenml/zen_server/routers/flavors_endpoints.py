@@ -13,17 +13,16 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for flavors."""
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, FLAVORS, VERSION_1
-from zenml.enums import StackComponentType, PermissionType
+from zenml.enums import PermissionType, StackComponentType
 from zenml.models import FlavorResponseModel
-
-from zenml.models.page_model import Params, Page
-from zenml.zen_server.auth import authorize, AuthContext
+from zenml.models.page_model import Page, Params
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -67,7 +66,7 @@ def list_flavors(
         user_name_or_id=user_name_or_id,
         is_shared=is_shared,
         name=name,
-        params=params
+        params=params,
     )
 
 

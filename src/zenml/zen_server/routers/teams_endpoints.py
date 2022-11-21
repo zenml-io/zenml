@@ -12,29 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for teams and team membership."""
-from typing import List, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import (
-    API,
-    LIMIT_DEFAULT,
-    LIMIT_MAX,
-    OFFSET,
-    ROLES,
-    TEAMS,
-    VERSION_1,
-)
+from zenml.constants import API, ROLES, TEAMS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models.page_model import Params, Page
 from zenml.models import (
     RoleAssignmentResponseModel,
     TeamRequestModel,
     TeamResponseModel,
     TeamUpdateModel,
 )
-from zenml.zen_server.auth import AuthContext, authorize
+from zenml.models.page_model import Page, Params
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -53,7 +44,7 @@ router = APIRouter(
 @handle_exceptions
 def list_teams(
     params: Params = Depends(),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[TeamResponseModel]:
     """Returns a list of all teams.
 
@@ -178,5 +169,5 @@ def get_role_assignments_for_team(
     return zen_store().list_role_assignments(
         team_name_or_id=team_name_or_id,
         project_name_or_id=project_name_or_id,
-        params=params
+        params=params,
     )

@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional, Union
 from uuid import UUID
 
-from zenml.constants import LIMIT_DEFAULT, OFFSET
+from zenml.constants import LIMIT_DEFAULT
 from zenml.enums import StackComponentType
 from zenml.models import (
     ArtifactRequestModel,
@@ -557,8 +557,11 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_teams(self, name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),) -> Page[TeamResponseModel]:
+    def list_teams(
+        self,
+        name: Optional[str] = None,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[TeamResponseModel]:
         """List all teams.
 
         Args:
@@ -630,8 +633,11 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_roles(self, name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),) -> Page[RoleResponseModel]:
+    def list_roles(
+        self,
+        name: Optional[str] = None,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[RoleResponseModel]:
         """List all roles.
 
         Args:
@@ -757,7 +763,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_projects(
-        self, name: Optional[str] = None,
+        self,
+        name: Optional[str] = None,
         params: Params = Params(page=1, size=LIMIT_DEFAULT),
     ) -> Page[ProjectResponseModel]:
         """List all projects.

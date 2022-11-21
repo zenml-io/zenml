@@ -16,12 +16,12 @@
 from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models.page_model import Page, Params
 from zenml.models import StackResponseModel, StackUpdateModel
+from zenml.models.page_model import Page, Params
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -79,7 +79,7 @@ def list_stacks(
             component_id=component_id,
             is_shared=True,
             name=name,
-        params=params,
+            params=params,
         )
         stacks += shared_stacks
 

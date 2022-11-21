@@ -13,26 +13,21 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for users."""
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Security, status, Depends
-from pydantic import SecretStr
+from fastapi import APIRouter, Depends, HTTPException, Security, status
 
 from zenml.constants import (
     ACTIVATE,
     API,
     DEACTIVATE,
     EMAIL_ANALYTICS,
-    LIMIT_DEFAULT,
-    LIMIT_MAX,
-    OFFSET,
     ROLES,
     USERS,
     VERSION_1,
 )
 from zenml.enums import PermissionType
-from zenml.models.page_model import Params, Page
 from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.models import (
@@ -42,6 +37,7 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
+from zenml.models.page_model import Page, Params
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
@@ -362,7 +358,7 @@ def list_role_assignments_for_user(
         user_name_or_id=user_name_or_id,
         project_name_or_id=project_name_or_id,
         role_name_or_id=role_name_or_id,
-        params=params
+        params=params,
     )
 
 

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for projects."""
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -21,8 +21,6 @@ from zenml.constants import (
     API,
     FLAVORS,
     LIMIT_DEFAULT,
-    LIMIT_MAX,
-    OFFSET,
     PIPELINES,
     PROJECTS,
     ROLES,
@@ -48,7 +46,7 @@ from zenml.models import (
     StackRequestModel,
     StackResponseModel,
 )
-from zenml.models.page_model import Params, Page
+from zenml.models.page_model import Page, Params
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -67,7 +65,7 @@ router = APIRouter(
 @handle_exceptions
 def list_projects(
     params: Params = Depends(),
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[ProjectResponseModel]:
     """Lists all projects in the organization.
 
@@ -181,6 +179,7 @@ def get_role_assignments_for_project(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     team_name_or_id: Optional[Union[str, UUID]] = None,
+    params: Params = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[RoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a team.
@@ -200,7 +199,7 @@ def get_role_assignments_for_project(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         team_name_or_id=team_name_or_id,
-        params=params
+        params=params,
     )
 
 
@@ -421,7 +420,7 @@ def list_project_flavors(
         user_name_or_id=user_name_or_id,
         is_shared=is_shared,
         name=name,
-        params=params
+        params=params,
     )
 
 
@@ -489,7 +488,7 @@ def list_project_pipelines(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         name=name,
-        params=params
+        params=params,
     )
 
 
@@ -586,16 +585,16 @@ def get_project_statistics(
     zen_store().list_runs()
     # TODO: with pagination, this won't work anymore
     return {
-        "stacks": zen_store().list_stacks(
-            project_name_or_id=project_name_or_id
-        ).total,
-        "components": zen_store().list_stack_components(
-                project_name_or_id=project_name_or_id
-            ).total,
-        "pipelines": zen_store().list_pipelines(
-            project_name_or_id=project_name_or_id
-        ).total,
-        "runs": zen_store().list_runs(
-            project_name_or_id=project_name_or_id
-        ).total,
+        "stacks": zen_store()
+        .list_stacks(project_name_or_id=project_name_or_id)
+        .total,
+        "components": zen_store()
+        .list_stack_components(project_name_or_id=project_name_or_id)
+        .total,
+        "pipelines": zen_store()
+        .list_pipelines(project_name_or_id=project_name_or_id)
+        .total,
+        "runs": zen_store()
+        .list_runs(project_name_or_id=project_name_or_id)
+        .total,
     }

@@ -15,7 +15,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
@@ -25,8 +25,7 @@ from zenml.models import (
     PipelineRunResponseModel,
     PipelineUpdateModel,
 )
-from zenml.models.page_model import Params, Page
-
+from zenml.models.page_model import Page, Params
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -65,7 +64,7 @@ def list_pipelines(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         name=name,
-        params=params
+        params=params,
     )
 
 

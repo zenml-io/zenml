@@ -48,7 +48,6 @@ from zenml.constants import (
     LIMIT_DEFAULT,
     LOGIN,
     METADATA_CONFIG,
-    OFFSET,
     METADATA_SYNC,
     PIPELINES,
     PROJECTS,
@@ -114,7 +113,7 @@ from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.models.page_model import Params, Page
+from zenml.models.page_model import Page, Params
 from zenml.models.server_models import ServerModel
 from zenml.models.team_models import TeamUpdateModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -802,7 +801,7 @@ class RestZenStore(BaseZenStore):
     def list_users(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT)
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
     ) -> Page[UserResponseModel]:
         """List all users.
 
@@ -2013,7 +2012,7 @@ class RestZenStore(BaseZenStore):
         self,
         route: str,
         **filters: Any,
-    ) -> Page[AnyModel]:
+    ) -> Page[AnyResponseModel]:
         """Retrieve a list of resources filtered by some criteria.
 
         Args:
@@ -2063,7 +2062,6 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected list, got {type(body)}"
             )
         return [response_model.parse_obj(entry) for entry in body]
-
 
     def _update_resource(
         self,
