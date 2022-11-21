@@ -54,11 +54,11 @@ from sqlalchemy.orm import noload
 from sqlmodel import Session, func, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
-from zenml.models.base_models import DomainModel
+from zenml.models.base_models import BaseResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 T = TypeVar("T", bound=BaseSchema)
-B = TypeVar("B", bound=DomainModel)
+B = TypeVar("B", bound=BaseResponseModel)
 
 
 @dataclass
@@ -163,7 +163,3 @@ class Page(GenericModel, Generic[B]):
 
         return cls.create(items, total, total_pages, params)
 
-
-# from fastapi_pagination import Page, Params
-# from fastapi_pagination.bases import AbstractPage
-# from fastapi_pagination.ext.sqlmodel import paginate

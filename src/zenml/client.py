@@ -14,6 +14,7 @@
 """Client implementation."""
 import os
 from abc import ABCMeta
+from functools import partial
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -35,7 +36,7 @@ from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
     REPOSITORY_DIRECTORY_NAME,
-    handle_bool_env_var,
+    handle_bool_env_var, LIMIT_DEFAULT,
 )
 from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.exceptions import (
@@ -74,6 +75,7 @@ from zenml.models import (
     UserUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.page_model import Page, Params
 from zenml.models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -646,7 +648,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The Team
         """
-        return self.zen_store.list_teams(name=name)
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_teams,
+                name=name
+            )
+        )
 
     def create_team(
         self, name: str, users: Optional[List[str]] = None
@@ -760,7 +767,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The User
         """
-        return self.zen_store.list_roles(name=name)
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_roles,
+                name=name
+            )
+        )
 
     def create_role(
         self, name: str, permissions_list: List[str]
@@ -992,11 +1004,14 @@ class Client(metaclass=ClientMetaClass):
         team_name_or_id: Optional[str] = None,
         project_name_or_id: Optional[str] = None,
     ) -> List[RoleAssignmentResponseModel]:
-        return self.zen_store.list_role_assignments(
-            project_name_or_id=project_name_or_id,
-            role_name_or_id=role_name_or_id,
-            user_name_or_id=user_name_or_id,
-            team_name_or_id=team_name_or_id,
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_role_assignments,
+                role_name_or_id=role_name_or_id,
+                user_name_or_id=user_name_or_id,
+                team_name_or_id=team_name_or_id,
+                project_name_or_id=project_name_or_id
+            )
         )
 
     # ------- #
@@ -1353,13 +1368,16 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List["StackResponseModel"]:
-        """"""
-        return self.zen_store.list_stacks(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id or self.active_user.id,
-            component_id=component_id,
-            name=name,
-            is_shared=is_shared,
+        """Return a list of stacks."""
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_stacks,
+                project_name_or_id=project_name_or_id or self.active_project.id,
+                user_name_or_id=user_name_or_id or self.active_user.id,
+                component_id=component_id,
+                name=name,
+                is_shared=is_shared,
+            )
         )
 
     @track(event=AnalyticsEvent.SET_STACK)
@@ -1503,13 +1521,16 @@ class Client(metaclass=ClientMetaClass):
         is_shared: Optional[bool] = None,
     ) -> List["ComponentResponseModel"]:
         """"""
-        return self.zen_store.list_stack_components(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id or self.active_user.id,
-            type=component_type,
-            flavor_name=flavor_name,
-            name=name,
-            is_shared=is_shared,
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_stack_components,
+                project_name_or_id=project_name_or_id or self.active_project.id,
+                user_name_or_id=user_name_or_id or self.active_user.id,
+                type=component_type,
+                flavor_name=flavor_name,
+                name=name,
+                is_shared=is_shared,
+            )
         )
 
     def register_stack_component(
@@ -1802,7 +1823,11 @@ class Client(metaclass=ClientMetaClass):
         from zenml.stack.flavor_registry import flavor_registry
 
         zenml_flavors = flavor_registry.flavors
-        custom_flavors = self.zen_store.list_flavors()
+        custom_flavors = self.depaginate(
+            list_command=partial(
+                self.zen_store.list_flavors,
+            )
+        )
         return zenml_flavors + custom_flavors
 
     def get_flavors_by_type(
@@ -1988,10 +2013,13 @@ class Client(metaclass=ClientMetaClass):
                 pipeline
         """
 
-        return self.zen_store.list_pipelines(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id,
-            name=name,
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_pipelines,
+                project_name_or_id=project_name_or_id,
+                user_name_or_id=user_name_or_id,
+                name=name,
+            )
         )
 
     def get_pipeline(self, name_id_or_prefix: str) -> PipelineResponseModel:
@@ -2299,14 +2327,17 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of all pipeline runs.
         """
-        return self.zen_store.list_runs(
-            project_name_or_id=project_name_or_id,
-            stack_id=stack_id,
-            component_id=component_id,
-            run_name=run_name,
-            user_name_or_id=user_name_or_id,
-            pipeline_id=pipeline_id,
-            unlisted=unlisted,
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_runs,
+                project_name_or_id=project_name_or_id,
+                stack_id=stack_id,
+                component_id=component_id,
+                run_name=run_name,
+                user_name_or_id=user_name_or_id,
+                pipeline_id=pipeline_id,
+                unlisted=unlisted,
+            )
         )
 
     def get_pipeline_run(
@@ -2430,24 +2461,24 @@ class Client(metaclass=ClientMetaClass):
             pass
 
         if "project" in response_model.__fields__:
-            entities: List[AnyResponseModel] = list_method(
+            entities: Page[AnyResponseModel] = list_method(
                 name=name_id_or_prefix,
                 project_name_or_id=self.active_project.id,
             )
         else:
-            entities: List[AnyResponseModel] = list_method(
+            entities: Page[AnyResponseModel] = list_method(
                 name=name_id_or_prefix,
             )
 
-        if len(entities) > 1:
+        if len(entities.items) > 1:
             raise KeyError(
                 f"Multiple {response_model} have been found "
                 f"for name '{name_id_or_prefix}'. The {response_model} listed "
                 f"above all share this name. Please specify by "
                 f"full or partial id."
             )
-        elif len(entities) == 1:
-            return entities[0]
+        elif len(entities.items) == 1:
+            return entities.items[0]
         else:
             logger.debug(
                 f"No {response_model} with name '{name_id_or_prefix}' "
@@ -2456,7 +2487,7 @@ class Client(metaclass=ClientMetaClass):
 
             filtered_entities = [
                 entity
-                for entity in entities
+                for entity in entities.items
                 if str(entity.id).startswith(name_id_or_prefix)  # type: ignore[arg-type]
             ]
             if len(filtered_entities) > 1:
@@ -2474,3 +2505,17 @@ class Client(metaclass=ClientMetaClass):
                     f"No {response_model} with name or id "
                     f"prefix '{name_id_or_prefix}' exists."
                 )
+
+    def depaginate(
+            self,
+            list_command: Callable,
+    ) -> List[AnyResponseModel]:
+        params = Params(page=1)
+        first_page: Page[BaseResponseModel] = list_command(params=params)
+        list_of_entities = list(first_page.items)
+        if first_page.total_pages < 1:
+            for page in [1, first_page.total_pages]:
+                params = Params(page=page)
+                list_of_entities.append(list_command(params))
+
+        return list_of_entities

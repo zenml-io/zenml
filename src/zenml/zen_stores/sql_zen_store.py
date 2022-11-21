@@ -1418,8 +1418,7 @@ class SqlZenStore(BaseZenStore):
             raise StackComponentExistsError(
                 f"Unable to shared component of type '{component.type.value}' "
                 f"with name '{component.name}': Found an existing shared "
-                f"component with the same name and type in project "
-                f"'{project.name}'."
+                f"component with the same name and type in this project."
             )
 
     # -----------------------
@@ -1661,7 +1660,7 @@ class SqlZenStore(BaseZenStore):
         self,
         name: Optional[str] = None,
         params: Params = Params(page=1, size=LIMIT_DEFAULT),
-    ) -> List[UserResponseModel]:
+    ) -> Page[UserResponseModel]:
         """List all users.
 
         Args:
@@ -1879,7 +1878,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_users_for_team(
         self, team_name_or_id: Union[str, UUID]
-    ) -> List[UserResponseModel]:
+    ) -> Page[UserResponseModel]:
         """Fetches all users of a team.
 
         Args:
@@ -2192,13 +2191,13 @@ class SqlZenStore(BaseZenStore):
             role_name_or_id=role_name_or_id,
             params=params,
         )
-        team_role_assignments = self._list_team_role_assignments(
-            project_name_or_id=project_name_or_id,
-            team_name_or_id=team_name_or_id,
-            role_name_or_id=role_name_or_id,
-            params=params,
-        )
-        return user_role_assignments + team_role_assignments
+        # team_role_assignments = self._list_team_role_assignments(
+        #     project_name_or_id=project_name_or_id,
+        #     team_name_or_id=team_name_or_id,
+        #     role_name_or_id=role_name_or_id,
+        #     params=params,
+        # )
+        return user_role_assignments # + team_role_assignments
 
     def _assign_role_to_user(
         self,
@@ -3193,7 +3192,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_run_steps(
         self, run_id: Optional[UUID] = None
-    ) -> List[StepRunResponseModel]:
+    ) -> Page[StepRunResponseModel]:
         """Get all run steps.
 
         Args:
@@ -3341,7 +3340,7 @@ class SqlZenStore(BaseZenStore):
         self,
         artifact_uri: Optional[str] = None,
         parent_step_id: Optional[UUID] = None,
-    ) -> List[ArtifactResponseModel]:
+    ) -> Page[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
