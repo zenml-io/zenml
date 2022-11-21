@@ -589,7 +589,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The User
         """
-        return self.zen_store.list_users(name=name)
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_users,
+                name=name
+            )
+        )
 
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.
