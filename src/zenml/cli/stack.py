@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 import getpass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 import click
@@ -154,17 +154,17 @@ def stack() -> None:
 )
 def register_stack(
     stack_name: str,
-    artifact_store_name: str,
-    orchestrator_name: str,
-    container_registry_name: Optional[str] = None,
-    secrets_manager_name: Optional[str] = None,
-    step_operator_name: Optional[str] = None,
-    feature_store_name: Optional[str] = None,
-    model_deployer_name: Optional[str] = None,
-    experiment_tracker_name: Optional[str] = None,
-    alerter_name: Optional[str] = None,
-    annotator_name: Optional[str] = None,
-    data_validator_name: Optional[str] = None,
+    artifact_store: str,
+    orchestrator: str,
+    container_registry: Optional[str] = None,
+    secrets_manager: Optional[str] = None,
+    step_operator: Optional[str] = None,
+    feature_store: Optional[str] = None,
+    model_deployer: Optional[str] = None,
+    experiment_tracker: Optional[str] = None,
+    alerter: Optional[str] = None,
+    annotator: Optional[str] = None,
+    data_validator: Optional[str] = None,
     set_stack: bool = False,
     share: bool = False,
 ) -> None:
@@ -172,17 +172,17 @@ def register_stack(
 
     Args:
         stack_name: Unique name of the stack
-        artifact_store_name: Name of the artifact store for this stack.
-        orchestrator_name: Name of the orchestrator for this stack.
-        container_registry_name: Name of the container registry for this stack.
-        secrets_manager_name: Name of the secrets manager for this stack.
-        step_operator_name: Name of the step operator for this stack.
-        feature_store_name: Name of the feature store for this stack.
-        model_deployer_name: Name of the model deployer for this stack.
-        experiment_tracker_name: Name of the experiment tracker for this stack.
-        alerter_name: Name of the alerter for this stack.
-        annotator_name: Name of the annotator for this stack.
-        data_validator_name: Name of the data validator for this stack.
+        artifact_store: Name of the artifact store for this stack.
+        orchestrator: Name of the orchestrator for this stack.
+        container_registry: Name of the container registry for this stack.
+        secrets_manager: Name of the secrets manager for this stack.
+        step_operator: Name of the step operator for this stack.
+        feature_store: Name of the feature store for this stack.
+        model_deployer: Name of the model deployer for this stack.
+        experiment_tracker: Name of the experiment tracker for this stack.
+        alerter: Name of the alerter for this stack.
+        annotator: Name of the annotator for this stack.
+        data_validator: Name of the data validator for this stack.
         set_stack: Immediately set this stack as active.
         share: Share the stack with other users.
     """
@@ -190,19 +190,33 @@ def register_stack(
     with console.status(f"Registering stack '{stack_name}'...\n"):
         client = Client()
 
-        component_mapping = {
-            StackComponentType.ARTIFACT_STORE: artifact_store_name,
-            StackComponentType.ALERTER: alerter_name,
-            StackComponentType.ANNOTATOR: annotator_name,
-            StackComponentType.CONTAINER_REGISTRY: container_registry_name,
-            StackComponentType.DATA_VALIDATOR: data_validator_name,
-            StackComponentType.EXPERIMENT_TRACKER: experiment_tracker_name,
-            StackComponentType.FEATURE_STORE: feature_store_name,
-            StackComponentType.MODEL_DEPLOYER: model_deployer_name,
-            StackComponentType.ORCHESTRATOR: orchestrator_name,
-            StackComponentType.SECRETS_MANAGER: secrets_manager_name,
-            StackComponentType.STEP_OPERATOR: step_operator_name,
-        }
+        components = dict()
+
+        components[StackComponentType.ARTIFACT_STORE] = artifact_store
+        components[StackComponentType.ORCHESTRATOR] = orchestrator
+
+        if alerter:
+            components[StackComponentType.ALERTER] = alerter
+        if annotator:
+            components[StackComponentType.ANNOTATOR] = annotator
+        if data_validator:
+            components[StackComponentType.DATA_VALIDATOR] = data_validator
+        if feature_store:
+            components[StackComponentType.FEATURE_STORE] = feature_store
+        if model_deployer:
+            components[StackComponentType.MODEL_DEPLOYER] = model_deployer
+        if secrets_manager:
+            components[StackComponentType.SECRETS_MANAGER] = secrets_manager
+        if step_operator:
+            components[StackComponentType.STEP_OPERATOR] = step_operator
+        if experiment_tracker:
+            components[
+                StackComponentType.EXPERIMENT_TRACKER
+            ] = experiment_tracker
+        if container_registry:
+            components[
+                StackComponentType.CONTAINER_REGISTRY
+            ] = container_registry
 
         # click<8.0.0 gives flags a default of None
         if share is None:
@@ -210,7 +224,7 @@ def register_stack(
 
         created_stack = client.register_stack(
             name=stack_name,
-            components=component_mapping,
+            components=components,
             is_shared=share,
         )
 
@@ -385,12 +399,11 @@ def update_stack(
                 name_id_or_prefix=stack_name_or_id,
                 component_updates=updates,
             )
+
         except IllegalOperationError as err:
             cli_utils.error(str(err))
 
-        cli_utils.declare(
-            f"Stack `{updated_stack.name}` successfully " f"updated!"
-        )
+        cli_utils.declare(f"Stack `{updated_stack.name}` successfully updated!")
 
 
 @stack.command(
@@ -399,19 +412,38 @@ def update_stack(
     help="Share a stack and all its components.",
 )
 @click.argument("stack_name_or_id", type=str, required=False)
+@click.option(
+    "--recursive",
+    "-r",
+    "recursive",
+    is_flag=True,
+    help="Recursively also share all stack components if they are private.",
+)
 def share_stack(
-    stack_name_or_id: Optional[str] = None,
+    stack_name_or_id: Optional[str], recursive: bool = False
 ) -> None:
     """Share a stack with your team.
 
     Args:
         stack_name_or_id: Name or id of the stack to share.
+        recursive: Recursively also share all components
     """
 
     client = Client()
 
     with console.status("Sharing the stack...\n"):
         try:
+            if recursive:
+                stack_to_update = client.get_stack(
+                    name_id_or_prefix=stack_name_or_id
+                )
+                for c_type, components in stack_to_update.components.items():
+                    for component in components:
+                        client.update_stack_component(
+                            name_id_or_prefix=component.id,
+                            component_type=c_type,
+                            is_shared=True,
+                        )
             updated_stack = client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
                 is_shared=True,
@@ -531,7 +563,7 @@ def remove_stack_component(
     client = Client()
 
     with console.status("Updating the stack...\n"):
-        stack_component_update = dict()
+        stack_component_update: Dict[StackComponentType, List[Any]] = dict()
 
         if container_registry_flag:
             stack_component_update[StackComponentType.CONTAINER_REGISTRY] = []
@@ -946,15 +978,22 @@ def import_stack(
 @stack.command("copy", help="Copy a stack to a new stack name.")
 @click.argument("source_stack_name_or_id", type=str, required=True)
 @click.argument("target_stack", type=str, required=True)
+@click.option(
+    "--share",
+    "share",
+    is_flag=True,
+    help="Use this flag to share this stack with other users.",
+    type=click.BOOL,
+)
 def copy_stack(
-    source_stack_name_or_id: str,
-    target_stack: str,
+    source_stack_name_or_id: str, target_stack: str, share: bool = False
 ) -> None:
     """Copy a stack.
 
     Args:
         source_stack_name_or_id: The name or id of the stack to copy.
         target_stack: Name of the copied stack.
+        share: Share the stack with other users.
     """
     track_event(AnalyticsEvent.COPIED_STACK)
 
@@ -974,7 +1013,7 @@ def copy_stack(
         client.register_stack(
             name=target_stack,
             components=component_mapping,
-            is_shared=stack_to_copy.is_shared,
+            is_shared=share,
         )
 
 

@@ -577,6 +577,20 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
+    def list_users(
+            self,
+            name: Optional[str] = None
+    ) -> List[UserResponseModel]:
+        """List all users.
+
+        Args:
+            name: The name to filter by
+
+        Returns:
+            The User
+        """
+        return self.zen_store.list_users(name=name)
+
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.
 
@@ -596,10 +610,11 @@ class Client(metaclass=ClientMetaClass):
 
     def update_user(
         self,
-        user_name_or_id: str,
+        user_name_or_id: Union[str, UUID],
         updated_name: Optional[str] = None,
         updated_full_name: Optional[str] = None,
         updated_email: Optional[str] = None,
+        updated_email_opt_in: Optional[bool] = None,
     ) -> UserResponseModel:
         user = self._get_entity_by_id_or_name_or_prefix(
             response_model=UserResponseModel,
@@ -613,8 +628,14 @@ class Client(metaclass=ClientMetaClass):
             user_update.name = updated_name
         if updated_full_name:
             user_update.full_name = updated_full_name
-        if updated_email:
+        if updated_email is not None:
             user_update.email = updated_email
+            user_update.email_opted_in = (
+                updated_email_opt_in or user.email_opted_in
+            )
+        if updated_email_opt_in is not None:
+            user_update.email_opted_in = updated_email_opt_in
+
         return self.zen_store.update_user(
             user_name_or_id=user.id, user_update=user_update
         )
@@ -917,7 +938,7 @@ class Client(metaclass=ClientMetaClass):
         user_or_team_name_or_id: Union[str, UUID],
         is_user: bool,
         project_name_or_id: Optional[Union[str, UUID]] = None,
-    ):
+    ) -> RoleAssignmentResponseModel:
         """Create a role assignment.
 
         Args:
@@ -979,7 +1000,7 @@ class Client(metaclass=ClientMetaClass):
         user_or_team_name_or_id: str,
         is_user: bool,
         project_name_or_id: Optional[str] = None,
-    ):
+    ) -> None:
         """Delete a role assignment.
 
         Args:
@@ -1203,7 +1224,7 @@ class Client(metaclass=ClientMetaClass):
     def register_stack(
         self,
         name: str,
-        components: Dict[StackComponentType, Optional[Union[UUID, str]]],
+        components: Dict[StackComponentType, Union[str, UUID]],
         is_shared: bool = False,
     ) -> "StackResponseModel":
         """Registers a stack and its components.
@@ -1219,14 +1240,27 @@ class Client(metaclass=ClientMetaClass):
 
         stack_components = dict()
 
-        for c_type, c_name in components.items():
-            if c_name:
-                stack_components[c_type] = [
-                    self.get_stack_component(
-                        name_id_or_prefix=c_name,
-                        component_type=c_type,
-                    ).id
-                ]
+        for c_type, c_identifier in components.items():
+            if c_identifier:
+                component = self.get_stack_component(
+                    name_id_or_prefix=c_identifier,
+                    component_type=c_type,
+                )
+                stack_components[c_type] = [component.id]
+
+                if is_shared:
+                    if not component.is_shared:
+                        raise ValueError(
+                            "You attempted to include a private "
+                            f"{c_type} {name} in a shared stack. This "
+                            f"is not supported. You can either share"
+                            f" the {c_type} with the following "
+                            f"command: \n `zenml {c_type.replace('_', '-')} "
+                            f"share`{component.id}`\n "
+                            f"or create the stack privately and "
+                            f"then share it and all of its components using: "
+                            f"\n `zenml stack share {name} -r`"
+                        )
 
         stack = StackRequestModel(
             name=name,
@@ -1294,11 +1328,19 @@ class Client(metaclass=ClientMetaClass):
 
             for component_type, components in stack.components.items():
                 for c in components:
-                    self.update_stack_component(
-                        name_id_or_prefix=c.id,
-                        component_type=component_type,
-                        is_shared=True,
-                    )
+                    if not c.is_shared:
+                        raise ValueError(
+                            f"A Stack can only be shared when all its "
+                            f"components are also shared. Component "
+                            f"{component_type}:{c.name} is not shared. Set "
+                            f"the {component_type} to shared like this and "
+                            f"then try re-sharing your stack:\n "
+                            f"`zenml {component_type.replace('_', '-')} "
+                            f"share {c.id}`\n. Alternatively, you can rerun "
+                            f"your command with `-r` to recursively "
+                            f"share all components within the stack."
+                        )
+
             update_model.is_shared = is_shared
 
         if description:
@@ -2241,7 +2283,7 @@ class Client(metaclass=ClientMetaClass):
                 name=mlmd_run.name,
                 stack=None,  # Stack might not exist in new DB.
                 pipeline=None,  # Pipeline might not exist in new DB.
-                status=ExecutionStatus.run_status(step_statuses, num_steps),
+                status=ExecutionStatus.run_status(step_statuses),
                 pipeline_configuration=mlmd_run.pipeline_configuration,
                 num_steps=num_steps,
                 mlmd_id=None,  # Run might not exist in new MLMD.
@@ -2341,7 +2383,8 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def get_pipeline_run(
-        self, name_id_or_prefix: str
+        self,
+        name_id_or_prefix: Union[str, UUID],
     ) -> PipelineRunResponseModel:
         """List pipelines.
 
@@ -2404,32 +2447,32 @@ class Client(metaclass=ClientMetaClass):
             )
         elif len(components) == 1:
             return components[0]
-        else:
-            logger.debug(
-                f"No component with name '{name_id_or_prefix}' "
-                f"exists. Trying to resolve as partial_id"
+
+        logger.debug(
+            f"No component with name '{name_id_or_prefix}' "
+            f"exists. Trying to resolve as partial_id"
+        )
+
+        filtered_comps = [
+            component
+            for component in components
+            if str(component.id).startswith(name_id_or_prefix)
+        ]
+        if len(filtered_comps) > 1:
+            raise KeyError(
+                f"The components listed above all share the provided "
+                f"prefix '{name_id_or_prefix}' on their ids. Please "
+                f"provide more characters to uniquely identify only one "
+                f"component."
             )
 
-            filtered_comps = [
-                component
-                for component in components
-                if str(component.id).startswith(name_id_or_prefix)
-            ]
-            if len(filtered_comps) > 1:
-                raise KeyError(
-                    f"The components listed above all share the provided "
-                    f"prefix '{name_id_or_prefix}' on their ids. Please "
-                    f"provide more characters to uniquely identify only one "
-                    f"component."
-                )
+        elif len(filtered_comps) == 1:
+            return filtered_comps[0]
 
-            elif len(filtered_comps) == 1:
-                return filtered_comps[0]
-            else:
-                raise KeyError(
-                    f"No component of type `{component_type}` with name or id "
-                    f"prefix '{name_id_or_prefix}' exists."
-                )
+        raise KeyError(
+            f"No component of type `{component_type}` with name or id "
+            f"prefix '{name_id_or_prefix}' exists."
+        )
 
     def _get_entity_by_id_or_name_or_prefix(
         self,

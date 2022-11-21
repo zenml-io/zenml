@@ -32,7 +32,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 from uuid import UUID
 
@@ -1124,12 +1123,19 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._fail_if_component_with_name_type_exists_for_user(
-                component=component, session=session
+                name=component.name,
+                component_type=component.type,
+                user_id=component.user,
+                project_id=component.project,
+                session=session,
             )
 
             if component.is_shared:
                 self._fail_if_component_with_name_type_already_shared(
-                    component=component, session=session
+                    name=component.name,
+                    component_type=component.type,
+                    project_id=component.project,
+                    session=session,
                 )
 
             # Create the component
@@ -1282,7 +1288,10 @@ class SqlZenStore(BaseZenStore):
             if component_update.name:
                 if existing_component.name != component_update.name:
                     self._fail_if_component_with_name_type_exists_for_user(
-                        component=component_update,
+                        name=component_update.name,
+                        component_type=existing_component.type,
+                        project_id=existing_component.project_id,
+                        user_id=existing_component.user_id,
                         session=session,
                     )
 
@@ -1295,7 +1304,10 @@ class SqlZenStore(BaseZenStore):
                     and component_update.is_shared
                 ):
                     self._fail_if_component_with_name_type_already_shared(
-                        component=component_update, session=session
+                        name=component_update.name or existing_component.name,
+                        component_type=existing_component.type,
+                        project_id=existing_component.project_id,
+                        session=session,
                     )
 
             existing_component.update(component_update=component_update)
@@ -1354,13 +1366,19 @@ class SqlZenStore(BaseZenStore):
 
     @staticmethod
     def _fail_if_component_with_name_type_exists_for_user(
-        component: ComponentRequestModel,
+        name: str,
+        component_type: StackComponentType,
+        project_id: UUID,
+        user_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a Component with same name/type exists.
 
         Args:
-            component: The Component
+            name: The name of the component
+            component_type: The type of the component
+            project_id: The ID of the project
+            user_id: The ID of the user
             session: The Session
 
         Returns:
@@ -1374,15 +1392,15 @@ class SqlZenStore(BaseZenStore):
         # owner) already exists
         existing_domain_component = session.exec(
             select(StackComponentSchema)
-            .where(StackComponentSchema.name == component.name)
-            .where(StackComponentSchema.project_id == component.project)
-            .where(StackComponentSchema.user_id == component.user)
-            .where(StackComponentSchema.type == component.type)
+            .where(StackComponentSchema.name == name)
+            .where(StackComponentSchema.project_id == project_id)
+            .where(StackComponentSchema.user_id == user_id)
+            .where(StackComponentSchema.type == component_type)
         ).first()
         if existing_domain_component is not None:
             raise StackComponentExistsError(
-                f"Unable to register '{component.type.value}' component "
-                f"with name '{component.name}': Found an existing "
+                f"Unable to register '{component_type.value}' component "
+                f"with name '{name}': Found an existing "
                 f"component with the same name and type in the same "
                 f" project, '{existing_domain_component.project.name}', "
                 f"owned by the same user, "
@@ -1390,35 +1408,40 @@ class SqlZenStore(BaseZenStore):
             )
         return None
 
+    @staticmethod
     def _fail_if_component_with_name_type_already_shared(
-        self,
-        component: ComponentRequestModel,
+        name: str,
+        component_type: StackComponentType,
+        project_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a Component with same name/type already shared.
 
         Args:
-            component: The Component
+            name: The name of the component
+            component_type: The type of the component
+            project_id: The ID of the project
             session: The Session
 
         Raises:
             StackComponentExistsError: If a component with the given name and
-                                       type is already shared by a user
+                type is already shared by a user
         """
         # Check if component with the same name, type is already shared
         # within the project
         existing_shared_component = session.exec(
             select(StackComponentSchema)
-            .where(StackComponentSchema.name == component.name)
-            .where(StackComponentSchema.project_id == component.project)
-            .where(StackComponentSchema.is_shared == component.is_shared)
-            .where(StackComponentSchema.type == component.type)
+            .where(StackComponentSchema.name == name)
+            .where(StackComponentSchema.project_id == project_id)
+            .where(StackComponentSchema.type == component_type)
+            .where(StackComponentSchema.is_shared == True)
         ).first()
         if existing_shared_component is not None:
             raise StackComponentExistsError(
-                f"Unable to shared component of type '{component.type.value}' "
-                f"with name '{component.name}': Found an existing shared "
-                f"component with the same name and type in this project."
+                f"Unable to shared component of type '{component_type.value}' "
+                f"with name '{name}': Found an existing shared "
+                f"component with the same name and type in project "
+                f"'{project_id}'."
             )
 
     # -----------------------
@@ -3529,14 +3552,11 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The run schema.
         """
-        return cast(
-            PipelineRunSchema,
-            self._get_schema_by_name_or_id(
-                object_name_or_id=run_name_or_id,
-                schema_class=PipelineRunSchema,
-                schema_name="run",
-                session=session,
-            ),
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=run_name_or_id,
+            schema_class=PipelineRunSchema,
+            schema_name="run",
+            session=session,
         )
 
     # MLMD Stuff

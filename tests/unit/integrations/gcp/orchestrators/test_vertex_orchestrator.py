@@ -203,7 +203,9 @@ def test_vertex_orchestrator_configure_container_resources(
         )()
 
         orchestrator._configure_container_resources(
-            container_op, resource_settings
+            container_op,
+            resource_settings,
+            node_selector_constraint=orchestrator.config.node_selector_constraint,
         )
 
     package_path = "unit_test_pipeline.json"

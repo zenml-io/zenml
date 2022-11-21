@@ -18,7 +18,7 @@ from secrets import token_hex
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field, SecretStr, root_validator
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
@@ -440,20 +440,24 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
 class UserUpdateModel(UserRequestModel):
     """"""
 
+    @root_validator
+    def user_email_updates(cls, values):
+        """"""
+        if values["email"] is not None:
+            if values["email_opted_in"] is None:
+                values["email_opted_in"] = True
 
-# ---- #
-# MISC #
-# ---- #
+            if values["email_opted_in"] is False:
+                raise ValueError(
+                    "You can not update the email of a user while setting "
+                    "email opt-in to False."
+                )
 
-
-class EmailOptInModel(BaseModel):
-    """Model for user deactivation requests."""
-
-    email: Optional[str] = Field(
-        default=None,
-        title="Email address associated with the account.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
-    )
-    email_opted_in: bool = Field(
-        title="Whether or not to associate the email with the user"
-    )
+        if values["email_opted_in"] is not None:
+            if values["email_opted_in"] is True:
+                if values["email"] is None:
+                    raise ValueError(
+                        "Please provide an email, when you are opting-in with "
+                        "your email."
+                    )
+        return values

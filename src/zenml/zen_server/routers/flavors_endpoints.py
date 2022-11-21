@@ -92,31 +92,6 @@ def get_flavor(
     return flavor
 
 
-@router.put(
-    "/{flavor_id}",
-    response_model=FlavorResponseModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def update_flavor(
-    flavor_id: UUID,
-    flavor: FlavorResponseModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> FlavorResponseModel:
-    """Updates a stack.
-
-    Args:
-        flavor_id: ID of the flavor.
-        flavor: Flavor to use for the update.
-
-    Returns:
-        The updated flavor.
-    """
-    flavor.id = flavor_id
-    updated_flavor = zen_store().update_flavor(flavor=flavor)
-    return updated_flavor
-
-
 @router.delete(
     "/{flavor_id}",
     responses={401: error_response, 404: error_response, 422: error_response},

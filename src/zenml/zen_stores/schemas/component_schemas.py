@@ -68,7 +68,9 @@ class StackComponentSchema(ShareableSchema, table=True):
         back_populates="components", link_model=StackCompositionSchema
     )
 
-    def update(self, component_update: ComponentUpdateModel):
+    def update(
+        self, component_update: ComponentUpdateModel
+    ) -> "StackComponentSchema":
         for field, value in component_update.dict(
             exclude_unset=True, exclude={"project", "user"}
         ).items():

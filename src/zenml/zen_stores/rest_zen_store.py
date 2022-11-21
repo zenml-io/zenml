@@ -40,7 +40,6 @@ from zenml.constants import (
     API,
     ARTIFACTS,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
-    EMAIL_ANALYTICS,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
     INFO,
@@ -78,7 +77,6 @@ from zenml.models import (
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
-    EmailOptInModel,
     FlavorRequestModel,
     FlavorResponseModel,
     PipelineRequestModel,
@@ -851,32 +849,6 @@ class RestZenStore(BaseZenStore):
             resource_id=user_name_or_id,
             route=USERS,
         )
-
-    def user_email_opt_in(
-        self,
-        user_name_or_id: Union[str, UUID],
-        user_opt_in_response: bool,
-        email: Optional[str] = None,
-    ) -> UserResponseModel:
-        """Persist user response to the email prompt.
-
-        Args:
-            user_name_or_id: The name or the ID of the user.
-            user_opt_in_response: Whether this email should be associated
-                with the user id in the telemetry
-            email: The users email
-
-        Returns:
-            The updated user.
-        """
-        request = EmailOptInModel(
-            email=email, email_opted_in=user_opt_in_response
-        )
-        route = f"{USERS}/{str(user_name_or_id)}{EMAIL_ANALYTICS}"
-
-        response_body = self.put(route, body=request)
-        user = UserResponseModel.parse_obj(response_body)
-        return user
 
     # -----
     # Teams

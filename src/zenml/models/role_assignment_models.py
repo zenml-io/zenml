@@ -14,7 +14,7 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, root_validator
 
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 
@@ -32,6 +32,21 @@ if TYPE_CHECKING:
 class RoleAssignmentBaseModel(BaseModel):
     """Domain model for role assignments."""
 
+    @root_validator(pre=True)
+    def check_team_or_user(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if not values.get("team") and not values.get("user"):
+            raise ValueError("Either team or user is required")
+        elif values.get("team") and values.get("user"):
+            raise ValueError("An assignment can not contain a user and team")
+        return values
+
+
+# ------- #
+# REQUEST #
+# ------- #
+
+
+class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
     project: Optional[UUID] = Field(
         None, title="The project that the role is limited to."
     )
@@ -44,24 +59,6 @@ class RoleAssignmentBaseModel(BaseModel):
 
     role: UUID = Field(title="The role.")
 
-    @validator("user", always=True)
-    @classmethod
-    def check_team_or_user(cls, user, values) -> UUID:
-        if not values.get("team") and not user:
-            raise ValueError("Either team or user is required")
-        elif values.get("team") and user:
-            raise ValueError(
-                "A role assignment can not contain a user and team"
-            )
-        return user
-
-
-# ------- #
-# REQUEST #
-# ------- #
-
-
-class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
     @root_validator
     def ensure_single_entity(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validates that either `user` or `team` is set.

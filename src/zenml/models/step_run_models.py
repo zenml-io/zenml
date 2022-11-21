@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.enums import ExecutionStatus
-from zenml.models.base_models import BaseResponseModel, update
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 
 # ---- #
@@ -25,7 +25,7 @@ class StepRunBaseModel(BaseModel):
     entrypoint_name: str
     parameters: Dict[str, str]
     step_configuration: Dict[str, Any]
-    docstring: str
+    docstring: Optional[str]
     num_outputs: Optional[int]
 
     # IDs in MLMD - needed for some metadata store methods
@@ -47,7 +47,7 @@ class StepRunResponseModel(StepRunBaseModel, BaseResponseModel):
 # ------- #
 
 
-class StepRunRequestModel(StepRunBaseModel, BaseResponseModel):
+class StepRunRequestModel(StepRunBaseModel, BaseRequestModel):
     """Domain Model representing a step in a pipeline run."""
 
 

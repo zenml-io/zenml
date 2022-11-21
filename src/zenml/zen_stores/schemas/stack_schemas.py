@@ -96,7 +96,7 @@ class StackSchema(ShareableSchema, table=True):
         self,
         stack_update: "StackUpdateModel",
         components: List["StackComponentSchema"],
-    ):
+    ) -> "StackSchema":
         for field, value in stack_update.dict(exclude_unset=True).items():
             if field == "components":
                 self.components = components

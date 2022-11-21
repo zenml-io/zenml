@@ -25,7 +25,6 @@ from typing import (
     List,
     NoReturn,
     Optional,
-    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -182,9 +181,9 @@ M = TypeVar("M", bound=BaseModel)
 
 
 def print_pydantic_models(
-    models: Sequence[M],
-    columns: Optional[Sequence[str]] = None,
-    exclude_columns: Sequence[str] = (),
+    models: List[M],
+    columns: Optional[List[str]] = None,
+    exclude_columns: List[str] = (),
     is_active: Optional[Callable[[M], bool]] = None,
 ) -> None:
     """Prints the list of Pydantic models in a table.
@@ -313,8 +312,8 @@ def print_stack_configuration(
     ]
     console.print(rich_table)
     declare(
-        f"Stack '{stack.name}' with id '{stack.id}' is owned by "
-        f"user '{stack.user.name}' and is "
+        f"Stack '{stack.name}' with id '{stack.id}' is "
+        f"{f'owned by user {stack.user.name} and is ' if stack.user else ''}"
         f"'{'shared' if stack.is_shared else 'private'}'."
     )
 

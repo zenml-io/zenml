@@ -15,7 +15,6 @@
 
 import argparse
 import socket
-from typing import Optional, cast
 
 from kubernetes import client as k8s_client
 
@@ -96,13 +95,9 @@ def main() -> None:
             step_name=pipeline_step_name
         )
 
-        settings = cast(
-            Optional[KubernetesOrchestratorSettings],
-            KubernetesOrchestratorSettings.parse_obj(
-                deployment_config.steps[pipeline_step_name].config.settings.get(
-                    "orchestrator.kubernetes", {}
-                )
-            ),
+        step_config = deployment_config.steps[pipeline_step_name].config
+        settings = KubernetesOrchestratorSettings.parse_obj(
+            step_config.settings.get("orchestrator.kubernetes", {})
         )
 
         # Define Kubernetes pod manifest.
