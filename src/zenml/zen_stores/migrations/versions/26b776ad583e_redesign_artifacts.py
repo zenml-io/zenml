@@ -173,6 +173,7 @@ def upgrade() -> None:
         )
         batch_op.drop_column("parent_step_id")
         batch_op.drop_column("producer_step_id")
+        batch_op.drop_column("is_cached")
 
     # Rename `step_id` to `step_run_id` in `step_run_input_artifact`
     with op.batch_alter_table(
@@ -206,10 +207,17 @@ def downgrade() -> None:
 
         # Create old parent and producer step columns
         batch_op.add_column(
-            sa.Column("producer_step_id", sa.CHAR(length=32), nullable=True)
+            sa.Column(
+                "producer_step_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+            )
         )
         batch_op.add_column(
-            sa.Column("parent_step_id", sa.CHAR(length=32), nullable=True)
+            sa.Column(
+                "parent_step_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+            )
+        )
+        batch_op.add_column(
+            sa.Column("is_cached", sa.Boolean(), nullable=False)
         )
 
         # Drop new artifact store link column

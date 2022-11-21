@@ -404,7 +404,6 @@ class ArtifactSchema(SQLModel, table=True):
     uri: str
     materializer: str
     data_type: str
-    is_cached: bool
 
     mlmd_id: Optional[int] = Field(default=None, nullable=True)
     mlmd_parent_step_id: Optional[int] = Field(default=None, nullable=True)
@@ -461,7 +460,7 @@ class ArtifactSchema(SQLModel, table=True):
             uri=self.uri,
             materializer=self.materializer,
             data_type=self.data_type,
-            is_cached=self.is_cached,
+            is_cached=parent_step_id == producer_step_id,
             mlmd_id=self.mlmd_id,
             mlmd_parent_step_id=self.mlmd_parent_step_id,
             mlmd_producer_step_id=self.mlmd_producer_step_id,
