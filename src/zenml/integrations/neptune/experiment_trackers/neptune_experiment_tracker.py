@@ -59,10 +59,7 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         object, so that it can be accessed later from other places
         e.g. step."""
 
-        settings = cast(
-            NeptuneExperimentTrackerSettings,
-            self.get_settings(info) or NeptuneExperimentTrackerSettings(),
-        )
+        settings = cast(NeptuneExperimentTrackerSettings, self.get_settings(info))
 
         self.run_state.token = self.config.api_token
         self.run_state.project = self.config.project
