@@ -190,7 +190,7 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run `zenml up` to see
 ```
 
 We will dive deeper into how to inspect the finished run within the chapter on
-[Accessing Pipeline Runs](./inspecting-pipeline-runs.md).
+[Accessing Pipeline Runs](./fetching-pipelines.md).
 
 ### Inspect your pipeline in the dashboard
 

@@ -29,6 +29,7 @@ from zenml.cli.stack import (
     describe_stack,
     export_stack,
     import_stack,
+    register_stack,
     remove_stack_component,
     rename_stack,
     share_stack,
@@ -36,7 +37,7 @@ from zenml.cli.stack import (
 )
 from zenml.client import Client
 from zenml.enums import StackComponentType
-from zenml.models import UserModel
+from zenml.models import StackModel, UserModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
@@ -93,6 +94,7 @@ def _create_local_secrets_manager(repo: Client):
         type=StackComponentType.SECRETS_MANAGER,
         user=repo.active_user.id,
         project=repo.active_project.id,
+        share_stack=False,
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -456,6 +458,61 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
         s for s in clean_client.stacks if s.name == "arias_new_stack"
     ][0]
     assert arias_stack.is_shared is False
+
+
+def test_create_shared_stack_when_component_is_private_fails(
+    clean_client: Client,
+) -> None:
+    """When sharing a stack all the components should also be shared, so if a
+    component is not shared this should fail."""
+    runner = CliRunner()
+    result = runner.invoke(
+        register_stack,
+        ["default2", "-o", "default", "-a", "default", "--share"],
+    )
+    assert result.exit_code == 1
+
+
+def test_add_private_component_to_shared_stack_fails(
+    clean_client: Client,
+) -> None:
+    """When sharing a stack all the components are also shared, so if a
+    component with the same name is already shared this should fail."""
+    runner = CliRunner()
+    local_secrets_manager = _create_local_secrets_manager(clean_client)
+    clean_client.register_stack_component(local_secrets_manager.to_model())
+    local_orchestrator = _create_local_orchestrator(clean_client)
+    clean_client.register_stack_component(local_orchestrator.to_model())
+    local_artifact_store = _create_local_artifact_store(clean_client)
+    clean_client.register_stack_component(local_artifact_store.to_model())
+
+    clean_client.register_stack(
+        stack=StackModel(
+            name="axls_stack",
+            components={
+                StackComponentType.ORCHESTRATOR: [local_orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [local_artifact_store.id],
+            },
+            user=clean_client.active_user.id,
+            project=clean_client.active_project.id,
+        )
+    )
+    result = runner.invoke(share_stack, ["axls_stack", "-r"])
+    assert result.exit_code == 0
+    result = runner.invoke(
+        update_stack, ["axls_stack", "-x", "arias_secrets_manager"]
+    )
+    assert result.exit_code == 1
+
+
+def test_share_stack_when_component_is_private_fails(
+    clean_client: Client,
+) -> None:
+    """When sharing a stack all the components are also shared, so if a
+    component with the same name is already shared this should fail."""
+    runner = CliRunner()
+    result = runner.invoke(share_stack, ["default"])
+    assert result.exit_code == 1
 
 
 def test_remove_component_from_nonexistent_stack_fails(clean_client) -> None:

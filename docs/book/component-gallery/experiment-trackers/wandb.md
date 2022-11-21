@@ -96,7 +96,7 @@ Experiment Tracker.
 {% endtabs %}
 
 For more, up-to-date information on the Weights & Biases Experiment Tracker
-implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker).
+implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker).
 
 ## How do you use it?
 
@@ -137,6 +137,8 @@ def tf_trainer(
     ...
 ```
 
+### Additional configuration
+
 For additional configuration of the Weights & Biases experiment tracker, you can pass
 `WandbExperimentTrackerSettings` to overwrite the [wandb.Settings](https://github.com/wandb/client/blob/master/wandb/sdk/wandb_settings.py#L353) or pass additional tags for your
 runs:
@@ -167,6 +169,11 @@ def my_step(
 
 Doing the above auto-magically logs all the data, metrics, and results within
 the step, no further action required!
+
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor.WandbExperimentTrackerSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
 
 You can also check out our examples pages for working examples that use the
 Weights & Biases Experiment Tracker in their stacks:

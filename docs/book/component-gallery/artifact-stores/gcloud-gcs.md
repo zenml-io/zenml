@@ -155,7 +155,7 @@ zenml secrets-manager secret register gcp_secret -s gcp \
 {% endtabs %}
 
 For more, up-to-date information on the GCS Artifact Store implementation and its
-configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.artifact_stores.gcp_artifact_store).
+configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.artifact_stores.gcp_artifact_store).
 
 ## How do you use it?
 

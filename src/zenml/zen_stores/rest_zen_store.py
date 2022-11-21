@@ -48,6 +48,7 @@ from zenml.constants import (
     INPUTS,
     LOGIN,
     METADATA_CONFIG,
+    METADATA_SYNC,
     PIPELINES,
     PROJECTS,
     ROLES,
@@ -1397,10 +1398,29 @@ class RestZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
+        self._sync_runs()
         return self._get_resource(
             resource_id=run_name_or_id,
             route=RUNS,
             resource_model=PipelineRunModel,
+        )
+
+    def get_or_create_run(
+        self, pipeline_run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
+
+        Args:
+            pipeline_run: The pipeline run to get or create.
+
+        Returns:
+            The pipeline run.
+        """
+        return self._create_project_scoped_resource(
+            resource=pipeline_run, route=RUNS, params={"get_if_exists": True}
         )
 
     def list_runs(
@@ -1429,6 +1449,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
+        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1468,31 +1489,32 @@ class RestZenStore(BaseZenStore):
     # Pipeline run steps
     # ------------------
 
-    def create_run_step(self, step: StepRunModel) -> StepRunModel:
-        """Creates a step.
+    def create_run_step(self, step_run: StepRunModel) -> StepRunModel:
+        """Creates a step run.
 
         Args:
-            step: The step to create.
+            step_run: The step run to create.
 
         Returns:
-            The created step.
+            The created step run.
         """
         return self._create_resource(
-            resource=step,
+            resource=step_run,
             route=STEPS,
         )
 
-    def get_run_step(self, step_id: UUID) -> StepRunModel:
-        """Get a step by ID.
+    def get_run_step(self, step_run_id: UUID) -> StepRunModel:
+        """Get a step run by ID.
 
         Args:
-            step_id: The ID of the step to get.
+            step_run_id: The ID of the step run to get.
 
         Returns:
-            The step.
+            The step run.
         """
+        self._sync_runs()
         return self._get_resource(
-            resource_id=step_id,
+            resource_id=step_run_id,
             route=STEPS,
             resource_model=StepRunModel,
         )
@@ -1508,6 +1530,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all run steps.
         """
+        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1516,25 +1539,27 @@ class RestZenStore(BaseZenStore):
             **filters,
         )
 
-    def update_run_step(self, step: StepRunModel) -> StepRunModel:
-        """Updates a step.
+    def update_run_step(self, step_run: StepRunModel) -> StepRunModel:
+        """Updates a step run.
 
         Args:
-            step: The step to update.
+            step_run: The step run to update.
 
         Returns:
-            The updated step.
+            The updated step run.
         """
         return self._update_resource(
-            resource=step,
+            resource=step_run,
             route=STEPS,
         )
 
-    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
-        """Get a list of inputs for a specific step.
+    def get_run_step_inputs(
+        self, step_run_id: UUID
+    ) -> Dict[str, ArtifactModel]:
+        """Get a list of inputs for a specific step run.
 
         Args:
-            step_id: The id of the step to get inputs for.
+            step_run_id: The id of the step run to get inputs for.
 
         Returns:
             A dict mapping artifact names to the input artifacts for the step.
@@ -1542,7 +1567,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             ValueError: if the response from the API is not a dict.
         """
-        body = self.get(f"{STEPS}/{str(step_id)}{INPUTS}")
+        body = self.get(f"{STEPS}/{str(step_run_id)}{INPUTS}")
         if not isinstance(body, dict):
             raise ValueError(
                 f"Bad API Response. Expected dict, got {type(body)}"
@@ -1585,6 +1610,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all artifacts.
         """
+        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1881,6 +1907,7 @@ class RestZenStore(BaseZenStore):
         route: str,
         request_model: Optional[Type[CreateRequest[AnyModel]]] = None,
         response_model: Optional[Type[CreateResponse[AnyModel]]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyModel:
         """Create a new resource.
 
@@ -1891,6 +1918,7 @@ class RestZenStore(BaseZenStore):
                 If not provided, the resource object itself will be used.
             response_model: Optional model to use to deserialize the response
                 body. If not provided, the resource class itself will be used.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The created resource.
@@ -1898,7 +1926,7 @@ class RestZenStore(BaseZenStore):
         request: BaseModel = resource
         if request_model is not None:
             request = request_model.from_model(resource)
-        response_body = self.post(f"{route}", body=request)
+        response_body = self.post(f"{route}", body=request, params=params)
         if response_model is not None:
             response = response_model.parse_obj(response_body)
             created_resource = response.to_model()
@@ -1916,6 +1944,7 @@ class RestZenStore(BaseZenStore):
         response_model: Optional[
             Type[CreateResponse[AnyProjectScopedModel]]
         ] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyProjectScopedModel:
         """Create a new project scoped resource.
 
@@ -1926,6 +1955,7 @@ class RestZenStore(BaseZenStore):
                 If not provided, the resource object itself will be used.
             response_model: Optional model to use to deserialize the response
                 body. If not provided, the resource class itself will be used.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The created resource.
@@ -1935,6 +1965,7 @@ class RestZenStore(BaseZenStore):
             route=f"{PROJECTS}/{str(resource.project)}{route}",
             request_model=request_model,
             response_model=response_model,
+            params=params,
         )
 
     def _get_resource(
@@ -2028,10 +2059,5 @@ class RestZenStore(BaseZenStore):
         self.delete(f"{route}/{str(resource_id)}")
 
     def _sync_runs(self) -> None:
-        """Syncs runs from MLMD.
-
-        Raises:
-            NotImplementedError: This internal method may not be called on a
-                `RestZenStore`.
-        """
-        raise NotImplementedError
+        """Syncs runs from MLMD."""
+        self.get(METADATA_SYNC)
