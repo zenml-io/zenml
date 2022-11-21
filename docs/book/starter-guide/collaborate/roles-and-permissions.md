@@ -15,13 +15,13 @@ The following global permissions are available within ZenML.
 **me**: Permission for a user to edit their own user metadata
 (username, password, etc.)
 
-To view the available permissions in the CLI run:
+To view the available permissions through the CLI simply run:
 
 `zenml permission list`
 
 # Roles
 
-Users are granted **Permissions** through **Roles**. You can see list all roles
+Users are granted **Permissions** through **Roles**. You can list all roles
 with their associated permissions by running.
 
 `zenml role list`
@@ -43,19 +43,24 @@ You can also create your own roles through the CLI:
 
 # Assigning roles to users
 
+Roles can be assigned to users through the CLI:
+
 `zenml role assign <ROLE_NAME> --user <USER_NAME>`
 
-alternatively during user creation 
+alternatively this can also be done during user creation 
 
 `zenml user create <USER_NAME> --role <ROLE_NAME>`
 
+{% hint style="info" %}
 By default, user creation through the UI will grant the user `admin` rights. 
 This default behaviour will change in the next iteration of the Dashboard as 
 the role will be selectable during user creation and in the User settings menu.
+{% endhint %}
 
 # Listing active role assignments
 
-If you want to inspect what roles have been assigned to which users, simply run:
+If you want to inspect which roles have been assigned to which users, 
+simply run:
 
 `zenml role assignment list`
 
