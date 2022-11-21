@@ -16,9 +16,8 @@
 import logging
 import os
 import re
-from datetime import datetime, timedelta
 from pathlib import Path, PurePath
-from threading import Lock, get_ident
+from threading import Lock
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -37,7 +36,7 @@ from pydantic import root_validator
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
-from sqlalchemy.sql.operators import is_, isnot
+from sqlalchemy.sql.operators import is_
 from sqlmodel import Session, SQLModel, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
@@ -47,12 +46,7 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
-from zenml.enums import (
-    ExecutionStatus,
-    LoggingLevels,
-    StackComponentType,
-    StoreType,
-)
+from zenml.enums import LoggingLevels, StackComponentType, StoreType
 from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
@@ -122,12 +116,7 @@ if TYPE_CHECKING:
         MetadataStoreClientConfig,
     )
 
-    from zenml.zen_stores.metadata_store import (
-        MetadataStore,
-        MLMDArtifactModel,
-        MLMDPipelineRunModel,
-        MLMDStepRunModel,
-    )
+    from zenml.zen_stores.metadata_store import MetadataStore
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -3748,5 +3737,3 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             ),
         )
-
-   
