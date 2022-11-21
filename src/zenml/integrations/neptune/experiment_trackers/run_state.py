@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Module containing objects allowing to store the state of neptune run across the project"""
+"""Module containing objects allowing to store the state of neptune run across the project."""
 
 import hashlib
 from typing import List

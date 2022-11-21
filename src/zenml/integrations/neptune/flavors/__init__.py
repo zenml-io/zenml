@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Neptune integration flavors"""
+"""Neptune integration flavors."""
 
 from zenml.integrations.neptune.flavors.neptune_experiment_tracker_flavor import (
     NeptuneExperimentTrackerConfig,

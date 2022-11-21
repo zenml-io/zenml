@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of Neptune Experiment Tracker"""
+"""Implementation of Neptune Experiment Tracker."""
 
 from typing import TYPE_CHECKING, Any, Optional, Set, Type, cast
 
@@ -30,12 +30,13 @@ if TYPE_CHECKING:
 
 class NeptuneExperimentTrackerConfig(BaseExperimentTrackerConfig):
     """Config for the Neptune experiment tracker.
+
     If attributes are left as None, neptune init_run
     will try to find the relevant values in the environment
 
-        Attributes:
-            project: name of the neptune project you want to log the metadata to
-            api_token: your secret api key to neptune
+    Attributes:
+        project: name of the neptune project you want to log the metadata to
+        api_token: your secret api key to neptune
     """
 
     project: Optional[str] = None
@@ -45,15 +46,13 @@ class NeptuneExperimentTrackerConfig(BaseExperimentTrackerConfig):
 class NeptuneExperimentTrackerSettings(BaseSettings):
     """Settings for the Neptune experiment tracker.
 
-        Attributes:
-            tags: Tags for the neptune run.
-    """
-
+    Attributes:
+        tags: Tags for the neptune run."""
     tags: Set[str] = set()
 
 
 class NeptuneExperimentTracker(BaseExperimentTracker):
-    """Track experiments using neptune.ai"""
+    """Track experiments using neptune.ai."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the experiment tracker.
