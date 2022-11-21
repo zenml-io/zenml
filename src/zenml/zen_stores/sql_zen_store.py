@@ -3078,12 +3078,13 @@ class SqlZenStore(BaseZenStore):
             # Create the step
             step_schema = StepRunSchema.from_create_model(step_run)
             session.add(step_schema)
-            session.commit()
 
             # Save parent step IDs into the database.
             for parent_step_id in step_run.parent_step_ids:
                 self._set_run_step_parent_step(
-                    child_id=step_run.id, parent_id=parent_step_id
+                    child_id=step_run.id,
+                    parent_id=parent_step_id,
+                    session=session,
                 )
 
             # Save input artifact IDs into the database.
@@ -3092,7 +3093,10 @@ class SqlZenStore(BaseZenStore):
                     run_step_id=step_run.id,
                     artifact_id=artifact_id,
                     name=input_name,
+                    session=session,
                 )
+
+            session.commit()
 
             return step_schema.to_model(
                 parent_step_ids=step_run.parent_step_ids,
@@ -3101,58 +3105,56 @@ class SqlZenStore(BaseZenStore):
             )
 
     def _set_run_step_parent_step(
-        self, child_id: UUID, parent_id: UUID
+        self, child_id: UUID, parent_id: UUID, session: Session
     ) -> None:
         """Sets the parent step run for a step run.
 
         Args:
             child_id: The ID of the child step run to set the parent for.
             parent_id: The ID of the parent step run to set a child for.
+            session: The database session to use.
 
         Raises:
             KeyError: if the child step run or parent step run doesn't exist.
         """
-        with Session(self.engine) as session:
-
-            # Check if the child step exists.
-            child_step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == child_id)
-            ).first()
-            if child_step_run is None:
-                raise KeyError(
-                    f"Unable to set parent step for step with ID "
-                    f"{child_id}: No step with this ID found."
-                )
-
-            # Check if the parent step exists.
-            parent_step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == parent_id)
-            ).first()
-            if parent_step_run is None:
-                raise KeyError(
-                    f"Unable to set parent step for step with ID "
-                    f"{child_id}: No parent step with ID {parent_id} "
-                    "found."
-                )
-
-            # Check if the parent step is already set.
-            assignment = session.exec(
-                select(StepRunParentsSchema)
-                .where(StepRunParentsSchema.child_id == child_id)
-                .where(StepRunParentsSchema.parent_id == parent_id)
-            ).first()
-            if assignment is not None:
-                return
-
-            # Save the parent step assignment in the database.
-            assignment = StepRunParentsSchema(
-                child_id=child_id, parent_id=parent_id
+        # Check if the child step exists.
+        child_step_run = session.exec(
+            select(StepRunSchema).where(StepRunSchema.id == child_id)
+        ).first()
+        if child_step_run is None:
+            raise KeyError(
+                f"Unable to set parent step for step with ID "
+                f"{child_id}: No step with this ID found."
             )
-            session.add(assignment)
-            session.commit()
+
+        # Check if the parent step exists.
+        parent_step_run = session.exec(
+            select(StepRunSchema).where(StepRunSchema.id == parent_id)
+        ).first()
+        if parent_step_run is None:
+            raise KeyError(
+                f"Unable to set parent step for step with ID "
+                f"{child_id}: No parent step with ID {parent_id} "
+                "found."
+            )
+
+        # Check if the parent step is already set.
+        assignment = session.exec(
+            select(StepRunParentsSchema)
+            .where(StepRunParentsSchema.child_id == child_id)
+            .where(StepRunParentsSchema.parent_id == parent_id)
+        ).first()
+        if assignment is not None:
+            return
+
+        # Save the parent step assignment in the database.
+        assignment = StepRunParentsSchema(
+            child_id=child_id, parent_id=parent_id
+        )
+        session.add(assignment)
 
     def _set_run_step_input_artifact(
-        self, run_step_id: UUID, artifact_id: UUID, name: str
+        self, run_step_id: UUID, artifact_id: UUID, name: str, session: Session
     ) -> None:
         """Sets an artifact as an input of a step run.
 
@@ -3160,47 +3162,45 @@ class SqlZenStore(BaseZenStore):
             run_step_id: The ID of the step run.
             artifact_id: The ID of the artifact.
             name: The name of the input in the step run.
+            session: The database session to use.
 
         Raises:
             KeyError: if the step run or artifact doesn't exist.
         """
-        with Session(self.engine) as session:
-
-            # Check if the step exists.
-            step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == run_step_id)
-            ).first()
-            if step_run is None:
-                raise KeyError(
-                    f"Unable to set input artifact: No step run with ID "
-                    f"'{run_step_id}' found."
-                )
-
-            # Check if the artifact exists.
-            artifact = session.exec(
-                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
-            ).first()
-            if artifact is None:
-                raise KeyError(
-                    f"Unable to set input artifact: No artifact with ID "
-                    f"'{artifact_id}' found."
-                )
-
-            # Check if the input is already set.
-            assignment = session.exec(
-                select(StepRunInputArtifactSchema)
-                .where(StepRunInputArtifactSchema.step_run_id == run_step_id)
-                .where(StepRunInputArtifactSchema.artifact_id == artifact_id)
-            ).first()
-            if assignment is not None:
-                return
-
-            # Save the input assignment in the database.
-            assignment = StepRunInputArtifactSchema(
-                step_run_id=run_step_id, artifact_id=artifact_id, name=name
+        # Check if the step exists.
+        step_run = session.exec(
+            select(StepRunSchema).where(StepRunSchema.id == run_step_id)
+        ).first()
+        if step_run is None:
+            raise KeyError(
+                f"Unable to set input artifact: No step run with ID "
+                f"'{run_step_id}' found."
             )
-            session.add(assignment)
-            session.commit()
+
+        # Check if the artifact exists.
+        artifact = session.exec(
+            select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+        ).first()
+        if artifact is None:
+            raise KeyError(
+                f"Unable to set input artifact: No artifact with ID "
+                f"'{artifact_id}' found."
+            )
+
+        # Check if the input is already set.
+        assignment = session.exec(
+            select(StepRunInputArtifactSchema)
+            .where(StepRunInputArtifactSchema.step_run_id == run_step_id)
+            .where(StepRunInputArtifactSchema.artifact_id == artifact_id)
+        ).first()
+        if assignment is not None:
+            return
+
+        # Save the input assignment in the database.
+        assignment = StepRunInputArtifactSchema(
+            step_run_id=run_step_id, artifact_id=artifact_id, name=name
+        )
+        session.add(assignment)
 
     def get_run_step(self, step_run_id: UUID) -> StepRunModel:
         """Get a step run by ID.
