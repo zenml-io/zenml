@@ -610,6 +610,7 @@ def sample_step_model() -> StepRunModel:
         parent_step_ids=[],
         input_artifacts={},
         step_configuration={},
+        caching_parameters={},
         status=ExecutionStatus.COMPLETED,
     )
 

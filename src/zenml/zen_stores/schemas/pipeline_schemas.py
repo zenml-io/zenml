@@ -172,6 +172,9 @@ class PipelineRunSchema(SQLModel, table=True):
 
     orchestrator_run_id: Optional[str] = Field(nullable=True)
 
+    enable_cache: Optional[bool] = Field(nullable=True)
+    start_time: Optional[datetime] = Field(nullable=True)
+    end_time: Optional[datetime] = Field(nullable=True)
     status: ExecutionStatus
     pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     num_steps: Optional[int]
@@ -206,6 +209,9 @@ class PipelineRunSchema(SQLModel, table=True):
             project_id=run.project,
             user_id=run.user,
             pipeline_id=run.pipeline_id,
+            enable_cache=run.enable_cache,
+            start_time=run.start_time,
+            end_time=run.end_time,
             status=run.status,
             pipeline_configuration=json.dumps(run.pipeline_configuration),
             num_steps=run.num_steps,
@@ -226,6 +232,7 @@ class PipelineRunSchema(SQLModel, table=True):
         """
         self.mlmd_id = model.mlmd_id
         self.status = model.status
+        self.end_time = model.end_time
         self.updated = datetime.now()
         return self
 
@@ -243,6 +250,9 @@ class PipelineRunSchema(SQLModel, table=True):
             project=self.project_id,
             user=self.user_id,
             pipeline_id=self.pipeline_id,
+            enable_cache=self.enable_cache,
+            start_time=self.start_time,
+            end_time=self.end_time,
             status=self.status,
             pipeline_configuration=json.loads(self.pipeline_configuration),
             num_steps=self.num_steps,
@@ -271,10 +281,16 @@ class StepRunSchema(SQLModel, table=True):
         nullable=False,
     )
 
+    enable_cache: Optional[bool] = Field(nullable=True)
+    start_time: Optional[datetime] = Field(nullable=True)
+    end_time: Optional[datetime] = Field(nullable=True)
     status: ExecutionStatus
     entrypoint_name: str
     parameters: str = Field(sa_column=Column(TEXT, nullable=False))
     step_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
+    caching_parameters: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     num_outputs: Optional[int]
 
@@ -298,10 +314,14 @@ class StepRunSchema(SQLModel, table=True):
             id=model.id,
             name=model.name,
             pipeline_run_id=model.pipeline_run_id,
+            enable_cache=model.enable_cache,
+            start_time=model.start_time,
+            end_time=model.end_time,
             status=model.status,
             entrypoint_name=model.entrypoint_name,
             parameters=json.dumps(model.parameters),
             step_configuration=json.dumps(model.step_configuration),
+            caching_parameters=json.dumps(model.caching_parameters),
             docstring=model.docstring,
             num_outputs=model.num_outputs,
             mlmd_id=model.mlmd_id,
@@ -317,6 +337,7 @@ class StepRunSchema(SQLModel, table=True):
             The updated `StepRunSchema`.
         """
         self.status = model.status
+        self.end_time = model.end_time
         self.updated = datetime.now()
         return self
 
@@ -336,16 +357,25 @@ class StepRunSchema(SQLModel, table=True):
         Returns:
             The created StepRunModel.
         """
+        if self.caching_parameters:
+            caching_parameters = json.loads(self.caching_parameters)
+        else:
+            caching_parameters = {}
+
         return StepRunModel(
             id=self.id,
             name=self.name,
             pipeline_run_id=self.pipeline_run_id,
             parent_step_ids=parent_step_ids,
             input_artifacts=input_artifacts,
+            enable_cache=self.enable_cache,
+            start_time=self.start_time,
+            end_time=self.end_time,
             status=self.status,
             entrypoint_name=self.entrypoint_name,
             parameters=json.loads(self.parameters),
             step_configuration=json.loads(self.step_configuration),
+            caching_parameters=caching_parameters,
             docstring=self.docstring,
             num_outputs=self.num_outputs,
             mlmd_id=self.mlmd_id,
