@@ -7,17 +7,7 @@ import neptune.new as neptune
 from zenml.client import Client
 from zenml.integrations.constants import NEPTUNE
 from zenml.steps.base_step import BaseStepMeta
-
-
-def singleton(class_):
-    instances = {}
-
-    def getinstance(*args, **kwargs):
-        if class_ not in instances:
-            instances[class_] = class_(*args, **kwargs)
-        return instances[class_]
-
-    return getinstance
+from zenml.utils.singleton import SingletonMetaClass
 
 
 class NoActiveRunException(Exception):
@@ -28,8 +18,7 @@ class InvalidExperimentTrackerSelected(Exception):
     pass
 
 
-@singleton
-class RunProvider:
+class RunProvider(metaclass=SingletonMetaClass):
     def __init__(self):
         self._active_run = None
         self._project = None
