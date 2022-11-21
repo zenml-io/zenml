@@ -12,7 +12,7 @@ The following global permissions are available within ZenML.
 
 **read**: Read permission on all resources.
 **write**: Write permission on all resources.
-**me**: Permission to for a user to edit their own user metadata
+**me**: Permission for a user to edit their own user metadata
 (username, password, etc.)
 
 To view the available permissions in the CLI run:
@@ -50,7 +50,7 @@ alternatively during user creation
 `zenml user create <USER_NAME> --role <ROLE_NAME>`
 
 By default, user creation through the UI will grant the user `admin` rights. 
-This default behaviour will change in teh next iteration of teh Dashboard as 
+This default behaviour will change in the next iteration of the Dashboard as 
 the role will be selectable during user creation and in the User settings menu.
 
 # Listing active role assignments
@@ -67,4 +67,4 @@ important for you.
 
 * Permissions and roles only become relevant if you are running through a 
 deployed ZenML Server. In local settings with a direct connection to a SQLite 
-Database user access is no limited/granted by roles.
+Database user access is not limited/granted by roles.
