@@ -251,7 +251,6 @@ This stack consists of the following components:
 
 * an AWS S3 artifact store
 * the local orchestrator
-* the local metadata store
 * a Seldon Core model deployer
 * a local secret manager used to store the credentials needed by Seldon Core to
 access the AWS S3 artifact store
@@ -307,8 +306,6 @@ This stack has all components running in the AWS cloud:
 
 * an AWS S3 artifact store
 * a Kubeflow orchestrator installed in an AWS EKS Kubernetes cluster
-* a metadata store that uses the same database as the Kubeflow deployment as
-a backend
 * an AWS ECR container registry
 * an AWS secret manager used to store the credentials needed by Seldon Core to
 access the AWS S3 artifact store

@@ -85,7 +85,6 @@ Kubernetes cluster.
 
 To run our pipeline on Tekton Pipelines deployed to GCP, we will create a new stack with these components:
 * The **artifact store** stores step outputs in a GCP Bucket. 
-* The **metadata store** stores metadata inside Cloud SQL backed MySQL database.
 * The docker images that are created to run your pipeline are stored in GCP **container registry**.
 * The **Tekton orchestrator** is responsible for running your ZenML pipeline in Tekton Pipelines. 
   We need to configure it with the right kubernetes context so ZenML can run pipelines in your GCP cluster. 
@@ -94,9 +93,6 @@ When running the upcoming commands, make sure to replace `<PATH_TO_YOUR_CONTAINE
 `<PATH_TO_YOUR_GCP_BUCKET>` with the actual URIs of your container registry and bucket. You will also need to replace
 `<NAME_OF_GCP_KUBERNETES_CONTEXT>` with the kubernetes context pointing to your gcp cluster.
 
-Finally, you would have to replace the MySQL parameters in the metadata store command. In this example, we have show-cased the insecure way to do it, but you might want to do it via [secrets](https://docs.zenml.io/component-gallery/secrets-managers).
-
-See [here](https://docs.zenml.io/mlops-stacks/metadata-stores/mysql) for more information about setting up a MySQL metadata store on the cloud.
 
 ```bash
 # In order to create the GCP artifact store, we need to install one additional ZenML integration:
@@ -115,7 +111,7 @@ zenml stack register gcp_tekton_stack \
     -c gcr_registry \
     --set
 
-# Forward the Tekton pipelines UI and metadata store so we can access them locally
+# Forward the Tekton pipelines UI so we can access them locally
 zenml stack up
 ```
 

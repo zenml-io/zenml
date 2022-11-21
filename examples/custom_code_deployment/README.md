@@ -117,7 +117,6 @@ This stack consists of the following components:
 
 * a GCP artifact store
 * the local orchestrator
-* the local metadata store
 * a KServe model deployer
 * a local secret manager used to store the credentials needed by KServe to
 access the GCP artifact store
@@ -338,7 +337,6 @@ This stack consists of the following components:
 
 * a GCP artifact store
 * the local orchestrator
-* the local metadata store
 * a Seldon Core model deployer
 * a local secrets manager used to store the credentials needed by Seldon Core to
 access the GCP artifact store

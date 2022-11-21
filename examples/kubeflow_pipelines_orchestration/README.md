@@ -111,8 +111,6 @@ Now with all the installation and initialization out of the way, all that's left
 to do is configuring our ZenML [stack](https://docs.zenml.io/getting-started/core-concepts). For
 this example, the stack we create consists of the following four parts:
 * The **local artifact store** stores step outputs on your hard disk. 
-* The **local metadata store** stores metadata like the pipeline name and step
-parameters inside a local SQLite database.
 * The docker images that are created to run your pipeline are stored in a local
 docker **container registry**.
 * The **Kubeflow orchestrator** is responsible for running your ZenML pipeline
@@ -239,26 +237,6 @@ The flow to get started for this example can be the following:
     zenml stack set <STACK_NAME>
     ```
 
-5. You should now create a secret for the CloudSQL instance that will allow ZenML to connect to it. Use the following command:
-
-    ```bash
-    zenml secrets-manager secret register gcp_mysql_secret --schema=mysql --user=<DB_USER> --password=<PWD> \
-      --ssl_ca=@</PATH/TO/DOWNLOADED/SERVER-CERT> \
-      --ssl_cert=@</PATH/TO/DOWNLOADED/CLIENT-CERT> \
-      --ssl_key=@</PATH/TO/DOWNLOADED/CLIENT-KEY>
-    ```
-
-    The values for the username and password can be obtained by running the following commands inside your recipe directory.
-
-    ```bash
-    terraform output metadata-db-username
-
-    terraform output metadata-db-password
-    ```
-
-    For the certificates, visit the Google Cloud Console to [create a certificate and download the files](https://cloud.google.com/sql/docs/mysql/configure-ssl-instance#:~:text=Cloud%20SQL%20Instances-,To%20open%20the%20Overview%20page%20of%20an%20instance%2C%20click%20the,Click%20Create%20client%20certificate.) to your system.
-
-
 You can now jump straight to the [section on running the pipeline](#e296b6efb88f-run-the-pipeline-1)!
 
 ### 🥞 Create a GCP Kubeflow Pipelines stack
@@ -287,7 +265,7 @@ zenml stack register gcp_kubeflow_stack \
     -c gcr_registry \
     --set
 
-# Forward the Kubeflow pipelines UI and metadata store so we can access them locally
+# Forward the Kubeflow pipelines UI so we can access them locally
 zenml stack up
 ```
 

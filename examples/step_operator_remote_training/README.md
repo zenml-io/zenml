@@ -64,8 +64,6 @@ Sagemaker.
 
 The stack will consist of:
 
-* The **local metadata store** which will track the configuration of your
-  executions.
 * The **local orchestrator** which will be executing your pipelines steps.
 * An **S3 artifact store** which will be responsible for storing the
   artifacts of your pipeline.
@@ -115,8 +113,6 @@ AzureML.
 
 The stack will consist of:
 
-* The **local metadata store** which will track the configuration of your
-  executions.
 * The **local orchestrator** which will be executing your pipelines steps.
 * An **azure artifact store** which will be responsible for storing the
   artifacts of your pipeline.
@@ -161,8 +157,6 @@ run on a managed training job managed on Vertex AI.
 
 The stack will consist of:
 
-* The **local metadata store** which will track the configuration of your
-  executions.
 * The **local orchestrator** which will be executing your pipelines steps.
 * A **GCP Bucket artifact store** which will be responsible for storing the
   artifacts of your pipeline.
