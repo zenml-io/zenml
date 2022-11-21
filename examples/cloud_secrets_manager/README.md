@@ -32,7 +32,7 @@ the [Azure Key Vault](https://azure.microsoft.com/en-us/services/key-vault/#prod
 
 ```shell
 # install CLI
-pip install zenml
+pip install "zenml[server]"
 
 # pull example
 zenml example pull cloud_secrets_manager

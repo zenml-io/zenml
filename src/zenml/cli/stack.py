@@ -15,7 +15,7 @@
 
 import getpass
 import json
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
 import click
@@ -28,9 +28,33 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import ProvisioningError
+from zenml.exceptions import (
+    IllegalOperationError,
+    ProvisioningError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
+
+if TYPE_CHECKING:
+    from zenml.models.stack_models import StackModel
+
+
+def _set_active_stack(stack: "StackModel") -> None:
+    """Sets the active stack.
+
+    Args:
+        stack: The stack to activate
+    """
+    client = Client()
+    scope = " repository" if client.root else " global"
+
+    with console.status(
+        f"Setting the{scope} active stack to " f"'{stack.name}'..."
+    ):
+        client.activate_stack(stack)
+        cli_utils.declare(f"Active{scope} stack set to: " f"'{stack.name}'")
 
 
 # Stacks
@@ -206,13 +230,25 @@ def register_stack(
 
         for c_type, name in type_component_mapping.items():
             if name:
-                stack_components[c_type] = [
-                    cli_utils.get_component_by_id_or_name_or_prefix(
-                        client=client,
-                        component_type=c_type,
-                        id_or_name_or_prefix=name,
-                    ).id
-                ]
+                component = cli_utils.get_component_by_id_or_name_or_prefix(
+                    client=client,
+                    component_type=c_type,
+                    id_or_name_or_prefix=name,
+                )
+                stack_components[c_type] = [component.id]
+                if share:
+                    if not component.is_shared:
+                        cli_utils.error(
+                            "You attempted to include a private "
+                            f"{c_type} {name} in a shared stack. This "
+                            f"is not supported. You can either share"
+                            f" the {c_type} with the following "
+                            f"command: \n `zenml {c_type.replace('_', '-')} "
+                            f"share`{component.id}`\n "
+                            f"or create the stack privately and "
+                            f"then share it and all of its components using: "
+                            f"\n `zenml stack share {stack_name} -r`"
+                        )
 
         # click<8.0.0 gives flags a default of None
         if share is None:
@@ -232,7 +268,7 @@ def register_stack(
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
     if set_stack:
-        client.activate_stack(stack=created_stack)
+        _set_active_stack(created_stack)
 
 
 @stack.command(
@@ -398,17 +434,29 @@ def update_stack(
 
         for c_type, name in type_component_mapping.items():
             if name:
-                stack_components[c_type] = [
-                    cli_utils.get_component_by_id_or_name_or_prefix(
-                        client=client,
-                        component_type=c_type,
-                        id_or_name_or_prefix=name,
-                    ).id
-                ]
+                component = cli_utils.get_component_by_id_or_name_or_prefix(
+                    client=client,
+                    component_type=c_type,
+                    id_or_name_or_prefix=name,
+                )
+                if stack_to_update.is_shared and not component.is_shared:
+                    cli_utils.error(
+                        "You attempted to include a private {c_type} "
+                        "`{name}` in a shared stack. This "
+                        f"is not supported. Set the {c_type} to "
+                        f"shared like this before updating this stack "
+                        f" \n `zenml {c_type.replace('_', '-')} "
+                        f"share {component.id}`\n."
+                    )
+                else:
+                    stack_components[c_type] = [component.id]
 
         stack_to_update.components = stack_components
 
-        client.update_stack(stack_to_update)
+        try:
+            client.update_stack(stack_to_update)
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(
             f"Stack `{stack_to_update.name}` successfully " f"updated!"
         )
@@ -420,13 +468,21 @@ def update_stack(
     help="Share a stack and all its components.",
 )
 @click.argument("stack_name_or_id", type=str, required=False)
+@click.option(
+    "--recursive",
+    "-r",
+    "recursive",
+    is_flag=True,
+    help="Recursively also share all stack components if they are private.",
+)
 def share_stack(
-    stack_name_or_id: Optional[str],
+    stack_name_or_id: Optional[str], recursive: bool = False
 ) -> None:
     """Share a stack with your team.
 
     Args:
         stack_name_or_id: Name or id of the stack to share.
+        recursive: Recursively also share all components
     """
     cli_utils.print_active_config()
 
@@ -448,24 +504,36 @@ def share_stack(
     else:
         for c_t, c in stack_to_share.to_hydrated_model().components.items():
             only_component = c[0]  # For future compatibility
-            # with console.status(
-            #     f"Sharing component `{only_component.name}`" f"...\n"
-            # ):
-            cli_utils.declare(
-                f"A Stack can only be shared when all its "
-                f"components are also shared. Component "
-                f"'{only_component.name}' is also set to "
-                f"shared."
-            )
 
-            only_component.is_shared = True
-            client.update_stack_component(component=only_component)
+            if not only_component.is_shared and not recursive:
+                cli_utils.error(
+                    f"A Stack can only be shared when all its "
+                    f"components are also shared. Component "
+                    f"{c_t}:{only_component.name} is not shared. Set the "
+                    f"{c_t} to shared like this and then try re-sharing your "
+                    f"stack:\n `zenml {c_t.replace('_', '-')} share {only_component.id}`\n. "
+                    f"Alternatively, you can rerun your command with `-r` to recursively "
+                    f"share all components within the stack."
+                )
+            with console.status(
+                f"Sharing component `{only_component.name}`" f"...\n"
+            ):
+                only_component.is_shared = True
+                try:
+                    client.update_stack_component(component=only_component)
+                except (
+                    IllegalOperationError,
+                    StackComponentExistsError,
+                ) as err:
+                    cli_utils.error(str(err))
 
         with console.status(f"Sharing stack `{stack_to_share.name}` ...\n"):
 
             stack_to_share.is_shared = True
-
-            client.update_stack(stack_to_share)
+            try:
+                client.update_stack(stack_to_share)
+            except (IllegalOperationError, StackExistsError) as err:
+                cli_utils.error(str(err))
             cli_utils.declare(
                 f"Stack `{stack_to_share.name}` successfully shared!"
             )
@@ -636,7 +704,10 @@ def remove_stack_component(
                 StackComponentType.DATA_VALIDATOR, None
             )
 
-        client.update_stack(stack_to_update)
+        try:
+            client.update_stack(stack_to_update)
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(f"Stack `{stack_name_or_id}` successfully updated!")
 
 
@@ -677,7 +748,10 @@ def rename_stack(
             pass
 
         stack_to_rename.name = new_stack_name
-        client.update_stack(stack_to_rename)
+        try:
+            client.update_stack(stack_to_rename)
+        except IllegalOperationError as err:
+            cli_utils.error(str(err))
         cli_utils.declare(
             f"Stack `{current_stack_name_or_id}` successfully renamed to `"
             f"{new_stack_name}`!"
@@ -793,8 +867,10 @@ def delete_stack(
                 f"active. Please choose a different active stack first by "
                 f"running 'zenml stack set STACK'."
             )
-
-    Client().deregister_stack(stack_to_delete)
+    try:
+        Client().deregister_stack(stack_to_delete)
+    except IllegalOperationError as err:
+        cli_utils.error(str(err))
     cli_utils.declare(f"Deleted stack '{stack_to_delete.name}'.")
 
 
@@ -807,7 +883,6 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
         stack_name_or_id: Name of the stack to set as active.
     """
     cli_utils.print_active_config()
-    scope = " repository" if Client().root else " global"
     client = Client()
 
     try:
@@ -817,14 +892,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
     except KeyError as e:
         cli_utils.error(str(e))
     else:
-        with console.status(
-            f"Setting the{scope} active stack to "
-            f"'{stack_to_set_active.name}'..."
-        ):
-            client.activate_stack(stack_to_set_active)
-            cli_utils.declare(
-                f"Active{scope} stack set to: " f"'{stack_to_set_active.name}'"
-            )
+        _set_active_stack(stack_to_set_active)
 
 
 @stack.command("get")
@@ -1034,6 +1102,7 @@ def _import_stack_component(
 
     registered_component = client.register_stack_component(
         ComponentModel(
+            id=UUID(component_id),
             user=client.active_user.id,
             project=client.active_project.id,
             type=component_type,
@@ -1137,15 +1206,22 @@ def import_stack(
 @stack.command("copy", help="Copy a stack to a new stack name.")
 @click.argument("source_stack_name_or_id", type=str, required=True)
 @click.argument("target_stack", type=str, required=True)
+@click.option(
+    "--share",
+    "share",
+    is_flag=True,
+    help="Use this flag to share this stack with other users.",
+    type=click.BOOL,
+)
 def copy_stack(
-    source_stack_name_or_id: str,
-    target_stack: str,
+    source_stack_name_or_id: str, target_stack: str, share: bool = False
 ) -> None:
     """Copy a stack.
 
     Args:
         source_stack_name_or_id: The name or id of the stack to copy.
         target_stack: Name of the copied stack.
+        share: Share the stack with other users.
     """
     track_event(AnalyticsEvent.COPIED_STACK)
 
@@ -1176,6 +1252,12 @@ def copy_stack(
         stack_to_copy.name = target_stack
         stack_to_copy.user = client.active_user.id
         stack_to_copy.project = client.active_project.id
+
+        # click<8.0.0 gives flags a default of None
+        if share is None:
+            share = False
+
+        stack_to_copy.is_shared = share
 
         from zenml.models import StackModel
 

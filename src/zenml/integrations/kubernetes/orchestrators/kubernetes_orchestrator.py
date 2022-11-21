@@ -30,16 +30,19 @@
 # inspired by the Kubernetes dag runner implementation of tfx
 """Kubernetes-native orchestrator."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
+import os
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
+from zenml.config.base_settings import BaseSettings
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
+    KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
@@ -51,6 +54,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
@@ -59,6 +63,8 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
+
+ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
 
 
 class KubernetesOrchestrator(BaseOrchestrator):
@@ -95,6 +101,15 @@ class KubernetesOrchestrator(BaseOrchestrator):
             The configuration.
         """
         return cast(KubernetesOrchestratorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Kubernetes orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return KubernetesOrchestratorSettings
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
@@ -253,9 +268,9 @@ class KubernetesOrchestrator(BaseOrchestrator):
                     step.config.name,
                 )
 
-        run_name = deployment.run_name
         pipeline_name = deployment.pipeline.name
-        pod_name = kube_utils.sanitize_pod_name(run_name)
+        orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
+        pod_name = kube_utils.sanitize_pod_name(orchestrator_run_name)
 
         # Get Docker image name (for all pods).
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
@@ -266,9 +281,13 @@ class KubernetesOrchestrator(BaseOrchestrator):
             KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_command()
         )
         args = KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
-            run_name=run_name,
+            run_name=orchestrator_run_name,
             image_name=image_name,
             kubernetes_namespace=self.config.kubernetes_namespace,
+        )
+
+        settings = cast(
+            KubernetesOrchestratorSettings, self.get_settings(deployment)
         )
 
         # Authorize pod to run Kubernetes commands inside the cluster.
@@ -291,13 +310,14 @@ class KubernetesOrchestrator(BaseOrchestrator):
             cron_expression = deployment.schedule.cron_expression
             cron_job_manifest = build_cron_job_manifest(
                 cron_expression=cron_expression,
-                run_name=run_name,
+                run_name=orchestrator_run_name,
                 pod_name=pod_name,
                 pipeline_name=pipeline_name,
                 image_name=image_name,
                 command=command,
                 args=args,
                 service_account_name=service_account_name,
+                settings=settings,
             )
             self._k8s_batch_api.create_namespaced_cron_job(
                 body=cron_job_manifest,
@@ -311,13 +331,14 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
         # Create and run the orchestrator pod.
         pod_manifest = build_pod_manifest(
-            run_name=run_name,
+            run_name=orchestrator_run_name,
             pod_name=pod_name,
             pipeline_name=pipeline_name,
             image_name=image_name,
             command=command,
             args=args,
             service_account_name=service_account_name,
+            settings=settings,
         )
         self._k8s_core_api.create_namespaced_pod(
             namespace=self.config.kubernetes_namespace,
@@ -325,13 +346,14 @@ class KubernetesOrchestrator(BaseOrchestrator):
         )
 
         # Wait for the orchestrator pod to finish and stream logs.
-        if self.config.synchronous:
+        if settings.synchronous:
             logger.info("Waiting for Kubernetes orchestrator pod...")
             kube_utils.wait_pod(
                 core_api=self._k8s_core_api,
                 pod_name=pod_name,
                 namespace=self.config.kubernetes_namespace,
                 exit_condition_lambda=kube_utils.pod_is_done,
+                timeout_sec=settings.timeout,
                 stream_logs=True,
             )
         else:
@@ -340,4 +362,22 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 f"`{self.config.kubernetes_namespace}:{pod_name}`. "
                 f"Run the following command to inspect the logs: "
                 f"`kubectl logs {pod_name} -n {self.config.kubernetes_namespace}`."
+            )
+
+    def get_orchestrator_run_id(self) -> str:
+        """Returns the active orchestrator run id.
+
+        Raises:
+            RuntimeError: If the environment variable specifying the run id
+                is not set.
+
+        Returns:
+            The orchestrator run id.
+        """
+        try:
+            return os.environ[ENV_ZENML_KUBERNETES_RUN_ID]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to read run id from environment variable "
+                f"{ENV_ZENML_KUBERNETES_RUN_ID}."
             )

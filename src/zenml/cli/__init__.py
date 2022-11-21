@@ -82,7 +82,7 @@ zenml init --path /path/to/dir
 If you wish to delete all data relating to your project from the
 directory, use the ``zenml clean`` command. This will:
 
--  delete all pipelines
+-  delete all pipelines and pipeline runs
 -  delete all artifacts
 -  delete all metadata
 
@@ -551,7 +551,7 @@ zenml model-deployer models delete <UUID>
 Administering the Stack
 -----------------------
 
-The stack is a grouping of your artifact store, your orchestrator. and other
+The stack is a grouping of your artifact store, your orchestrator, and other
 optional MLOps tools like experiment trackers or model deployers.
 With the ZenML tool, switching from a local stack to a distributed cloud
 environment can be accomplished with just a few CLI commands.
@@ -707,6 +707,59 @@ following command:
 
 ```shell
 zenml stack register-secrets [<STACK_NAME>]
+```
+
+Administering your Pipelines
+----------------------------
+
+ZenML provides several CLI commands to help you administer your pipelines and
+pipeline runs.
+
+After you have run some pipelines by by executing the corresponding Python 
+scripts, you can list all pipelines via:
+
+```bash
+zenml pipeline list
+```
+
+Since every pipeline run creates a new pipeline by default, you might
+occasionally want to delete a pipeline, which you can do via:
+
+```bash
+zenml pipeline delete PIPELINE_NAME
+```
+
+This will delete the pipeline and change all corresponding pipeline runs to
+become unlisted (not linked to any pipeline).
+
+To list all pipeline runs that you have executed, use:
+
+```bash
+zenml pipeline runs list
+```
+
+These are currently read-only and cannot be modified or deleted.
+
+If you would like to switch to a different ZenML deployment 
+(e.g., when switching from a local deployment to a cloud deployment), you can
+migrate your existing pipeline runs by exporting them to a YAML file via:
+
+```bash
+zenml pipeline runs export FILENAME.yaml
+```
+
+This will create a FILENAME.yaml containing all your pipeline runs, which, after
+connecting to the new ZenML deployment, you can then import again like this:
+
+```bash
+zenml pipeline runs import FILENAME.yaml
+```
+
+If you would like to migrate old pipeline runs from a legacy metadata store from
+ZenML versions < 0.20.0, you can do so by running the following command:
+
+```bash
+zenml pipeline runs migrate METADATA_STORE_PATH
 ```
 
 Managing the local ZenML Dashboard
@@ -943,6 +996,12 @@ or
 zenml user delete USER_NAME
 ```
 
+A freshly created user will by default be assigned the admin role. This
+behavior can be overwritten:
+```bash
+zenml user create USER_NAME --role guest
+```
+
 To see a list of all users, run:
 ```bash
 zenml user list
@@ -973,16 +1032,27 @@ To see a list of all teams, run:
 zenml team list
 ```
 
-A role groups permissions and can be assigned to users or teams. To create or
-delete a role, run one of the following commands:
+A role groups permissions to resources. Currently, there are the following
+globally scoped roles to choose from: 'write', 'read' and 'me'. To create
+a role, run one of the following commands:
 ```bash
-zenml role create ROLE_NAME
+zenml role create ROLE_NAME --write --read --me
+zenml role create ROLE_NAME --read
+```
+
+To delete a role run:
+```bash
 zenml role delete ROLE_NAME
 ```
 
 To see a list of all roles, run:
 ```bash
 zenml role list
+```
+
+You can also update the role name and the attached permissions of a role:
+```bash
+zenml role update [-n <NEW_NAME>| -r <PERMISSION_TO_REMOVE>| -a <PERMISSION_TO_ADD>]
 ```
 
 If you want to assign or revoke a role from users or teams, you can run
@@ -1003,6 +1073,10 @@ You can see a list of all current role assignments by running:
 zenml role assignment list
 ```
 
+At any point you may inspect all available permissions:
+```bash
+zenml permission list
+```
 
 Deploying ZenML to the cloud
 ----------------------------

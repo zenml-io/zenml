@@ -85,13 +85,13 @@ ZenML, depending on which type of Azure credentials you want to use:
 
 * an Azure connection string
 * an Azure account key
-* the client ID, client secret and tenant ID of the Azure service principle
+* the client ID, client secret and tenant ID of the Azure service principal
 
 For more information on how to retrieve information about your Azure Storage
 Account and Access Key or connection string, please refer to this
 [Azure guide](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python?tabs=environment-variable-windows#copy-your-credentials-from-the-azure-portal).
 
-For information on how to configure an Azure service principle, please consult
+For information on how to configure an Azure service principal, please consult
 the [Azure documentation](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal).
 
 {% tabs %}
@@ -182,7 +182,7 @@ zenml secrets-manager secret register az_secret -s azure \
 {% endtabs %}
 
 For more, up-to-date information on the Azure Artifact Store implementation and
-its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-azure/#zenml.integrations.azure.artifact_stores).
+its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-azure/#zenml.integrations.azure.artifact_stores).
 
 ## How do you use it?
 

@@ -13,9 +13,13 @@ resource "helm_release" "zen-server" {
 
 
   set {
-    name = "image.tag"
+    name = "zenml.image.tag"
     value = var.zenmlserver_image_tag
   }
+  set {
+    name = "zenml.initImage.tag"
+    value = var.zenmlinit_image_tag
+  } 
   set {
     name  = "zenml.defaultUsername"
     value = var.username
@@ -39,50 +43,50 @@ resource "helm_release" "zen-server" {
     value = var.ingress_path != ""? "/${var.ingress_path}": ""
   }
   set {
-    name = "ingress.path"
+    name = "zenml.ingress.path"
     value = var.ingress_path != ""? "/${var.ingress_path}/?(.*)": "/"
   }
   set {
-    name = "ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/rewrite-target"
+    name = "zenml.ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/rewrite-target"
     value = var.ingress_path != ""? "/$1": ""
   }
   set {
-    name = "ingress.host"
+    name = "zenml.ingress.host"
     value = var.create_ingress_controller? "${data.kubernetes_service.ingress-controller[0].status.0.load_balancer.0.ingress.0.hostname}" : var.ingress_controller_hostname
   }
   set {
-    name = "ingress.tls.enabled"
+    name = "zenml.ingress.tls.enabled"
     value = var.ingress_tls
   }
   set {
-    name = "ingress.tls.generateCerts"
+    name = "zenml.ingress.tls.generateCerts"
     value = var.ingress_tls_generate_certs
   }
   set {
-    name = "ingress.tls.secretName"
+    name = "zenml.ingress.tls.secretName"
     value = "${var.name}-${var.ingress_tls_secret_name}"
   }
 
   # set parameters for the mysql database
   set {
     name  = "zenml.database.url"
-    value = var.create_rds? "mysql://${module.metadata_store[0].db_instance_username}:${module.metadata_store[0].db_instance_password}@${module.metadata_store[0].db_instance_address}:3306/${var.db_name}" : var.database_url
+    value = var.deploy_db? "mysql://${module.metadata_store[0].db_instance_username}:${module.metadata_store[0].db_instance_password}@${module.metadata_store[0].db_instance_address}:3306/${var.db_name}" : var.database_url
   }
   set {
     name  = "zenml.database.sslCa"
-    value = var.create_rds? "" : var.database_ssl_ca
+    value = var.deploy_db? "" : var.database_ssl_ca
   }
   set {
     name  = "zenml.database.sslCert"
-    value = var.create_rds? "" : var.database_ssl_cert
+    value = var.deploy_db? "" : var.database_ssl_cert
   }
   set {
     name  = "zenml.database.sslKey"
-    value = var.create_rds? "" : var.database_ssl_key
+    value = var.deploy_db? "" : var.database_ssl_key
   }
   set {
     name  = "zenml.database.sslVerifyServerCert"
-    value = var.create_rds? false : var.database_ssl_verify_server_cert
+    value = var.deploy_db? false : var.database_ssl_verify_server_cert
   }
   depends_on = [
     resource.kubernetes_namespace.zen-server

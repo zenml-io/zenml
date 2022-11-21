@@ -32,7 +32,6 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
 
     Attributes:
         region: The AWS region to deploy to.
-        create_rds: Whether to create an RDS database.
         rds_name: The name of the RDS instance to create
         db_name: Name of RDS database to create.
         db_type: Type of RDS database to create.
@@ -42,7 +41,6 @@ class AWSServerDeploymentConfig(TerraformServerDeploymentConfig):
     """
 
     region: str = "eu-west-1"
-    create_rds: bool = True
     rds_name: str = "zenmlserver"
     db_name: str = "zenmlserver"
     db_type: str = "mysql"

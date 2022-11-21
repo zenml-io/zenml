@@ -25,7 +25,7 @@ zenml annotator register label_studio_annotator \
 ## Register missing secrets for your stack
 
 When using components with secret references in your stack, you need to make sure
-that the stack contains a [secrets manager](../../mlops-stacks/secrets-managers/secrets-managers.md)
+that the stack contains a [secrets manager](../../component-gallery/secrets-managers/secrets-managers.md)
 and all the referenced secrets exist in this secrets manager. To make this process easier, you can
 use the following CLI command to interactively register all secrets for a stack:
 
@@ -107,8 +107,7 @@ will not work in combination with a remote orchestrator.
 
 
 {% hint style="info" %}
-To read a more detailed guide about how Secret Managers function in ZenML,
-[click here](../../component-gallery/secrets-managers/).
+Read a more detailed guide about how Secret Managers work in [ZenML](../../component-gallery/secrets-managers/secrets-managers.md)
 {% endhint %}
 
 ## Secret validation

@@ -54,4 +54,4 @@ A concrete example of using the GitHub secrets manager can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/github_actions_orchestration).
 
 For more information and a full list of configurable attributes of the GitHub 
-secrets manager, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-github/#zenml.integrations.github.secrets_managers.github_secrets_manager.GitHubSecretsManager).
+secrets manager, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-github/#zenml.integrations.github.secrets_managers.github_secrets_manager.GitHubSecretsManager).

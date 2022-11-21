@@ -33,6 +33,7 @@ import os
 import time
 import types
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -41,8 +42,10 @@ from typing import (
     List,
     Optional,
     Type,
+    Union,
     cast,
 )
+from uuid import UUID
 
 from google.protobuf import json_format
 from pydantic import root_validator
@@ -70,12 +73,13 @@ from tfx.types.artifact import Artifact
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.models import PipelineRunModel
 from zenml.orchestrators.utils import get_cache_status
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
-from zenml.utils import proto_utils, source_utils, string_utils
+from zenml.utils import proto_utils, source_utils, string_utils, uuid_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -209,6 +213,17 @@ class BaseOrchestrator(StackComponent, ABC):
         return cast(BaseOrchestratorConfig, self._config)
 
     @abstractmethod
+    def get_orchestrator_run_id(self) -> str:
+        """Returns the run id of the active orchestrator run.
+
+        Important: This needs to be a unique ID and return the same value for
+        all steps of a pipeline run.
+
+        Returns:
+            The orchestrator run id.
+        """
+
+    @abstractmethod
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
@@ -272,14 +287,11 @@ class BaseOrchestrator(StackComponent, ABC):
 
         return result
 
-    def run_step(
-        self, step: "Step", run_name: Optional[str] = None
-    ) -> Optional[data_types.ExecutionInfo]:
+    def run_step(self, step: "Step") -> Optional[data_types.ExecutionInfo]:
         """This sets up a component launcher and executes the given step.
 
         Args:
             step: The step to be executed
-            run_name: The unique run name
 
         Returns:
             The execution info of the step.
@@ -292,12 +304,13 @@ class BaseOrchestrator(StackComponent, ABC):
         step_name = step.config.name
         pb2_pipeline = self._active_pb2_pipeline
 
-        run_name = run_name or self._active_deployment.run_name
+        run_model = self._create_or_reuse_run()
+
         # Substitute the runtime parameter to be a concrete run_id, it is
         # important for this to be unique for each run.
         runtime_parameter_utils.substitute_runtime_parameter(
             pb2_pipeline,
-            {PIPELINE_RUN_ID_PARAMETER_NAME: run_name},
+            {PIPELINE_RUN_ID_PARAMETER_NAME: run_model.name},
         )
 
         # Extract the deployment_configs and use it to access the executor and
@@ -314,9 +327,6 @@ class BaseOrchestrator(StackComponent, ABC):
 
         metadata_connection_cfg = Client().zen_store.get_metadata_config()
 
-        # At this point the active metadata store is queried for the
-        # metadata_connection
-        stack = Client().active_stack
         executor_operator = self._get_executor_operator(
             step_operator=step.config.step_operator
         )
@@ -327,12 +337,13 @@ class BaseOrchestrator(StackComponent, ABC):
         step_run_info = StepRunInfo(
             config=step.config,
             pipeline=self._active_deployment.pipeline,
-            run_name=run_name,
+            run_name=run_model.name,
         )
 
         # The protobuf node for the current step is loaded here.
         pipeline_node = self._get_node_with_step_name(step_name)
 
+        stack = Client().active_stack
         proto_utils.add_mlmd_contexts(
             pipeline_node=pipeline_node,
             step=step,
@@ -359,6 +370,9 @@ class BaseOrchestrator(StackComponent, ABC):
             stack.prepare_step_run(info=step_run_info)
             try:
                 execution_info = self._execute_step(component_launcher)
+            except:  # noqa: E722
+                self._publish_failed_run(run_name_or_id=run_model.name)
+                raise
             finally:
                 stack.cleanup_step_run(info=step_run_info)
 
@@ -404,6 +418,65 @@ class BaseOrchestrator(StackComponent, ABC):
         """Cleans up the active run."""
         self._active_deployment = None
         self._active_pb2_pipeline = None
+
+    def get_run_id_for_orchestrator_run_id(
+        self, orchestrator_run_id: str
+    ) -> UUID:
+        """Generates a run ID from an orchestrator run id.
+
+        Args:
+            orchestrator_run_id: The orchestrator run id.
+
+        Returns:
+            The run id generated from the orchestrator run id.
+        """
+        run_id_seed = f"{self.id}-{orchestrator_run_id}"
+        return uuid_utils.generate_uuid_from_string(run_id_seed)
+
+    def _create_or_reuse_run(self) -> PipelineRunModel:
+        """Creates a run or reuses an existing one.
+
+        Returns:
+            The created or existing run.
+        """
+        assert self._active_deployment
+        orchestrator_run_id = self.get_orchestrator_run_id()
+
+        run_id = self.get_run_id_for_orchestrator_run_id(orchestrator_run_id)
+
+        date = datetime.now().strftime("%Y_%m_%d")
+        time = datetime.now().strftime("%H_%M_%S_%f")
+        run_name = self._active_deployment.run_name.format(date=date, time=time)
+
+        logger.debug("Creating run with ID: %s, name: %s", run_id, run_name)
+
+        client = Client()
+        run_model = PipelineRunModel(
+            id=run_id,
+            name=run_name,
+            orchestrator_run_id=orchestrator_run_id,
+            user=client.active_user.id,
+            project=client.active_project.id,
+            stack_id=self._active_deployment.stack_id,
+            pipeline_id=self._active_deployment.pipeline_id,
+            status=ExecutionStatus.RUNNING,
+            pipeline_configuration=self._active_deployment.pipeline.dict(),
+            num_steps=len(self._active_deployment.steps),
+        )
+
+        return client.zen_store.get_or_create_run(run_model)
+
+    @staticmethod
+    def _publish_failed_run(run_name_or_id: Union[str, UUID]) -> None:
+        """Set run status to failed.
+
+        Args:
+            run_name_or_id: The name or ID of the run that failed.
+        """
+        client = Client()
+        run = client.zen_store.get_run(run_name_or_id)
+        run.status = ExecutionStatus.FAILED
+        client.zen_store.update_run(run)
 
     @staticmethod
     def _ensure_artifact_classes_loaded(

@@ -52,7 +52,7 @@ Save these, you will need them at a later point.
 
 ## 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
 
-Yes! With [ZenML Stack Recipes](../../docs/book/stack-deployment-guide/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
+Yes! With [ZenML Stack Recipes](../../docs/book/advanced-guide/practical/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
 
 The flow to get started for this example can be the following:
 
@@ -122,7 +122,7 @@ replace all the <PLACEHOLDERS> with the correct values from your GCP project.
 
 ```bash
 # install CLI
-pip install zenml
+pip install "zenml[server]"
 
 # install ZenML integrations
 zenml integration install gcp

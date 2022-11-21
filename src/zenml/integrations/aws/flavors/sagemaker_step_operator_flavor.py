@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
@@ -25,25 +26,37 @@ if TYPE_CHECKING:
     from zenml.integrations.aws.step_operators import SagemakerStepOperator
 
 
-class SagemakerStepOperatorConfig(BaseStepOperatorConfig):
-    """Config for the Sagemaker step operator.
+class SagemakerStepOperatorSettings(BaseSettings):
+    """Settings for the Sagemaker step operator.
 
     Attributes:
-        role: The role that has to be assigned to the jobs which are
-            running in Sagemaker.
         instance_type: The type of the compute instance where jobs will run.
-        bucket: Name of the S3 bucket to use for storing artifacts
-            from the job run. If not provided, a default bucket will be created
-            based on the following format: "sagemaker-{region}-{aws-account-id}".
+            Check https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html
+            for a list of available instance types.
         experiment_name: The name for the experiment to which the job
             will be associated. If not provided, the job runs would be
             independent.
     """
 
-    role: str
-    instance_type: str
-    bucket: Optional[str] = None
+    instance_type: Optional[str] = None
     experiment_name: Optional[str] = None
+
+
+class SagemakerStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseStepOperatorConfig, SagemakerStepOperatorSettings
+):
+    """Config for the Sagemaker step operator.
+
+    Attributes:
+        role: The role that has to be assigned to the jobs which are
+            running in Sagemaker.
+        bucket: Name of the S3 bucket to use for storing artifacts
+            from the job run. If not provided, a default bucket will be created
+            based on the following format: "sagemaker-{region}-{aws-account-id}".
+    """
+
+    role: str
+    bucket: Optional[str] = None
 
     @property
     def is_remote(self) -> bool:

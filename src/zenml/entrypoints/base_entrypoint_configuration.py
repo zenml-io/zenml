@@ -15,7 +15,7 @@
 
 import argparse
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, NoReturn, Optional, Set
+from typing import Any, Dict, List, NoReturn, Set
 
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
@@ -105,36 +105,13 @@ class BaseEntrypointConfiguration(ABC):
 
         return arguments
 
-    def get_run_name(self, pipeline_name: str) -> Optional[str]:
-        """Returns an optional run name.
-
-        Examples:
-        * If you're in an orchestrator environment which has an equivalent
-            concept to a pipeline run, you can use that as the run name. E.g.
-            Kubeflow Pipelines sets a run id as environment variable in all
-            pods which we can reuse: `return os.environ["KFP_RUN_ID"]`
-        * If that isn't possible, you could pass a unique value as an argument
-            to the entrypoint (make sure to also return it from
-            `get_entrypoint_options()`) and use it like this:
-            `return self.entrypoint_args["run_name_option"]`
-
-        Args:
-            pipeline_name: The name of the pipeline.
-
-        Returns:
-            The run name.
-        """
-        return None
-
     @classmethod
     def _parse_arguments(cls, arguments: List[str]) -> Dict[str, Any]:
         """Parses command line arguments.
 
         This method will create an `argparse.ArgumentParser` and add required
         arguments for all the options specified in the
-        `get_entrypoint_options()` method of this class. Subclasses that
-        require additional arguments during entrypoint execution should provide
-        them by implementing the `get_custom_entrypoint_options()` class method.
+        `get_entrypoint_options()` method of this class.
 
         Args:
             arguments: Arguments to parse. The format should be something that
@@ -173,25 +150,11 @@ class BaseEntrypointConfiguration(ABC):
     def load_deployment_config(self) -> "PipelineDeployment":
         """Loads the deployment config.
 
-        If a subclass implements the `get_run_name` method and returns a
-        value from it, this method will also update the run name of the
-        deployment config.
-
         Returns:
-            The (updated) deployment config.
+            The deployment config.
         """
         config_dict = yaml_utils.read_yaml(DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE)
-        deployment_config = PipelineDeployment.parse_obj(config_dict)
-
-        custom_run_name = self.get_run_name(
-            pipeline_name=deployment_config.pipeline.name
-        )
-        if custom_run_name:
-            deployment_config = deployment_config.copy(
-                update={"run_name": custom_run_name}
-            )
-
-        return deployment_config
+        return PipelineDeployment.parse_obj(config_dict)
 
     @abstractmethod
     def run(self) -> None:

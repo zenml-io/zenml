@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.models import (
     ArtifactModel,
     ComponentModel,
@@ -35,7 +35,10 @@ from zenml.models import (
 from zenml.models.server_models import ServerModel
 
 if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+    from ml_metadata.proto.metadata_store_pb2 import (
+        ConnectionConfig,
+        MetadataStoreClientConfig,
+    )
 
 
 class ZenStoreInterface(ABC):
@@ -129,7 +132,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_metadata_config(
         self, expand_certs: bool = False
-    ) -> "ConnectionConfig":
+    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
         """Get the TFX metadata config of this ZenStore.
 
         Args:
@@ -737,6 +740,7 @@ class ZenStoreInterface(ABC):
     def list_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
@@ -745,6 +749,8 @@ class ZenStoreInterface(ABC):
         Args:
             project_name_or_id: If provided, only list assignments for the given
                 project
+            role_name_or_id: If provided, only list assignments of the given
+                role
             team_name_or_id: If provided, only list assignments for the given
                 team
             user_name_or_id: If provided, only list assignments for the given
@@ -948,34 +954,30 @@ class ZenStoreInterface(ABC):
         """
 
     # --------------
-    # Pipeline steps
-    # --------------
-
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    # TODO: Discuss whether we even need this, given that the endpoint is on
-    # pipeline runs
-    # TODO: [ALEX] add filtering param(s)
-    @abstractmethod
-    def list_steps(self, pipeline_id: UUID) -> List[StepRunModel]:
-        """List all steps.
-
-        Args:
-            pipeline_id: The ID of the pipeline to list steps for.
-
-        Returns:
-            A list of all steps.
-        """
-
-    # --------------
     # Pipeline runs
     # --------------
 
     @abstractmethod
-    def get_run(self, run_id: UUID) -> PipelineRunModel:
+    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            EntityExistsError: If an identical pipeline run already exists.
+            KeyError: If the pipeline does not exist.
+        """
+
+    @abstractmethod
+    def get_run(self, run_name_or_id: Union[str, UUID]) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to get.
+            run_name_or_id: The name or ID of the pipeline run to get.
 
         Returns:
             The pipeline run.
@@ -984,24 +986,20 @@ class ZenStoreInterface(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
 
-    # TODO: Figure out what exactly gets returned from this
     @abstractmethod
-    def get_run_component_side_effects(
-        self,
-        run_id: UUID,
-        component_id: Optional[UUID] = None,
-    ) -> Dict[str, Any]:
-        """Gets the side effects for a component in a pipeline run.
+    def get_or_create_run(
+        self, pipeline_run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
 
         Args:
-            run_id: The ID of the pipeline run to get.
-            component_id: The ID of the component to get.
+            pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The side effects for the component in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
+            The pipeline run.
         """
 
     @abstractmethod
@@ -1033,19 +1031,57 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run_status(self, run_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a pipeline run.
+    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
+        """Updates a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to get the status for.
+            run: The pipeline run to use for the update.
 
         Returns:
-            The status of the pipeline run.
+            The updated pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    # TODO: Figure out what exactly gets returned from this
+    @abstractmethod
+    def get_run_component_side_effects(
+        self,
+        run_id: UUID,
+        component_id: Optional[UUID] = None,
+    ) -> Dict[str, Any]:
+        """Gets the side effects for a component in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+            component_id: The ID of the component to get.
+
+        Returns:
+            The side effects for the component in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
         """
 
     # ------------------
     # Pipeline run steps
     # ------------------
+
+    @abstractmethod
+    def create_run_step(self, step: StepRunModel) -> StepRunModel:
+        """Creates a step.
+
+        Args:
+            step: The step to create.
+
+        Returns:
+            The created step.
+
+        Raises:
+            EntityExistsError: if the step already exists.
+            KeyError: if the pipeline run doesn't exist.
+        """
 
     @abstractmethod
     def get_run_step(self, step_id: UUID) -> StepRunModel:
@@ -1062,14 +1098,30 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
-        """Get a list of outputs for a specific step.
+    def list_run_steps(
+        self, run_id: Optional[UUID] = None
+    ) -> List[StepRunModel]:
+        """Get all run steps.
 
         Args:
-            step_id: The id of the step to get outputs for.
+            run_id: If provided, only return steps for this pipeline run.
 
         Returns:
-            A dict mapping artifact names to the output artifacts for the step.
+            A list of all run steps.
+        """
+
+    @abstractmethod
+    def update_run_step(self, step: StepRunModel) -> StepRunModel:
+        """Updates a step.
+
+        Args:
+            step: The step to update.
+
+        Returns:
+            The updated step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
         """
 
     @abstractmethod
@@ -1083,37 +1135,37 @@ class ZenStoreInterface(ABC):
             A dict mapping artifact names to the input artifacts for the step.
         """
 
-    @abstractmethod
-    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
-        """Gets the execution status of a single step.
-
-        Args:
-            step_id: The ID of the step to get the status for.
-
-        Returns:
-            ExecutionStatus: The status of the step.
-        """
+    # ---------
+    # Artifacts
+    # ---------
 
     @abstractmethod
-    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
-        """Gets all steps in a pipeline run.
+    def create_artifact(self, artifact: ArtifactModel) -> ArtifactModel:
+        """Creates an artifact.
 
         Args:
-            run_id: The ID of the pipeline run for which to list runs.
+            artifact: The artifact to create.
 
         Returns:
-            A mapping from step names to step models for all steps in the run.
+            The created artifact.
+
+        Raises:
+            KeyError: if the parent step doesn't exist.
         """
 
     @abstractmethod
     def list_artifacts(
-        self, artifact_uri: Optional[str] = None
+        self,
+        artifact_uri: Optional[str] = None,
+        parent_step_id: Optional[UUID] = None,
     ) -> List[ArtifactModel]:
         """Lists all artifacts.
 
         Args:
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
+            parent_step_id: If specified, only artifacts for the given step run
+                will be returned.
 
         Returns:
             A list of all artifacts.

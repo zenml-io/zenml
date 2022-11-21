@@ -178,7 +178,6 @@ zenml_examples/
 **wandb/
 !src/zenml/integrations/wandb
 
-
 # some examples have yamls; don't ignore them
 !examples/**/*.yaml
 

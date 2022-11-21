@@ -16,6 +16,7 @@
 ## Starter Guide
 
 * [Pipelines](./starter-guide/pipelines/pipelines.md)
+  * [Dashboard Overview](./starter-guide/pipelines/dashboard.md)
   * [Fetching Pipelines](./starter-guide/pipelines/fetching-pipelines.md)
   * [Step Parameterization and Caching](./starter-guide/pipelines/iterating.md)
 * [Stacks](./starter-guide/stacks/stacks.md)
@@ -32,6 +33,7 @@
   * [Containerization (Docker)](./advanced-guide/pipelines/containerization.md)
   * [Passing Custom Data Types through Steps (Materializers)](./advanced-guide/pipelines/materializers.md)
   * [Specifying Step Resources](./advanced-guide/pipelines/step-resources.md)
+  * [Enabling GPU-backed hardware](./advanced-guide/pipelines/gpu-hardware.md)
   * [Accessing Metadata within Steps](./advanced-guide/pipelines/step-metadata.md)
   * [Controlling the Step Execution Order](./advanced-guide/pipelines/step-order.md)
 * [Extending Stacks](./advanced-guide/stacks/stacks.md)
@@ -96,6 +98,7 @@
   * [MLflow](./component-gallery/model-deployers/mlflow.md)
   * [Seldon](./component-gallery/model-deployers/seldon.md)
   * [KServe](./component-gallery/model-deployers/kserve.md)
+  * [BentoML](./component-gallery/model-deployers/bentoml.md)
   * [Develop a Custom Model Deployer](./component-gallery/model-deployers/custom.md)
 * [Step Operators](./component-gallery/step-operators/step-operators.md)
   * [Amazon SageMaker](./component-gallery/step-operators/amazon-sagemaker.md)

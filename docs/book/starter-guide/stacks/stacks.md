@@ -14,9 +14,9 @@ At **ZenML**, we believe that this is one of the most important and challenging 
 Taking this into consideration, ZenML provides additional abstractions that
 help you simplify infrastructure configuration and management:
 
-- [Stacks](./stack.md): A combination of various MLOps *stack components*.
-- [Stack Components](./registering-stacks.md): Configuration of MLOps tools, which come in different *categories* and *flavors*.
-- [Flavors](./registering-stacks.md): Represent a concrete implementation of a stack component.
+- [Stacks](./stacks.md#stack): A combination of various MLOps *stack components*.
+- [Stack Components](./stacks.md#stack-components): Configuration of MLOps tools, which come in different *categories* and *flavors*.
+- [Flavors](./stacks.md#stack-component-flavors): Represent a concrete implementation of a stack component.
 
 Let's discuss each in further detail:
 
@@ -27,12 +27,11 @@ and infrastructure. For instance, you might want to:
 
 - Orchestrate your ML workflows with [Kubeflow](../../component-gallery/orchestrators/kubeflow.md),
 - Save ML artifacts in an [Amazon S3](../../component-gallery/artifact-stores/amazon-s3.md) bucket,
-- Track ML metadata in a managed [MySQL](../../component-gallery/metadata-stores/mysql.md) database,
 - Track your experiments with [Weights & Biases](../../component-gallery/experiment-trackers/wandb.md),
 - Deploy models on Kubernetes with [Seldon](../../component-gallery/model-deployers/seldon.md) or [KServe](../../component-gallery/model-deployers/kserve.md),
 
 In the illustration, you see one user register two stacks, the `Local Stack` and a `Production Stack`. These stacks can be shared
-with other people easily - something we'll dig into more [later](../collaborate/).
+with other people easily - something we'll dig into more [later](../collaborate/collaborate.md).
 
 ![Running your pipeline in the cloud](../../assets/core_concepts/03_multi_stack.png)
 
@@ -88,7 +87,7 @@ place in your local file system, but we could also configure ZenML to store
 this data in a cloud bucket like [Amazon S3](../../component-gallery/artifact-stores/amazon-s3.md) 
 or any other place instead.
 
-You can see all supported stack component types in a single table view [here](../component-gallery/categories.md)
+You can see all supported stack component types in a single table view [here](../../component-gallery/categories.md)
 
 {% hint style="info" %}
 Every stack can usually contain one stack component category of each type, e.g.,

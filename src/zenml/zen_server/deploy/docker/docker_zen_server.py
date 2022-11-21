@@ -13,15 +13,13 @@
 #  permissions and limitations under the License.
 """Service implementation for the ZenML docker server deployment."""
 
-import ipaddress
 import os
-from typing import Dict, List, Optional, Tuple, Union, cast
+from typing import Dict, List, Optional, Tuple, cast
 
 import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
-    DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
@@ -65,9 +63,6 @@ class DockerServerDeploymentConfig(ServerDeploymentConfig):
 
     port: int = 8238
     image: str = DOCKER_ZENML_SERVER_DEFAULT_IMAGE
-    ip_address: Union[
-        ipaddress.IPv4Address, ipaddress.IPv6Address
-    ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
     store: Optional[StoreConfiguration] = None
 
     class Config:

@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Project Models for the API endpoint definitions."""
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from pydantic import Field
 
@@ -95,11 +96,8 @@ class HydratedPipelineModel(PipelineModel):
         project = zen_store.get_project(pipeline_model.project)
         user = zen_store.get_user(pipeline_model.user)
         runs = zen_store.list_runs(pipeline_id=pipeline_model.id)
-        last_x_runs = runs[:num_runs]
-        status_last_x_runs = []
-        for run in last_x_runs:
-            status_last_x_runs.append(zen_store.get_run_status(run_id=run.id))
-
+        last_x_runs = runs[-num_runs:]
+        status_last_x_runs = [run.status for run in last_x_runs]
         return cls(
             id=pipeline_model.id,
             name=pipeline_model.name,
@@ -112,6 +110,25 @@ class HydratedPipelineModel(PipelineModel):
             created=pipeline_model.created,
             updated=pipeline_model.updated,
         )
+
+
+class CreatePipelineRunRequest(ProjectScopedCreateRequest[PipelineRunModel]):
+    """Pipeline run model for create requests."""
+
+    _MODEL_TYPE = PipelineRunModel
+
+    id: Optional[UUID]
+    name: str = Field(
+        title="The name of the pipeline run.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    orchestrator_run_id: Optional[str]
+    stack_id: Optional[UUID]
+    pipeline_id: Optional[UUID]
+    status: ExecutionStatus
+    pipeline_configuration: Dict[str, Any]
+    num_steps: int
+    mlmd_id: Optional[int]
 
 
 class HydratedPipelineRunModel(PipelineRunModel):
@@ -143,8 +160,6 @@ class HydratedPipelineRunModel(PipelineRunModel):
         """
         zen_store = GlobalConfiguration().zen_store
 
-        status = zen_store.get_run_status(run_id=run_model.id)
-
         pipeline = None
         stack = None
         user = None
@@ -161,5 +176,4 @@ class HydratedPipelineRunModel(PipelineRunModel):
             pipeline=pipeline,
             stack=stack,
             user=user,
-            status=status
         )

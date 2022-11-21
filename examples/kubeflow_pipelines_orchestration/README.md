@@ -42,7 +42,7 @@ ZenML repository:
 
 ```bash
 # Install python dependencies
-pip install zenml
+pip install "zenml[server]"
 pip install notebook  # if you want to run the example on the notebook
 
 # Install ZenML integrations
@@ -208,7 +208,7 @@ Kubernetes cluster.
 
 ### 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
 
-Yes! With [ZenML Stack Recipes](../../docs/book/stack-deployment-guide/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
+Yes! With [ZenML Stack Recipes](../../docs/book/advanced-guide/practical/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
 
 The flow to get started for this example can be the following:
 
@@ -265,7 +265,6 @@ You can now jump straight to the [section on running the pipeline](#e296b6efb88f
 
 To run our pipeline on Kubeflow Pipelines deployed to GCP, we will create a new stack with these components:
 * The **artifact store** stores step outputs in a GCP Bucket. 
-* The **metadata store** stores metadata inside the Kubeflow Pipelines internal MySQL database.
 * The docker images that are created to run your pipeline are stored in GCP **container registry**.
 * The **Kubeflow orchestrator** is responsible for running your ZenML pipeline in Kubeflow Pipelines. 
   We need to configure it with the right kubernetes context so ZenML can run pipelines in your GCP cluster. 

@@ -40,10 +40,10 @@ your stack.
 We can then register the orchestrator and use it in our active stack:
 
 ```shell
-zenml orchestrator register <NAME> --flavor=github
+zenml orchestrator register <ORCHESTRATOR_NAME> --flavor=github
 
-# Add the orchestrator to the active stack
-zenml stack update -o <NAME>
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
@@ -75,4 +75,4 @@ A concrete example of using the GitHub Actions orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/github_actions_orchestration).
 
 For more information and a full list of configurable attributes of the GitHub 
-Actions orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-github/#zenml.integrations.github.orchestrators.github_actions_orchestrator.GitHubActionsOrchestrator).
+Actions orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-github/#zenml.integrations.github.orchestrators.github_actions_orchestrator.GitHubActionsOrchestrator).

@@ -16,12 +16,12 @@
 import json
 from collections import OrderedDict
 from json import JSONDecodeError
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from ml_metadata import proto
 from ml_metadata.metadata_store import metadata_store
-from ml_metadata.proto import metadata_store_pb2
+from ml_metadata.proto import Artifact, metadata_store_pb2
 from pydantic import BaseModel, Extra
 from tfx.dsl.compiler.constants import PIPELINE_RUN_CONTEXT_TYPE_NAME
 
@@ -37,6 +37,7 @@ from zenml.steps.utils import (
 )
 from zenml.utils.proto_utils import (
     MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME,
+    MLMD_CONTEXT_NUM_OUTPUTS_PROPERTY_NAME,
     MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME,
     MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME,
     MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME,
@@ -52,12 +53,12 @@ class MLMDPipelineRunModel(BaseModel):
 
     mlmd_id: int
     name: str
-    project: UUID
-    user: UUID
+    project: Optional[UUID]
+    user: Optional[UUID]
     pipeline_id: Optional[UUID]
-    stack_id: UUID
+    stack_id: Optional[UUID]
     pipeline_configuration: Dict[str, Any]
-    num_steps: int
+    num_steps: Optional[int]
 
 
 class MLMDStepRunModel(BaseModel):
@@ -69,6 +70,8 @@ class MLMDStepRunModel(BaseModel):
     name: str
     parameters: Dict[str, str]
     step_configuration: Dict[str, Any]
+    docstring: Optional[str]
+    num_outputs: Optional[int]
 
 
 class MLMDArtifactModel(BaseModel):
@@ -193,11 +196,31 @@ class MetadataStore:
         step_context_properties = self._get_zenml_execution_context_properties(
             execution=execution,
         )
-        step_configuration = json.loads(
-            step_context_properties.get(
-                MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME
-            ).string_value
-        )
+        if MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME in step_context_properties:
+            step_configuration = json.loads(
+                step_context_properties.get(
+                    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME
+                ).string_value
+            )
+        else:
+            step_configuration = {}
+
+        # Extract docstring.
+        docstring = None
+        if "config" in step_configuration:
+            step_configuration_config = step_configuration["config"]
+            if "docstring" in step_configuration_config:
+                docstring = step_configuration_config["docstring"]
+
+        # Get number of outputs.
+        if MLMD_CONTEXT_NUM_OUTPUTS_PROPERTY_NAME in step_context_properties:
+            num_outputs = int(
+                step_context_properties.get(
+                    MLMD_CONTEXT_NUM_OUTPUTS_PROPERTY_NAME
+                ).string_value
+            )
+        else:
+            num_outputs = None
 
         # TODO [ENG-222]: This is a lot of querying to the metadata store. We
         #  should refactor and make it nicer. Probably it makes more sense
@@ -244,55 +267,81 @@ class MetadataStore:
             mlmd_parent_step_ids=list(parents_step_ids),
             entrypoint_name=impl_name,
             name=step_name,
-            parameters=step_parameters,
-            step_configuration=step_configuration,
+            parameters=step_parameters or {},
+            step_configuration=step_configuration or {},
+            docstring=docstring,
+            num_outputs=num_outputs,
         )
 
     def _get_pipeline_run_model_from_context(
         self, context: proto.Context
     ) -> MLMDPipelineRunModel:
-        context_properties = self._get_zenml_execution_context_properties(
-            self.store.get_executions_by_context(context_id=context.id)[-1]
-        )
-        model_ids = json.loads(
-            context_properties.get(
-                MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME
-            ).string_value
-        )
-        pipeline_configuration = json.loads(
-            context_properties.get(
-                MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME
-            ).string_value
-        )
-        num_steps = int(
-            context_properties.get(
-                MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME
-            ).string_value
-        )
+
+        project, user, pipeline_id, stack_id = None, None, None, None
+        pipeline_configuration = {}
+        num_steps = None
+
+        executions = self.store.get_executions_by_context(context_id=context.id)
+        if len(executions) > 0:
+            context_properties = self._get_zenml_execution_context_properties(
+                executions[-1]
+            )
+
+            if MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME in context_properties:
+                model_ids = json.loads(
+                    context_properties.get(
+                        MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME
+                    ).string_value
+                )
+                project = model_ids.get("project_id")
+                user = model_ids.get("user_id")
+                pipeline_id = model_ids.get("pipeline_id")
+                stack_id = model_ids.get("stack_id")
+
+            if MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME in context_properties:
+                pipeline_configuration = json.loads(
+                    context_properties.get(
+                        MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME
+                    ).string_value
+                )
+
+            if MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME in context_properties:
+                num_steps = int(
+                    context_properties.get(
+                        MLMD_CONTEXT_NUM_STEPS_PROPERTY_NAME
+                    ).string_value
+                )
+
         return MLMDPipelineRunModel(
             mlmd_id=context.id,
             name=context.name,
-            project=model_ids["project_id"],
-            user=model_ids["user_id"],
-            pipeline_id=model_ids["pipeline_id"],
-            stack_id=model_ids["stack_id"],
-            pipeline_configuration=pipeline_configuration,
+            project=project,
+            user=user,
+            pipeline_id=pipeline_id,
+            stack_id=stack_id,
+            pipeline_configuration=pipeline_configuration or {},
             num_steps=num_steps,
         )
 
-    def get_all_runs(self) -> Dict[str, MLMDPipelineRunModel]:
+    def get_all_runs(
+        self, ignored_ids: Optional[List[int]] = None
+    ) -> List[MLMDPipelineRunModel]:
         """Gets a mapping run name -> ID for all runs registered in MLMD.
+
+        Args:
+            ignored_ids: A list of run IDs to ignore.
 
         Returns:
             A mapping run name -> ID for all runs registered in MLMD.
         """
-        all_pipeline_runs = self.store.get_contexts_by_type(
+        run_contexts = self.store.get_contexts_by_type(
             PIPELINE_RUN_CONTEXT_TYPE_NAME
         )
-        return {
-            run.name: self._get_pipeline_run_model_from_context(run)
-            for run in all_pipeline_runs
-        }
+        return [
+            self._get_pipeline_run_model_from_context(run_context)
+            for run_context in run_contexts
+            if not ignored_ids or run_context.id not in ignored_ids
+        ]
 
     def get_pipeline_run_steps(
         self, run_id: int
@@ -348,90 +397,123 @@ class MetadataStore:
         else:
             return ExecutionStatus.FAILED
 
-    def get_step_artifacts(
-        self, step_id: int, step_parent_step_ids: List[int], step_name: str
-    ) -> Tuple[Dict[str, MLMDArtifactModel], Dict[str, MLMDArtifactModel]]:
-        """Returns input and output artifacts for the given step.
+    def _get_artifact_model_from_proto(
+        self, artifact_proto: Artifact, parent_step_id: int
+    ) -> MLMDArtifactModel:
+        """Gets a model of an artifact from its proto.
 
         Args:
-            step_id: The ID of the step to get the artifacts for.
-            step_parent_step_ids: The IDs of the parent steps of the given step.
-            step_name: The name of the step.
+            artifact_proto: The proto of the artifact to get the model for.
+            parent_step_id: The ID of the parent step.
 
         Returns:
-            A tuple (inputs, outputs) where inputs and outputs are both Dicts mapping artifact names to the input and output artifacts respectively.
+            A model of the artifact.
         """
         # maps artifact types to their string representation
         artifact_type_mapping = {
             type_.id: type_.name for type_ in self.store.get_artifact_types()
         }
+        artifact_type = artifact_type_mapping[artifact_proto.type_id]
 
-        events = self.store.get_events_by_execution_ids([step_id])  # noqa
-        artifacts = self.store.get_artifacts_by_id(
-            [event.artifact_id for event in events]
+        materializer = artifact_proto.properties[
+            MATERIALIZER_PROPERTY_KEY
+        ].string_value
+
+        data_type = artifact_proto.properties[
+            DATATYPE_PROPERTY_KEY
+        ].string_value
+
+        artifact_id = artifact_proto.id
+        producer_step = self.get_producer_step_from_artifact(artifact_id)
+        producer_step_id = producer_step.mlmd_id
+        artifact = MLMDArtifactModel(
+            mlmd_id=artifact_id,
+            type=artifact_type,
+            uri=artifact_proto.uri,
+            materializer=materializer,
+            data_type=data_type,
+            mlmd_parent_step_id=parent_step_id,
+            mlmd_producer_step_id=producer_step_id,
+            is_cached=parent_step_id != producer_step_id,
         )
+        return artifact
 
-        inputs: Dict[str, MLMDArtifactModel] = {}
-        outputs: Dict[str, MLMDArtifactModel] = {}
+    def get_step_input_artifacts(
+        self,
+        step_id: int,
+        step_parent_step_ids: List[int],
+    ) -> Dict[str, MLMDArtifactModel]:
+        """Returns input artifacts for the given step.
 
-        # sort them according to artifact_id's so that the zip works.
+        Args:
+            step_id: The ID of the step to get the input artifacts for.
+            step_parent_step_ids: The IDs of the parent steps of the given step.
+
+        Returns:
+            A dict mapping input names to input artifacts.
+        """
+        events = self.store.get_events_by_execution_ids([step_id])  # noqa
+        events = [event for event in events if event.type == event.INPUT]
+        input_artifact_ids = [event.artifact_id for event in events]
+        artifacts = self.store.get_artifacts_by_id(input_artifact_ids)
         events.sort(key=lambda x: x.artifact_id)
         artifacts.sort(key=lambda x: x.id)
 
+        inputs: Dict[str, MLMDArtifactModel] = {}
         for event_proto, artifact_proto in zip(events, artifacts):
-            artifact_type = artifact_type_mapping[artifact_proto.type_id]
+            assert event_proto.artifact_id == artifact_proto.id
             artifact_name = event_proto.path.steps[0].key
 
-            materializer = artifact_proto.properties[
-                MATERIALIZER_PROPERTY_KEY
-            ].string_value
+            # In the case that this is an input event, we actually need
+            # to resolve the parent step ID via its parents outputs.
+            parent_step_id = None
+            for parent_id in step_parent_step_ids:
+                self.get_step_by_id(parent_id)
+                parent_outputs = self.get_step_output_artifacts(
+                    step_id=parent_id,
+                )
+                for parent_output in parent_outputs.values():
+                    if artifact_proto.id == parent_output.mlmd_id:
+                        parent_step_id = parent_id
+            assert parent_step_id is not None
 
-            data_type = artifact_proto.properties[
-                DATATYPE_PROPERTY_KEY
-            ].string_value
-
-            parent_step_id = step_id
-            if event_proto.type == event_proto.INPUT:
-                # In the case that this is an input event, we actually need
-                # to resolve it via its parents outputs.
-                for parent_id in step_parent_step_ids:
-                    parent_step = self.get_step_by_id(parent_id)
-                    parent_outputs = self.get_step_artifacts(
-                        step_id=parent_id,
-                        step_parent_step_ids=parent_step.mlmd_parent_step_ids,
-                        step_name=parent_step.entrypoint_name,
-                    )[1]
-                    for parent_output in parent_outputs.values():
-                        if artifact_proto.id == parent_output.mlmd_id:
-                            parent_step_id = parent_id
-
-            artifact_id = event_proto.artifact_id
-            producer_step = self.get_producer_step_from_artifact(artifact_id)
-            producer_step_id = producer_step.mlmd_id
-            artifact = MLMDArtifactModel(
-                mlmd_id=artifact_id,
-                type=artifact_type,
-                uri=artifact_proto.uri,
-                materializer=materializer,
-                data_type=data_type,
-                mlmd_parent_step_id=parent_step_id,
-                mlmd_producer_step_id=producer_step_id,
-                is_cached=parent_step_id != producer_step_id,
+            artifact = self._get_artifact_model_from_proto(
+                artifact_proto, parent_step_id=parent_step_id
             )
+            inputs[artifact_name] = artifact
 
-            if event_proto.type == event_proto.INPUT:
-                inputs[artifact_name] = artifact
-            elif event_proto.type == event_proto.OUTPUT:
-                outputs[artifact_name] = artifact
+        logger.debug("Fetched %d inputs for step '%d'.", len(inputs), step_id)
+        return inputs
 
-        logger.debug(
-            "Fetched %d inputs and %d outputs for step '%s'.",
-            len(inputs),
-            len(outputs),
-            step_name,
-        )
+    def get_step_output_artifacts(
+        self, step_id: int
+    ) -> Dict[str, MLMDArtifactModel]:
+        """Returns the output artifacts for the given step.
 
-        return inputs, outputs
+        Args:
+            step_id: The ID of the step to get the output artifacts for.
+
+        Returns:
+            A dict mapping output names to output artifacts.
+        """
+        events = self.store.get_events_by_execution_ids([step_id])  # noqa
+        events = [event for event in events if event.type == event.OUTPUT]
+        output_artifact_ids = [event.artifact_id for event in events]
+        artifacts = self.store.get_artifacts_by_id(output_artifact_ids)
+        events.sort(key=lambda x: x.artifact_id)
+        artifacts.sort(key=lambda x: x.id)
+
+        outputs: Dict[str, MLMDArtifactModel] = {}
+        for event_proto, artifact_proto in zip(events, artifacts):
+            assert event_proto.artifact_id == artifact_proto.id
+            artifact_name = event_proto.path.steps[0].key
+            artifact = self._get_artifact_model_from_proto(
+                artifact_proto, parent_step_id=step_id
+            )
+            outputs[artifact_name] = artifact
+
+        logger.debug("Fetched %d outputs for step '%d'.", len(outputs), step_id)
+        return outputs
 
     def get_producer_step_from_artifact(
         self, artifact_id: int

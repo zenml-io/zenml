@@ -28,14 +28,15 @@ from typing import (
     Optional,
     Sequence,
     Union,
-    cast,
 )
 
 from alembic.config import Config
 from alembic.runtime.environment import EnvironmentContext
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
+from sqlalchemy import Column, String
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql.schema import MetaData
 from sqlmodel import SQLModel
 
@@ -87,6 +88,15 @@ def include_object(
 
 
 _RevIdType = Union[str, Sequence[str]]
+
+Base = declarative_base()
+
+
+class AlembicVersion(Base):  # type: ignore[valid-type,misc]
+    """Alembic version table."""
+
+    __tablename__ = "alembic_version"
+    version_num = Column(String, nullable=False, primary_key=True)
 
 
 class Alembic:
@@ -141,7 +151,7 @@ class Alembic:
         """
         # Check the existence of any of the SQLModel tables
         return not self.engine.dialect.has_table(
-            self.engine.connect(), cast(str, schemas.StackSchema.__tablename__)
+            self.engine.connect(), schemas.StackSchema.__tablename__
         )
 
     def run_migrations(

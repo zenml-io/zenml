@@ -26,7 +26,8 @@ if TYPE_CHECKING:
     from zenml.integrations.label_studio.annotators import LabelStudioAnnotator
 
 
-DEFAULT_LABEL_STUDIO_PORT = 8093
+DEFAULT_LOCAL_INSTANCE_URL = "http://localhost"
+DEFAULT_LOCAL_LABEL_STUDIO_PORT = 8093
 
 
 class LabelStudioAnnotatorConfig(
@@ -35,10 +36,12 @@ class LabelStudioAnnotatorConfig(
     """Config for the Label Studio annotator.
 
     Attributes:
+        instance_url: URL of the Label Studio instance.
         port: The port to use for the annotation interface.
     """
 
-    port: int = DEFAULT_LABEL_STUDIO_PORT
+    instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
+    port: int = DEFAULT_LOCAL_LABEL_STUDIO_PORT
 
 
 class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
