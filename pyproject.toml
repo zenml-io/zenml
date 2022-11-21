@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.21.1"
+version = "0.22.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -31,18 +31,18 @@ classifiers = [
 exclude = [
     "tests.*",
     "*.tests",
-    "*.tests.*",
     "docs",
     "tests",
     "tests",
     "legacy",
+    "*.tests.*",
     "examples"
 ]
 include = [
     "src/zenml",
     "*.txt",
-    "*.md",
-    "*.sh"
+     "*.sh",
+    "*.md"
 ]
 
 [tool.poetry.scripts]
@@ -257,7 +257,8 @@ module = [
     "model_archiver.*",
     "kfp_tekton.*",
     "mlflow.*",
-    "python_terraform.*"
+    "python_terraform.*",
+    "bentoml.*",
 ]
 ignore_missing_imports = true
 

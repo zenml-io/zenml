@@ -391,7 +391,7 @@ class StackComponent:
 
     def get_settings(
         self, container: Union["Step", "StepRunInfo", "PipelineDeployment"]
-    ) -> Optional["BaseSettings"]:
+    ) -> "BaseSettings":
         """Gets settings for this stack component.
 
         This will return `None` if the stack component doesn't specify a
@@ -403,23 +403,32 @@ class StackComponent:
                 which to get the settings.
 
         Returns:
-            Optional settings for this stack component.
+            Settings for this stack component.
+
+        Raises:
+            RuntimeError: If the stack component does not specify a settings
+                class.
         """
         if not self.settings_class:
-            return None
+            raise RuntimeError(
+                f"Unable to get settings for component {self} because this "
+                "component does not have an associated settings class. "
+                "Return a settings class from the `@settings_class` property "
+                "and try again."
+            )
 
         key = settings_utils.get_stack_component_setting_key(self)
 
-        options = (
+        all_settings = (
             container.config.settings
             if isinstance(container, (Step, StepRunInfo))
             else container.pipeline.settings
         )
 
-        if key not in options:
-            return None
-
-        return self.settings_class(**options[key].dict())
+        if key in all_settings:
+            return self.settings_class.parse_obj(all_settings[key])
+        else:
+            return self.settings_class()
 
     @property
     def log_file(self) -> Optional[str]:

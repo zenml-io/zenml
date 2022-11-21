@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.azure import AZUREML_STEP_OPERATOR_FLAVOR
 from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
@@ -26,7 +27,20 @@ if TYPE_CHECKING:
     from zenml.integrations.azure.step_operators import AzureMLStepOperator
 
 
-class AzureMLStepOperatorConfig(BaseStepOperatorConfig):
+class AzureMLStepOperatorSettings(BaseSettings):
+    """Settings for the AzureML step operator.
+
+    Attributes:
+        environment_name: The name of the environment if there
+            already exists one.
+    """
+
+    environment_name: Optional[str] = None
+
+
+class AzureMLStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseStepOperatorConfig, AzureMLStepOperatorSettings
+):
     """Config for the AzureML step operator.
 
     Attributes:
@@ -37,9 +51,6 @@ class AzureMLStepOperatorConfig(BaseStepOperatorConfig):
         compute_target_name: The name of the configured ComputeTarget.
             An instance of it has to be created on the portal if it doesn't
             exist already.
-        environment_name: The name of the environment if there
-            already exists one.
-
         tenant_id: The Azure Tenant ID.
         service_principal_id: The ID for the service principal that is created
             to allow apps to access secure resources.
@@ -50,9 +61,6 @@ class AzureMLStepOperatorConfig(BaseStepOperatorConfig):
     resource_group: str
     workspace_name: str
     compute_target_name: str
-
-    # Environment
-    environment_name: Optional[str] = None
 
     # Service principal authentication
     # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal

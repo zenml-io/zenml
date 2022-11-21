@@ -71,7 +71,7 @@ python file_that_runs_a_zenml_pipeline.py
 ### Additional configuration
 
 For additional configuration of the Kubernetes orchestrator, you can pass
-`KubernetesOrchestratorSettings` which allows you to configure the following attributes:
+`KubernetesOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
 * `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
 your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
@@ -119,11 +119,16 @@ kubernetes_settings = KubernetesOrchestratorSettings(
   ...
 ```
 
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor.KubernetesOrchestratorSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
+
 A concrete example of using the Kubernetes orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubernetes_orchestration).
 
 For more information and a full list of configurable attributes of the 
-Kubernetes orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator).
+Kubernetes orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator).
 
 ### Enabling CUDA for GPU-backed hardware
 

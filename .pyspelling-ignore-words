@@ -50,6 +50,7 @@ AzureML
 AzureMLStepOperatorConfig
 AzureSecretsManagerConfig
 BAQsFADAT
+BENTO
 Backend
 Backpropagation
 Baris
@@ -101,7 +102,14 @@ BaseStepVisualizer
 BaseTypedModel
 BaseVisualizer
 BaseZenStore
+Bento
+Bento's
 BentoML
+BentoMLDeployerParameters
+BentoMLDeploymentService
+BentoMLModelDeployer
+BentoMlDeploymentConfig
+Bentos
 Bing
 Bitbucket
 BluePill
@@ -436,6 +444,7 @@ MyService
 MyStackComponent
 MyStep
 MyStepEntrypointConfiguration
+NDArray
 NDhaFw
 NFS
 NLP
@@ -453,6 +462,7 @@ NotAuthorizedError
 NotFoundError
 NotImplementedError
 NumPy
+NumpyNdarray
 OAuth
 OSError
 Ok
@@ -466,6 +476,7 @@ PID
 PIL
 PNS
 PRD
+PREDICITON
 PREV
 PREVROLLEDOUTREVISION
 PWD
@@ -641,6 +652,7 @@ StackWrapper
 StandaloneCommand
 StandardScaler
 Standards
+Standarize
 StepContext
 StepContextError
 StepDecorator
@@ -671,6 +683,7 @@ TFX
 TFX's
 TLS
 TODO
+TPU
 Tekton
 TempPathFactory
 TensorBoard
@@ -735,6 +748,7 @@ XGBoost
 XServiceConfig
 XServiceStatus
 YRrJyVJUVfSKpA
+Yatai
 ZSH
 ZW
 ZenAzure
@@ -833,6 +847,9 @@ baseclass
 basename
 baz
 bdb
+bento
+bentoctl
+bentoml
 bff
 bigrams
 blogpost
@@ -844,6 +861,7 @@ br
 camelCase
 catchup
 categoricaltargetdrift
+cb
 cbe
 cd
 cda
@@ -851,6 +869,7 @@ cdb
 ce
 centric
 ceph
+certfile
 charset
 ci
 classificationmodelperformance
@@ -957,11 +976,13 @@ dsl
 dso
 dst
 dt
+dtype
 dv
 eaa
 eb
 ebd
 ec
+ecf
 ecr
 edwardgeorge
 ee
@@ -1004,6 +1025,7 @@ feedforward
 felix
 fff
 ffmpeg
+fgidomup
 fileio
 filepath
 filesize
@@ -1043,6 +1065,7 @@ googlecloudstorage
 gpu
 graphviz
 grey
+greyscale
 gritty
 grpc
 gserviceaccount
@@ -1085,6 +1108,7 @@ init
 initializations
 initializer
 initializers
+inp
 instantiation
 integrations
 interdependencies
@@ -1117,9 +1141,11 @@ kaggle
 ker
 keras
 keyRings
+keyfile
 kfp
 kfserving
 knative
+kq
 kr
 kserve
 kservegs
@@ -1131,6 +1157,7 @@ kubernetes
 kv
 kwarg
 kwargs
+lables
 len
 libcudart
 libsm
@@ -1260,6 +1287,7 @@ pretrained
 prettyprint
 prevalidator
 probabilisticmodelperformance
+producation
 profiler
 programmatically
 projectNumber
@@ -1296,6 +1324,7 @@ repos
 repr
 reproducibility
 req
+reqs
 requestBody
 requestPath
 requiredintegrations
