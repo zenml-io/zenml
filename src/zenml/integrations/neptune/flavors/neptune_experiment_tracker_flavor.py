@@ -1,3 +1,5 @@
+"""Neptune experiment tracker flavor"""
+
 from typing import Type
 
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -16,6 +18,7 @@ class NeptuneExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
     @property
     def name(self) -> str:
         """Name of the flavor.
+
         Returns:
             The name of the flavor.
         """
@@ -24,6 +27,7 @@ class NeptuneExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
     @property
     def config_class(self) -> Type[NeptuneExperimentTrackerConfig]:
         """Returns `NeptuneExperimentTrackerConfig` config class.
+
         Returns:
                 The config class.
         """
@@ -32,6 +36,7 @@ class NeptuneExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
     @property
     def implementation_class(self) -> Type["NeptuneExperimentTracker"]:
         """Implementation class for this flavor.
+
         Returns:
             The implementation class.
         """

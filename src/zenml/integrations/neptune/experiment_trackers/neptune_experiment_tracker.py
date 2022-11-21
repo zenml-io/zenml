@@ -1,3 +1,5 @@
+"""Implementation of Neptune Experiment Tracker"""
+
 from typing import TYPE_CHECKING, Any, Optional, Set, Type, cast
 
 from zenml.config.base_settings import BaseSettings
@@ -13,18 +15,31 @@ if TYPE_CHECKING:
 
 
 class NeptuneExperimentTrackerConfig(BaseExperimentTrackerConfig):
+    """Config for the Neptune experiment tracker.
+    If attributes are left as None, neptune init_run
+    will try to find the relevant values in the environment
+
+        Attributes:
+            project: name of the neptune project you want to log the metadata to
+            api_token: your secret api key to neptune
+    """
+
     project: Optional[str] = None
     api_token: Optional[str] = SecretField()
 
 
 class NeptuneExperimentTrackerSettings(BaseSettings):
+    """Settings for the Neptune experiment tracker.
+
+        Attributes:
+            tags: Tags for the neptune run.
+    """
+
     tags: Set[str] = set()
 
 
 class NeptuneExperimentTracker(BaseExperimentTracker):
-    """
-    Track experiments using neptune.ai
-    """
+    """Track experiments using neptune.ai"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the experiment tracker.
@@ -55,10 +70,10 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         return NeptuneExperimentTrackerSettings
 
     def prepare_step_run(self, info: "StepRunInfo") -> None:
-        """Initializes neptune run and stores it in the run_state
-        object, so that it can be accessed later from other places
-        e.g. step."""
+        """Initializes neptune run and stores it in the run_state object.
 
+        The run object can then be accessed later from other places e.g. step.
+        """
         settings = cast(NeptuneExperimentTrackerSettings, self.get_settings(info))
 
         self.run_state.token = self.config.api_token

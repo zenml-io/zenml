@@ -1,3 +1,5 @@
+"""Initialization of Neptune experiment tracker"""
+
 from zenml.integrations.neptune.experiment_trackers.neptune_experiment_tracker import (
     NeptuneExperimentTracker,
     NeptuneExperimentTrackerConfig,

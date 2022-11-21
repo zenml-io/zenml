@@ -1,3 +1,5 @@
+"""Module containing Neptune integration"""
+
 from typing import List, Type
 
 from zenml.integrations.constants import NEPTUNE
@@ -20,7 +22,7 @@ class NeptuneIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the <EXAMPLE> integration."""
+        """Declare the stack component flavors for the neptune integration."""
         from zenml.integrations.neptune.flavors import (
             NeptuneExperimentTrackerFlavor,
         )
