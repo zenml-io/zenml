@@ -78,7 +78,7 @@ def create_run_step(
     Returns:
         The created run step.
     """
-    return zen_store().create_run_step(step=step)
+    return zen_store().create_run_step(step_run=step)
 
 
 @router.get(
@@ -123,7 +123,7 @@ def update_step(
         The updated step model.
     """
     step_model.id = step_id
-    updated_step = zen_store().update_run_step(step=step_model)
+    updated_step = zen_store().update_run_step(step_run=step_model)
     return updated_step
 
 
