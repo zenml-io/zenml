@@ -531,6 +531,116 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
     assert arias_stack.is_shared is False
 
 
+def test_create_shared_stack_when_component_is_private_fails(
+    clean_client: Client,
+) -> None:
+    """When sharing a stack all the components should also be shared, so if a
+    component is not shared this should fail."""
+    runner = CliRunner()
+    register_command = cli.commands["stack"].commands["register"]
+    result = runner.invoke(
+        register_command,
+        ["default2", "-o", "default", "-a", "default", "--share"],
+    )
+    assert result.exit_code == 1
+
+
+def test_add_private_component_to_shared_stack_fails(
+    clean_client: Client,
+) -> None:
+    """When sharing a stack all the components are also shared, so if a
+    component with the same name is already shared this should fail."""
+    # Shared component
+    shared_artifact_store = _create_local_artifact_store(clean_client)
+
+    other_user = clean_client.create_user(name="Arias_Evil_Twin")
+    clean_client.zen_store.create_stack_component(
+        component=ComponentRequestModel(
+            name=shared_artifact_store.name,
+            is_shared=True,
+            type=StackComponentType.ARTIFACT_STORE,
+            flavor="local",
+            configuration={},
+            user=other_user.id,
+            project=clean_client.active_project.id,
+        )
+    )
+
+    # Non-shared components
+    new_artifact_store = _create_local_artifact_store(clean_client)
+
+    new_artifact_store_model = clean_client.register_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.dict(),
+    )
+
+    new_orchestrator = _create_local_orchestrator(clean_client)
+
+    new_orchestrator_model = clean_client.register_stack_component(
+        name=new_orchestrator.name,
+        flavor=new_orchestrator.flavor,
+        component_type=new_orchestrator.type,
+        configuration=new_orchestrator.config.dict(),
+    )
+
+    # Register non-shared stack with non-shared components
+    new_stack = clean_client.register_stack(
+        name="arias_new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.id,
+            StackComponentType.ORCHESTRATOR: new_orchestrator_model.id,
+        }
+    )
+
+    # Share stack where the shared versions of components already exists
+    runner = CliRunner()
+    share_command = cli.commands["stack"].commands["share"]
+    result = runner.invoke(share_command, [new_stack.name, "-r"])
+    assert result.exit_code == 1
+
+
+def test_share_stack_when_component_is_private_fails(
+    clean_client: Client,
+) -> None:
+    """When sharing a stack all the components are also shared, so if a
+    component with the same name is already shared this should fail."""
+    # Non-shared components
+    new_artifact_store = _create_local_artifact_store(clean_client)
+
+    new_artifact_store_model = clean_client.register_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.dict(),
+    )
+
+    new_orchestrator = _create_local_orchestrator(clean_client)
+
+    new_orchestrator_model = clean_client.register_stack_component(
+        name=new_orchestrator.name,
+        flavor=new_orchestrator.flavor,
+        component_type=new_orchestrator.type,
+        configuration=new_orchestrator.config.dict(),
+    )
+
+    # Register non-shared stack with non-shared components
+    new_stack = clean_client.register_stack(
+        name="arias_new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
+            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
+        }
+    )
+
+    # Share stack where the shared versions of components already exists
+    runner = CliRunner()
+    share_command = cli.commands["stack"].commands["share"]
+    result = runner.invoke(share_command, [new_stack.name])
+    assert result.exit_code == 1
+
+
 def test_remove_component_from_nonexistent_stack_fails(clean_client) -> None:
     """Test stack remove-component of nonexistent stack fails."""
     runner = CliRunner()

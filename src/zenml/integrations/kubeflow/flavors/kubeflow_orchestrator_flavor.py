@@ -20,12 +20,13 @@ from pydantic import root_validator
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
-from zenml.utils.deprecation_utils import deprecate_pydantic_attributes
 
 if TYPE_CHECKING:
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 
+logger = get_logger(__name__)
 
 DEFAULT_KFP_UI_PORT = 8080
 
@@ -34,6 +35,11 @@ class KubeflowOrchestratorSettings(BaseSettings):
     """Settings for the Kubeflow orchestrator.
 
     Attributes:
+        synchronous: If `True`, running a pipeline using this orchestrator will
+            block until all steps finished running on KFP. This setting only
+            has an effect when specified on the pipeline and will be ignored if
+            specified on steps.
+        timeout: How many seconds to wait for synchronous runs.
         client_args: Arguments to pass when initializing the KFP client.
         user_namespace: The user namespace to use when creating experiments
             and runs.
@@ -42,15 +48,14 @@ class KubeflowOrchestratorSettings(BaseSettings):
         pod_settings: Pod settings to apply.
     """
 
+    synchronous: bool = False
+    timeout: int = 1200
+
     client_args: Dict[str, Any] = {}
     user_namespace: Optional[str] = None
     node_selectors: Dict[str, str] = {}
     node_affinity: Dict[str, List[str]] = {}
     pod_settings: Optional[KubernetesPodSettings] = None
-
-    _deprecation_validator = deprecate_pydantic_attributes(
-        "node_selectors", "node_affinity"
-    )
 
     @root_validator
     def _migrate_pod_settings(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -64,6 +69,13 @@ class KubeflowOrchestratorSettings(BaseSettings):
         )
 
         has_old_settings = any([node_selectors, node_affinity])
+
+        if has_old_settings:
+            logger.warning(
+                "The attributes `node_selectors` and `node_affinity` of the "
+                "Kubeflow settings will be deprecated soon. Use the "
+                "attribute `pod_settings` instead.",
+            )
 
         if has_pod_settings and has_old_settings:
             raise AssertionError(
@@ -107,7 +119,9 @@ class KubeflowOrchestratorSettings(BaseSettings):
         return values
 
 
-class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
+class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseOrchestratorConfig, KubeflowOrchestratorSettings
+):
     """Configuration for the Kubeflow orchestrator.
 
     Attributes:
@@ -120,8 +134,6 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
             Pipelines is deployed. Defaults to `kubeflow`.
         kubernetes_context: Optional name of a kubernetes context to run
             pipelines in. If not set, will try to spin up a local K3d cluster.
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on KFP.
         skip_local_validations: If `True`, the local validations will be
             skipped.
         skip_cluster_provisioning: If `True`, the k3d cluster provisioning will
@@ -133,8 +145,7 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
-    kubernetes_context: Optional[str] = None
-    synchronous: bool = False
+    kubernetes_context: Optional[str] = None  # TODO: Potential setting
     skip_local_validations: bool = False
     skip_cluster_provisioning: bool = False
     skip_ui_daemon_provisioning: bool = False

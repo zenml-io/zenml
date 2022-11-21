@@ -399,11 +399,12 @@ def update_stack(
                 name_id_or_prefix=stack_name_or_id,
                 component_updates=updates,
             )
+
         except IllegalOperationError as err:
             cli_utils.error(str(err))
 
         cli_utils.declare(
-            f"Stack `{updated_stack.name}` successfully " f"updated!"
+            f"Stack `{updated_stack.name}` successfully updated!"
         )
 
 
@@ -413,19 +414,38 @@ def update_stack(
     help="Share a stack and all its components.",
 )
 @click.argument("stack_name_or_id", type=str, required=False)
+@click.option(
+    "--recursive",
+    "-r",
+    "recursive",
+    is_flag=True,
+    help="Recursively also share all stack components if they are private.",
+)
 def share_stack(
-    stack_name_or_id: Optional[str] = None,
+    stack_name_or_id: Optional[str], recursive: bool = False
 ) -> None:
     """Share a stack with your team.
 
     Args:
         stack_name_or_id: Name or id of the stack to share.
+        recursive: Recursively also share all components
     """
 
     client = Client()
 
     with console.status("Sharing the stack...\n"):
         try:
+            if recursive:
+                stack_to_update = client.get_stack(
+                    name_id_or_prefix=stack_name_or_id
+                )
+                for c_type, components in stack_to_update.components.items():
+                    for component in components:
+                        client.update_stack_component(
+                            name_id_or_prefix=component.id,
+                            component_type=c_type,
+                            is_shared=True,
+                        )
             updated_stack = client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
                 is_shared=True,
@@ -960,15 +980,22 @@ def import_stack(
 @stack.command("copy", help="Copy a stack to a new stack name.")
 @click.argument("source_stack_name_or_id", type=str, required=True)
 @click.argument("target_stack", type=str, required=True)
+@click.option(
+    "--share",
+    "share",
+    is_flag=True,
+    help="Use this flag to share this stack with other users.",
+    type=click.BOOL,
+)
 def copy_stack(
-    source_stack_name_or_id: str,
-    target_stack: str,
+    source_stack_name_or_id: str, target_stack: str, share: bool = False
 ) -> None:
     """Copy a stack.
 
     Args:
         source_stack_name_or_id: The name or id of the stack to copy.
         target_stack: Name of the copied stack.
+        share: Share the stack with other users.
     """
     track_event(AnalyticsEvent.COPIED_STACK)
 
@@ -988,7 +1015,7 @@ def copy_stack(
         client.register_stack(
             name=target_stack,
             components=component_mapping,
-            is_shared=stack_to_copy.is_shared,
+            is_shared=share,
         )
 
 

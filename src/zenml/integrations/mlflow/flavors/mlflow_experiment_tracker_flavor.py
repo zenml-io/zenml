@@ -72,7 +72,9 @@ class MLFlowExperimentTrackerSettings(BaseSettings):
     tags: Dict[str, Any] = {}
 
 
-class MLFlowExperimentTrackerConfig(BaseExperimentTrackerConfig):
+class MLFlowExperimentTrackerConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseExperimentTrackerConfig, MLFlowExperimentTrackerSettings
+):
     """Config for the MLflow experiment tracker.
 
     Attributes:

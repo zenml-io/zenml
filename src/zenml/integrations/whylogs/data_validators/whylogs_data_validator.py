@@ -84,10 +84,7 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
         Args:
             info: Info about the step that will be executed.
         """
-        settings = cast(
-            WhylogsDataValidatorSettings,
-            self.get_settings(info) or WhylogsDataValidatorSettings(),
-        )
+        settings = cast(WhylogsDataValidatorSettings, self.get_settings(info))
         if settings.enable_whylabs:
             os.environ[WHYLABS_LOGGING_ENABLED_ENV] = "true"
         if settings.dataset_id:
@@ -99,10 +96,7 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
         Args:
             info: Info about the step that was executed.
         """
-        settings = cast(
-            WhylogsDataValidatorSettings,
-            self.get_settings(info) or WhylogsDataValidatorSettings(),
-        )
+        settings = cast(WhylogsDataValidatorSettings, self.get_settings(info))
         if settings.enable_whylabs:
             del os.environ[WHYLABS_LOGGING_ENABLED_ENV]
         if settings.dataset_id:

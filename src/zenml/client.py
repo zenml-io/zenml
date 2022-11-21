@@ -1188,7 +1188,7 @@ class Client(metaclass=ClientMetaClass):
     def register_stack(
         self,
         name: str,
-        components: Dict[StackComponentType, str],
+        components: Dict[StackComponentType, Union[str, UUID]],
         is_shared: bool = False,
     ) -> "StackResponseModel":
         """Registers a stack and its components.
@@ -1204,14 +1204,27 @@ class Client(metaclass=ClientMetaClass):
 
         stack_components = dict()
 
-        for c_type, c_name in components.items():
-            if c_name:
-                stack_components[c_type] = [
-                    self.get_stack_component(
-                        name_id_or_prefix=c_name,
+        for c_type, c_identifier in components.items():
+            if c_identifier:
+                component = self.get_stack_component(
+                        name_id_or_prefix=c_identifier,
                         component_type=c_type,
-                    ).id
-                ]
+                    )
+                stack_components[c_type] = [component.id]
+
+                if is_shared:
+                    if not component.is_shared:
+                        raise ValueError(
+                            "You attempted to include a private "
+                            f"{c_type} {name} in a shared stack. This "
+                            f"is not supported. You can either share"
+                            f" the {c_type} with the following "
+                            f"command: \n `zenml {c_type.replace('_', '-')} "
+                            f"share`{component.id}`\n "
+                            f"or create the stack privately and "
+                            f"then share it and all of its components using: "
+                            f"\n `zenml stack share {name} -r`"
+                        )
 
         stack = StackRequestModel(
             name=name,
@@ -1279,11 +1292,19 @@ class Client(metaclass=ClientMetaClass):
 
             for component_type, components in stack.components.items():
                 for c in components:
-                    self.update_stack_component(
-                        name_id_or_prefix=c.id,
-                        component_type=component_type,
-                        is_shared=True,
-                    )
+                    if not c.is_shared:
+                        raise ValueError(
+                             f"A Stack can only be shared when all its "
+                             f"components are also shared. Component "
+                             f"{component_type}:{c.name} is not shared. Set "
+                             f"the {component_type} to shared like this and "
+                             f"then try re-sharing your stack:\n "
+                             f"`zenml {component_type.replace('_', '-')} "
+                             f"share {c.id}`\n. Alternatively, you can rerun "
+                             f"your command with `-r` to recursively "
+                             f"share all components within the stack."
+                        )
+
             update_model.is_shared = is_shared
 
         if description:
