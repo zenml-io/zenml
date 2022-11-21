@@ -77,4 +77,4 @@ aws ecr get-login-password --region <REGION> | docker login --username AWS --pas
 ```
 
 For more information and a full list of configurable attributes of the AWS 
-container registry, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-aws/#zenml.integrations.aws.container_registries.aws_container_registry.AWSContainerRegistry).
+container registry, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.container_registries.aws_container_registry.AWSContainerRegistry).

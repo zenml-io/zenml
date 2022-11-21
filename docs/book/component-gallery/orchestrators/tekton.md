@@ -110,12 +110,12 @@ as part of your stack.
 We can then register the orchestrator and use it in our active stack:
 
 ```shell
-zenml orchestrator register <NAME> \
+zenml orchestrator register <ORCHESTRATOR_NAME> \
     --flavor=tekton \
     --kubernetes_context=<KUBERNETES_CONTEXT>
 
-# Add the orchestrator to the active stack
-zenml stack update -o <NAME>
+# Register and activate a stack with the new orchestrator
+zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
@@ -138,7 +138,7 @@ python file_that_runs_a_zenml_pipeline.py
 ### Additional configuration
 
 For additional configuration of the Tekton orchestrator, you can pass
-`TektonOrchestratorSettings` which allows you to configure the following attributes:
+`TektonOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
 * `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
 your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
@@ -186,11 +186,16 @@ tekton_settings = TektonOrchestratorSettings(
   ...
 ```
 
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-tekton/#zenml.integrations.tekton.flavors.tekton_orchestrator_flavor.TektonOrchestratorSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
+
 A concrete example of using the Tekton orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/tekton_pipelines_orchestration).
 
 For more information and a full list of configurable attributes of the Tekton 
-orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-tekton/#zenml.integrations.tekton.orchestrators.tekton_orchestrator.TektonOrchestrator).
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-tekton/#zenml.integrations.tekton.orchestrators.tekton_orchestrator.TektonOrchestrator).
 
 ### Enabling CUDA for GPU-backed hardware
 

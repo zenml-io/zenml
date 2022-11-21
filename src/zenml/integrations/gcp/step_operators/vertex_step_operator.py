@@ -19,7 +19,7 @@ google_cloud_ai_platform/training_clients.py
 """
 
 import time
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 
 from google.cloud import aiplatform
 
@@ -34,6 +34,7 @@ from zenml.integrations.gcp.constants import (
 )
 from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import (
     VertexStepOperatorConfig,
+    VertexStepOperatorSettings,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
@@ -44,11 +45,29 @@ from zenml.step_operators import BaseStepOperator
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_run_info import StepRunInfo
+
 logger = get_logger(__name__)
 
 VERTEX_DOCKER_IMAGE_DIGEST_KEY = "vertex_docker_image"
+
+
+def validate_accelerator_type(accelerator_type: Optional[str] = None) -> None:
+    """Validates that the accelerator type is valid.
+
+    Args:
+        accelerator_type: The accelerator type to validate.
+
+    Raises:
+        ValueError: If the accelerator type is not valid.
+    """
+    accepted_vals = list(aiplatform.gapic.AcceleratorType.__members__.keys())
+    if accelerator_type and accelerator_type.upper() not in accepted_vals:
+        raise ValueError(
+            f"Accelerator must be one of the following: {accepted_vals}"
+        )
 
 
 class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
@@ -66,22 +85,6 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             **kwargs: Arbitrary keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        self._validate_accelerator_type()
-
-    def _validate_accelerator_type(self) -> None:
-        """Validates that the accelerator type is valid.
-
-        Raises:
-            ValueError: If the accelerator type is not valid.
-        """
-        accepted_vals = list(
-            aiplatform.gapic.AcceleratorType.__members__.keys()
-        )
-        accelerator_type = self.config.accelerator_type
-        if accelerator_type and accelerator_type.upper() not in accepted_vals:
-            raise ValueError(
-                f"Accelerator must be one of the following: {accepted_vals}"
-            )
 
     @property
     def config(self) -> VertexStepOperatorConfig:
@@ -91,6 +94,15 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             The configuration.
         """
         return cast(VertexStepOperatorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Vertex step operator.
+
+        Returns:
+            The settings class.
+        """
+        return VertexStepOperatorSettings
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -184,6 +196,8 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                 "--machine_type=<MACHINE_TYPE>`",
                 self.name,
             )
+        settings = cast(VertexStepOperatorSettings, self.get_settings(info))
+        validate_accelerator_type(settings.accelerator_type)
 
         job_labels = {"source": f"zenml-{__version__.replace('.', '_')}"}
 
@@ -213,7 +227,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             credentials=credentials, client_options=client_options
         )
         accelerator_count = (
-            resource_settings.gpu_count or self.config.accelerator_count
+            resource_settings.gpu_count or settings.accelerator_count
         )
         custom_job = {
             "display_name": info.run_name,
@@ -221,10 +235,10 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                 "worker_pool_specs": [
                     {
                         "machine_spec": {
-                            "machine_type": self.config.machine_type,
-                            "accelerator_type": self.config.accelerator_type,
+                            "machine_type": settings.machine_type,
+                            "accelerator_type": settings.accelerator_type,
                             "accelerator_count": accelerator_count
-                            if self.config.accelerator_type
+                            if settings.accelerator_type
                             else 0,
                         },
                         "replica_count": 1,

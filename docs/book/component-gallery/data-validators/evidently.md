@@ -79,7 +79,7 @@ input. Even when running model performance comparison analyses, no model
 needs to be present. However, that does mean that the input data needs to
 include additional `target` and `prediction` columns for some profiling reports
 and, you have to include additional information about the dataset columns in the
-form of [column mappings](https://docs.evidentlyai.com/features/dashboards/column_mapping).
+form of [column mappings](https://docs.evidentlyai.com/user-guide/tests-and-reports/column-mapping).
 Depending on how your data is structured, you may also need to include additional
 steps in your pipeline before the data validation step to insert the additional
 `target` and `prediction` columns into your data. This may also require
@@ -166,7 +166,7 @@ Possible report options supported by Evidently are:
 - "regressionmodelperformance"
 - "probabilisticmodelperformance"
 
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileStep), the step takes in
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileStep), the step takes in
 a reference dataset and a comparison dataset required for data drift and
 model comparison reports. It returns an Evidently `Profile` object and a
 `Dashboard` rendered as an HTML string:
@@ -252,7 +252,7 @@ config=EvidentlyProfileParameters(
 )
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileConfig) in the API
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileConfig) in the API
 docs.
 
 You can also check out our examples pages for working examples that use the
@@ -321,7 +321,7 @@ def data_drift_detection(
     return [profile, dashboard.html()]
 ```
 
-Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.data_validators.evidently_data_validator.EvidentlyDataValidator) in the API docs.
+Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://apidocs.zenml.io/latest/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.data_validators.evidently_data_validator.EvidentlyDataValidator) in the API docs.
 
 ### Call Evidently directly
 
