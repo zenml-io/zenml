@@ -19,6 +19,7 @@ from typing import Any
 
 from ml_metadata.proto.metadata_store_pb2 import Artifact
 
+from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -104,5 +105,24 @@ def load_model_from_metadata(model_uri: str) -> Any:
             model.eval()
     except ImportError:
         pass
+    logger.debug(f"Model loaded successfully :\n{model}")
+    return model
+
+
+def model_from_model_artifact(model_artifact: ModelArtifact) -> Any:
+    """Load model to memory from a model artifact.
+
+    Args:
+        model_artifact: The model artifact to load.
+
+    Returns:
+        The ML model object loaded into memory.
+    """
+    materializer_class = source_utils.load_source_path_class(
+        model_artifact.materializer
+    )
+    model_class = source_utils.load_source_path_class(model_artifact.datatype)
+    materializer_object: BaseMaterializer = materializer_class(model_artifact)
+    model = materializer_object.handle_input(model_class)
     logger.debug(f"Model loaded successfully :\n{model}")
     return model

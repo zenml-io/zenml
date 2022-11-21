@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """REST Zen Store implementation."""
-
+import json
 import os
 import re
 from pathlib import Path, PurePath
@@ -27,23 +27,28 @@ from typing import (
     TypeVar,
     Union,
 )
+from urllib.parse import urlparse
 from uuid import UUID
 
 import requests
 import urllib3
 from pydantic import BaseModel, validator
 
+import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
     ARTIFACTS,
+    DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EMAIL_ANALYTICS,
+    ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
     INFO,
     INPUTS,
     LOGIN,
     METADATA_CONFIG,
+    METADATA_SYNC,
     PIPELINES,
     PROJECTS,
     ROLES,
@@ -60,6 +65,7 @@ from zenml.exceptions import (
     AuthorizationException,
     DoesNotExistException,
     EntityExistsError,
+    IllegalOperationError,
     StackComponentExistsError,
     StackExistsError,
 )
@@ -83,6 +89,10 @@ from zenml.models import (
 from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
 from zenml.models.server_models import ServerModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.networking_utils import (
+    replace_internal_hostname_with_localhost,
+    replace_localhost_with_internal_hostname,
+)
 from zenml.zen_server.models.base_models import (
     CreateRequest,
     CreateResponse,
@@ -173,6 +183,11 @@ class RestZenStoreConfiguration(StoreConfiguration):
                 "https://hostname[:port] or http://hostname[:port]."
             )
 
+        # When running inside a container, if the URL uses localhost, the
+        # target service will not be available. We try to replace localhost
+        # with one of the special Docker or K3D internal hostnames.
+        url = replace_localhost_with_internal_hostname(url)
+
         return url
 
     @validator("verify_ssl")
@@ -208,6 +223,18 @@ class RestZenStoreConfiguration(StoreConfiguration):
         verify_ssl = str(file_path)
 
         return verify_ssl
+
+    @classmethod
+    def supports_url_scheme(cls, url: str) -> bool:
+        """Check if a URL scheme is supported by this store.
+
+        Args:
+            url: The URL to check.
+
+        Returns:
+            True if the URL scheme is supported, False otherwise.
+        """
+        return urlparse(url).scheme in ("http", "https")
 
     def expand_certificates(self) -> None:
         """Expands the certificates in the verify_ssl field."""
@@ -289,8 +316,21 @@ class RestZenStore(BaseZenStore):
 
     def _initialize(self) -> None:
         """Initialize the REST store."""
-        # try to connect to the server to validate the configuration
-        self.active_user
+        client_version = zenml.__version__
+        server_version = self.get_store_info().version
+
+        if not DISABLE_CLIENT_SERVER_MISMATCH_WARNING and (
+            server_version != client_version
+        ):
+            logger.warning(
+                "Your ZenML client version (%s) does not match the server "
+                "version (%s). This version mismatch might lead to errors or "
+                "unexpected behavior. \nTo disable this warning message, set "
+                "the environment variable `%s=True`",
+                client_version,
+                server_version,
+                ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+            )
 
     def get_store_info(self) -> ServerModel:
         """Get information about the server.
@@ -361,10 +401,21 @@ class RestZenStore(BaseZenStore):
             assert isinstance(default_store_cfg, SqlZenStoreConfiguration)
             return default_store_cfg.get_metadata_config()
 
-        if not expand_certs:
-            if metadata_config_pb.HasField(
-                "mysql"
-            ) and metadata_config_pb.mysql.HasField("ssl_options"):
+        if metadata_config_pb.HasField("mysql"):
+            # If the server returns a MySQL connection config with a hostname
+            # that is a Docker or K3D internal hostname that cannot be resolved
+            # locally, we need to replace it with localhost. We're assuming
+            # that we're running on the host machine and the MySQL server can
+            # be accessed via localhost.
+            metadata_config_pb.mysql.host = (
+                replace_internal_hostname_with_localhost(
+                    metadata_config_pb.mysql.host
+                )
+            )
+
+            if not expand_certs and metadata_config_pb.mysql.HasField(
+                "ssl_options"
+            ):
                 # Save the certificates in a secure location on disk
                 secret_folder = Path(
                     GlobalConfiguration().local_stores_path,
@@ -376,7 +427,8 @@ class RestZenStore(BaseZenStore):
                     ):
                         continue
                     content = getattr(
-                        metadata_config_pb.mysql.ssl_options, key.lstrip("ssl_")
+                        metadata_config_pb.mysql.ssl_options,
+                        key.lstrip("ssl_"),
                     )
                     if content and not os.path.isfile(content):
                         fileio.makedirs(str(secret_folder))
@@ -919,7 +971,11 @@ class RestZenStore(BaseZenStore):
 
         Args:
             team_name_or_id: The name or ID of the team for which to get users.
+
+        Raises:
+            NotImplementedError: This method is not implemented
         """
+        raise NotImplementedError("Not Implemented")
 
     def get_teams_for_user(
         self, user_name_or_id: Union[str, UUID]
@@ -929,7 +985,11 @@ class RestZenStore(BaseZenStore):
         Args:
             user_name_or_id: The name or ID of the user for which to get all
                 teams.
+
+        Raises:
+            NotImplementedError: This method is not implemented
         """
+        raise NotImplementedError("Not Implemented")
 
     def add_user_to_team(
         self,
@@ -941,7 +1001,11 @@ class RestZenStore(BaseZenStore):
         Args:
             user_name_or_id: Name or ID of the user to add to the team.
             team_name_or_id: Name or ID of the team to which to add the user to.
+
+        Raises:
+            NotImplementedError: This method is not implemented
         """
+        raise NotImplementedError("Not Implemented")
 
     def remove_user_from_team(
         self,
@@ -952,8 +1016,13 @@ class RestZenStore(BaseZenStore):
 
         Args:
             user_name_or_id: Name or ID of the user to remove from the team.
-            team_name_or_id: Name or ID of the team from which to remove the user.
+            team_name_or_id: Name or ID of the team from which to remove the
+                user.
+
+        Raises:
+            NotImplementedError: This method is not implemented
         """
+        raise NotImplementedError("Not Implemented")
 
     # -----
     # Roles
@@ -1041,6 +1110,7 @@ class RestZenStore(BaseZenStore):
     def list_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
@@ -1049,6 +1119,8 @@ class RestZenStore(BaseZenStore):
         Args:
             project_name_or_id: If provided, only list assignments for the given
                 project
+            role_name_or_id: If provided, only list assignments of the given
+                role
             team_name_or_id: If provided, only list assignments for the given
                 team
             user_name_or_id: If provided, only list assignments for the given
@@ -1094,6 +1166,16 @@ class RestZenStore(BaseZenStore):
                 assign the role. If this is not provided, the role will be
                 assigned globally.
         """
+        path = (
+            f"{USERS}/{str(user_or_team_name_or_id)}{ROLES}"
+            f"?role_name_or_id={role_name_or_id}"
+        )
+        logger.debug(f"Sending POST request to {path}...")
+        self._request(
+            "POST",
+            self.url + API + VERSION_1 + path,
+            data=json.dumps({}),
+        )
 
     def revoke_role(
         self,
@@ -1113,6 +1195,16 @@ class RestZenStore(BaseZenStore):
                 the role. If this is not provided, the role will be revoked
                 globally.
         """
+        path = (
+            f"{USERS}/{str(user_or_team_name_or_id)}{ROLES}"
+            f"/{str(role_name_or_id)}"
+        )
+        logger.debug(f"Sending POST request to {path}...")
+        self._request(
+            "DELETE",
+            self.url + API + VERSION_1 + path,
+            data=json.dumps({}),
+        )
 
     # --------
     # Projects
@@ -1306,10 +1398,29 @@ class RestZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
+        self._sync_runs()
         return self._get_resource(
             resource_id=run_name_or_id,
             route=RUNS,
             resource_model=PipelineRunModel,
+        )
+
+    def get_or_create_run(
+        self, pipeline_run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
+
+        Args:
+            pipeline_run: The pipeline run to get or create.
+
+        Returns:
+            The pipeline run.
+        """
+        return self._create_project_scoped_resource(
+            resource=pipeline_run, route=RUNS, params={"get_if_exists": True}
         )
 
     def list_runs(
@@ -1338,6 +1449,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
+        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1400,6 +1512,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The step.
         """
+        self._sync_runs()
         return self._get_resource(
             resource_id=step_id,
             route=STEPS,
@@ -1417,6 +1530,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all run steps.
         """
+        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1494,6 +1608,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all artifacts.
         """
+        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1571,6 +1686,8 @@ class RestZenStore(BaseZenStore):
                 entity already exists.
             AuthorizationException: If the response indicates that the request
                 is not authorized.
+            IllegalOperationError: If the response indicates that the requested
+                operation is forbidden.
             KeyError: If the response indicates that the requested entity
                 does not exist.
             RuntimeError: If the response indicates that the requested entity
@@ -1596,6 +1713,11 @@ class RestZenStore(BaseZenStore):
                 f"{response.status_code} Client Error: Unauthorized request to "
                 f"URL {response.url}: {response.json().get('detail')}"
             )
+        elif response.status_code == 403:
+            msg = response.json().get("detail", response.text)
+            if isinstance(msg, list):
+                msg = msg[-1]
+            raise IllegalOperationError(msg)
         elif response.status_code == 404:
             if "KeyError" in response.text:
                 raise KeyError(
@@ -1783,6 +1905,7 @@ class RestZenStore(BaseZenStore):
         route: str,
         request_model: Optional[Type[CreateRequest[AnyModel]]] = None,
         response_model: Optional[Type[CreateResponse[AnyModel]]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyModel:
         """Create a new resource.
 
@@ -1793,6 +1916,7 @@ class RestZenStore(BaseZenStore):
                 If not provided, the resource object itself will be used.
             response_model: Optional model to use to deserialize the response
                 body. If not provided, the resource class itself will be used.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The created resource.
@@ -1800,7 +1924,7 @@ class RestZenStore(BaseZenStore):
         request: BaseModel = resource
         if request_model is not None:
             request = request_model.from_model(resource)
-        response_body = self.post(f"{route}", body=request)
+        response_body = self.post(f"{route}", body=request, params=params)
         if response_model is not None:
             response = response_model.parse_obj(response_body)
             created_resource = response.to_model()
@@ -1818,6 +1942,7 @@ class RestZenStore(BaseZenStore):
         response_model: Optional[
             Type[CreateResponse[AnyProjectScopedModel]]
         ] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> AnyProjectScopedModel:
         """Create a new project scoped resource.
 
@@ -1828,6 +1953,7 @@ class RestZenStore(BaseZenStore):
                 If not provided, the resource object itself will be used.
             response_model: Optional model to use to deserialize the response
                 body. If not provided, the resource class itself will be used.
+            params: Optional query parameters to pass to the endpoint.
 
         Returns:
             The created resource.
@@ -1837,6 +1963,7 @@ class RestZenStore(BaseZenStore):
             route=f"{PROJECTS}/{str(resource.project)}{route}",
             request_model=request_model,
             response_model=response_model,
+            params=params,
         )
 
     def _get_resource(
@@ -1930,10 +2057,5 @@ class RestZenStore(BaseZenStore):
         self.delete(f"{route}/{str(resource_id)}")
 
     def _sync_runs(self) -> None:
-        """Syncs runs from MLMD.
-
-        Raises:
-            NotImplementedError: This internal method may not be called on a
-                `RestZenStore`.
-        """
-        raise NotImplementedError
+        """Syncs runs from MLMD."""
+        self.get(METADATA_SYNC)

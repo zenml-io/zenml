@@ -16,7 +16,7 @@
 import itertools
 import os
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, List, Optional, Tuple, Type, cast
 
 from azureml.core import (
     ComputeTarget,
@@ -41,6 +41,7 @@ from zenml.constants import (
 from zenml.environment import Environment as ZenMLEnvironment
 from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
     AzureMLStepOperatorConfig,
+    AzureMLStepOperatorSettings,
 )
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
@@ -54,6 +55,7 @@ from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
 
 logger = get_logger(__name__)
@@ -76,6 +78,15 @@ class AzureMLStepOperator(BaseStepOperator):
             The configuration.
         """
         return cast(AzureMLStepOperatorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the AzureML step operator.
+
+        Returns:
+            The settings class.
+        """
+        return AzureMLStepOperatorSettings
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -145,6 +156,7 @@ class AzureMLStepOperator(BaseStepOperator):
         workspace: Workspace,
         docker_settings: "DockerSettings",
         run_name: str,
+        environment_name: Optional[str] = None,
     ) -> Environment:
         """Prepares the environment in which Azure will run all jobs.
 
@@ -155,6 +167,7 @@ class AzureMLStepOperator(BaseStepOperator):
             docker_settings: The Docker settings for this step.
             run_name: The name of the pipeline run that can be used
                 for naming environments and runs.
+            environment_name: Optional name of an existing environment to use.
 
         Returns:
             The AzureML Environment object.
@@ -174,9 +187,9 @@ class AzureMLStepOperator(BaseStepOperator):
             "Using requirements for AzureML step operator environment: %s",
             requirements,
         )
-        if self.config.environment_name:
+        if environment_name:
             environment = Environment.get(
-                workspace=workspace, name=self.config.environment_name
+                workspace=workspace, name=environment_name
             )
             if not environment.python.conda_dependencies:
                 environment.python.conda_dependencies = (
@@ -271,6 +284,8 @@ class AzureMLStepOperator(BaseStepOperator):
                 ignored_docker_fields,
             )
 
+        settings = cast(AzureMLStepOperatorSettings, self.get_settings(info))
+
         workspace = Workspace.get(
             subscription_id=self.config.subscription_id,
             resource_group=self.config.resource_group,
@@ -302,6 +317,7 @@ class AzureMLStepOperator(BaseStepOperator):
                 workspace=workspace,
                 docker_settings=docker_settings,
                 run_name=info.run_name,
+                environment_name=settings.environment_name,
             )
             compute_target = ComputeTarget(
                 workspace=workspace, name=self.config.compute_target_name

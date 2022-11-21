@@ -740,6 +740,7 @@ class ZenStoreInterface(ABC):
     def list_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
@@ -748,6 +749,8 @@ class ZenStoreInterface(ABC):
         Args:
             project_name_or_id: If provided, only list assignments for the given
                 project
+            role_name_or_id: If provided, only list assignments of the given
+                role
             team_name_or_id: If provided, only list assignments for the given
                 team
             user_name_or_id: If provided, only list assignments for the given
@@ -981,6 +984,22 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def get_or_create_run(
+        self, pipeline_run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
+
+        Args:
+            pipeline_run: The pipeline run to get or create.
+
+        Returns:
+            The pipeline run.
         """
 
     @abstractmethod

@@ -16,23 +16,26 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List
+from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
-from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
-    from zenml.zen_stores.schemas.stack_schemas import StackSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.stack_schemas import (
+    StackCompositionSchema,
+    StackSchema,
+)
+from zenml.zen_stores.schemas.user_management_schemas import UserSchema
 
 
 class StackComponentSchema(SQLModel, table=True):
     """SQL Model for stack components."""
+
+    __tablename__ = "stack_component"
 
     id: UUID = Field(primary_key=True)
 
@@ -42,13 +45,23 @@ class StackComponentSchema(SQLModel, table=True):
     type: StackComponentType
     flavor: str
 
-    project_id: UUID = Field(
-        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
     )
     project: "ProjectSchema" = Relationship(back_populates="components")
 
-    user_id: UUID = Field(
-        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
     )
     user: "UserSchema" = Relationship(back_populates="components")
 

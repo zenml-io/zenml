@@ -107,8 +107,7 @@ will not work in combination with a remote orchestrator.
 
 
 {% hint style="info" %}
-To read a more detailed guide about how Secret Managers function in ZenML,
-[click here](../../component-gallery/secrets-managers/).
+Read a more detailed guide about how Secret Managers work in [ZenML](../../component-gallery/secrets-managers/secrets-managers.md)
 {% endhint %}
 
 ## Secret validation

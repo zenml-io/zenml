@@ -37,7 +37,9 @@ class TektonOrchestratorSettings(BaseSettings):
     pod_settings: Optional[KubernetesPodSettings] = None
 
 
-class TektonOrchestratorConfig(BaseOrchestratorConfig):
+class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseOrchestratorConfig, TektonOrchestratorSettings
+):
     """Configuration for the Tekton orchestrator.
 
     Attributes:
@@ -50,7 +52,7 @@ class TektonOrchestratorConfig(BaseOrchestratorConfig):
             daemon will be skipped.
     """
 
-    kubernetes_context: str
+    kubernetes_context: str  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
     tekton_ui_port: int = DEFAULT_TEKTON_UI_PORT
     skip_ui_daemon_provisioning: bool = False

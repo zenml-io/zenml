@@ -12,16 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Model definitions for users, teams, and roles."""
-
 import re
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Set, cast
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.enums import PermissionType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models.base_models import DomainModel
@@ -53,6 +53,7 @@ class JWTToken(BaseModel):
 
     token_type: JWTTokenType
     user_id: UUID
+    permissions: List[str]
 
     @classmethod
     def decode(cls, token_type: JWTTokenType, token: str) -> "JWTToken":
@@ -88,9 +89,18 @@ class JWTToken(BaseModel):
             raise AuthorizationException(
                 "Invalid JWT token: the subject claim is missing"
             )
+        permissions: List[str] = payload.get("permissions")
+        if permissions is None:
+            raise AuthorizationException(
+                "Invalid JWT token: the permissions scope is missing"
+            )
 
         try:
-            return cls(token_type=token_type, user_id=UUID(subject))
+            return cls(
+                token_type=token_type,
+                user_id=UUID(subject),
+                permissions=set(permissions),
+            )
         except ValueError as e:
             raise AuthorizationException(
                 f"Invalid JWT token: could not decode subject claim: {e}"
@@ -114,6 +124,7 @@ class JWTToken(BaseModel):
 
         claims: Dict[str, Any] = {
             "sub": str(self.user_id),
+            "permissions": list(self.permissions),
         }
 
         if expire_minutes:
@@ -277,16 +288,21 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
 
         return None
 
-    def generate_access_token(self) -> str:
+    def generate_access_token(self, permissions: List[str]) -> str:
         """Generates an access token.
 
         Generates an access token and returns it.
+
+        Args:
+            permissions: Permissions to add to the token
 
         Returns:
             The generated access token.
         """
         return JWTToken(
-            token_type=JWTTokenType.ACCESS_TOKEN, user_id=self.id
+            token_type=JWTTokenType.ACCESS_TOKEN,
+            user_id=self.id,
+            permissions=permissions,
         ).encode()
 
     def get_activation_token(self) -> Optional[str]:
@@ -352,6 +368,17 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         underscore_attrs_are_private = True
 
 
+class PermissionModel(BaseModel):
+    """Domain model for roles."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
+
+    id: int = Field(title="Id of the specific permission")
+    name: str = Field(
+        title="The unique name of the permission.",
+    )
+
+
 class RoleModel(DomainModel, AnalyticsTrackedModelMixin):
     """Domain model for roles."""
 
@@ -361,6 +388,7 @@ class RoleModel(DomainModel, AnalyticsTrackedModelMixin):
         title="The unique name of the role.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
+    permissions: Set[PermissionType]
 
 
 class TeamModel(DomainModel, AnalyticsTrackedModelMixin):

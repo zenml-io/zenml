@@ -65,10 +65,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
             info: Info about the step that will be executed.
         """
         os.environ[WANDB_API_KEY] = self.config.api_key
-        settings = cast(
-            WandbExperimentTrackerSettings,
-            self.get_settings(info) or WandbExperimentTrackerSettings(),
-        )
+        settings = cast(WandbExperimentTrackerSettings, self.get_settings(info))
 
         tags = settings.tags + [info.run_name, info.pipeline.name]
         wandb_run_name = (

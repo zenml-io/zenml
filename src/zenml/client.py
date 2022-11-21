@@ -1373,16 +1373,15 @@ class Client(metaclass=ClientMetaClass):
                     status = ExecutionStatus.FAILED
                 step_statuses.append(status)
 
-            num_steps = len(steps)
             pipeline_run = PipelineRunModel(
                 user=self.active_user.id,  # Old user might not exist.
                 project=self.active_project.id,  # Old project might not exist.
                 name=mlmd_run.name,
                 stack_id=None,  # Stack might not exist in new DB.
                 pipeline_id=None,  # Pipeline might not exist in new DB.
-                status=ExecutionStatus.run_status(step_statuses, num_steps),
+                status=ExecutionStatus.run_status(step_statuses),
                 pipeline_configuration=mlmd_run.pipeline_configuration,
-                num_steps=num_steps,
+                num_steps=len(steps),
                 mlmd_id=None,  # Run might not exist in new MLMD.
             )
             new_run = self.zen_store.create_run(pipeline_run)
@@ -1393,10 +1392,12 @@ class Client(metaclass=ClientMetaClass):
                     step_mlmd_id_mapping[mlmd_parent_step_id]
                     for mlmd_parent_step_id in step.mlmd_parent_step_ids
                 ]
-                inputs, outputs = metadata_store.get_step_artifacts(
+                inputs = metadata_store.get_step_input_artifacts(
                     step_id=step.mlmd_id,
                     step_parent_step_ids=step.mlmd_parent_step_ids,
-                    step_name=step.name,
+                )
+                outputs = metadata_store.get_step_output_artifacts(
+                    step_id=step.mlmd_id
                 )
                 input_artifacts = {
                     input_name: artifact_mlmd_id_mapping[mlmd_artifact.mlmd_id]
@@ -1412,6 +1413,7 @@ class Client(metaclass=ClientMetaClass):
                     parameters=step.parameters,
                     step_configuration={},
                     mlmd_parent_step_ids=[],
+                    num_outputs=len(outputs),
                 )
                 new_step = self.zen_store.create_run_step(step_run)
                 step_mlmd_id_mapping[step.mlmd_id] = new_step.id
@@ -1442,17 +1444,8 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             user_name_or_id: The name or ID of the user to delete.
-
-        Raises:
-            IllegalOperationError: If the user to delete is the active user.
         """
-        user = self.zen_store.get_user(user_name_or_id)
-        if self.zen_store.active_user_name == user.name:
-            raise IllegalOperationError(
-                "You cannot delete yourself. If you wish to delete your active "
-                "user account, please contact your ZenML administrator."
-            )
-        Client().zen_store.delete_user(user_name_or_id=user.name)
+        Client().zen_store.delete_user(user_name_or_id=user_name_or_id)
 
     def delete_project(self, project_name_or_id: str) -> None:
         """Delete a project.

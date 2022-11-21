@@ -319,16 +319,27 @@ def test_registering_a_new_stack_with_already_registered_components(
 def test_updating_a_stack_with_new_components(clean_client):
     """Tests that updating a new stack with already registered components
     updates the stack with the new or altered components passed in."""
-    current_stack = clean_client.active_stack
-    old_orchestrator = current_stack.orchestrator
+    stack = _create_local_stack(
+        repo=clean_client, stack_name="some_new_stack_name"
+    )
+    stack_model = stack.to_model(
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
+    )
+    clean_client.register_stack_component(stack.orchestrator.to_model())
+    clean_client.register_stack_component(stack.artifact_store.to_model())
+    clean_client.register_stack(stack_model)
+    clean_client.activate_stack(stack_model)
+
+    old_orchestrator = stack.orchestrator
     new_orchestrator = _create_local_stack(
         clean_client, "", orchestrator_name="new_orchestrator"
     ).orchestrator
     updated_stack = Stack(
-        id=current_stack.id,
-        name=current_stack.name,
+        id=stack.id,
+        name=stack.name,
         orchestrator=new_orchestrator,
-        artifact_store=current_stack.artifact_store,
+        artifact_store=stack.artifact_store,
     )
 
     with does_not_raise():
@@ -348,13 +359,24 @@ def test_updating_a_stack_with_new_components(clean_client):
 
 def test_renaming_stack_with_update_method_succeeds(clean_client):
     """Tests that renaming a stack with the update method succeeds."""
-    current_stack = clean_client.active_stack
+    stack = _create_local_stack(
+        repo=clean_client, stack_name="some_new_stack_name"
+    )
+    stack_model = stack.to_model(
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
+    )
+    clean_client.register_stack_component(stack.orchestrator.to_model())
+    clean_client.register_stack_component(stack.artifact_store.to_model())
+    clean_client.register_stack(stack_model)
+    clean_client.activate_stack(stack_model)
+
     new_stack_name = "new_stack_name"
     updated_stack = Stack(
-        id=current_stack.id,
+        id=stack.id,
         name=new_stack_name,
-        orchestrator=current_stack.orchestrator,
-        artifact_store=current_stack.artifact_store,
+        orchestrator=stack.orchestrator,
+        artifact_store=stack.artifact_store,
     )
 
     with does_not_raise():

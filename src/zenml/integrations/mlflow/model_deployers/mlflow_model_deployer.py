@@ -223,8 +223,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
         existing_service.stop(timeout=timeout, force=force)
 
         # delete the old configuration file
-        service_directory_path = existing_service.status.runtime_path or ""
-        shutil.rmtree(service_directory_path)
+        if existing_service.status.runtime_path:
+            shutil.rmtree(existing_service.status.runtime_path)
 
     # the step will receive a config from the user that mentions the number
     # of workers etc.the step implementation will create a new config using

@@ -13,13 +13,17 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML local Docker orchestrator."""
 
+import json
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union, cast
 from uuid import uuid4
 
+from pydantic import validator
+
 from zenml.client import Client
+from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
@@ -50,6 +54,15 @@ class LocalDockerOrchestrator(BaseOrchestrator):
     This orchestrator does not allow for concurrent execution of steps and also
     does not support running on a schedule.
     """
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Local Docker orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return LocalDockerOrchestratorSettings
 
     def prepare_pipeline_deployment(
         self,
@@ -153,6 +166,12 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name
             )
+
+            settings = cast(
+                LocalDockerOrchestratorSettings,
+                self.get_settings(step),
+            )
+
             user = None
             if sys.platform != "win32":
                 user = os.getuid()
@@ -165,6 +184,8 @@ class LocalDockerOrchestrator(BaseOrchestrator):
                 volumes=volumes,
                 environment=environment,
                 stream=True,
+                extra_hosts={"host.docker.internal": "host-gateway"},
+                **settings.run_args,
             )
 
             for line in logs:
@@ -180,7 +201,53 @@ class LocalDockerOrchestrator(BaseOrchestrator):
         )
 
 
-class LocalDockerOrchestratorConfig(BaseOrchestratorConfig):
+class LocalDockerOrchestratorSettings(BaseSettings):
+    """Local Docker orchestrator settings.
+
+    Attributes:
+        run_args: Arguments to pass to the `docker run` call.
+    """
+
+    run_args: Dict[str, Any] = {}
+
+    @validator("run_args", pre=True)
+    def _convert_json_string(
+        cls, value: Union[None, str, Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
+        """Converts potential JSON strings passed via the CLI to dictionaries.
+
+        Args:
+            value: The value to convert.
+
+        Returns:
+            The converted value.
+
+        Raises:
+            TypeError: If the value is not a `str`, `Dict` or `None`.
+            ValueError: If the value is an invalid json string or a json string
+                that does not decode into a dictionary.
+        """
+        if isinstance(value, str):
+            try:
+                dict_ = json.loads(value)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid json string '{value}'") from e
+
+            if not isinstance(dict_, Dict):
+                raise ValueError(
+                    f"Json string '{value}' did not decode into a dictionary."
+                )
+
+            return dict_
+        elif isinstance(value, Dict) or value is None:
+            return value
+        else:
+            raise TypeError(f"{value} is not a json string or a dictionary.")
+
+
+class LocalDockerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseOrchestratorConfig, LocalDockerOrchestratorSettings
+):
     """Local Docker orchestrator config."""
 
     @property
