@@ -126,8 +126,8 @@ from zenml.zen_stores.schemas import (
     RoleSchema,
     StackComponentSchema,
     StackSchema,
-    StepRunParentsSchema,
     StepRunArtifactSchema,
+    StepRunParentsSchema,
     StepRunSchema,
     TeamRoleAssignmentSchema,
     TeamSchema,
@@ -1128,7 +1128,7 @@ class SqlZenStore(BaseZenStore):
                     name=component.name,
                     component_type=component.type,
                     project_id=component.project,
-                    session=session
+                    session=session,
                 )
 
             # Create the component
@@ -3249,9 +3249,7 @@ class SqlZenStore(BaseZenStore):
                 )
             query_result = session.exec(
                 select(ArtifactSchema, StepRunArtifactSchema)
-                .where(
-                    ArtifactSchema.id == StepRunArtifactSchema.artifact_id
-                )
+                .where(ArtifactSchema.id == StepRunArtifactSchema.artifact_id)
                 .where(StepRunArtifactSchema.step_id == step_id)
             ).all()
             return {

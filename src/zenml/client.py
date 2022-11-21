@@ -1207,9 +1207,9 @@ class Client(metaclass=ClientMetaClass):
         for c_type, c_identifier in components.items():
             if c_identifier:
                 component = self.get_stack_component(
-                        name_id_or_prefix=c_identifier,
-                        component_type=c_type,
-                    )
+                    name_id_or_prefix=c_identifier,
+                    component_type=c_type,
+                )
                 stack_components[c_type] = [component.id]
 
                 if is_shared:
@@ -1294,15 +1294,15 @@ class Client(metaclass=ClientMetaClass):
                 for c in components:
                     if not c.is_shared:
                         raise ValueError(
-                             f"A Stack can only be shared when all its "
-                             f"components are also shared. Component "
-                             f"{component_type}:{c.name} is not shared. Set "
-                             f"the {component_type} to shared like this and "
-                             f"then try re-sharing your stack:\n "
-                             f"`zenml {component_type.replace('_', '-')} "
-                             f"share {c.id}`\n. Alternatively, you can rerun "
-                             f"your command with `-r` to recursively "
-                             f"share all components within the stack."
+                            f"A Stack can only be shared when all its "
+                            f"components are also shared. Component "
+                            f"{component_type}:{c.name} is not shared. Set "
+                            f"the {component_type} to shared like this and "
+                            f"then try re-sharing your stack:\n "
+                            f"`zenml {component_type.replace('_', '-')} "
+                            f"share {c.id}`\n. Alternatively, you can rerun "
+                            f"your command with `-r` to recursively "
+                            f"share all components within the stack."
                         )
 
             update_model.is_shared = is_shared

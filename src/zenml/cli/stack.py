@@ -403,9 +403,7 @@ def update_stack(
         except IllegalOperationError as err:
             cli_utils.error(str(err))
 
-        cli_utils.declare(
-            f"Stack `{updated_stack.name}` successfully updated!"
-        )
+        cli_utils.declare(f"Stack `{updated_stack.name}` successfully updated!")
 
 
 @stack.command(

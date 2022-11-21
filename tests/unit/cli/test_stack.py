@@ -591,7 +591,7 @@ def test_add_private_component_to_shared_stack_fails(
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.id,
             StackComponentType.ORCHESTRATOR: new_orchestrator_model.id,
-        }
+        },
     )
 
     # Share stack where the shared versions of components already exists
@@ -631,7 +631,7 @@ def test_share_stack_when_component_is_private_fails(
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
             StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
-        }
+        },
     )
 
     # Share stack where the shared versions of components already exists
