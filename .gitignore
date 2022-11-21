@@ -187,3 +187,6 @@ test_terraform/
 
 # feast registry database
 examples/feast_feature_store/feast_feature_repo/data/registry.db
+
+#neptune
+*.neptune/
