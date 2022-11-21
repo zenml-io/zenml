@@ -129,7 +129,7 @@ class StepSpec(StrictBaseModel):
                 return False
 
             # Remove internal version pin from older sources for backwards
-            # compatability
+            # compatibility
             source = source_utils.remove_internal_version_pin(self.source)
             other_source = source_utils.remove_internal_version_pin(
                 other.source
