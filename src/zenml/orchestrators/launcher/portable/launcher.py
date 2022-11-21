@@ -264,7 +264,9 @@ class Launcher:
             exec_properties=exec_properties,
         )
 
-    def _prepare_execution(self) -> Tuple[_ExecutionPreparationResult, UUID]:
+    def _prepare_execution(
+        self,
+    ) -> Tuple[_ExecutionPreparationResult, Optional[UUID]]:
         """Prepares inputs, outputs and execution properties for actual execution."""
         with self._mlmd_connection as m:
             # 1.Prepares all contexts.
@@ -298,12 +300,15 @@ class Launcher:
                         ),
                     )
                     # RMTFX: publish failed step run
-                return _ExecutionPreparationResult(
-                    execution_info=self._build_execution_info(
-                        execution_id=execution.id
+                return (
+                    _ExecutionPreparationResult(
+                        execution_info=self._build_execution_info(
+                            execution_id=execution.id
+                        ),
+                        contexts=contexts,
+                        is_execution_needed=False,
                     ),
-                    contexts=contexts,
-                    is_execution_needed=False,
+                    None,
                 )
 
             # RMTFX: register pipeline run, step
@@ -317,10 +322,13 @@ class Launcher:
                     "Skipping execution for %s",
                     self._pipeline_node.node_info.id,
                 )
-                return _ExecutionPreparationResult(
-                    execution_info=self._build_execution_info(),
-                    contexts=contexts,
-                    is_execution_needed=False,
+                return (
+                    _ExecutionPreparationResult(
+                        execution_info=self._build_execution_info(),
+                        contexts=contexts,
+                        is_execution_needed=False,
+                    ),
+                    None,
                 )
 
             # TODO(b/197741942): Support len > 1.
@@ -341,12 +349,15 @@ class Launcher:
                         executor_output=executor_output,
                     )
                     # RMTFX: publish failed step run
-                return _ExecutionPreparationResult(
-                    execution_info=self._build_execution_info(
-                        execution_id=execution.id
+                return (
+                    _ExecutionPreparationResult(
+                        execution_info=self._build_execution_info(
+                            execution_id=execution.id
+                        ),
+                        contexts=contexts,
+                        is_execution_needed=False,
                     ),
-                    contexts=contexts,
-                    is_execution_needed=False,
+                    None,
                 )
 
             input_artifacts = resolved_inputs[0]
@@ -701,9 +712,12 @@ class Launcher:
             execution_preparation_result.is_execution_needed,
         )
         if is_execution_needed:
+            assert step_run_id
             executor_watcher = None
             try:
                 if self._executor_operator:
+                    # RMTFX: this seems to not be used at all even in TFX
+
                     # Create an execution watcher and save an in memory copy of the
                     # Execution object to execution to it. Launcher calls executor
                     # operator in process, thus there won't be race condition between the
