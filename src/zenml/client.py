@@ -2241,7 +2241,7 @@ class Client(metaclass=ClientMetaClass):
                 name=mlmd_run.name,
                 stack=None,  # Stack might not exist in new DB.
                 pipeline=None,  # Pipeline might not exist in new DB.
-                status=ExecutionStatus.run_status(step_statuses, num_steps),
+                status=ExecutionStatus.run_status(step_statuses),
                 pipeline_configuration=mlmd_run.pipeline_configuration,
                 num_steps=num_steps,
                 mlmd_id=None,  # Run might not exist in new MLMD.
@@ -2402,32 +2402,32 @@ class Client(metaclass=ClientMetaClass):
             )
         elif len(components) == 1:
             return components[0]
-        else:
-            logger.debug(
-                f"No component with name '{name_id_or_prefix}' "
-                f"exists. Trying to resolve as partial_id"
+
+        logger.debug(
+            f"No component with name '{name_id_or_prefix}' "
+            f"exists. Trying to resolve as partial_id"
+        )
+
+        filtered_comps = [
+            component
+            for component in components
+            if str(component.id).startswith(name_id_or_prefix)
+        ]
+        if len(filtered_comps) > 1:
+            raise KeyError(
+                f"The components listed above all share the provided "
+                f"prefix '{name_id_or_prefix}' on their ids. Please "
+                f"provide more characters to uniquely identify only one "
+                f"component."
             )
 
-            filtered_comps = [
-                component
-                for component in components
-                if str(component.id).startswith(name_id_or_prefix)
-            ]
-            if len(filtered_comps) > 1:
-                raise KeyError(
-                    f"The components listed above all share the provided "
-                    f"prefix '{name_id_or_prefix}' on their ids. Please "
-                    f"provide more characters to uniquely identify only one "
-                    f"component."
-                )
+        elif len(filtered_comps) == 1:
+            return filtered_comps[0]
 
-            elif len(filtered_comps) == 1:
-                return filtered_comps[0]
-            else:
-                raise KeyError(
-                    f"No component of type `{component_type}` with name or id "
-                    f"prefix '{name_id_or_prefix}' exists."
-                )
+        raise KeyError(
+            f"No component of type `{component_type}` with name or id "
+            f"prefix '{name_id_or_prefix}' exists."
+        )
 
     def _get_entity_by_id_or_name_or_prefix(
         self,
