@@ -53,8 +53,8 @@ jobs:
       # label_studio are currently the ones known to be very restrictive in
       # terms of what versions of dependencies they require
       # 3. Install bentoml because of its attrs version
-      # 4. Install airflow because of its attrs version>=2.1.0
-      # 5. install the rest of the integrations
+      # 4. Install airflow because of its attrs version>=22.1.0
+      # 5. install the rest of the integrations (where aws depends on attrs==20.3.0)
       # 6. as the last step, install zenml again (step 1. repeated)
       # 7. Reinstall jinja in the correct version as the contexthandler is
       # deprecated in 3.1.0 but mkdocstring depends on this method
