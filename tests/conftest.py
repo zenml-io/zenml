@@ -612,7 +612,6 @@ def sample_step_model() -> StepRunModel:
         output_artifacts={},
         step_configuration={},
         status=ExecutionStatus.COMPLETED,
-        is_cached=False,
     )
 
 
@@ -662,7 +661,6 @@ def sample_artifact_model() -> ArtifactModel:
         data_type="sample_data_type",
         parent_step_id=uuid4(),
         producer_step_id=uuid4(),
-        is_cached=False,
     )
 
 
