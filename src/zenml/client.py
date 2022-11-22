@@ -1033,7 +1033,7 @@ class Client(metaclass=ClientMetaClass):
         return project
 
     def get_project(
-        self, name_id_or_prefix: Union[str, UUID]
+        self, name_id_or_prefix: Optional[Union[UUID, str]]
     ) -> ProjectResponseModel:
         """Gets a project.
 
@@ -1043,6 +1043,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The Project
         """
+        if not name_id_or_prefix:
+            return self.active_project
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=ProjectResponseModel,
             get_method=self.zen_store.get_project,
@@ -1065,18 +1067,18 @@ class Client(metaclass=ClientMetaClass):
 
     def update_project(
         self,
-        name: str,
+        name_id_or_prefix: Optional[Union[UUID, str]],
         new_name: Optional[str] = None,
         new_description: Optional[str] = None,
     ) -> "ProjectResponseModel":
         """Create a new project.
 
         Args:
-            name: Name of the project
+            name_id_or_prefix: Name, ID or prefix of the project
             new_name: Name of the project
             new_description: Description of the project
         """
-        project = self.get_project(name_id_or_prefix=name)
+        project = self.get_project(name_id_or_prefix=name_id_or_prefix)
         project_update = ProjectUpdateModel()
         if new_name:
             project_update.name = new_name
@@ -1226,12 +1228,12 @@ class Client(metaclass=ClientMetaClass):
 
     def update_stack(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
         description: Optional[str] = None,
         component_updates: Optional[
-            Dict[StackComponentType, List[Optional[str]]]
+            Dict[StackComponentType, List[Optional[Union[UUID, str]]]]
         ] = None,
     ) -> "StackResponseModel":
         """Updates a stack and its components.
@@ -1574,7 +1576,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_stack_component(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Optional[Union[UUID, str]],
         component_type: StackComponentType,
         name: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,

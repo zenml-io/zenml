@@ -1326,7 +1326,10 @@ class RestZenStore(BaseZenStore):
             The pipeline run.
         """
         return self._create_project_scoped_resource(
-            resource=pipeline_run, route=RUNS, params={"get_if_exists": True}
+            resource=pipeline_run,
+            route=RUNS,
+            response_model=PipelineRunResponseModel,
+            params={"get_if_exists": True},
         )
 
     def list_runs(

@@ -122,8 +122,17 @@ class PipelineRunSchema(NamedSchema, table=True):
                 updated=self.updated,
             )
 
-    def update(self, run_update: "PipelineRunUpdateModel"):
-        """ """
+    def update(
+        self, run_update: "PipelineRunUpdateModel"
+    ) -> "PipelineRunSchema":
+        """Update a `PipelineRunSchema` with a `PipelineRunUpdateModel`.
+
+        Args:
+            run_update: The `PipelineRunUpdateModel` to update with.
+
+        Returns:
+            The updated `PipelineRunSchema`.
+        """
         if run_update.mlmd_id:
             self.mlmd_id = run_update.mlmd_id
 
@@ -131,3 +140,4 @@ class PipelineRunSchema(NamedSchema, table=True):
             self.status = run_update.status
 
         self.updated = datetime.now()
+        return self

@@ -26,11 +26,8 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import (
-        PipelineRunSchema,
-        StackComponentSchema,
-        StackUpdateModel,
-    )
+    from zenml.models.stack_models import StackUpdateModel
+    from zenml.zen_stores.schemas import PipelineRunSchema, StackComponentSchema
 
 
 class StackCompositionSchema(SQLModel, table=True):

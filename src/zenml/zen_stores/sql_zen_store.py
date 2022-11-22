@@ -1087,15 +1087,19 @@ class SqlZenStore(BaseZenStore):
             project = self._get_project_schema(
                 project_name_or_id=stack.project, session=session
             )
-            owner_of_shared = self._get_user_schema(
-                existing_shared_stack.user_id, session=session
-            )
-
-            raise StackExistsError(
+            error_msg = (
                 f"Unable to share stack with name '{stack.name}': Found an "
                 f"existing shared stack with the same name in project "
-                f"'{project.name}' owned by '{owner_of_shared.name}'."
+                f"'{project.name}'"
             )
+            if existing_shared_stack.user_id:
+                owner_of_shared = self._get_user_schema(
+                    existing_shared_stack.user_id, session=session
+                )
+                error_msg += f" owned by '{owner_of_shared.name}'."
+            else:
+                error_msg += ", which is currently not owned by any user."
+            raise StackExistsError(error_msg)
 
     # ----------------
     # Stack components
@@ -1844,7 +1848,7 @@ class SqlZenStore(BaseZenStore):
             # Update the team
             existing_team.update(team_update=team_update)
             existing_team.users = []
-            if "users" in team_update.__fields_set__:
+            if "users" in team_update.__fields_set__ and team_update.users:
                 for user in team_update.users:
                     existing_team.users.append(
                         self._get_user_schema(
@@ -2280,12 +2284,15 @@ class SqlZenStore(BaseZenStore):
                 user_name_or_id=role_assignment.user,
                 project_name_or_id=role_assignment.project,
             )
-        elif role_assignment.team:
+        if role_assignment.team:
             return self._assign_role_to_team(
                 role_name_or_id=role_assignment.role,
                 team_name_or_id=role_assignment.team,
                 project_name_or_id=role_assignment.project,
             )
+        raise ValueError(
+            "Role assignment must be assigned to either a user or a team."
+        )
 
     def get_role_assignment(
         self, role_assignment_id: UUID
@@ -2310,11 +2317,9 @@ class SqlZenStore(BaseZenStore):
             if team_role:
                 return team_role.to_model()
 
-            if user_role is None and team_role is None:
-                raise KeyError(
-                    f"RoleAssignment with ID {role_assignment_id} "
-                    f"not found."
-                )
+            raise KeyError(
+                f"RoleAssignment with ID {role_assignment_id} not found."
+            )
 
     def delete_role_assignment(self, role_assignment_id: UUID) -> None:
         """Delete a specific role assignment

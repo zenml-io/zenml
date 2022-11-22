@@ -347,9 +347,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                     active_stack = self._get_or_create_default_stack(
                         active_project
                     )
-                elif (
-                    not active_stack.is_shared
-                    and active_stack.user.id != self.active_user.id
+                elif not active_stack.is_shared and (
+                    not active_stack.user
+                    or (active_stack.user.id != self.active_user.id)
                 ):
                     logger.warning(
                         "The current %s active stack is not shared and not "

@@ -102,7 +102,7 @@ def update_project(
     cli_utils.print_active_config()
     try:
         Client().update_project(
-            name=project_name,
+            name_id_or_prefix=project_name,
             new_name=new_name,
             new_description=new_description,
         )
