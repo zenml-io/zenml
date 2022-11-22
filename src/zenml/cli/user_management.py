@@ -68,7 +68,7 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 def list_users() -> None:
     """List all users."""
     cli_utils.print_active_config()
-    users = Client().zen_store.users
+    users = Client().list_users()
     if not users:
         cli_utils.declare("No users registered.")
         return

@@ -575,6 +575,20 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
+    def list_users(
+            self,
+            name: Optional[str] = None
+    ) -> List[UserResponseModel]:
+        """List all users.
+
+        Args:
+            name: The name to filter by
+
+        Returns:
+            The User
+        """
+        return self.zen_store.list_users(name=name)
+
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.
 

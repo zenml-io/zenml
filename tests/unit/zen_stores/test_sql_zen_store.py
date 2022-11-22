@@ -300,14 +300,6 @@ def test_removing_user_from_team_succeeds(
     assert current_user_id not in updated_team.user_ids
 
 
-def test_getting_user_from_nonexistent_team_fails(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-):
-    """Tests getting a user from a nonexistent team raises an error."""
-    with pytest.raises(KeyError):
-        sql_store["store"].get_users_for_team(uuid.uuid4())
-
-
 def test_access_user_in_team_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
