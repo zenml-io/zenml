@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -36,9 +37,9 @@ class ArtifactBaseModel(BaseModel):
     is_cached: bool
 
     # IDs in MLMD - needed for some metadata store methods
-    mlmd_id: int
-    mlmd_parent_step_id: int
-    mlmd_producer_step_id: int
+    mlmd_id: Optional[int]
+    mlmd_parent_step_id: Optional[int]
+    mlmd_producer_step_id: Optional[int]
 
 
 # -------- #

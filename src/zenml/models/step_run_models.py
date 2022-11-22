@@ -29,7 +29,7 @@ class StepRunBaseModel(BaseModel):
     num_outputs: Optional[int]
 
     # IDs in MLMD - needed for some metadata store methods
-    mlmd_id: int
+    mlmd_id: Optional[int]
     mlmd_parent_step_ids: List[int]
 
 

@@ -76,9 +76,7 @@ class PipelineRunBaseModel(BaseModel):
 class PipelineRunResponseModel(
     PipelineRunBaseModel, ProjectScopedResponseModel
 ):
-    """Pipeline model with User and Project fully hydrated."""
-
-    status: ExecutionStatus = Field(title="The status of the run.")
+    """Pipeline run model with user, project, pipeline, and stack hydrated."""
 
     pipeline: Optional["PipelineResponseModel"] = Field(
         title="The pipeline this run belongs to."

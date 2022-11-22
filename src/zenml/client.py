@@ -28,7 +28,7 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -2083,7 +2083,6 @@ class Client(metaclass=ClientMetaClass):
         Args:
             filename: The filename from which to import the pipeline runs.
         """
-        from datetime import datetime
 
         from zenml.utils.yaml_utils import read_yaml
 
@@ -2092,11 +2091,10 @@ class Client(metaclass=ClientMetaClass):
         yaml_data = read_yaml(filename)
         for pipeline_run_dict in yaml_data:
             steps = pipeline_run_dict.pop("steps")
-            pipeline_run_dict.pop("id")
+            pipeline_run_dict["id"] = uuid4()
+            pipeline_run_dict["user"] = self.active_user.id
+            pipeline_run_dict["project"] = self.active_project.id
             pipeline_run = PipelineRunRequestModel.parse_obj(pipeline_run_dict)
-            pipeline_run.updated = datetime.now()
-            pipeline_run.user = self.active_user.id
-            pipeline_run.project = self.active_project.id
             pipeline_run.stack = None
             pipeline_run.pipeline = None
             pipeline_run.mlmd_id = None
@@ -2114,7 +2112,6 @@ class Client(metaclass=ClientMetaClass):
                     input_name: artifact_id_mapping[str(artifact_id)]
                     for input_name, artifact_id in step.input_artifacts.items()
                 }
-                step.updated = datetime.now()
                 step.mlmd_id = None
                 step.mlmd_parent_step_ids = []
                 step = self.zen_store.create_run_step(step)
@@ -2126,7 +2123,6 @@ class Client(metaclass=ClientMetaClass):
                     artifact.producer_step_id = step_id_mapping[
                         str(artifact.producer_step_id)
                     ]
-                    artifact.updated = datetime.now()
                     artifact.mlmd_id = None
                     artifact.mlmd_parent_step_id = None
                     artifact.mlmd_producer_step_id = None
