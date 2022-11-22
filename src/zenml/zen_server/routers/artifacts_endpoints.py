@@ -13,14 +13,15 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
+from asyncio.log import logger
 from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Security
 
-from zenml.constants import API, ARTIFACTS, VERSION_1
+from zenml.constants import API, ARTIFACTS, PRODUCER_STEP, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models.pipeline_models import ArtifactModel
+from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -47,16 +48,18 @@ def list_artifacts(
     Args:
         artifact_uri: If specified, only artifacts with the given URI will
             be returned.
-        parent_step_id: If specified, only artifacts for the given step run
-            will be returned.
+        parent_step_id: Deprecated filter, will be ignored.
 
     Returns:
         The artifacts according to query filters.
     """
-    return zen_store().list_artifacts(
-        artifact_uri=artifact_uri,
-        parent_step_id=parent_step_id,
-    )
+    if parent_step_id:
+        logger.warning(
+            "The ZenML server received a request to list artifacts with an "
+            "outdated filter argument. If you see this message, please "
+            "update your ZenML client to match the server version."
+        )
+    return zen_store().list_artifacts(artifact_uri=artifact_uri)
 
 
 @router.post(
@@ -78,3 +81,24 @@ def create_artifact(
         The created artifact.
     """
     return zen_store().create_artifact(artifact)
+
+
+@router.get(
+    "/{artifact_id}" + PRODUCER_STEP,
+    response_model=StepRunModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_artifact_producer_step_id(
+    artifact_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> StepRunModel:
+    """Gets the producer step for an artifact.
+
+    Args:
+        artifact_id: The ID of the artifact to get the producer step for.
+
+    Returns:
+        The step run that produced the artifact.
+    """
+    return zen_store().get_artifact_producer_step(artifact_id)

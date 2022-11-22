@@ -107,6 +107,7 @@ class StepRunModel(DomainModel):
     pipeline_run_id: UUID
     parent_step_ids: List[UUID]
     input_artifacts: Dict[str, UUID]  # mapping from input name to artifact ID
+    output_artifacts: Dict[str, UUID]  # mapping from output name to artifact ID
 
     enable_cache: Optional[bool]
     code_hash: Optional[str]
@@ -132,16 +133,11 @@ class ArtifactModel(DomainModel):
     name: str  # Name of the output in the parent step
 
     artifact_store_id: Optional[UUID]
-    parent_step_id: UUID
-    producer_step_id: UUID
 
     type: ArtifactType
     uri: str
     materializer: str
     data_type: str
-    is_cached: bool
 
     # IDs in MLMD - needed for some metadata store methods
     mlmd_id: Optional[int]
-    mlmd_parent_step_id: Optional[int]
-    mlmd_producer_step_id: Optional[int]

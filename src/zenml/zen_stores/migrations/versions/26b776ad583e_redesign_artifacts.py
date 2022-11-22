@@ -33,7 +33,6 @@ def upgrade() -> None:
         sa.Column("step_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("artifact_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("is_cached", sa.Boolean(), nullable=False),
         sa.ForeignKeyConstraint(
             ["artifact_id"],
             ["artifacts.id"],
@@ -52,6 +51,7 @@ def upgrade() -> None:
     # ------------
     # Migrate data
     # ------------
+    conn = op.get_bind()
     meta = sa.MetaData(bind=op.get_bind())
     meta.reflect(
         only=(
@@ -63,7 +63,6 @@ def upgrade() -> None:
     artifacts = sa.Table("artifacts", meta)
     step_run_output_artifact = sa.Table("step_run_output_artifact", meta)
     step_run_input_artifact = sa.Table("step_run_input_artifact", meta)
-    conn = op.get_bind()
 
     # Get all artifacts that were actually produced and not cached.
     produced_artifacts = conn.execute(
@@ -127,7 +126,6 @@ def upgrade() -> None:
             "step_run_id": produced_artifact.parent_step_id,
             "artifact_id": produced_artifact.id,
             "name": produced_artifact.name,
-            "is_cached": False,
         }
         for produced_artifact in produced_artifacts
     ]
@@ -136,7 +134,6 @@ def upgrade() -> None:
             "step_run_id": cached_artifact.parent_step_id,
             "artifact_id": cached_to_produced_mapping[cached_artifact.id],
             "name": cached_artifact.name,
-            "is_cached": True,
         }
         for cached_artifact in cached_artifacts
     ]
@@ -174,6 +171,8 @@ def upgrade() -> None:
         batch_op.drop_column("parent_step_id")
         batch_op.drop_column("producer_step_id")
         batch_op.drop_column("is_cached")
+        batch_op.drop_column("mlmd_parent_step_id")
+        batch_op.drop_column("mlmd_producer_step_id")
 
     # Rename `step_id` to `step_run_id` in `step_run_input_artifact`
     with op.batch_alter_table(
@@ -218,6 +217,12 @@ def downgrade() -> None:
         )
         batch_op.add_column(
             sa.Column("is_cached", sa.Boolean(), nullable=False)
+        )
+        batch_op.add_column(
+            sa.Column("mlmd_producer_step_id", sa.Integer(), nullable=True)
+        )
+        batch_op.add_column(
+            sa.Column("mlmd_parent_step_id", sa.Integer(), nullable=True)
         )
 
         # Drop new artifact store link column

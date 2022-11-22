@@ -134,12 +134,11 @@ def test_pipeline_export_delete_import(
     """Tests exporting, deleting and importing a pipeline run."""
     sample_pipeline_run_model.project = clean_client.active_project.id
     sample_pipeline_run_model.user = clean_client.active_user.id
-    sample_step_model.pipeline_run_id = sample_pipeline_run_model.id
-    sample_artifact_model.parent_step_id = sample_step_model.id
-    sample_artifact_model.producer_step_id = sample_step_model.id
     clean_client.zen_store.create_run(sample_pipeline_run_model)
+    new_artifact = clean_client.zen_store.create_artifact(sample_artifact_model)
+    sample_step_model.pipeline_run_id = sample_pipeline_run_model.id
+    sample_step_model.output_artifacts = {new_artifact.name: new_artifact.id}
     clean_client.zen_store.create_run_step(sample_step_model)
-    clean_client.zen_store.create_artifact(sample_artifact_model)
     assert len(clean_client.zen_store.list_runs()) > 0
     assert len(clean_client.zen_store.list_run_steps()) > 0
     assert len(clean_client.zen_store.list_artifacts()) > 0

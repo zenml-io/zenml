@@ -145,10 +145,7 @@ def get_step_outputs(
     Returns:
         All outputs of the step, mapping from output name to artifact model.
     """
-    return {
-        artifact.name: artifact
-        for artifact in zen_store().list_artifacts(parent_step_id=step_id)
-    }
+    return zen_store().get_run_step_output_artifacts(step_id)
 
 
 @router.get(
@@ -169,7 +166,7 @@ def get_step_inputs(
     Returns:
         All inputs of the step, mapping from input name to artifact model.
     """
-    return zen_store().get_run_step_inputs(step_id)
+    return zen_store().get_run_step_input_artifacts(step_id)
 
 
 @router.get(

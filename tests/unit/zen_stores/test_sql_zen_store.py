@@ -1191,9 +1191,8 @@ def test_get_run_step_outputs_succeeds(
 ):
     """Tests getting run step outputs."""
     pipeline_step = sql_store_with_run["step"]
-    run_step_outputs = sql_store_with_run["store"].list_artifacts(
-        parent_step_id=pipeline_step.id
-    )
+    store = sql_store_with_run["store"]
+    run_step_outputs = store.get_run_step_output_artifacts(pipeline_step.id)
     assert len(run_step_outputs) == 1
 
 
@@ -1202,9 +1201,8 @@ def test_get_run_step_inputs_succeeds(
 ):
     """Tests getting run step inputs."""
     pipeline_step = sql_store_with_run["step"]
-    run_step_inputs = sql_store_with_run["store"].get_run_step_inputs(
-        step_run_id=pipeline_step.id
-    )
+    store = sql_store_with_run["store"]
+    run_step_inputs = store.get_run_step_input_artifacts(pipeline_step.id)
     assert len(run_step_inputs) == 1
 
 
@@ -1212,8 +1210,9 @@ def test_get_run_step_inputs_fails_when_step_does_not_exist(
     sql_store: BaseZenStore,
 ):
     """Tests getting run step inputs fails when step does not exist."""
+    store = sql_store["store"]
     with pytest.raises(KeyError):
-        sql_store["store"].get_run_step_inputs(step_run_id=uuid.uuid4())
+        store.get_run_step_input_artifacts(step_run_id=uuid.uuid4())
 
 
 def test_get_run_step_status_succeeds(

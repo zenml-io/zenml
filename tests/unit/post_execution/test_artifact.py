@@ -30,7 +30,6 @@ def _create_artifact_view(materializer: str, data_type: str) -> ArtifactView:
             uri="",
             materializer=materializer,
             data_type=data_type,
-            is_cached=False,
             mlmd_id=0,
             mlmd_parent_step_id=0,
             mlmd_producer_step_id=0,

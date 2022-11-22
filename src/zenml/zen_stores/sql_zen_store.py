@@ -124,7 +124,6 @@ if TYPE_CHECKING:
 
     from zenml.zen_stores.metadata_store import (
         MetadataStore,
-        MLMDArtifactModel,
         MLMDPipelineRunModel,
         MLMDStepRunModel,
     )
@@ -3096,12 +3095,22 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
+            # Save output artifact IDs into the database.
+            for output_name, artifact_id in step_run.output_artifacts.items():
+                self._set_run_step_output_artifact(
+                    step_run_id=step_run.id,
+                    artifact_id=artifact_id,
+                    name=output_name,
+                    session=session,
+                )
+
             session.commit()
 
             return step_schema.to_model(
                 parent_step_ids=step_run.parent_step_ids,
                 mlmd_parent_step_ids=step_run.mlmd_parent_step_ids,
                 input_artifacts=step_run.input_artifacts,
+                output_artifacts=step_run.output_artifacts,
             )
 
     def _set_run_step_parent_step(
@@ -3202,6 +3211,61 @@ class SqlZenStore(BaseZenStore):
         )
         session.add(assignment)
 
+    def _set_run_step_output_artifact(
+        self,
+        step_run_id: UUID,
+        artifact_id: UUID,
+        name: str,
+        session: Session,
+    ) -> None:
+        """Sets an artifact as an output of a step run.
+
+        Args:
+            step_run_id: The ID of the step run.
+            artifact_id: The ID of the artifact.
+            name: The name of the output in the step run.
+            session: The database session to use.
+
+        Raises:
+            KeyError: if the step run or artifact doesn't exist.
+        """
+        # Check if the step exists.
+        step_run = session.exec(
+            select(StepRunSchema).where(StepRunSchema.id == step_run_id)
+        ).first()
+        if step_run is None:
+            raise KeyError(
+                f"Unable to set output artifact: No step run with ID "
+                f"'{step_run_id}' found."
+            )
+
+        # Check if the artifact exists.
+        artifact = session.exec(
+            select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+        ).first()
+        if artifact is None:
+            raise KeyError(
+                f"Unable to set output artifact: No artifact with ID "
+                f"'{artifact_id}' found."
+            )
+
+        # Check if the output is already set.
+        assignment = session.exec(
+            select(StepRunOutputArtifactSchema)
+            .where(StepRunOutputArtifactSchema.step_run_id == step_run_id)
+            .where(StepRunOutputArtifactSchema.artifact_id == artifact_id)
+        ).first()
+        if assignment is not None:
+            return
+
+        # Save the output assignment in the database.
+        assignment = StepRunOutputArtifactSchema(
+            step_run_id=step_run_id,
+            artifact_id=artifact_id,
+            name=name,
+        )
+        session.add(assignment)
+
     def get_run_step(self, step_run_id: UUID) -> StepRunModel:
         """Get a step run by ID.
 
@@ -3265,11 +3329,24 @@ class SqlZenStore(BaseZenStore):
                 for input_artifact in input_artifact_list
             }
 
+            # Get output artifacts.
+            output_artifact_list = session.exec(
+                select(
+                    StepRunOutputArtifactSchema.artifact_id,
+                    StepRunOutputArtifactSchema.name,
+                ).where(StepRunOutputArtifactSchema.step_run_id == step_run.id)
+            ).all()
+            output_artifacts = {
+                output_artifact[1]: output_artifact[0]
+                for output_artifact in output_artifact_list
+            }
+
             # Convert to model.
             return step_run.to_model(
                 parent_step_ids=parent_step_ids,
                 mlmd_parent_step_ids=mlmd_parent_step_ids,
                 input_artifacts=input_artifacts,
+                output_artifacts=output_artifacts,
             )
 
     def list_run_steps(
@@ -3305,6 +3382,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the step run doesn't exist.
         """
         with Session(self.engine) as session:
+
             # Check if the step exists
             existing_step_run = session.exec(
                 select(StepRunSchema).where(StepRunSchema.id == step_run.id)
@@ -3318,94 +3396,104 @@ class SqlZenStore(BaseZenStore):
             # Update the step
             existing_step_run.from_update_model(step_run)
             session.add(existing_step_run)
-            session.commit()
 
+            # Update the output artifacts.
+            for output_name, artifact_id in step_run.output_artifacts.items():
+                self._set_run_step_output_artifact(
+                    step_run_id=step_run.id,
+                    artifact_id=artifact_id,
+                    name=output_name,
+                    session=session,
+                )
+
+            # Input artifacts and parent steps cannot be updated after the
+            # step has been created.
+
+            session.commit()
             session.refresh(existing_step_run)
+
             return existing_step_run.to_model(
                 parent_step_ids=step_run.parent_step_ids,
                 mlmd_parent_step_ids=step_run.mlmd_parent_step_ids,
                 input_artifacts=step_run.input_artifacts,
+                output_artifacts=step_run.output_artifacts,
             )
 
-    def get_run_step_inputs(
+    def get_run_step_input_artifacts(
         self, step_run_id: UUID
     ) -> Dict[str, ArtifactModel]:
-        """Get a list of inputs for a specific step run.
+        """Get the input artifacts for a step run.
 
         Args:
-            step_run_id: The id of the step run to get inputs for.
+            step_run_id: The ID of the step run to get the input artifacts for.
 
         Returns:
-            A dict mapping artifact names to the input artifacts for the step.
+            A dictionary mapping artifact names to artifact models.
 
         Raises:
             KeyError: if the step run doesn't exist.
         """
         with Session(self.engine) as session:
-
-            # Check if the step exists.
             step_run = session.exec(
                 select(StepRunSchema).where(StepRunSchema.id == step_run_id)
             ).first()
             if step_run is None:
                 raise KeyError(
-                    f"Unable to get input artifacts for step with ID "
-                    f"{step_run_id}: No step with this ID found."
+                    f"Unable to get step run with ID {step_run_id}: No step "
+                    "run with this ID found."
                 )
-
-            # Get input artifacts.
-            query_result = session.exec(
-                select(ArtifactSchema, StepRunInputArtifactSchema)
+            input_artifacts = session.exec(
+                select(
+                    ArtifactSchema,
+                    StepRunInputArtifactSchema.name,
+                )
                 .where(
                     ArtifactSchema.id == StepRunInputArtifactSchema.artifact_id
                 )
                 .where(StepRunInputArtifactSchema.step_run_id == step_run_id)
             ).all()
+            return {
+                input_artifact[1]: input_artifact[0].to_model()
+                for input_artifact in input_artifacts
+            }
 
-            # Convert to model.
-            input_artifacts: Dict[str, ArtifactModel] = {}
-            for artifact, input_artifact in query_result:
+    def get_run_step_output_artifacts(
+        self, step_run_id: UUID
+    ) -> Dict[str, ArtifactModel]:
+        """Get the output artifacts for a step run.
 
-                # Get the parent step ID.
-                parent_step_id = session.exec(
-                    select(StepRunOutputArtifactSchema.step_run_id)
-                    .where(
-                        StepRunOutputArtifactSchema.artifact_id == artifact.id
-                    )
-                    .where(
-                        StepRunParentsSchema.parent_id
-                        == StepRunOutputArtifactSchema.step_run_id
-                    )
-                    .where(StepRunParentsSchema.child_id == step_run_id)
-                ).first()
-                if parent_step_id is None:
-                    raise KeyError(
-                        f"Unable to get input artifacts for step with ID "
-                        f"{step_run_id}: No parent step found for artifact "
-                        f"{artifact.id}."
-                    )
+        Args:
+            step_run_id: The ID of the step run to get the output artifacts for.
 
-                # Get the producer step ID.
-                producer_step_id = session.exec(
-                    select(StepRunOutputArtifactSchema.step_run_id)
-                    .where(
-                        StepRunOutputArtifactSchema.artifact_id == artifact.id
-                    )
-                    .where(StepRunOutputArtifactSchema.is_cached == False)
-                ).first()
-                if producer_step_id is None:
-                    raise KeyError(
-                        f"Unable to get input artifacts for step with ID "
-                        f"{step_run_id}: No producer step found for artifact "
-                        f"{artifact.id}."
-                    )
+        Returns:
+            A dictionary mapping artifact names to artifact models.
 
-                # Convert the artifact schema to a model.
-                input_artifacts[input_artifact.name] = artifact.to_model(
-                    parent_step_id=parent_step_id,
-                    producer_step_id=producer_step_id,
+        Raises:
+            KeyError: if the step run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            step_run = session.exec(
+                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
+            ).first()
+            if step_run is None:
+                raise KeyError(
+                    f"Unable to get step run with ID {step_run_id}: No step "
+                    "run with this ID found."
                 )
-            return input_artifacts
+            output_artifacts = session.exec(
+                select(
+                    ArtifactSchema,
+                    StepRunOutputArtifactSchema.name,
+                )
+                .where(
+                    ArtifactSchema.id == StepRunOutputArtifactSchema.artifact_id
+                )
+                .where(StepRunOutputArtifactSchema.step_run_id == step_run_id)
+            ).all()
+            return {
+                output_artifact[1]: output_artifact[0].to_model()
+                for output_artifact in output_artifacts
+            }
 
     # ---------
     # Artifacts
@@ -3420,153 +3508,61 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created artifact.
         """
-        # Create the artifact.
         with Session(self.engine) as session:
             artifact_schema = ArtifactSchema.from_create_model(artifact)
             session.add(artifact_schema)
             session.commit()
-            artifact = artifact_schema.to_model(
-                parent_step_id=artifact.parent_step_id,
-                producer_step_id=artifact.producer_step_id,
-            )
-
-        # Set the artifact as output of its parent step.
-        self._set_run_step_output_artifact(
-            artifact_id=artifact.id,
-            step_run_id=artifact.parent_step_id,
-            name=artifact.name,
-            is_cached=artifact.is_cached,
-        )
-
-        return artifact
-
-    def _set_run_step_output_artifact(
-        self, step_run_id: UUID, artifact_id: UUID, name: str, is_cached: bool
-    ) -> None:
-        """Sets an artifact as an output of a step run.
-
-        Args:
-            step_run_id: The ID of the step run.
-            artifact_id: The ID of the artifact.
-            name: The name of the output in the step run.
-            is_cached: Whether the artifact was cached or newly created.
-
-        Raises:
-            KeyError: if the step run or artifact doesn't exist.
-        """
-        with Session(self.engine) as session:
-
-            # Check if the step exists.
-            step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
-            ).first()
-            if step_run is None:
-                raise KeyError(
-                    f"Unable to set output artifact: No step run with ID "
-                    f"'{step_run_id}' found."
-                )
-
-            # Check if the artifact exists.
-            artifact = session.exec(
-                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
-            ).first()
-            if artifact is None:
-                raise KeyError(
-                    f"Unable to set output artifact: No artifact with ID "
-                    f"'{artifact_id}' found."
-                )
-
-            # Check if the output is already set.
-            assignment = session.exec(
-                select(StepRunOutputArtifactSchema)
-                .where(StepRunOutputArtifactSchema.step_run_id == step_run_id)
-                .where(StepRunOutputArtifactSchema.artifact_id == artifact_id)
-            ).first()
-            if assignment is not None:
-                return
-
-            # Save the output assignment in the database.
-            assignment = StepRunOutputArtifactSchema(
-                step_run_id=step_run_id,
-                artifact_id=artifact_id,
-                name=name,
-                is_cached=is_cached,
-            )
-            session.add(assignment)
-            session.commit()
+            return artifact_schema.to_model()
 
     def list_artifacts(
         self,
         artifact_uri: Optional[str] = None,
-        parent_step_id: Optional[UUID] = None,
     ) -> List[ArtifactModel]:
         """Lists all artifacts.
 
         Args:
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
-            parent_step_id: If specified, only artifacts for the given step run
-                will be returned.
 
         Returns:
             A list of all artifacts.
-
-        Raises:
-            KeyError: if the producer step of an artifact doesn't exist.
         """
         if not self.runs_inside_server:
             self._sync_runs()
         with Session(self.engine) as session:
-
-            # Get all artifacts.
             query = select(ArtifactSchema)
             if artifact_uri is not None:
                 query = query.where(ArtifactSchema.uri == artifact_uri)
-            if parent_step_id is not None:
-                query = query.where(
-                    ArtifactSchema.id == StepRunOutputArtifactSchema.artifact_id
-                ).where(
-                    StepRunOutputArtifactSchema.step_run_id == parent_step_id
-                )
             artifacts = session.exec(query).all()
+            return [artifact.to_model() for artifact in artifacts]
 
-            artifact_models: List[ArtifactModel] = []
-            for artifact in artifacts:
+    def get_artifact_producer_step(self, artifact_id: UUID) -> StepRunModel:
+        """Gets the producer step for an artifact.
 
-                # Get the producer step ID of each artifact.
-                artifact_producer_step_id = session.exec(
-                    select(StepRunOutputArtifactSchema.step_run_id)
-                    .where(
-                        StepRunOutputArtifactSchema.artifact_id == artifact.id
-                    )
-                    .where(StepRunOutputArtifactSchema.is_cached == False)
-                ).first()
-                if artifact_producer_step_id is None:
-                    raise KeyError(
-                        f"Unable to list input artifacts: No producer step "
-                        f"found for artifact {artifact.id}."
-                    )
+        Args:
+            artifact_id: The ID of the artifact to get the producer step for.
 
-                # Get the parent step ID of each artifact.
-                if parent_step_id:
-                    artifact_parent_step_ids = [parent_step_id]
-                else:
-                    artifact_parent_step_ids = session.exec(
-                        select(StepRunOutputArtifactSchema.step_run_id).where(
-                            StepRunOutputArtifactSchema.artifact_id
-                            == artifact.id
-                        )
-                    ).all()
+        Returns:
+            The step run that produced the artifact.
 
-                # Convert the artifact schema to a model for each parent.
-                for artifact_parent_step_id in artifact_parent_step_ids:
-                    artifact_models.append(
-                        artifact.to_model(
-                            parent_step_id=artifact_parent_step_id,
-                            producer_step_id=artifact_producer_step_id,
-                        )
-                    )
-            return artifact_models
+        Raises:
+            KeyError: if the artifact doesn't exist or doesn't have a producer.
+        """
+        with Session(self.engine) as session:
+            output_artifact = session.exec(
+                select(StepRunOutputArtifactSchema)
+                .where(StepRunOutputArtifactSchema.artifact_id == artifact_id)
+                .where(
+                    StepRunOutputArtifactSchema.step_run_id == StepRunSchema.id
+                )
+                .where(StepRunSchema.status != ExecutionStatus.CACHED)
+            ).first()
+            if output_artifact is None:
+                raise KeyError(
+                    f"No producer step found for artifact with ID "
+                    f"{artifact_id}."
+                )
+            return self.get_run_step(output_artifact.step_run_id)
 
     # =======================
     # Internal helper methods
@@ -4041,14 +4037,23 @@ class SqlZenStore(BaseZenStore):
             step_id=mlmd_step.mlmd_id,
             step_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
         )
-        input_artifacts = {}
+        input_artifacts: Dict[str, UUID] = {}
         for input_name, mlmd_artifact in mlmd_inputs.items():
             artifact_id = self._resolve_mlmd_artifact_id(
                 mlmd_id=mlmd_artifact.mlmd_id,
             )
             input_artifacts[input_name] = artifact_id
 
+        # Output artifacts might not exist in the DB yet, so we write an empty
+        # dict for now and update them later.
+        output_artifacts: Dict[str, UUID] = {}
+
         # Create step.
+        # If a step is marked as completed in MLMD, we still mark it as
+        # running since some of the artifacts might not exist yet.
+        status = self.metadata_store.get_step_status(mlmd_step.mlmd_id)
+        if status == ExecutionStatus.COMPLETED:
+            status = ExecutionStatus.RUNNING
         new_step_run = StepRunModel(
             name=step_name,
             mlmd_id=mlmd_step.mlmd_id,
@@ -4064,7 +4069,8 @@ class SqlZenStore(BaseZenStore):
                 for parent_step_id in mlmd_step.mlmd_parent_step_ids
             ],
             input_artifacts=input_artifacts,
-            status=ExecutionStatus.RUNNING,  # Update later.
+            output_artifacts=output_artifacts,
+            status=status,
             caching_parameters={},  # Not used for now
         )
         return self.create_run_step(new_step_run)
@@ -4084,11 +4090,14 @@ class SqlZenStore(BaseZenStore):
 
         # Get the names of all outputs that are already in ZenML.
         with Session(self.engine) as session:
-            zenml_output_names = session.exec(
-                select(StepRunOutputArtifactSchema.name).where(
+            zenml_output_list = session.exec(
+                select(StepRunOutputArtifactSchema).where(
                     StepRunOutputArtifactSchema.step_run_id == step_model.id
                 )
             ).all()
+            zenml_outputs = {
+                output.name: output.artifact_id for output in zenml_output_list
+            }
 
         # Get all MLMD output artifacts.
         mlmd_outputs = self.metadata_store.get_step_output_artifacts(
@@ -4097,55 +4106,35 @@ class SqlZenStore(BaseZenStore):
 
         # For each output in MLMD, sync it into ZenML if it doesn't exist yet.
         for output_name, mlmd_artifact in mlmd_outputs.items():
-            if output_name not in zenml_output_names:
-                try:
-                    self._sync_run_step_artifact(output_name, mlmd_artifact)
-                except EntityExistsError as exists_err:
-                    logger.debug(
-                        f"Artifact {output_name} already exists: "
-                        f"{str(exists_err)}. Skipping sync."
-                    )
-                    continue
+            if output_name in zenml_outputs:
+                continue
 
-    def _sync_run_step_artifact(
-        self, output_name: str, mlmd_artifact: "MLMDArtifactModel"
-    ) -> None:
-        """Sync a single run step artifact from MLMD into the database.
+            # If the step was not cached, it must have created the artifact,
+            # so we need to create the artifact in the DB first.
+            if step_model.status != ExecutionStatus.CACHED:
+                new_artifact = ArtifactModel(
+                    name=output_name,
+                    mlmd_id=mlmd_artifact.mlmd_id,
+                    type=mlmd_artifact.type,
+                    uri=mlmd_artifact.uri,
+                    materializer=mlmd_artifact.materializer,
+                    data_type=mlmd_artifact.data_type,
+                )
+                new_artifact = self.create_artifact(new_artifact)
 
-        Args:
-            output_name: The name of the output artifact.
-            mlmd_artifact: The MLMD artifact model to sync.
-        """
-        if not mlmd_artifact.is_cached:
-            new_artifact = ArtifactModel(
-                name=output_name,
-                mlmd_id=mlmd_artifact.mlmd_id,
-                type=mlmd_artifact.type,
-                uri=mlmd_artifact.uri,
-                materializer=mlmd_artifact.materializer,
-                data_type=mlmd_artifact.data_type,
-                mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
-                mlmd_producer_step_id=mlmd_artifact.mlmd_producer_step_id,
-                is_cached=False,
-                parent_step_id=self._resolve_mlmd_step_id(
-                    mlmd_artifact.mlmd_parent_step_id
-                ),
-                producer_step_id=self._resolve_mlmd_step_id(
-                    mlmd_artifact.mlmd_producer_step_id
-                ),
-            )
-            new_artifact = self.create_artifact(new_artifact)
-        else:
+            # Link the artifact to the step.
             artifact_id = self._resolve_mlmd_artifact_id(mlmd_artifact.mlmd_id)
             step_run_id = self._resolve_mlmd_step_id(
                 mlmd_artifact.mlmd_parent_step_id
             )
-            self._set_run_step_output_artifact(
-                artifact_id=artifact_id,
-                step_run_id=step_run_id,
-                name=output_name,
-                is_cached=True,
-            )
+            with Session(self.engine) as session:
+                self._set_run_step_output_artifact(
+                    artifact_id=artifact_id,
+                    step_run_id=step_run_id,
+                    name=output_name,
+                    session=session,
+                )
+                session.commit()
 
     def _sync_run_step_status(self, step_model: StepRunModel) -> StepRunModel:
         """Updates the status of a step run model.
