@@ -380,6 +380,8 @@ class Launcher:
                 and step_run.cache_key == cache_key
             ]
 
+            cache_candidates.sort(key=lambda s: s.created)
+
             if cache_candidates:
                 # if exists, use latest run and do the following:
                 #   - Set status to cached
@@ -825,6 +827,7 @@ class Launcher:
             # artifacts
             step_run = Client().zen_store.get_run_step(step_run_id)
 
+            zenml_output_artifacts = {}
             for name, artifact_list in execution_info.output_dict.items():
                 artifact = artifact_list[0]
                 properties = (
@@ -843,7 +846,9 @@ class Launcher:
                     is_cached=False,
                 )
                 Client().zen_store.create_artifact(a)
+                zenml_output_artifacts[name] = a.id
 
+            step_run.output_artifacts = zenml_output_artifacts
             step_run.status = ExecutionStatus.COMPLETED
             Client().zen_store.update_run_step(step_run)
 
