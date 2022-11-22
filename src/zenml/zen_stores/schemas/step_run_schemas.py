@@ -17,7 +17,6 @@ from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 
-
 class StepRunSchema(NamedSchema, table=True):
     """SQL Model for steps of pipeline runs."""
 
