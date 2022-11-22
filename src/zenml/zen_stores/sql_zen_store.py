@@ -4071,6 +4071,7 @@ class SqlZenStore(BaseZenStore):
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
             status=status,
+            caching_parameters={},  # Not used for now
         )
         return self.create_run_step(new_step_run)
 

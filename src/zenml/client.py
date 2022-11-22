@@ -1447,6 +1447,7 @@ class Client(metaclass=ClientMetaClass):
                     entrypoint_name=step.entrypoint_name,
                     parameters=step.parameters,
                     step_configuration={},
+                    caching_parameters={},
                     mlmd_parent_step_ids=[],
                     num_outputs=len(outputs),
                 )

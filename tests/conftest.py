@@ -611,6 +611,7 @@ def sample_step_model() -> StepRunModel:
         input_artifacts={},
         output_artifacts={},
         step_configuration={},
+        caching_parameters={},
         status=ExecutionStatus.COMPLETED,
     )
 
