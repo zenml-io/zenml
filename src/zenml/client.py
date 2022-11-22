@@ -702,12 +702,7 @@ class Client(metaclass=ClientMetaClass):
         remove_users: Optional[List[str]] = None,
         add_users: Optional[List[str]] = None,
     ) -> TeamResponseModel:
-        team = self._get_entity_by_id_or_name_or_prefix(
-            response_model=TeamResponseModel,
-            get_method=self.zen_store.get_team,
-            list_method=self.zen_store.list_teams,
-            name_id_or_prefix=team_name_or_id,
-        )
+        team = self.get_team(team_name_or_id)
 
         team_update = TeamUpdateModel()
         if new_name:
@@ -760,7 +755,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name or ID of the role.
 
         Returns:
-            The User
+            The fetched role.
         """
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=RoleResponseModel,
@@ -770,27 +765,27 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
-        """Gets a user.
+        """Fetches roles.
 
         Args:
             name: The name of the roles.
 
         Returns:
-            The User
+            The list of roles.
         """
         return self.zen_store.list_roles(name=name)
 
     def create_role(
         self, name: str, permissions_list: List[str]
     ) -> RoleResponseModel:
-        """Gets a user.
+        """Creates a role.
 
         Args:
             name: The name for the new role.
             permissions_list: The permissions to attach to this role.
 
         Returns:
-            The newly created role
+            The newly created role.
         """
         permissions: Set[PermissionType] = set()
         for permission in permissions_list:
@@ -807,23 +802,19 @@ class Client(metaclass=ClientMetaClass):
         remove_permission: Optional[List[str]] = None,
         add_permission: Optional[List[str]] = None,
     ) -> RoleResponseModel:
-        """Gets a user.
+        """Updates a rele.
 
         Args:
-            name_id_or_prefix: The name or ID of the user.
+            name_id_or_prefix: The name or ID of the role.
             new_name: The new name for the role
-            remove_permission: Permissions to remove from this role
-            add_permission: Permissions to add to this role
+            remove_permission: Permissions to remove from this role.
+            add_permission: Permissions to add to this role.
 
         Returns:
-            The User
+            The updated role.
         """
-        role = self._get_entity_by_id_or_name_or_prefix(
-            response_model=RoleResponseModel,
-            get_method=self.zen_store.get_role,
-            list_method=self.zen_store.list_roles,
-            name_id_or_prefix=name_id_or_prefix,
-        )
+        role = self.get_role(name_id_or_prefix=name_id_or_prefix)
+
         role_update = RoleUpdateModel()
 
         role_permissions = None
@@ -867,10 +858,10 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def delete_role(self, name_id_or_prefix: str) -> None:
-        """Gets a user.
+        """Deletes a role.
 
         Args:
-            name_id_or_prefix: The name or ID of the user.
+            name_id_or_prefix: The name or ID of the role.
         """
         self.zen_store.delete_role(role_name_or_id=name_id_or_prefix)
 
@@ -906,7 +897,7 @@ class Client(metaclass=ClientMetaClass):
                 user_name_or_id=user_or_team_name_or_id,
                 role_name_or_id=role_name_or_id,
             )
-        # Implicit assumption is that maximally one such assignment can exists
+        # Implicit assumption is that maximally one such assignment can exist
         if role_assignments:
             return role_assignments[0]
         else:

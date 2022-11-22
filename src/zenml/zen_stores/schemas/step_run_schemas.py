@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -16,8 +16,6 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
-if TYPE_CHECKING:
-    pass
 
 
 class StepRunSchema(NamedSchema, table=True):

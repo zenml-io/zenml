@@ -716,7 +716,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
         stack_name_or_id: Name of the stack to set as active.
     """
     client = Client()
-    scope = "repository" if client.root else " global"
+    scope = "repository" if client.uses_local_configuration else "global"
 
     with console.status(
         f"Setting the {scope} active stack to '{stack_name_or_id}'..."
