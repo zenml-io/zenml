@@ -1871,25 +1871,6 @@ class SqlZenStore(BaseZenStore):
             session.delete(team)
             session.commit()
 
-    # ---------------
-    # Team membership
-    # ---------------
-
-    def get_users_for_team(
-        self, team_name_or_id: Union[str, UUID]
-    ) -> List[UserResponseModel]:
-        """Fetches all users of a team.
-
-        Args:
-            team_name_or_id: The name or ID of the team for which to get users.
-
-        Returns:
-            A list of all users that are part of the team.
-        """
-        with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id, session=session)
-            return [user.to_model() for user in team.users]
-
     # -----
     # Roles
     # -----
