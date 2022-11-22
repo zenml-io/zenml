@@ -29,7 +29,7 @@ class InvalidExperimentTrackerSelected(Exception):
 
 
 class RunProvider(metaclass=SingletonMetaClass):
-    """Singleton object used to store and persist neptune run state across the pipeline"""
+    """Singleton object used to store and persist neptune run state across the pipeline."""
     def __init__(self):
         """Initialize RunProvider. Called with no arguments."""
         self._active_run = None

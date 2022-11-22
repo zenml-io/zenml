@@ -47,7 +47,8 @@ class NeptuneExperimentTrackerSettings(BaseSettings):
     """Settings for the Neptune experiment tracker.
 
     Attributes:
-        tags: Tags for the neptune run."""
+        tags: Tags for the neptune run.
+    """
     tags: Set[str] = set()
 
 
@@ -66,7 +67,7 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
 
     @staticmethod
     def _is_last_step(info: "StepRunInfo") -> bool:
-        """Check whether the current step is the last step of the pipeline"""
+        """Check whether the current step is the last step of the pipeline."""
         pipeline_name = info.pipeline.name
         step_name = info.config.name
         client = Client()
