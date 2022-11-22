@@ -34,7 +34,7 @@ By default, ZenML comes with two roles.
 (Permissions: read, write, me )
 
 **guest**: The guest role lets users change their own user data and grants 
-general global read access. (Permissions: write, me )
+general global read access. (Permissions: read, me )
 
 ## Custom Roles
 
