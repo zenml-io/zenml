@@ -48,7 +48,6 @@ from zenml.constants import (
     INPUTS,
     LOGIN,
     METADATA_CONFIG,
-    METADATA_SYNC,
     PIPELINES,
     PROJECTS,
     ROLES,
@@ -1398,7 +1397,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
-        self._sync_runs()
         return self._get_resource(
             resource_id=run_name_or_id,
             route=RUNS,
@@ -1449,7 +1447,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
-        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1512,7 +1509,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The step run.
         """
-        self._sync_runs()
         return self._get_resource(
             resource_id=step_run_id,
             route=STEPS,
@@ -1530,7 +1526,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all run steps.
         """
-        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1610,7 +1605,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all artifacts.
         """
-        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -2057,7 +2051,3 @@ class RestZenStore(BaseZenStore):
             route: The resource REST API route to use.
         """
         self.delete(f"{route}/{str(resource_id)}")
-
-    def _sync_runs(self) -> None:
-        """Syncs runs from MLMD."""
-        self.get(METADATA_SYNC)

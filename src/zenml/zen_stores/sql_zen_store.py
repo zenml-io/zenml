@@ -17,7 +17,6 @@ import logging
 import os
 import re
 from pathlib import Path, PurePath
-from threading import Lock
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -547,8 +546,6 @@ class SqlZenStore(BaseZenStore):
         CONFIG_TYPE: The type of the store configuration.
         _engine: The SQLAlchemy engine.
         _metadata_store: The metadata store.
-        _lock: A thread mutex used to ensure thread safety during the pipeline
-            run synchronization.
     """
 
     config: SqlZenStoreConfiguration
@@ -558,9 +555,7 @@ class SqlZenStore(BaseZenStore):
 
     _engine: Optional[Engine] = None
     _metadata_store: Optional["MetadataStore"] = None
-    _highest_synced_run_mlmd_id: int = 0
     _alembic: Optional[Alembic] = None
-    _sync_lock: Optional[Lock] = None
 
     @property
     def engine(self) -> Engine:
@@ -615,20 +610,6 @@ class SqlZenStore(BaseZenStore):
             raise ValueError("Store not initialized")
         return self._alembic
 
-    @property
-    def sync_lock(self) -> Lock:
-        """The mutex used to synchronize pipeline runs.
-
-        Returns:
-            The mutex used to synchronize pipeline runs.
-
-        Raises:
-            ValueError: If the store is not initialized.
-        """
-        if not self._sync_lock:
-            raise ValueError("Store not initialized")
-        return self._sync_lock
-
     # ====================================
     # ZenML Store interface implementation
     # ====================================
@@ -656,8 +637,6 @@ class SqlZenStore(BaseZenStore):
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
-
-        self._sync_lock = Lock()
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the current python package."""
@@ -2870,8 +2849,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
         with Session(self.engine) as session:
             run = self._get_run_schema(run_name_or_id, session=session)
             return run.to_model()
@@ -3201,8 +3178,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step run doesn't exist.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
         with Session(self.engine) as session:
             step_run = session.exec(
                 select(StepRunSchema).where(StepRunSchema.id == step_run_id)

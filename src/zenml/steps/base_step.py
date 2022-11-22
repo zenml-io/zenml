@@ -618,8 +618,16 @@ class BaseStep(metaclass=BaseStepMeta):
         input_channels = {
             name: artifact.channel for name, artifact in input_artifacts.items()
         }
-        for input_ in input_artifacts.values():
+
+        from zenml.config.step_configurations import OutputSpec
+
+        self._inputs = {}
+        for name, input_ in input_artifacts.items():
             self._upstream_steps.add(input_.channel.producer_component_id)
+            self._inputs[name] = OutputSpec(
+                step_name=input_.channel.producer_component_id,
+                output_name=input_.channel.output_key,
+            )
 
         config = self._finalize_configuration(input_artifacts=input_artifacts)
 

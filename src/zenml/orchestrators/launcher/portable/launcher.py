@@ -13,9 +13,20 @@
 # limitations under the License.
 """This module defines a generic Launcher for all TFleX nodes."""
 
+import json
 import sys
 import traceback
-from typing import Any, Dict, List, Mapping, Optional, Tuple, Type, TypeVar
+from typing import (
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 from uuid import UUID
 
 import attr
@@ -54,6 +65,10 @@ from tfx.proto.orchestration import (
 from tfx.utils import typing_utils
 
 from zenml.client import Client
+from zenml.config.step_configurations import Step
+from zenml.enums import ExecutionStatus
+from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 # Subclasses of BaseExecutorOperator
 ExecutorOperator = TypeVar(
@@ -134,6 +149,12 @@ def _register_execution(
         input_artifacts=input_artifacts,
         exec_properties=exec_properties,
     )
+
+
+def generate_cache_key(
+    step: Step, input_artifacts: Dict[str, ArtifactModel]
+) -> str:
+    return ""
 
 
 class Launcher:
@@ -281,6 +302,112 @@ class Launcher:
                 )
             )
 
+            run_name = (
+                self._pipeline_runtime_spec.pipeline_run_id.field_value.string_value
+            )
+            run = Client().zen_store.get_run(run_name)
+
+            for context in self._pipeline_node.contexts.contexts:
+                if context.type.name == "zenml":
+                    config_json = context.properties[
+                        "step_configuration"
+                    ].field_value.string_value
+
+                    step = Step.parse_raw(config_json)
+                    break
+            else:
+                assert False
+
+            current_run_steps = Client().zen_store.list_run_steps(run_id=run.id)
+
+            # Z1) Get input artifacts of current run
+            current_run_input_artifacts = {}
+            for name, inp_ in step.spec.inputs.items():
+                for s in current_run_steps:
+                    if s.entrypoint_name == inp_.step_name:
+                        artifacts = Client().zen_store.list_artifacts(
+                            parent_step_id=s.id
+                        )
+                        for artifact in artifacts:
+                            if artifact.name == inp_.output_name:
+                                current_run_input_artifacts[name] = artifact
+                                break
+
+                        break
+                else:
+                    assert False
+
+            # Z2) generate cache key for current step
+            cache_key = generate_cache_key(
+                step=step, input_artifacts=current_run_input_artifacts
+            )  # noqa
+
+            # Z3) Register step run
+
+            step_name = json.loads(
+                self._pipeline_node.parameters.parameters[
+                    "zenml-pipeline_parameter_name"
+                ].field_value.string_value
+            )
+            entrypoint_name = self._pipeline_node.node_info.id
+
+            parent_step_ids = []
+
+            for upstream_step in step.spec.upstream_steps:
+                for run_step in current_run_steps:
+                    if run_step.entrypoint_name == upstream_step:
+                        parent_step_ids.append(run_step.id)
+
+            # RMTFX: Get parent step names from pipeline spec, get their IDs from the run model
+            input_artifacts = {
+                k: a.id for k, a in current_run_input_artifacts.items()
+            }
+            step_run = StepRunModel(
+                name=step_name,
+                pipeline_run_id=run.id,
+                parent_step_ids=parent_step_ids,
+                input_artifacts=input_artifacts,
+                status=ExecutionStatus.RUNNING,
+                entrypoint_name=entrypoint_name,
+                parameters=step.config.parameters,
+                step_configuration=step.dict(),
+                mlmd_parent_step_ids=[],
+                # cache_key=cache_key
+            )
+            Client().zen_store.create_run_step(step_run)
+
+            # Z4) query zen store for all step runs with same cache key
+
+            all_step_runs = Client().zen_store.list_run_steps()  # noqa
+            # cache_candidates = [
+            #     step for step in all_step_runs if step.cache_key == cache_key
+            # ]
+            cache_candidates = []
+
+            if cache_candidates:
+                # if exists, use latest run and do the following:
+                #   - Set status to cached
+                #   - Update with output artifacts of the existing step run
+                step_run.status = ExecutionStatus.CACHED
+                Client().zen_store.update_run_step(step_run)
+                cached_step_run = cache_candidates[-1]
+                cached_output_artifacts = Client().zen_store.list_artifacts(
+                    parent_step_id=cached_step_run.id
+                )
+                zen_store = cast(SqlZenStore, Client().zen_store)
+                for output_artifact in cached_output_artifacts:
+                    zen_store._set_run_step_output_artifact(
+                        step_run_id=step_run.id,
+                        artifact_id=output_artifact.id,
+                        name=output_artifact.name,
+                        is_cached=True,
+                    )
+            else:
+                # if no step run exists:
+                #   - Run code
+                #   - Register the new output artifacts
+                ...
+
             try:
                 resolved_inputs = inputs_utils.resolve_input_artifacts(
                     pipeline_node=self._pipeline_node, metadata_handler=m
@@ -379,68 +506,6 @@ class Launcher:
                     is_execution_needed=False,
                 )
 
-            # RMTFX: just register the step here, no reuse necessary
-            from zenml.enums import ExecutionStatus
-            from zenml.models.pipeline_models import StepRunModel
-
-            run_name = (
-                self._pipeline_runtime_spec.pipeline_run_id.field_value.string_value
-            )
-            run = Client().zen_store.get_run(run_name)
-            import json
-
-            from zenml.config.step_configurations import Step
-
-            step_name = json.loads(
-                self._pipeline_node.parameters.parameters[
-                    "zenml-pipeline_parameter_name"
-                ].field_value.string_value
-            )
-            entrypoint_name = self._pipeline_node.node_info.id
-
-            zenml_artifacts = {}
-
-            for key, artifact in input_artifacts.items():
-                uri = artifact[0].uri
-                zenml_artifacts[key] = (
-                    Client().zen_store.list_artifacts(artifact_uri=uri)[-1].id
-                )
-
-            step_config = {}
-            params = {}
-            parent_step_ids = []
-
-            for context in self._pipeline_node.contexts.contexts:
-                if context.type.name == "zenml":
-                    config_json = context.properties[
-                        "step_configuration"
-                    ].field_value.string_value
-
-                    s = Step.parse_raw(config_json)
-                    step_config = s.dict()
-                    params = s.config.parameters
-
-                    run_steps = Client().zen_store.list_run_steps(run_id=run.id)
-                    for n in s.spec.upstream_steps:
-                        for rs in run_steps:
-                            if rs.entrypoint_name == n:
-                                parent_step_ids.append(rs.id)
-
-            # RMTFX: Get parent step names from pipeline spec, get their IDs from the run model
-            step = StepRunModel(
-                name=step_name,
-                pipeline_run_id=run.id,
-                parent_step_ids=parent_step_ids,
-                input_artifacts=zenml_artifacts,
-                status=ExecutionStatus.RUNNING,
-                entrypoint_name=entrypoint_name,
-                parameters=params,
-                step_configuration=step_config,
-                mlmd_id=execution.id,
-                mlmd_parent_step_ids=[],
-            )
-            Client().zen_store.create_run_step(step)
-
             # 5. Resolve output
             output_artifacts = self._output_resolver.generate_output_artifacts(
                 execution.id
@@ -489,23 +554,25 @@ class Launcher:
                 if cached_outputs is not None:
                     # Publishes cache result
                     # RMTFX: publish step with status = Cached
-                    step.status = ExecutionStatus.CACHED
-                    Client().zen_store.update_run_step(step)
+                    step_run.status = ExecutionStatus.CACHED
+                    Client().zen_store.update_run_step(step_run)
                     # RMTFX: connect to cached output artifacts somehow
                     for name, artifact_list in cached_outputs.items():
                         artifact = artifact_list[0]
-                        old_artifact = Client().zen_store.list_artifacts(
+                        zenml_artifact = Client().zen_store.list_artifacts(
                             artifact_uri=artifact.uri
                         )[
                             -1
                         ]  # maybe 0
-                        new_artifact = old_artifact.copy(
-                            exclude={"id", "created", "updated"}
+
+                        # RMTFX: replace with generic zen store once exposed
+                        zen_store = cast(SqlZenStore, Client().zen_store)
+                        zen_store._set_run_step_output_artifact(
+                            step_run_id=step_run.id,
+                            artifact_id=zenml_artifact.id,
+                            name=name,
+                            is_cached=True,
                         )
-                        new_artifact.name = name
-                        new_artifact.parent_step_id = step.id
-                        new_artifact.is_cached = True
-                        Client().zen_store.create_artifact(new_artifact)
 
                     execution_publish_utils.publish_cached_execution(
                         metadata_handler=m,
@@ -528,7 +595,7 @@ class Launcher:
                             contexts=contexts,
                             is_execution_needed=False,
                         ),
-                        step.id,
+                        step_run.id,
                     )
 
             # 8. Going to trigger executor.
@@ -556,7 +623,7 @@ class Launcher:
                     contexts=contexts,
                     is_execution_needed=True,
                 ),
-                step.id,
+                step_run.id,
             )
 
     def _build_execution_info(self, **kwargs: Any) -> data_types.ExecutionInfo:
@@ -741,7 +808,6 @@ class Launcher:
                 )
                 # RMTFX: set status to failed
                 step_run = Client().zen_store.get_run_step(step_run_id)
-                from zenml.enums import ExecutionStatus
 
                 step_run.status = ExecutionStatus.FAILED
                 Client().zen_store.update_run_step(step_run)
@@ -776,9 +842,6 @@ class Launcher:
             )
             # RMTFX: Set status to Completed, add end time or other metadata, add
             # artifacts
-            from zenml.enums import ExecutionStatus
-            from zenml.models.pipeline_models import ArtifactModel
-
             step_run = Client().zen_store.get_run_step(step_run_id)
 
             for name, artifact_list in execution_info.output_dict.items():
