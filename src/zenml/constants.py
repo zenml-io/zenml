@@ -195,6 +195,7 @@ ACTIVATE = "/activate"
 INFO = "/info"
 VERSION_1 = "/v1"
 STATUS = "/status"
+PRODUCER_STEP = "/producer-step"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]

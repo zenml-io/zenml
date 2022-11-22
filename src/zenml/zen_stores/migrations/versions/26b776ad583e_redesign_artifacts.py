@@ -33,7 +33,6 @@ def upgrade() -> None:
         sa.Column("step_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("artifact_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("is_cached", sa.Boolean(), nullable=False),
         sa.ForeignKeyConstraint(
             ["artifact_id"],
             ["artifacts.id"],
@@ -49,21 +48,31 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("step_run_id", "artifact_id"),
     )
 
+    # Add `is_cached` column to `step_run`
+    with op.batch_alter_table("step_run", schema=None) as batch_op:
+        batch_op.add_column(sa.Column("is_cached", sa.Boolean(), nullable=True))
+
     # ------------
     # Migrate data
     # ------------
+    conn = op.get_bind()
     meta = sa.MetaData(bind=op.get_bind())
     meta.reflect(
         only=(
             "artifacts",
             "step_run_output_artifact",
             "step_run_input_artifact",
+            "step_run",
         )
     )
     artifacts = sa.Table("artifacts", meta)
     step_run_output_artifact = sa.Table("step_run_output_artifact", meta)
     step_run_input_artifact = sa.Table("step_run_input_artifact", meta)
-    conn = op.get_bind()
+    step_run = sa.Table("step_run", meta, autoload_with=conn)
+
+    # Set `is_cached` to `False` for all existing step runs
+    conn.execute(step_run.update().values(is_cached=false()))
+    # conn.execute(step_run.insert({"is_cached": false()}))
 
     # Get all artifacts that were actually produced and not cached.
     produced_artifacts = conn.execute(
@@ -174,6 +183,8 @@ def upgrade() -> None:
         batch_op.drop_column("parent_step_id")
         batch_op.drop_column("producer_step_id")
         batch_op.drop_column("is_cached")
+        batch_op.drop_column("mlmd_parent_step_id")
+        batch_op.drop_column("mlmd_producer_step_id")
 
     # Rename `step_id` to `step_run_id` in `step_run_input_artifact`
     with op.batch_alter_table(
@@ -200,6 +211,14 @@ def upgrade() -> None:
             ondelete="CASCADE",
         )
 
+    # Set `is_cached` column of `step_run` to not nullable
+    with op.batch_alter_table("step_run", schema=None) as batch_op:
+        batch_op.alter_column(
+            "is_cached",
+            nullable=False,
+            existing_type=sa.Boolean(),
+        )
+
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
@@ -218,6 +237,12 @@ def downgrade() -> None:
         )
         batch_op.add_column(
             sa.Column("is_cached", sa.Boolean(), nullable=False)
+        )
+        batch_op.add_column(
+            sa.Column("mlmd_producer_step_id", sa.Integer(), nullable=True)
+        )
+        batch_op.add_column(
+            sa.Column("mlmd_parent_step_id", sa.Integer(), nullable=True)
         )
 
         # Drop new artifact store link column
@@ -284,6 +309,10 @@ def downgrade() -> None:
             ["id"],
             ondelete="CASCADE",
         )
+
+    # Drop `is_cached` column from `step_run`
+    with op.batch_alter_table("step_run", schema=None) as batch_op:
+        batch_op.drop_column("is_cached")
 
     # Drop new table
     op.drop_table("step_run_output_artifact")

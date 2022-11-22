@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, Any, Optional, Type
 from uuid import UUID
 
+from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.models.pipeline_models import ArtifactModel
 from zenml.utils import source_utils
@@ -99,35 +100,13 @@ class ArtifactView:
         return self._model.materializer
 
     @property
-    def parent_step_id(self) -> UUID:
-        """Returns the ID of the parent step.
-
-        This need not be equivalent to the ID of the producer step.
-
-        Returns:
-            The ID of the parent step.
-        """
-        assert self._model.parent_step_id
-        return self._model.parent_step_id
-
-    @property
     def producer_step_id(self) -> UUID:
         """Returns the ID of the original step that produced the artifact.
 
         Returns:
             The ID of the original step that produced the artifact.
         """
-        assert self._model.producer_step_id
-        return self._model.producer_step_id
-
-    @property
-    def is_cached(self) -> bool:
-        """Returns True if artifact was cached in a previous run, else False.
-
-        Returns:
-            True if artifact was cached in a previous run, else False.
-        """
-        return self._model.is_cached
+        return Client().zen_store.get_artifact_producer_step(self.id).id
 
     def read(
         self,

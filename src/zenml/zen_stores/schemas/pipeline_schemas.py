@@ -271,6 +271,7 @@ class StepRunSchema(SQLModel, table=True):
         nullable=False,
     )
 
+    is_cached: bool
     status: ExecutionStatus
     entrypoint_name: str
     parameters: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -298,6 +299,7 @@ class StepRunSchema(SQLModel, table=True):
             id=model.id,
             name=model.name,
             pipeline_run_id=model.pipeline_run_id,
+            is_cached=model.is_cached,
             status=model.status,
             entrypoint_name=model.entrypoint_name,
             parameters=json.dumps(model.parameters),
@@ -325,6 +327,7 @@ class StepRunSchema(SQLModel, table=True):
         parent_step_ids: List[UUID],
         mlmd_parent_step_ids: List[int],
         input_artifacts: Dict[str, UUID],
+        output_artifacts: Dict[str, UUID],
     ) -> StepRunModel:
         """Convert a `StepRunSchema` to a `StepRunModel`.
 
@@ -332,6 +335,7 @@ class StepRunSchema(SQLModel, table=True):
             parent_step_ids: The parent step ids to link to the step.
             mlmd_parent_step_ids: The parent step ids in MLMD.
             input_artifacts: The input artifacts to link to the step.
+            output_artifacts: The output artifacts to link to the step.
 
         Returns:
             The created StepRunModel.
@@ -342,6 +346,8 @@ class StepRunSchema(SQLModel, table=True):
             pipeline_run_id=self.pipeline_run_id,
             parent_step_ids=parent_step_ids,
             input_artifacts=input_artifacts,
+            output_artifacts=output_artifacts,
+            is_cached=self.is_cached,
             status=self.status,
             entrypoint_name=self.entrypoint_name,
             parameters=json.loads(self.parameters),
@@ -406,8 +412,6 @@ class ArtifactSchema(SQLModel, table=True):
     data_type: str
 
     mlmd_id: Optional[int] = Field(default=None, nullable=True)
-    mlmd_parent_step_id: Optional[int] = Field(default=None, nullable=True)
-    mlmd_producer_step_id: Optional[int] = Field(default=None, nullable=True)
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -430,22 +434,11 @@ class ArtifactSchema(SQLModel, table=True):
             uri=model.uri,
             materializer=model.materializer,
             data_type=model.data_type,
-            is_cached=model.is_cached,
             mlmd_id=model.mlmd_id,
-            mlmd_parent_step_id=model.mlmd_parent_step_id,
-            mlmd_producer_step_id=model.mlmd_producer_step_id,
         )
 
-    def to_model(
-        self,
-        parent_step_id: UUID,
-        producer_step_id: UUID,
-    ) -> ArtifactModel:
+    def to_model(self) -> ArtifactModel:
         """Convert an `ArtifactSchema` to an `ArtifactModel`.
-
-        Args:
-            parent_step_id: The parent step id to link to the artifact.
-            producer_step_id: The producer step id to link to the artifact.
 
         Returns:
             The created `ArtifactModel`.
@@ -453,17 +446,12 @@ class ArtifactSchema(SQLModel, table=True):
         return ArtifactModel(
             id=self.id,
             name=self.name,
-            parent_step_id=parent_step_id,
-            producer_step_id=producer_step_id,
             artifact_store_id=self.artifact_store_id,
             type=self.type,
             uri=self.uri,
             materializer=self.materializer,
             data_type=self.data_type,
-            is_cached=parent_step_id != producer_step_id,
             mlmd_id=self.mlmd_id,
-            mlmd_parent_step_id=self.mlmd_parent_step_id,
-            mlmd_producer_step_id=self.mlmd_producer_step_id,
             created=self.created,
             updated=self.updated,
         )
@@ -519,4 +507,3 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
         primary_key=True,
     )
     name: str
-    is_cached: bool
