@@ -33,6 +33,7 @@ import typing
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     ClassVar,
     Dict,
     List,
@@ -50,6 +51,7 @@ from tfx.proto.orchestration import execution_result_pb2
 from tfx.types import component_spec
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
@@ -64,7 +66,7 @@ from zenml.utils import proto_utils, source_utils
 if TYPE_CHECKING:
     from tfx.dsl.component.experimental.decorators import _SimpleComponent
 
-    from zenml.config.step_configurations import ArtifactConfiguration
+    from zenml.config.step_configurations import ArtifactConfiguration, Step
     from zenml.steps.base_step import BaseStep
 
 logger = get_logger(__name__)
@@ -520,3 +522,216 @@ class _ZenMLStepExecutor(BaseExecutor):
         )
         with fileio.open(self._context.executor_output_uri, "wb") as f:
             f.write(executor_output.SerializeToString())
+
+
+class StepExecutor:
+    """Class to execute ZenML steps."""
+
+    def __init__(self, step: "Step"):
+        self._step = step
+
+    @property
+    def configuration(self) -> StepConfiguration:
+        """Configuration of the step to execute.
+
+        Returns:
+            The step configuration.
+        """
+        return self._step.config
+
+    def _load_step_function(self) -> Callable[..., Any]:
+        from zenml.steps import BaseStep
+
+        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
+            self._step.spec.source, expected_class=BaseStep
+        )
+
+        step_instance = step_class()
+        return step_instance.entrypoint
+
+    def _load_output_materializers(self) -> Dict[str, Type[BaseMaterializer]]:
+        """Loads the output materializers for the step.
+
+        Returns:
+            The step output materializers.
+        """
+        materializers = {}
+        for name, output in self.configuration.outputs.items():
+            materializer_class: Type[
+                BaseMaterializer
+            ] = source_utils.load_and_validate_class(
+                output.materializer_source, expected_class=BaseMaterializer
+            )
+            materializers[name] = materializer_class
+        return materializers
+
+    def _load_input_artifact(
+        self, artifact: BaseArtifact, data_type: Type[Any]
+    ) -> Any:
+        """Loads an input artifact.
+
+        Args:
+            artifact: The artifact to load.
+            data_type: The data type of the artifact value.
+
+        Returns:
+            The artifact value.
+        """
+        # Skip materialization for BaseArtifact and its subtypes.
+        if issubclass(data_type, BaseArtifact):
+            if data_type != type(artifact):
+                logger.warning(
+                    f"You specified the data_type `{data_type}` but the actual "
+                    f"artifact type from the previous step is "
+                    f"`{type(artifact)}`. Ignoring this for now, but please be "
+                    f"aware of this in your step code."
+                )
+            return artifact
+
+        materializer_class = source_utils.load_source_path_class(
+            artifact.materializer
+        )
+        materializer = materializer_class(artifact)
+        return materializer.handle_input(data_type=data_type)
+
+    def _store_output_artifact(
+        self,
+        materializer_class: Type[BaseMaterializer],
+        materializer_source: str,
+        artifact: BaseArtifact,
+        data: Any,
+    ) -> None:
+        """Stores an output artifact.
+
+        Args:
+            materializer_class: The materializer class to store the artifact.
+            materializer_source: The source of the materializer class.
+            artifact: The artifact to store.
+            data: The data to store in the artifact.
+        """
+        artifact.materializer = materializer_source
+        artifact.datatype = source_utils.resolve_class(type(data))
+        materializer_class(artifact).handle_return(data)
+
+    def execute(
+        self,
+        input_artifacts: Dict[str, BaseArtifact],
+        output_artifacts: Dict[str, BaseArtifact],
+        run_name: str,
+        pipeline_config: PipelineConfiguration,
+    ) -> None:
+        from zenml.steps import BaseParameters
+
+        step_name = self.configuration.name
+        step_function = self._load_step_function()
+        output_materializers = self._load_output_materializers()
+
+        # Building the args for the entrypoint function
+        function_params = {}
+
+        # First, we parse the inputs, i.e., params and input artifacts.
+        spec = inspect.getfullargspec(inspect.unwrap(step_function))
+        args = spec.args
+
+        if args and args[0] == "self":
+            args.pop(0)
+
+        for arg in args:
+            arg_type = spec.annotations.get(arg, None)
+            arg_type = resolve_type_annotation(arg_type)
+
+            if issubclass(arg_type, BaseParameters):
+                step_params = arg_type.parse_obj(self.configuration.parameters)
+                function_params[arg] = step_params
+            elif issubclass(arg_type, StepContext):
+                context = arg_type(
+                    step_name=step_name,
+                    output_materializers=output_materializers,
+                    output_artifacts=output_artifacts,
+                )
+                function_params[arg] = context
+            else:
+                # At this point, it has to be an artifact, so we resolve
+                function_params[arg] = self._load_input_artifact(
+                    input_artifacts[arg], arg_type
+                )
+
+        step_run_info = StepRunInfo(
+            config=self.configuration,
+            pipeline=pipeline_config,
+            run_name=run_name,
+        )
+        # Wrap the execution of the step function in a step environment
+        # that the step function code can access to retrieve information about
+        # the pipeline runtime, such as the current step name and the current
+        # pipeline run ID
+        with StepEnvironment(
+            pipeline_name=pipeline_config.name,
+            pipeline_run_id=run_name,
+            step_name=step_name,
+            step_run_info=step_run_info,
+            cache_enabled=self.configuration.enable_cache,
+        ):
+            return_values = step_function(**function_params)
+
+        output_annotations = parse_return_type_annotations(spec.annotations)
+        if len(output_annotations) > 0:
+            # if there is only one output annotation (either directly specified
+            # or contained in an `Output` tuple) we treat the step function
+            # return value as the return for that output
+            if len(output_annotations) == 1:
+                return_values = [return_values]
+            elif not isinstance(return_values, Sequence):
+                # if the user defined multiple outputs, the return value must
+                # be a sequence
+                raise StepInterfaceError(
+                    f"Wrong step function output type for step '{step_name}: "
+                    f"Expected multiple outputs ({output_annotations}) but "
+                    f"the function did not return a sequence-like object "
+                    f"(actual return value: {return_values})."
+                )
+            elif len(output_annotations) != len(return_values):
+                # if the user defined multiple outputs, the amount of actual
+                # outputs must be the same
+                raise StepInterfaceError(
+                    f"Wrong amount of step function outputs for step "
+                    f"'{step_name}: Expected {len(output_annotations)} outputs "
+                    f"but the function returned {len(return_values)} outputs"
+                    f"(return values: {return_values})."
+                )
+
+            for return_value, (output_name, output_type) in zip(
+                return_values, output_annotations.items()
+            ):
+                if not isinstance(return_value, output_type):
+                    raise StepInterfaceError(
+                        f"Wrong type for output '{output_name}' of step "
+                        f"'{step_name}' (expected type: {output_type}, "
+                        f"actual type: {type(return_value)})."
+                    )
+
+                materializer_class = output_materializers[output_name]
+                materializer_source = self.configuration.outputs[
+                    output_name
+                ].materializer_source
+
+                self._store_output_artifact(
+                    materializer_class=materializer_class,
+                    materializer_source=materializer_source,
+                    artifact=output_artifacts[output_name],
+                    data=return_value,
+                )
+
+        # Write the executor output to the artifact store so the executor
+        # operator (potentially not running on the same machine) can read it
+        # to populate the metadata store
+
+        # executor_output = execution_result_pb2.ExecutorOutput()
+        # outputs_utils.populate_output_artifact(executor_output, output_dict)
+
+        # logger.debug(
+        #     "Writing executor output to '%s'.",
+        #     self._context.executor_output_uri,
+        # )
+        # with fileio.open(self._context.executor_output_uri, "wb") as f:
+        #     f.write(executor_output.SerializeToString())

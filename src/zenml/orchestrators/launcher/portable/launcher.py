@@ -16,7 +16,18 @@
 import json
 import sys
 import traceback
-from typing import Any, Dict, List, Mapping, Optional, Tuple, Type, TypeVar
+from datetime import datetime
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+)
 from uuid import UUID
 
 import attr
@@ -59,6 +70,11 @@ from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+from zenml.steps.utils import StepExecutor
+
+if TYPE_CHECKING:
+    from zenml.config.pipeline_configurations import PipelineConfiguration
+
 
 # Subclasses of BaseExecutorOperator
 ExecutorOperator = TypeVar(
@@ -863,93 +879,25 @@ class Launcher:
 
 
 class Launcherv2:
-    def __init__(self, step: Step, step_name: str, run_name: str):
+    def __init__(
+        self,
+        step: Step,
+        step_name: str,
+        run_name: str,
+        pipeline_config: "PipelineConfiguration",
+    ):
         self._step = step
         self._step_name = step_name
         self._run_name = run_name
-
-    def _build_execution_info(self, **kwargs: Any) -> data_types.ExecutionInfo:
-        # pytype: disable=wrong-arg-types
-        kwargs.update(
-            pipeline_node=self._pipeline_node,
-            pipeline_info=self._pipeline_info,
-            pipeline_run_id=(
-                self._pipeline_runtime_spec.pipeline_run_id.field_value.string_value
-            ),
-        )
-        # pytype: enable=wrong-arg-types
-        return data_types.ExecutionInfo(**kwargs)
-
-    def _build_error_output(
-        self, code: int, msg: Optional[str] = None
-    ) -> execution_result_pb2.ExecutorOutput:
-        if msg is None:
-            msg = "\n".join(traceback.format_exception(*sys.exc_info()))
-        return execution_result_pb2.ExecutorOutput(
-            execution_result=execution_result_pb2.ExecutionResult(
-                code=code, result_message=msg
-            )
-        )
-
-    def _run_executor(
-        self, execution_info: data_types.ExecutionInfo
-    ) -> execution_result_pb2.ExecutorOutput:
-        """Executes underlying component implementation."""
-
-        logging.info("Going to run a new execution: %s", execution_info)
-
-        outputs_utils.make_output_dirs(execution_info.output_dict)
-        try:
-            executor_output = self._executor_operator.run_executor(
-                execution_info
-            )
-            code = executor_output.execution_result.code
-            if code != 0:
-                result_message = executor_output.execution_result.result_message
-                err = (
-                    f"Execution {execution_info.execution_id} "
-                    f"failed with error code {code} and "
-                    f"error message {result_message}"
-                )
-                logging.error(err)
-                raise _ExecutionFailedError(err, executor_output)
-            return executor_output
-        except Exception:  # pylint: disable=broad-except
-            outputs_utils.remove_output_dirs(execution_info.output_dict)
-            raise
-
-    def _clean_up_stateless_execution_info(
-        self, execution_info: data_types.ExecutionInfo
-    ):
-        logging.info("Cleaning up stateless execution info.")
-        # Clean up tmp dir
-        try:
-            fileio.rmtree(execution_info.tmp_dir)
-        except fileio.NotFoundError:
-            # TODO(b/182964682): investigate the root cause of why this is happening.
-            logging.warning(
-                "execution_info.tmp_dir %s is not found, it is likely that it has "
-                "been deleted by the executor. This is the full execution_info: %s",
-                execution_info.tmp_dir,
-                execution_info.to_proto(),
-            )
-
-    def _clean_up_stateful_execution_info(
-        self, execution_info: data_types.ExecutionInfo
-    ):
-        """Post execution clean up."""
-        logging.info("Cleaning up stateful execution info.")
-        outputs_utils.remove_stateful_working_dir(
-            execution_info.stateful_working_dir
-        )
+        self._pipeline_config = pipeline_config
 
     def launch(self) -> Optional[data_types.ExecutionInfo]:
-        # Create run here instead
+        # TODO: Create run here instead
         run = Client().zen_store.get_run(self._run_name)
         current_run_steps = Client().zen_store.list_run_steps(run_id=run.id)
 
         # Z1) Get input artifacts of current run
-        current_run_input_artifacts = {}
+        current_run_input_artifacts: Dict[str, ArtifactModel] = {}
         for name, inp_ in self._step.spec.inputs.items():
             for s in current_run_steps:
                 if s.entrypoint_name == inp_.step_name:
@@ -982,14 +930,14 @@ class Launcherv2:
                     parent_step_ids.append(run_step.id)
 
         # RMTFX: Get parent step names from pipeline spec, get their IDs from the run model
-        input_artifacts = {
+        input_artifact_ids = {
             k: a.id for k, a in current_run_input_artifacts.items()
         }
         current_step_run = StepRunModel(
             name=self._step_name,
             pipeline_run_id=run.id,
             parent_step_ids=parent_step_ids,
-            input_artifacts=input_artifacts,
+            input_artifacts=input_artifact_ids,
             status=ExecutionStatus.RUNNING,
             entrypoint_name=self._step.config.name,
             parameters=self._step.config.parameters,
@@ -998,6 +946,8 @@ class Launcherv2:
             cache_key=cache_key,
             output_artifacts={},
             caching_parameters={},
+            start_time=datetime.now(),
+            enable_cache=self._step.config.enable_cache,
         )
         Client().zen_store.create_run_step(current_step_run)
 
@@ -1019,21 +969,44 @@ class Launcherv2:
             cached_step_run = cache_candidates[-1]
             current_step_run.output_artifacts = cached_step_run.output_artifacts
             current_step_run.status = ExecutionStatus.CACHED
+            current_step_run.end_time = current_step_run.start_time
             Client().zen_store.update_run_step(current_step_run)
         else:
             # if no step run exists:
             #   - Run code
             #   - Register the new output artifacts
             try:
-                # run step
-                step_outputs: Dict[str, BaseArtifact] = {}
+                input_artifacts: Dict[str, BaseArtifact] = {}
+                for name, artifact_model in current_run_input_artifacts.items():
+                    artifact = BaseArtifact()
+                    artifact.name = name
+                    artifact.uri = artifact_model.uri
+                    artifact.materializer = artifact_model.materializer
+                    artifact.datatype = artifact_model.data_type
+                    input_artifacts[name] = artifact
+
+                output_artifacts: Dict[str, BaseArtifact] = {}
+                for name, _ in self._step.config.outputs.items():
+                    artifact = BaseArtifact()
+                    artifact.name = name
+                    artifact.uri = "/tmp/zenml"
+                    fileio.makedirs(artifact.uri)
+                    output_artifacts[name] = artifact
+
+                executor = StepExecutor(step=self._step)
+                executor.execute(
+                    input_artifacts=input_artifacts,
+                    output_artifacts=output_artifacts,
+                    run_name=self._run_name,
+                    pipeline_config=self._pipeline_config,
+                )
             except:
                 current_step_run.status = ExecutionStatus.FAILED
                 Client().zen_store.update_run_step(current_step_run)
                 raise
 
             output_artifact_ids = {}
-            for name, artifact in step_outputs.items():
+            for name, artifact in output_artifacts.items():
                 artifact_model = ArtifactModel(
                     name=name,
                     type=artifact.artifact_type.name,
@@ -1046,4 +1019,5 @@ class Launcherv2:
 
             current_step_run.output_artifacts = output_artifact_ids
             current_step_run.status = ExecutionStatus.COMPLETED
+            current_step_run.end_time = datetime.now()
             Client().zen_store.update_run_step(current_step_run)

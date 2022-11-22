@@ -360,6 +360,17 @@ class BaseOrchestrator(StackComponent, ABC):
             custom_driver_spec=custom_driver_spec,
             custom_executor_operators=custom_executor_operators,
         )
+        n = [
+            name
+            for name, s in self._active_deployment.steps.items()
+            if s.config.name == step_name
+        ][0]
+        l = launcher.Launcherv2(
+            step=step,
+            step_name=n,
+            run_name=run_model.name,
+            pipeline_config=self._active_deployment.pipeline,
+        )
 
         # If a step operator is used, the current environment will not be the
         # one executing the step function code and therefore we don't need to
@@ -369,14 +380,15 @@ class BaseOrchestrator(StackComponent, ABC):
         else:
             stack.prepare_step_run(info=step_run_info)
             try:
-                execution_info = self._execute_step(component_launcher)
+                # execution_info = self._execute_step(component_launcher)
+                l.launch()
             except:  # noqa: E722
                 self._publish_failed_run(run_name_or_id=run_model.name)
                 raise
             finally:
                 stack.cleanup_step_run(info=step_run_info)
 
-        return execution_info
+        # return execution_info
 
     @staticmethod
     def requires_resources_in_orchestration_environment(
