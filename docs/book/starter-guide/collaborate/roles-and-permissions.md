@@ -30,10 +30,11 @@ with their associated permissions by running.
 
 By default, ZenML comes with two roles.
 
-**admin**: The admin role grants all permissions globally.
+**admin**: The admin role grants all permissions globally. 
+(Permissions: read, write, me )
 
 **guest**: The guest role lets users change their own user data and grants 
-general global read access.
+general global read access. (Permissions: read, me )
 
 ## Custom Roles
 
@@ -67,9 +68,12 @@ simply run:
 ## Limitations
 
 * For the time being all roles apply permissions locally. This may change in the 
-future. Feel free to let us know on Slack or through our Roadmap if this is
-important for you.
+future. Feel free to let us know on 
+[Slack](https://zenml.slack.com/join/shared_invite/zt-t4aw242p-K6aCaUjhnxNOrLR7bcAb7g#/shared-invite/email) 
+or through our 
+[Roadmap](https://zenml.hellonext.co/roadmap) if this is important for you.
 
 * Permissions and roles only become relevant if you are running through a 
-deployed ZenML Server. In local settings with a direct connection to a SQLite 
-Database user access is not limited/granted by roles.
+[deployed ZenML Server](https://docs.zenml.io/getting-started/deploying-zenml).
+In local settings with a direct connection to a SQLite Database user access is
+not limited/granted by roles.
