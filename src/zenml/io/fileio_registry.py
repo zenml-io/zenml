@@ -28,25 +28,25 @@
 """Filesystem registry managing filesystem plugins."""
 
 import re
-import threading
-from typing import Dict, Type
+from threading import Lock
+from typing import TYPE_CHECKING, Dict, Type
 
-from tfx.dsl.io.filesystem import Filesystem, PathType
-from tfx.dsl.io.plugins.local import LocalFilesystem
+if TYPE_CHECKING:
+    from zenml.io.filesystem import Filesystem, PathType
 
 
 class FileIORegistry:
-    """Registry of pluggable filesystem implementations used in TFX components."""
+    """Registry of pluggable filesystem implementations."""
 
     def __init__(self) -> None:
-        self._filesystems: Dict[PathType, Type[Filesystem]] = {}
-        self._registration_lock = threading.Lock()
+        self._filesystems: Dict["PathType", Type["Filesystem"]] = {}
+        self._registration_lock = Lock()
 
-    def register(self, filesystem_cls: Type[Filesystem]) -> None:
+    def register(self, filesystem_cls: Type["Filesystem"]) -> None:
         """Register a filesystem implementation.
 
         Args:
-          filesystem_cls: Subclass of `tfx.dsl.io.filesystem.Filesystem`.
+          filesystem_cls: Subclass of `zenml.io.filesystem.Filesystem`.
         """
         with self._registration_lock:
             for scheme in filesystem_cls.SUPPORTED_SCHEMES:
@@ -57,7 +57,9 @@ class FileIORegistry:
                     pass
                 self._filesystems[scheme] = filesystem_cls
 
-    def get_filesystem_for_scheme(self, scheme: PathType) -> Type[Filesystem]:
+    def get_filesystem_for_scheme(
+        self, scheme: "PathType"
+    ) -> Type["Filesystem"]:
         """Get filesystem plugin for given scheme string."""
         if isinstance(scheme, bytes):
             scheme = scheme.decode("utf-8")
@@ -70,7 +72,7 @@ class FileIORegistry:
             )
         return self._filesystems[scheme]
 
-    def get_filesystem_for_path(self, path: PathType) -> Type[Filesystem]:
+    def get_filesystem_for_path(self, path: "PathType") -> Type["Filesystem"]:
         """Get filesystem plugin for given path."""
         # Assume local path by default, but extract filesystem prefix if available.
         if isinstance(path, str):
@@ -89,5 +91,3 @@ class FileIORegistry:
 
 # Default global instance of the filesystem registry.
 default_filesystem_registry = FileIORegistry()
-
-default_filesystem_registry.register(LocalFilesystem)

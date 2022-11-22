@@ -16,28 +16,38 @@
 import fnmatch
 import os
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
-
-from tfx.dsl.io.filesystem import Filesystem, PathType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+)
 
 from zenml.constants import REMOTE_FS_PREFIX
 from zenml.io.fileio_registry import default_filesystem_registry
 from zenml.logger import get_logger
 
+if TYPE_CHECKING:
+    from zenml.io.filesystem import Filesystem, PathType
+
 logger = get_logger(__name__)
 
 
-def _get_filesystem(path: PathType) -> Type[Filesystem]:
+def _get_filesystem(path: "PathType") -> Type["Filesystem"]:
     """Returns a filesystem class for a given path from the registry"""
     return default_filesystem_registry.get_filesystem_for_path(path)
 
 
-def open(path: PathType, mode: str = "r") -> Any:  # noqa
+def open(path: "PathType", mode: str = "r") -> Any:  # noqa
     """Open a file at the given path."""
     return _get_filesystem(path).open(path, mode=mode)
 
 
-def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+def copy(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
     """Copy a file from the source to the destination."""
     src_fs = _get_filesystem(src)
     dst_fs = _get_filesystem(dst)
@@ -53,24 +63,24 @@ def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         open(dst, mode="wb").write(contents)
 
 
-def exists(path: PathType) -> bool:
+def exists(path: "PathType") -> bool:
     """Returns `True` if the given path exists."""
     return _get_filesystem(path).exists(path)
 
 
-def remove(path: PathType) -> None:
+def remove(path: "PathType") -> None:
     """Remove the file at the given path. Dangerous operation."""
     if not exists(path):
         raise FileNotFoundError(f"{convert_to_str(path)} does not exist!")
     _get_filesystem(path).remove(path)
 
 
-def glob(pattern: PathType) -> List[PathType]:
+def glob(pattern: "PathType") -> List["PathType"]:
     """Return the paths that match a glob pattern."""
     return _get_filesystem(pattern).glob(pattern)
 
 
-def isdir(path: PathType) -> bool:
+def isdir(path: "PathType") -> bool:
     """Returns whether the given path points to a directory."""
     return _get_filesystem(path).isdir(path)
 
@@ -109,17 +119,17 @@ def listdir(dir_path: str, only_file_names: bool = False) -> List[str]:
         return []
 
 
-def makedirs(path: PathType) -> None:
+def makedirs(path: "PathType") -> None:
     """Make a directory at the given path, recursively creating parents."""
     _get_filesystem(path).makedirs(path)
 
 
-def mkdir(path: PathType) -> None:
+def mkdir(path: "PathType") -> None:
     """Make a directory at the given path; parent directory must exist."""
     _get_filesystem(path).mkdir(path)
 
 
-def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+def rename(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
     """Rename source file to destination file.
 
     Args:
@@ -159,16 +169,16 @@ def rmtree(dir_path: str) -> None:
     _get_filesystem(dir_path).rmtree(dir_path)
 
 
-def stat(path: PathType) -> Any:
+def stat(path: "PathType") -> Any:
     """Return the stat descriptor for a given file path."""
     return _get_filesystem(path).stat(path)
 
 
 def walk(
-    top: PathType,
+    top: "PathType",
     topdown: bool = True,
     onerror: Optional[Callable[..., None]] = None,
-) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+) -> Iterable[Tuple["PathType", List["PathType"], List["PathType"]]]:
     """Return an iterator that walks the contents of the given directory.
 
     Args:
@@ -184,7 +194,7 @@ def walk(
     return _get_filesystem(top).walk(top, topdown=topdown, onerror=onerror)
 
 
-def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
+def find_files(dir_path: "PathType", pattern: str) -> Iterable[str]:
     # TODO [ENG-189]: correct docstring since 'None' is never returned
     """Find files in a directory that match pattern.
 
@@ -336,8 +346,8 @@ def get_parent(dir_path: str) -> str:
     return Path(dir_path).parent.stem
 
 
-def convert_to_str(path: PathType) -> str:
-    """Converts a PathType to a str using UTF-8."""
+def convert_to_str(path: "PathType") -> str:
+    """Converts a "PathType" to a str using UTF-8."""
     if isinstance(path, str):
         return path
     else:
