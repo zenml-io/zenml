@@ -661,24 +661,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         )
         return new_user
 
-    def get_teams_for_user(
-        self, user_name_or_id: Union[str, UUID]
-    ) -> List[TeamResponseModel]:
-        """"""
-        user = self.get_user(user_name_or_id=user_name_or_id)
-        return user.teams
-
-    # -----
-    # Teams
-    # -----
-
-    def get_users_for_team(
-        self, team_name_or_id: Union[str, UUID]
-    ) -> List[UserResponseModel]:
-        """"""
-        team = self.get_team(team_name_or_id=team_name_or_id)
-        return team.users
-
     # -----
     # Roles
     # -----
