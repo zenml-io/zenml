@@ -944,7 +944,6 @@ class RestZenStore(BaseZenStore):
             response_model=RoleResponseModel,
         )
 
-    # TODO: Should it be name or id or just id?
     def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
         """Gets a specific role.
 

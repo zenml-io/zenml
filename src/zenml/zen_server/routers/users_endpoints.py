@@ -106,7 +106,7 @@ def create_user(
     Args:
         user: User to create.
         assign_default_role: Whether the initial role should be assigned to the
-                             new user.
+            new user.
 
     Returns:
         The created user.

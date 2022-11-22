@@ -56,7 +56,7 @@ def list_role_assignments(
             user
 
     Returns:
-        List of all roles.
+        List of all role assignments.
     """
     return zen_store().list_role_assignments(
         project_name_or_id=project_name_or_id,
@@ -105,7 +105,7 @@ def get_role_assignment(
         role_assignment_name_or_id: Name or ID of the role assignment.
 
     Returns:
-        A specific role.
+        A specific role assignment.
     """
     return zen_store().get_role_assignment(
         role_assignment_id=role_assignment_name_or_id
@@ -124,6 +124,6 @@ def delete_role_assignment(
     """Deletes a specific role.
 
     Args:
-        role_name_or_id: Name or ID of the role.
+        role_assignment_id: The ID of the role assignment.
     """
     zen_store().delete_role_assignment(role_assignment_id=role_assignment_id)
