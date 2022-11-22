@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 import getpass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 import click
@@ -190,7 +190,7 @@ def register_stack(
     with console.status(f"Registering stack '{stack_name}'...\n"):
         client = Client()
 
-        components = dict()
+        components: Dict[StackComponentType, Union[str, UUID]] = dict()
 
         components[StackComponentType.ARTIFACT_STORE] = artifact_store
         components[StackComponentType.ORCHESTRATOR] = orchestrator
@@ -366,7 +366,7 @@ def update_stack(
 
     with console.status("Updating stack...\n"):
 
-        updates = dict()
+        updates: Dict[StackComponentType, List[Union[str, UUID]]] = dict()
         if artifact_store_name:
             updates[StackComponentType.ARTIFACT_STORE] = [artifact_store_name]
         if alerter_name:
@@ -1004,7 +1004,7 @@ def copy_stack(
             name_id_or_prefix=source_stack_name_or_id
         )
 
-        component_mapping: Dict[StackComponentType, Optional[str, UUID]] = {}
+        component_mapping: Dict[StackComponentType, Union[str, UUID]] = {}
 
         for c_type, c_list in stack_to_copy.components.items():
             if c_list:

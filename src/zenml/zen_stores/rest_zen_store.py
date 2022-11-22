@@ -251,7 +251,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
         config_path: str,
         load_config_path: Optional[PurePath] = None,
     ) -> "StoreConfiguration":
-        """Create a copy of the store config using a different configuration path.
+        """Create a copy of the store config using a different path.
 
         This method is used to create a copy of the store configuration that can
         be loaded using a different configuration path or in the context of a

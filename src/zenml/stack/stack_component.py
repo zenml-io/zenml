@@ -696,16 +696,3 @@ class StackComponent:
             )
 
         return values
-
-    def __eq__(self, other: object) -> bool:
-        """Checks if two stack components are equal.
-
-        Args:
-            other: The other stack component to compare to.
-
-        Returns:
-            True if the stack components are equal, False otherwise.
-        """
-        if isinstance(other, StackComponent):
-            return self.to_model() == other.to_model()
-        return NotImplemented

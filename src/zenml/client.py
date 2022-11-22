@@ -97,7 +97,7 @@ class ClientConfiguration(FileSyncModel):
     active_stack_id: Optional[UUID]
 
     @property
-    def active_project(self):
+    def active_project(self) -> ProjectResponseModel:
         return self._active_project
 
     def set_active_project(self, project: "ProjectResponseModel") -> None:
@@ -559,7 +559,9 @@ class Client(metaclass=ClientMetaClass):
 
         return created_user
 
-    def get_user(self, name_id_or_prefix: Union[str, UUID]) -> UserResponseModel:
+    def get_user(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> UserResponseModel:
         """Gets a user.
 
         Args:
@@ -633,7 +635,9 @@ class Client(metaclass=ClientMetaClass):
     # TEAM #
     # ---- #
 
-    def get_team(self, name_id_or_prefix: str) -> TeamResponseModel:
+    def get_team(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> TeamResponseModel:
         """Gets a team.
 
         Args:
@@ -742,7 +746,9 @@ class Client(metaclass=ClientMetaClass):
     # ROLES #
     # ----- #
 
-    def get_role(self, name_id_or_prefix: str) -> RoleResponseModel:
+    def get_role(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> RoleResponseModel:
         """Gets a role.
 
         Args:
@@ -1026,7 +1032,9 @@ class Client(metaclass=ClientMetaClass):
             )
         return project
 
-    def get_project(self, name_id_or_prefix: str) -> ProjectResponseModel:
+    def get_project(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> ProjectResponseModel:
         """Gets a project.
 
         Args:
@@ -1290,14 +1298,16 @@ class Client(metaclass=ClientMetaClass):
 
         # Get the current components
         if component_updates:
-            components = {}
+            components_dict = {}
             for component_type, component_list in stack.components.items():
                 if component_list is not None:
-                    components[component_type] = [c.id for c in component_list]
+                    components_dict[component_type] = [
+                        c.id for c in component_list
+                    ]
 
             for component_type, component_list in component_updates.items():
                 if component_list is not None:
-                    components[component_type] = [
+                    components_dict[component_type] = [
                         self.get_stack_component(
                             name_id_or_prefix=c,
                             component_type=component_type,
@@ -1305,7 +1315,7 @@ class Client(metaclass=ClientMetaClass):
                         for c in component_list
                     ]
 
-            update_model.components = components
+            update_model.components = components_dict
 
         return self.zen_store.update_stack(
             stack_id=stack.id,

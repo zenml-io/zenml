@@ -134,7 +134,7 @@ from zenml.zen_stores.schemas import (
     UserRoleAssignmentSchema,
     UserSchema,
 )
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.role_schemas import RolePermissionSchema
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
@@ -151,7 +151,7 @@ if TYPE_CHECKING:
         MLMDStepRunModel,
     )
 
-AnyBaseSchema = TypeVar("AnyBaseSchema", bound=BaseSchema)
+AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -973,7 +973,7 @@ class SqlZenStore(BaseZenStore):
                         stack=stack_update, session=session
                     )
 
-            components = None
+            components = []
             if stack_update.components:
                 filters = [
                     (StackComponentSchema.id == component_id)
@@ -2320,7 +2320,7 @@ class SqlZenStore(BaseZenStore):
         """Delete a specific role assignment
 
         Args:
-            role_assignment_id: The Id of the specific role assignment
+            role_assignment_id: The ID of the specific role assignment
         """
         with Session(self.engine) as session:
             user_role = session.exec(
@@ -2789,8 +2789,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
-        # We want to have the create statement in the try block since running it
-        # first will reduce concurrency issues.
+        # We want to have the 'create' statement in the try block since running
+        # it first will reduce concurrency issues.
         try:
             return self.create_run(pipeline_run)
         except EntityExistsError:
@@ -3331,10 +3331,10 @@ class SqlZenStore(BaseZenStore):
     @staticmethod
     def _get_schema_by_name_or_id(
         object_name_or_id: Union[str, UUID],
-        schema_class: Type[AnyBaseSchema],
+        schema_class: Type[AnyNamedSchema],
         schema_name: str,
         session: Session,
-    ) -> AnyBaseSchema:
+    ) -> AnyNamedSchema:
         """Query a schema by its 'name' or 'id' field.
 
         Args:

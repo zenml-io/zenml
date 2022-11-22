@@ -96,7 +96,7 @@ def create_role_assignment(
 )
 @handle_exceptions
 def get_role_assignment(
-    role_assignment_name_or_id: Union[str, UUID],
+    role_assignment_name_or_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> RoleAssignmentResponseModel:
     """Returns a specific role assignment.

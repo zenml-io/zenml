@@ -86,7 +86,7 @@ class UserSchema(NamedSchema, table=True):
             activation_token=model.create_hashed_activation_token(),
         )
 
-    def update(self, user_update: UserUpdateModel):
+    def update(self, user_update: UserUpdateModel) -> "UserSchema":
         for field, value in user_update.dict(exclude_unset=True).items():
             setattr(self, field, value)
 

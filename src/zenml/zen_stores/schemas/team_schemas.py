@@ -64,7 +64,7 @@ class TeamSchema(NamedSchema, table=True):
         back_populates="team", sa_relationship_kwargs={"cascade": "delete"}
     )
 
-    def update(self, team_update: TeamUpdateModel):
+    def update(self, team_update: TeamUpdateModel) -> "TeamSchema":
         for field, value in team_update.dict(exclude_unset=True).items():
             if field == "users":
                 pass

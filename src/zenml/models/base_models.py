@@ -13,16 +13,12 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ForwardRef, Optional, Type, TypeVar
+from typing import Any, ForwardRef, Optional, Type, TypeVar
 from uuid import UUID
 
 from pydantic import Field
 
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
-
-if TYPE_CHECKING:
-    from zenml.models.project_models import ProjectResponseModel
-    from zenml.models.user_models import UserResponseModel
 
 # --------------- #
 # RESPONSE MODELS #

@@ -122,27 +122,6 @@ class Stack:
         self._annotator = annotator
         self._data_validator = data_validator
 
-    def to_model(self, user: UUID, project: UUID) -> "StackResponseModel":
-        """Creates a StackModel from an actual Stack instance.
-
-        Args:
-            user: The user ID of the user who created the stack.
-            project: The project ID of the project the stack belongs to.
-
-        Returns:
-            A StackModel
-        """
-        return StackResponseModel(
-            id=self.id,
-            name=self.name,
-            user=user,
-            project=project,
-            components={
-                type_: [component.to_model().id]
-                for type_, component in self.components.items()
-            },
-        )
-
     @classmethod
     def from_model(cls, stack_model: StackResponseModel) -> "Stack":
         """Creates a Stack instance from a StackModel.

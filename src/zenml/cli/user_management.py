@@ -156,7 +156,7 @@ def create_user(
             cli_utils.declare(
                 f"The created user account is currently inactive. You can "
                 f"activate it by visiting the dashboard at the following URL:\n"
-                f"{client.zen_store.url}/signup?user={str(new_user.id)}&username={new_user.name}&token={new_user.activation_token.get_secret_value()}\n"
+                f"{client.zen_store.url}/signup?user={str(new_user.id)}&username={new_user.name}&token={new_user.activation_token}\n"
             )
 
 

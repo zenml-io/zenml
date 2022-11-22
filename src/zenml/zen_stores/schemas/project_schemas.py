@@ -78,7 +78,7 @@ class ProjectSchema(NamedSchema, table=True):
         """
         return cls(name=project.name, description=project.description)
 
-    def update(self, project_update: ProjectUpdateModel):
+    def update(self, project_update: ProjectUpdateModel) -> "ProjectSchema":
         for field, value in project_update.dict(exclude_unset=True).items():
             setattr(self, field, value)
 
