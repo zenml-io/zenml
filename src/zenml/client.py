@@ -2094,9 +2094,9 @@ class Client(metaclass=ClientMetaClass):
             pipeline_run_dict["id"] = uuid4()
             pipeline_run_dict["user"] = self.active_user.id
             pipeline_run_dict["project"] = self.active_project.id
+            pipeline_run_dict["stack"] = None
+            pipeline_run_dict["pipeline"] = None
             pipeline_run = PipelineRunRequestModel.parse_obj(pipeline_run_dict)
-            pipeline_run.stack = None
-            pipeline_run.pipeline = None
             pipeline_run.mlmd_id = None
             pipeline_run = self.zen_store.create_run(pipeline_run)
             for step_dict in steps:
