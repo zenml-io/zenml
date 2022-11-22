@@ -1614,6 +1614,21 @@ class RestZenStore(BaseZenStore):
             route=ARTIFACTS,
         )
 
+    def get_artifact(self, artifact_id: UUID) -> ArtifactModel:
+        """Gets an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to get.
+
+        Returns:
+            The artifact.
+        """
+        return self._get_resource(
+            resource_id=artifact_id,
+            route=ARTIFACTS,
+            resource_model=ArtifactModel,
+        )
+
     def list_artifacts(
         self,
         artifact_uri: Optional[str] = None,
