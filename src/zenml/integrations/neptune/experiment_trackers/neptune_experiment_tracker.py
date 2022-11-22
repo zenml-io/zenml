@@ -67,7 +67,14 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
 
     @staticmethod
     def _is_last_step(info: "StepRunInfo") -> bool:
-        """Check whether the current step is the last step of the pipeline."""
+        """Check whether the current step is the last step of the pipeline.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            flag whether the current step is the last one in the pipeline
+        """
         pipeline_name = info.pipeline.name
         step_name = info.config.name
         client = Client()
@@ -100,6 +107,9 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         """Initializes neptune run and stores it in the run_state object.
 
         The run object can then be accessed later from other places e.g. step.
+
+        Args:
+            info: Info about the step that was executed.
         """
         settings = cast(NeptuneExperimentTrackerSettings, self.get_settings(info))
 
@@ -109,7 +119,11 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         self.run_state.tags = list(settings.tags)
 
     def cleanup_step_run(self, info: "StepRunInfo") -> None:
-        """If the current step is the last step of the pipeline, stop neptune run."""
+        """If the current step is the last step of the pipeline, stop neptune run.
+
+        Args:
+            info: Info about the step that was executed.
+        """
         if self._is_last_step(info):
             self.run_state.active_run.sync()
             self.run_state.active_run.stop()

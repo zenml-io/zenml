@@ -40,47 +40,83 @@ class RunProvider(metaclass=SingletonMetaClass):
 
     @property
     def project(self) -> str:
-        """Getter for project name."""
+        """Getter for project name.
+
+        Returns:
+            Name of the project fed to the RunProvider.
+        """
         return self._project
 
     @property
     def token(self) -> str:
-        """Getter for api token."""
+        """Getter for api token.
+
+        Returns:
+            Neptune API token fed to the RunProvider.
+        """
         return self._token
 
     @property
     def run_name(self) -> str:
-        """Getter for run name."""
+        """Getter for run name.
+
+        Returns:
+            Name of the pipeline run.
+        """
         return self._run_name
 
     @property
     def tags(self) -> List[str]:
-        """Getter for run tags."""
+        """Getter for run tags.
+
+        Returns:
+            Tags associated with neptune run.
+        """
         return self._tags
 
     @project.setter
     def project(self, project: str):
-        """Setter for project name."""
+        """Setter for project name.
+
+        Args:
+            project: neptune project name
+        """
         self._project = project
 
     @token.setter
     def token(self, token: str):
-        """Setter for api token."""
+        """Setter for api token.
+
+        Args:
+            token: neptune API token
+        """
         self._token = token
 
     @run_name.setter
     def run_name(self, run_name: str):
-        """Setter for run name."""
+        """Setter for run name.
+
+        Args:
+            run_name: name of the pipeline run
+        """
         self._run_name = run_name
 
     @tags.setter
     def tags(self, tags: List[str]):
-        """Setter for run tags."""
+        """Setter for run tags.
+
+        Args:
+            tags: list of tags associated with neptune run
+        """
         self._tags = tags
 
     @property
     def active_run(self) -> neptune.metadata_containers.Run:
-        """Either gets active neptune run or initializes a new one."""
+        """Either gets active neptune run or initializes a new one.
+
+        Returns:
+            Neptune run object
+        """
         if self._active_run is None:
             run = neptune.init_run(
                 project=self.project,
@@ -94,7 +130,14 @@ class RunProvider(metaclass=SingletonMetaClass):
 
 
 def get_neptune_run() -> neptune.metadata_containers.Run:
-    """Helper function to fetch existing neptune run or create a new one."""
+    """Helper function to fetch existing neptune run or create a new one.
+
+    Returns:
+        neptune run object
+
+    Raises:
+        InvalidExperimentTrackerSelected: when called while using an experiment tracker other than neptune
+    """
     client = Client()
     experiment_tracker = client.active_stack.experiment_tracker
     if experiment_tracker.flavor == NEPTUNE:

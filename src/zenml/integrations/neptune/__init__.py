@@ -35,7 +35,11 @@ class NeptuneIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the neptune integration."""
+        """Declare the stack component flavors for the neptune integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
         from zenml.integrations.neptune.flavors import (
             NeptuneExperimentTrackerFlavor,
         )
