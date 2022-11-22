@@ -245,6 +245,94 @@ Model server BentoMLDeploymentService[cd38d6e6-467b-46e0-be13-3112c6e65d0e]
 (type: model-serving, flavor: bentoml) was deleted.
 ```
 
+# From local to cloud with Bentoctl
+
+Once a model server has been deployed locally, and tested, it can be deployed to
+a cloud provider. This is done with the [bentoctl](https://github.com/bentoml/bentoctl) 
+which is a CLI tool for managing BentoML deployments on cloud providers.
+
+## Prerequisites
+
+To use Bentoctl, you need : 
+
+1. An account with a cloud provider. Currently, Bentoctl supports AWS, GCP, and Azure. 
+You will also need to have the corresponding CLI tools installed on your machine. 
+2. Docker installed on your machine.
+3. Terraform installed on your machine.
+
+## Setup Bentoctl
+
+To install Bentoctl, run the following command:
+
+```shell
+pip install bentoctl
+```
+
+## Deploying to AWS Sagemaker with Bentoctl
+
+In this example we will deploy the already built Bento from ZenML Pipeline
+and deploy it to AWS Sagemaker.
+
+### 1. Install AWS Sagemaker Plugin
+
+To deploy a bento to AWS Sagemaker, we need to install the AWS Sagemaker
+bentoctl plugin:
+
+```shell
+zenml integration install aws s3
+bentoctl operator install aws-sagemaker
+```
+
+### 2. Initialize deployment with bentoctl
+
+To initialize a deployment, we need to run the following command:
+
+```shell
+bentoctl init
+
+"""
+api_version: v1
+name: zenml-bentoml-example
+operator:
+    name: aws-sagemaker
+template: terraform
+spec: 
+    region: eu-central-1
+    instance_type: ml.m5.large
+    initial_instance_count: 1
+    timeout: 60
+    enable_data_capture: False
+    destination_s3_uri: 
+    initial_sampling_percentage: 1
+filename for deployment_config [deployment_config.yaml]: 
+deployment config generated to: deployment_config.yaml
+✨ generated template files.
+  - ./main.tf
+  - ./bentoctl.tfvars
+"""
+```
+
+### 3. Build and push AWS sagemaker compatible docker image to the registry
+
+```shell
+bentoctl build -b $BENTO_TAG -f $DEPLOYEMNT_CONFIG_FILE
+
+# Example:
+bentoctl build -b pytorch_mnist_service:kq25r5c6fgidomup -f deployment_config.yaml
+```
+
+### 4. Apply Deployment Terraform and bentoctl
+
+```shell
+bentoctl apply
+```
+
+### 5. Get the endpoint
+
+```shell
+URL=$(terraform output -json | jq -r .endpoint.value)predict
+```
+
 ### 🧽 Clean up
 
 To stop any prediction servers running in the background, use the
@@ -252,6 +340,12 @@ To stop any prediction servers running in the background, use the
 
 ```shell
 zenml model-deployer models delete cd38d6e6-467b-46e0-be13-3112c6e65d0e
+```
+
+To delete the Sagemaker deployment, run the following command:
+
+```shell
+benctl destroy
 ```
 
 Then delete the remaining ZenML references.

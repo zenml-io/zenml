@@ -38,10 +38,16 @@ you can take a look to one of the other
 [Model Deployer Flavors](./model-deployers.md#model-deployers-flavors) 
 available in ZenML (e.g. Seldon Core, KServe, etc.)
 
-Note: The BentoML also allows you to deploy your models in a more complex
-production grade dedicated ways, you can take a look to 
-[Yatai](https://github.com/bentoml/Yatai) and 
-[bentoctl](https://github.com/bentoml/bentoctl)
+The BentoML also allows you to deploy your models in a more complex
+production grade dedicated ways, [bentoctl](https://github.com/bentoml/bentoctl)
+is one of this ways, bentoctl takes your built Bento from a ZenML
+pipeline and deploy it with bentoctl in a cloud environment such as AWS Lambda, 
+AWS SageMaker, Google Cloud Functions, Google Cloud AI Platform, Azure Functions.
+Read more about this in the [From Local to Cloud with bentoctl section](#from-local-to-cloud-with-bentoml).
+
+Note: The bentoctl integration implementation is still in progress and will be
+available soon. The integration will allow you to deploy your models to a specific
+cloud provider with just few lines of code using ZenML built-in steps.
 
 ## How do you deploy it?
 
@@ -213,6 +219,55 @@ def predictor(
         result = to_labels(prediction[0])
         rich_print(f"Prediction for {img} is {result}")
 ```
+
+### From Local to Cloud with bentoctl
+
+bentoctl helps deploy any machine learning models as production-ready API 
+endpoints on the cloud. It is a command line tool that provides a simple
+interface to manage your BentoML bundles. 
+
+The bentoctl CLI provides list of opetors which are plugins that interact with 
+cloud services, some of these operators are:
+
+* [AWS Lambda](https://github.com/bentoml/aws-lambda-deploy)
+* [AWS SageMaker](https://github.com/bentoml/aws-sagemaker-deploy)
+* [AWS EC2](https://github.com/bentoml/aws-ec2-deploy)
+* [Google Cloud Run](https://github.com/bentoml/google-cloud-run-deploy)
+* [Google Compute Engine](https://github.com/bentoml/google-compute-engine-deploy)
+* [Azure Container Instances](https://github.com/bentoml/azure-container-instances-deploy)
+* [Heroku](https://github.com/bentoml/heroku-deploy)
+
+To deploy your BentoML bundle to the cloud, you need to install the `bentoctl` CLI
+and the operator plugin for the cloud service you want to deploy to.
+    
+```bash
+# Install bentoctl CLI
+pip install bentoctl
+# Install a choosen operator
+bentoctl operator install $OPERATOR # example: aws-lambda
+```
+
+Once you have the `bentoctl` CLI and the operator plugin installed, you can use
+the `bentoctl` CLI to deploy your BentoML bundle to the cloud.
+
+```bash
+# Let's get the name of the BentoML bundle we want to deploy
+bentoml list
+
+# Generate deployment configuration file
+bentoctl init
+
+# Build and push the docker image to the cloud
+bentoctl build -b $BENTO_TAG -f deployment_config.yaml
+
+# Deploy to the cloud
+bentoctl apply -f deployment_config.yaml
+```
+
+deployment_name = "zenml-bentoml-example"
+region = "eu-central-1"
+instance_type = "ml.m5.large"
+
 
 You can check the BentoML deployment example for more details.
 
