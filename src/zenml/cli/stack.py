@@ -53,7 +53,7 @@ def stack() -> None:
 @click.option(
     "-a",
     "--artifact-store",
-    "artifact_store_name",
+    "artifact_store",
     help="Name of the artifact store for this stack.",
     type=str,
     required=True,
@@ -61,7 +61,7 @@ def stack() -> None:
 @click.option(
     "-o",
     "--orchestrator",
-    "orchestrator_name",
+    "orchestrator",
     help="Name of the orchestrator for this stack.",
     type=str,
     required=True,
@@ -69,7 +69,7 @@ def stack() -> None:
 @click.option(
     "-c",
     "--container_registry",
-    "container_registry_name",
+    "container_registry",
     help="Name of the container registry for this stack.",
     type=str,
     required=False,
@@ -77,7 +77,7 @@ def stack() -> None:
 @click.option(
     "-x",
     "--secrets_manager",
-    "secrets_manager_name",
+    "secrets_manager",
     help="Name of the secrets manager for this stack.",
     type=str,
     required=False,
@@ -85,7 +85,7 @@ def stack() -> None:
 @click.option(
     "-s",
     "--step_operator",
-    "step_operator_name",
+    "step_operator",
     help="Name of the step operator for this stack.",
     type=str,
     required=False,
@@ -93,7 +93,7 @@ def stack() -> None:
 @click.option(
     "-f",
     "--feature_store",
-    "feature_store_name",
+    "feature_store",
     help="Name of the feature store for this stack.",
     type=str,
     required=False,
@@ -101,7 +101,7 @@ def stack() -> None:
 @click.option(
     "-d",
     "--model_deployer",
-    "model_deployer_name",
+    "model_deployer",
     help="Name of the model deployer for this stack.",
     type=str,
     required=False,
@@ -109,7 +109,7 @@ def stack() -> None:
 @click.option(
     "-e",
     "--experiment_tracker",
-    "experiment_tracker_name",
+    "experiment_tracker",
     help="Name of the experiment tracker for this stack.",
     type=str,
     required=False,
@@ -117,7 +117,7 @@ def stack() -> None:
 @click.option(
     "-al",
     "--alerter",
-    "alerter_name",
+    "alerter",
     help="Name of the alerter for this stack.",
     type=str,
     required=False,
@@ -125,7 +125,7 @@ def stack() -> None:
 @click.option(
     "-an",
     "--annotator",
-    "annotator_name",
+    "annotator",
     help="Name of the annotator for this stack.",
     type=str,
     required=False,
@@ -133,7 +133,7 @@ def stack() -> None:
 @click.option(
     "-dv",
     "--data_validator",
-    "data_validator_name",
+    "data_validator",
     help="Name of the data validator for this stack.",
     type=str,
     required=False,
@@ -245,7 +245,7 @@ def register_stack(
 @click.option(
     "-a",
     "--artifact-store",
-    "artifact_store_name",
+    "artifact_store",
     help="Name of the new artifact store for this stack.",
     type=str,
     required=False,
@@ -253,7 +253,7 @@ def register_stack(
 @click.option(
     "-o",
     "--orchestrator",
-    "orchestrator_name",
+    "orchestrator",
     help="Name of the new orchestrator for this stack.",
     type=str,
     required=False,
@@ -261,7 +261,7 @@ def register_stack(
 @click.option(
     "-c",
     "--container_registry",
-    "container_registry_name",
+    "container_registry",
     help="Name of the new container registry for this stack.",
     type=str,
     required=False,
@@ -269,7 +269,7 @@ def register_stack(
 @click.option(
     "-s",
     "--step_operator",
-    "step_operator_name",
+    "step_operator",
     help="Name of the new step operator for this stack.",
     type=str,
     required=False,
@@ -277,7 +277,7 @@ def register_stack(
 @click.option(
     "-x",
     "--secrets_manager",
-    "secrets_manager_name",
+    "secrets_manager",
     help="Name of the new secrets manager for this stack.",
     type=str,
     required=False,
@@ -285,7 +285,7 @@ def register_stack(
 @click.option(
     "-f",
     "--feature_store",
-    "feature_store_name",
+    "feature_store",
     help="Name of the new feature store for this stack.",
     type=str,
     required=False,
@@ -293,7 +293,7 @@ def register_stack(
 @click.option(
     "-d",
     "--model_deployer",
-    "model_deployer_name",
+    "model_deployer",
     help="Name of the new model deployer for this stack.",
     type=str,
     required=False,
@@ -301,7 +301,7 @@ def register_stack(
 @click.option(
     "-e",
     "--experiment_tracker",
-    "experiment_tracker_name",
+    "experiment_tracker",
     help="Name of the new experiment tracker for this stack.",
     type=str,
     required=False,
@@ -309,7 +309,7 @@ def register_stack(
 @click.option(
     "-al",
     "--alerter",
-    "alerter_name",
+    "alerter",
     help="Name of the new alerter for this stack.",
     type=str,
     required=False,
@@ -317,7 +317,7 @@ def register_stack(
 @click.option(
     "-an",
     "--annotator",
-    "annotator_name",
+    "annotator",
     help="Name of the new annotator for this stack.",
     type=str,
     required=False,
@@ -325,74 +325,73 @@ def register_stack(
 @click.option(
     "-dv",
     "--data_validator",
-    "data_validator_name",
+    "data_validator",
     help="Name of the data validator for this stack.",
     type=str,
     required=False,
 )
 def update_stack(
     stack_name_or_id: Optional[str] = None,
-    artifact_store_name: Optional[str] = None,
-    orchestrator_name: Optional[str] = None,
-    container_registry_name: Optional[str] = None,
-    step_operator_name: Optional[str] = None,
-    secrets_manager_name: Optional[str] = None,
-    feature_store_name: Optional[str] = None,
-    model_deployer_name: Optional[str] = None,
-    experiment_tracker_name: Optional[str] = None,
-    alerter_name: Optional[str] = None,
-    annotator_name: Optional[str] = None,
-    data_validator_name: Optional[str] = None,
+    artifact_store: Optional[str] = None,
+    orchestrator: Optional[str] = None,
+    container_registry: Optional[str] = None,
+    step_operator: Optional[str] = None,
+    secrets_manager: Optional[str] = None,
+    feature_store: Optional[str] = None,
+    model_deployer: Optional[str] = None,
+    experiment_tracker: Optional[str] = None,
+    alerter: Optional[str] = None,
+    annotator: Optional[str] = None,
+    data_validator: Optional[str] = None,
 ) -> None:
     """Update a stack.
 
     Args:
         stack_name_or_id: Name or id of the stack to update.
-        artifact_store_name: Name of the new artifact store for this stack.
-        orchestrator_name: Name of the new orchestrator for this stack.
-        container_registry_name: Name of the new container registry for this
-            stack.
-        step_operator_name: Name of the new step operator for this stack.
-        secrets_manager_name: Name of the new secrets manager for this stack.
-        feature_store_name: Name of the new feature store for this stack.
-        model_deployer_name: Name of the new model deployer for this stack.
+        artifact_store: Name of the new artifact store for this stack.
+        orchestrator: Name of the new orchestrator for this stack.
+        container_registry: Name of the new container registry for this stack.
+        step_operator: Name of the new step operator for this stack.
+        secrets_manager: Name of the new secrets manager for this stack.
+        feature_store: Name of the new feature store for this stack.
+        model_deployer: Name of the new model deployer for this stack.
         experiment_tracker_name: Name of the new experiment tracker for this
             stack.
-        alerter_name: Name of the new alerter for this stack.
-        annotator_name: Name of the new annotator for this stack.
-        data_validator_name: Name of the new data validator for this stack.
+        alerter: Name of the new alerter for this stack.
+        annotator: Name of the new annotator for this stack.
+        data_validator: Name of the new data validator for this stack.
     """
     client = Client()
 
     with console.status("Updating stack...\n"):
 
         updates: Dict[StackComponentType, List[Union[str, UUID]]] = dict()
-        if artifact_store_name:
-            updates[StackComponentType.ARTIFACT_STORE] = [artifact_store_name]
-        if alerter_name:
-            updates[StackComponentType.ALERTER] = [alerter_name]
-        if annotator_name:
-            updates[StackComponentType.ANNOTATOR] = [annotator_name]
-        if container_registry_name:
+        if artifact_store:
+            updates[StackComponentType.ARTIFACT_STORE] = [artifact_store]
+        if alerter:
+            updates[StackComponentType.ALERTER] = [alerter]
+        if annotator:
+            updates[StackComponentType.ANNOTATOR] = [annotator]
+        if container_registry:
             updates[StackComponentType.CONTAINER_REGISTRY] = [
-                container_registry_name
+                container_registry
             ]
-        if data_validator_name:
-            updates[StackComponentType.DATA_VALIDATOR] = [data_validator_name]
-        if experiment_tracker_name:
+        if data_validator:
+            updates[StackComponentType.DATA_VALIDATOR] = [data_validator]
+        if experiment_tracker:
             updates[StackComponentType.EXPERIMENT_TRACKER] = [
-                experiment_tracker_name
+                experiment_tracker
             ]
-        if feature_store_name:
-            updates[StackComponentType.FEATURE_STORE] = [feature_store_name]
-        if model_deployer_name:
-            updates[StackComponentType.MODEL_DEPLOYER] = [model_deployer_name]
-        if orchestrator_name:
-            updates[StackComponentType.ORCHESTRATOR] = [orchestrator_name]
-        if secrets_manager_name:
-            updates[StackComponentType.SECRETS_MANAGER] = [secrets_manager_name]
-        if step_operator_name:
-            updates[StackComponentType.STEP_OPERATOR] = [step_operator_name]
+        if feature_store:
+            updates[StackComponentType.FEATURE_STORE] = [feature_store]
+        if model_deployer:
+            updates[StackComponentType.MODEL_DEPLOYER] = [model_deployer]
+        if orchestrator:
+            updates[StackComponentType.ORCHESTRATOR] = [orchestrator]
+        if secrets_manager:
+            updates[StackComponentType.SECRETS_MANAGER] = [secrets_manager]
+        if step_operator:
+            updates[StackComponentType.STEP_OPERATOR] = [step_operator]
 
         try:
             updated_stack = client.update_stack(
@@ -965,7 +964,7 @@ def import_stack(
             component_type=component_type,
             component_config=component_config,
         )
-        component_ids[component_type + "_name"] = str(component_id)
+        component_ids[component_type] = str(component_id)
 
     # register new stack
     ctx.invoke(
