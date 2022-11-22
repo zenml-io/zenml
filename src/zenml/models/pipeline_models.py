@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Model definitions for pipelines, runs, steps, and artifacts."""
 
+from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
@@ -82,6 +83,9 @@ class PipelineRunModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
     stack_id: Optional[UUID]  # Might become None if the stack is deleted.
     pipeline_id: Optional[UUID]  # Unlisted runs have this as None.
 
+    enable_cache: Optional[bool]
+    start_time: Optional[datetime]
+    end_time: Optional[datetime]
     status: ExecutionStatus
     pipeline_configuration: Dict[str, Any]
     num_steps: Optional[int]
@@ -103,13 +107,20 @@ class StepRunModel(DomainModel):
     pipeline_run_id: UUID
     parent_step_ids: List[UUID]
     input_artifacts: Dict[str, UUID]  # mapping from input name to artifact ID
+    output_artifacts: Dict[str, UUID]  # mapping from output name to artifact ID
 
+    enable_cache: Optional[bool]
+    code_hash: Optional[str]
+    cache_key: Optional[str]
+    start_time: Optional[datetime]
+    end_time: Optional[datetime]
     status: ExecutionStatus
     entrypoint_name: str
     parameters: Dict[str, str]
     step_configuration: Dict[str, Any]
     docstring: Optional[str]
     num_outputs: Optional[int]
+    caching_parameters: Dict[str, Any]
 
     # IDs in MLMD - needed for some metadata store methods
     mlmd_id: Optional[int]
@@ -122,16 +133,11 @@ class ArtifactModel(DomainModel):
     name: str  # Name of the output in the parent step
 
     artifact_store_id: Optional[UUID]
-    parent_step_id: UUID
-    producer_step_id: UUID
 
     type: ArtifactType
     uri: str
     materializer: str
     data_type: str
-    is_cached: bool
 
     # IDs in MLMD - needed for some metadata store methods
     mlmd_id: Optional[int]
-    mlmd_parent_step_id: Optional[int]
-    mlmd_producer_step_id: Optional[int]

@@ -1205,24 +1205,32 @@ class Client(metaclass=ClientMetaClass):
         if not pipeline_runs:
             logger.warning("No pipeline runs found. Nothing to export.")
             return
-        yaml_data = []
+
+        yaml_data: Dict[str, List[Dict[str, Any]]] = {
+            "artifacts": [],
+            "runs": [],
+        }
+
+        # First write all artifacts.
+        artifacts = self.zen_store.list_artifacts()
+        for artifact in sorted(artifacts, key=lambda x: x.created):
+            artifact_dict = json.loads(artifact.json())
+            yaml_data["artifacts"].append(artifact_dict)
+
+        # Then write all pipeline runs.
         for pipeline_run in pipeline_runs:
             run_dict = json.loads(pipeline_run.json())
             run_dict["steps"] = []
             steps = self.zen_store.list_run_steps(run_id=pipeline_run.id)
             for step in steps:
                 step_dict = json.loads(step.json())
-                step_dict["output_artifacts"] = []
-                artifacts = self.zen_store.list_artifacts(
-                    parent_step_id=step.id
-                )
-                for artifact in sorted(artifacts, key=lambda x: x.created):
-                    artifact_dict = json.loads(artifact.json())
-                    step_dict["output_artifacts"].append(artifact_dict)
                 run_dict["steps"].append(step_dict)
-            yaml_data.append(run_dict)
+            yaml_data["runs"].append(run_dict)
+
         write_yaml(filename, yaml_data)
-        logger.info(f"Exported {len(yaml_data)} pipeline runs to {filename}.")
+        logger.info(
+            f"Exported {len(pipeline_runs)} pipeline runs to {filename}."
+        )
 
     def import_pipeline_runs(self, filename: str) -> None:
         """Import pipeline runs from a YAML file.
@@ -1242,7 +1250,18 @@ class Client(metaclass=ClientMetaClass):
         step_id_mapping: Dict[str, UUID] = {}
         artifact_id_mapping: Dict[str, UUID] = {}
         yaml_data = read_yaml(filename)
-        for pipeline_run_dict in yaml_data:
+
+        # First import all artifacts.
+        for artifact_dict in yaml_data["artifacts"]:
+            artifact_id = artifact_dict.pop("id")
+            artifact = ArtifactModel.parse_obj(artifact_dict)
+            artifact.updated = datetime.now()
+            artifact.mlmd_id = None
+            self.zen_store.create_artifact(artifact)
+            artifact_id_mapping[str(artifact_id)] = artifact.id
+
+        # Then import all pipeline runs.
+        for pipeline_run_dict in yaml_data["runs"]:
             steps = pipeline_run_dict.pop("steps")
             pipeline_run_dict.pop("id")
             pipeline_run = PipelineRunModel.parse_obj(pipeline_run_dict)
@@ -1254,7 +1273,6 @@ class Client(metaclass=ClientMetaClass):
             pipeline_run.mlmd_id = None
             pipeline_run = self.zen_store.create_run(pipeline_run)
             for step_dict in steps:
-                artifacts = step_dict.pop("output_artifacts")
                 step_id = step_dict.pop("id")
                 step = StepRunModel.parse_obj(step_dict)
                 step.pipeline_run_id = pipeline_run.id
@@ -1266,25 +1284,20 @@ class Client(metaclass=ClientMetaClass):
                     input_name: artifact_id_mapping[str(artifact_id)]
                     for input_name, artifact_id in step.input_artifacts.items()
                 }
+                step.output_artifacts = {
+                    output_name: artifact_id_mapping[str(artifact_id)]
+                    for output_name, artifact_id in step.output_artifacts.items()
+                }
                 step.updated = datetime.now()
                 step.mlmd_id = None
                 step.mlmd_parent_step_ids = []
                 step = self.zen_store.create_run_step(step)
                 step_id_mapping[str(step_id)] = step.id
-                for artifact_dict in artifacts:
-                    artifact_id = artifact_dict.pop("id")
-                    artifact = ArtifactModel.parse_obj(artifact_dict)
-                    artifact.parent_step_id = step.id
-                    artifact.producer_step_id = step_id_mapping[
-                        str(artifact.producer_step_id)
-                    ]
-                    artifact.updated = datetime.now()
-                    artifact.mlmd_id = None
-                    artifact.mlmd_parent_step_id = None
-                    artifact.mlmd_producer_step_id = None
-                    self.zen_store.create_artifact(artifact)
-                    artifact_id_mapping[str(artifact_id)] = artifact.id
-        logger.info(f"Imported {len(yaml_data)} pipeline runs from {filename}.")
+
+        logger.info(
+            f"Imported {len(yaml_data['runs'])} pipeline runs from "
+            f"{filename}."
+        )
 
     def migrate_pipeline_runs(
         self,
@@ -1356,10 +1369,10 @@ class Client(metaclass=ClientMetaClass):
         if not pipeline_runs:
             raise RuntimeError("No pipeline runs found in the metadata store.")
 
-        # For each run, first store the pipeline run, then all steps, then all
-        # output artifacts of each step.
-        # Runs, steps, and artifacts need to be sorted chronologically ensure
-        # that the MLMD IDs of producer steps and parent steps can be resolved.
+        # For each run, first store the pipeline run, then all steps.
+        # For each step, first store the output artifacts, then the step itself.
+        # Runs and steps need to be sorted chronologically to ensure that the
+        # MLMD IDs of parent steps and input artifacts can be resolved.
         for mlmd_run in sorted(pipeline_runs, key=lambda x: x.mlmd_id):
             steps = metadata_store.get_pipeline_run_steps(
                 mlmd_run.mlmd_id
@@ -1399,44 +1412,47 @@ class Client(metaclass=ClientMetaClass):
                 outputs = metadata_store.get_step_output_artifacts(
                     step_id=step.mlmd_id
                 )
+
+                # If the step has outputs and was not cached, we need to create
+                # these artifacts in the new DB first.
+                if outputs and step_status != ExecutionStatus.CACHED:
+                    for output_name, mlmd_artifact in outputs.items():
+                        artifact = ArtifactModel(
+                            name=output_name,
+                            type=mlmd_artifact.type,
+                            uri=mlmd_artifact.uri,
+                            materializer=mlmd_artifact.materializer,
+                            data_type=mlmd_artifact.data_type,
+                        )
+                        new_artifact = self.zen_store.create_artifact(artifact)
+                        artifact_mlmd_id_mapping[
+                            mlmd_artifact.mlmd_id
+                        ] = new_artifact.id
+
                 input_artifacts = {
                     input_name: artifact_mlmd_id_mapping[mlmd_artifact.mlmd_id]
                     for input_name, mlmd_artifact in inputs.items()
+                }
+                output_artifacts = {
+                    output_name: artifact_mlmd_id_mapping[mlmd_artifact.mlmd_id]
+                    for output_name, mlmd_artifact in outputs.items()
                 }
                 step_run = StepRunModel(
                     name=step.name,
                     pipeline_run_id=new_run.id,
                     parent_step_ids=parent_step_ids,
                     input_artifacts=input_artifacts,
+                    output_artifacts=output_artifacts,
                     status=step_status,
                     entrypoint_name=step.entrypoint_name,
                     parameters=step.parameters,
                     step_configuration={},
+                    caching_parameters={},
                     mlmd_parent_step_ids=[],
                     num_outputs=len(outputs),
                 )
                 new_step = self.zen_store.create_run_step(step_run)
                 step_mlmd_id_mapping[step.mlmd_id] = new_step.id
-                for output_name, mlmd_artifact in sorted(
-                    outputs.items(), key=lambda x: x[1].mlmd_id
-                ):
-                    producer_step_id = step_mlmd_id_mapping[
-                        mlmd_artifact.mlmd_producer_step_id
-                    ]
-                    artifact = ArtifactModel(
-                        name=output_name,
-                        parent_step_id=new_step.id,
-                        producer_step_id=producer_step_id,
-                        type=mlmd_artifact.type,
-                        uri=mlmd_artifact.uri,
-                        materializer=mlmd_artifact.materializer,
-                        data_type=mlmd_artifact.data_type,
-                        is_cached=mlmd_artifact.is_cached,
-                    )
-                    new_artifact = self.zen_store.create_artifact(artifact)
-                    artifact_mlmd_id_mapping[
-                        mlmd_artifact.mlmd_id
-                    ] = new_artifact.id
         logger.info(f"Migrated {len(pipeline_runs)} pipeline runs.")
 
     def delete_user(self, user_name_or_id: str) -> None:
