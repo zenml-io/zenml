@@ -25,10 +25,6 @@ from ml_metadata.proto import Artifact, metadata_store_pb2
 from pydantic import BaseModel, Extra
 from tfx.dsl.compiler.constants import PIPELINE_RUN_CONTEXT_TYPE_NAME
 
-from zenml.artifacts.constants import (
-    DATATYPE_PROPERTY_KEY,
-    MATERIALIZER_PROPERTY_KEY,
-)
 from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.logger import get_logger
 from zenml.steps.utils import (
@@ -46,6 +42,8 @@ from zenml.utils.proto_utils import (
 logger = get_logger(__name__)
 
 ZENML_CONTEXT_TYPE_NAME = "zenml"
+DATATYPE_PROPERTY_KEY = "datatype"
+MATERIALIZER_PROPERTY_KEY = "materializer"
 
 
 class MLMDPipelineRunModel(BaseModel):

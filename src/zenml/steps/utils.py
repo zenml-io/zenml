@@ -222,6 +222,7 @@ def _create_channel_parameters(
         ] = source_utils.load_and_validate_class(
             artifact_config.artifact_source, expected_class=BaseArtifact
         )
+        # TODO[RMTFX]: artifact_class is no longer an MLMD Artifact type.
         channel_parameters[key] = component_spec.ChannelParameter(
             type=artifact_class
         )
@@ -355,7 +356,7 @@ class _ZenMLStepExecutor(BaseExecutor):
             data: The data to store in the artifact.
         """
         artifact.materializer = materializer_source
-        artifact.datatype = source_utils.resolve_class(type(data))
+        artifact.data_type = source_utils.resolve_class(type(data))
         materializer_class(artifact).handle_return(data)
 
     def Do(
