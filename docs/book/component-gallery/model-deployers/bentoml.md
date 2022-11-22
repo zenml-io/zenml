@@ -264,11 +264,6 @@ bentoctl build -b $BENTO_TAG -f deployment_config.yaml
 bentoctl apply -f deployment_config.yaml
 ```
 
-deployment_name = "zenml-bentoml-example"
-region = "eu-central-1"
-instance_type = "ml.m5.large"
-
-
 You can check the BentoML deployment example for more details.
 
 - [Model Deployer with BentoML](https://github.com/zenml-io/zenml/tree/main/examples/bentoml_deployment)

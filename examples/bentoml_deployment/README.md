@@ -315,7 +315,7 @@ deployment config generated to: deployment_config.yaml
 ### 3. Build and push AWS sagemaker compatible docker image to the registry
 
 ```shell
-bentoctl build -b $BENTO_TAG -f $DEPLOYEMNT_CONFIG_FILE
+bentoctl build -b $BENTO_TAG -f $DEPLOYMENT_CONFIG_FILE
 
 # Example:
 bentoctl build -b pytorch_mnist_service:kq25r5c6fgidomup -f deployment_config.yaml
