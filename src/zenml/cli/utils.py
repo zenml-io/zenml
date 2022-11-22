@@ -926,7 +926,7 @@ def print_components_table(
             "COMPONENT ID": component.id,
             "FLAVOR": component.flavor,
             "SHARED": get_shared_emoji(component.is_shared),
-            "OWNER": component.user.name,
+            "OWNER": f"{component.user.name if component.user else 'DELETED!'}",
         }
         configurations.append(component_config)
     print_table(configurations)

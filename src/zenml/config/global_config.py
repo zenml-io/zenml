@@ -667,7 +667,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     def set_active_stack(self, stack: "StackResponseModel") -> None:
         self.active_stack_id = stack.id
 
-    def get_active_project(self):
+    def get_active_project(self)->"ProjectResponseModel":
         project_name = self.get_active_project_name()
 
         if self._active_project is None:

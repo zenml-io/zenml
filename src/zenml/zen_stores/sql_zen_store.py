@@ -3230,7 +3230,9 @@ class SqlZenStore(BaseZenStore):
                 )
             query_result = session.exec(
                 select(ArtifactSchema, StepRunInputArtifactSchema)
-                .where(ArtifactSchema.id == StepRunInputArtifactSchema.artifact_id)
+                .where(
+                    ArtifactSchema.id == StepRunInputArtifactSchema.artifact_id
+                )
                 .where(StepRunInputArtifactSchema.step_id == step_id)
             ).all()
             return {

@@ -441,7 +441,7 @@ class UserUpdateModel(UserRequestModel):
     """"""
 
     @root_validator
-    def user_email_updates(cls, values):
+    def user_email_updates(cls, values) -> Dict[str, Any]:
         """"""
         if values["email"] is not None:
             if values["email_opted_in"] is None:

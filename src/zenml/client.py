@@ -559,7 +559,7 @@ class Client(metaclass=ClientMetaClass):
 
         return created_user
 
-    def get_user(self, name_id_or_prefix: str) -> UserResponseModel:
+    def get_user(self, name_id_or_prefix: Union[str, UUID]) -> UserResponseModel:
         """Gets a user.
 
         Args:
