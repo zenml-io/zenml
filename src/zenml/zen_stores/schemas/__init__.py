@@ -44,6 +44,7 @@ __all__ = [
     "ProjectSchema",
     "StackSchema",
     "ArtifactSchema",
+    "StepRunInputArtifactSchema",
     "StepRunParentsSchema",
     "StepRunSchema",
     "UserSchema",

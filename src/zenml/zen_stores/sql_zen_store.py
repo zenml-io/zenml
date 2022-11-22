@@ -2720,19 +2720,34 @@ class SqlZenStore(BaseZenStore):
                         f"MLMD ID '{pipeline_run.mlmd_id}' already exists."
                     )
 
-            # Query stack
-            if pipeline_run.stack is None:
-                logger.warning(
-                    f"No stack found for this run. "
-                    f"Creating pipeline run '{pipeline_run.name}' without "
-                    "linked stack."
-                )
+            # Query stack to ensure it exists in the DB
+            stack_id = None
+            if pipeline_run.stack is not None:
+                stack_id = session.exec(
+                    select(StackSchema.id).where(
+                        StackSchema.id == pipeline_run.stack
+                    )
+                ).first()
+                if stack_id is None:
+                    logger.warning(
+                        f"No stack found for this run. "
+                        f"Creating pipeline run '{pipeline_run.name}' without "
+                        "linked stack."
+                    )
 
-            if pipeline_run.pipeline is None:
-                logger.warning(
-                    f"No pipeline found. Creating pipeline run "
-                    f"'{pipeline_run.name}' as unlisted run."
-                )
+            # Query pipeline to ensure it exists in the DB
+            pipeline_id = None
+            if pipeline_run.pipeline is not None:
+                pipeline_id = session.exec(
+                    select(PipelineSchema.id).where(
+                        PipelineSchema.id == pipeline_run.pipeline
+                    )
+                ).first()
+                if pipeline_id is None:
+                    logger.warning(
+                        f"No pipeline found. Creating pipeline run "
+                        f"'{pipeline_run.name}' as unlisted run."
+                    )
 
             configuration = json.dumps(pipeline_run.pipeline_configuration)
 
@@ -2740,10 +2755,10 @@ class SqlZenStore(BaseZenStore):
                 id=pipeline_run.id,
                 name=pipeline_run.name,
                 orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                stack_id=pipeline_run.stack,
+                stack_id=stack_id,
                 project_id=pipeline_run.project,
                 user_id=pipeline_run.user,
-                pipeline_id=pipeline_run.pipeline,
+                pipeline_id=pipeline_id,
                 status=pipeline_run.status,
                 pipeline_configuration=configuration,
                 num_steps=pipeline_run.num_steps,
@@ -3983,7 +3998,9 @@ class SqlZenStore(BaseZenStore):
         is_failed = status == ExecutionStatus.FAILED
         is_done = status in (ExecutionStatus.COMPLETED, ExecutionStatus.CACHED)
         if is_failed or (is_done and all_synced):
-            run_model.status = status
-            self.update_run(run_model)
+            self.update_run(
+                run_id=run_model.id,
+                run_update=PipelineRunUpdateModel(status=status),
+            )
 
         return run_model

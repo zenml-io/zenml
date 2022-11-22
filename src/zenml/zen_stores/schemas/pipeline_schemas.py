@@ -63,7 +63,7 @@ class PipelineSchema(NamedSchema, table=True):
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
-        sa_relationship_kwargs={"order_by": "desc(PipelineRunSchema.created)"},
+        sa_relationship_kwargs={"order_by": "asc(PipelineRunSchema.created)"},
     )
 
     def to_model(
