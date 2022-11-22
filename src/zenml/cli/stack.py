@@ -222,7 +222,7 @@ def register_stack(
         if share is None:
             share = False
 
-        created_stack = client.register_stack(
+        created_stack = client.create_stack(
             name=stack_name,
             components=components,
             is_shared=share,
@@ -701,7 +701,7 @@ def delete_stack(stack_name_or_id: str, yes: bool = False) -> None:
     with console.status(f"Deleting stack '{stack_name_or_id}'...\n"):
         client = Client()
         try:
-            client.deregister_stack(stack_name_or_id)
+            client.delete_stack(stack_name_or_id)
         except (KeyError, ValueError, IllegalOperationError) as err:
             cli_utils.error(str(err))
         cli_utils.declare(f"Deleted stack '{stack_name_or_id}'.")
@@ -1010,7 +1010,7 @@ def copy_stack(
             if c_list:
                 component_mapping[c_type] = c_list[0].id
 
-        client.register_stack(
+        client.create_stack(
             name=target_stack,
             components=component_mapping,
             is_shared=share,

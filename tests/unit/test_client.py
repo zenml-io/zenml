@@ -79,7 +79,7 @@ def _create_local_stack(
         client=client, artifact_store_name=artifact_store_name or _random_name()
     )
 
-    return client.register_stack(
+    return client.create_stack(
         name=stack_name,
         components={
             StackComponentType.ORCHESTRATOR: str(orchestrator.id),
@@ -240,7 +240,7 @@ def test_registering_a_stack(clean_client):
         client=clean_client,
     )
     new_stack_name = "some_new_stack_name"
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name=new_stack_name,
         components={
             StackComponentType.ORCHESTRATOR: str(orch.id),
@@ -263,7 +263,7 @@ def test_registering_a_stack_with_existing_name(clean_client):
     artifact_store = _create_local_artifact_store(clean_client)
 
     with pytest.raises(StackExistsError):
-        clean_client.register_stack(
+        clean_client.create_stack(
             name="axels_super_awesome_stack_of_fluffyness",
             components={
                 StackComponentType.ORCHESTRATOR: str(orchestrator.id),
@@ -324,7 +324,7 @@ def test_renaming_stack_with_update_method_succeeds(clean_client):
 def test_register_a_stack_with_unregistered_component_fails(clean_client):
     """Tests that registering a stack with an unregistered component fails."""
     with pytest.raises(KeyError):
-        clean_client.register_stack(
+        clean_client.create_stack(
             name="axels_empty_stack_of_disappoint",
             components={
                 StackComponentType.ORCHESTRATOR: "orchestrator_doesnt_exist",
@@ -336,7 +336,7 @@ def test_register_a_stack_with_unregistered_component_fails(clean_client):
 def test_deregistering_the_active_stack(clean_client):
     """Tests that deregistering the active stack fails."""
     with pytest.raises(ValueError):
-        clean_client.deregister_stack(clean_client.active_stack_model.id)
+        clean_client.delete_stack(clean_client.active_stack_model.id)
 
 
 def test_deregistering_a_non_active_stack(clean_client):
@@ -346,7 +346,7 @@ def test_deregistering_a_non_active_stack(clean_client):
     )
 
     with does_not_raise():
-        clean_client.deregister_stack(name_id_or_prefix=stack.id)
+        clean_client.delete_stack(name_id_or_prefix=stack.id)
 
 
 def test_getting_a_stack_component(clean_client):

@@ -1194,7 +1194,7 @@ class Client(metaclass=ClientMetaClass):
         else:
             return self.active_stack_model
 
-    def register_stack(
+    def create_stack(
         self,
         name: str,
         components: Dict[StackComponentType, Union[str, UUID]],
@@ -1343,7 +1343,7 @@ class Client(metaclass=ClientMetaClass):
             stack_update=update_model,
         )
 
-    def deregister_stack(self, name_id_or_prefix: Union[str, UUID]) -> None:
+    def delete_stack(self, name_id_or_prefix: Union[str, UUID]) -> None:
         """Deregisters a stack.
 
         Args:

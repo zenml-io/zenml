@@ -142,4 +142,4 @@ def delete_stack(
     Args:
         stack_id: Name of the stack.
     """
-    zen_store().delete_stack(stack_id)  # aka 'deregister_stack'
+    zen_store().delete_stack(stack_id)  # aka 'delete_stack'

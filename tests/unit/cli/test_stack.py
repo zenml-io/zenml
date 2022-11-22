@@ -146,7 +146,7 @@ def test_update_stack_active_stack_succeeds(clean_client) -> None:
     orchestrator_name = registered_stack.components[
         StackComponentType.ORCHESTRATOR
     ][0].name
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
@@ -191,7 +191,7 @@ def test_updating_non_active_stack_succeeds(clean_client) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
@@ -239,7 +239,7 @@ def test_update_stack_adding_component_succeeds(clean_client) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
@@ -286,7 +286,7 @@ def test_update_stack_adding_to_default_stack_fails(clean_client) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
@@ -376,7 +376,7 @@ def test_rename_stack_active_stack_succeeds(clean_client) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
@@ -404,7 +404,7 @@ def test_rename_stack_non_active_stack_succeeds(clean_client) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
@@ -458,7 +458,7 @@ def test_share_stack_that_is_already_shared_fails(
         configuration=new_orchestrator.config.dict(),
     )
 
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
@@ -501,7 +501,7 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
         configuration=new_orchestrator.config.dict(),
     )
 
-    clean_client.register_stack(
+    clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
@@ -586,7 +586,7 @@ def test_add_private_component_to_shared_stack_fails(
     )
 
     # Register non-shared stack with non-shared components
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.id,
@@ -626,7 +626,7 @@ def test_share_stack_when_component_is_private_fails(
     )
 
     # Register non-shared stack with non-shared components
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
@@ -670,7 +670,7 @@ def test_remove_component_core_component_fails(clean_client) -> None:
         configuration=new_orchestrator.config.dict(),
     )
 
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
@@ -716,7 +716,7 @@ def test_remove_component_non_core_component_succeeds(clean_client) -> None:
         component_type=new_secrets_manager.type,
         configuration=new_secrets_manager.config.dict(),
     )
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
@@ -748,7 +748,7 @@ def test_delete_stack_with_flag_succeeds(clean_client) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
@@ -776,7 +776,7 @@ def test_delete_stack_default_stack_fails(clean_client) -> None:
         StackComponentType.ORCHESTRATOR
     ][0].name
 
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: artifact_store_name,
@@ -822,7 +822,7 @@ def test_stack_export_delete_import(clean_client) -> None:
         configuration=new_orchestrator.config.dict(),
     )
 
-    new_stack_model = clean_client.register_stack(
+    new_stack_model = clean_client.create_stack(
         name="arias_new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
@@ -840,7 +840,7 @@ def test_stack_export_delete_import(clean_client) -> None:
     assert os.path.exists("arias_new_stack.yaml")
 
     # delete stack and corresponding components
-    clean_client.deregister_stack(name_id_or_prefix=new_stack_model.name)
+    clean_client.delete_stack(name_id_or_prefix=new_stack_model.name)
     clean_client.deregister_stack_component(
         name_id_or_prefix=new_orchestrator_model.name,
         component_type=StackComponentType.ORCHESTRATOR,

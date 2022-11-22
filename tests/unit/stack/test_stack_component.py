@@ -185,7 +185,7 @@ def test_stack_component_secret_reference_resolving(
         flavor="TEST",
     )
 
-    new_stack = clean_client.register_stack(
+    new_stack = clean_client.create_stack(
         name="new_stack",
         components={
             StackComponentType.ARTIFACT_STORE: new_artifact_store.name,
