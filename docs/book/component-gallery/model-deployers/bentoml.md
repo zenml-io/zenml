@@ -38,11 +38,11 @@ you can take a look to one of the other
 [Model Deployer Flavors](./model-deployers.md#model-deployers-flavors) 
 available in ZenML (e.g. Seldon Core, KServe, etc.)
 
-The BentoML also allows you to deploy your models in a more complex
-production grade dedicated ways, [bentoctl](https://github.com/bentoml/bentoctl)
-is one of this ways, bentoctl takes your built Bento from a ZenML
-pipeline and deploy it with bentoctl in a cloud environment such as AWS Lambda, 
-AWS SageMaker, Google Cloud Functions, Google Cloud AI Platform, Azure Functions.
+BentoML also allows you to deploy your models in a more complex
+production grade setting. [Bentoctl](https://github.com/bentoml/bentoctl)
+is one of the tools that can help you get there. Bentoctl takes your built Bento from a ZenML
+pipeline and deploys it with bentoctl into a cloud environment such as AWS Lambda, 
+AWS SageMaker, Google Cloud Functions, Google Cloud AI Platform or Azure Functions.
 Read more about this in the [From Local to Cloud with bentoctl section](#from-local-to-cloud-with-bentoml).
 
 Note: The bentoctl integration implementation is still in progress and will be
@@ -222,8 +222,8 @@ def predictor(
 
 ### From Local to Cloud with bentoctl
 
-bentoctl helps deploy any machine learning models as production-ready API 
-endpoints on the cloud. It is a command line tool that provides a simple
+Bentoctl helps deploy any machine learning models as production-ready API 
+endpoints into the cloud. It is a command line tool that provides a simple
 interface to manage your BentoML bundles. 
 
 The bentoctl CLI provides list of opetors which are plugins that interact with 
