@@ -1129,7 +1129,7 @@ class RestZenStore(BaseZenStore):
         """Delete a specific role assignment
 
         Args:
-            role_assignment_id: The Id of the specific role assignment
+            role_assignment_id: The ID of the specific role assignment
         """
         self._delete_resource(
             resource_id=role_assignment_id,

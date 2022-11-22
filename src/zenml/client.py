@@ -1596,7 +1596,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[str, UUID],
         component_type: StackComponentType,
         name: Optional[str] = None,
-        configuration: Optional[Dict[str, str]] = None,
+        configuration: Optional[Dict[str, Any]] = None,
         is_shared: Optional[bool] = None,
     ) -> "ComponentResponseModel":
         """Updates a stack component.

@@ -41,6 +41,7 @@ from zenml.models import (
     PipelineRunResponseModel,
     ProjectRequestModel,
     ProjectResponseModel,
+    ProjectUpdateModel,
     RoleAssignmentResponseModel,
     StackRequestModel,
     StackResponseModel,
@@ -125,8 +126,8 @@ def get_project(
 )
 @handle_exceptions
 def update_project(
-    project_name_or_id: Union[str, UUID],
-    project_update: ProjectRequestModel,
+    project_name_or_id: UUID,
+    project_update: ProjectUpdateModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> ProjectResponseModel:
     """Get a project for given name.

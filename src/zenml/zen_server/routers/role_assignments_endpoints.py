@@ -118,7 +118,7 @@ def get_role_assignment(
 )
 @handle_exceptions
 def delete_role_assignment(
-    role_assignment_name_or_id: Union[str, UUID],
+    role_assignment_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Deletes a specific role.
@@ -127,5 +127,5 @@ def delete_role_assignment(
         role_name_or_id: Name or ID of the role.
     """
     zen_store().delete_role_assignment(
-        role_assignment_id=role_assignment_name_or_id
+        role_assignment_id=role_assignment_id
     )

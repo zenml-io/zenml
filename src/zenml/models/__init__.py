@@ -139,6 +139,7 @@ __all__ = [
     "StepRunUpdateModel",
     "TeamRequestModel",
     "TeamResponseModel",
+    "TeamUpdateModel",
     "UserRequestModel",
     "UserResponseModel",
     "UserUpdateModel",

@@ -1004,11 +1004,11 @@ def copy_stack(
             name_id_or_prefix=source_stack_name_or_id
         )
 
-        component_mapping: Dict[StackComponentType, Optional[str]] = {}
+        component_mapping: Dict[StackComponentType, Optional[str, UUID]] = {}
 
         for c_type, c_list in stack_to_copy.components.items():
             if c_list:
-                component_mapping[c_type] = c_list[0].name
+                component_mapping[c_type] = c_list[0].id
 
         client.register_stack(
             name=target_stack,
