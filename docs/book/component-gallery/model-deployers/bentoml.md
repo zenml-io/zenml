@@ -226,8 +226,8 @@ Bentoctl helps deploy any machine learning models as production-ready API
 endpoints into the cloud. It is a command line tool that provides a simple
 interface to manage your BentoML bundles. 
 
-The bentoctl CLI provides list of opetors which are plugins that interact with 
-cloud services, some of these operators are:
+The bentoctl CLI provides list of operators which are plugins that interact 
+with cloud services, some of these operators are:
 
 * [AWS Lambda](https://github.com/bentoml/aws-lambda-deploy)
 * [AWS SageMaker](https://github.com/bentoml/aws-sagemaker-deploy)

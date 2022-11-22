@@ -345,7 +345,7 @@ zenml model-deployer models delete cd38d6e6-467b-46e0-be13-3112c6e65d0e
 To delete the Sagemaker deployment, run the following command:
 
 ```shell
-benctl destroy
+bentoctl destroy
 ```
 
 Then delete the remaining ZenML references.
