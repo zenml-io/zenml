@@ -41,7 +41,6 @@ from zenml.models import (
     RoleResponseModel,
     StackRequestModel,
     StackResponseModel,
-    TeamResponseModel,
     UserRequestModel,
     UserResponseModel,
 )

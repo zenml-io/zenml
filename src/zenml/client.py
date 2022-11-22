@@ -575,10 +575,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_users(
-            self,
-            name: Optional[str] = None
-    ) -> List[UserResponseModel]:
+    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
         """List all users.
 
         Args:
@@ -1042,7 +1039,7 @@ class Client(metaclass=ClientMetaClass):
             project = self._config.active_project
 
         if not project:
-            project = GlobalConfiguration().active_project
+            project = GlobalConfiguration().get_active_project()
 
         if not project:
             raise RuntimeError(
@@ -1162,7 +1159,7 @@ class Client(metaclass=ClientMetaClass):
             stack = self.get_stack(self._config.active_stack_id)
 
         if not stack:
-            stack = self.get_stack(GlobalConfiguration().active_stack_id)
+            stack = self.get_stack(GlobalConfiguration().get_active_stack_id())
 
         if not stack:
             raise RuntimeError(

@@ -126,6 +126,4 @@ def delete_role_assignment(
     Args:
         role_name_or_id: Name or ID of the role.
     """
-    zen_store().delete_role_assignment(
-        role_assignment_id=role_assignment_id
-    )
+    zen_store().delete_role_assignment(role_assignment_id=role_assignment_id)

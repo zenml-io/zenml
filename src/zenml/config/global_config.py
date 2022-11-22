@@ -19,6 +19,7 @@ import uuid
 from pathlib import PurePath
 from secrets import token_hex
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from uuid import UUID
 
 from packaging import version
 from pydantic import BaseModel, Field, ValidationError, validator
@@ -666,14 +667,28 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     def set_active_stack(self, stack: "StackResponseModel") -> None:
         self.active_stack_id = stack.id
 
-    @property
-    def active_project(self) -> Optional["ProjectResponseModel"]:
-        if not self._active_project and self.active_project_name:
+    def get_active_project(self):
+        project_name = self.get_active_project_name()
+
+        if self._active_project is None:
             project = self.zen_store.get_project(
-                project_name_or_id=self.active_project_name,
+                project_name_or_id=project_name,
             )
             self.set_active_project(project)
+
         return self._active_project
+
+    def get_active_project_name(self) -> str:
+        if self.active_project_name is None:
+            _ = self.zen_store
+
+        return self.active_project_name
+
+    def get_active_stack_id(self) -> UUID:
+        if self.active_stack_id is None:
+            _ = self.zen_store
+
+        return self.active_stack_id
 
     def record_email_opt_in_out(
         self, opted_in: bool, email: Optional[str], source: AnalyticsEventSource
@@ -702,7 +717,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             or opted_in
             and not self.user_email_opt_in
         ):
-
             # When the user opts out giving the email for the first time, or
             # when the user opts in after opting out (e.g. when connecting to
             # a new server where the account has opt-in enabled), we want to
