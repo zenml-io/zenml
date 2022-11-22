@@ -129,6 +129,7 @@ class ArtifactModel(DomainModel):
 
     name: str  # Name of the output in the parent step
 
+    artifact_store_id: Optional[UUID]
     parent_step_id: UUID
     producer_step_id: UUID
 

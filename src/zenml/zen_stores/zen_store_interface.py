@@ -1069,32 +1069,32 @@ class ZenStoreInterface(ABC):
     # ------------------
 
     @abstractmethod
-    def create_run_step(self, step: StepRunModel) -> StepRunModel:
-        """Creates a step.
+    def create_run_step(self, step_run: StepRunModel) -> StepRunModel:
+        """Creates a step run.
 
         Args:
-            step: The step to create.
+            step_run: The step run to create.
 
         Returns:
-            The created step.
+            The created step run.
 
         Raises:
-            EntityExistsError: if the step already exists.
+            EntityExistsError: if the step run already exists.
             KeyError: if the pipeline run doesn't exist.
         """
 
     @abstractmethod
-    def get_run_step(self, step_id: UUID) -> StepRunModel:
-        """Get a step by ID.
+    def get_run_step(self, step_run_id: UUID) -> StepRunModel:
+        """Get a step run by ID.
 
         Args:
-            step_id: The ID of the step to get.
+            step_run_id: The ID of the step run to get.
 
         Returns:
-            The step.
+            The step run.
 
         Raises:
-            KeyError: if the step doesn't exist.
+            KeyError: if the step run doesn't exist.
         """
 
     @abstractmethod
@@ -1111,28 +1111,33 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_run_step(self, step: StepRunModel) -> StepRunModel:
-        """Updates a step.
+    def update_run_step(self, step_run: StepRunModel) -> StepRunModel:
+        """Updates a step run.
 
         Args:
-            step: The step to update.
+            step_run: The step run to update.
 
         Returns:
-            The updated step.
+            The updated step run.
 
         Raises:
-            KeyError: if the step doesn't exist.
+            KeyError: if the step run doesn't exist.
         """
 
     @abstractmethod
-    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
-        """Get a list of inputs for a specific step.
+    def get_run_step_inputs(
+        self, step_run_id: UUID
+    ) -> Dict[str, ArtifactModel]:
+        """Get a list of inputs for a specific step run.
 
         Args:
-            step_id: The id of the step to get inputs for.
+            step_run_id: The id of the step run to get inputs for.
 
         Returns:
             A dict mapping artifact names to the input artifacts for the step.
+
+        Raises:
+            KeyError: if the step run doesn't exist.
         """
 
     # ---------
@@ -1148,9 +1153,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The created artifact.
-
-        Raises:
-            KeyError: if the parent step doesn't exist.
         """
 
     @abstractmethod

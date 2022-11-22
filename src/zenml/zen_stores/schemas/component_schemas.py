@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
@@ -30,6 +30,9 @@ from zenml.zen_stores.schemas.stack_schemas import (
     StackSchema,
 )
 from zenml.zen_stores.schemas.user_management_schemas import UserSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.pipeline_schemas import ArtifactSchema
 
 
 class StackComponentSchema(SQLModel, table=True):
@@ -64,6 +67,10 @@ class StackComponentSchema(SQLModel, table=True):
         nullable=True,
     )
     user: "UserSchema" = Relationship(back_populates="components")
+
+    artifacts: List["ArtifactSchema"] = Relationship(
+        back_populates="artifact_store",
+    )
 
     configuration: bytes
 
