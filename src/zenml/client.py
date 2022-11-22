@@ -611,13 +611,7 @@ class Client(metaclass=ClientMetaClass):
         updated_email: Optional[str] = None,
         updated_email_opt_in: Optional[bool] = None,
     ) -> UserResponseModel:
-        user = self._get_entity_by_id_or_name_or_prefix(
-            response_model=UserResponseModel,
-            get_method=self.zen_store.get_user,
-            list_method=self.zen_store.list_users,
-            name_id_or_prefix=user_name_or_id,
-        )
-
+        user = self.get_user(name_id_or_prefix=user_name_or_id)
         user_update = UserUpdateModel()
         if updated_name:
             user_update.name = updated_name
@@ -925,27 +919,12 @@ class Client(metaclass=ClientMetaClass):
             project_name_or_id: project scope within which to assign the role
 
         """
-        role = self._get_entity_by_id_or_name_or_prefix(
-            response_model=RoleResponseModel,
-            get_method=self.zen_store.get_role,
-            list_method=self.zen_store.list_roles,
-            name_id_or_prefix=role_name_or_id,
-        )
+        role = self.get_role(name_id_or_prefix=role_name_or_id)
         project = None
         if project_name_or_id:
-            project = self._get_entity_by_id_or_name_or_prefix(
-                response_model=ProjectResponseModel,
-                get_method=self.zen_store.get_project,
-                list_method=self.zen_store.list_projects,
-                name_id_or_prefix=project_name_or_id,
-            )
+            project = self.get_project(name_id_or_prefix=project_name_or_id)
         if is_user:
-            user = self._get_entity_by_id_or_name_or_prefix(
-                response_model=UserResponseModel,
-                get_method=self.zen_store.get_user,
-                list_method=self.zen_store.list_users,
-                name_id_or_prefix=user_or_team_name_or_id,
-            )
+            user = self.get_user(name_id_or_prefix=user_or_team_name_or_id)
             role_assignment = RoleAssignmentRequestModel(
                 role=role.id,
                 user=user.id,
@@ -953,12 +932,7 @@ class Client(metaclass=ClientMetaClass):
                 is_user=True,
             )
         else:
-            team = self._get_entity_by_id_or_name_or_prefix(
-                response_model=TeamResponseModel,
-                get_method=self.zen_store.get_team,
-                list_method=self.zen_store.list_teams,
-                name_id_or_prefix=user_or_team_name_or_id,
-            )
+            team = self.get_team(name_id_or_prefix=user_or_team_name_or_id)
             role_assignment = RoleAssignmentRequestModel(
                 role=role.id,
                 team=team.id,
@@ -1094,12 +1068,7 @@ class Client(metaclass=ClientMetaClass):
             new_name: Name of the project
             new_description: Description of the project
         """
-        project = self._get_entity_by_id_or_name_or_prefix(
-            response_model=ProjectResponseModel,
-            get_method=self.zen_store.get_project,
-            list_method=self.zen_store.list_projects,
-            name_id_or_prefix=name,
-        )
+        project = self.get_project(name_id_or_prefix=name)
         project_update = ProjectUpdateModel()
         if new_name:
             project_update.name = new_name
