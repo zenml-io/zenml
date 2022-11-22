@@ -44,7 +44,6 @@ from typing import (
 )
 
 from pydantic import root_validator
-from tfx.dsl.io.fileio import NotFoundError
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
@@ -52,44 +51,6 @@ from zenml.stack import Flavor, StackComponent, StackComponentConfig
 from zenml.utils import io_utils
 
 PathType = Union[bytes, str]
-
-
-def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
-    """Utility decorator used for catching a `FileNotFoundError`.
-
-    Error is converted to a `NotFoundError` in order to deal with the TFX
-    exception handling.
-
-    Args:
-        _func: The function to decorate.
-
-    Returns:
-        The decorated function.
-    """
-
-    def inner_function(*args: Any, **kwargs: Any) -> Any:
-        """Inner function for the decorator.
-
-        It attempts to run the function
-        wrapped by the decorator and catches the FileNotFoundError if it is
-        thrown. In that case, the tfx.NotFoundError is raised instead.
-
-        Args:
-            *args: The positional arguments to pass to the function.
-            **kwargs: The keyword arguments to pass to the function.
-
-        Returns:
-            The inner function.
-
-        Raises:
-            NotFoundError: If the function throws a FileNotFoundError.
-        """
-        try:
-            return _func(*args, **kwargs)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
-
-    return inner_function
 
 
 def _sanitize_potential_path(potential_path: Any) -> Any:
@@ -386,56 +347,35 @@ class BaseArtifactStore(StackComponent):
         self._register()
 
     def _register(self, priority: int = 5) -> None:
-        """Create and register a filesystem within the TFX registry.
+        """Create and register a filesystem within the filesystem registry.
 
         Args:
             priority: The priority of the filesystem.
         """
-        from tfx.dsl.io.filesystem import Filesystem
-        from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
+        from zenml.io import Filesystem, default_filsystem_registry
 
         filesystem_class = type(
             self.__class__.__name__,
             (Filesystem,),
             {
                 "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
-                "open": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.open))
-                ),
-                "copy": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.copyfile))
-                ),
+                "open": staticmethod(_sanitize_paths(self.open)),
+                "copy": staticmethod(_sanitize_paths(self.copyfile)),
                 "exists": staticmethod(_sanitize_paths(self.exists)),
                 "glob": staticmethod(_sanitize_paths(self.glob)),
                 "isdir": staticmethod(_sanitize_paths(self.isdir)),
-                "listdir": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.listdir))
-                ),
+                "listdir": staticmethod(_sanitize_paths(self.listdir)),
                 "makedirs": staticmethod(_sanitize_paths(self.makedirs)),
-                "mkdir": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.mkdir))
-                ),
-                "remove": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.remove))
-                ),
-                "rename": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.rename))
-                ),
-                "rmtree": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.rmtree))
-                ),
-                "stat": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.stat))
-                ),
-                "walk": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.walk))
-                ),
+                "mkdir": staticmethod(_sanitize_paths(self.mkdir)),
+                "remove": staticmethod(_sanitize_paths(self.remove)),
+                "rename": staticmethod(_sanitize_paths(self.rename)),
+                "rmtree": staticmethod(_sanitize_paths(self.rmtree)),
+                "stat": staticmethod(_sanitize_paths(self.stat)),
+                "walk": staticmethod(_sanitize_paths(self.walk)),
             },
         )
 
-        DEFAULT_FILESYSTEM_REGISTRY.register(
-            filesystem_class, priority=priority
-        )
+        default_filsystem_registry.register(filesystem_class, priority=priority)
 
 
 class BaseArtifactStoreFlavor(Flavor):
