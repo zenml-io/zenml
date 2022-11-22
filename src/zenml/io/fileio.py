@@ -21,7 +21,7 @@ from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
 from zenml.constants import REMOTE_FS_PREFIX
-from zenml.io.fileio_registry import default_fileio_registry
+from zenml.io.fileio_registry import default_filesystem_registry
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 
 def _get_filesystem(path: PathType) -> Type[Filesystem]:
     """Returns a filesystem class for a given path from the registry"""
-    return default_fileio_registry.get_filesystem_for_path(path)
+    return default_filesystem_registry.get_filesystem_for_path(path)
 
 
 def open(path: PathType, mode: str = "r") -> Any:  # noqa

@@ -88,6 +88,6 @@ class FileIORegistry:
 
 
 # Default global instance of the filesystem registry.
-default_fileio_registry = FileIORegistry()
+default_filesystem_registry = FileIORegistry()
 
-default_fileio_registry.register(LocalFilesystem)
+default_filesystem_registry.register(LocalFilesystem)

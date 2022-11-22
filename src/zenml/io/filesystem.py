@@ -17,7 +17,7 @@ from typing import Any, Dict, Tuple, Type, Union, cast
 
 from tfx.dsl.io.filesystem import Filesystem as BaseFileSystem
 
-from zenml.io.fileio_registry import default_fileio_registry
+from zenml.io.fileio_registry import default_filesystem_registry
 
 PathType = Union[bytes, str]
 
@@ -40,7 +40,7 @@ class FileSystemMeta(type):
                 "You should specify a list of SUPPORTED_SCHEMES when creating "
                 "a filesystem"
             )
-            default_fileio_registry.register(cls)
+            default_filesystem_registry.register(cls)
 
         return cls
 
