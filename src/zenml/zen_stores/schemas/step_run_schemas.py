@@ -123,10 +123,10 @@ class StepRunParentsSchema(SQLModel, table=True):
     )
 
 
-class StepRunArtifactSchema(SQLModel, table=True):
+class StepRunInputArtifactSchema(SQLModel, table=True):
     """SQL Model that defines which artifacts are inputs to which step."""
 
-    __tablename__ = "step_run_artifact"
+    __tablename__ = "step_run_input_artifact"
 
     step_id: UUID = build_foreign_key_field(
         source=__tablename__,
