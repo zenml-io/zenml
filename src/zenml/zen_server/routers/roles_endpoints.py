@@ -108,7 +108,7 @@ def update_role(
     # noqa: DAR401
 
     Args:
-        role_name_or_id: Name or ID of the role.
+        role_id: The ID of the role.
         role_update: Role update.
 
     Returns:
