@@ -30,10 +30,12 @@
 from typing import (
     Any,
     Callable,
+    ClassVar,
     Dict,
     Iterable,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
     Union,
@@ -71,7 +73,7 @@ class Filesystem(metaclass=FileSystemMeta):
     https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py
     """
 
-    SUPPORTED_SCHEMES = []
+    SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:
