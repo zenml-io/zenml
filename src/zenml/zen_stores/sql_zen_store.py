@@ -1556,6 +1556,7 @@ class SqlZenStore(BaseZenStore):
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(FlavorSchema.user_id == user.id)
 
+            query.order_by(FlavorSchema.created)
             flavors = Page.paginate(session, query, params)
 
         return flavors
@@ -1697,6 +1698,8 @@ class SqlZenStore(BaseZenStore):
             query = select(UserSchema)
             if name:
                 query = query.where(UserSchema.name == name)
+
+            query.order_by(PipelineSchema.created)
             users = Page.paginate(session, query, params)
 
         return users
@@ -1834,6 +1837,7 @@ class SqlZenStore(BaseZenStore):
             query = select(TeamSchema)
             if name:
                 query = query.where(TeamSchema.name == name)
+            query = query.order_by(TeamSchema.created)
             teams = Page.paginate(session, query, params)
             return teams
 
@@ -1985,6 +1989,8 @@ class SqlZenStore(BaseZenStore):
             query = select(RoleSchema)
             if name:
                 query = query.where(RoleSchema.name == name)
+
+            query.order_by(RoleSchema.created)
             roles = Page.paginate(session, query, params)
 
             return roles
@@ -2144,6 +2150,7 @@ class SqlZenStore(BaseZenStore):
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(UserRoleAssignmentSchema.user_id == user.id)
+            query.order_by(UserRoleAssignmentSchema.created)
             assignments = Page.paginate(session, query, params)
             return assignments
 
@@ -2182,6 +2189,7 @@ class SqlZenStore(BaseZenStore):
             if team_name_or_id is not None:
                 team = self._get_team_schema(team_name_or_id, session=session)
                 query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
+            query.order_by(TeamRoleAssignmentSchema.created)
             assignments = Page.paginate(session, query, params)
             return assignments
 
@@ -2480,7 +2488,7 @@ class SqlZenStore(BaseZenStore):
             query = select(ProjectSchema)
             if name:
                 query = query.where(ProjectSchema.name == name)
-
+            query.order_by(ProjectSchema.created)
             projects = Page.paginate(session, query, params)
 
         return projects
@@ -2662,6 +2670,7 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(PipelineSchema.name == name)
 
             # Get all pipelines in the project
+            query.order_by(PipelineSchema.created)
             pipelines = Page.paginate(session, query, params)
             return pipelines
 
