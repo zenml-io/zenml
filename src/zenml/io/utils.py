@@ -21,7 +21,7 @@ from typing import Callable, Optional
 import click
 
 from zenml.constants import APP_NAME, ENV_ZENML_CONFIG_PATH
-from zenml.io.fileio import file_exists, is_remote, open
+from zenml.io.fileio import exists, is_remote, open
 
 
 def create_tarfile(
@@ -100,7 +100,7 @@ def read_file_contents_as_string(file_path: str) -> str:
     Args:
         file_path: Path to file.
     """
-    if not file_exists(file_path):
+    if not exists(file_path):
         raise FileNotFoundError(f"{file_path} does not exist!")
     return open(file_path).read()  # type: ignore[no-any-return]
 

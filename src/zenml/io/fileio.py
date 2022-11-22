@@ -44,7 +44,7 @@ def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
     if src_fs is dst_fs:
         src_fs.copy(src, dst, overwrite=overwrite)
     else:
-        if not overwrite and file_exists(dst):
+        if not overwrite and exists(dst):
             raise FileExistsError(
                 f"Destination file '{convert_to_str(dst)}' already exists "
                 f"and `overwrite` is false."
@@ -53,14 +53,14 @@ def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         open(dst, mode="wb").write(contents)
 
 
-def file_exists(path: PathType) -> bool:
+def exists(path: PathType) -> bool:
     """Returns `True` if the given path exists."""
     return _get_filesystem(path).exists(path)
 
 
 def remove(path: PathType) -> None:
     """Remove the file at the given path. Dangerous operation."""
-    if not file_exists(path):
+    if not exists(path):
         raise FileNotFoundError(f"{convert_to_str(path)} does not exist!")
     _get_filesystem(path).remove(path)
 
@@ -70,7 +70,7 @@ def glob(pattern: PathType) -> List[PathType]:
     return _get_filesystem(pattern).glob(pattern)
 
 
-def is_dir(path: PathType) -> bool:
+def isdir(path: PathType) -> bool:
     """Returns whether the given path points to a directory."""
     return _get_filesystem(path).isdir(path)
 
@@ -87,7 +87,7 @@ def is_root(path: str) -> bool:
     return Path(path).parent == Path(path)
 
 
-def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
+def listdir(dir_path: str, only_file_names: bool = False) -> List[str]:
     """Returns a list of files under dir.
 
     Args:
@@ -109,7 +109,7 @@ def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
         return []
 
 
-def make_dirs(path: PathType) -> None:
+def makedirs(path: PathType) -> None:
     """Make a directory at the given path, recursively creating parents."""
     _get_filesystem(path).makedirs(path)
 
@@ -144,7 +144,7 @@ def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         )
 
 
-def rm_dir(dir_path: str) -> None:
+def rmtree(dir_path: str) -> None:
     """Deletes dir recursively. Dangerous operation.
 
     Args:
@@ -153,7 +153,7 @@ def rm_dir(dir_path: str) -> None:
     Raises:
         TypeError: If the path is not pointing to a directory.
     """
-    if not is_dir(dir_path):
+    if not isdir(dir_path):
         raise TypeError(f"Path '{dir_path}' is not a directory.")
 
     _get_filesystem(dir_path).rmtree(dir_path)
@@ -227,7 +227,7 @@ def create_file_if_not_exists(
 
     """
     full_path = Path(file_path)
-    if not file_exists(file_path):
+    if not exists(file_path):
         create_dir_recursive_if_not_exists(str(full_path.parent))
         with open(str(full_path), "w") as f:
             f.write(file_contents)
@@ -251,7 +251,7 @@ def create_dir_if_not_exists(dir_path: str) -> None:
     Args:
         dir_path: Local path in filesystem.
     """
-    if not is_dir(dir_path):
+    if not isdir(dir_path):
         mkdir(dir_path)
 
 
@@ -261,8 +261,8 @@ def create_dir_recursive_if_not_exists(dir_path: str) -> None:
     Args:
         dir_path: Local path in filesystem.
     """
-    if not is_dir(dir_path):
-        make_dirs(dir_path)
+    if not isdir(dir_path):
+        makedirs(dir_path)
 
 
 def resolve_relative_path(path: str) -> str:
@@ -289,10 +289,10 @@ def copy_dir(
         destination_dir: Path to copy to.
         overwrite: Boolean. If false, function throws an error before overwrite.
     """
-    for source_file in list_dir(source_dir):
+    for source_file in listdir(source_dir):
         source_file_path = Path(source_file)
         destination_name = os.path.join(destination_dir, source_file_path.name)
-        if is_dir(source_file):
+        if isdir(source_file):
             copy_dir(source_file, destination_name, overwrite)
         else:
             create_dir_recursive_if_not_exists(
