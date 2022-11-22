@@ -70,10 +70,6 @@ def upgrade() -> None:
     step_run_input_artifact = sa.Table("step_run_input_artifact", meta)
     step_run = sa.Table("step_run", meta, autoload_with=conn)
 
-    # Set `is_cached` to `False` for all existing step runs
-    conn.execute(step_run.update().values(is_cached=false()))
-    # conn.execute(step_run.insert({"is_cached": false()}))
-
     # Get all artifacts that were actually produced and not cached.
     produced_artifacts = conn.execute(
         select(
@@ -136,7 +132,6 @@ def upgrade() -> None:
             "step_run_id": produced_artifact.parent_step_id,
             "artifact_id": produced_artifact.id,
             "name": produced_artifact.name,
-            "is_cached": False,
         }
         for produced_artifact in produced_artifacts
     ]
@@ -145,14 +140,20 @@ def upgrade() -> None:
             "step_run_id": cached_artifact.parent_step_id,
             "artifact_id": cached_to_produced_mapping[cached_artifact.id],
             "name": cached_artifact.name,
-            "is_cached": True,
         }
         for cached_artifact in cached_artifacts
     ]
+    cached_step_ids = [out["step_run_id"] for out in cached_output_artifacts]
     output_artifacts = produced_output_artifacts + cached_output_artifacts
 
     if output_artifacts:
         conn.execute(step_run_output_artifact.insert().values(output_artifacts))
+        conn.execute(step_run.update().values(is_cached=false()))
+        conn.execute(
+            step_run.update()
+            .values(is_cached=true())
+            .where(step_run.c.id.in_(cached_step_ids))
+        )
 
     # --------------
     # Adjust columns
