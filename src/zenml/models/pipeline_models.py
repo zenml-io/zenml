@@ -100,7 +100,6 @@ class StepRunModel(DomainModel):
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
 
-    is_cached: bool
     pipeline_run_id: UUID
     parent_step_ids: List[UUID]
     input_artifacts: Dict[str, UUID]  # mapping from input name to artifact ID

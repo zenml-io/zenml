@@ -48,10 +48,6 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("step_run_id", "artifact_id"),
     )
 
-    # Add `is_cached` column to `step_run`
-    with op.batch_alter_table("step_run", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("is_cached", sa.Boolean(), nullable=True))
-
     # ------------
     # Migrate data
     # ------------
@@ -62,13 +58,11 @@ def upgrade() -> None:
             "artifacts",
             "step_run_output_artifact",
             "step_run_input_artifact",
-            "step_run",
         )
     )
     artifacts = sa.Table("artifacts", meta)
     step_run_output_artifact = sa.Table("step_run_output_artifact", meta)
     step_run_input_artifact = sa.Table("step_run_input_artifact", meta)
-    step_run = sa.Table("step_run", meta, autoload_with=conn)
 
     # Get all artifacts that were actually produced and not cached.
     produced_artifacts = conn.execute(
@@ -143,17 +137,10 @@ def upgrade() -> None:
         }
         for cached_artifact in cached_artifacts
     ]
-    cached_step_ids = [out["step_run_id"] for out in cached_output_artifacts]
     output_artifacts = produced_output_artifacts + cached_output_artifacts
 
     if output_artifacts:
         conn.execute(step_run_output_artifact.insert().values(output_artifacts))
-        conn.execute(step_run.update().values(is_cached=false()))
-        conn.execute(
-            step_run.update()
-            .values(is_cached=true())
-            .where(step_run.c.id.in_(cached_step_ids))
-        )
 
     # --------------
     # Adjust columns
@@ -210,14 +197,6 @@ def upgrade() -> None:
             ["step_run_id"],
             ["id"],
             ondelete="CASCADE",
-        )
-
-    # Set `is_cached` column of `step_run` to not nullable
-    with op.batch_alter_table("step_run", schema=None) as batch_op:
-        batch_op.alter_column(
-            "is_cached",
-            nullable=False,
-            existing_type=sa.Boolean(),
         )
 
 
@@ -310,10 +289,6 @@ def downgrade() -> None:
             ["id"],
             ondelete="CASCADE",
         )
-
-    # Drop `is_cached` column from `step_run`
-    with op.batch_alter_table("step_run", schema=None) as batch_op:
-        batch_op.drop_column("is_cached")
 
     # Drop new table
     op.drop_table("step_run_output_artifact")

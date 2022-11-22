@@ -1444,7 +1444,6 @@ class Client(metaclass=ClientMetaClass):
                     input_artifacts=input_artifacts,
                     output_artifacts=output_artifacts,
                     status=step_status,
-                    is_cached=step_status == ExecutionStatus.CACHED,
                     entrypoint_name=step.entrypoint_name,
                     parameters=step.parameters,
                     step_configuration={},

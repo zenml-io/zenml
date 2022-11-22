@@ -271,7 +271,6 @@ class StepRunSchema(SQLModel, table=True):
         nullable=False,
     )
 
-    is_cached: bool
     status: ExecutionStatus
     entrypoint_name: str
     parameters: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -299,7 +298,6 @@ class StepRunSchema(SQLModel, table=True):
             id=model.id,
             name=model.name,
             pipeline_run_id=model.pipeline_run_id,
-            is_cached=model.is_cached,
             status=model.status,
             entrypoint_name=model.entrypoint_name,
             parameters=json.dumps(model.parameters),
@@ -347,7 +345,6 @@ class StepRunSchema(SQLModel, table=True):
             parent_step_ids=parent_step_ids,
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
-            is_cached=self.is_cached,
             status=self.status,
             entrypoint_name=self.entrypoint_name,
             parameters=json.loads(self.parameters),

@@ -37,7 +37,6 @@ from pydantic import root_validator
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
-from sqlalchemy.sql.expression import false
 from sqlalchemy.sql.operators import is_, isnot
 from sqlmodel import Session, SQLModel, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
@@ -3556,7 +3555,7 @@ class SqlZenStore(BaseZenStore):
                 .where(
                     StepRunOutputArtifactSchema.step_run_id == StepRunSchema.id
                 )
-                .where(StepRunSchema.is_cached == false())
+                .where(StepRunSchema.status != ExecutionStatus.CACHED)
             ).first()
             if output_artifact is None:
                 raise KeyError(
@@ -4072,7 +4071,6 @@ class SqlZenStore(BaseZenStore):
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
             status=status,
-            is_cached=status == ExecutionStatus.CACHED,
         )
         return self.create_run_step(new_step_run)
 
@@ -4112,7 +4110,7 @@ class SqlZenStore(BaseZenStore):
 
             # If the step was not cached, it must have created the artifact,
             # so we need to create the artifact in the DB first.
-            if not step_model.is_cached:
+            if step_model.status != ExecutionStatus.CACHED:
                 new_artifact = ArtifactModel(
                     name=output_name,
                     mlmd_id=mlmd_artifact.mlmd_id,
@@ -4120,7 +4118,6 @@ class SqlZenStore(BaseZenStore):
                     uri=mlmd_artifact.uri,
                     materializer=mlmd_artifact.materializer,
                     data_type=mlmd_artifact.data_type,
-                    is_cached=False,
                 )
                 new_artifact = self.create_artifact(new_artifact)
 
