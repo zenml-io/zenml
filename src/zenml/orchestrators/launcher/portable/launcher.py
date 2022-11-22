@@ -154,7 +154,11 @@ def _register_execution(
 def generate_cache_key(
     step: Step, input_artifacts: Dict[str, ArtifactModel]
 ) -> str:
-    return ""
+    return json.dumps(step.config.parameters, sort_keys=True)
+
+
+def get_cache_key(step_run: StepRunModel) -> str:
+    return step_run.parameters["cache_key"]
 
 
 class Launcher:
@@ -340,7 +344,7 @@ class Launcher:
             # Z2) generate cache key for current step
             cache_key = generate_cache_key(
                 step=step, input_artifacts=current_run_input_artifacts
-            )  # noqa
+            )
 
             # Z3) Register step run
 
@@ -362,46 +366,53 @@ class Launcher:
             input_artifacts = {
                 k: a.id for k, a in current_run_input_artifacts.items()
             }
-            step_run = StepRunModel(
+            current_step_run = StepRunModel(
                 name=step_name,
                 pipeline_run_id=run.id,
                 parent_step_ids=parent_step_ids,
                 input_artifacts=input_artifacts,
                 status=ExecutionStatus.RUNNING,
                 entrypoint_name=entrypoint_name,
-                parameters=step.config.parameters,
+                parameters={
+                    "cache_key": cache_key
+                },  # TODO: re-add normal params
                 step_configuration=step.dict(),
                 mlmd_parent_step_ids=[],
                 # cache_key=cache_key
             )
-            Client().zen_store.create_run_step(step_run)
+            Client().zen_store.create_run_step(current_step_run)
 
             # Z4) query zen store for all step runs with same cache key
 
-            all_step_runs = Client().zen_store.list_run_steps()  # noqa
-            # cache_candidates = [
-            #     step for step in all_step_runs if step.cache_key == cache_key
-            # ]
-            cache_candidates = []
+            all_step_runs = Client().zen_store.list_run_steps()
+            cache_candidates = [
+                step_run
+                for step_run in all_step_runs
+                if step_run.id != current_step_run.id
+                and get_cache_key(step_run=step_run) == cache_key
+            ]
 
             if cache_candidates:
                 # if exists, use latest run and do the following:
                 #   - Set status to cached
                 #   - Update with output artifacts of the existing step run
-                step_run.status = ExecutionStatus.CACHED
-                Client().zen_store.update_run_step(step_run)
-                cached_step_run = cache_candidates[-1]
-                cached_output_artifacts = Client().zen_store.list_artifacts(
-                    parent_step_id=cached_step_run.id
-                )
-                zen_store = cast(SqlZenStore, Client().zen_store)
-                for output_artifact in cached_output_artifacts:
-                    zen_store._set_run_step_output_artifact(
-                        step_run_id=step_run.id,
-                        artifact_id=output_artifact.id,
-                        name=output_artifact.name,
-                        is_cached=True,
-                    )
+
+                # This is happening later, enable once needed
+                # step_run.status = ExecutionStatus.CACHED
+                # Client().zen_store.update_run_step(step_run)
+                # cached_step_run = cache_candidates[-1]
+                # cached_output_artifacts = Client().zen_store.list_artifacts(
+                #     parent_step_id=cached_step_run.id
+                # )
+                # zen_store = cast(SqlZenStore, Client().zen_store)
+                # for output_artifact in cached_output_artifacts:
+                #     zen_store._set_run_step_output_artifact(
+                #         step_run_id=step_run.id,
+                #         artifact_id=output_artifact.id,
+                #         name=output_artifact.name,
+                #         is_cached=True,
+                #     )
+                ...
             else:
                 # if no step run exists:
                 #   - Run code
@@ -554,8 +565,8 @@ class Launcher:
                 if cached_outputs is not None:
                     # Publishes cache result
                     # RMTFX: publish step with status = Cached
-                    step_run.status = ExecutionStatus.CACHED
-                    Client().zen_store.update_run_step(step_run)
+                    current_step_run.status = ExecutionStatus.CACHED
+                    Client().zen_store.update_run_step(current_step_run)
                     # RMTFX: connect to cached output artifacts somehow
                     for name, artifact_list in cached_outputs.items():
                         artifact = artifact_list[0]
@@ -568,7 +579,7 @@ class Launcher:
                         # RMTFX: replace with generic zen store once exposed
                         zen_store = cast(SqlZenStore, Client().zen_store)
                         zen_store._set_run_step_output_artifact(
-                            step_run_id=step_run.id,
+                            step_run_id=current_step_run.id,
                             artifact_id=zenml_artifact.id,
                             name=name,
                             is_cached=True,
@@ -595,7 +606,7 @@ class Launcher:
                             contexts=contexts,
                             is_execution_needed=False,
                         ),
-                        step_run.id,
+                        current_step_run.id,
                     )
 
             # 8. Going to trigger executor.
@@ -623,7 +634,7 @@ class Launcher:
                     contexts=contexts,
                     is_execution_needed=True,
                 ),
-                step_run.id,
+                current_step_run.id,
             )
 
     def _build_execution_info(self, **kwargs: Any) -> data_types.ExecutionInfo:
