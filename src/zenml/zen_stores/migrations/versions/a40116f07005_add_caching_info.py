@@ -1,7 +1,7 @@
 """Add Caching Info [a40116f07005].
 
 Revision ID: a40116f07005
-Revises: 0.22.0
+Revises: 26b776ad583e
 Create Date: 2022-11-21 15:24:02.436227
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a40116f07005"
-down_revision = "0.22.0"
+down_revision = "26b776ad583e"
 branch_labels = None
 depends_on = None
 
