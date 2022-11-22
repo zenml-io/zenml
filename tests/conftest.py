@@ -609,8 +609,10 @@ def sample_step_model() -> StepRunModel:
         pipeline_run_id=uuid4(),
         parent_step_ids=[],
         input_artifacts={},
+        output_artifacts={},
         step_configuration={},
         status=ExecutionStatus.COMPLETED,
+        is_cached=False,
     )
 
 
