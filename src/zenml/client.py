@@ -2215,6 +2215,7 @@ class Client(metaclass=ClientMetaClass):
 
             num_steps = len(steps)
             pipeline_run = PipelineRunRequestModel(
+                id=uuid4(),
                 user=self.active_user.id,  # Old user might not exist.
                 project=self.active_project.id,  # Old project might not exist.
                 name=mlmd_run.name,
