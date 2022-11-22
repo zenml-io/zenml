@@ -40,7 +40,7 @@ from typing import (
     cast,
 )
 
-from zenml.io.fileio_registry import default_filesystem_registry
+from zenml.io.filesystem_registry import default_filesystem_registry
 
 PathType = Union[bytes, str]
 

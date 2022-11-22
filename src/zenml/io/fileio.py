@@ -28,7 +28,7 @@ from typing import (
 )
 
 from zenml.constants import REMOTE_FS_PREFIX
-from zenml.io.fileio_registry import default_filesystem_registry
+from zenml.io.filesystem_registry import default_filesystem_registry
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
