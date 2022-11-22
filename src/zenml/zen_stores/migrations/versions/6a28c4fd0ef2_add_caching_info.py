@@ -1,15 +1,16 @@
-"""Add Caching Info [a40116f07005].
+"""Add Caching Info [6a28c4fd0ef2].
 
-Revision ID: a40116f07005
+Revision ID: 6a28c4fd0ef2
 Revises: 26b776ad583e
-Create Date: 2022-11-21 15:24:02.436227
+Create Date: 2022-11-22 12:59:26.081411
 
 """
 import sqlalchemy as sa
+import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "a40116f07005"
+revision = "6a28c4fd0ef2"
 down_revision = "26b776ad583e"
 branch_labels = None
 depends_on = None
@@ -35,6 +36,16 @@ def upgrade() -> None:
             sa.Column("enable_cache", sa.Boolean(), nullable=True)
         )
         batch_op.add_column(
+            sa.Column(
+                "code_hash", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+            )
+        )
+        batch_op.add_column(
+            sa.Column(
+                "cache_key", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+            )
+        )
+        batch_op.add_column(
             sa.Column("start_time", sa.DateTime(), nullable=True)
         )
         batch_op.add_column(sa.Column("end_time", sa.DateTime(), nullable=True))
@@ -48,6 +59,8 @@ def downgrade() -> None:
     with op.batch_alter_table("step_run", schema=None) as batch_op:
         batch_op.drop_column("end_time")
         batch_op.drop_column("start_time")
+        batch_op.drop_column("cache_key")
+        batch_op.drop_column("code_hash")
         batch_op.drop_column("enable_cache")
         batch_op.drop_column("caching_parameters")
 

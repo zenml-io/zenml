@@ -282,6 +282,8 @@ class StepRunSchema(SQLModel, table=True):
     )
 
     enable_cache: Optional[bool] = Field(nullable=True)
+    code_hash: Optional[str] = Field(nullable=True)
+    cache_key: Optional[str] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True)
     status: ExecutionStatus
@@ -315,6 +317,8 @@ class StepRunSchema(SQLModel, table=True):
             name=model.name,
             pipeline_run_id=model.pipeline_run_id,
             enable_cache=model.enable_cache,
+            code_hash=model.code_hash,
+            cache_key=model.cache_key,
             start_time=model.start_time,
             end_time=model.end_time,
             status=model.status,
@@ -369,6 +373,8 @@ class StepRunSchema(SQLModel, table=True):
             parent_step_ids=parent_step_ids,
             input_artifacts=input_artifacts,
             enable_cache=self.enable_cache,
+            code_hash=self.code_hash,
+            cache_key=self.cache_key,
             start_time=self.start_time,
             end_time=self.end_time,
             status=self.status,

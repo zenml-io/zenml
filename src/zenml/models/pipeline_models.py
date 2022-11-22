@@ -109,6 +109,8 @@ class StepRunModel(DomainModel):
     input_artifacts: Dict[str, UUID]  # mapping from input name to artifact ID
 
     enable_cache: Optional[bool]
+    code_hash: Optional[str]
+    cache_key: Optional[str]
     start_time: Optional[datetime]
     end_time: Optional[datetime]
     status: ExecutionStatus
