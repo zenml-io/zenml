@@ -84,6 +84,27 @@ def create_artifact(
 
 
 @router.get(
+    "/{artifact_id}",
+    response_model=ArtifactModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_artifact(
+    artifact_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> ArtifactModel:
+    """Get an artifact by ID.
+
+    Args:
+        artifact_id: The ID of the artifact to get.
+
+    Returns:
+        The artifact with the given ID.
+    """
+    return zen_store().get_artifact(artifact_id)
+
+
+@router.get(
     "/{artifact_id}" + PRODUCER_STEP,
     response_model=StepRunModel,
     responses={401: error_response, 404: error_response, 422: error_response},

@@ -3514,6 +3514,29 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             return artifact_schema.to_model()
 
+    def get_artifact(self, artifact_id: UUID) -> ArtifactModel:
+        """Gets an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to get.
+
+        Returns:
+            The artifact.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+        with Session(self.engine) as session:
+            artifact = session.exec(
+                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+            ).first()
+            if artifact is None:
+                raise KeyError(
+                    f"Unable to get artifact with ID {artifact_id}: "
+                    f"No artifact with this ID found."
+                )
+            return artifact.to_model()
+
     def list_artifacts(
         self,
         artifact_uri: Optional[str] = None,

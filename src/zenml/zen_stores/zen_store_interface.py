@@ -1172,6 +1172,20 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def get_artifact(self, artifact_id: UUID) -> ArtifactModel:
+        """Gets an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to get.
+
+        Returns:
+            The artifact.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+
+    @abstractmethod
     def list_artifacts(
         self,
         artifact_uri: Optional[str] = None,
