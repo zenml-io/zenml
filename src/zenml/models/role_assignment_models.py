@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field, root_validator
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 
 if TYPE_CHECKING:
-    from zenml.models.project_models import ProjectResponseModel
+    from zenml.models.workspace_models import WorkspaceResponseModel
     from zenml.models.role_models import RoleResponseModel
     from zenml.models.team_models import TeamResponseModel
     from zenml.models.user_models import UserResponseModel
@@ -47,8 +47,8 @@ class RoleAssignmentBaseModel(BaseModel):
 
 
 class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
-    project: Optional[UUID] = Field(
-        None, title="The project that the role is limited to."
+    workspace: Optional[UUID] = Field(
+        None, title="The workspace that the role is limited to."
     )
     team: Optional[UUID] = Field(
         None, title="The team that the role is assigned to."
@@ -91,8 +91,8 @@ class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
 class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
     """"""
 
-    project: Optional["ProjectResponseModel"] = Field(
-        title="The project scope of this role assignment.", default=None
+    workspace: Optional["WorkspaceResponseModel"] = Field(
+        title="The workspace scope of this role assignment.", default=None
     )
     team: Optional["TeamResponseModel"] = Field(
         title="The team the role is assigned to.", default=None

@@ -31,9 +31,9 @@ from zenml.models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
-    ProjectRequestModel,
-    ProjectResponseModel,
-    ProjectUpdateModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     RoleRequestModel,
@@ -105,22 +105,22 @@ class ZenStoreInterface(ABC):
       them call the generic get or list method in this interface.
       * keep the logic required to convert between ZenML domain Model classes
       and internal store representations outside the ZenML domain Model classes
-      * methods for resources that have two or more unique keys (e.g. a Project
+      * methods for resources that have two or more unique keys (e.g. a Workspace
       is uniquely identified by its name as well as its UUID) should reflect
       that in the method variants and/or method arguments:
         * methods that take in a resource identifier as argument should accept
-        all variants of the identifier (e.g. `project_name_or_uuid` for methods
-        that get/list/update/delete Projects)
+        all variants of the identifier (e.g. `workspace_name_or_uuid` for methods
+        that get/list/update/delete Workspaces)
         * if a compound key is involved, separate get methods should be
         implemented (e.g. `get_pipeline` to get a pipeline by ID and
-        `get_pipeline_in_project` to get a pipeline by its name and the ID of
-        the project it belongs to)
+        `get_pipeline_in_workspace` to get a pipeline by its name and the ID of
+        the workspace it belongs to)
       * methods for resources that are scoped as children of other resources
-      (e.g. a Stack is always owned by a Project) should reflect the
+      (e.g. a Stack is always owned by a Workspace) should reflect the
       key(s) of the parent resource in the provided methods and method
       arguments:
         * create methods should take the parent resource UUID(s) as an argument
-        (e.g. `create_stack` takes in the project ID)
+        (e.g. `create_stack` takes in the workspace ID)
         * get methods should be provided to retrieve a resource by the compound
         key that includes the parent resource key(s)
         * list methods should feature optional filter arguments that reflect
@@ -181,7 +181,7 @@ class ZenStoreInterface(ABC):
 
         Raises:
             StackExistsError: If a stack with the same name is already owned
-                by this user in this project.
+                by this user in this workspace.
         """
 
     @abstractmethod
@@ -201,7 +201,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stacks(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
@@ -210,7 +210,7 @@ class ZenStoreInterface(ABC):
         """List all stacks matching the given filter criteria.
 
         Args:
-            project_name_or_id: ID or name of the Project containing the stack
+            workspace_name_or_id: ID or name of the Workspace containing the stack
             user_name_or_id: Optionally filter stacks by their owner
             component_id: Optionally filter for stacks that contain the
                           component
@@ -223,7 +223,7 @@ class ZenStoreInterface(ABC):
             A list of all stacks matching the filter criteria.
 
         Raises:
-            KeyError: if the project doesn't exist.
+            KeyError: if the workspace doesn't exist.
         """
 
     @abstractmethod
@@ -272,13 +272,13 @@ class ZenStoreInterface(ABC):
 
         Raises:
             StackComponentExistsError: If a stack component with the same name
-                and type is already owned by this user in this project.
+                and type is already owned by this user in this workspace.
         """
 
     @abstractmethod
     def list_stack_components(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
@@ -288,7 +288,7 @@ class ZenStoreInterface(ABC):
         """List all stack components matching the given filter criteria.
 
         Args:
-            project_name_or_id: The ID or name of the Project to which the stack
+            workspace_name_or_id: The ID or name of the Workspace to which the stack
                 components belong
             user_name_or_id: Optionally filter stack components by the owner
             type: Optionally filter by type of stack component
@@ -301,7 +301,7 @@ class ZenStoreInterface(ABC):
             A list of all stack components matching the filter criteria.
 
         Raises:
-            KeyError: if the project doesn't exist.
+            KeyError: if the workspace doesn't exist.
         """
 
     @abstractmethod
@@ -368,7 +368,7 @@ class ZenStoreInterface(ABC):
 
         Raises:
             EntityExistsError: If a flavor with the same name and type
-                is already owned by this user in this project.
+                is already owned by this user in this workspace.
         """
 
     @abstractmethod
@@ -388,7 +388,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_flavors(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
@@ -397,7 +397,7 @@ class ZenStoreInterface(ABC):
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            project_name_or_id: Optionally filter by the Project to which the
+            workspace_name_or_id: Optionally filter by the Workspace to which the
                 component flavors belong
             user_name_or_id: Optionally filter by the owner
             component_type: Optionally filter by type of stack component
@@ -409,7 +409,7 @@ class ZenStoreInterface(ABC):
             List of all the stack component flavors matching the given criteria.
 
         Raises:
-            KeyError: if the project doesn't exist.
+            KeyError: if the workspace doesn't exist.
         """
 
     @abstractmethod
@@ -677,7 +677,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_role_assignments(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -685,8 +685,8 @@ class ZenStoreInterface(ABC):
         """List all role assignments.
 
         Args:
-            project_name_or_id: If provided, only list assignments for the given
-                project
+            workspace_name_or_id: If provided, only list assignments for the given
+                workspace
             role_name_or_id: If provided, only list assignments of the given
                 role
             team_name_or_id: If provided, only list assignments for the given
@@ -699,80 +699,80 @@ class ZenStoreInterface(ABC):
         """
 
     # --------
-    # Projects
+    # Workspaces
     # --------
 
     @abstractmethod
-    def create_project(
-        self, project: ProjectRequestModel
-    ) -> ProjectResponseModel:
-        """Creates a new project.
+    def create_workspace(
+        self, workspace: WorkspaceRequestModel
+    ) -> WorkspaceResponseModel:
+        """Creates a new workspace.
 
         Args:
-            project: The project to create.
+            workspace: The workspace to create.
 
         Returns:
-            The newly created project.
+            The newly created workspace.
 
         Raises:
-            EntityExistsError: If a project with the given name already exists.
+            EntityExistsError: If a workspace with the given name already exists.
         """
 
     @abstractmethod
-    def get_project(
-        self, project_name_or_id: Union[UUID, str]
-    ) -> ProjectResponseModel:
-        """Get an existing project by name or ID.
+    def get_workspace(
+        self, workspace_name_or_id: Union[UUID, str]
+    ) -> WorkspaceResponseModel:
+        """Get an existing workspace by name or ID.
 
         Args:
-            project_name_or_id: Name or ID of the project to get.
+            workspace_name_or_id: Name or ID of the workspace to get.
 
         Returns:
-            The requested project.
+            The requested workspace.
 
         Raises:
-            KeyError: If there is no such project.
+            KeyError: If there is no such workspace.
         """
 
     @abstractmethod
-    def list_projects(
+    def list_workspaces(
         self, name: Optional[str] = None
-    ) -> List[ProjectResponseModel]:
-        """List all projects.
+    ) -> List[WorkspaceResponseModel]:
+        """List all workspaces.
 
         Args:
             name: Optionally filter by name
 
         Returns:
-            A list of all projects.
+            A list of all workspaces.
         """
 
     @abstractmethod
-    def update_project(
-        self, project_id: UUID, project_update: ProjectUpdateModel
-    ) -> ProjectResponseModel:
-        """Update an existing project.
+    def update_workspace(
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
+    ) -> WorkspaceResponseModel:
+        """Update an existing workspace.
 
         Args:
-            project_id: The ID of the project to be updated.
-            project_update: The update to be applied to the project.
+            workspace_id: The ID of the workspace to be updated.
+            workspace_update: The update to be applied to the workspace.
 
         Returns:
-            The updated project.
+            The updated workspace.
 
         Raises:
-            KeyError: if the project does not exist.
+            KeyError: if the workspace does not exist.
         """
 
     @abstractmethod
-    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a project.
+    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a workspace.
 
         Args:
-            project_name_or_id: Name or ID of the project to delete.
+            workspace_name_or_id: Name or ID of the workspace to delete.
 
         Raises:
-            KeyError: If no project with the given name exists.
+            KeyError: If no workspace with the given name exists.
         """
 
     # ---------
@@ -783,7 +783,7 @@ class ZenStoreInterface(ABC):
         self,
         pipeline: PipelineRequestModel,
     ) -> PipelineResponseModel:
-        """Creates a new pipeline in a project.
+        """Creates a new pipeline in a workspace.
 
         Args:
             pipeline: The pipeline to create.
@@ -792,7 +792,7 @@ class ZenStoreInterface(ABC):
             The newly created pipeline.
 
         Raises:
-            KeyError: if the project does not exist.
+            KeyError: if the workspace does not exist.
             EntityExistsError: If an identical pipeline already exists.
         """
 
@@ -813,15 +813,15 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_pipelines(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
     ) -> List[PipelineResponseModel]:
-        """List all pipelines in the project.
+        """List all pipelines in the workspace.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this
-                project.
+            workspace_name_or_id: If provided, only list pipelines in this
+                workspace.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
 
@@ -829,7 +829,7 @@ class ZenStoreInterface(ABC):
             A list of pipelines.
 
         Raises:
-            KeyError: if the project does not exist.
+            KeyError: if the workspace does not exist.
         """
 
     @abstractmethod
@@ -918,7 +918,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_runs(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[UUID] = None,
         component_id: Optional[UUID] = None,
         run_name: Optional[str] = None,
@@ -929,7 +929,7 @@ class ZenStoreInterface(ABC):
         """Gets all pipeline runs.
 
         Args:
-            project_name_or_id: If provided, only return runs for this project.
+            workspace_name_or_id: If provided, only return runs for this workspace.
             stack_id: If provided, only return runs for this stack.
             component_id: Optionally filter for runs that used the
                           component

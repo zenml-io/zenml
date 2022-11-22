@@ -267,7 +267,7 @@ class StackComponent:
         flavor: str,
         type: StackComponentType,
         user: UUID,
-        project: UUID,
+        workspace: UUID,
         created: datetime,
         updated: datetime,
         *args: Any,
@@ -282,7 +282,7 @@ class StackComponent:
             flavor: The flavor of the component.
             type: The type of the component.
             user: The ID of the user who created the component.
-            project: The ID of the project the component belongs to.
+            workspace: The ID of the workspace the component belongs to.
             created: The creation time of the component.
             updated: The last update time of the component.
             *args: Additional positional arguments.
@@ -303,7 +303,7 @@ class StackComponent:
         self.flavor = flavor
         self.type = type
         self.user = user
-        self.project = project
+        self.workspace = workspace
         self.created = created
         self.updated = updated
 
@@ -342,7 +342,7 @@ class StackComponent:
 
         return flavor.implementation_class(
             user=component_model.user.id,
-            project=component_model.project.id,
+            workspace=component_model.workspace.id,
             name=component_model.name,
             id=component_model.id,
             config=configuration,

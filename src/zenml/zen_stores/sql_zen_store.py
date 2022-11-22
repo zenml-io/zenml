@@ -77,9 +77,9 @@ from zenml.models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
-    ProjectRequestModel,
-    ProjectResponseModel,
-    ProjectUpdateModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     RoleRequestModel,
@@ -122,7 +122,7 @@ from zenml.zen_stores.schemas import (
     FlavorSchema,
     PipelineRunSchema,
     PipelineSchema,
-    ProjectSchema,
+    WorkspaceSchema,
     RoleSchema,
     StackComponentSchema,
     StackSchema,
@@ -843,7 +843,7 @@ class SqlZenStore(BaseZenStore):
             ).all()
 
             new_stack_schema = StackSchema(
-                project_id=stack.project,
+                workspace_id=stack.workspace,
                 user_id=stack.user,
                 is_shared=stack.is_shared,
                 name=stack.name,
@@ -880,7 +880,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_stacks(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
@@ -889,7 +889,7 @@ class SqlZenStore(BaseZenStore):
         """List all stacks matching the given filter criteria.
 
         Args:
-            project_name_or_id: ID or name of the Project containing the stack
+            workspace_name_or_id: ID or name of the Workspace containing the stack
             user_name_or_id: Optionally filter stacks by their owner
             component_id: Optionally filter for stacks that contain the
                           component
@@ -903,11 +903,11 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Get a list of all stacks
             query = select(StackSchema)
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
+            if workspace_name_or_id:
+                workspace = self._get_workspace_schema(
+                    workspace_name_or_id, session=session
                 )
-                query = query.where(StackSchema.project_id == project.id)
+                query = query.where(StackSchema.workspace_id == workspace.id)
             if user_name_or_id:
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(StackSchema.user_id == user.id)
@@ -942,7 +942,7 @@ class SqlZenStore(BaseZenStore):
             IllegalOperationError: if the stack is a default stack.
         """
         with Session(self.engine) as session:
-            # Check if stack with the domain key (name, project, owner) already
+            # Check if stack with the domain key (name, workspace, owner) already
             #  exists
             existing_stack = session.exec(
                 select(StackSchema).where(StackSchema.id == stack_id)
@@ -966,7 +966,7 @@ class SqlZenStore(BaseZenStore):
 
             # Check if stack update makes the stack a shared stack. In that
             # case, check if a stack with the same name is already shared
-            # within the project
+            # within the workspace
             if stack_update.is_shared:
                 if not existing_stack.is_shared and stack_update.is_shared:
                     self._fail_if_stack_with_name_already_shared(
@@ -1042,12 +1042,12 @@ class SqlZenStore(BaseZenStore):
         existing_domain_stack = session.exec(
             select(StackSchema)
             .where(StackSchema.name == stack.name)
-            .where(StackSchema.project_id == stack.project)
+            .where(StackSchema.workspace_id == stack.workspace)
             .where(StackSchema.user_id == stack.user)
         ).first()
         if existing_domain_stack is not None:
-            project = self._get_project_schema(
-                project_name_or_id=stack.project, session=session
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=stack.workspace, session=session
             )
             user = self._get_user_schema(
                 user_name_or_id=stack.user, session=session
@@ -1055,7 +1055,7 @@ class SqlZenStore(BaseZenStore):
             raise StackExistsError(
                 f"Unable to register stack with name "
                 f"'{stack.name}': Found an existing stack with the same "
-                f"name in the active project, '{project.name}', owned by the "
+                f"name in the active workspace, '{workspace.name}', owned by the "
                 f"same user, '{user.name}'."
             )
         return None
@@ -1076,16 +1076,16 @@ class SqlZenStore(BaseZenStore):
                               by a user.
         """
         # Check if component with the same name, type is already shared
-        # within the project
+        # within the workspace
         existing_shared_stack = session.exec(
             select(StackSchema)
             .where(StackSchema.name == stack.name)
-            .where(StackSchema.project_id == stack.project)
+            .where(StackSchema.workspace_id == stack.workspace)
             .where(StackSchema.is_shared == stack.is_shared)
         ).first()
         if existing_shared_stack is not None:
-            project = self._get_project_schema(
-                project_name_or_id=stack.project, session=session
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=stack.workspace, session=session
             )
             owner_of_shared = self._get_user_schema(
                 existing_shared_stack.user_id, session=session
@@ -1093,8 +1093,8 @@ class SqlZenStore(BaseZenStore):
 
             raise StackExistsError(
                 f"Unable to share stack with name '{stack.name}': Found an "
-                f"existing shared stack with the same name in project "
-                f"'{project.name}' owned by '{owner_of_shared.name}'."
+                f"existing shared stack with the same name in workspace "
+                f"'{workspace.name}' owned by '{owner_of_shared.name}'."
             )
 
     # ----------------
@@ -1119,7 +1119,7 @@ class SqlZenStore(BaseZenStore):
                 name=component.name,
                 component_type=component.type,
                 user_id=component.user,
-                project_id=component.project,
+                workspace_id=component.workspace,
                 session=session,
             )
 
@@ -1127,14 +1127,14 @@ class SqlZenStore(BaseZenStore):
                 self._fail_if_component_with_name_type_already_shared(
                     name=component.name,
                     component_type=component.type,
-                    project_id=component.project,
+                    workspace_id=component.workspace,
                     session=session,
                 )
 
             # Create the component
             new_component = StackComponentSchema(
                 name=component.name,
-                project_id=component.project,
+                workspace_id=component.workspace,
                 user_id=component.user,
                 is_shared=component.is_shared,
                 type=component.type,
@@ -1179,7 +1179,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
@@ -1189,7 +1189,7 @@ class SqlZenStore(BaseZenStore):
         """List all stack components matching the given filter criteria.
 
         Args:
-            project_name_or_id: The ID or name of the Project to which the stack
+            workspace_name_or_id: The ID or name of the Workspace to which the stack
                 components belong
             user_name_or_id: Optionally filter stack components by the owner
             type: Optionally filter by type of stack component
@@ -1204,12 +1204,12 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Get a list of all stacks
             query = select(StackComponentSchema)
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
+            if workspace_name_or_id:
+                workspace = self._get_workspace_schema(
+                    workspace_name_or_id, session=session
                 )
                 query = query.where(
-                    StackComponentSchema.project_id == project.id
+                    StackComponentSchema.workspace_id == workspace.id
                 )
             if user_name_or_id:
                 user = self._get_user_schema(user_name_or_id, session=session)
@@ -1278,14 +1278,14 @@ class SqlZenStore(BaseZenStore):
                     self._fail_if_component_with_name_type_exists_for_user(
                         name=component_update.name,
                         component_type=existing_component.type,
-                        project_id=existing_component.project_id,
+                        workspace_id=existing_component.workspace_id,
                         user_id=existing_component.user_id,
                         session=session,
                     )
 
             # Check if component update makes the component a shared component,
             # In that case check if a component with the same name, type are
-            # already shared within the project
+            # already shared within the workspace
             if component_update.is_shared:
                 if (
                     not existing_component.is_shared
@@ -1294,7 +1294,7 @@ class SqlZenStore(BaseZenStore):
                     self._fail_if_component_with_name_type_already_shared(
                         name=component_update.name or existing_component.name,
                         component_type=existing_component.type,
-                        project_id=existing_component.project_id,
+                        workspace_id=existing_component.workspace_id,
                         session=session,
                     )
 
@@ -1356,7 +1356,7 @@ class SqlZenStore(BaseZenStore):
     def _fail_if_component_with_name_type_exists_for_user(
         name: str,
         component_type: StackComponentType,
-        project_id: UUID,
+        workspace_id: UUID,
         user_id: UUID,
         session: Session,
     ) -> None:
@@ -1365,7 +1365,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             name: The name of the component
             component_type: The type of the component
-            project_id: The ID of the project
+            workspace_id: The ID of the workspace
             user_id: The ID of the user
             session: The Session
 
@@ -1376,12 +1376,12 @@ class SqlZenStore(BaseZenStore):
             StackComponentExistsError: If a component with the given name and
                                        type is already owned by the user
         """
-        # Check if component with the same domain key (name, type, project,
+        # Check if component with the same domain key (name, type, workspace,
         # owner) already exists
         existing_domain_component = session.exec(
             select(StackComponentSchema)
             .where(StackComponentSchema.name == name)
-            .where(StackComponentSchema.project_id == project_id)
+            .where(StackComponentSchema.workspace_id == workspace_id)
             .where(StackComponentSchema.user_id == user_id)
             .where(StackComponentSchema.type == component_type)
         ).first()
@@ -1390,7 +1390,7 @@ class SqlZenStore(BaseZenStore):
                 f"Unable to register '{component_type.value}' component "
                 f"with name '{name}': Found an existing "
                 f"component with the same name and type in the same "
-                f" project, '{existing_domain_component.project.name}', "
+                f" workspace, '{existing_domain_component.workspace.name}', "
                 f"owned by the same user, "
                 f"'{existing_domain_component.user.name}'."
             )
@@ -1400,7 +1400,7 @@ class SqlZenStore(BaseZenStore):
     def _fail_if_component_with_name_type_already_shared(
         name: str,
         component_type: StackComponentType,
-        project_id: UUID,
+        workspace_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a Component with same name/type already shared.
@@ -1408,7 +1408,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             name: The name of the component
             component_type: The type of the component
-            project_id: The ID of the project
+            workspace_id: The ID of the workspace
             session: The Session
 
         Raises:
@@ -1416,11 +1416,11 @@ class SqlZenStore(BaseZenStore):
                 type is already shared by a user
         """
         # Check if component with the same name, type is already shared
-        # within the project
+        # within the workspace
         existing_shared_component = session.exec(
             select(StackComponentSchema)
             .where(StackComponentSchema.name == name)
-            .where(StackComponentSchema.project_id == project_id)
+            .where(StackComponentSchema.workspace_id == workspace_id)
             .where(StackComponentSchema.type == component_type)
             .where(StackComponentSchema.is_shared == True)
         ).first()
@@ -1428,8 +1428,8 @@ class SqlZenStore(BaseZenStore):
             raise StackComponentExistsError(
                 f"Unable to shared component of type '{component_type.value}' "
                 f"with name '{name}': Found an existing shared "
-                f"component with the same name and type in project "
-                f"'{project_id}'."
+                f"component with the same name and type in workspace "
+                f"'{workspace_id}'."
             )
 
     # -----------------------
@@ -1448,16 +1448,16 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If a flavor with the same name and type
-                is already owned by this user in this project.
+                is already owned by this user in this workspace.
         """
         with Session(self.engine) as session:
-            # Check if component with the same domain key (name, type, project,
+            # Check if component with the same domain key (name, type, workspace,
             # owner) already exists
             existing_flavor = session.exec(
                 select(FlavorSchema)
                 .where(FlavorSchema.name == flavor.name)
                 .where(FlavorSchema.type == flavor.type)
-                .where(FlavorSchema.project_id == flavor.project)
+                .where(FlavorSchema.workspace_id == flavor.workspace)
                 .where(FlavorSchema.user_id == flavor.user)
             ).first()
 
@@ -1466,7 +1466,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to register '{flavor.type.value}' flavor "
                     f"with name '{flavor.name}': Found an existing "
                     f"flavor with the same name and type in the same "
-                    f"'{flavor.project}' project owned by the same "
+                    f"'{flavor.workspace}' workspace owned by the same "
                     f"'{flavor.user}' user."
                 )
 
@@ -1476,7 +1476,7 @@ class SqlZenStore(BaseZenStore):
                 source=flavor.source,
                 config_schema=flavor.config_schema,
                 integration=flavor.integration,
-                project_id=flavor.project,
+                workspace_id=flavor.workspace,
                 user_id=flavor.user,
             )
             session.add(new_flavor)
@@ -1506,7 +1506,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_flavors(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
@@ -1515,7 +1515,7 @@ class SqlZenStore(BaseZenStore):
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            project_name_or_id: Optionally filter by the Project to which the
+            workspace_name_or_id: Optionally filter by the Workspace to which the
                 component flavors belong
             component_type: Optionally filter by type of stack component
             user_name_or_id: Optionally filter by the owner
@@ -1529,11 +1529,11 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(FlavorSchema)
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
+            if workspace_name_or_id:
+                workspace = self._get_workspace_schema(
+                    workspace_name_or_id, session=session
                 )
-                query = query.where(FlavorSchema.project_id == project.id)
+                query = query.where(FlavorSchema.workspace_id == workspace.id)
             if component_type:
                 query = query.where(FlavorSchema.type == component_type)
             if name:
@@ -2063,15 +2063,15 @@ class SqlZenStore(BaseZenStore):
 
     def _list_user_role_assignments(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         role_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentResponseModel]:
         """List all user role assignments.
 
         Args:
-            project_name_or_id: If provided, only return role assignments for
-                this project.
+            workspace_name_or_id: If provided, only return role assignments for
+                this workspace.
             user_name_or_id: If provided, only list assignments for this user.
             role_name_or_id: If provided, only list assignments of the given
                 role
@@ -2081,12 +2081,12 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(UserRoleAssignmentSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
+            if workspace_name_or_id is not None:
+                workspace = self._get_workspace_schema(
+                    workspace_name_or_id, session=session
                 )
                 query = query.where(
-                    UserRoleAssignmentSchema.project_id == project.id
+                    UserRoleAssignmentSchema.workspace_id == workspace.id
                 )
             if role_name_or_id is not None:
                 role = self._get_role_schema(role_name_or_id, session=session)
@@ -2099,15 +2099,15 @@ class SqlZenStore(BaseZenStore):
 
     def _list_team_role_assignments(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         role_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentResponseModel]:
         """List all team role assignments.
 
         Args:
-            project_name_or_id: If provided, only return role assignments for
-                this project.
+            workspace_name_or_id: If provided, only return role assignments for
+                this workspace.
             team_name_or_id: If provided, only list assignments for this team.
             role_name_or_id: If provided, only list assignments of the given
                 role
@@ -2117,12 +2117,12 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(TeamRoleAssignmentSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
+            if workspace_name_or_id is not None:
+                workspace = self._get_workspace_schema(
+                    workspace_name_or_id, session=session
                 )
                 query = query.where(
-                    TeamRoleAssignmentSchema.project_id == project.id
+                    TeamRoleAssignmentSchema.workspace_id == workspace.id
                 )
             if role_name_or_id is not None:
                 role = self._get_role_schema(role_name_or_id, session=session)
@@ -2135,7 +2135,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_role_assignments(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -2143,8 +2143,8 @@ class SqlZenStore(BaseZenStore):
         """List all role assignments.
 
         Args:
-            project_name_or_id: If provided, only return role assignments for
-                this project.
+            workspace_name_or_id: If provided, only return role assignments for
+                this workspace.
             role_name_or_id: If provided, only list assignments of the given
                 role
             team_name_or_id: If provided, only list assignments for this team.
@@ -2154,12 +2154,12 @@ class SqlZenStore(BaseZenStore):
             A list of all role assignments.
         """
         user_role_assignments = self._list_user_role_assignments(
-            project_name_or_id=project_name_or_id,
+            workspace_name_or_id=workspace_name_or_id,
             user_name_or_id=user_name_or_id,
             role_name_or_id=role_name_or_id,
         )
         team_role_assignments = self._list_team_role_assignments(
-            project_name_or_id=project_name_or_id,
+            workspace_name_or_id=workspace_name_or_id,
             team_name_or_id=team_name_or_id,
             role_name_or_id=role_name_or_id,
         )
@@ -2169,12 +2169,12 @@ class SqlZenStore(BaseZenStore):
         self,
         role_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> RoleAssignmentResponseModel:
-        """Assigns a role to a user, potentially scoped to a specific project.
+        """Assigns a role to a user, potentially scoped to a specific workspace.
 
         Args:
-            project_name_or_id: Optional ID of a project in which to assign the
+            workspace_name_or_id: Optional ID of a workspace in which to assign the
                 role. If this is not provided, the role will be assigned
                 globally.
             role_name_or_id: Name or ID of the role to assign.
@@ -2185,33 +2185,33 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             role = self._get_role_schema(role_name_or_id, session=session)
-            project: Optional[ProjectSchema] = None
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
+            workspace: Optional[WorkspaceSchema] = None
+            if workspace_name_or_id:
+                workspace = self._get_workspace_schema(
+                    workspace_name_or_id, session=session
                 )
             user = self._get_user_schema(user_name_or_id, session=session)
             query = select(UserRoleAssignmentSchema).where(
                 UserRoleAssignmentSchema.user_id == user.id,
                 UserRoleAssignmentSchema.role_id == role.id,
             )
-            if project is not None:
+            if workspace is not None:
                 query = query.where(
-                    UserRoleAssignmentSchema.project_id == project.id
+                    UserRoleAssignmentSchema.workspace_id == workspace.id
                 )
             existing_role_assignment = session.exec(query).first()
             if existing_role_assignment is not None:
                 raise EntityExistsError(
                     f"Unable to assign role '{role.name}' to user "
-                    f"'{user.name}': Role already assigned in this project."
+                    f"'{user.name}': Role already assigned in this workspace."
                 )
             role_assignment = UserRoleAssignmentSchema(
                 role_id=role.id,
                 user_id=user.id,
-                project_id=project.id if project else None,
+                workspace_id=workspace.id if workspace else None,
                 role=role,
                 user=user,
-                project=project,
+                workspace=workspace,
             )
             session.add(role_assignment)
             session.commit()
@@ -2221,14 +2221,14 @@ class SqlZenStore(BaseZenStore):
         self,
         role_name_or_id: Union[str, UUID],
         team_name_or_id: Union[str, UUID],
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> RoleAssignmentResponseModel:
-        """Assigns a role to a team, potentially scoped to a specific project.
+        """Assigns a role to a team, potentially scoped to a specific workspace.
 
         Args:
             role_name_or_id: Name or ID of the role to assign.
             team_name_or_id: Name or ID of the team to which to assign the role.
-            project_name_or_id: Optional ID of a project in which to assign the
+            workspace_name_or_id: Optional ID of a workspace in which to assign the
                 role. If this is not provided, the role will be assigned
                 globally.
 
@@ -2237,33 +2237,33 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             role = self._get_role_schema(role_name_or_id, session=session)
-            project: Optional[ProjectSchema] = None
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
+            workspace: Optional[WorkspaceSchema] = None
+            if workspace_name_or_id:
+                workspace = self._get_workspace_schema(
+                    workspace_name_or_id, session=session
                 )
             team = self._get_team_schema(team_name_or_id, session=session)
             query = select(TeamRoleAssignmentSchema).where(
                 TeamRoleAssignmentSchema.team_id == team.id,
                 TeamRoleAssignmentSchema.role_id == role.id,
             )
-            if project is not None:
+            if workspace is not None:
                 query = query.where(
-                    TeamRoleAssignmentSchema.project_id == project.id
+                    TeamRoleAssignmentSchema.workspace_id == workspace.id
                 )
             existing_role_assignment = session.exec(query).first()
             if existing_role_assignment is not None:
                 raise EntityExistsError(
                     f"Unable to assign role '{role.name}' to team "
-                    f"'{team.name}': Role already assigned in this project."
+                    f"'{team.name}': Role already assigned in this workspace."
                 )
             role_assignment = TeamRoleAssignmentSchema(
                 role_id=role.id,
                 team_id=team.id,
-                project_id=project.id if project else None,
+                workspace_id=workspace.id if workspace else None,
                 role=role,
                 team=team,
-                project=project,
+                workspace=workspace,
             )
             session.add(role_assignment)
             session.commit()
@@ -2273,18 +2273,18 @@ class SqlZenStore(BaseZenStore):
     def create_role_assignment(
         self, role_assignment: RoleAssignmentRequestModel
     ) -> RoleAssignmentResponseModel:
-        """Assigns a role to a user or team, scoped to a specific project."""
+        """Assigns a role to a user or team, scoped to a specific workspace."""
         if role_assignment.user:
             return self._assign_role_to_user(
                 role_name_or_id=role_assignment.role,
                 user_name_or_id=role_assignment.user,
-                project_name_or_id=role_assignment.project,
+                workspace_name_or_id=role_assignment.workspace,
             )
         elif role_assignment.team:
             return self._assign_role_to_team(
                 role_name_or_id=role_assignment.role,
                 team_name_or_id=role_assignment.team,
-                project_name_or_id=role_assignment.project,
+                workspace_name_or_id=role_assignment.workspace,
             )
 
     def get_role_assignment(
@@ -2349,146 +2349,146 @@ class SqlZenStore(BaseZenStore):
                 session.commit()
 
     # --------
-    # Projects
+    # Workspaces
     # --------
 
-    @track(AnalyticsEvent.CREATED_PROJECT)
-    def create_project(
-        self, project: ProjectRequestModel
-    ) -> ProjectResponseModel:
-        """Creates a new project.
+    @track(AnalyticsEvent.CREATED_WORKSPACE)
+    def create_workspace(
+        self, workspace: WorkspaceRequestModel
+    ) -> WorkspaceResponseModel:
+        """Creates a new workspace.
 
         Args:
-            project: The project to create.
+            workspace: The workspace to create.
 
         Returns:
-            The newly created project.
+            The newly created workspace.
 
         Raises:
-            EntityExistsError: If a project with the given name already exists.
+            EntityExistsError: If a workspace with the given name already exists.
         """
         with Session(self.engine) as session:
-            # Check if project with the given name already exists
-            existing_project = session.exec(
-                select(ProjectSchema).where(ProjectSchema.name == project.name)
+            # Check if workspace with the given name already exists
+            existing_workspace = session.exec(
+                select(WorkspaceSchema).where(WorkspaceSchema.name == workspace.name)
             ).first()
-            if existing_project is not None:
+            if existing_workspace is not None:
                 raise EntityExistsError(
-                    f"Unable to create project {project.name}: "
-                    "A project with this name already exists."
+                    f"Unable to create workspace {workspace.name}: "
+                    "A workspace with this name already exists."
                 )
 
-            # Create the project
-            new_project = ProjectSchema.from_request(project)
-            session.add(new_project)
+            # Create the workspace
+            new_workspace = WorkspaceSchema.from_request(workspace)
+            session.add(new_workspace)
             session.commit()
 
-            # Explicitly refresh the new_project schema
-            session.refresh(new_project)
+            # Explicitly refresh the new_workspace schema
+            session.refresh(new_workspace)
 
-            return new_project.to_model()
+            return new_workspace.to_model()
 
-    def get_project(
-        self, project_name_or_id: Union[str, UUID]
-    ) -> ProjectResponseModel:
-        """Get an existing project by name or ID.
+    def get_workspace(
+        self, workspace_name_or_id: Union[str, UUID]
+    ) -> WorkspaceResponseModel:
+        """Get an existing workspace by name or ID.
 
         Args:
-            project_name_or_id: Name or ID of the project to get.
+            workspace_name_or_id: Name or ID of the workspace to get.
 
         Returns:
-            The requested project if one was found.
+            The requested workspace if one was found.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(
-                project_name_or_id, session=session
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id, session=session
             )
-        return project.to_model()
+        return workspace.to_model()
 
-    def list_projects(
+    def list_workspaces(
         self, name: Optional[str] = None
-    ) -> List[ProjectResponseModel]:
-        """List all projects.
+    ) -> List[WorkspaceResponseModel]:
+        """List all workspaces.
 
         Args:
             name: Optionally filter by name
 
         Returns:
-            A list of all projects.
+            A list of all workspaces.
         """
         with Session(self.engine) as session:
-            query = select(ProjectSchema)
+            query = select(WorkspaceSchema)
             if name:
-                query = query.where(ProjectSchema.name == name)
-            projects = session.exec(query.order_by(ProjectSchema.name)).all()
+                query = query.where(WorkspaceSchema.name == name)
+            workspaces = session.exec(query.order_by(WorkspaceSchema.name)).all()
 
-            return [project.to_model() for project in projects]
+            return [workspace.to_model() for workspace in workspaces]
 
-    @track(AnalyticsEvent.UPDATED_PROJECT)
-    def update_project(
-        self, project_id: UUID, project_update: ProjectUpdateModel
-    ) -> ProjectResponseModel:
-        """Update an existing project.
+    @track(AnalyticsEvent.UPDATED_WORKSPACE)
+    def update_workspace(
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
+    ) -> WorkspaceResponseModel:
+        """Update an existing workspace.
 
         Args:
-            project_id: The ID of the project to be updated.
-            project_update: The update to be applied to the project.
+            workspace_id: The ID of the workspace to be updated.
+            workspace_update: The update to be applied to the workspace.
 
         Returns:
-            The updated project.
+            The updated workspace.
 
         Raises:
-            IllegalOperationError: if the project is the default project.
+            IllegalOperationError: if the workspace is the default workspace.
         """
         with Session(self.engine) as session:
-            existing_project = session.exec(
-                select(ProjectSchema).where(ProjectSchema.id == project_id)
+            existing_workspace = session.exec(
+                select(WorkspaceSchema).where(WorkspaceSchema.id == workspace_id)
             ).first()
-            if existing_project is None:
+            if existing_workspace is None:
                 raise KeyError(
-                    f"Unable to update project with id "
-                    f"'{project_id}': Found no"
-                    f"existing projects with this id."
+                    f"Unable to update workspace with id "
+                    f"'{workspace_id}': Found no"
+                    f"existing workspaces with this id."
                 )
             if (
-                existing_project.name == self._default_project_name
-                and "name" in project_update.__fields_set__
-                and project_update.name != existing_project.name
+                existing_workspace.name == self._default_workspace_name
+                and "name" in workspace_update.__fields_set__
+                and workspace_update.name != existing_workspace.name
             ):
                 raise IllegalOperationError(
-                    "The name of the default project cannot be changed."
+                    "The name of the default workspace cannot be changed."
                 )
 
-            # Update the project
-            existing_project.update(project_update=project_update)
-            session.add(existing_project)
+            # Update the workspace
+            existing_workspace.update(workspace_update=workspace_update)
+            session.add(existing_workspace)
             session.commit()
 
             # Refresh the Model that was just created
-            session.refresh(existing_project)
-            return existing_project.to_model()
+            session.refresh(existing_workspace)
+            return existing_workspace.to_model()
 
-    @track(AnalyticsEvent.DELETED_PROJECT)
-    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a project.
+    @track(AnalyticsEvent.DELETED_WORKSPACE)
+    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a workspace.
 
         Args:
-            project_name_or_id: Name or ID of the project to delete.
+            workspace_name_or_id: Name or ID of the workspace to delete.
 
         Raises:
-            IllegalOperationError: If the project is the default project.
+            IllegalOperationError: If the workspace is the default workspace.
         """
         with Session(self.engine) as session:
-            # Check if project with the given name exists
-            project = self._get_project_schema(
-                project_name_or_id, session=session
+            # Check if workspace with the given name exists
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id, session=session
             )
-            if project.name == self._default_project_name:
+            if workspace.name == self._default_workspace_name:
                 raise IllegalOperationError(
-                    "The default project cannot be deleted."
+                    "The default workspace cannot be deleted."
                 )
 
-            session.delete(project)
+            session.delete(workspace)
             session.commit()
 
     # ---------
@@ -2500,7 +2500,7 @@ class SqlZenStore(BaseZenStore):
         self,
         pipeline: PipelineRequestModel,
     ) -> PipelineResponseModel:
-        """Creates a new pipeline in a project.
+        """Creates a new pipeline in a workspace.
 
         Args:
             pipeline: The pipeline to create.
@@ -2516,19 +2516,19 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.project_id == pipeline.project)
+                .where(PipelineSchema.workspace_id == pipeline.workspace)
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
-                    f"Unable to create pipeline in project "
-                    f"'{pipeline.project}': A pipeline with this name "
+                    f"Unable to create pipeline in workspace "
+                    f"'{pipeline.workspace}': A pipeline with this name "
                     f"already exists."
                 )
 
             # Create the pipeline
             new_pipeline = PipelineSchema(
                 name=pipeline.name,
-                project_id=pipeline.project,
+                workspace_id=pipeline.workspace,
                 user_id=pipeline.user,
                 docstring=pipeline.docstring,
                 spec=pipeline.spec.json(sort_keys=True),
@@ -2567,15 +2567,15 @@ class SqlZenStore(BaseZenStore):
 
     def list_pipelines(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
     ) -> List[PipelineResponseModel]:
-        """List all pipelines in the project.
+        """List all pipelines in the workspace.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this
-                project.
+            workspace_name_or_id: If provided, only list pipelines in this
+                workspace.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
 
@@ -2583,13 +2583,13 @@ class SqlZenStore(BaseZenStore):
             A list of pipelines.
         """
         with Session(self.engine) as session:
-            # Check if project with the given name exists
+            # Check if workspace with the given name exists
             query = select(PipelineSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
+            if workspace_name_or_id is not None:
+                workspace = self._get_workspace_schema(
+                    workspace_name_or_id, session=session
                 )
-                query = query.where(PipelineSchema.project_id == project.id)
+                query = query.where(PipelineSchema.workspace_id == workspace.id)
 
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id, session=session)
@@ -2598,7 +2598,7 @@ class SqlZenStore(BaseZenStore):
             if name:
                 query = query.where(PipelineSchema.name == name)
 
-            # Get all pipelines in the project
+            # Get all pipelines in the workspace
             pipelines = session.exec(query).all()
             return [pipeline.to_model() for pipeline in pipelines]
 
@@ -2741,7 +2741,7 @@ class SqlZenStore(BaseZenStore):
                 name=pipeline_run.name,
                 orchestrator_run_id=pipeline_run.orchestrator_run_id,
                 stack_id=pipeline_run.stack,
-                project_id=pipeline_run.project,
+                workspace_id=pipeline_run.workspace,
                 user_id=pipeline_run.user,
                 pipeline_id=pipeline_run.pipeline,
                 status=pipeline_run.status,
@@ -2804,7 +2804,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_runs(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[UUID] = None,
         component_id: Optional[UUID] = None,
         run_name: Optional[str] = None,
@@ -2815,7 +2815,7 @@ class SqlZenStore(BaseZenStore):
         """Gets all pipeline runs.
 
         Args:
-            project_name_or_id: If provided, only return runs for this project.
+            workspace_name_or_id: If provided, only return runs for this workspace.
             stack_id: If provided, only return runs for this stack.
             component_id: Optionally filter for runs that used the
                           component
@@ -2832,11 +2832,11 @@ class SqlZenStore(BaseZenStore):
             self._sync_runs()
         with Session(self.engine) as session:
             query = select(PipelineRunSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
+            if workspace_name_or_id is not None:
+                workspace = self._get_workspace_schema(
+                    workspace_name_or_id, session=session
                 )
-                query = query.where(PipelineRunSchema.project_id == project.id)
+                query = query.where(PipelineRunSchema.workspace_id == workspace.id)
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
             if component_id:
@@ -3337,9 +3337,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             object_name_or_id: The name or ID of the object to query.
-            schema_class: The schema class to query. E.g., `ProjectSchema`.
+            schema_class: The schema class to query. E.g., `WorkspaceSchema`.
             schema_name: The name of the schema used for error messages.
-                E.g., "project".
+                E.g., "workspace".
             session: The database session to use.
 
         Returns:
@@ -3374,27 +3374,27 @@ class SqlZenStore(BaseZenStore):
             raise KeyError(error_msg)
         return schema
 
-    def _get_project_schema(
+    def _get_workspace_schema(
         self,
-        project_name_or_id: Union[str, UUID],
+        workspace_name_or_id: Union[str, UUID],
         session: Session,
-    ) -> ProjectSchema:
-        """Gets a project schema by name or ID.
+    ) -> WorkspaceSchema:
+        """Gets a workspace schema by name or ID.
 
         This is a helper method that is used in various places to find the
-        project associated to some other object.
+        workspace associated to some other object.
 
         Args:
-            project_name_or_id: The name or ID of the project to get.
+            workspace_name_or_id: The name or ID of the workspace to get.
             session: The database session to use.
 
         Returns:
-            The project schema.
+            The workspace schema.
         """
         return self._get_schema_by_name_or_id(
-            object_name_or_id=project_name_or_id,
-            schema_class=ProjectSchema,
-            schema_name="project",
+            object_name_or_id=workspace_name_or_id,
+            schema_class=WorkspaceSchema,
+            schema_name="workspace",
             session=session,
         )
 
@@ -3709,7 +3709,7 @@ class SqlZenStore(BaseZenStore):
         new_run = PipelineRunRequestModel(
             name=mlmd_run.name,
             mlmd_id=mlmd_run.mlmd_id,
-            project=mlmd_run.project or self._default_project.id,  # For legacy
+            workspace=mlmd_run.workspace or self._default_workspace.id,  # For legacy
             user=mlmd_run.user or self._default_user.id,  # For legacy
             stack=mlmd_run.stack_id,
             pipeline=mlmd_run.pipeline_id,

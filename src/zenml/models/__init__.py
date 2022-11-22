@@ -32,10 +32,10 @@ from zenml.models.pipeline_run_models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
 )
-from zenml.models.project_models import (
-    ProjectRequestModel,
-    ProjectResponseModel,
-    ProjectUpdateModel,
+from zenml.models.workspace_models import (
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
 from zenml.models.role_assignment_models import (
     RoleAssignmentRequestModel,
@@ -70,15 +70,15 @@ from zenml.models.user_models import (
 
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 StackResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 FlavorResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
 UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
@@ -89,23 +89,23 @@ RoleAssignmentResponseModel.update_forward_refs(
     RoleResponseModel=RoleResponseModel,
     TeamResponseModel=TeamResponseModel,
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
 PipelineResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
 PipelineRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
     PipelineResponseModel=PipelineResponseModel,
     StackResponseModel=StackResponseModel,
 )
 StepRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
 __all__ = [
@@ -123,9 +123,9 @@ __all__ = [
     "PipelineRunRequestModel",
     "PipelineRunResponseModel",
     "PipelineRunUpdateModel",
-    "ProjectRequestModel",
-    "ProjectResponseModel",
-    "ProjectUpdateModel",
+    "WorkspaceRequestModel",
+    "WorkspaceResponseModel",
+    "WorkspaceUpdateModel",
     "RoleAssignmentRequestModel",
     "RoleAssignmentResponseModel",
     "RoleRequestModel",

@@ -5,8 +5,8 @@ from pydantic import BaseModel, Field
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
     update,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
@@ -31,8 +31,8 @@ class PipelineBaseModel(BaseModel):
 # -------- #
 
 
-class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
-    """Pipeline model with User and Project fully hydrated."""
+class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
+    """Pipeline model with User and Workspace fully hydrated."""
 
     runs: Optional[List["PipelineRunResponseModel"]] = Field(
         title="A list of the last x Pipeline Runs."
@@ -47,7 +47,7 @@ class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
 # ------- #
 
 
-class PipelineRequestModel(PipelineBaseModel, ProjectScopedRequestModel):
+class PipelineRequestModel(PipelineBaseModel, WorkspaceScopedRequestModel):
     """Domain model representing a pipeline."""
 
 

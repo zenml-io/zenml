@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
 )
 from zenml.models.constants import MODEL_CONFIG_SCHEMA_MAX_LENGTH
 
@@ -40,7 +40,7 @@ class FlavorBaseModel(BaseModel):
 # -------- #
 
 
-class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
+class FlavorResponseModel(FlavorBaseModel, WorkspaceScopedResponseModel):
     """Domain model representing the custom implementation of a flavor."""
 
 
@@ -49,5 +49,5 @@ class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
 # ------- #
 
 
-class FlavorRequestModel(FlavorBaseModel, ProjectScopedRequestModel):
+class FlavorRequestModel(FlavorBaseModel, WorkspaceScopedRequestModel):
     """ """

@@ -42,7 +42,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_pipelines(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
@@ -50,7 +50,7 @@ def list_pipelines(
     """Gets a list of pipelines.
 
     Args:
-        project_name_or_id: Name or ID of the project to get pipelines for.
+        workspace_name_or_id: Name or ID of the workspace to get pipelines for.
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by pipeline name
 
@@ -58,7 +58,7 @@ def list_pipelines(
         List of pipeline objects.
     """
     return zen_store().list_pipelines(
-        project_name_or_id=project_name_or_id,
+        workspace_name_or_id=workspace_name_or_id,
         user_name_or_id=user_name_or_id,
         name=name,
     )
@@ -135,7 +135,7 @@ def delete_pipeline(
 @handle_exceptions
 def list_pipeline_runs(
     pipeline_id: UUID,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     stack_id: Optional[UUID] = None,
     run_name: Optional[str] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -146,7 +146,7 @@ def list_pipeline_runs(
 
     Args:
         pipeline_id: ID of the pipeline for which to list runs.
-        project_name_or_id: Name or ID of the project for which to filter runs.
+        workspace_name_or_id: Name or ID of the workspace for which to filter runs.
         stack_id: ID of the stack for which to filter runs.
         run_name: Filter by run name if provided
         user_name_or_id: If provided, only return runs for this user.
@@ -156,7 +156,7 @@ def list_pipeline_runs(
         The pipeline runs according to query filters.
     """
     return zen_store().list_runs(
-        project_name_or_id=project_name_or_id,
+        workspace_name_or_id=workspace_name_or_id,
         run_name=run_name,
         stack_id=stack_id,
         component_id=component_id,

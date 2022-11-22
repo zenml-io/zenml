@@ -33,8 +33,8 @@ from zenml.models import (
     FlavorRequestModel,
     PipelineRequestModel,
     PipelineUpdateModel,
-    ProjectRequestModel,
-    ProjectUpdateModel,
+    WorkspaceRequestModel,
+    WorkspaceUpdateModel,
     RoleAssignmentRequestModel,
     RoleRequestModel,
     RoleUpdateModel,
@@ -73,7 +73,7 @@ def test_project_creation_succeeds(
 ):
     """Tests project creation."""
     assert len(sql_store["store"].list_projects()) == 1
-    new_project = ProjectRequestModel(name="arias_project")
+    new_project = WorkspaceRequestModel(name="arias_project")
     sql_store["store"].create_project(new_project)
     projects_list = sql_store["store"].list_projects()
     assert len(projects_list) == 2
@@ -104,7 +104,7 @@ def test_updating_default_project_fails(
     """Tests updating the default project."""
     default_project = sql_store["store"].get_project(DEFAULT_PROJECT_NAME)
     assert default_project.name == DEFAULT_PROJECT_NAME
-    project_update = ProjectUpdateModel(
+    project_update = WorkspaceUpdateModel(
         name="aria_project",
         description="Aria has taken possession of this project.",
     )
@@ -118,11 +118,11 @@ def test_updating_project_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
     """Tests updating a project."""
-    new_project = ProjectRequestModel(name="arias_project")
+    new_project = WorkspaceRequestModel(name="arias_project")
     new_project = sql_store["store"].create_project(new_project)
 
     new_name = "axls_project"
-    project_update = ProjectUpdateModel(
+    project_update = WorkspaceUpdateModel(
         name=new_name, description="Axl has taken possession of this project."
     )
 
@@ -138,7 +138,7 @@ def test_updating_nonexisting_project_raises_error(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating a nonexistent project raises an error."""
-    project_update = ProjectUpdateModel(name="arias_project")
+    project_update = WorkspaceUpdateModel(name="arias_project")
     with pytest.raises(KeyError):
         sql_store["store"].update_project(
             project_id=uuid.uuid4(), project_update=project_update
@@ -149,7 +149,7 @@ def test_deleting_project_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
     """Tests deleting a project."""
-    new_project = ProjectRequestModel(name="axls_project")
+    new_project = WorkspaceRequestModel(name="axls_project")
     new_project = sql_store["store"].create_project(new_project)
     with does_not_raise():
         sql_store["store"].delete_project("axls_project")

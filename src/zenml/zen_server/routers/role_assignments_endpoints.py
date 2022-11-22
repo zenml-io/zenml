@@ -37,7 +37,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_role_assignments(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     role_name_or_id: Optional[Union[str, UUID]] = None,
     team_name_or_id: Optional[Union[str, UUID]] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -46,8 +46,8 @@ def list_role_assignments(
     """Returns a list of all role assignments.
 
     Args:
-        project_name_or_id: If provided, only list assignments for the given
-            project
+        workspace_name_or_id: If provided, only list assignments for the given
+            workspace
         role_name_or_id: If provided, only list assignments of the given
             role
         team_name_or_id: If provided, only list assignments for the given
@@ -59,7 +59,7 @@ def list_role_assignments(
         List of all role assignments.
     """
     return zen_store().list_role_assignments(
-        project_name_or_id=project_name_or_id,
+        workspace_name_or_id=workspace_name_or_id,
         role_name_or_id=role_name_or_id,
         team_name_or_id=team_name_or_id,
         user_name_or_id=user_name_or_id,

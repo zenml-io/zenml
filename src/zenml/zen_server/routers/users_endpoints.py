@@ -333,7 +333,7 @@ def email_opt_in_response(
 @handle_exceptions
 def get_role_assignments_for_user(
     user_name_or_id: Union[str, UUID],
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     role_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[RoleAssignmentResponseModel]:
@@ -341,8 +341,8 @@ def get_role_assignments_for_user(
 
     Args:
         user_name_or_id: Name or ID of the user.
-        project_name_or_id: If provided, only list roles that are limited to
-            the given project.
+        workspace_name_or_id: If provided, only list roles that are limited to
+            the given workspace.
         role_name_or_id: If provided, only list assignments of the given
             role
 
@@ -351,7 +351,7 @@ def get_role_assignments_for_user(
     """
     return zen_store().list_role_assignments(
         user_name_or_id=user_name_or_id,
-        project_name_or_id=project_name_or_id,
+        workspace_name_or_id=workspace_name_or_id,
         role_name_or_id=role_name_or_id,
     )
 

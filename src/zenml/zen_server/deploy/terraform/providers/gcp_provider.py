@@ -31,7 +31,7 @@ class GCPServerDeploymentConfig(TerraformServerDeploymentConfig):
     """GCP server deployment configuration.
 
     Attributes:
-        project_id: The project in GCP to deploy the server to.
+        workspace_id: The workspace in GCP to deploy the server to.
         region: The GCP region to deploy to.
         cloudsql_name: The name of the CloudSQL instance to create
         db_name: Name of CloudSQL database to create.
@@ -39,7 +39,7 @@ class GCPServerDeploymentConfig(TerraformServerDeploymentConfig):
         db_disk_size: Allocated storage of CloudSQL database to create.
     """
 
-    project_id: str
+    workspace_id: str
     region: str = "europe-west3"
     cloudsql_name: str = "zenmlserver"
     db_name: str = "zenmlserver"

@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field
 from zenml import __version__ as current_zenml_version
 from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
     update,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
@@ -74,9 +74,9 @@ class PipelineRunBaseModel(BaseModel):
 
 
 class PipelineRunResponseModel(
-    PipelineRunBaseModel, ProjectScopedResponseModel
+    PipelineRunBaseModel, WorkspaceScopedResponseModel
 ):
-    """Pipeline model with User and Project fully hydrated."""
+    """Pipeline model with User and Workspace fully hydrated."""
 
     status: ExecutionStatus = Field(title="The status of the run.")
 
@@ -93,7 +93,7 @@ class PipelineRunResponseModel(
 # ------- #
 
 
-class PipelineRunRequestModel(PipelineRunBaseModel, ProjectScopedRequestModel):
+class PipelineRunRequestModel(PipelineRunBaseModel, WorkspaceScopedRequestModel):
     """Domain Model representing a pipeline run."""
 
     id: UUID

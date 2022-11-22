@@ -22,7 +22,7 @@ from sqlmodel import Field, Relationship
 from zenml.enums import StackComponentType
 from zenml.models.flavor_models import FlavorResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
@@ -44,15 +44,15 @@ class FlavorSchema(NamedSchema, table=True):
     config_schema: str = Field(sa_column=Column(String(4096)), nullable=False)
     integration: Optional[str] = Field(default="")
 
-    project_id: UUID = build_foreign_key_field(
+    workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="flavors")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="flavors")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -78,7 +78,7 @@ class FlavorSchema(NamedSchema, table=True):
             config_schema=self.config_schema,
             integration=self.integration,
             user=self.user.to_model(),
-            project=self.project.to_model(),
+            workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
         )

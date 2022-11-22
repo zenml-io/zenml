@@ -43,7 +43,7 @@ types_router = APIRouter(
 )
 @handle_exceptions
 def list_stack_components(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
     type: Optional[str] = None,
     name: Optional[str] = None,
@@ -56,7 +56,7 @@ def list_stack_components(
     """Get a list of all stack components for a specific type.
 
     Args:
-        project_name_or_id: Name or ID of the project
+        workspace_name_or_id: Name or ID of the workspace
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by component name
         type: Optionally filter by component type
@@ -72,7 +72,7 @@ def list_stack_components(
     components = zen_store().list_stack_components(
         name=name,
         user_name_or_id=user_name_or_id or auth_context.user.id,
-        project_name_or_id=project_name_or_id,
+        workspace_name_or_id=workspace_name_or_id,
         flavor_name=flavor_name,
         type=type,
         is_shared=False,
@@ -80,7 +80,7 @@ def list_stack_components(
     # In case the user didn't explicitly filter for is shared == False
     if is_shared is None or is_shared:
         shared_components = zen_store().list_stack_components(
-            project_name_or_id=project_name_or_id,
+            workspace_name_or_id=workspace_name_or_id,
             user_name_or_id=user_name_or_id,
             flavor_name=flavor_name,
             name=name,

@@ -1176,7 +1176,7 @@ from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.pipeline import *  # noqa
-from zenml.cli.project import *  # noqa
+from zenml.cli.workspace import *  # noqa
 from zenml.cli.role import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.server import *  # noqa

@@ -46,7 +46,7 @@ from zenml.utils.analytics_utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models import ProjectResponseModel, StackResponseModel
+    from zenml.models import WorkspaceResponseModel, StackResponseModel
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -132,7 +132,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             global config.
         store: Store configuration.
         active_stack_id: The ID of the active stack.
-        active_project_name: The name of the active project.
+        active_workspace_name: The name of the active workspace.
         jwt_secret_key: The secret key used to sign and verify JWT tokens.
         _config_path: Directory where the global config file is stored.
     """
@@ -144,12 +144,12 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     version: Optional[str]
     store: Optional[StoreConfiguration]
     active_stack_id: Optional[uuid.UUID]
-    active_project_name: Optional[str]
+    active_workspace_name: Optional[str]
     jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
-    _active_project: Optional["ProjectResponseModel"] = None
+    _active_workspace: Optional["WorkspaceResponseModel"] = None
 
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
@@ -410,15 +410,15 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     def _sanitize_config(self) -> None:
         """Sanitize and save the global configuration.
 
-        This method is called to ensure that the active stack and project
+        This method is called to ensure that the active stack and workspace
         are set to their default values, if possible.
         """
-        active_project, active_stack = self.zen_store.validate_active_config(
-            self.active_project_name,
+        active_workspace, active_stack = self.zen_store.validate_active_config(
+            self.active_workspace_name,
             self.active_stack_id,
             config_name="global",
         )
-        self.set_active_project(active_project)
+        self.set_active_workspace(active_workspace)
         self.set_active_stack(active_stack)
 
     @staticmethod
@@ -655,26 +655,26 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         return self._zen_store
 
-    def set_active_project(self, project: "ProjectResponseModel") -> None:
-        """Set the project for the local client.
+    def set_active_workspace(self, workspace: "WorkspaceResponseModel") -> None:
+        """Set the workspace for the local client.
 
         Args:
-            project: The project to set active.
+            workspace: The workspace to set active.
         """
-        self.active_project_name = project.name
-        self._active_project = project
+        self.active_workspace_name = workspace.name
+        self._active_workspace = workspace
 
     def set_active_stack(self, stack: "StackResponseModel") -> None:
         self.active_stack_id = stack.id
 
-    def get_active_project(self):
-        project_name = self.get_active_project_name()
+    def get_active_workspace(self):
+        workspace_name = self.get_active_workspace_name()
 
-        if self._active_project is None:
-            project = self.zen_store.get_project(
-                project_name_or_id=project_name,
+        if self._active_workspace is None:
+            workspace = self.zen_store.get_workspace(
+                workspace_name_or_id=workspace_name,
             )
-            self.set_active_project(project)
+            self.set_active_workspace(project)
 
         return self._active_project
 

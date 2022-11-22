@@ -408,10 +408,10 @@ def print_active_config() -> None:
         declare(f"Using the SQL database: '{gc.store.url}'.")
     elif gc.store.type == StoreType.REST:
         declare(f"Connected to the ZenML server: '{gc.store.url}'")
-    if gc.get_active_project_name():
+    if gc.get_active_workspace_name():
         scope = "repository" if client.uses_local_configuration else "global"
         declare(
-            f"Running with active project: '{gc.get_active_project_name()}' "
+            f"Running with active workspace: '{gc.get_active_workspace_name()}' "
             f"({scope})"
         )
 
@@ -1006,11 +1006,11 @@ def print_pipeline_runs_table(
     print_table(runs_dicts)
 
 
-def warn_unsupported_non_default_project() -> None:
-    """Warning for unsupported non-default project."""
+def warn_unsupported_non_default_workspace() -> None:
+    """Warning for unsupported non-default workspace."""
     warning(
-        "Currently the concept of `project` is not supported "
-        "within the Dashboard. The Project functionality will be "
+        "Currently the concept of `workspace` is not supported "
+        "within the Dashboard. The Workspace functionality will be "
         "completed in the coming weeks. For the time being it "
-        "is recommended to stay within the `default` project."
+        "is recommended to stay within the `default` workspace."
     )

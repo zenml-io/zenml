@@ -27,7 +27,7 @@ from zenml.models.component_models import (
     ComponentUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -45,15 +45,15 @@ class StackComponentSchema(ShareableSchema, table=True):
     flavor: str
     configuration: bytes
 
-    project_id: UUID = build_foreign_key_field(
+    workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="components")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="components")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -72,7 +72,7 @@ class StackComponentSchema(ShareableSchema, table=True):
         self, component_update: ComponentUpdateModel
     ) -> "StackComponentSchema":
         for field, value in component_update.dict(
-            exclude_unset=True, exclude={"project", "user"}
+            exclude_unset=True, exclude={"workspace", "user"}
         ).items():
             if field == "configuration":
                 self.configuration = base64.b64encode(
@@ -96,7 +96,7 @@ class StackComponentSchema(ShareableSchema, table=True):
             type=self.type,
             flavor=self.flavor,
             user=self.user.to_model(),
-            project=self.project.to_model(),
+            workspace=self.workspace.to_model(),
             is_shared=self.is_shared,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()

@@ -64,7 +64,7 @@ def list_pipelines() -> None:
 
     cli_utils.print_pydantic_models(
         pipelines,
-        exclude_columns=["id", "created", "updated", "user", "project"],
+        exclude_columns=["id", "created", "updated", "user", "workspace"],
     )
 
 

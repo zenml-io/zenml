@@ -44,7 +44,7 @@ class MLMDPipelineRunModel(BaseModel):
 
     mlmd_id: int
     name: str
-    project: Optional[UUID]
+    workspace: Optional[UUID]
     user: Optional[UUID]
     pipeline_id: Optional[UUID]
     stack_id: Optional[UUID]
@@ -273,7 +273,7 @@ class MetadataStore:
         self, context: proto.Context
     ) -> MLMDPipelineRunModel:
 
-        project, user, pipeline_id, stack_id = None, None, None, None
+        workspace, user, pipeline_id, stack_id = None, None, None, None
         pipeline_configuration = {}
         num_steps = None
 
@@ -289,7 +289,7 @@ class MetadataStore:
                         MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME
                     ).string_value
                 )
-                project = model_ids.get("project_id")
+                workspace = model_ids.get("workspace_id")
                 user = model_ids.get("user_id")
                 pipeline_id = model_ids.get("pipeline_id")
                 stack_id = model_ids.get("stack_id")
@@ -311,7 +311,7 @@ class MetadataStore:
         return MLMDPipelineRunModel(
             mlmd_id=context.id,
             name=context.name,
-            project=project,
+            workspace=workspace,
             user=user,
             pipeline_id=pipeline_id,
             stack_id=stack_id,

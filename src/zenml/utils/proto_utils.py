@@ -80,7 +80,7 @@ def add_mlmd_contexts(
     model_ids = json.dumps(
         {
             "user_id": client.active_user.id,
-            "project_id": client.active_project.id,
+            "workspace_id": client.active_workspace.id,
             "pipeline_id": deployment.pipeline_id,
             "stack_id": deployment.stack_id,
         },

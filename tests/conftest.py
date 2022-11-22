@@ -43,8 +43,8 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
     ArtifactResponseModel,
     PipelineRunResponseModel,
-    ProjectRequestModel,
-    ProjectResponseModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
     RoleRequestModel,
     StepRunResponseModel,
     TeamRequestModel,
@@ -361,7 +361,7 @@ def sql_store_with_user_team_role() -> Dict[
     new_user = UserRequestModel(name="axl")
     new_user = store.create_user(new_user)
 
-    new_project = ProjectRequestModel(name="axl_prj")
+    new_project = WorkspaceRequestModel(name="axl_prj")
     new_project = store.create_project(new_project)
 
     yield {
@@ -651,9 +651,9 @@ def sample_user_model() -> UserResponseModel:
 
 
 @pytest.fixture
-def sample_project_model() -> ProjectResponseModel:
+def sample_project_model() -> WorkspaceResponseModel:
     """Return a sample project model for testing purposes"""
-    return ProjectResponseModel(
+    return WorkspaceResponseModel(
         id=uuid4(),
         name="axl",
         created=datetime.now(),
@@ -664,7 +664,7 @@ def sample_project_model() -> ProjectResponseModel:
 @pytest.fixture
 def sample_step_model(
     sample_user_model: UserResponseModel,
-    sample_project_model: ProjectResponseModel,
+    sample_project_model: WorkspaceResponseModel,
 ) -> StepRunResponseModel:
     """Return a sample step model for testing purposes"""
     return StepRunResponseModel(
@@ -697,7 +697,7 @@ def sample_step_view(sample_step_model) -> StepView:
 @pytest.fixture
 def sample_pipeline_run_model(
     sample_user_model: UserResponseModel,
-    sample_project_model: ProjectResponseModel,
+    sample_project_model: WorkspaceResponseModel,
 ) -> PipelineRunResponseModel:
     """Return sample pipeline run view for testing purposes"""
     return PipelineRunResponseModel(

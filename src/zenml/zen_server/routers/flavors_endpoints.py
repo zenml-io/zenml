@@ -38,7 +38,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_flavors(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     component_type: Optional[StackComponentType] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
@@ -48,7 +48,7 @@ def list_flavors(
     """Returns all flavors.
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
         component_type: Optionally filter by component type.
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by flavor name.
@@ -58,7 +58,7 @@ def list_flavors(
         All flavors.
     """
     return zen_store().list_flavors(
-        project_name_or_id=project_name_or_id,
+        workspace_name_or_id=workspace_name_or_id,
         component_type=component_type,
         user_name_or_id=user_name_or_id,
         is_shared=is_shared,

@@ -38,7 +38,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_stacks(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[UUID] = None,
     name: Optional[str] = None,
@@ -50,7 +50,7 @@ def list_stacks(
     """Returns all stacks.
 
     Args:
-        project_name_or_id: Name or ID of the project
+        workspace_name_or_id: Name or ID of the workspace
         user_name_or_id: Optionally filter by name or ID of the user.
         component_id: Optionally filter by component that is part of the stack.
         name: Optionally filter by stack name
@@ -61,7 +61,7 @@ def list_stacks(
         All stacks.
     """
     stacks = zen_store().list_stacks(
-        project_name_or_id=project_name_or_id,
+        workspace_name_or_id=workspace_name_or_id,
         user_name_or_id=user_name_or_id or auth_context.user.id,
         component_id=component_id,
         is_shared=False,
@@ -70,7 +70,7 @@ def list_stacks(
     # In case the user didn't explicitly filter for is shared == False
     if is_shared is None or is_shared:
         shared_stacks = zen_store().list_stacks(
-            project_name_or_id=project_name_or_id,
+            workspace_name_or_id=workspace_name_or_id,
             user_name_or_id=user_name_or_id,
             component_id=component_id,
             is_shared=True,

@@ -51,7 +51,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_runs(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     stack_id: Optional[UUID] = None,
     run_name: Optional[str] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -63,7 +63,7 @@ def list_runs(
     """Get pipeline runs according to query filters.
 
     Args:
-        project_name_or_id: Name or ID of the project for which to filter runs.
+        workspace_name_or_id: Name or ID of the workspace for which to filter runs.
         stack_id: ID of the stack for which to filter runs.
         run_name: Filter by run name if provided
         user_name_or_id: If provided, only return runs for this user.
@@ -76,7 +76,7 @@ def list_runs(
         The pipeline runs according to query filters.
     """
     return zen_store().list_runs(
-        project_name_or_id=project_name_or_id,
+        workspace_name_or_id=workspace_name_or_id,
         run_name=run_name,
         stack_id=stack_id,
         component_id=component_id,

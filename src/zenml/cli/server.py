@@ -564,7 +564,7 @@ def status() -> None:
     scope = "repository" if client.uses_local_configuration else "global"
     cli_utils.declare(f"The current user is: '{client.active_user.name}'")
     cli_utils.declare(
-        f"The active project is: '{client.active_project.name}' " f"({scope})"
+        f"The active workspace is: '{client.active_workspace.name}' " f"({scope})"
     )
     cli_utils.declare(
         f"The active stack is: '{client.active_stack_model.name}' ({scope})"
@@ -659,8 +659,8 @@ def status() -> None:
     type=str,
 )
 @click.option(
-    "--project",
-    help="The project to use when connecting to the ZenML server.",
+    "--workspace",
+    help="The workspace to use when connecting to the ZenML server.",
     required=False,
     type=str,
 )
@@ -694,7 +694,7 @@ def connect(
     url: Optional[str] = None,
     username: Optional[str] = None,
     password: Optional[str] = None,
-    project: Optional[str] = None,
+    workspace: Optional[str] = None,
     no_verify_ssl: bool = False,
     ssl_ca_cert: Optional[str] = None,
     config: Optional[str] = None,
@@ -708,7 +708,7 @@ def connect(
             server.
         password: The password that is used to authenticate with the ZenML
             server.
-        project: The active project that is used to connect to the ZenML
+        workspace: The active workspace that is used to connect to the ZenML
             server.
         no_verify_ssl: Whether to verify the server's TLS certificate.
         ssl_ca_cert: A path to a CA bundle to use to verify the server's TLS
@@ -791,12 +791,12 @@ def connect(
     store_config = store_config_class.parse_obj(store_dict)
     GlobalConfiguration().set_store(store_config)
 
-    if project:
+    if workspace:
         try:
-            Client().set_active_project(project_name_or_id=project)
+            Client().set_active_workspace(workspace_name_or_id=workspace)
         except KeyError:
             cli_utils.warning(
-                f"The project {project} does not exist or is not accessible. "
+                f"The workspace {project} does not exist or is not accessible. "
                 f"Please set another project by running `zenml "
                 f"project set`."
             )

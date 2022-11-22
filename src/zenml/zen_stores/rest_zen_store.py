@@ -48,7 +48,7 @@ from zenml.constants import (
     METADATA_CONFIG,
     METADATA_SYNC,
     PIPELINES,
-    PROJECTS,
+    WORKSPACES,
     ROLE_ASSIGNMENTS,
     ROLES,
     RUNS,
@@ -84,9 +84,9 @@ from zenml.models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
-    ProjectRequestModel,
-    ProjectResponseModel,
-    ProjectUpdateModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     RoleRequestModel,
@@ -107,8 +107,8 @@ from zenml.models import (
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
 )
 from zenml.models.server_models import ServerModel
 from zenml.models.team_models import TeamUpdateModel
@@ -134,12 +134,12 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
 AnyProjestRequestModel = TypeVar(
-    "AnyProjestRequestModel", bound=ProjectScopedRequestModel
+    "AnyProjestRequestModel", bound=WorkspaceScopedRequestModel
 )
 
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 AnyProjestResponseModel = TypeVar(
-    "AnyProjestResponseModel", bound=ProjectScopedResponseModel
+    "AnyProjestResponseModel", bound=WorkspaceScopedResponseModel
 )
 
 DEFAULT_HTTP_TIMEOUT = 30
@@ -459,7 +459,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The registered stack.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=stack,
             route=STACKS,
             response_model=StackResponseModel,
@@ -482,7 +482,7 @@ class RestZenStore(BaseZenStore):
 
     def list_stacks(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
@@ -491,7 +491,7 @@ class RestZenStore(BaseZenStore):
         """List all stacks matching the given filter criteria.
 
         Args:
-            project_name_or_id: ID or name of the Project containing the stack
+            workspace_name_or_id: ID or name of the Workspace containing the stack
             user_name_or_id: Optionally filter stacks by their owner
             component_id: Optionally filter for stacks that contain the
                           component
@@ -563,7 +563,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created stack component.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=component,
             route=STACK_COMPONENTS,
             response_model=ComponentResponseModel,
@@ -586,7 +586,7 @@ class RestZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
@@ -596,7 +596,7 @@ class RestZenStore(BaseZenStore):
         """List all stack components matching the given filter criteria.
 
         Args:
-            project_name_or_id: The ID or name of the Project to which the stack
+            workspace_name_or_id: The ID or name of the Workspace to which the stack
                 components belong
             type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor
@@ -664,7 +664,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created flavor.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=flavor,
             route=FLAVORS,
             response_model=FlavorResponseModel,
@@ -687,7 +687,7 @@ class RestZenStore(BaseZenStore):
 
     def list_flavors(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
@@ -696,7 +696,7 @@ class RestZenStore(BaseZenStore):
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            project_name_or_id: Optionally filter by the Project to which the
+            workspace_name_or_id: Optionally filter by the Workspace to which the
                 component flavors belong
             user_name_or_id: Optionally filter by the owner
             component_type: Optionally filter by type of stack component
@@ -1014,7 +1014,7 @@ class RestZenStore(BaseZenStore):
 
     def list_role_assignments(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -1022,8 +1022,8 @@ class RestZenStore(BaseZenStore):
         """List all role assignments.
 
         Args:
-            project_name_or_id: If provided, only list assignments for the given
-                project
+            workspace_name_or_id: If provided, only list assignments for the given
+                workspace
             role_name_or_id: If provided, only list assignments of the given
                 role
             team_name_or_id: If provided, only list assignments for the given
@@ -1036,7 +1036,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._list_resources(
             route=f"{ROLE_ASSIGNMENTS}",
-            project_name_or_id=project_name_or_id,
+            workspace_name_or_id=workspace_name_or_id,
             role_name_or_id=role_name_or_id,
             team_name_or_id=team_name_or_id,
             user_name_or_id=user_name_or_id,
@@ -1052,7 +1052,7 @@ class RestZenStore(BaseZenStore):
             role_assignment_id: Name or ID of the role assignment to get.
 
         Returns:
-            The requested project.
+            The requested workspace.
         """
         return self._get_resource(
             resource_id=role_assignment_id,
@@ -1080,7 +1080,7 @@ class RestZenStore(BaseZenStore):
             role_assignment: The role assignment to create.
 
         Returns:
-            The newly created project.
+            The newly created workspace.
         """
         return self._create_resource(
             resource=role_assignment,
@@ -1089,93 +1089,93 @@ class RestZenStore(BaseZenStore):
         )
 
     # --------
-    # Projects
+    # Workspaces
     # --------
 
-    @track(AnalyticsEvent.CREATED_PROJECT)
-    def create_project(
-        self, project: ProjectRequestModel
-    ) -> ProjectResponseModel:
-        """Creates a new project.
+    @track(AnalyticsEvent.CREATED_WORKSPACE)
+    def create_workspace(
+        self, workspace: WorkspaceRequestModel
+    ) -> WorkspaceResponseModel:
+        """Creates a new workspace.
 
         Args:
-            project: The project to create.
+            workspace: The workspace to create.
 
         Returns:
-            The newly created project.
+            The newly created workspace.
         """
         return self._create_resource(
-            resource=project,
-            route=PROJECTS,
-            response_model=ProjectResponseModel,
+            resource=workspace,
+            route=WORKSPACES,
+            response_model=WorkspaceResponseModel,
         )
 
-    def get_project(
-        self, project_name_or_id: Union[UUID, str]
-    ) -> ProjectResponseModel:
-        """Get an existing project by name or ID.
+    def get_workspace(
+        self, workspace_name_or_id: Union[UUID, str]
+    ) -> WorkspaceResponseModel:
+        """Get an existing workspace by name or ID.
 
         Args:
-            project_name_or_id: Name or ID of the project to get.
+            workspace_name_or_id: Name or ID of the workspace to get.
 
         Returns:
-            The requested project.
+            The requested workspace.
         """
         return self._get_resource(
-            resource_id=project_name_or_id,
-            route=PROJECTS,
-            response_model=ProjectResponseModel,
+            resource_id=workspace_name_or_id,
+            route=WORKSPACES,
+            response_model=WorkspaceResponseModel,
         )
 
-    def list_projects(
+    def list_workspaces(
         self, name: Optional[str] = None
-    ) -> List[ProjectResponseModel]:
-        """List all projects.
+    ) -> List[WorkspaceResponseModel]:
+        """List all workspaces.
 
         Args:
             name: Optionally filter by name
 
         Returns:
-            A list of all projects.
+            A list of all workspaces.
         """
         filters = locals()
         filters.pop("self")
         return self._list_resources(
-            route=PROJECTS,
-            response_model=ProjectResponseModel,
+            route=WORKSPACES,
+            response_model=WorkspaceResponseModel,
             **filters,
         )
 
-    @track(AnalyticsEvent.UPDATED_PROJECT)
-    def update_project(
-        self, project_id: UUID, project_update: ProjectUpdateModel
-    ) -> ProjectResponseModel:
-        """Update an existing project.
+    @track(AnalyticsEvent.UPDATED_WORKSPACE)
+    def update_workspace(
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
+    ) -> WorkspaceResponseModel:
+        """Update an existing workspace.
 
         Args:
-            project_id: The ID of the project to be updated.
-            project_update: The update to be applied to the project.
+            workspace_id: The ID of the workspace to be updated.
+            workspace_update: The update to be applied to the workspace.
 
         Returns:
-            The updated project.
+            The updated workspace.
         """
         return self._update_resource(
-            resource_id=project_id,
-            resource_update=project_update,
-            route=PROJECTS,
-            response_model=ProjectResponseModel,
+            resource_id=workspace_id,
+            resource_update=workspace_update,
+            route=WORKSPACES,
+            response_model=WorkspaceResponseModel,
         )
 
-    @track(AnalyticsEvent.DELETED_PROJECT)
-    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a project.
+    @track(AnalyticsEvent.DELETED_WORKSPACE)
+    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a workspace.
 
         Args:
-            project_name_or_id: Name or ID of the project to delete.
+            workspace_name_or_id: Name or ID of the workspace to delete.
         """
         self._delete_resource(
-            resource_id=project_name_or_id,
-            route=PROJECTS,
+            resource_id=workspace_name_or_id,
+            route=WORKSPACES,
         )
 
     # ---------
@@ -1186,7 +1186,7 @@ class RestZenStore(BaseZenStore):
     def create_pipeline(
         self, pipeline: PipelineRequestModel
     ) -> PipelineResponseModel:
-        """Creates a new pipeline in a project.
+        """Creates a new pipeline in a workspace.
 
         Args:
             pipeline: The pipeline to create.
@@ -1194,7 +1194,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created pipeline.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=pipeline,
             route=PIPELINES,
             response_model=PipelineResponseModel,
@@ -1217,15 +1217,15 @@ class RestZenStore(BaseZenStore):
 
     def list_pipelines(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
     ) -> List[PipelineResponseModel]:
-        """List all pipelines in the project.
+        """List all pipelines in the workspace.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this
-            project.
+            workspace_name_or_id: If provided, only list pipelines in this
+            workspace.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
 
@@ -1287,7 +1287,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created pipeline run.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=pipeline_run,
             response_model=PipelineRunResponseModel,
             route=RUNS,
@@ -1325,13 +1325,13 @@ class RestZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=pipeline_run, route=RUNS, params={"get_if_exists": True}
         )
 
     def list_runs(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[UUID] = None,
         component_id: Optional[UUID] = None,
         run_name: Optional[str] = None,
@@ -1342,7 +1342,7 @@ class RestZenStore(BaseZenStore):
         """Gets all pipeline runs.
 
         Args:
-            project_name_or_id: If provided, only return runs for this project.
+            workspace_name_or_id: If provided, only return runs for this workspace.
             stack_id: If provided, only return runs for this stack.
             component_id: Optionally filter for runs that used the
                           component
@@ -1838,14 +1838,14 @@ class RestZenStore(BaseZenStore):
         response_body = self.post(f"{route}", body=resource, params=params)
         return response_model.parse_obj(response_body)
 
-    def _create_project_scoped_resource(
+    def _create_workspace_scoped_resource(
         self,
-        resource: ProjectScopedRequestModel,
+        resource: WorkspaceScopedRequestModel,
         response_model: Type[AnyProjestResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
     ) -> AnyProjestResponseModel:
-        """Create a new project scoped resource.
+        """Create a new workspace scoped resource.
 
         Args:
             resource: The resource to create.
@@ -1860,7 +1860,7 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=resource,
             response_model=response_model,
-            route=f"{PROJECTS}/{str(resource.project)}{route}",
+            route=f"{WORKSPACES}/{str(resource.workspace)}{route}",
             params=params,
         )
 

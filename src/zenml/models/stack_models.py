@@ -41,7 +41,7 @@ class StackBaseModel(BaseModel):
 
 
 class StackResponseModel(StackBaseModel, ShareableResponseModel):
-    """Stack model with Components, User and Project fully hydrated."""
+    """Stack model with Components, User and Workspace fully hydrated."""
 
     components: Dict[StackComponentType, List[ComponentResponseModel]] = Field(
         title="A mapping of stack component types to the actual"
@@ -71,7 +71,7 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
         component_data = {}
         for component_type, components_list in self.components.items():
             component_dict = json.loads(components_list[0].json())
-            component_dict.pop("project")  # Not needed in the yaml repr
+            component_dict.pop("workspace")  # Not needed in the yaml repr
             component_dict.pop("created")  # Not needed in the yaml repr
             component_dict.pop("updated")  # Not needed in the yaml repr
             component_data[component_type.value] = component_dict

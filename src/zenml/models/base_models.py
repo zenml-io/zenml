@@ -21,7 +21,7 @@ from pydantic import Field
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 if TYPE_CHECKING:
-    from zenml.models.project_models import ProjectResponseModel
+    from zenml.models.workspace_models import WorkspaceResponseModel
     from zenml.models.user_models import UserResponseModel
 
 # --------------- #
@@ -78,28 +78,28 @@ class UserScopedResponseModel(BaseResponseModel):
     )
 
 
-class ProjectScopedResponseModel(UserScopedResponseModel):
-    """Base project-scoped domain model.
+class WorkspaceScopedResponseModel(UserScopedResponseModel):
+    """Base workspace-scoped domain model.
 
-    Used as a base class for all domain models that are project-scoped.
+    Used as a base class for all domain models that are workspace-scoped.
     """
 
-    project: ForwardRef("ProjectResponseModel") = Field(
-        title="The project of this resource."
+    workspace: ForwardRef("WorkspaceResponseModel") = Field(
+        title="The workspace of this resource."
     )
 
 
-class ShareableResponseModel(ProjectScopedResponseModel):
-    """Base shareable project-scoped domain model.
+class ShareableResponseModel(WorkspaceScopedResponseModel):
+    """Base shareable workspace-scoped domain model.
 
-    Used as a base class for all domain models that are project-scoped and are
+    Used as a base class for all domain models that are workspace-scoped and are
     shareable.
     """
 
     is_shared: bool = Field(
         title=(
             "Flag describing if this resource is shared with other users in "
-            "the same project."
+            "the same workspace."
         ),
     )
 
@@ -122,19 +122,19 @@ class UserOwnedRequestModel(BaseRequestModel):
     user: UUID = Field(title="The id of the user that created this resource.")
 
 
-class ProjectScopedRequestModel(UserOwnedRequestModel):
-    """Base project-scoped domain model.
+class WorkspaceScopedRequestModel(UserOwnedRequestModel):
+    """Base workspace-scoped domain model.
 
-    Used as a base class for all domain models that are project-scoped.
+    Used as a base class for all domain models that are workspace-scoped.
     """
 
-    project: UUID = Field(title="The project to which this resource belongs.")
+    workspace: UUID = Field(title="The workspace to which this resource belongs.")
 
 
-class ShareableRequestModel(ProjectScopedRequestModel):
-    """Base shareable project-scoped domain model.
+class ShareableRequestModel(WorkspaceScopedRequestModel):
+    """Base shareable workspace-scoped domain model.
 
-    Used as a base class for all domain models that are project-scoped and are
+    Used as a base class for all domain models that are workspace-scoped and are
     shareable.
     """
 
@@ -142,7 +142,7 @@ class ShareableRequestModel(ProjectScopedRequestModel):
         default=False,
         title=(
             "Flag describing if this resource is shared with other users in "
-            "the same project."
+            "the same workspace."
         ),
     )
 

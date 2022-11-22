@@ -24,16 +24,16 @@ from zenml.models.constants import (
 # ---- #
 # BASE #
 # ---- #
-class ProjectBaseModel(BaseModel):
+class WorkspaceBaseModel(BaseModel):
     """"""
 
     name: str = Field(
-        title="The unique name of the project.",
+        title="The unique name of the workspace.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     description: str = Field(
         default="",
-        title="The description of the project.",
+        title="The description of the workspace.",
         max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
 
@@ -43,7 +43,7 @@ class ProjectBaseModel(BaseModel):
 # -------- #
 
 
-class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
+class WorkspaceResponseModel(WorkspaceBaseModel, BaseResponseModel):
     """"""
 
 
@@ -52,7 +52,7 @@ class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
 # ------- #
 
 
-class ProjectRequestModel(ProjectBaseModel, BaseRequestModel):
+class WorkspaceRequestModel(WorkspaceBaseModel, BaseRequestModel):
     """"""
 
 
@@ -62,5 +62,5 @@ class ProjectRequestModel(ProjectBaseModel, BaseRequestModel):
 
 
 @update
-class ProjectUpdateModel(ProjectRequestModel):
+class WorkspaceUpdateModel(WorkspaceRequestModel):
     """"""

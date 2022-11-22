@@ -132,7 +132,7 @@ def test_pipeline_export_delete_import(
     sample_artifact_model,
 ) -> None:
     """Tests exporting, deleting and importing a pipeline run."""
-    sample_pipeline_run_model.project = clean_client.active_project.id
+    sample_pipeline_run_model.workspace = clean_client.active_project.id
     sample_pipeline_run_model.user = clean_client.active_user.id
     sample_step_model.pipeline_run_id = sample_pipeline_run_model.id
     sample_artifact_model.parent_step_id = sample_step_model.id

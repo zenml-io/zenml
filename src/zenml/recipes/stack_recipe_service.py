@@ -33,7 +33,7 @@ DATABASE_HOST_OUTPUT = "metadata-db-host"
 DATABASE_USERNAME_OUTPUT = "metadata-db-username"
 DATABASE_PASSWORD_OUTPUT = "metadata-db-password"
 INGRESS_CONTROLLER_HOST_OUTPUT = "ingress-controller-host"
-PROJECT_ID_OUTPUT = "project-id"
+WORKSPACE_ID_OUTPUT = "workspace-id"
 ZENML_VERSION_VARIABLE = "zenml-version"
 
 
@@ -217,7 +217,7 @@ class StackRecipeService(TerraformService):
 
         if provider == "gcp":
             config["project_id"] = self.terraform_client.output(
-                PROJECT_ID_OUTPUT, full_value=True
+                WORKSPACE_ID_OUTPUT, full_value=True
             )
 
         return cast(str, yaml.dump(config))

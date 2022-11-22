@@ -146,20 +146,20 @@ def delete_team(
 @handle_exceptions
 def get_role_assignments_for_team(
     team_name_or_id: Union[str, UUID],
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[RoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a team.
 
     Args:
         team_name_or_id: Name or ID of the team.
-        project_name_or_id: If provided, only list roles that are limited to
-            the given project.
+        workspace_name_or_id: If provided, only list roles that are limited to
+            the given workspace.
 
     Returns:
         A list of all roles that are assigned to a team.
     """
     return zen_store().list_role_assignments(
         team_name_or_id=team_name_or_id,
-        project_name_or_id=project_name_or_id,
+        workspace_name_or_id=workspace_name_or_id,
     )
