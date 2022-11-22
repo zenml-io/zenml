@@ -3225,6 +3225,7 @@ class SqlZenStore(BaseZenStore):
             step_run_id: The ID of the step run.
             artifact_id: The ID of the artifact.
             name: The name of the output in the step run.
+            session: The database session to use.
 
         Raises:
             KeyError: if the step run or artifact doesn't exist.
@@ -3526,9 +3527,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A list of all artifacts.
-
-        Raises:
-            KeyError: if the producer step of an artifact doesn't exist.
         """
         if not self.runs_inside_server:
             self._sync_runs()

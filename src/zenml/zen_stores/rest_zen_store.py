@@ -1649,6 +1649,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The step run that produced the artifact.
+
+        Raises:
+            ValueError: if the response from the API is not a dict.
         """
         body = self.get(f"{ARTIFACTS}/{str(artifact_id)}{PRODUCER_STEP}")
         if not isinstance(body, dict):
