@@ -1441,6 +1441,7 @@ class RestZenStore(BaseZenStore):
         return self._list_resources(
             route=STEPS,
             resource_model=StepRunResponseModel,
+            response_model=StepRunResponseModel,
             **filters,
         )
 
@@ -1532,6 +1533,7 @@ class RestZenStore(BaseZenStore):
         return self._list_resources(
             route=ARTIFACTS,
             resource_model=ArtifactResponseModel,
+            response_model=ArtifactResponseModel,
             **filters,
         )
 
