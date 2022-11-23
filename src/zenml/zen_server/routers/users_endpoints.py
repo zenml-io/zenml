@@ -399,7 +399,6 @@ def update_myself(
     Returns:
         The updated user.
     """
-    # TODO find diff between user and the auth_context.user
     return zen_store().update_user(
         user_id=auth_context.user.id, user_update=user
     )
