@@ -330,6 +330,7 @@ InitializationException
 Initializations
 IntegrationError
 Intitialization
+InvalidExperimentTrackerSelected
 InvalidKeyError
 Istio
 Itemwise
@@ -553,6 +554,7 @@ RoleAssignment
 RoleBinding
 RoleModel
 Rollouts
+RunProvider
 Runtime
 RuntimeConfiguration
 RuntimeError
