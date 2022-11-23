@@ -111,9 +111,8 @@ class Launcher:
         parent_step_ids = []
 
         for upstream_step in self._step.spec.upstream_steps:
-            for run_step in current_run_steps:
-                if run_step.entrypoint_name == upstream_step:
-                    parent_step_ids.append(run_step.id)
+            run_step = current_run_steps[upstream_step]
+            parent_step_ids.append(run_step.id)
 
         input_artifact_ids = {
             key: artifact.id
