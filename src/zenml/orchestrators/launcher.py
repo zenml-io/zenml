@@ -144,6 +144,8 @@ class Launcher:
             for step_run in all_step_runs
             if step_run.id != current_step_run.id
             and step_run.cache_key == cache_key
+            and step_run.status
+            in {ExecutionStatus.COMPLETED, ExecutionStatus.CACHED}
         ]
 
         if cache_candidates:
