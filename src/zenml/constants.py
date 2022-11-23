@@ -101,9 +101,6 @@ else:
         ENV_ZENML_LOGGING_VERBOSITY, default="INFO"
     ).upper()
 
-ABSL_LOGGING_VERBOSITY: int = handle_int_env_var(
-    ENV_ABSL_LOGGING_VERBOSITY, -100
-)
 
 INSIDE_ZENML_CONTAINER = handle_bool_env_var(ENV_ZENML_CONTAINER, False)
 
