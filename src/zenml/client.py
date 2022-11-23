@@ -79,6 +79,7 @@ from zenml.models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
+from zenml.constants import ENV_ZENML_ACTIVE_STACK_NAME
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
@@ -1213,6 +1214,9 @@ class Client(metaclass=ClientMetaClass):
             RuntimeError: If the active stack is not set.
         """
         stack: Optional["StackResponseModel"] = None
+
+        if ENV_ZENML_ACTIVE_STACK_NAME in os.environ:
+            return self.get_stack(ENV_ZENML_ACTIVE_STACK_NAME)
 
         if self._config:
             stack = self.get_stack(self._config.active_stack_id)
