@@ -46,7 +46,19 @@ Go to https://open.crowd.dev/zenml and type your query in the search bar.
 
 ## How to see logs on the client and server
 
-## How to toggle ZENML_LOGGING_VERBOSITY env variable to show more logs
+
+## How to toggle ZENML_LOGGING_VERBOSITY environment variable to show more logs
+In the event that the default log is not helpful you can toggle the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
+
+The default value is
+
+```shell
+ZENML_LOGGING_VERBOSITY=INFO
+```
+
+You can pick other values such as `WARN`, `ERROR`, `CRITICAL`, `DEBUG` to change what's shown as logs.
+
+See [System Environment Variable](../guidelines/system-environmental-variables.md) for more information.
 
 ## Common errors
 
