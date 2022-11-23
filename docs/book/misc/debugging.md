@@ -1,5 +1,5 @@
 ---
-description: A guide to debug common issues.
+description: A guide to debug common issues and get help.
 ---
 
 # Debugging Guide
@@ -7,7 +7,7 @@ This page documents a series of how-tos for efficient debugging and getting help
 
 ## 🔍 How to search Slack for answers
 Before posting on Slack it's a good idea to search in Slack and [GitHub issues](https://github.com/zenml-io/zenml/issues)
-to see if the issue you're facing already has a solution in place. Also, check out the [Common errors](#--common-errors) section below.
+to see if the issue you're facing already has a solution in place. Also, check out the [Common errors](#-common-errors) section below.
 
 We recommend that you [join our Slack channel]((https://zenml.io/meet)) and use the built-in Slack search function at the top of the page. 
 Chances are you'd find your answers there.
@@ -70,6 +70,8 @@ ZENML_LOGGING_VERBOSITY=INFO
 ```
 You can pick other values such as `WARN`, `ERROR`, `CRITICAL`, `DEBUG` to change what's shown in the logs.
 See [System Environment Variable](../guidelines/system-environmental-variables.md) for more information on other environment variables that affect the behavior of ZenML.
+
+Read more about how to set environment variables [here](https://linuxize.com/post/how-to-set-and-list-environment-variables-in-linux/).
 
 ## 📜 How to see logs on the client and server
 
