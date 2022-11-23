@@ -804,19 +804,19 @@ class RestZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
-        self, user_name_or_id: Union[str, UUID], user_update: UserUpdateModel
+        self, user_id: UUID, user_update: UserUpdateModel
     ) -> UserResponseModel:
         """Updates an existing user.
 
         Args:
-            user_name_or_id: The id of the user to update.
+            user_id: The id of the user to update.
             user_update: The update to be applied to the user.
 
         Returns:
             The updated user.
         """
         return self._update_resource(
-            resource_id=user_name_or_id,
+            resource_id=user_id,
             resource_update=user_update,
             route=USERS,
             response_model=UserResponseModel,

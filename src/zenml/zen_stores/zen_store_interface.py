@@ -487,12 +487,12 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_user(
-        self, user_name_or_id: Union[str, UUID], user_update: UserUpdateModel
+        self, user_id: UUID, user_update: UserUpdateModel
     ) -> UserResponseModel:
         """Updates an existing user.
 
         Args:
-            user_name_or_id: The id of the user to update.
+            user_id: The id of the user to update.
             user_update: The update to be applied to the user.
 
         Returns:

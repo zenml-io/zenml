@@ -104,7 +104,14 @@ class ClientConfiguration(FileSyncModel):
         Returns:
             The active project.
         """
-        return self._active_project
+        if self._active_project:
+            return self._active_project
+        else:
+            raise RuntimeError(
+                "No active project is configured. Run "
+                "`zenml project set PROJECT_NAME` to set the active "
+                "project."
+            )
 
     def set_active_project(self, project: "ProjectResponseModel") -> None:
         """Set the project for the local client.
@@ -657,7 +664,7 @@ class Client(metaclass=ClientMetaClass):
             user_update.email_opted_in = updated_email_opt_in
 
         return self.zen_store.update_user(
-            user_name_or_id=user.id, user_update=user_update
+            user_id=user.id, user_update=user_update
         )
 
     # ---- #
@@ -750,22 +757,25 @@ class Client(metaclass=ClientMetaClass):
         team = self.get_team(team_name_or_id)
 
         team_update = TeamUpdateModel()
+
         if new_name:
             team_update.name = new_name
 
-        team_users: Optional[List[UUID]] = None
+        if remove_users is not None and add_users is not None:
+            union_add_rm = set(remove_users) & set(add_users)
+            if union_add_rm:
+                raise RuntimeError(
+                    f"The `remove_user` and `add_user` "
+                    f"options both contain the same value(s): "
+                    f"`{union_add_rm}`. Please rerun command and make sure "
+                    f"that the same user does not show up for "
+                    f"`remove_user` and `add_user`."
+                )
 
-        union_add_rm = set(remove_users) & set(add_users)
-        if union_add_rm:
-            raise RuntimeError(
-                f"The `remove_user` and `add_user` "
-                f"options both contain the same value(s): "
-                f"`{union_add_rm}`. Please rerun command and make sure "
-                f"that the same user does not show up for "
-                f"`remove_user` and `add_user`."
-            )
         # Only if permissions are being added or removed will they need to be
         #  set for the update model
+        team_users = []
+
         if remove_users or add_users:
             team_users = [u.id for u in team.users]
         if remove_users:
@@ -868,39 +878,41 @@ class Client(metaclass=ClientMetaClass):
 
         role_update = RoleUpdateModel()
 
-        role_permissions = None
+        if remove_permission is not None and add_permission is not None:
+            union_add_rm = set(remove_permission) & set(add_permission)
+            if union_add_rm:
+                raise RuntimeError(
+                    f"The `remove_permission` and `add_permission` "
+                    f"options both contain the same value(s): "
+                    f"`{union_add_rm}`. Please rerun command and make sure "
+                    f"that the same role does not show up for "
+                    f"`remove_permission` and `add_permission`."
+                )
 
-        union_add_rm = set(remove_permission) & set(add_permission)
-        if union_add_rm:
-            raise RuntimeError(
-                f"The `remove_permission` and `add_permission` "
-                f"options both contain the same value(s): "
-                f"`{union_add_rm}`. Please rerun command and make sure "
-                f"that the same role does not show up for "
-                f"`remove_permission` and `add_permission`."
-            )
         # Only if permissions are being added or removed will they need to be
         #  set for the update model
         if remove_permission or add_permission:
             role_permissions = role.permissions
-        if remove_permission:
-            for rm_p in remove_permission:
-                if rm_p in PermissionType:
-                    try:
-                        role_permissions.remove(PermissionType(rm_p))
-                    except KeyError:
-                        logger.warning(
-                            f"Role {remove_permission} was already not "
-                            f"part of the {role} Role."
-                        )
-        if add_permission:
-            for add_p in add_permission:
-                if add_p in PermissionType.values():
-                    # Set won't throw an error if the item was already in it
-                    role_permissions.add(PermissionType(add_p))
 
-        if role_permissions:
-            role_update.permissions = set(role_permissions)
+            if remove_permission:
+                for rm_p in remove_permission:
+                    if rm_p in PermissionType:
+                        try:
+                            role_permissions.remove(PermissionType(rm_p))
+                        except KeyError:
+                            logger.warning(
+                                f"Role {remove_permission} was already not "
+                                f"part of the {role} Role."
+                            )
+            if add_permission:
+                for add_p in add_permission:
+                    if add_p in PermissionType.values():
+                        # Set won't throw an error if the item was already in it
+                        role_permissions.add(PermissionType(add_p))
+
+            if role_permissions is not None:
+                role_update.permissions = set(role_permissions)
+
         if new_name:
             role_update.name = new_name
 
@@ -1314,7 +1326,7 @@ class Client(metaclass=ClientMetaClass):
         is_shared: Optional[bool] = None,
         description: Optional[str] = None,
         component_updates: Optional[
-            Dict[StackComponentType, List[Optional[Union[UUID, str]]]]
+            Dict[StackComponentType, List[Union[UUID, str]]]
         ] = None,
     ) -> "StackResponseModel":
         """Updates a stack and its components.
@@ -1390,19 +1402,16 @@ class Client(metaclass=ClientMetaClass):
         if component_updates:
             components_dict = {}
             for component_type, component_list in stack.components.items():
-                if component_list is not None:
-                    components_dict[component_type] = [
-                        c.id for c in component_list
-                    ]
+                components_dict[component_type] = [c.id for c in component_list]
 
-            for component_type, component_list in component_updates.items():
-                if component_list is not None:
+            for component_type, component_id_list in component_updates.items():
+                if component_id_list is not None:
                     components_dict[component_type] = [
                         self.get_stack_component(
                             name_id_or_prefix=c,
                             component_type=component_type,
                         ).id
-                        for c in component_list
+                        for c in component_id_list
                     ]
 
             update_model.components = components_dict
@@ -2450,7 +2459,7 @@ class Client(metaclass=ClientMetaClass):
 
     def _get_component_by_id_or_name_or_prefix(
         self,
-        name_id_or_prefix: str,
+        name_id_or_prefix: Union[str, UUID],
         component_type: StackComponentType,
     ) -> "ComponentResponseModel":
         """Fetches a component of given type using the name, id or partial id.
@@ -2467,11 +2476,17 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If no stack with the given name exists.
         """
         # First interpret as full UUID
+
         try:
-            component_id = UUID(str(name_id_or_prefix))
-            return self.zen_store.get_stack_component(component_id)
+            if isinstance(name_id_or_prefix, UUID):
+                return self.zen_store.get_stack_component(name_id_or_prefix)
+            else:
+                entity_id = UUID(name_id_or_prefix)
+                return self.zen_store.get_stack_component(entity_id)
         except ValueError:
             pass
+
+        name_id_or_prefix = str(name_id_or_prefix)
 
         components = self.zen_store.list_stack_components(
             name=name_id_or_prefix,
@@ -2517,8 +2532,8 @@ class Client(metaclass=ClientMetaClass):
     def _get_entity_by_id_or_name_or_prefix(
         self,
         response_model: Type[AnyResponseModel],
-        get_method: Callable,
-        list_method: Callable,
+        get_method: Callable[..., AnyResponseModel],
+        list_method: Callable[..., List[AnyResponseModel]],
         name_id_or_prefix: Union[str, UUID],
     ) -> "AnyResponseModel":
         """Fetches an entity using the name, id or partial id.
@@ -2552,7 +2567,7 @@ class Client(metaclass=ClientMetaClass):
                 project_name_or_id=self.active_project.id,
             )
         else:
-            entities: List[AnyResponseModel] = list_method(
+            entities = list_method(
                 name=name_id_or_prefix,
             )
 

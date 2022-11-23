@@ -266,7 +266,7 @@ class StackComponent:
         config: StackComponentConfig,
         flavor: str,
         type: StackComponentType,
-        user: UUID,
+        user: Optional[UUID],
         project: UUID,
         created: datetime,
         updated: datetime,
@@ -340,8 +340,13 @@ class StackComponent:
 
         configuration = flavor.config_class(**component_model.configuration)
 
+        if component_model.user is not None:
+            user_id = component_model.user.id
+        else:
+            user_id = None
+
         return flavor.implementation_class(
-            user=component_model.user.id,
+            user=user_id,
             project=component_model.project.id,
             name=component_model.name,
             id=component_model.id,

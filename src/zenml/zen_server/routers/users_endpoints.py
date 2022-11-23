@@ -181,8 +181,10 @@ def update_user(
     Returns:
         The updated user.
     """
+    user = zen_store().get_user(user_name_or_id)
+
     return zen_store().update_user(
-        user_name_or_id=user_name_or_id,
+        user_id=user.id,
         user_update=user_update,
     )
 
@@ -209,6 +211,8 @@ def activate_user(
     Raises:
         HTTPException: If the user is not authorized to activate the user.
     """
+    user = zen_store().get_user(user_name_or_id)
+
     auth_context = authenticate_credentials(
         user_name_or_id=user_name_or_id,
         activation_token=user_update.activation_token,
@@ -221,7 +225,7 @@ def activate_user(
     user_update.active = True
     user_update.activation_token = None
     return zen_store().update_user(
-        user_name_or_id=user_name_or_id, user_update=user_update
+        user_id=user.id, user_update=user_update
     )
 
 
@@ -243,10 +247,12 @@ def deactivate_user(
     Returns:
         The generated activation token.
     """
+    user = zen_store().get_user(user_name_or_id)
+
     user_update = UserUpdateModel(active=False)
     token = user_update.generate_activation_token()
     user = zen_store().update_user(
-        user_name_or_id=user_name_or_id, user_update=user_update
+        user_id=user.id, user_update=user_update
     )
     # add back the original unhashed activation token
     user.activation_token = token
@@ -310,6 +316,8 @@ def email_opt_in_response(
         NotAuthorizedError: if the user does not have the required
             permissions
     """
+    user = zen_store().get_user(user_name_or_id)
+
     if str(auth_context.user.id) == str(user_name_or_id):
         user_update = UserUpdateModel(
             email=user_response.email,
@@ -317,7 +325,7 @@ def email_opt_in_response(
         )
 
         return zen_store().update_user(
-            user_name_or_id=user_name_or_id, user_update=user_update
+            user_id=user.id, user_update=user_update
         )
     else:
         raise NotAuthorizedError(
@@ -399,5 +407,5 @@ def update_myself(
     """
     # TODO find diff between user and the auth_context.user
     return zen_store().update_user(
-        user_name_or_id=auth_context.user.id, user_update=user
+        user_id=auth_context.user.id, user_update=user
     )

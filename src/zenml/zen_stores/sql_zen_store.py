@@ -1687,12 +1687,12 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
-        self, user_name_or_id: Union[str, UUID], user_update: UserUpdateModel
+        self, user_id: UUID, user_update: UserUpdateModel
     ) -> UserResponseModel:
         """Updates an existing user.
 
         Args:
-            user_name_or_id: The id of the user to update.
+            user_id: The id of the user to update.
             user_update: The update to be applied to the user.
 
         Returns:
@@ -1703,9 +1703,7 @@ class SqlZenStore(BaseZenStore):
                 for the default user account.
         """
         with Session(self.engine) as session:
-            existing_user = self._get_user_schema(
-                user_name_or_id, session=session
-            )
+            existing_user = self._get_user_schema(user_id, session=session)
             if (
                 existing_user.name == self._default_user_name
                 and "name" in user_update.__fields_set__
