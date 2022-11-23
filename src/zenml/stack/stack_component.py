@@ -114,7 +114,7 @@ class StackComponentConfig(BaseModel, ABC):
 
         Concrete stack component configuration classes should override this
         method to return True if the stack component is running in a remote
-        location and it needs to access the ZenML database.
+        location, and it needs to access the ZenML database.
 
         This designation is used to determine if the stack component can be
         used with a local ZenML database or if it requires a remote ZenML

@@ -1553,10 +1553,10 @@ class Client(metaclass=ClientMetaClass):
         from zenml.stack import Flavor
 
         flavor_class = Flavor.from_model(flavor_model)
-        configuration = flavor_class.config_class(**configuration)
+        configuration_obj = flavor_class.config_class(**configuration)
 
         self._validate_stack_component_configuration(
-            component_type, configuration=configuration
+            component_type, configuration=configuration_obj
         )
 
         create_component_model = ComponentRequestModel(
@@ -2005,7 +2005,9 @@ class Client(metaclass=ClientMetaClass):
             name=name,
         )
 
-    def get_pipeline(self, name_id_or_prefix: str) -> PipelineResponseModel:
+    def get_pipeline(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> PipelineResponseModel:
         """List pipelines.
 
         Args:
