@@ -145,6 +145,7 @@ def test_pipeline_export_delete_import(
     assert len(clean_client.zen_store.list_run_steps()) > 0
     sample_artifact_request_model.parent_step_id = sample_step_model.id
     sample_artifact_request_model.producer_step_id = sample_step_model.id
+    clean_client.zen_store.create_artifact(sample_artifact_request_model)
     assert len(clean_client.zen_store.list_artifacts()) > 0
 
     # Export pipeline run

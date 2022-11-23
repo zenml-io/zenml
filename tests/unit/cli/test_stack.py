@@ -447,6 +447,7 @@ def test_share_stack_that_is_already_shared_fails(
         flavor=new_artifact_store.flavor,
         component_type=new_artifact_store.type,
         configuration=new_artifact_store.config.dict(),
+        is_shared=True,
     )
 
     new_orchestrator = _create_local_orchestrator(clean_client)
@@ -456,6 +457,7 @@ def test_share_stack_that_is_already_shared_fails(
         flavor=new_orchestrator.flavor,
         component_type=new_orchestrator.type,
         configuration=new_orchestrator.config.dict(),
+        is_shared=True,
     )
 
     new_stack = clean_client.create_stack(
