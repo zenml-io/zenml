@@ -883,7 +883,7 @@ def test_updating_stack_succeeds(
     )
     assert sql_store["store"].get_stack(new_stack.id) is not None
     assert sql_store["store"].get_stack(new_stack.id).name == new_stack_name
-    # Ensure unset fields of the UpdateModel are not changed
+    # Ensure unset fields of the `UpdateModel` are not changed
     assert (
         sql_store["store"].get_stack(new_stack.id).description
         == new_stack.description

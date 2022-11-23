@@ -802,7 +802,7 @@ class Client(metaclass=ClientMetaClass):
         remove_permission: Optional[List[str]] = None,
         add_permission: Optional[List[str]] = None,
     ) -> RoleResponseModel:
-        """Updates a rele.
+        """Updates a role.
 
         Args:
             name_id_or_prefix: The name or ID of the role.

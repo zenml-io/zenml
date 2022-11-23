@@ -139,7 +139,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
     )
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target="artifacts",  # ArtifactSchema.__tablename__,
+        target="artifacts",  # `ArtifactSchema.__tablename__`
         source_column="artifact_id",
         target_column="id",
         ondelete="CASCADE",

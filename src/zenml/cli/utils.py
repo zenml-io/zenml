@@ -220,7 +220,7 @@ def print_pydantic_models(
 
         for k in include_columns:
             value = getattr(model, k)
-            # In case the response model contains nested BaseResponseModels
+            # In case the response model contains nested `BaseResponseModels`
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
             if isinstance(value, BaseResponseModel):
@@ -229,7 +229,7 @@ def print_pydantic_models(
                 else:
                     items[k] = str(value.id)
 
-            # If it is a list of BaseResponseModels access each Model within
+            # If it is a list of `BaseResponseModels` access each Model within
             #  the list and extract either name or id
             elif isinstance(value, list) and issubclass(
                 model.__fields__[k].type_, BaseResponseModel
