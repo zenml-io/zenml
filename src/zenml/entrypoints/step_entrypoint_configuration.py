@@ -13,9 +13,7 @@
 #  permissions and limitations under the License.
 """Base class for entrypoint configurations that run a single step."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Set
-
-from tfx.orchestration.portable import data_types
+from typing import TYPE_CHECKING, Any, List, Set
 
 from zenml.client import Client
 from zenml.entrypoints import utils as entrypoint_utils
@@ -92,11 +90,12 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
     ```
     """
 
+    # TODO: Figure out a replacement class for the TFX execution info that
+    # would be useful here
     def post_run(
         self,
         pipeline_name: str,
         step_name: str,
-        execution_info: Optional[data_types.ExecutionInfo] = None,
     ) -> None:
         """Does cleanup or post-processing after the step finished running.
 
@@ -107,7 +106,6 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             pipeline_name: Name of the parent pipeline of the step that was
                 executed.
             step_name: Name of the step that was executed.
-            execution_info: Info about the finished step execution.
         """
 
     @classmethod
@@ -158,19 +156,18 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
 
         step = deployment_config.steps[step_name]
         entrypoint_utils.load_and_configure_step(step)
-        execution_info = self._run_step(step, deployment=deployment_config)
+        self._run_step(step, deployment=deployment_config)
 
         self.post_run(
             pipeline_name=pipeline_name,
             step_name=step_name,
-            execution_info=execution_info,
         )
 
     def _run_step(
         self,
         step: "Step",
         deployment: "PipelineDeployment",
-    ) -> Optional[data_types.ExecutionInfo]:
+    ) -> None:
         """Runs a single step.
 
         Args:
@@ -182,4 +179,4 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         """
         orchestrator = Client().active_stack.orchestrator
         orchestrator._prepare_run(deployment=deployment)
-        return orchestrator.run_step(step=step)
+        orchestrator.run_step(step=step)

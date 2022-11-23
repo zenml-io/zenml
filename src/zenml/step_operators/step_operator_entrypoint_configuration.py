@@ -13,14 +13,10 @@
 #  permissions and limitations under the License.
 """Abstract base class for entrypoint configurations that run a single step."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Set, Type
+from typing import TYPE_CHECKING, Any, List, Set, Type
 
 from tfx.dsl.components.base.base_executor import BaseExecutor
-from tfx.orchestration.portable import data_types
 from tfx.orchestration.portable.data_types import ExecutionInfo
-from tfx.orchestration.portable.python_executor_operator import (
-    run_with_executor,
-)
 from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
 
 from zenml.client import Client
@@ -29,7 +25,6 @@ from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
 from zenml.io import fileio
-from zenml.steps import utils as step_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -74,7 +69,7 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         self,
         step: "Step",
         deployment: "PipelineDeployment",
-    ) -> Optional[data_types.ExecutionInfo]:
+    ) -> None:
         """Runs a single step.
 
         Args:
@@ -93,15 +88,6 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
 
         execution_info_path = self.entrypoint_args[EXECUTION_INFO_PATH_OPTION]
         execution_info = self._load_execution_info(execution_info_path)
-        executor_class = step_utils.get_executor_class(step.config.name)
-        if not executor_class:
-            raise RuntimeError(
-                f"Unable to find executor class for step {step.config.name}."
-            )
-
-        executor = self._configure_executor(
-            executor_class=executor_class, execution_info=execution_info
-        )
 
         stack.orchestrator._ensure_artifact_classes_loaded(step.config)
         step_run_info = StepRunInfo(
@@ -112,11 +98,10 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
 
         stack.prepare_step_run(info=step_run_info)
         try:
-            run_with_executor(execution_info=execution_info, executor=executor)
+            # TODO: run
+            ...
         finally:
             stack.cleanup_step_run(info=step_run_info)
-
-        return execution_info
 
     @staticmethod
     def _load_execution_info(execution_info_path: str) -> ExecutionInfo:

@@ -16,9 +16,7 @@
 import logging
 import os
 import re
-from datetime import datetime, timedelta
 from pathlib import Path, PurePath
-from threading import Lock, get_ident
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -37,7 +35,7 @@ from pydantic import root_validator
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
-from sqlalchemy.sql.operators import is_, isnot
+from sqlalchemy.sql.operators import is_
 from sqlmodel import Session, SQLModel, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
@@ -117,16 +115,7 @@ from zenml.zen_stores.schemas import (
 )
 
 if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import (
-        ConnectionConfig,
-        MetadataStoreClientConfig,
-    )
-
-    from zenml.zen_stores.metadata_store import (
-        MetadataStore,
-        MLMDPipelineRunModel,
-        MLMDStepRunModel,
-    )
+    pass
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -168,14 +157,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             pool.
         max_overflow: The maximum number of connections to allow in the
             SQLAlchemy pool in addition to the pool_size.
-        grpc_metadata_host: The host to use for the gRPC metadata server.
-        grpc_metadata_port: The port to use for the gRPC metadata server.
-        grpc_metadata_ssl_ca: The certificate authority certificate to use for
-            the gRPC metadata server connection.
-        grpc_metadata_ssl_cert: The client certificate to use for the gRPC
-            metadata server connection.
-        grpc_metadata_ssl_key: The client certificate private key to use for
-            the gRPC metadata server connection.
     """
 
     type: StoreType = StoreType.SQL
@@ -191,6 +172,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_size: int = 20
     max_overflow: int = 20
 
+    # TODO: deprecate
     grpc_metadata_host: Optional[str] = None
     grpc_metadata_port: Optional[int] = None
     grpc_metadata_ssl_ca: Optional[str] = None
@@ -342,6 +324,22 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         """
         return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
 
+    @staticmethod
+    def get_local_path(url: str) -> Optional[str]:
+        """Get a local path from the given URL.
+
+        Args:
+            url: The sql url.
+
+        Returns:
+            The path if the URL refers to a SQLite database, None otherwise.
+        """
+        sqlite_prefix = "sqlite:///"
+        if not url.startswith(sqlite_prefix):
+            return None
+        path = url[len(sqlite_prefix) :]
+        return path
+
     @classmethod
     def supports_url_scheme(cls, url: str) -> bool:
         """Check if a URL scheme is supported by this store.
@@ -409,71 +407,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 config.url = cls.get_local_url(config_path)
 
         return config
-
-    def get_metadata_config(
-        self, expand_certs: bool = False
-    ) -> "ConnectionConfig":
-        """Get the metadata configuration for the SQL ZenML store.
-
-        Args:
-            expand_certs: Whether to expand the certificate paths to their
-                contents.
-
-        Returns:
-            The metadata configuration.
-
-        Raises:
-            NotImplementedError: If the SQL driver is not supported.
-        """
-        from ml_metadata.proto.metadata_store_pb2 import MySQLDatabaseConfig
-        from tfx.orchestration import metadata
-
-        sql_url = make_url(self.url)
-        if sql_url.drivername == SQLDatabaseDriver.SQLITE:
-            assert self.database is not None
-            mlmd_config = metadata.sqlite_metadata_connection_config(
-                self.database
-            )
-        elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
-            # all these are guaranteed by our root validator
-            assert self.database is not None
-            assert self.username is not None
-            assert self.password is not None
-            assert sql_url.host is not None
-
-            mlmd_config = metadata.mysql_metadata_connection_config(
-                host=sql_url.host,
-                port=sql_url.port or 3306,
-                database=self.database,
-                username=self.username,
-                password=self.password,
-            )
-
-            mlmd_ssl_options = {}
-            # Handle certificate params
-            for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-                ssl_setting = getattr(self, key)
-                if not ssl_setting:
-                    continue
-                if expand_certs and os.path.isfile(ssl_setting):
-                    with open(ssl_setting, "r") as f:
-                        ssl_setting = f.read()
-                mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
-
-            # Handle additional params
-            if mlmd_ssl_options:
-                mlmd_ssl_options[
-                    "verify_server_cert"
-                ] = self.ssl_verify_server_cert
-                mlmd_config.mysql.ssl_options.CopyFrom(
-                    MySQLDatabaseConfig.SSLOptions(**mlmd_ssl_options)
-                )
-        else:
-            raise NotImplementedError(
-                f"SQL driver `{sql_url.drivername}` is not supported."
-            )
-
-        return mlmd_config
 
     def get_sqlmodel_config(self) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
         """Get the SQLModel engine configuration for the SQL ZenML store.
@@ -557,8 +490,6 @@ class SqlZenStore(BaseZenStore):
         CONFIG_TYPE: The type of the store configuration.
         _engine: The SQLAlchemy engine.
         _metadata_store: The metadata store.
-        _lock: A thread mutex used to ensure thread safety during the pipeline
-            run synchronization.
     """
 
     config: SqlZenStoreConfiguration
@@ -567,10 +498,7 @@ class SqlZenStore(BaseZenStore):
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
     _engine: Optional[Engine] = None
-    _metadata_store: Optional["MetadataStore"] = None
-    _highest_synced_run_mlmd_id: int = 0
     _alembic: Optional[Alembic] = None
-    _sync_lock: Optional[Lock] = None
 
     @property
     def engine(self) -> Engine:
@@ -585,20 +513,6 @@ class SqlZenStore(BaseZenStore):
         if not self._engine:
             raise ValueError("Store not initialized")
         return self._engine
-
-    @property
-    def metadata_store(self) -> "MetadataStore":
-        """The metadata store.
-
-        Returns:
-            The metadata store.
-
-        Raises:
-            ValueError: If the store is not initialized.
-        """
-        if not self._metadata_store:
-            raise ValueError("Store not initialized")
-        return self._metadata_store
 
     @property
     def runs_inside_server(self) -> bool:
@@ -625,20 +539,6 @@ class SqlZenStore(BaseZenStore):
             raise ValueError("Store not initialized")
         return self._alembic
 
-    @property
-    def sync_lock(self) -> Lock:
-        """The mutex used to synchronize pipeline runs.
-
-        Returns:
-            The mutex used to synchronize pipeline runs.
-
-        Raises:
-            ValueError: If the store is not initialized.
-        """
-        if not self._sync_lock:
-            raise ValueError("Store not initialized")
-        return self._sync_lock
-
     # ====================================
     # ZenML Store interface implementation
     # ====================================
@@ -649,25 +549,25 @@ class SqlZenStore(BaseZenStore):
 
     def _initialize(self) -> None:
         """Initialize the SQL store."""
-        from zenml.zen_stores.metadata_store import MetadataStore
-
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
-
-        metadata_config = self.config.get_metadata_config()
-        self._metadata_store = MetadataStore(config=metadata_config)
 
         url, connect_args, engine_args = self.config.get_sqlmodel_config()
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
         )
+
+        local_path = self.config.get_local_path(url)
+        if local_path and not fileio.exists(local_path):
+            # If the parent directory does not exist, SQLAlchemy does not
+            # automatically create the database
+            fileio.makedirs(os.path.dirname(local_path))
+
         self._alembic = Alembic(self.engine)
         if (
             not self.skip_migrations
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
-
-        self._sync_lock = Lock()
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the current python package."""
@@ -729,50 +629,6 @@ class SqlZenStore(BaseZenStore):
         sql_url = make_url(self.config.url)
         model.database_type = ServerDatabaseType(sql_url.drivername)
         return model
-
-    # ------------
-    # TFX Metadata
-    # ------------
-
-    def get_metadata_config(
-        self, expand_certs: bool = False
-    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Args:
-            expand_certs: Whether to expand the certificate paths in the
-                connection config to their value.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
-        """
-        from ml_metadata.proto.metadata_store_pb2 import (
-            MetadataStoreClientConfig,
-        )
-
-        # If the gRPC metadata store connection configuration is present,
-        # advertise it to the client instead of the direct SQL connection
-        # config.
-        if self.config.grpc_metadata_host:
-            mlmd_config = MetadataStoreClientConfig()
-            mlmd_config.host = self.config.grpc_metadata_host
-            mlmd_config.port = self.config.grpc_metadata_port
-            if self.config.grpc_metadata_ssl_ca:
-                mlmd_config.ssl_config.custom_ca = (
-                    self.config.grpc_metadata_ssl_ca
-                )
-            if self.config.grpc_metadata_ssl_cert:
-                mlmd_config.ssl_config.server_cert = (
-                    self.config.grpc_metadata_ssl_cert
-                )
-            if self.config.grpc_metadata_ssl_key:
-                mlmd_config.ssl_config.client_key = (
-                    self.config.grpc_metadata_ssl_key
-                )
-
-            return mlmd_config
-
-        return self.config.get_metadata_config(expand_certs=expand_certs)
 
     # ------
     # Stacks
@@ -2880,8 +2736,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
         with Session(self.engine) as session:
             run = self._get_run_schema(run_name_or_id, session=session)
             return run.to_model()
@@ -2939,8 +2793,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
         with Session(self.engine) as session:
             query = select(PipelineRunSchema)
             if project_name_or_id is not None:
@@ -3278,8 +3130,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step run doesn't exist.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
         with Session(self.engine) as session:
             step_run = session.exec(
                 select(StepRunSchema).where(StepRunSchema.id == step_run_id)
@@ -3360,8 +3210,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all run steps.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
         query = select(StepRunSchema)
         if run_id is not None:
             query = query.where(StepRunSchema.pipeline_run_id == run_id)
@@ -3550,8 +3398,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all artifacts.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
         with Session(self.engine) as session:
             query = select(ArtifactSchema)
             if artifact_uri is not None:
@@ -3773,472 +3619,3 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             ),
         )
-
-    # MLMD Stuff
-
-    def _resolve_mlmd_step_id(self, mlmd_id: int) -> UUID:
-        """Resolves a step ID from MLMD to a ZenML step ID.
-
-        Args:
-            mlmd_id: The MLMD ID of the step.
-
-        Returns:
-            The ZenML step ID.
-
-        Raises:
-            KeyError: if the step couldn't be found.
-        """
-        with Session(self.engine) as session:
-            step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.mlmd_id == mlmd_id)
-            ).first()
-            if step_run is None:
-                raise KeyError(
-                    f"Unable to resolve MLMD step ID {mlmd_id}: "
-                    f"No step with this ID found."
-                )
-            return step_run.id
-
-    def _resolve_mlmd_artifact_id(self, mlmd_id: int) -> UUID:
-        """Resolves an artifact ID from MLMD to a ZenML artifact ID.
-
-        Args:
-            mlmd_id: The MLMD ID of the artifact.
-
-        Returns:
-            The ZenML artifact ID.
-
-        Raises:
-            KeyError: if the artifact couldn't be found.
-        """
-        with Session(self.engine) as session:
-            artifact = session.exec(
-                select(ArtifactSchema).where(ArtifactSchema.mlmd_id == mlmd_id)
-            ).first()
-            if artifact is None:
-                raise KeyError(
-                    f"Unable to resolve MLMD artifact ID {mlmd_id}: "
-                    f"No artifact with this ID found."
-                )
-            return artifact.id
-
-    def _sync_runs(self) -> None:
-        """Sync runs from MLMD into the database.
-
-        This queries all runs from MLMD, checks for each whether it already
-        exists in the database, and if not, creates it.
-        """
-        from zenml.zen_stores.migrations.alembic import AlembicVersion
-        from zenml.zen_stores.rest_zen_store import DEFAULT_HTTP_TIMEOUT
-
-        # This is to synchronize the locally running threads so that only
-        # one thread attempts to sync the runs at any given time.
-        # The timeout is set to be shorter than the default REST client
-        # timeout, so that we don't block the client for too long.
-        logger.debug(f"[{get_ident()}] Trying to acquire sync lock...")
-        if not self.sync_lock.acquire(timeout=DEFAULT_HTTP_TIMEOUT - 10):
-            logger.warning(
-                f"[{get_ident()}] Timed out waiting to acquire pipeline "
-                f"run sync lock. Skipping the sync this time around."
-            )
-            return
-
-        logger.debug(f"[{get_ident()}] Pipeline run sync lock acquired.")
-        try:
-            with Session(self.engine) as session:
-                logger.debug("Syncing pipeline runs...")
-                if self.config.driver != SQLDatabaseDriver.SQLITE:
-                    # This is to synchronize all server processes trying to
-                    # sync the pipeline runs at the same time. We use the
-                    # alembic version table as a shared resource that we can
-                    # lock to prevent multiple processes from syncing runs
-                    # at the same time.
-                    session.query(AlembicVersion).with_for_update().all()
-                self._sync_runs_with_lock(session)
-                logger.debug("Pipeline runs sync complete")
-        except Exception:
-            logger.exception("Failed to sync pipeline runs.")
-        finally:
-            self.sync_lock.release()
-
-    def _sync_runs_with_lock(self, session: Session) -> None:
-        """Sync runs from MLMD into the database while the DB is locked.
-
-        This queries all runs from MLMD, checks for each whether it already
-        exists in the database, and if not, creates it.
-
-        Args:
-            session: The database session to use.
-        """
-        # Find all runs that already have an MLMD ID. These are already
-        # synced and connected to MLMD, so we don't need to query them from
-        # MLMD again.
-        synced_mlmd_ids = session.exec(
-            select(PipelineRunSchema.mlmd_id).where(
-                isnot(PipelineRunSchema.mlmd_id, None)
-            )
-        ).all()
-        logger.debug(f"Found {len(synced_mlmd_ids)} pipeline runs with MLMD ID")
-
-        # Find all runs that have no MLMD ID. These might need to be
-        # connected.
-        runs_without_mlmd_id = session.exec(
-            select(PipelineRunSchema).where(
-                is_(PipelineRunSchema.mlmd_id, None)
-            )
-        ).all()
-        logger.debug(
-            f"Found {len(runs_without_mlmd_id)} pipeline runs without MLMD ID"
-        )
-        runs_without_mlmd_id_dict = {
-            run_.name: run_ for run_ in runs_without_mlmd_id
-        }
-
-        # Sync all MLMD runs that don't exist in ZenML. For performance reasons,
-        # we determine this by explicitly ignoring runs that are already synced.
-        unsynced_mlmd_runs = self.metadata_store.get_all_runs(
-            ignored_ids=[id_ for id_ in synced_mlmd_ids if id_ is not None]
-        )
-        logger.debug(
-            f"Adding {len(unsynced_mlmd_runs)} new pipeline runs from MLMD"
-        )
-        for mlmd_run in unsynced_mlmd_runs:
-
-            # If a run is written in both ZenML and MLMD but doesn't have an
-            # MLMD ID set in the DB, we need to set it to connect the two.
-            if mlmd_run.name in runs_without_mlmd_id_dict:
-                run_model = runs_without_mlmd_id_dict[mlmd_run.name].to_model()
-                run_model.mlmd_id = mlmd_run.mlmd_id
-                try:
-                    self.update_run(run_model)
-                except Exception as err:
-                    logger.warning(
-                        f"Syncing run '{mlmd_run.name}' failed: {str(err)}"
-                    )
-                    continue
-
-            # Create runs that are in MLMD but not in the DB.
-            else:
-                try:
-                    self._sync_run(mlmd_run)
-                except EntityExistsError as exists_err:
-                    logger.debug(
-                        f"Run '{mlmd_run.name}' already exists: "
-                        f"{str(exists_err)}. Skipping sync."
-                    )
-                    continue
-                except Exception as err:
-                    logger.warning(
-                        f"Syncing run '{mlmd_run.name}' failed: {str(err)}"
-                    )
-                    continue
-
-        # Sync steps and status of all unfinished runs.
-        # We also filter out anything older than 1 week to prevent old broken
-        # unfinished runs from being synced over and over again.
-        unfinished_runs = session.exec(
-            select(PipelineRunSchema)
-            .where(PipelineRunSchema.status == ExecutionStatus.RUNNING)
-            .where(
-                PipelineRunSchema.updated >= datetime.now() - timedelta(weeks=1)
-            )
-        ).all()
-        logger.debug(
-            f"Updating {len(unfinished_runs)} unfinished pipeline runs from "
-            "MLMD"
-        )
-        for run_ in unfinished_runs:
-            try:
-                logger.debug(f"Syncing run steps for pipeline run '{run_.id}'")
-                self._sync_run_steps(run_.id)
-                logger.debug(
-                    f"Updating run status for pipeline run '{run_.id}'"
-                )
-                self._sync_run_status(run_.to_model())
-            except Exception as err:
-                logger.warning(f"Syncing run '{run_.name}' failed: {str(err)}")
-
-        logger.debug("Pipeline runs sync complete.")
-
-    def _sync_run(self, mlmd_run: "MLMDPipelineRunModel") -> PipelineRunModel:
-        """Sync a single run from MLMD into the database.
-
-        Args:
-            mlmd_run: The MLMD run model to sync.
-
-        Returns:
-            The synced run model.
-        """
-        new_run = PipelineRunModel(
-            name=mlmd_run.name,
-            mlmd_id=mlmd_run.mlmd_id,
-            project=mlmd_run.project or self._default_project.id,  # For legacy
-            user=mlmd_run.user or self._default_user.id,  # For legacy
-            stack_id=mlmd_run.stack_id,
-            pipeline_id=mlmd_run.pipeline_id,
-            pipeline_configuration=mlmd_run.pipeline_configuration,
-            num_steps=mlmd_run.num_steps,
-            status=ExecutionStatus.RUNNING,  # Update later.
-        )
-        return self.create_run(new_run)
-
-    def _sync_run_steps(self, run_id: UUID) -> None:
-        """Sync run steps from MLMD into the database.
-
-        Since we do not allow to create steps in the database directly, this is
-        a one-way sync from MLMD to the database.
-
-        Args:
-            run_id: The ID of the pipeline run to sync steps for.
-
-        Raises:
-            KeyError: if the run couldn't be found.
-        """
-        with Session(self.engine) as session:
-            run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
-            ).first()
-
-            # If the run doesn't exist, raise an error.
-            if run is None:
-                raise KeyError(
-                    f"Unable to sync run steps for run with ID {run_id}: "
-                    f"No run with this ID found."
-                )
-
-            # If the run didn't come from MLMD, we can't sync artifacts.
-            if run.mlmd_id is None:
-                return
-
-            # Get all steps that already exist in the database.
-            zenml_steps = session.exec(
-                select(StepRunSchema).where(
-                    StepRunSchema.pipeline_run_id == run_id
-                )
-            ).all()
-            zenml_step_dict = {step.name: step for step in zenml_steps}
-
-        # Get all steps from MLMD.
-        mlmd_steps = self.metadata_store.get_pipeline_run_steps(run.mlmd_id)
-
-        # For each step in MLMD, sync it into ZenML if it doesn't exist yet.
-        for step_name, mlmd_step in mlmd_steps.items():
-            if step_name not in zenml_step_dict:
-                try:
-                    step_model = self._sync_run_step(
-                        run_id, step_name, mlmd_step
-                    )
-                except EntityExistsError as exists_err:
-                    logger.debug(
-                        f"Run step '{step_name}' of run {run.name} already "
-                        f"exists: {str(exists_err)}. Skipping sync."
-                    )
-                    continue
-            else:
-                step_schema = zenml_step_dict[step_name]
-                step_model = self._run_step_schema_to_model(step_schema)
-
-            # Sync artifacts and status of all unfinished steps.
-            self._sync_run_step_artifacts(step_model)
-            self._sync_run_step_status(step_model)
-
-    def _sync_run_step(
-        self, run_id: UUID, step_name: str, mlmd_step: "MLMDStepRunModel"
-    ) -> StepRunModel:
-        """Sync a single run step from MLMD into the database.
-
-        Args:
-            run_id: The ID of the pipeline run to sync the step for.
-            step_name: The name of the step to sync.
-            mlmd_step: The MLMD step model to sync.
-
-        Returns:
-            The synced run step model.
-        """
-        # Build dict of input artifacts.
-        mlmd_inputs = self.metadata_store.get_step_input_artifacts(
-            step_id=mlmd_step.mlmd_id,
-            step_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
-        )
-        input_artifacts: Dict[str, UUID] = {}
-        for input_name, mlmd_artifact in mlmd_inputs.items():
-            artifact_id = self._resolve_mlmd_artifact_id(
-                mlmd_id=mlmd_artifact.mlmd_id,
-            )
-            input_artifacts[input_name] = artifact_id
-
-        # Output artifacts might not exist in the DB yet, so we write an empty
-        # dict for now and update them later.
-        output_artifacts: Dict[str, UUID] = {}
-
-        # Create step.
-        # If a step is marked as completed in MLMD, we still mark it as
-        # running since some of the artifacts might not exist yet.
-        status = self.metadata_store.get_step_status(mlmd_step.mlmd_id)
-        if status == ExecutionStatus.COMPLETED:
-            status = ExecutionStatus.RUNNING
-        new_step_run = StepRunModel(
-            name=step_name,
-            mlmd_id=mlmd_step.mlmd_id,
-            mlmd_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
-            entrypoint_name=mlmd_step.entrypoint_name,
-            parameters=mlmd_step.parameters,
-            step_configuration=mlmd_step.step_configuration,
-            docstring=mlmd_step.docstring,
-            num_outputs=mlmd_step.num_outputs,
-            pipeline_run_id=run_id,
-            parent_step_ids=[
-                self._resolve_mlmd_step_id(parent_step_id)
-                for parent_step_id in mlmd_step.mlmd_parent_step_ids
-            ],
-            input_artifacts=input_artifacts,
-            output_artifacts=output_artifacts,
-            status=status,
-            caching_parameters={},  # Not used for now
-        )
-        return self.create_run_step(new_step_run)
-
-    def _sync_run_step_artifacts(self, step_model: StepRunModel) -> None:
-        """Sync run step artifacts from MLMD into the database.
-
-        Since we do not allow to create artifacts in the database directly, this
-        is a one-way sync from MLMD to the database.
-
-        Args:
-            step_model: The model of the step run to sync artifacts for.
-        """
-        # If the step didn't come from MLMD, we can't sync artifacts.
-        if step_model.mlmd_id is None:
-            return
-
-        # Get the names of all outputs that are already in ZenML.
-        with Session(self.engine) as session:
-            zenml_output_list = session.exec(
-                select(StepRunOutputArtifactSchema).where(
-                    StepRunOutputArtifactSchema.step_run_id == step_model.id
-                )
-            ).all()
-            zenml_outputs = {
-                output.name: output.artifact_id for output in zenml_output_list
-            }
-
-        # Get all MLMD output artifacts.
-        mlmd_outputs = self.metadata_store.get_step_output_artifacts(
-            step_id=step_model.mlmd_id
-        )
-
-        # For each output in MLMD, sync it into ZenML if it doesn't exist yet.
-        for output_name, mlmd_artifact in mlmd_outputs.items():
-            if output_name in zenml_outputs:
-                continue
-
-            # If the step was not cached, it must have created the artifact,
-            # so we need to create the artifact in the DB first.
-            if step_model.status != ExecutionStatus.CACHED:
-                new_artifact = ArtifactModel(
-                    name=output_name,
-                    mlmd_id=mlmd_artifact.mlmd_id,
-                    type=mlmd_artifact.type,
-                    uri=mlmd_artifact.uri,
-                    materializer=mlmd_artifact.materializer,
-                    data_type=mlmd_artifact.data_type,
-                )
-                new_artifact = self.create_artifact(new_artifact)
-
-            # Link the artifact to the step.
-            artifact_id = self._resolve_mlmd_artifact_id(mlmd_artifact.mlmd_id)
-            step_run_id = self._resolve_mlmd_step_id(
-                mlmd_artifact.mlmd_parent_step_id
-            )
-            with Session(self.engine) as session:
-                self._set_run_step_output_artifact(
-                    artifact_id=artifact_id,
-                    step_run_id=step_run_id,
-                    name=output_name,
-                    session=session,
-                )
-                session.commit()
-
-    def _sync_run_step_status(self, step_model: StepRunModel) -> StepRunModel:
-        """Updates the status of a step run model.
-
-        In contrast to other update methods, this does not use the status of the
-        model to overwrite the DB. Instead, the status is queried from MLMD.
-
-        Args:
-            step_model: The step run model to update.
-
-        Returns:
-            The step run model with updated status.
-        """
-        # Update status only if the step is running and has an MLMD ID.
-        if (
-            step_model.status != ExecutionStatus.RUNNING
-            or step_model.mlmd_id is None
-        ):
-            return step_model
-
-        # Check if all output artifacts have been synced.
-        all_synced = True
-        if step_model.num_outputs and step_model.num_outputs > 0:
-            with Session(self.engine) as session:
-                outputs = session.exec(
-                    select(StepRunOutputArtifactSchema).where(
-                        StepRunOutputArtifactSchema.step_run_id == step_model.id
-                    )
-                ).all()
-            if len(outputs) < step_model.num_outputs:
-                all_synced = False
-
-        # Get the status from MLMD and update the model if necessary.
-        status = self.metadata_store.get_step_status(step_model.mlmd_id)
-        is_failed = status == ExecutionStatus.FAILED
-        is_done = status in (ExecutionStatus.COMPLETED, ExecutionStatus.CACHED)
-        if is_failed or (is_done and all_synced):
-            step_model.status = status
-            self.update_run_step(step_model)
-
-        return step_model
-
-    def _sync_run_status(self, run_model: PipelineRunModel) -> PipelineRunModel:
-        """Updates the status of a pipeline run model.
-
-        In contrast to other update methods, this does not use the status of the
-        model to overwrite the DB. Instead, the status is computed based on the
-        status of each step, and if that is different from the status in the DB,
-        the DB and model are both updated.
-
-        Args:
-            run_model: The pipeline run model to update.
-
-        Returns:
-            The pipeline run model with updated status.
-        """
-        # Update status only if the run is running.
-        if run_model.status != ExecutionStatus.RUNNING:
-            return run_model
-
-        # Get all steps of the run.
-        with Session(self.engine) as session:
-            steps = session.exec(
-                select(StepRunSchema).where(
-                    StepRunSchema.pipeline_run_id == run_model.id
-                )
-            ).all()
-
-        # Check if all steps have been synced.
-        all_synced = True
-        if run_model.num_steps and run_model.num_steps > 0:
-            if len(steps) < run_model.num_steps:
-                all_synced = False
-
-        # Compute the status of the run based on the status of the steps and
-        # update the model if necessary.
-        status = ExecutionStatus.run_status([step.status for step in steps])
-        is_failed = status == ExecutionStatus.FAILED
-        is_done = status in (ExecutionStatus.COMPLETED, ExecutionStatus.CACHED)
-        if is_failed or (is_done and all_synced):
-            run_model.status = status
-            self.update_run(run_model)
-
-        return run_model

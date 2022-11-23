@@ -25,9 +25,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-# Minor parts of the  `prepare_or_run_pipeline()` method of this file are
-# inspired by the airflow dag runner implementation of tfx
 """Implementation of Airflow orchestrator integration."""
 
 import datetime
