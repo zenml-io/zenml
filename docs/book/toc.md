@@ -25,6 +25,7 @@
 * [Collaboration](./starter-guide/collaborate/collaborate.md)
   * [Connecting to a Deployed ZenML](./starter-guide/collaborate/zenml-deployment.md)
   * [Inviting Users](./starter-guide/collaborate/users.md)
+  * [User Roles & Permissions](./starter-guide/collaborate/roles-and-permissions.md)
 
 ## Advanced Guide
 

@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import RESOURCE_SETTINGS_KEY
 from zenml.config.strict_base_model import StrictBaseModel
+from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config import ResourceSettings
@@ -131,20 +132,26 @@ class StepSpec(StrictBaseModel):
             True if the other object is referring to the same step.
         """
         if isinstance(other, StepSpec):
-
             if self.upstream_steps != other.upstream_steps:
                 return False
 
             if self.inputs != other.inputs:
                 return False
 
-            if self.source == other.source:
+            # Remove internal version pin from older sources for backwards
+            # compatibility
+            source = source_utils.remove_internal_version_pin(self.source)
+            other_source = source_utils.remove_internal_version_pin(
+                other.source
+            )
+
+            if source == other_source:
                 return True
 
-            if self.source.endswith(other.source):
+            if source.endswith(other_source):
                 return True
 
-            if other.source.endswith(self.source):
+            if other_source.endswith(source):
                 return True
 
             return False

@@ -11,26 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from constants import MODEL_NAME
 
-from zenml.integrations.bentoml.steps import (
-    BentoMLBuilderParameters,
-    bento_builder_step,
-)
 
-bento_builder = bento_builder_step(
-    params=BentoMLBuilderParameters(
-        model_name=MODEL_NAME,
-        model_type="pytorch",
-        service="service.py:svc",
-        labels={
-            "framework": "pytorch",
-            "dataset": "mnist",
-            "zenml_version": "0.21.1",
-        },
-        exclude=["data"],
-        python={
-            "packages": ["zenml", "torch", "torchvision"],
-        },
+from zenml.config.step_configurations import StepSpec
+
+
+def test_step_spec_equality():
+    """Tests the step spec equality operator."""
+    assert StepSpec(
+        source="zenml.integrations.airflow.AirflowIntegration",
+        upstream_steps=[],
+    ) == StepSpec(
+        source="zenml.integrations.airflow.AirflowIntegration@zenml_1.0.0",
+        upstream_steps=[],
     )
-)
+    assert StepSpec(
+        source="zenml.integrations.airflow.AirflowIntegration",
+        upstream_steps=[],
+    ) != StepSpec(
+        source="zenml.integrations.airflow.NotAirflowIntegration",
+        upstream_steps=[],
+    )
