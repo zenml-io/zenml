@@ -295,32 +295,6 @@ def test_pipeline_parameter_name_is_empty_when_initializing_a_step():
     assert some_step().pipeline_parameter_name is None
 
 
-def test_access_step_component_before_calling():
-    """Tests that accessing a steps component before calling it raises
-    a StepInterfaceError."""
-
-    @step
-    def some_step() -> None:
-        pass
-
-    with pytest.raises(StepInterfaceError):
-        _ = some_step().component
-
-
-def test_access_step_component_after_calling():
-    """Tests that a step component exists after the step was called."""
-
-    @step
-    def some_step() -> None:
-        pass
-
-    step_instance = some_step()
-    step_instance()
-
-    with does_not_raise():
-        _ = step_instance.component
-
-
 def test_configure_step_with_wrong_materializer_class():
     """Tests that passing a random class as a materializer raises a
     StepInterfaceError."""

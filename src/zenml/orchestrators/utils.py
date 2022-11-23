@@ -14,33 +14,11 @@
 """Utility functions for the orchestrator."""
 
 import random
-from typing import Optional
-
-from tfx.orchestration.portable import data_types
 
 from zenml.client import Client
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
-
-def get_cache_status(
-    execution_info: Optional[data_types.ExecutionInfo],
-) -> bool:
-    """Returns whether a cached execution was used or not.
-
-    Args:
-        execution_info: The execution info.
-
-    Returns:
-        `True` if the execution was cached, `False` otherwise.
-    """
-    # An execution output URI is only provided if the step needs to be
-    # executed (= is not cached)
-    if execution_info and execution_info.execution_output_uri is None:
-        return True
-    else:
-        return False
 
 
 def get_orchestrator_run_name(pipeline_name: str) -> str:

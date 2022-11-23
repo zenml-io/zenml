@@ -15,7 +15,6 @@
 from typing import TYPE_CHECKING, Type
 
 from zenml.steps import BaseStep
-from zenml.steps import utils as step_utils
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
@@ -40,6 +39,5 @@ def load_and_configure_step(step: "Step") -> "BaseStep":
 
     step_instance = step_class()
     step_instance._configuration = step.config
-    step_utils.create_executor_class(step=step_instance)
 
     return step_instance

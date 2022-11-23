@@ -16,24 +16,13 @@ import copy
 import string
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
-import tfx.orchestration.pipeline as tfx_pipeline
-from google.protobuf import json_format
-from tfx.dsl.compiler.compiler import Compiler as TFXCompiler
-from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
-from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
-
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
-from zenml.utils import (
-    pydantic_utils,
-    settings_utils,
-    source_utils,
-    string_utils,
-)
+from zenml.utils import pydantic_utils, settings_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -77,9 +66,6 @@ class Compiler:
             self._verify_run_name(run_configuration.run_name)
 
         pipeline.connect(**pipeline.steps)
-        pb2_pipeline = self._compile_proto_pipeline(
-            pipeline=pipeline, stack=stack
-        )
 
         pipeline_settings = self._filter_and_validate_settings(
             settings=pipeline.configuration.settings,
@@ -101,9 +87,7 @@ class Compiler:
                 pipeline_extra=pipeline.configuration.extra,
                 stack=stack,
             )
-            for name, step in self._get_sorted_steps(
-                pb2_pipeline, steps=pipeline.steps
-            )
+            for name, step in self._get_sorted_steps(steps=pipeline.steps)
         }
 
         self._ensure_required_stack_components_exist(
@@ -114,16 +98,11 @@ class Compiler:
             pipeline_name=pipeline.name
         )
 
-        encoded_pb2_pipeline = string_utils.b64_encode(
-            json_format.MessageToJson(pb2_pipeline)
-        )
-
         deployment = PipelineDeployment(
             run_name=run_name,
             stack_id=stack.id,
             schedule=run_configuration.schedule,
             pipeline=pipeline.configuration,
-            proto_pipeline=encoded_pb2_pipeline,
             steps=steps,
         )
         logger.debug("Compiled pipeline deployment: %s", deployment)
@@ -305,6 +284,7 @@ class Compiler:
         return StepSpec(
             source=source_utils.resolve_class(step.__class__),
             upstream_steps=sorted(step.upstream_steps),
+            inputs=step._inputs,
         )
 
     def _compile_step(
@@ -351,53 +331,6 @@ class Compiler:
 
         return Step(spec=step_spec, config=complete_step_configuration)
 
-    def _compile_proto_pipeline(
-        self, pipeline: "BasePipeline", stack: "Stack"
-    ) -> Pb2Pipeline:
-        """Compiles a ZenML pipeline into a TFX protobuf pipeline.
-
-        Args:
-            pipeline: The pipeline to compile.
-            stack: The stack on which the pipeline will run.
-
-        Raises:
-            KeyError: If any step of the pipeline contains an invalid upstream
-                step.
-
-        Returns:
-            The compiled proto pipeline.
-        """
-        # Connect the inputs/outputs of all steps in the pipeline
-        tfx_components = {
-            step.name: step.component for step in pipeline.steps.values()
-        }
-
-        # Add potential task dependencies that users specified
-        for step in pipeline.steps.values():
-            for upstream_step in step.upstream_steps:
-                try:
-                    upstream_node = tfx_components[upstream_step]
-                except KeyError:
-                    raise KeyError(
-                        f"Unable to find upstream step `{upstream_step}` for step "
-                        f"`{step.name}`. Available steps: {set(tfx_components)}."
-                    )
-
-                step.component.add_upstream_node(upstream_node)
-
-        artifact_store = stack.artifact_store
-
-        # We do not pass the metadata connection config here as it might not be
-        # accessible. Instead it is queried from the active stack right before a
-        # step is executed (see `BaseOrchestrator.run_step(...)`)
-        intermediate_tfx_pipeline = tfx_pipeline.Pipeline(
-            pipeline_name=pipeline.name,
-            components=list(tfx_components.values()),
-            pipeline_root=artifact_store.path,
-            enable_cache=pipeline.enable_cache,
-        )
-        return TFXCompiler().compile(intermediate_tfx_pipeline)
-
     @staticmethod
     def _get_default_run_name(pipeline_name: str) -> str:
         """Gets the default name for a pipeline run.
@@ -412,7 +345,7 @@ class Compiler:
 
     @staticmethod
     def _get_sorted_steps(
-        pb2_pipeline: Pb2Pipeline, steps: Dict[str, "BaseStep"]
+        steps: Dict[str, "BaseStep"]
     ) -> List[Tuple[str, "BaseStep"]]:
         """Sorts the steps of a pipeline.
 
@@ -420,21 +353,15 @@ class Compiler:
         sequentially without any conflicts.
 
         Args:
-            pb2_pipeline: Pipeline proto representation.
             steps: ZenML pipeline steps.
 
         Returns:
             The sorted steps.
         """
-        mapping = {
-            step.name: (name_in_pipeline, step)
-            for name_in_pipeline, step in steps.items()
-        }
-        sorted_steps = []
-        for node in pb2_pipeline.nodes:
-            pipeline_node: PipelineNode = node.pipeline_node
-            sorted_steps.append(mapping[pipeline_node.node_info.id])
-        return sorted_steps
+        # TODO: implement topological sort
+        return [
+            (name_in_pipeline, step) for name_in_pipeline, step in steps.items()
+        ]
 
     @staticmethod
     def _ensure_required_stack_components_exist(

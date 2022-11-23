@@ -150,7 +150,6 @@ def test_stack_prepare_pipeline_run(
         run_name=run_name,
         stack_id=uuid4(),
         pipeline=pipeline.configuration,
-        proto_pipeline="",
     )
     stack_with_mock_components.prepare_pipeline_deployment(deployment)
     for component in stack_with_mock_components.components.values():
