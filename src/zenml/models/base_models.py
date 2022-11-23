@@ -160,9 +160,8 @@ T = TypeVar("T", bound="BaseRequestModel")
 
 def update(_cls: Type[T]) -> Type[T]:
     """TODO: @bcdurak describe what this does."""
-    for field in _cls.__fields__:
-        new_field = _cls.__fields__[field]
-        new_field.required = False
-        new_field.allow_none = True
+    for _, value in _cls.__fields__.items():
+        value.required = False
+        value.allow_none = True
 
     return _cls
