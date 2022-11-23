@@ -2098,12 +2098,12 @@ class Client(metaclass=ClientMetaClass):
             pipeline_run_dict["pipeline"] = None
             pipeline_run = PipelineRunRequestModel.parse_obj(pipeline_run_dict)
             pipeline_run.mlmd_id = None
-            pipeline_run = self.zen_store.create_run(pipeline_run)
+            pipeline_run_response = self.zen_store.create_run(pipeline_run)
             for step_dict in steps:
                 artifacts = step_dict.pop("output_artifacts")
                 step_id = step_dict.pop("id")
                 step = StepRunRequestModel.parse_obj(step_dict)
-                step.pipeline_run_id = pipeline_run.id
+                step.pipeline_run_id = pipeline_run_response.id
                 step.parent_step_ids = [
                     step_id_mapping[str(parent_step_id)]
                     for parent_step_id in step.parent_step_ids
@@ -2114,20 +2114,20 @@ class Client(metaclass=ClientMetaClass):
                 }
                 step.mlmd_id = None
                 step.mlmd_parent_step_ids = []
-                step = self.zen_store.create_run_step(step)
-                step_id_mapping[str(step_id)] = step.id
+                step_response = self.zen_store.create_run_step(step)
+                step_id_mapping[str(step_id)] = step_response.id
                 for artifact_dict in artifacts:
                     artifact_id = artifact_dict.pop("id")
                     artifact = ArtifactRequestModel.parse_obj(artifact_dict)
-                    artifact.parent_step_id = step.id
+                    artifact.parent_step_id = step_response.id
                     artifact.producer_step_id = step_id_mapping[
                         str(artifact.producer_step_id)
                     ]
                     artifact.mlmd_id = None
                     artifact.mlmd_parent_step_id = None
                     artifact.mlmd_producer_step_id = None
-                    artifact = self.zen_store.create_artifact(artifact)
-                    artifact_id_mapping[str(artifact_id)] = artifact.id
+                    artifact_response = self.zen_store.create_artifact(artifact)
+                    artifact_id_mapping[str(artifact_id)] = artifact_response.id
         logger.info(f"Imported {len(yaml_data)} pipeline runs from {filename}.")
 
     def migrate_pipeline_runs(
