@@ -17,7 +17,7 @@ import hashlib
 import os
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Type
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
@@ -27,7 +27,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 from zenml.steps.utils import StepExecutor
-from zenml.utils import string_utils
+from zenml.utils import source_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
@@ -196,6 +196,7 @@ class Launcher:
 
             input_artifacts: Dict[str, BaseArtifact] = {}
             for name, artifact_model in current_run_input_artifacts.items():
+                # TODO: make sure this is the correct artifact class
                 artifact_ = BaseArtifact()
                 artifact_.name = name
                 artifact_.uri = artifact_model.uri
@@ -204,8 +205,13 @@ class Launcher:
                 input_artifacts[name] = artifact_
 
             output_artifacts: Dict[str, BaseArtifact] = {}
-            for name, _ in self._step.config.outputs.items():
-                artifact_ = BaseArtifact()
+            for name, artifact_config in self._step.config.outputs.items():
+                artifact_class: Type[
+                    BaseArtifact
+                ] = source_utils.load_and_validate_class(
+                    artifact_config.artifact_source, expected_class=BaseArtifact
+                )
+                artifact_ = artifact_class()
                 artifact_.name = name
                 artifact_.uri = generate_artifact_uri(
                     artifact_store=self._stack.artifact_store,
