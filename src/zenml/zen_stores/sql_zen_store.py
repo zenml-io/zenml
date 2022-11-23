@@ -115,7 +115,7 @@ from zenml.zen_stores.schemas import (
 )
 
 if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+    pass
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -157,14 +157,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             pool.
         max_overflow: The maximum number of connections to allow in the
             SQLAlchemy pool in addition to the pool_size.
-        grpc_metadata_host: The host to use for the gRPC metadata server.
-        grpc_metadata_port: The port to use for the gRPC metadata server.
-        grpc_metadata_ssl_ca: The certificate authority certificate to use for
-            the gRPC metadata server connection.
-        grpc_metadata_ssl_cert: The client certificate to use for the gRPC
-            metadata server connection.
-        grpc_metadata_ssl_key: The client certificate private key to use for
-            the gRPC metadata server connection.
     """
 
     type: StoreType = StoreType.SQL
@@ -180,6 +172,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_size: int = 20
     max_overflow: int = 20
 
+    # TODO: deprecate
     grpc_metadata_host: Optional[str] = None
     grpc_metadata_port: Optional[int] = None
     grpc_metadata_ssl_ca: Optional[str] = None
@@ -331,6 +324,22 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         """
         return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
 
+    @staticmethod
+    def get_local_path(url: str) -> Optional[str]:
+        """Get a local path from the given URL.
+
+        Args:
+            url: The sql url.
+
+        Returns:
+            The path if the URL refers to a SQLite database, None otherwise.
+        """
+        sqlite_prefix = "sqlite:///"
+        if not url.startswith(sqlite_prefix):
+            return None
+        path = url[len(sqlite_prefix) :]
+        return path
+
     @classmethod
     def supports_url_scheme(cls, url: str) -> bool:
         """Check if a URL scheme is supported by this store.
@@ -398,71 +407,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 config.url = cls.get_local_url(config_path)
 
         return config
-
-    def get_metadata_config(
-        self, expand_certs: bool = False
-    ) -> "ConnectionConfig":
-        """Get the metadata configuration for the SQL ZenML store.
-
-        Args:
-            expand_certs: Whether to expand the certificate paths to their
-                contents.
-
-        Returns:
-            The metadata configuration.
-
-        Raises:
-            NotImplementedError: If the SQL driver is not supported.
-        """
-        from ml_metadata.proto.metadata_store_pb2 import MySQLDatabaseConfig
-        from tfx.orchestration import metadata
-
-        sql_url = make_url(self.url)
-        if sql_url.drivername == SQLDatabaseDriver.SQLITE:
-            assert self.database is not None
-            mlmd_config = metadata.sqlite_metadata_connection_config(
-                self.database
-            )
-        elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
-            # all these are guaranteed by our root validator
-            assert self.database is not None
-            assert self.username is not None
-            assert self.password is not None
-            assert sql_url.host is not None
-
-            mlmd_config = metadata.mysql_metadata_connection_config(
-                host=sql_url.host,
-                port=sql_url.port or 3306,
-                database=self.database,
-                username=self.username,
-                password=self.password,
-            )
-
-            mlmd_ssl_options = {}
-            # Handle certificate params
-            for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-                ssl_setting = getattr(self, key)
-                if not ssl_setting:
-                    continue
-                if expand_certs and os.path.isfile(ssl_setting):
-                    with open(ssl_setting, "r") as f:
-                        ssl_setting = f.read()
-                mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
-
-            # Handle additional params
-            if mlmd_ssl_options:
-                mlmd_ssl_options[
-                    "verify_server_cert"
-                ] = self.ssl_verify_server_cert
-                mlmd_config.mysql.ssl_options.CopyFrom(
-                    MySQLDatabaseConfig.SSLOptions(**mlmd_ssl_options)
-                )
-        else:
-            raise NotImplementedError(
-                f"SQL driver `{sql_url.drivername}` is not supported."
-            )
-
-        return mlmd_config
 
     def get_sqlmodel_config(self) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
         """Get the SQLModel engine configuration for the SQL ZenML store.
@@ -611,6 +555,13 @@ class SqlZenStore(BaseZenStore):
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
         )
+
+        local_path = self.config.get_local_path(url)
+        if local_path and not fileio.exists(local_path):
+            # If the parent directory does not exist, SQLAlchemy does not
+            # automatically create the database
+            fileio.makedirs(os.path.dirname(local_path))
+
         self._alembic = Alembic(self.engine)
         if (
             not self.skip_migrations
