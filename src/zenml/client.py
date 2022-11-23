@@ -40,6 +40,7 @@ from zenml.constants import (
 from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.exceptions import (
     AlreadyExistsException,
+    EntityExistsError,
     IllegalOperationError,
     InitializationException,
     ValidationError,
@@ -698,8 +699,11 @@ class Client(metaclass=ClientMetaClass):
         """Create a team.
 
         Args:
-            name: Name of the new team
-            users: Users of the new team
+            name: Name of the team.
+            users: Users to add to the team.
+
+        Returns:
+            The created team.
         """
         user_list = []
         if users:
@@ -738,6 +742,10 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The updated team.
+
+        Raises:
+            RuntimeError: If the same user is in both `remove_users` and
+                `add_users`.
         """
         team = self.get_team(team_name_or_id)
 
@@ -851,6 +859,10 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The updated role.
+
+        Raises:
+            RuntimeError: If the same permission is in both the
+                `remove_permission` and `add_permission` lists.
         """
         role = self.get_role(name_id_or_prefix=name_id_or_prefix)
 
@@ -918,11 +930,17 @@ class Client(metaclass=ClientMetaClass):
         """Get a role assignment.
 
         Args:
-            role_name_or_id: Role to assign
-            user_or_team_name_or_id: team to assign the role to
-            is_user: Whether to interpret the user_or_team_name_or_id field as
-                user (=True) or team (=False)
-            project_name_or_id: project scope within which to assign the role
+            role_name_or_id: The name or ID of the role.
+            user_or_team_name_or_id: The name or ID of the user or team.
+            is_user: Whether to interpret the `user_or_team_name_or_id` field as
+                user (=True) or team (=False).
+            project_name_or_id: project scope within which to assign the role.
+
+        Returns:
+            The role assignment.
+
+        Raises:
+            RuntimeError: If the role assignment does not exist.
         """
         if is_user:
             role_assignments = self.zen_store.list_role_assignments(
@@ -957,12 +975,15 @@ class Client(metaclass=ClientMetaClass):
         """Create a role assignment.
 
         Args:
-            role_name_or_id: Role to assign
-            user_or_team_name_or_id: team to assign the role to
-            is_user: Whether to interpret the user_or_team_name_or_id field as
-                user (=True) or team (=False)
-            project_name_or_id: project scope within which to assign the role
+            role_name_or_id: Name or ID of the role to assign.
+            user_or_team_name_or_id: Name or ID of the user or team to assign
+                the role to.
+            is_user: Whether to interpret the `user_or_team_name_or_id` field as
+                user (=True) or team (=False).
+            project_name_or_id: project scope within which to assign the role.
 
+        Returns:
+            The newly created role assignment.
         """
         role = self.get_role(name_id_or_prefix=role_name_or_id)
         project = None
@@ -1108,8 +1129,11 @@ class Client(metaclass=ClientMetaClass):
         """Create a new project.
 
         Args:
-            name: Name of the project
-            description: Description of the project
+            name: Name of the project.
+            description: Description of the project.
+
+        Returns:
+            The created project.
         """
         return self.zen_store.create_project(
             ProjectRequestModel(name=name, description=description)
@@ -1121,12 +1145,15 @@ class Client(metaclass=ClientMetaClass):
         new_name: Optional[str] = None,
         new_description: Optional[str] = None,
     ) -> "ProjectResponseModel":
-        """Create a new project.
+        """Update a project.
 
         Args:
-            name_id_or_prefix: Name, ID or prefix of the project
-            new_name: Name of the project
-            new_description: Description of the project
+            name_id_or_prefix: Name, ID or prefix of the project to update.
+            new_name: New name of the project.
+            new_description: New description of the project.
+
+        Returns:
+            The updated project.
         """
         project = self.get_project(name_id_or_prefix=name_id_or_prefix)
         project_update = ProjectUpdateModel()
@@ -1204,14 +1231,15 @@ class Client(metaclass=ClientMetaClass):
     def get_stack(
         self, name_id_or_prefix: Optional[Union[UUID, str]] = None
     ) -> "StackResponseModel":
-        """Get Stack.
+        """Get a stack by name, ID or prefix.
+
+        If no name, ID or prefix is provided, the active stack is returned.
 
         Args:
-            name_id_or_prefix: ID of the pipeline.
+            name_id_or_prefix: The name, ID or prefix of the stack.
 
-        Raises:
-            KeyError: If the name_id_or_prefix does not uniquely identify one
-                stack
+        Returns:
+            The stack.
         """
         if name_id_or_prefix is not None:
             return self._get_entity_by_id_or_name_or_prefix(
@@ -1238,6 +1266,10 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The model of the registered stack.
+
+        Raises:
+            ValueError: If the stack contains private components and is
+                attempted to be registered as shared.
         """
         stack_components = dict()
 
@@ -1288,13 +1320,20 @@ class Client(metaclass=ClientMetaClass):
         """Updates a stack and its components.
 
         Args:
-            name_id_or_prefix: The name, id or the id prefix of the
-                stack which is getting updated.
-            name: the updated name of the stack
-            is_shared: the updated shared status of the stack
-            description: the updated description of the stack
+            name_id_or_prefix: The name, id or prefix of the stack to update.
+            name: the new name of the stack.
+            is_shared: the new shared status of the stack.
+            description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
-                updated list of names.
+                lists of new stack component names or ids.
+
+        Returns:
+            The model of the updated stack.
+
+        Raises:
+            ValueError: If the stack contains private components and is
+                attempted to be shared.
+            EntityExistsError: If the stack name is already taken.
         """
         # First, get the stack
         stack = self.get_stack(name_id_or_prefix=name_id_or_prefix)
@@ -1312,7 +1351,7 @@ class Client(metaclass=ClientMetaClass):
                 name=name, is_shared=shared_status
             )
             if existing_stacks:
-                raise ValueError(
+                raise EntityExistsError(
                     "There are already existing stacks with the name "
                     f"'{name}'."
                 )
@@ -1322,7 +1361,7 @@ class Client(metaclass=ClientMetaClass):
         if is_shared:
             existing_stacks = self.list_stacks(name=name, is_shared=True)
             if existing_stacks:
-                raise ValueError(
+                raise EntityExistsError(
                     "There are already existing shared stacks with the name "
                     f"'{name}'."
                 )
@@ -1546,6 +1585,10 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The registered stack component.
+
+        Raises:
+            KeyError: If no name_id_or_prefix is provided and no such component
+                is part of the active stack.
         """
         if name_id_or_prefix is not None:
             return self._get_component_by_id_or_name_or_prefix(
@@ -1606,11 +1649,11 @@ class Client(metaclass=ClientMetaClass):
         """Registers a stack component.
 
         Args:
-            name:
-            flavor:
-            component_type:
-            configuration:
-            is_shared:
+            name: The name of the stack component.
+            flavor: The flavor of the stack component.
+            component_type: The type of the stack component.
+            configuration: The configuration of the stack component.
+            is_shared: Whether the stack component is shared or not.
 
         Returns:
             The model of the registered component.
@@ -1657,14 +1700,18 @@ class Client(metaclass=ClientMetaClass):
         """Updates a stack component.
 
         Args:
-            name_id_or_prefix:
-            component_type:
-            name:
-            configuration:
-            is_shared:
+            name_id_or_prefix: The name, id or prefix of the stack component to
+                update.
+            component_type: The type of the stack component to update.
+            name: The new name of the stack component.
+            configuration: The new configuration of the stack component.
+            is_shared: The new shared status of the stack component.
 
         Returns:
-            The updated component.
+            The updated stack component.
+
+        Raises:
+            EntityExistsError: If the new name is already taken.
         """
         # Get the existing component model
         component = self.get_stack_component(
@@ -1686,7 +1733,7 @@ class Client(metaclass=ClientMetaClass):
                 component_type=component_type,
             )
             if existing_components:
-                raise ValueError(
+                raise EntityExistsError(
                     f"There are already existing "
                     f"{'shared' if shared_status else 'unshared'} components "
                     f"with the name '{name}'."
@@ -1698,7 +1745,7 @@ class Client(metaclass=ClientMetaClass):
                 name=name, is_shared=True, component_type=component_type
             )
             if existing_components:
-                raise ValueError(
+                raise EntityExistsError(
                     f"There are already existing shared components with "
                     f"the name '{name}'"
                 )
@@ -1851,9 +1898,6 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The stack component flavor.
-
-        Raises:
-            KeyError: if the stack component flavor doesn't exist.
         """
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=FlavorResponseModel,
@@ -2065,9 +2109,8 @@ class Client(metaclass=ClientMetaClass):
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
 
-        Raises:
-            KeyError: If the name_id_or_prefix does not uniquely identify one
-                pipeline
+        Returns:
+            A list of pipelines.
         """
         return self.zen_store.list_pipelines(
             project_name_or_id=project_name_or_id,
@@ -2078,14 +2121,13 @@ class Client(metaclass=ClientMetaClass):
     def get_pipeline(
         self, name_id_or_prefix: Union[str, UUID]
     ) -> PipelineResponseModel:
-        """List pipelines.
+        """Get a pipeline by name, id or prefix.
 
         Args:
-            name_id_or_prefix: ID of the pipeline.
+            name_id_or_prefix: The name, id or prefix of the pipeline.
 
-        Raises:
-            KeyError: If the name_id_or_prefix does not uniquely identify one
-                pipeline
+        Returns:
+            The pipeline.
         """
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=PipelineResponseModel,
@@ -2100,10 +2142,6 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, id or prefix id of the pipeline
                 to delete.
-
-        Raises:
-            KeyError: If the name_id_or_prefix does not uniquely identify one
-                pipeline
         """
         pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
@@ -2390,14 +2428,13 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
     ) -> PipelineRunResponseModel:
-        """List pipelines.
+        """Gets a pipeline run by name, ID, or prefix.
 
         Args:
-            name_id_or_prefix: ID of the pipeline run.
+            name_id_or_prefix: Name, ID, or prefix of the pipeline run.
 
-        Raises:
-            KeyError: If the name_id_or_prefix does not uniquely identify one
-                pipeline
+        Returns:
+            The pipeline run.
         """
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=PipelineRunResponseModel,
@@ -2487,6 +2524,9 @@ class Client(metaclass=ClientMetaClass):
         """Fetches an entity using the name, id or partial id.
 
         Args:
+            response_model: The response model to use for the entity.
+            get_method: The method to use to fetch the entity by id.
+            list_method: The method to use to fetch all entities.
             name_id_or_prefix: The id, name or partial id of the entity to
                 fetch.
 

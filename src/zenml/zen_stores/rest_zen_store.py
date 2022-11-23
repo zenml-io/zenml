@@ -522,9 +522,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated stack.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
         """
         return self._update_resource(
             resource_id=stack_id,
@@ -778,8 +775,9 @@ class RestZenStore(BaseZenStore):
         Args:
             user_name_or_id: The name or ID of the user to get.
 
-        Returns:
-            The requested user, if it was found.
+        Raises:
+            NotImplementedError: This method is only available for the
+                SQLZenStore.
         """
         raise NotImplementedError(
             "This method is only designed for use"
@@ -900,9 +898,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated team.
-
-        Raises:
-            KeyError: if the team does not exist.
         """
         return self._update_resource(
             resource_id=team_id,
@@ -1224,7 +1219,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             project_name_or_id: If provided, only list pipelines in this
-            project.
+                project.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
 
@@ -1897,7 +1892,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             route: The resource REST API route to use.
-            resource_model: Model to use to serialize the response body.
+            response_model: Model to use to serialize the response body.
             filters: Filter parameters to use in the query.
 
         Returns:

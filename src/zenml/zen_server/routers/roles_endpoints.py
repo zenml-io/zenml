@@ -42,6 +42,9 @@ def list_roles(
 ) -> List[RoleResponseModel]:
     """Returns a list of all roles.
 
+    Args:
+        name: Optional name of the role to filter by.
+
     Returns:
         List of all roles.
     """

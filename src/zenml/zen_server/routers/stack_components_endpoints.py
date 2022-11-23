@@ -100,7 +100,6 @@ def list_stack_components(
 @handle_exceptions
 def get_stack_component(
     component_id: UUID,
-    hydrated: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> ComponentResponseModel:
     """Returns the requested stack component.

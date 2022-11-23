@@ -112,7 +112,7 @@ def update_team(
     # noqa: DAR401
 
     Args:
-        team_name_or_id: Name or ID of the team.
+        team_id: ID of the team to update.
         team_update: Team update.
 
     Returns:

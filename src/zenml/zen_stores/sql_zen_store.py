@@ -812,10 +812,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The registered stack.
-
-        Raises:
-            KeyError: If one or more of the stack's components are not
-                registered in the store.
         """
         with Session(self.engine) as session:
             self._fail_if_stack_with_name_exists_for_user(
@@ -2187,6 +2183,9 @@ class SqlZenStore(BaseZenStore):
             role_name_or_id: Name or ID of the role to assign.
             user_name_or_id: Name or ID of the user to which to assign the role.
 
+        Returns:
+            A model of the role assignment.
+
         Raises:
             EntityExistsError: If the role assignment already exists.
         """
@@ -2239,6 +2238,9 @@ class SqlZenStore(BaseZenStore):
                 role. If this is not provided, the role will be assigned
                 globally.
 
+        Returns:
+            A model of the role assignment.
+
         Raises:
             EntityExistsError: If the role assignment already exists.
         """
@@ -2280,7 +2282,17 @@ class SqlZenStore(BaseZenStore):
     def create_role_assignment(
         self, role_assignment: RoleAssignmentRequestModel
     ) -> RoleAssignmentResponseModel:
-        """Assigns a role to a user or team, scoped to a specific project."""
+        """Assigns a role to a user or team, scoped to a specific project.
+
+        Args:
+            role_assignment: The role assignment to create.
+
+        Returns:
+            The created role assignment.
+
+        Raises:
+            ValueError: If neither a user nor a team is specified.
+        """
         if role_assignment.user:
             return self._assign_role_to_user(
                 role_name_or_id=role_assignment.role,
@@ -2338,7 +2350,10 @@ class SqlZenStore(BaseZenStore):
         """Delete a specific role assignment.
 
         Args:
-            role_assignment_id: The ID of the specific role assignment
+            role_assignment_id: The ID of the specific role assignment.
+
+        Raises:
+            KeyError: If the role assignment does not exist.
         """
         with Session(self.engine) as session:
             user_role = session.exec(
@@ -2360,8 +2375,7 @@ class SqlZenStore(BaseZenStore):
 
             if user_role is None and team_role is None:
                 raise KeyError(
-                    f"RoleAssignment with ID {role_assignment_id} "
-                    f"not found."
+                    f"RoleAssignment with ID {role_assignment_id} not found."
                 )
             else:
                 session.commit()
@@ -2457,6 +2471,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             IllegalOperationError: if the project is the default project.
+            KeyError: if the project does not exist.
         """
         with Session(self.engine) as session:
             existing_project = session.exec(

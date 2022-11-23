@@ -87,8 +87,8 @@ class StepRunSchema(NamedSchema, table=True):
 
         Args:
             parent_step_ids: The parent step ids to link to the step.
-            mlmd_parent_step_ids: The parent step ids in MLMD.
-            input_artifacts:
+            mlmd_parent_step_ids: The parent step ids in MLMD
+            input_artifacts: The input artifacts to link to the step.
 
         Returns:
             The created StepRunModel.
