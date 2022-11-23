@@ -13,7 +13,7 @@
 # limitations under the License.
 """This module defines a generic Launcher for all TFleX nodes."""
 
-import json
+import hashlib
 import os
 import time
 from datetime import datetime
@@ -38,17 +38,26 @@ logger = get_logger(__name__)
 
 
 def generate_cache_key(
-    step: Step, input_artifacts: Dict[str, ArtifactModel]
+    step: Step,
+    artifact_store: "BaseArtifactStore",
+    input_artifacts: Dict[str, ArtifactModel],
 ) -> str:
-    step_name = step.config.name
-    input_artifact_ids: Dict[str, str] = {
-        input_name: str(artifact.id)
-        for input_name, artifact in input_artifacts.items()
-    }
-    param_str = json.dumps(step.config.parameters, sort_keys=True)
-    input_str = json.dumps(input_artifact_ids, sort_keys=True)
-    cache_data = step_name + param_str + input_str
-    return cache_data
+    hash_ = hashlib.md5()
+
+    hash_.update(step.spec.source.encode())
+    hash_.update(artifact_store.path.encode())
+
+    for key, value in sorted(step.config.parameters.items()):
+        hash_.update(key.encode())
+        hash_.update(str(value).encode())
+
+    for name, artifact in input_artifacts.items():
+        hash_.update(name.encode())
+        hash_.update(artifact.id.bytes)
+
+    # TODO: include output artifacts and cache params
+
+    return hash_.hexdigest()
 
 
 def generate_artifact_uri(
@@ -82,7 +91,6 @@ class Launcher:
     def launch(self) -> None:
         # TODO: Create run here instead
 
-        # TODO: this does not respect the step OR pipeline level `enable_cache`
         logger.info(f"Step `{self._step_name}` has started.")
 
         run = Client().zen_store.get_run(self._run_name)
@@ -112,8 +120,14 @@ class Launcher:
             current_run_input_artifacts[name] = artifact
 
         # 2. Generate cache key for current step
+        cache_enabled = (
+            self._pipeline_config.enable_cache
+            and self._step.config.enable_cache
+        )
         cache_key = generate_cache_key(
-            step=self._step, input_artifacts=current_run_input_artifacts
+            step=self._step,
+            artifact_store=self._stack.artifact_store,
+            input_artifacts=current_run_input_artifacts,
         )
 
         # 3. Register step run
@@ -144,31 +158,37 @@ class Launcher:
             enable_cache=self._step.config.enable_cache,
         )
 
-        # 4. query zen store for all step runs with same cache key
+        cache_used = False
 
-        all_step_runs = Client().zen_store.list_run_steps()
-        cache_candidates = [
-            step_run
-            for step_run in all_step_runs
-            if step_run.id != current_step_run.id
-            and step_run.cache_key == cache_key
-            and step_run.status
-            in {ExecutionStatus.COMPLETED, ExecutionStatus.CACHED}
-        ]
+        if cache_enabled:
+            # 4. query zen store for all step runs with same cache key
+            all_step_runs = Client().zen_store.list_run_steps()
+            cache_candidates = [
+                step_run
+                for step_run in all_step_runs
+                if step_run.id != current_step_run.id
+                and step_run.cache_key == cache_key
+                and step_run.status
+                in {ExecutionStatus.COMPLETED, ExecutionStatus.CACHED}
+            ]
 
-        if cache_candidates:
-            # if exists, use latest run and do the following:
-            #   - Set status to cached
-            #   - Update with output artifacts of the existing step run
-            cache_candidates.sort(key=lambda s: s.created)
-            cached_step_run = cache_candidates[-1]
-            current_step_run.output_artifacts = cached_step_run.output_artifacts
-            current_step_run.status = ExecutionStatus.CACHED
-            current_step_run.end_time = current_step_run.start_time
-            Client().zen_store.create_run_step(current_step_run)
+            if cache_candidates:
+                # if exists, use latest run and do the following:
+                #   - Set status to cached
+                #   - Update with output artifacts of the existing step run
+                cache_candidates.sort(key=lambda s: s.created)
+                cached_step_run = cache_candidates[-1]
+                current_step_run.output_artifacts = (
+                    cached_step_run.output_artifacts
+                )
+                current_step_run.status = ExecutionStatus.CACHED
+                current_step_run.end_time = current_step_run.start_time
+                Client().zen_store.create_run_step(current_step_run)
 
-            logger.info(f"Using cached version of `{self._step_name}`.")
-        else:
+                logger.info(f"Using cached version of `{self._step_name}`.")
+                cache_used = True
+
+        if not cache_used:
             # if no step run exists:
             #   - Run code
             #   - Register the new output artifacts
