@@ -29,22 +29,17 @@
 # The `run_step()` method of this file is a modified version of the local dag
 # runner implementation of tfx
 """Base orchestrator class."""
-import os
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union, cast
 from uuid import UUID
 
 from pydantic import root_validator
-from tfx.dsl.io.fileio import NotFoundError
-from tfx.orchestration.portable import outputs_utils
-from tfx.types.artifact import Artifact
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import PipelineRunModel
 from zenml.orchestrators.launcher import Launcher
@@ -56,72 +51,6 @@ if TYPE_CHECKING:
     from zenml.config.step_configurations import Step, StepConfiguration
 
 logger = get_logger(__name__)
-
-
-# TFX PATCH ####################################################################
-# The following code patches a function in tfx which leads to an OSError on
-# Windows.
-def _patched_remove_stateful_working_dir(stateful_working_dir: str) -> None:
-    """Deletes the stateful working directory if it exists.
-
-    Args:
-        stateful_working_dir: Stateful working directory to delete.
-    """
-    # The original implementation uses
-    # `os.path.abspath(os.path.join(stateful_working_dir, os.pardir))` to
-    # compute the parent directory that needs to be deleted. This however
-    # doesn't work with our artifact store paths (e.g. s3://my-artifact-store)
-    # which would get converted to something like this:
-    # /path/to/current/working/directory/s3:/my-artifact-store. In order to
-    # avoid that we use `os.path.dirname` instead as the stateful working dir
-    # should already be an absolute path anyway.
-    stateful_working_dir = os.path.dirname(stateful_working_dir)
-    try:
-        fileio.rmtree(stateful_working_dir)
-    except NotFoundError:
-        logger.debug(
-            "Unable to find stateful working directory '%s'.",
-            stateful_working_dir,
-        )
-
-
-def _patched_remove_output_dirs(output_dict: Dict[str, List[Artifact]]) -> None:
-    """Remove dirs of output artifacts' URI.
-
-    Args:
-        output_dict: Dictionary of strings to output artifacts.
-    """
-    # The original implementation was doing a fileio.rmtree
-    # without checking for the existence of the object. This
-    # caused a cascading failure, and users of ZenML then see
-    # an internal TFX error in some cases.
-    for _, artifact_list in output_dict.items():
-        for artifact in artifact_list:
-            if fileio.isdir(artifact.uri):
-                fileio.rmtree(artifact.uri)
-            elif fileio.exists(artifact.uri):
-                fileio.remove(artifact.uri)
-
-
-assert hasattr(
-    outputs_utils, "remove_stateful_working_dir"
-), "Unable to find tfx function."
-setattr(
-    outputs_utils,
-    "remove_stateful_working_dir",
-    _patched_remove_stateful_working_dir,
-)
-assert hasattr(
-    outputs_utils, "remove_output_dirs"
-), "Unable to find tfx function."
-setattr(
-    outputs_utils,
-    "remove_output_dirs",
-    _patched_remove_output_dirs,
-)
-
-
-# END OF TFX PATCH #############################################################
 
 
 class BaseOrchestratorConfig(StackComponentConfig):
