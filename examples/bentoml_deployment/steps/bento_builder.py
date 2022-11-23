@@ -29,5 +29,8 @@ bento_builder = bento_builder_step(
             "zenml_version": "0.21.1",
         },
         exclude=["data"],
+        python={
+            "packages": ["zenml", "torch", "torchvision"],
+        },
     )
 )
