@@ -41,11 +41,39 @@ Attach the relevant output to help us understand more on what happened under the
 Sometimes it's useful to provide more logs to give more context to the issue at hand.
 See below.
 
-
 ## How to search Slack for answers
+Go to https://open.crowd.dev/zenml and type your query in the search bar.
 
 ## How to see logs on the client and server
 
 ## How to toggle ZENML_LOGGING_VERBOSITY env variable to show more logs
 
 ## Common errors
+
+### Error initializing rest store
+
+Typically, the error presents itself as: 
+
+```bash
+RuntimeError: Error initializing rest store with URL 'http://127.0.0.1:8237': HTTPConnectionPool(host='127.0.0.1', port=8237): Max retries exceeded with url: /api/v1/login (Caused by 
+NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f9abb198550>: Failed to establish a new connection: [Errno 61] Connection refused'))
+```
+
+If you restarted your machine after deploying ZenML then you have to run `zenml up` again after each restart.
+Local ZenML deployments don't survive machine restarts.
+
+
+### Column 'step_configuration' cannot be null
+
+```bash
+sqlalchemy.exc.IntegrityError: (pymysql.err.IntegrityError) (1048, "Column 'step_configuration' cannot be null")
+```
+
+This happens when a step configuration is too long. 
+We changed the limit form 4K to 65K chars, but it could still happen if you have excessively long strings in your config.
+
+### Install ZenML on Apple Silicon without Rosetta
+Our recommended, and tested approach is to install via `Rosetta`. 
+
+But a community member recently discovered a way to install ZenML on Apple Silicon without Rosetta.
+Join the conversation [here](https://open.crowd.dev/zenml/for-what-its-worth-i-was-able-to-successfully-install?q=&p=1).
