@@ -81,11 +81,19 @@ class StepConfiguration(PartialStepConfiguration):
         return ResourceSettings.parse_obj(model_or_dict)
 
 
+class OutputSpec(StrictBaseModel):
+    """Step output specification."""
+
+    step_name: str
+    output_name: str
+
+
 class StepSpec(StrictBaseModel):
     """Specification of a pipeline."""
 
     source: str
     upstream_steps: List[str]
+    inputs: Dict[str, OutputSpec]
 
     @property
     def module_name(self) -> str:
@@ -125,6 +133,9 @@ class StepSpec(StrictBaseModel):
         if isinstance(other, StepSpec):
 
             if self.upstream_steps != other.upstream_steps:
+                return False
+
+            if self.inputs != other.inputs:
                 return False
 
             if self.source == other.source:

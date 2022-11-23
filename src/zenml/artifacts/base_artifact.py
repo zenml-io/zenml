@@ -38,10 +38,6 @@ class BaseArtifact:
 
     TYPE_NAME: str = "BaseArtifact"
 
-    uri: str
-    materializer: str
-    data_type: str
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init method for BaseArtifact.
 
@@ -50,6 +46,10 @@ class BaseArtifact:
             **kwargs: Keyword arguments.
         """
         self.set_zenml_artifact_type()
+        self.name = None
+        self.uri = None
+        self.materializer = None
+        self.data_type = None
 
     @classmethod
     def set_zenml_artifact_type(cls) -> None:

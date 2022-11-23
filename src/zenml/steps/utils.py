@@ -27,45 +27,24 @@ is proposed by ZenML.
 from __future__ import absolute_import, division, print_function
 
 import inspect
-import json
 import sys
 import typing
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Type,
-)
-
-import pydantic
-from tfx.dsl.components.base.base_executor import BaseExecutor
-from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
-from tfx.orchestration.portable import outputs_utils
-from tfx.proto.orchestration import execution_result_pb2
-from tfx.types import component_spec
+from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Type
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
-from zenml.exceptions import MissingStepParameterError, StepInterfaceError
-from zenml.io import fileio
+from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.step_output import Output
-from zenml.utils import proto_utils, source_utils
+from zenml.utils import source_utils
 
 if TYPE_CHECKING:
-    from tfx.dsl.component.experimental.decorators import _SimpleComponent
-
-    from zenml.config.step_configurations import ArtifactConfiguration
-    from zenml.steps.base_step import BaseStep
+    from zenml.config.step_configurations import Step
 
 logger = get_logger(__name__)
 
@@ -141,150 +120,11 @@ def parse_return_type_annotations(
     return output_signature
 
 
-def create_component_class(step: "BaseStep") -> Type["_SimpleComponent"]:
-    """Creates a TFX component class.
+class StepExecutor:
+    """Class to execute ZenML steps."""
 
-    Args:
-        step: The step for which to create the component class.
-
-    Returns:
-        The component class.
-    """
-    from tfx.dsl.component.experimental.decorators import _SimpleComponent
-
-    executor_class = create_executor_class(step=step)
-    component_spec_class = _create_component_spec_class(step=step)
-
-    module, _ = source_utils.resolve_class(step.__class__).rsplit(".", 1)
-
-    return type(
-        step.configuration.name,
-        (_SimpleComponent,),
-        {
-            "SPEC_CLASS": component_spec_class,
-            "EXECUTOR_SPEC": ExecutorClassSpec(executor_class=executor_class),
-            "__module__": module,
-        },
-    )
-
-
-def _create_component_spec_class(
-    step: "BaseStep",
-) -> Type[component_spec.ComponentSpec]:
-    """Creates a TFX component spec class.
-
-    Args:
-        step: The step for which to create the component spec class.
-
-    Returns:
-        The component spec class.
-    """
-    # Ensure that the step configuration is complete
-    configuration = StepConfiguration.parse_obj(step.configuration)
-
-    inputs = _create_channel_parameters(configuration.inputs)
-    outputs = _create_channel_parameters(configuration.outputs)
-
-    execution_parameter_names = set(configuration.parameters).union(
-        step._internal_execution_parameters
-    )
-    parameters = {
-        key: component_spec.ExecutionParameter(type=str)  # type: ignore[no-untyped-call] # noqa
-        for key in execution_parameter_names
-    }
-    return type(
-        f"{step.name}_Spec",
-        (component_spec.ComponentSpec,),
-        {
-            "INPUTS": inputs,
-            "OUTPUTS": outputs,
-            "PARAMETERS": parameters,
-            "__module__": __name__,
-        },
-    )
-
-
-def _create_channel_parameters(
-    artifacts: Mapping[str, "ArtifactConfiguration"]
-) -> Dict[str, component_spec.ChannelParameter]:
-    """Creates TFX channel parameters for ZenML artifacts.
-
-    Args:
-        artifacts: The ZenML artifacts.
-
-    Returns:
-        TFX channel parameters.
-    """
-    channel_parameters = {}
-    for key, artifact_config in artifacts.items():
-        artifact_class: Type[
-            BaseArtifact
-        ] = source_utils.load_and_validate_class(
-            artifact_config.artifact_source, expected_class=BaseArtifact
-        )
-        # TODO[RMTFX]: artifact_class is no longer an MLMD Artifact type.
-        channel_parameters[key] = component_spec.ChannelParameter(
-            type=artifact_class
-        )
-    return channel_parameters
-
-
-def create_executor_class(
-    step: "BaseStep",
-) -> Type["_ZenMLStepExecutor"]:
-    """Creates an executor class for a step.
-
-    Args:
-        step: The step instance for which to create an executor class.
-
-    Returns:
-        The executor class.
-    """
-    executor_class_name = _get_executor_class_name(step.configuration.name)
-    executor_class = type(
-        executor_class_name,
-        (_ZenMLStepExecutor,),
-        {"_STEP": step, "__module__": __name__},
-    )
-
-    # Add the executor class to the current module, so tfx can load it
-    module = sys.modules[__name__]
-    setattr(module, executor_class_name, executor_class)
-
-    return executor_class
-
-
-def get_executor_class(step_name: str) -> Optional[Type["_ZenMLStepExecutor"]]:
-    """Gets the executor class for a step.
-
-    Args:
-        step_name: Name of the step for which to get the executor class.
-
-    Returns:
-        The executor class.
-    """
-    executor_class_name = _get_executor_class_name(step_name)
-    module = sys.modules[__name__]
-    return getattr(module, executor_class_name, None)
-
-
-def _get_executor_class_name(step_name: str) -> str:
-    """Gets the executor class name for a step.
-
-    Args:
-        step_name: Name of the step for which to get the executor class name.
-
-    Returns:
-        The executor class name.
-    """
-    return f"{step_name}_Executor"
-
-
-class _ZenMLStepExecutor(BaseExecutor):
-    """TFX Executor which runs ZenML steps."""
-
-    if TYPE_CHECKING:
-        _STEP: ClassVar["BaseStep"]
+    def __init__(self, step: "Step"):
+        self._step = step
 
     @property
     def configuration(self) -> StepConfiguration:
@@ -293,7 +133,17 @@ class _ZenMLStepExecutor(BaseExecutor):
         Returns:
             The step configuration.
         """
-        return StepConfiguration.parse_obj(self._STEP.configuration)
+        return self._step.config
+
+    def _load_step_function(self) -> Callable[..., Any]:
+        from zenml.steps import BaseStep
+
+        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
+            self._step.spec.source, expected_class=BaseStep
+        )
+
+        step_instance = step_class()
+        return step_instance.entrypoint
 
     def _load_output_materializers(self) -> Dict[str, Type[BaseMaterializer]]:
         """Loads the output materializers for the step.
@@ -359,36 +209,18 @@ class _ZenMLStepExecutor(BaseExecutor):
         artifact.data_type = source_utils.resolve_class(type(data))
         materializer_class(artifact).handle_return(data)
 
-    def Do(
+    def execute(
         self,
-        input_dict: Dict[str, List[BaseArtifact]],
-        output_dict: Dict[str, List[BaseArtifact]],
-        exec_properties: Dict[str, Any],
+        input_artifacts: Dict[str, BaseArtifact],
+        output_artifacts: Dict[str, BaseArtifact],
+        run_name: str,
+        pipeline_config: PipelineConfiguration,
     ) -> None:
-        """Main block for the execution of the step.
-
-        Args:
-            input_dict: dictionary containing the input artifacts
-            output_dict: dictionary containing the output artifacts
-            exec_properties: dictionary containing the execution parameters
-
-        Raises:
-            MissingStepParameterError: if a required parameter is missing.
-            RuntimeError: if the step fails.
-            StepInterfaceError: if the step interface is not implemented.
-        """
         from zenml.steps import BaseParameters
 
         step_name = self.configuration.name
-        step_function = self._STEP.entrypoint
+        step_function = self._load_step_function()
         output_materializers = self._load_output_materializers()
-
-        # remove all ZenML internal execution properties
-        exec_properties = {
-            k: json.loads(v)
-            for k, v in exec_properties.items()
-            if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX)
-        }
 
         # Building the args for the entrypoint function
         function_params = {}
@@ -405,23 +237,9 @@ class _ZenMLStepExecutor(BaseExecutor):
             arg_type = resolve_type_annotation(arg_type)
 
             if issubclass(arg_type, BaseParameters):
-                try:
-                    config_object = arg_type.parse_obj(exec_properties)
-                except pydantic.ValidationError as e:
-                    missing_fields = [
-                        str(field)
-                        for error_dict in e.errors()
-                        for field in error_dict["loc"]
-                    ]
-
-                    raise MissingStepParameterError(
-                        step_name,
-                        missing_fields,
-                        arg_type,
-                    ) from None
-                function_params[arg] = config_object
+                step_params = arg_type.parse_obj(self.configuration.parameters)
+                function_params[arg] = step_params
             elif issubclass(arg_type, StepContext):
-                output_artifacts = {k: v[0] for k, v in output_dict.items()}
                 context = arg_type(
                     step_name=step_name,
                     output_materializers=output_materializers,
@@ -431,30 +249,21 @@ class _ZenMLStepExecutor(BaseExecutor):
             else:
                 # At this point, it has to be an artifact, so we resolve
                 function_params[arg] = self._load_input_artifact(
-                    input_dict[arg][0], arg_type
+                    input_artifacts[arg], arg_type
                 )
 
-        if self._context is None:
-            raise RuntimeError(
-                "No TFX context is set for the currently running pipeline. "
-                "Cannot retrieve pipeline runtime information."
-            )
-
-        pipeline_config = proto_utils.get_pipeline_config(
-            self._context.pipeline_node
-        )
         step_run_info = StepRunInfo(
             config=self.configuration,
             pipeline=pipeline_config,
-            run_name=self._context.pipeline_run_id,
+            run_name=run_name,
         )
         # Wrap the execution of the step function in a step environment
         # that the step function code can access to retrieve information about
         # the pipeline runtime, such as the current step name and the current
         # pipeline run ID
         with StepEnvironment(
-            pipeline_name=self._context.pipeline_info.id,
-            pipeline_run_id=self._context.pipeline_run_id,
+            pipeline_name=pipeline_config.name,
+            pipeline_run_id=run_name,
             step_name=step_name,
             step_run_info=step_run_info,
             cache_enabled=self.configuration.enable_cache,
@@ -505,19 +314,20 @@ class _ZenMLStepExecutor(BaseExecutor):
                 self._store_output_artifact(
                     materializer_class=materializer_class,
                     materializer_source=materializer_source,
-                    artifact=output_dict[output_name][0],
+                    artifact=output_artifacts[output_name],
                     data=return_value,
                 )
 
         # Write the executor output to the artifact store so the executor
         # operator (potentially not running on the same machine) can read it
         # to populate the metadata store
-        executor_output = execution_result_pb2.ExecutorOutput()
-        outputs_utils.populate_output_artifact(executor_output, output_dict)
 
-        logger.debug(
-            "Writing executor output to '%s'.",
-            self._context.executor_output_uri,
-        )
-        with fileio.open(self._context.executor_output_uri, "wb") as f:
-            f.write(executor_output.SerializeToString())
+        # executor_output = execution_result_pb2.ExecutorOutput()
+        # outputs_utils.populate_output_artifact(executor_output, output_dict)
+
+        # logger.debug(
+        #     "Writing executor output to '%s'.",
+        #     self._context.executor_output_uri,
+        # )
+        # with fileio.open(self._context.executor_output_uri, "wb") as f:
+        #     f.write(executor_output.SerializeToString())

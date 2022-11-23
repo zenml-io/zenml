@@ -14,28 +14,21 @@
 
 """Custom StepExecutorOperator which can be passed to the step operator."""
 
-import json
 import os
-from typing import TYPE_CHECKING, Any, List, cast
+from typing import TYPE_CHECKING
 
 from tfx.orchestration.portable import data_types
-from tfx.orchestration.portable.base_executor_operator import (
-    BaseExecutorOperator,
-)
-from tfx.proto.orchestration import executable_spec_pb2, execution_result_pb2
+from tfx.proto.orchestration import execution_result_pb2
 
 from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
-from zenml.steps.utils import (
-    INTERNAL_EXECUTION_PARAMETER_PREFIX,
-    PARAM_PIPELINE_PARAMETER_NAME,
-)
-from zenml.utils import proto_utils
 
 if TYPE_CHECKING:
     from zenml.stack import Stack
@@ -84,18 +77,13 @@ def _read_executor_output(
         )
 
 
-class StepExecutorOperator(BaseExecutorOperator):
+class StepExecutorOperator:
     """StepExecutorOperator extends TFX's BaseExecutorOperator.
 
     This class can be passed as a custom executor operator during
     a pipeline run which will then be used to call the step's
     configured step operator to launch it in some environment.
     """
-
-    SUPPORTED_EXECUTOR_SPEC_TYPE = [
-        executable_spec_pb2.PythonClassExecutableSpec
-    ]
-    SUPPORTED_PLATFORM_CONFIG_TYPE: List[Any] = []
 
     @staticmethod
     def _get_step_operator(
@@ -130,25 +118,6 @@ class StepExecutorOperator(BaseExecutorOperator):
 
         return step_operator
 
-    @staticmethod
-    def _get_step_name_in_pipeline(
-        execution_info: data_types.ExecutionInfo,
-    ) -> str:
-        """Gets the name of a step inside its pipeline.
-
-        Args:
-            execution_info: The step execution info.
-
-        Returns:
-            The name of the step in the pipeline.
-        """
-        property_name = (
-            INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
-        )
-        return cast(
-            str, json.loads(execution_info.exec_properties[property_name])
-        )
-
     def run_executor(
         self,
         execution_info: data_types.ExecutionInfo,
@@ -169,10 +138,8 @@ class StepExecutorOperator(BaseExecutorOperator):
         assert execution_info.tmp_dir
         assert execution_info.execution_output_uri
 
-        step = proto_utils.get_step(pipeline_node=execution_info.pipeline_node)
-        pipeline_config = proto_utils.get_pipeline_config(
-            pipeline_node=execution_info.pipeline_node
-        )
+        step: Step = Step()
+        pipeline_config: PipelineConfiguration = PipelineConfiguration()
         assert step.config.step_operator
 
         stack = Client().active_stack
@@ -187,7 +154,7 @@ class StepExecutorOperator(BaseExecutorOperator):
         )
         _write_execution_info(execution_info, path=execution_info_path)
 
-        step_name_in_pipeline = self._get_step_name_in_pipeline(execution_info)
+        step_name_in_pipeline = ""  # TODO
 
         entrypoint_command = (
             StepOperatorEntrypointConfiguration.get_entrypoint_command()

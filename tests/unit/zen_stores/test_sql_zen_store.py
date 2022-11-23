@@ -16,7 +16,6 @@ import uuid
 from contextlib import ExitStack as does_not_raise
 
 import pytest
-from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ExecutionStatus, PermissionType, StackComponentType
@@ -688,19 +687,6 @@ def test_revoking_role_for_nonexistent_user_fails(
         sql_store_with_team["store"].revoke_role(new_role_id, uuid.uuid4())
 
 
-#  .----------------.
-# | METADATA_CONFIG |
-# '-----------------'
-
-
-def test_get_metadata_config_succeeds(
-    sql_store: BaseZenStore,
-):
-    """Tests getting metadata config."""
-    metadata_config = sql_store["store"].get_metadata_config()
-    assert metadata_config is not None
-
-
 #  .-------.
 # | STACKS |
 # '--------'
@@ -879,21 +865,6 @@ def test_deleting_a_stack_succeeds(
     sql_store["store"].delete_stack(new_stack.id)
     with pytest.raises(KeyError):
         sql_store["store"].get_stack(new_stack.id)
-
-
-# ------------
-# TFX Metadata
-# ------------
-
-
-def test_tfx_metadata_succeeds(
-    sql_store: BaseZenStore,
-):
-    """Tests tfx metadata."""
-    with does_not_raise():
-        config = sql_store["store"].get_metadata_config()
-        assert config is not None
-        assert type(config) == ConnectionConfig
 
 
 # ---------
