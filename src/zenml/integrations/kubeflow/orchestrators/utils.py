@@ -134,6 +134,8 @@ def _render_artifact_as_mdstr(single_artifact: artifact.Artifact) -> str:
     """
     span_str = "None"
     split_names_str = "None"
+    # TODO[RMTFX]: we no longer use MLMD artifacts and our artifacts have no
+    # properties anymore. How to handle this?
     if single_artifact.PROPERTIES:
         if "span" in single_artifact.PROPERTIES:
             span_str = str(single_artifact.span)

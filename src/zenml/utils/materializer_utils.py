@@ -17,8 +17,6 @@ import os
 import tempfile
 from typing import Any
 
-from ml_metadata.proto.metadata_store_pb2 import Artifact
-
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.io import fileio
@@ -68,10 +66,6 @@ def load_model_from_metadata(model_uri: str) -> Any:
     by the save_model_metadata function. The information in the Yaml file is
     used to load the model into memory in the inference environment.
 
-    model_uri: the URI of the model checkpoint/files to load.
-    datatype: the model type. This is the path to the model class.
-    materializer: the materializer class. This is the path to the materializer class.
-
     Args:
         model_uri: the artifact to extract the metadata from.
 
@@ -82,20 +76,17 @@ def load_model_from_metadata(model_uri: str) -> Any:
         os.path.join(model_uri, MODEL_METADATA_YAML_FILE_NAME), "r"
     ) as f:
         metadata = read_yaml(f.name)
-    model_artifact = Artifact()
-    model_artifact.uri = model_uri
-    model_artifact.properties[METADATA_DATATYPE].string_value = metadata[
-        METADATA_DATATYPE
-    ]
-    model_artifact.properties[METADATA_MATERIALIZER].string_value = metadata[
-        METADATA_MATERIALIZER
-    ]
-    materializer_class = source_utils.load_source_path_class(
-        model_artifact.properties[METADATA_MATERIALIZER].string_value
+
+    data_type = metadata[METADATA_DATATYPE]
+    materializer = metadata[METADATA_MATERIALIZER]
+
+    model_artifact = ModelArtifact(
+        uri=model_uri,
+        data_type=data_type,
+        materializer=materializer,
     )
-    model_class = source_utils.load_source_path_class(
-        model_artifact.properties[METADATA_DATATYPE].string_value
-    )
+    materializer_class = source_utils.load_source_path_class(materializer)
+    model_class = source_utils.load_source_path_class(data_type)
     materializer_object: BaseMaterializer = materializer_class(model_artifact)
     model = materializer_object.handle_input(model_class)
     try:
@@ -121,7 +112,7 @@ def model_from_model_artifact(model_artifact: ModelArtifact) -> Any:
     materializer_class = source_utils.load_source_path_class(
         model_artifact.materializer
     )
-    model_class = source_utils.load_source_path_class(model_artifact.datatype)
+    model_class = source_utils.load_source_path_class(model_artifact.data_type)
     materializer_object: BaseMaterializer = materializer_class(model_artifact)
     model = materializer_object.handle_input(model_class)
     logger.debug(f"Model loaded successfully :\n{model}")

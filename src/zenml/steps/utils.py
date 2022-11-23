@@ -206,7 +206,7 @@ class StepExecutor:
             data: The data to store in the artifact.
         """
         artifact.materializer = materializer_source
-        artifact.datatype = source_utils.resolve_class(type(data))
+        artifact.data_type = source_utils.resolve_class(type(data))
         materializer_class(artifact).handle_return(data)
 
     def execute(

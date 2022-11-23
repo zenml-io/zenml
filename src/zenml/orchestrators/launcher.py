@@ -181,7 +181,7 @@ class Launcher:
                 artifact_.name = name
                 artifact_.uri = artifact_model.uri
                 artifact_.materializer = artifact_model.materializer
-                artifact_.datatype = artifact_model.data_type
+                artifact_.data_type = artifact_model.data_type
                 input_artifacts[name] = artifact_
 
             output_artifacts: Dict[str, BaseArtifact] = {}
