@@ -110,6 +110,7 @@ BentoMLDeploymentService
 BentoMLModelDeployer
 BentoMlDeploymentConfig
 Bentos
+behaviour
 Bing
 Bitbucket
 BluePill
@@ -593,6 +594,7 @@ SecretSchemas
 SecretsManager
 SecretsManagerReadWrite
 SecretsManagerScope
+selectable
 Seldon
 SeldonClient
 SeldonClientError
@@ -1133,6 +1135,7 @@ jk
 joblib
 jpeg
 jpg
+jq
 json
 jsonified
 jsonpath
