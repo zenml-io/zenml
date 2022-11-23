@@ -73,7 +73,7 @@ class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
     """Request model for stack components."""
 
     @validator("name")
-    def name_cant_be_a_secret_reference(cls, name):
+    def name_cant_be_a_secret_reference(cls, name: str) -> str:
         if secret_utils.is_secret_reference(name):
             raise ValueError(
                 "Passing the `name` attribute of a stack component as a "

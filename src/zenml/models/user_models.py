@@ -186,10 +186,10 @@ class UserBaseModel(BaseModel):
 class UserResponseModel(UserBaseModel, BaseResponseModel):
     """Response model for users. TODO @alexejpenner describe what this does."""
 
+    activation_token: Optional[str] = Field(default=None)
     teams: Optional[List["TeamResponseModel"]] = Field(
         title="The list of teams for this user."
     )
-    activation_token: Optional[str] = Field(default=None)
 
     def generate_access_token(self, permissions: List[str]) -> str:
         """Generates an access token.
@@ -209,7 +209,7 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
         ).encode()
 
 
-class UserAuthModel(UserResponseModel, BaseResponseModel):
+class UserAuthModel(UserBaseModel, BaseResponseModel):
     """TODO @alexejpenner describe what this does."""
 
     email: Optional[str] = Field(
@@ -222,6 +222,26 @@ class UserAuthModel(UserResponseModel, BaseResponseModel):
 
     activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
     password: Optional[SecretStr] = Field(default=None, exclude=True)
+    teams: Optional[List["TeamResponseModel"]] = Field(
+        title="The list of teams for this user."
+    )
+
+    def generate_access_token(self, permissions: List[str]) -> str:
+        """Generates an access token.
+
+        Generates an access token and returns it.
+
+        Args:
+            permissions: Permissions to add to the token
+
+        Returns:
+            The generated access token.
+        """
+        return JWTToken(
+            token_type=JWTTokenType.ACCESS_TOKEN,
+            user_id=self.id,
+            permissions=permissions,
+        ).encode()
 
     @classmethod
     def _is_hashed_secret(cls, secret: SecretStr) -> bool:

@@ -197,7 +197,7 @@ def print_pydantic_models(
 
     """
     if exclude_columns is None:
-        exclude_columns = []
+        exclude_columns = list()
 
     def __dictify(model: M) -> Dict[str, str]:
         """Helper function to map over the list to turn Models into dicts.
@@ -211,7 +211,7 @@ def print_pydantic_models(
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
             include_columns = [
-                k for k in model.dict().keys() if k not in exclude_columns
+                k for k in model.dict().keys() if k not in exclude_columns  # type: ignore[operator]
             ]
         else:
             include_columns = columns
