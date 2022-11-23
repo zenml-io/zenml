@@ -15,7 +15,6 @@
 
 import collections
 import inspect
-import json
 import random
 from abc import abstractmethod
 from collections import defaultdict
@@ -38,7 +37,6 @@ from typing import (
 )
 
 from pydantic import ValidationError
-from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
@@ -70,7 +68,6 @@ from zenml.steps.utils import (
     PARAM_SETTINGS,
     PARAM_STEP_NAME,
     PARAM_STEP_OPERATOR,
-    create_component_class,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -78,8 +75,6 @@ from zenml.utils import dict_utils, pydantic_utils, settings_utils, source_utils
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
-    from tfx.dsl.component.experimental.decorators import _SimpleComponent
-
     from zenml.config.base_settings import SettingsOrDict
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
@@ -264,14 +259,17 @@ class BaseStep(metaclass=BaseStepMeta):
         steps can finalize their configuration.
 
         Attributes:
-            channel: TFX channel that defines the artifact class and id of the
-                step that produced the output.
+            name: Name of the output.
+            step_name: Name of the step that produced this output.
             materializer_source: The source of the materializer used to
                 write the output.
+            artifact_source: The source of the artifact class of the output.
         """
 
-        channel: Channel
+        name: str
+        step_name: str
         materializer_source: str
+        artifact_source: str
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes a step.
@@ -281,7 +279,6 @@ class BaseStep(metaclass=BaseStepMeta):
             **kwargs: Keyword arguments passed to the step.
         """
         self.pipeline_parameter_name: Optional[str] = None
-        self._component: Optional["_SimpleComponent"] = None
         self._has_been_called = False
         self._upstream_steps: Set[str] = set()
 
@@ -590,7 +587,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def __call__(
         self, *artifacts: _OutputArtifact, **kw_artifacts: _OutputArtifact
     ) -> Union[_OutputArtifact, List[_OutputArtifact]]:
-        """Generates a component when called.
+        """Finalizes the step input and output configuration.
 
         Args:
             *artifacts: Positional input artifacts passed to
@@ -615,51 +612,29 @@ class BaseStep(metaclass=BaseStepMeta):
         input_artifacts = self._validate_input_artifacts(
             *artifacts, **kw_artifacts
         )
-        input_channels = {
-            name: artifact.channel for name, artifact in input_artifacts.items()
-        }
 
         from zenml.config.step_configurations import OutputSpec
 
         self._inputs = {}
         for name, input_ in input_artifacts.items():
-            self._upstream_steps.add(input_.channel.producer_component_id)
+            self._upstream_steps.add(input_.step_name)
             self._inputs[name] = OutputSpec(
-                step_name=input_.channel.producer_component_id,
-                output_name=input_.channel.output_key,
+                step_name=input_.step_name,
+                output_name=input_.name,
             )
 
         config = self._finalize_configuration(input_artifacts=input_artifacts)
-
-        execution_parameters = {
-            **self.configuration.parameters,
-            **self._internal_execution_parameters,
-        }
-
-        # Convert execution parameter values to strings
-        try:
-            execution_parameters = {
-                k: json.dumps(v) for k, v in execution_parameters.items()
-            }
-        except TypeError as e:
-            raise StepInterfaceError(
-                f"Failed to serialize execution parameters for step "
-                f"'{self.name}'. Please make sure to only use "
-                f"json serializable parameter values."
-            ) from e
-
-        component_class = create_component_class(step=self)
-        self._component = component_class(
-            **input_channels, **execution_parameters
-        )
 
         # Resolve the returns in the right order.
         returns = []
         for key in self.OUTPUT_SIGNATURE:
             materializer_source = config.outputs[key].materializer_source
+            artifact_source = config.outputs[key].artifact_source
             output_artifact = BaseStep._OutputArtifact(
-                channel=cast(Channel, self.component.outputs[key]),
+                name=key,
+                step_name=self.name,
                 materializer_source=materializer_source,
+                artifact_source=artifact_source,
             )
             returns.append(output_artifact)
 
@@ -668,24 +643,6 @@ class BaseStep(metaclass=BaseStepMeta):
             return returns[0]
         else:
             return returns
-
-    @property
-    def component(self) -> "_SimpleComponent":
-        """Returns a TFX component.
-
-        Returns:
-            A TFX component.
-
-        Raises:
-            StepInterfaceError: If you are trying to access the step component
-                before creating it.
-        """
-        if not self._component:
-            raise StepInterfaceError(
-                "Trying to access the step component "
-                "before creating it via calling the step."
-            )
-        return self._component
 
     def with_return_materializers(
         self: T,
@@ -1093,9 +1050,8 @@ class BaseStep(metaclass=BaseStepMeta):
 
         inputs = {}
         for input_name, artifact in input_artifacts.items():
-            artifact_source = source_utils.resolve_class(artifact.channel.type)
             inputs[input_name] = ArtifactConfiguration(
-                artifact_source=artifact_source,
+                artifact_source=artifact.artifact_source,
                 materializer_source=artifact.materializer_source,
             )
         self._validate_inputs(inputs)

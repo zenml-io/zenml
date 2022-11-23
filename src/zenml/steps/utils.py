@@ -61,7 +61,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.step_output import Output
-from zenml.utils import proto_utils, source_utils
+from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from tfx.dsl.component.experimental.decorators import _SimpleComponent

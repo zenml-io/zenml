@@ -35,10 +35,7 @@ from zenml.models import (
 from zenml.models.server_models import ServerModel
 
 if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import (
-        ConnectionConfig,
-        MetadataStoreClientConfig,
-    )
+    pass
 
 
 class ZenStoreInterface(ABC):
@@ -123,24 +120,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             Information about the store.
-        """
-
-    # ------------
-    # TFX Metadata
-    # ------------
-
-    @abstractmethod
-    def get_metadata_config(
-        self, expand_certs: bool = False
-    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Args:
-            expand_certs: Whether to expand the certificate paths in the
-                connection config to their value.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
         """
 
     # ------

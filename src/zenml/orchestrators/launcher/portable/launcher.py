@@ -15,6 +15,7 @@
 
 import json
 import sys
+import time
 import traceback
 from datetime import datetime
 from typing import (
@@ -69,11 +70,14 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
+from zenml.logger import get_logger
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 from zenml.steps.utils import StepExecutor
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineConfiguration
+logger = get_logger(__name__)
 
 
 # Subclasses of BaseExecutorOperator
@@ -893,6 +897,9 @@ class Launcherv2:
 
     def launch(self) -> Optional[data_types.ExecutionInfo]:
         # TODO: Create run here instead
+        start_time = time.time()
+        logger.info(f"Step `{self._step_name}` has started.")
+
         run = Client().zen_store.get_run(self._run_name)
         current_run_steps = Client().zen_store.list_run_steps(run_id=run.id)
 
@@ -971,29 +978,32 @@ class Launcherv2:
             current_step_run.status = ExecutionStatus.CACHED
             current_step_run.end_time = current_step_run.start_time
             Client().zen_store.update_run_step(current_step_run)
+
+            logger.info(f"Using cached version of `{self._step_name}`.")
         else:
             # if no step run exists:
             #   - Run code
             #   - Register the new output artifacts
+            input_artifacts: Dict[str, BaseArtifact] = {}
+            for name, artifact_model in current_run_input_artifacts.items():
+                artifact = BaseArtifact()
+                artifact.name = name
+                artifact.uri = artifact_model.uri
+                artifact.materializer = artifact_model.materializer
+                artifact.datatype = artifact_model.data_type
+                input_artifacts[name] = artifact
+
+            output_artifacts: Dict[str, BaseArtifact] = {}
+            for name, _ in self._step.config.outputs.items():
+                artifact = BaseArtifact()
+                artifact.name = name
+                artifact.uri = "/tmp/zenml"
+                fileio.makedirs(artifact.uri)
+                output_artifacts[name] = artifact
+
+            executor = StepExecutor(step=self._step)
+
             try:
-                input_artifacts: Dict[str, BaseArtifact] = {}
-                for name, artifact_model in current_run_input_artifacts.items():
-                    artifact = BaseArtifact()
-                    artifact.name = name
-                    artifact.uri = artifact_model.uri
-                    artifact.materializer = artifact_model.materializer
-                    artifact.datatype = artifact_model.data_type
-                    input_artifacts[name] = artifact
-
-                output_artifacts: Dict[str, BaseArtifact] = {}
-                for name, _ in self._step.config.outputs.items():
-                    artifact = BaseArtifact()
-                    artifact.name = name
-                    artifact.uri = "/tmp/zenml"
-                    fileio.makedirs(artifact.uri)
-                    output_artifacts[name] = artifact
-
-                executor = StepExecutor(step=self._step)
                 executor.execute(
                     input_artifacts=input_artifacts,
                     output_artifacts=output_artifacts,
@@ -1003,6 +1013,7 @@ class Launcherv2:
             except:
                 current_step_run.status = ExecutionStatus.FAILED
                 Client().zen_store.update_run_step(current_step_run)
+                logger.error(f"Failed to execute step `{self._step_name}`.")
                 raise
 
             output_artifact_ids = {}
@@ -1021,3 +1032,8 @@ class Launcherv2:
             current_step_run.status = ExecutionStatus.COMPLETED
             current_step_run.end_time = datetime.now()
             Client().zen_store.update_run_step(current_step_run)
+        duration = time.time() - start_time
+        logger.info(
+            f"Step `{self._step_name}` has finished in "
+            f"{string_utils.get_human_readable_time(duration)}."
+        )

@@ -115,12 +115,7 @@ from zenml.zen_stores.schemas import (
 )
 
 if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import (
-        ConnectionConfig,
-        MetadataStoreClientConfig,
-    )
-
-from zenml.zen_stores.metadata_store import MetadataStore
+    from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -625,12 +620,7 @@ class SqlZenStore(BaseZenStore):
 
     def _initialize(self) -> None:
         """Initialize the SQL store."""
-        from zenml.zen_stores.metadata_store import MetadataStore
-
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
-
-        metadata_config = self.config.get_metadata_config()
-        self._metadata_store = MetadataStore(config=metadata_config)
 
         url, connect_args, engine_args = self.config.get_sqlmodel_config()
         self._engine = create_engine(
@@ -703,50 +693,6 @@ class SqlZenStore(BaseZenStore):
         sql_url = make_url(self.config.url)
         model.database_type = ServerDatabaseType(sql_url.drivername)
         return model
-
-    # ------------
-    # TFX Metadata
-    # ------------
-
-    def get_metadata_config(
-        self, expand_certs: bool = False
-    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Args:
-            expand_certs: Whether to expand the certificate paths in the
-                connection config to their value.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
-        """
-        from ml_metadata.proto.metadata_store_pb2 import (
-            MetadataStoreClientConfig,
-        )
-
-        # If the gRPC metadata store connection configuration is present,
-        # advertise it to the client instead of the direct SQL connection
-        # config.
-        if self.config.grpc_metadata_host:
-            mlmd_config = MetadataStoreClientConfig()
-            mlmd_config.host = self.config.grpc_metadata_host
-            mlmd_config.port = self.config.grpc_metadata_port
-            if self.config.grpc_metadata_ssl_ca:
-                mlmd_config.ssl_config.custom_ca = (
-                    self.config.grpc_metadata_ssl_ca
-                )
-            if self.config.grpc_metadata_ssl_cert:
-                mlmd_config.ssl_config.server_cert = (
-                    self.config.grpc_metadata_ssl_cert
-                )
-            if self.config.grpc_metadata_ssl_key:
-                mlmd_config.ssl_config.client_key = (
-                    self.config.grpc_metadata_ssl_key
-                )
-
-            return mlmd_config
-
-        return self.config.get_metadata_config(expand_certs=expand_certs)
 
     # ------
     # Stacks

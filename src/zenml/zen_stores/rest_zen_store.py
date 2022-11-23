@@ -16,17 +16,7 @@ import json
 import os
 import re
 from pathlib import Path, PurePath
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -47,7 +37,6 @@ from zenml.constants import (
     INFO,
     INPUTS,
     LOGIN,
-    METADATA_CONFIG,
     OUTPUTS,
     PIPELINES,
     PRODUCER_STEP,
@@ -91,7 +80,6 @@ from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
 from zenml.models.server_models import ServerModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.networking_utils import (
-    replace_internal_hostname_with_localhost,
     replace_localhost_with_internal_hostname,
 )
 from zenml.zen_server.models.base_models import (
@@ -125,12 +113,6 @@ from zenml.zen_server.models.user_management_models import (
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import (
-        ConnectionConfig,
-        MetadataStoreClientConfig,
-    )
 
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
@@ -341,109 +323,6 @@ class RestZenStore(BaseZenStore):
         """
         body = self.get(INFO)
         return ServerModel.parse_obj(body)
-
-    # ------------
-    # TFX Metadata
-    # ------------
-
-    def get_metadata_config(
-        self, expand_certs: bool = False
-    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Args:
-            expand_certs: Whether to expand the certificate paths in the
-                connection config to their value.
-
-        Raises:
-            ValueError: if the server response is invalid.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
-        """
-        from google.protobuf.json_format import Parse, ParseError
-        from ml_metadata.proto.metadata_store_pb2 import (
-            ConnectionConfig,
-            MetadataStoreClientConfig,
-        )
-
-        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
-
-        body = self.get(f"{METADATA_CONFIG}")
-        if not isinstance(body, str):
-            raise ValueError(
-                f"Invalid response from server: {body}. Expected string."
-            )
-
-        # First try to parse the response as a ConnectionConfig, then as a
-        # MetadataStoreClientConfig.
-        try:
-            metadata_config_pb = Parse(body, ConnectionConfig())
-        except ParseError:
-            return Parse(body, MetadataStoreClientConfig())
-
-        # if the server returns a SQLite connection config, but the file is not
-        # available locally, we need to replace the path with the local path of
-        # the default local SQLite database
-        if metadata_config_pb.HasField("sqlite") and not os.path.isfile(
-            metadata_config_pb.sqlite.filename_uri
-        ):
-            message = (
-                f"The ZenML server is using a SQLite database at "
-                f"{metadata_config_pb.sqlite.filename_uri} that is not "
-                f"available locally. Using the default local SQLite "
-                f"database instead."
-            )
-            if not self.is_local_store():
-                logger.warning(message)
-            else:
-                logger.debug(message)
-            default_store_cfg = GlobalConfiguration().get_default_store()
-            assert isinstance(default_store_cfg, SqlZenStoreConfiguration)
-            return default_store_cfg.get_metadata_config()
-
-        if metadata_config_pb.HasField("mysql"):
-            # If the server returns a MySQL connection config with a hostname
-            # that is a Docker or K3D internal hostname that cannot be resolved
-            # locally, we need to replace it with localhost. We're assuming
-            # that we're running on the host machine and the MySQL server can
-            # be accessed via localhost.
-            metadata_config_pb.mysql.host = (
-                replace_internal_hostname_with_localhost(
-                    metadata_config_pb.mysql.host
-                )
-            )
-
-            if not expand_certs and metadata_config_pb.mysql.HasField(
-                "ssl_options"
-            ):
-                # Save the certificates in a secure location on disk
-                secret_folder = Path(
-                    GlobalConfiguration().local_stores_path,
-                    "certificates",
-                )
-                for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-                    if not metadata_config_pb.mysql.ssl_options.HasField(
-                        key.lstrip("ssl_")
-                    ):
-                        continue
-                    content = getattr(
-                        metadata_config_pb.mysql.ssl_options,
-                        key.lstrip("ssl_"),
-                    )
-                    if content and not os.path.isfile(content):
-                        fileio.makedirs(str(secret_folder))
-                        file_path = Path(secret_folder, f"{key}.pem")
-                        with open(file_path, "w") as f:
-                            f.write(content)
-                        file_path.chmod(0o600)
-                        setattr(
-                            metadata_config_pb.mysql.ssl_options,
-                            key.lstrip("ssl_"),
-                            str(file_path),
-                        )
-
-        return metadata_config_pb
 
     # ------
     # Stacks
