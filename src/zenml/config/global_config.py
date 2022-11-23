@@ -674,15 +674,15 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             workspace = self.zen_store.get_workspace(
                 workspace_name_or_id=workspace_name,
             )
-            self.set_active_workspace(project)
+            self.set_active_workspace(workspace)
 
-        return self._active_project
+        return self._active_workspace
 
-    def get_active_project_name(self) -> str:
-        if self.active_project_name is None:
+    def get_active_workspace_name(self) -> str:
+        if self.active_workspace_name is None:
             _ = self.zen_store
 
-        return self.active_project_name
+        return self.active_workspace_name
 
     def get_active_stack_id(self) -> UUID:
         if self.active_stack_id is None:
