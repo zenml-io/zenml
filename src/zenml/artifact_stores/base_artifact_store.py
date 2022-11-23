@@ -352,7 +352,8 @@ class BaseArtifactStore(StackComponent):
         Args:
             priority: The priority of the filesystem.
         """
-        from zenml.io import Filesystem, default_filsystem_registry
+        from zenml.io.filesystem import Filesystem
+        from zenml.io.filesystem_registry import default_filesystem_registry
 
         filesystem_class = type(
             self.__class__.__name__,
@@ -375,7 +376,7 @@ class BaseArtifactStore(StackComponent):
             },
         )
 
-        default_filsystem_registry.register(filesystem_class, priority=priority)
+        default_filesystem_registry.register(filesystem_class)
 
 
 class BaseArtifactStoreFlavor(Flavor):
