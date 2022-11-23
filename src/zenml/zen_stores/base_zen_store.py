@@ -441,18 +441,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         """
         project = self.get_project(project_name_or_id=project_name_or_id)
         user = self.get_user(user_name_or_id=user_name_or_id)
-        try:
-            self._get_default_stack(
-                project_name_or_id=project_name_or_id,
-                user_name_or_id=user_name_or_id,
-            )
-        except KeyError:
-            pass
-        else:
-            raise StackExistsError(
-                f"Default stack already exists for user "
-                f"{user.name} in project {project.name}"
-            )
 
         logger.info(
             f"Creating default stack for user '{user.name}' in project "
