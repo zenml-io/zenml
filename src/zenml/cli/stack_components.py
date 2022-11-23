@@ -830,49 +830,61 @@ def generate_stack_component_logs_command(
         cli_utils.print_active_stack()
 
         client = Client()
-        try:
-            component_model = cli_utils.get_component_by_id_or_name_or_prefix(
-                client=client,
-                component_type=component_type,
-                id_or_name_or_prefix=name_or_id,
+
+        if not name_or_id:
+            component_model = client.active_stack_model.components.get(
+                component_type, []
             )
-        except KeyError as e:
-            cli_utils.error(str(e))  # noqa
-        else:
-            from zenml.stack import StackComponent
-
-            component = StackComponent.from_model(
-                component_model=component_model
-            )
-
-            display_name = _component_display_name(component_type)
-            log_file = component.log_file
-
-            if not log_file or not fileio.exists(log_file):
-                cli_utils.warning(
-                    f"Unable to find log file for {display_name} "
-                    f"'{component.name}'."
+            if len(component_model) == 0:
+                cli_utils.error(
+                    f"Cannot describe any {component_type} since the active "
+                    f"stack has no {component_type} and no name or id was "
+                    f"provided."
                 )
-                return
+        else:
+            try:
+                component_model = (
+                    cli_utils.get_component_by_id_or_name_or_prefix(
+                        client=client,
+                        component_type=component_type,
+                        id_or_name_or_prefix=name_or_id,
+                    )
+                )
+            except KeyError as e:
+                cli_utils.error(str(e))  # noqa
 
-            if follow:
-                try:
-                    with open(log_file, "r") as f:
-                        # seek to the end of the file
-                        f.seek(0, 2)
+        from zenml.stack import StackComponent
 
-                        while True:
-                            line = f.readline()
-                            if not line:
-                                time.sleep(0.1)
-                                continue
-                            line = line.rstrip("\n")
-                            click.echo(line)
-                except KeyboardInterrupt:
-                    cli_utils.declare(f"Stopped following {display_name} logs.")
-            else:
+        component = StackComponent.from_model(component_model=component_model)
+
+        display_name = _component_display_name(component_type)
+        log_file = component.log_file
+
+        if not log_file or not fileio.exists(log_file):
+            cli_utils.warning(
+                f"Unable to find log file for {display_name} "
+                f"'{component.name}'."
+            )
+            return
+
+        if follow:
+            try:
                 with open(log_file, "r") as f:
-                    click.echo(f.read())
+                    # seek to the end of the file
+                    f.seek(0, 2)
+
+                    while True:
+                        line = f.readline()
+                        if not line:
+                            time.sleep(0.1)
+                            continue
+                        line = line.rstrip("\n")
+                        click.echo(line)
+            except KeyboardInterrupt:
+                cli_utils.declare(f"Stopped following {display_name} logs.")
+        else:
+            with open(log_file, "r") as f:
+                click.echo(f.read())
 
     return stack_component_logs_command
 
