@@ -3,16 +3,28 @@ description: A guide to debug common issues.
 ---
 
 # Debugging Guide
-This page serves as a guide to help you find solutions to commons issues and how to debug them.
+A series of how-tos for efficient debugging and getting help.
+
+## How to search Slack for answers
+Before posting on Slack it's a good idea to search on [GitHub issues](https://github.com/zenml-io/zenml/issues) or in our Slack
+to see if the issue you're facing already has a solution in place.
+
+We recommend that you [join our Slack channel]((https://zenml.io/meet)) and use the built-in Slack search function at the top of the page. 
+Chances are you'd find your answers there.
+
+Our current Slack plan only lets you search chat history within the past 90 days.
+If you'd like to view older chats, we recommend that you head to https://open.crowd.dev/zenml and type your query in the search bar.
+It should surface chats older than 90 days from our channel.
+In most cases, it's not very relevant, but it's there if you'd like to peer further into the past.
 
 ## How to post on Slack
-When posting on Slack it's very useful to provide the following information (when applicable) so that anyone in 
-the community can answer your questions having complete information.
+When posting on Slack it's useful to provide the following information (when applicable) so that we get a 
+complete picture before providing a solution.
 
 ### 1️⃣ System Information
-Let us know relevant information about your system information.
+Let us know relevant information about your system.
 
-Run the following in your terminal and copy the output to your Slack question:
+We recommend running the following in your terminal and attach the output to your question.
 
 `python -c "import zenml.environment; print(zenml.environment.get_system_details())"`
 
@@ -27,25 +39,36 @@ Environment: native
 Integrations: ['airflow', 'graphviz']
 ```
 
+System information provides more context to your issue and also eliminates the need for anyone to ask when they're trying to help.  
+This increases the chances of your question getting answered and saves everyone's time.
+
 ### 2️⃣ What happened
-Tell us what were you trying to achieve? 
-What did you expect to happen?
-And what actually happened?
+Tell us briefly:
+* What were you trying to achieve? 
+* What did you expect to happen?
+* What actually happened?
 
 ### 3️⃣ How to reproduce the error
-Walk us through how to reproduce the same error you faced. 
-Ideally step-by-step.
+Walk us through how to reproduce the same error you had step-by-step, whenever possible.
 
 ### 4️⃣ Relevant log output
-Attach the relevant output to help us understand more on what happened under the hood.
-Sometimes it's useful to provide more logs to give more context to the issue at hand.
-See below.
+Attach relevant log outputs to help us understand what happened under the hood.
 
-## How to search Slack for answers
-We recommend that you join our Slack channel and use the built-in Slack search function. 
+Sometimes, the default log output does not help much to shed light on the issue.
+In this case, it's useful to provide additional logs.
+Additional logs are not shown by default, you'll have to toggle an environment variable for it.
+Read the next section to find out how.
 
-But if the chat happens more than 90 days in the past, then the next option is to use `crow.dev`.
-Go to https://open.crowd.dev/zenml and type your query in the search bar.
+## How to toggle `ZENML_LOGGING_VERBOSITY` environment variable to show additional logs
+In the event that the default log is not helpful you can toggle the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
+
+The default value is
+```shell
+ZENML_LOGGING_VERBOSITY=INFO
+```
+
+You can pick other values such as `WARN`, `ERROR`, `CRITICAL`, `DEBUG` to change what's shown as logs.
+See [System Environment Variable](../guidelines/system-environmental-variables.md) for more information on other environment variables that affect the behavior of ZenML.
 
 ## How to see logs on the client and server
 
@@ -66,18 +89,6 @@ INFO:asyncio:Syncing pipeline runs...
 2022-10-19 09:09:18,516 - zenml.zen_stores.metadata_store - DEBUG - Fetched 2 inputs and 2 outputs for step 'normalizer'. (metadata_store.py:427)
 2022-10-19 09:09:18,606 - zenml.zen_stores.metadata_store - DEBUG - Fetched 0 inputs and 4 outputs for step 'importer'. (metadata_store.py:427)
 ```
-
-
-## How to toggle `ZENML_LOGGING_VERBOSITY` environment variable to show more logs
-In the event that the default log is not helpful you can toggle the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
-
-The default value is
-```shell
-ZENML_LOGGING_VERBOSITY=INFO
-```
-
-You can pick other values such as `WARN`, `ERROR`, `CRITICAL`, `DEBUG` to change what's shown as logs.
-See [System Environment Variable](../guidelines/system-environmental-variables.md) for more information.
 
 ## Common errors
 
