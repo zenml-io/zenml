@@ -79,6 +79,15 @@ class ProjectSchema(NamedSchema, table=True):
         return cls(name=project.name, description=project.description)
 
     def update(self, project_update: ProjectUpdateModel) -> "ProjectSchema":
+        """Update a `ProjectSchema` from a `ProjectUpdateModel`.
+
+        Args:
+            project_update: The `ProjectUpdateModel` from which to update the
+                schema.
+
+        Returns:
+            The updated `ProjectSchema`.
+        """
         for field, value in project_update.dict(exclude_unset=True).items():
             setattr(self, field, value)
 

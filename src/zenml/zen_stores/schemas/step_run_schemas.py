@@ -1,3 +1,18 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""SQLModel implementation of step run tables."""
+
 import json
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -42,6 +57,14 @@ class StepRunSchema(NamedSchema, table=True):
 
     @classmethod
     def from_request(cls, request: StepRunRequestModel) -> "StepRunSchema":
+        """Create a step run schema from a step run request model.
+
+        Args:
+            request: The step run request model.
+
+        Returns:
+            The step run schema.
+        """
         return cls(
             name=request.name,
             pipeline_run_id=request.pipeline_run_id,
@@ -89,7 +112,15 @@ class StepRunSchema(NamedSchema, table=True):
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":
-        """For steps only the execution status is mutable"""
+        """Update a step run schema with a step run update model.
+
+        Args:
+            step_update: The step run update model.
+
+        Returns:
+            The updated step run schema.
+        """
+        # For steps only the execution status is mutable.
         if "status" in step_update.__fields_set__ and step_update.status:
             self.status = step_update.status
 

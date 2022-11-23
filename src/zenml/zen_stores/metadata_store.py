@@ -330,7 +330,6 @@ class MetadataStore:
         Returns:
             A mapping run name -> ID for all runs registered in MLMD.
         """
-
         from tfx.dsl.compiler.constants import PIPELINE_RUN_CONTEXT_TYPE_NAME
 
         run_contexts = self.store.get_contexts_by_type(

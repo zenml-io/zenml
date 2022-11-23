@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""SQLModel implementation of team tables."""
+
 from datetime import datetime
 from typing import TYPE_CHECKING, List
 from uuid import UUID
@@ -65,6 +67,14 @@ class TeamSchema(NamedSchema, table=True):
     )
 
     def update(self, team_update: TeamUpdateModel) -> "TeamSchema":
+        """Update a `TeamSchema` with a `TeamUpdateModel`.
+
+        Args:
+            team_update: The `TeamUpdateModel` to update the schema with.
+
+        Returns:
+            The updated `TeamSchema`.
+        """
         for field, value in team_update.dict(exclude_unset=True).items():
             if field == "users":
                 pass

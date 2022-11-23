@@ -658,17 +658,34 @@ class ZenStoreInterface(ABC):
     def create_role_assignment(
         self, role_assignment: RoleAssignmentRequestModel
     ) -> RoleAssignmentResponseModel:
-        """"""
+        """Creates a new role assignment.
+
+        Args:
+            role_assignment: The role assignment model to create.
+
+        Returns:
+            The newly created role assignment.
+        """
 
     @abstractmethod
     def get_role_assignment(
         self, role_assignment_id: UUID
     ) -> RoleAssignmentResponseModel:
-        """"""
+        """Gets a specific role assignment.
+
+        Args:
+            role_assignment_id: ID of the role assignment to get.
+
+        Returns:
+            The requested role assignment.
+
+        Raises:
+            KeyError: If no role assignment with the given ID exists.
+        """
 
     @abstractmethod
     def delete_role_assignment(self, role_assignment_id: UUID) -> None:
-        """Delete a specific role assignment
+        """Delete a specific role assignment.
 
         Args:
             role_assignment_id: The ID of the specific role assignment

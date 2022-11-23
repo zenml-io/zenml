@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""SQLModel implementation of user tables."""
 
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
@@ -87,6 +88,14 @@ class UserSchema(NamedSchema, table=True):
         )
 
     def update(self, user_update: UserUpdateModel) -> "UserSchema":
+        """Update a `UserSchema` from a `UserUpdateModel`.
+
+        Args:
+            user_update: The `UserUpdateModel` from which to update the schema.
+
+        Returns:
+            The updated `UserSchema`.
+        """
         for field, value in user_update.dict(exclude_unset=True).items():
             setattr(self, field, value)
 

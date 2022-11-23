@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base classes for SQLModel schemas."""
+
 
 from datetime import datetime
 from uuid import UUID, uuid4
@@ -27,7 +29,7 @@ class BaseSchema(SQLModel):
 
 
 class NamedSchema(BaseSchema):
-    """Base Named SQL Model"""
+    """Base Named SQL Model."""
 
     name: str
 

@@ -2300,7 +2300,17 @@ class SqlZenStore(BaseZenStore):
     def get_role_assignment(
         self, role_assignment_id: UUID
     ) -> RoleAssignmentResponseModel:
-        """"""
+        """Gets a role assignment by ID.
+
+        Args:
+            role_assignment_id: ID of the role assignment to get.
+
+        Returns:
+            The role assignment.
+
+        Raises:
+            KeyError: If the role assignment does not exist.
+        """
         with Session(self.engine) as session:
             user_role = session.exec(
                 select(UserRoleAssignmentSchema).where(
@@ -2325,7 +2335,7 @@ class SqlZenStore(BaseZenStore):
             )
 
     def delete_role_assignment(self, role_assignment_id: UUID) -> None:
-        """Delete a specific role assignment
+        """Delete a specific role assignment.
 
         Args:
             role_assignment_id: The ID of the specific role assignment

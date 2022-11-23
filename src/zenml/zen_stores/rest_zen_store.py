@@ -516,7 +516,6 @@ class RestZenStore(BaseZenStore):
     ) -> StackResponseModel:
         """Update a stack.
 
-
         Args:
             stack_id: The ID of the stack update.
             stack_update: The update request on the stack.
@@ -1061,7 +1060,7 @@ class RestZenStore(BaseZenStore):
         )
 
     def delete_role_assignment(self, role_assignment_id: UUID) -> None:
-        """Delete a specific role assignment
+        """Delete a specific role assignment.
 
         Args:
             role_assignment_id: The ID of the specific role assignment
