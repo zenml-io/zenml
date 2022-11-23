@@ -21,7 +21,6 @@ from pydantic import Field
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 if TYPE_CHECKING:
-    from zenml.models import ProjectResponseModel, UserResponseModel
     from zenml.models.project_models import ProjectResponseModel
     from zenml.models.user_models import UserResponseModel
 
