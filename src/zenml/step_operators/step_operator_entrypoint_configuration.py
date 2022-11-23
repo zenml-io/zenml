@@ -13,18 +13,13 @@
 #  permissions and limitations under the License.
 """Abstract base class for entrypoint configurations that run a single step."""
 
-from typing import TYPE_CHECKING, Any, List, Set, Type
-
-from tfx.dsl.components.base.base_executor import BaseExecutor
-from tfx.orchestration.portable.data_types import ExecutionInfo
-from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
+from typing import TYPE_CHECKING, Any, List, Set
 
 from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
-from zenml.io import fileio
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -89,7 +84,6 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         execution_info_path = self.entrypoint_args[EXECUTION_INFO_PATH_OPTION]
         execution_info = self._load_execution_info(execution_info_path)
 
-        stack.orchestrator._ensure_artifact_classes_loaded(step.config)
         step_run_info = StepRunInfo(
             config=step.config,
             pipeline=deployment.pipeline,
@@ -102,43 +96,3 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             ...
         finally:
             stack.cleanup_step_run(info=step_run_info)
-
-    @staticmethod
-    def _load_execution_info(execution_info_path: str) -> ExecutionInfo:
-        """Loads the execution info from the given path.
-
-        Args:
-            execution_info_path: Path to the execution info file.
-
-        Returns:
-            Execution info.
-        """
-        with fileio.open(execution_info_path, "rb") as f:
-            execution_info_proto = ExecutionInvocation.FromString(f.read())
-
-        return ExecutionInfo.from_proto(execution_info_proto)
-
-    @staticmethod
-    def _configure_executor(
-        executor_class: Type[BaseExecutor], execution_info: ExecutionInfo
-    ) -> BaseExecutor:
-        """Creates and configures an executor instance.
-
-        Args:
-            executor_class: The class of the executor instance.
-            execution_info: Execution info for the executor.
-
-        Returns:
-            A configured executor instance.
-        """
-        context = BaseExecutor.Context(
-            tmp_dir=execution_info.tmp_dir,
-            unique_id=str(execution_info.execution_id),
-            executor_output_uri=execution_info.execution_output_uri,
-            stateful_working_dir=execution_info.stateful_working_dir,
-            pipeline_node=execution_info.pipeline_node,
-            pipeline_info=execution_info.pipeline_info,
-            pipeline_run_id=execution_info.pipeline_run_id,
-        )
-
-        return executor_class(context=context)

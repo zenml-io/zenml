@@ -19,7 +19,6 @@ from uuid import UUID
 
 from pydantic import root_validator
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus, StackComponentType
@@ -27,11 +26,11 @@ from zenml.logger import get_logger
 from zenml.models import PipelineRunModel
 from zenml.orchestrators.launcher import Launcher
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
-from zenml.utils import source_utils, uuid_utils
+from zenml.utils import uuid_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
-    from zenml.config.step_configurations import Step, StepConfiguration
+    from zenml.config.step_configurations import Step
 
 logger = get_logger(__name__)
 
@@ -177,8 +176,6 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         assert self._active_deployment
 
-        self._ensure_artifact_classes_loaded(step.config)
-
         run_model = self._create_or_reuse_run()
 
         step_run_info = StepRunInfo(
@@ -311,31 +308,6 @@ class BaseOrchestrator(StackComponent, ABC):
         run = client.zen_store.get_run(run_name_or_id)
         run.status = ExecutionStatus.FAILED
         client.zen_store.update_run(run)
-
-    # TODO: probably can remove this
-    @staticmethod
-    def _ensure_artifact_classes_loaded(
-        step_configuration: "StepConfiguration",
-    ) -> None:
-        """Ensures that all artifact classes for a step are loaded.
-
-        Args:
-            step_configuration: A step configuration.
-        """
-        artifact_class_sources = set(
-            input_.artifact_source
-            for input_ in step_configuration.inputs.values()
-        ) | set(
-            output.artifact_source
-            for output in step_configuration.outputs.values()
-        )
-
-        for source in artifact_class_sources:
-            # Tfx depends on these classes being loaded so it can detect the
-            # correct artifact class
-            source_utils.validate_source_class(
-                source, expected_class=BaseArtifact
-            )
 
 
 class BaseOrchestratorFlavor(Flavor):

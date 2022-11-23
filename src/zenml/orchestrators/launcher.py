@@ -45,6 +45,7 @@ def generate_cache_key(
     hash_ = hashlib.md5()
 
     hash_.update(step.spec.source.encode())
+    # TODO: maybe this should be the ID instead? Or completely removed?
     hash_.update(artifact_store.path.encode())
 
     for key, value in sorted(step.config.parameters.items()):
