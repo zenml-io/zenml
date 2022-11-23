@@ -186,7 +186,6 @@ def register_stack(
         set_stack: Immediately set this stack as active.
         share: Share the stack with other users.
     """
-
     with console.status(f"Registering stack '{stack_name}'...\n"):
         client = Client()
 
@@ -427,7 +426,6 @@ def share_stack(
         stack_name_or_id: Name or id of the stack to share.
         recursive: Recursively also share all components
     """
-
     client = Client()
 
     with console.status("Sharing the stack...\n"):
@@ -558,7 +556,6 @@ def remove_stack_component(
         annotator_flag: To remove the annotator from this stack.
         data_validator_flag: To remove the data validator from this stack.
     """
-
     client = Client()
 
     with console.status("Updating the stack...\n"):
@@ -614,7 +611,6 @@ def rename_stack(
         stack_name_or_id: Name of the stack to rename.
         new_stack_name: New name of the stack.
     """
-
     client = Client()
 
     with console.status("Renaming stack...\n"):
@@ -639,7 +635,6 @@ def list_stacks(just_mine: bool = False) -> None:
     Args:
         just_mine: To list only the stacks that the current user has created.
     """
-
     client = Client()
     with console.status("Listing stacks...\n"):
         if just_mine:
@@ -665,7 +660,6 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
     Args:
         stack_name_or_id: Name of the stack to describe.
     """
-
     client = Client()
 
     with console.status(f"Describing stack '{stack_name_or_id}'...\n"):
@@ -730,7 +724,6 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
 @stack.command("get")
 def get_active_stack() -> None:
     """Gets the active stack."""
-
     scope = "repository" if Client().uses_local_configuration else "global"
 
     with console.status("Getting the active stack..."):

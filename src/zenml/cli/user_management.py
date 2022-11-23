@@ -35,7 +35,8 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
     """Get the user.
 
     Args:
-        user_name_or_id: The name or ID of the user."""
+        user_name_or_id: The name or ID of the user.
+    """
     cli_utils.print_active_config()
     client = Client()
     if not user_name_or_id:

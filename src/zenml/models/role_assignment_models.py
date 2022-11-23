@@ -37,13 +37,13 @@ class RoleAssignmentBaseModel(BaseModel):
     @root_validator(pre=True)
     def check_team_or_user(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Check that either a team or a user is set.
-        
+
         Args:
             values: The values to validate.
-        
+
         Returns:
             The validated values.
-        
+
         Raises:
             ValueError: If both or neither team and user are set.
         """

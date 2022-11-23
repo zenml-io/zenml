@@ -117,7 +117,8 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
     """Get the project.
 
     Args:
-        project_name_or_id: The name or ID of the project to set as active."""
+        project_name_or_id: The name or ID of the project to set as active.
+    """
     warn_unsupported_non_default_project()
     client = Client()
     if not project_name_or_id:

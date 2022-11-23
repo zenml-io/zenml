@@ -49,7 +49,6 @@ def generate_stack_component_get_command(
 
     def get_stack_component_command() -> None:
         """Prints the name of the active component."""
-
         client = Client()
         display_name = _component_display_name(component_type)
 
@@ -93,7 +92,6 @@ def generate_stack_component_describe_command(
         Args:
             name_id_or_prefix: Name or id of the component to describe.
         """
-
         client = Client()
 
         component_ = client.get_stack_component(
@@ -131,7 +129,6 @@ def generate_stack_component_list_command(
 
     def list_stack_components_command() -> None:
         """Prints a table of stack components."""
-
         client = Client()
 
         with console.status(f"Listing {component_type.plural}..."):
@@ -252,7 +249,6 @@ def generate_stack_component_update_command(
             name_id_or_prefix: The name or id of the stack component to update.
             args: Additional arguments to pass to the update command.
         """
-
         client = Client()
 
         # Parse the given args
@@ -306,7 +302,6 @@ def generate_stack_component_share_command(
         Args:
             name_id_or_prefix: The name or id of the stack component to update.
         """
-
         client = Client()
 
         with console.status(
@@ -357,7 +352,6 @@ def generate_stack_component_remove_attribute_command(
                 attribute from.
             args: Additional arguments to pass to the remove_attribute command.
         """
-
         client = Client()
 
         with console.status(
@@ -453,7 +447,6 @@ def generate_stack_component_delete_command(
         Args:
             name_id_or_prefix: The name of the stack component to delete.
         """
-
         client = Client()
 
         with console.status(
@@ -543,7 +536,6 @@ def generate_stack_component_up_command(
         Args:
             name_id_or_prefix: The name or_id of the stack component to deploy.
         """
-
         client = Client()
 
         with console.status(
@@ -623,7 +615,6 @@ def generate_stack_component_down_command(
                 stop/deprovision.
             force: Deprovision local resources instead of suspending them.
         """
-
         client = Client()
 
         with console.status(
@@ -707,7 +698,6 @@ def generate_stack_component_logs_command(
             follow: Follow the log file instead of just displaying the current
                 logs.
         """
-
         client = Client()
 
         with console.status(
@@ -801,7 +791,6 @@ def generate_stack_component_flavor_list_command(
 
     def list_stack_component_flavor_command() -> None:
         """Lists the flavors for a single type of stack component."""
-
         client = Client()
 
         with console.status(f"Listing {display_name} flavors`...\n"):
@@ -836,7 +825,6 @@ def generate_stack_component_flavor_register_command(
         Args:
             source: The source file to read the flavor from.
         """
-
         client = Client()
 
         with console.status(f"Registering a new {display_name} flavor`...\n"):
@@ -878,7 +866,6 @@ def generate_stack_component_flavor_describe_command(
         Args:
             name: The name of the flavor.
         """
-
         client = Client()
 
         with console.status(f"Describing {display_name} flavor: {name}`...\n"):
@@ -948,7 +935,6 @@ def register_single_stack_component_cli_commands(
     )
     def command_group() -> None:
         """Group commands for a single stack component type."""
-
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 

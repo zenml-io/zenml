@@ -54,7 +54,7 @@ class TeamResponseModel(TeamBaseModel, BaseResponseModel):
     @property
     def user_ids(self) -> List[UUID]:
         """Returns a list of user IDs that are part of this team.
-        
+
         Returns:
             A list of user IDs.
         """

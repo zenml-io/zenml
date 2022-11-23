@@ -100,6 +100,7 @@ def get_run(
 
     Args:
         run_id: ID of the pipeline run to get.
+
     Returns:
         The pipeline run.
     """

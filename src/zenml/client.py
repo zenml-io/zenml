@@ -98,6 +98,11 @@ class ClientConfiguration(FileSyncModel):
 
     @property
     def active_project(self) -> ProjectResponseModel:
+        """Get the active project for the local client.
+
+        Returns:
+            The active project.
+        """
         return self._active_project
 
     def set_active_project(self, project: "ProjectResponseModel") -> None:
@@ -541,6 +546,17 @@ class Client(metaclass=ClientMetaClass):
         initial_role: Optional[str] = None,
         password: Optional[str] = None,
     ) -> UserResponseModel:
+        """Create a new user.
+
+        Args:
+            name: The name of the user.
+            initial_role: Optionally, an initial role to assign to the user.
+            password: The password of the user. If not provided, the user will
+                be created with empty password.
+
+        Returns:
+            The model of the created user.
+        """
         user = UserRequestModel(name=name, password=password or None)
         if self.zen_store.type != StoreType.REST:
             user.active = password != ""
@@ -613,6 +629,18 @@ class Client(metaclass=ClientMetaClass):
         updated_email: Optional[str] = None,
         updated_email_opt_in: Optional[bool] = None,
     ) -> UserResponseModel:
+        """Update a user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to update.
+            updated_name: The new name of the user.
+            updated_full_name: The new full name of the user.
+            updated_email: The new email of the user.
+            updated_email_opt_in: The new email opt-in status of the user.
+
+        Returns:
+            The updated user.
+        """
         user = self.get_user(name_id_or_prefix=user_name_or_id)
         user_update = UserUpdateModel()
         if updated_name:
@@ -700,6 +728,17 @@ class Client(metaclass=ClientMetaClass):
         remove_users: Optional[List[str]] = None,
         add_users: Optional[List[str]] = None,
     ) -> TeamResponseModel:
+        """Update a team.
+
+        Args:
+            team_name_or_id: The name or ID of the team to update.
+            new_name: The new name of the team.
+            remove_users: The users to remove from the team.
+            add_users: The users to add to the team.
+
+        Returns:
+            The updated team.
+        """
         team = self.get_team(team_name_or_id)
 
         team_update = TeamUpdateModel()
@@ -981,6 +1020,17 @@ class Client(metaclass=ClientMetaClass):
         team_name_or_id: Optional[str] = None,
         project_name_or_id: Optional[str] = None,
     ) -> List[RoleAssignmentResponseModel]:
+        """List role assignments.
+
+        Args:
+            role_name_or_id: Only list assignments for this role
+            user_name_or_id: Only list assignments for this user
+            team_name_or_id: Only list assignments for this team
+            project_name_or_id: Only list assignments in this project
+
+        Returns:
+            List of role assignments
+        """
         return self.zen_store.list_role_assignments(
             project_name_or_id=project_name_or_id,
             role_name_or_id=role_name_or_id,
@@ -1189,7 +1239,6 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of the registered stack.
         """
-
         stack_components = dict()
 
         for c_type, c_identifier in components.items():
@@ -1364,7 +1413,18 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List["StackResponseModel"]:
-        """"""
+        """Lists all stacks.
+
+        Args:
+            project_name_or_id: The name or id of the project to filter by.
+            user_name_or_id: The name or id of the user to filter by.
+            component_id: The id of the component to filter by.
+            name: The name of the stack to filter by.
+            is_shared: The shared status of the stack to filter by.
+
+        Returns:
+            A list of stacks.
+        """
         return self.zen_store.list_stacks(
             project_name_or_id=project_name_or_id or self.active_project.id,
             user_name_or_id=user_name_or_id or self.active_user.id,
@@ -1513,7 +1573,19 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List["ComponentResponseModel"]:
-        """"""
+        """Lists all registered stack components.
+
+        Args:
+            project_name_or_id: The name or id of the project to filter by.
+            user_name_or_id: The name or id of the user to filter by.
+            component_type: The type of the component to filter by.
+            flavor_name: The name of the flavor to filter by.
+            name: The name of the component to filter by.
+            is_shared: The shared status of the component to filter by.
+
+        Returns:
+            A list of stack components.
+        """
         return self.zen_store.list_stack_components(
             project_name_or_id=project_name_or_id or self.active_project.id,
             user_name_or_id=user_name_or_id or self.active_user.id,
@@ -1931,7 +2003,6 @@ class Client(metaclass=ClientMetaClass):
             AlreadyExistsException: If there is an existing pipeline in the
                 project with the same name but a different configuration.
         """
-
         existing_pipelines = self.zen_store.list_pipelines(
             name=pipeline_name,
         )
@@ -1998,7 +2069,6 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If the name_id_or_prefix does not uniquely identify one
                 pipeline
         """
-
         return self.zen_store.list_pipelines(
             project_name_or_id=project_name_or_id,
             user_name_or_id=user_name_or_id,
@@ -2017,7 +2087,6 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If the name_id_or_prefix does not uniquely identify one
                 pipeline
         """
-
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=PipelineResponseModel,
             get_method=self.zen_store.get_pipeline,
@@ -2036,7 +2105,6 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If the name_id_or_prefix does not uniquely identify one
                 pipeline
         """
-
         pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
@@ -2085,7 +2153,6 @@ class Client(metaclass=ClientMetaClass):
         Args:
             filename: The filename from which to import the pipeline runs.
         """
-
         from zenml.utils.yaml_utils import read_yaml
 
         step_id_mapping: Dict[str, UUID] = {}
@@ -2332,7 +2399,6 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If the name_id_or_prefix does not uniquely identify one
                 pipeline
         """
-
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=PipelineRunResponseModel,
             get_method=self.zen_store.get_run,

@@ -671,9 +671,19 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         return project
 
     def set_active_stack(self, stack: "StackResponseModel") -> None:
+        """Set the active stack for the local client.
+
+        Args:
+            stack: The model of the stack to set active.
+        """
         self.active_stack_id = stack.id
 
     def get_active_project(self) -> "ProjectResponseModel":
+        """Get a model of the active project for the local client.
+
+        Returns:
+            The model of the active project.
+        """
         project_name = self.get_active_project_name()
 
         if self._active_project is not None:
@@ -685,6 +695,13 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         return self.set_active_project(project)
 
     def get_active_project_name(self) -> str:
+        """Get the name of the active project.
+
+        If the active project doesn't exist yet, the ZenStore is reinitialized.
+
+        Returns:
+            The name of the active project.
+        """
         if self.active_project_name is None:
             _ = self.zen_store
             assert self.active_project_name is not None
@@ -692,6 +709,13 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         return self.active_project_name
 
     def get_active_stack_id(self) -> UUID:
+        """Get the ID of the active stack.
+
+        If the active stack doesn't exist yet, the ZenStore is reinitialized.
+
+        Returns:
+            The active stack ID.
+        """
         if self.active_stack_id is None:
             _ = self.zen_store
             assert self.active_stack_id is not None
