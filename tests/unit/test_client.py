@@ -37,7 +37,7 @@ def _create_local_orchestrator(
     client: Client,
     orchestrator_name: str = "OrchesTraitor",
 ) -> ComponentResponseModel:
-    return client.register_stack_component(
+    return client.create_stack_component(
         name=orchestrator_name,
         flavor="local",
         component_type=StackComponentType.ORCHESTRATOR,
@@ -50,7 +50,7 @@ def _create_local_artifact_store(
     client: Client,
     artifact_store_name: str = "Art-E-Fact",
 ) -> ComponentResponseModel:
-    return client.register_stack_component(
+    return client.create_stack_component(
         name=artifact_store_name,
         flavor="local",
         component_type=StackComponentType.ARTIFACT_STORE,
@@ -375,7 +375,7 @@ def test_registering_a_stack_component_with_existing_name(clean_client):
         client=clean_client, orchestrator_name="axels_orchestration_laboratory"
     )
     with pytest.raises(StackComponentExistsError):
-        clean_client.register_stack_component(
+        clean_client.create_stack_component(
             name="axels_orchestration_laboratory",
             flavor="local",
             component_type=StackComponentType.ORCHESTRATOR,

@@ -868,7 +868,7 @@ def _import_stack_component(
     except KeyError:
         pass
 
-    registered_component = client.register_stack_component(
+    registered_component = client.create_stack_component(
         name=component_name,
         flavor=component_flavor,
         configuration=component_config["configuration"],

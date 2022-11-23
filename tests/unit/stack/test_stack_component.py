@@ -156,7 +156,7 @@ def test_stack_component_prevents_secret_references_for_some_attributes(
     with pytest.raises(ValueError):
         # Can't have a secret reference for an attribute that requires
         # pydantic validation
-        clean_client.register_stack_component(
+        clean_client.create_stack_component(
             name="test",
             configuration={"attribute_with_validator": "{{secret.key}}"},
             flavor="TEST",
@@ -164,7 +164,7 @@ def test_stack_component_prevents_secret_references_for_some_attributes(
         )
 
     with does_not_raise():
-        clean_client.register_stack_component(
+        clean_client.create_stack_component(
             name="test",
             configuration={"attribute_without_validator": "{{secret.key}}"},
             flavor="TEST",
@@ -179,13 +179,13 @@ def test_stack_component_secret_reference_resolving(
 
     from zenml.artifact_stores import LocalArtifactStoreConfig
 
-    new_artifact_store = clean_client.register_stack_component(
+    new_artifact_store = clean_client.create_stack_component(
         name="local",
         configuration=LocalArtifactStoreConfig().dict(),
         flavor="local",
         component_type=StackComponentType.ARTIFACT_STORE,
     )
-    new_orchestrator = clean_client.register_stack_component(
+    new_orchestrator = clean_client.create_stack_component(
         name="stub_orchestrator",
         component_type=StackComponentType.ORCHESTRATOR,
         configuration=StubOrchestratorConfig(
@@ -216,7 +216,7 @@ def test_stack_component_secret_reference_resolving(
 
     from zenml.secrets_managers import LocalSecretsManager
 
-    new_secrets_manager = clean_client.register_stack_component(
+    new_secrets_manager = clean_client.create_stack_component(
         name="new_secrets_manager",
         component_type=StackComponentType.SECRETS_MANAGER,
         flavor="local",
@@ -264,7 +264,7 @@ def test_stack_component_serialization_does_not_resolve_secrets(
     resolve secret references."""
     secret_ref = "{{name.key}}"
 
-    new_orchestrator = clean_client.register_stack_component(
+    new_orchestrator = clean_client.create_stack_component(
         name="stub_orchestrator",
         component_type=StackComponentType.ORCHESTRATOR,
         configuration=StubOrchestratorConfig(

@@ -1065,7 +1065,7 @@ class Client(metaclass=ClientMetaClass):
             List of role assignments
         """
         return self.zen_store.list_role_assignments(
-            project_name_or_id=project_name_or_id,
+            project_name_or_id=project_name_or_id or self.active_project.id,
             role_name_or_id=role_name_or_id,
             user_name_or_id=user_name_or_id,
             team_name_or_id=team_name_or_id,
@@ -1475,7 +1475,7 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.zen_store.list_stacks(
             project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id or self.active_user.id,
+            user_name_or_id=user_name_or_id,
             component_id=component_id,
             name=name,
             is_shared=is_shared,
@@ -1640,14 +1640,14 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.zen_store.list_stack_components(
             project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id or self.active_user.id,
+            user_name_or_id=user_name_or_id,
             type=component_type,
             flavor_name=flavor_name,
             name=name,
             is_shared=is_shared,
         )
 
-    def register_stack_component(
+    def create_stack_component(
         self,
         name: str,
         flavor: str,
@@ -1929,6 +1929,8 @@ class Client(metaclass=ClientMetaClass):
 
     def list_flavors(
         self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List["FlavorResponseModel"]:
         """Fetches all the flavor models.
 
@@ -1938,7 +1940,10 @@ class Client(metaclass=ClientMetaClass):
         from zenml.stack.flavor_registry import flavor_registry
 
         zenml_flavors = flavor_registry.flavors
-        custom_flavors = self.zen_store.list_flavors()
+        custom_flavors = self.zen_store.list_flavors(
+            project_name_or_id=project_name_or_id or self.active_project.id,
+            user_name_or_id=user_name_or_id,
+        )
         return zenml_flavors + custom_flavors
 
     def get_flavors_by_type(
@@ -2031,7 +2036,7 @@ class Client(metaclass=ClientMetaClass):
     # - PIPELINES -
     # -------------
 
-    def register_pipeline(
+    def create_pipeline(
         self,
         pipeline_name: str,
         pipeline_spec: "PipelineSpec",
@@ -2058,6 +2063,7 @@ class Client(metaclass=ClientMetaClass):
         """
         existing_pipelines = self.zen_store.list_pipelines(
             name=pipeline_name,
+            project_name_or_id=self.active_project.id,
         )
 
         # A) If there is no pipeline with this name, register a new pipeline.
@@ -2122,7 +2128,7 @@ class Client(metaclass=ClientMetaClass):
             A list of pipelines.
         """
         return self.zen_store.list_pipelines(
-            project_name_or_id=project_name_or_id,
+            project_name_or_id=project_name_or_id or self.active_project.id,
             user_name_or_id=user_name_or_id,
             name=name,
         )
@@ -2424,11 +2430,11 @@ class Client(metaclass=ClientMetaClass):
             A list of all pipeline runs.
         """
         return self.zen_store.list_runs(
-            project_name_or_id=project_name_or_id,
+            project_name_or_id=project_name_or_id or self.active_project.id,
+            user_name_or_id=user_name_or_id,
             stack_id=stack_id,
             component_id=component_id,
             run_name=run_name,
-            user_name_or_id=user_name_or_id,
             pipeline_id=pipeline_id,
             unlisted=unlisted,
         )

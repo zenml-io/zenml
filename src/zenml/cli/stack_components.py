@@ -206,7 +206,7 @@ def generate_stack_component_register_command(
 
         with console.status(f"Registering {display_name} '{name}'...\n"):
             # Create a new stack component model
-            component = client.register_stack_component(
+            component = client.create_stack_component(
                 name=name,
                 flavor=flavor,
                 component_type=component_type,
@@ -505,7 +505,7 @@ def generate_stack_component_copy_command(
                 component_type=component_type,
             )
 
-            client.register_stack_component(
+            client.create_stack_component(
                 name=target_component,
                 flavor=component_to_copy.flavor,
                 component_type=component_to_copy.type,
