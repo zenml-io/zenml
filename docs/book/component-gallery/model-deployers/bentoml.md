@@ -203,8 +203,8 @@ def bentoml_pipeline(
 ```
 
 In more complex scenarios, you might want to build a pipeline that trains a model,
-builds a bento bundle in a remote environement. Then creates a new pipeline that
-retreives the bento bundle and deploys it to a local http server, or to a cloud
+builds a bento bundle in a remote environment. Then creates a new pipeline that
+retrieve the bento bundle and deploys it to a local http server, or to a cloud
 provider. The following example shows a pipeline example that does exactly that.
 
 ```python
@@ -295,7 +295,7 @@ and the operator plugin for the cloud service you want to deploy to.
 ```bash
 # Install bentoctl CLI
 pip install bentoctl
-# Install a choosen operator
+# Install a choose operator
 bentoctl operator install $OPERATOR # example: aws-lambda
 ```
 
