@@ -74,6 +74,8 @@ class Launcher:
 
     def launch(self) -> None:
         # TODO: Create run here instead
+
+        # TODO: this does not respect the step OR pipeline level `enable_cache`
         logger.info(f"Step `{self._step_name}` has started.")
 
         run = Client().zen_store.get_run(self._run_name)
