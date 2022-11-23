@@ -1278,7 +1278,10 @@ class SqlZenStore(BaseZenStore):
             # In case of a renaming update, make sure no component of the same
             # type already exists with that name
             if component_update.name:
-                if existing_component.name != component_update.name:
+                if (
+                    existing_component.name != component_update.name
+                    and existing_component.user_id is not None
+                ):
                     self._fail_if_component_with_name_type_exists_for_user(
                         name=component_update.name,
                         component_type=existing_component.type,
