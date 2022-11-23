@@ -41,7 +41,15 @@ logger = get_logger(__name__)
 def generate_cache_key(
     step: Step, input_artifacts: Dict[str, ArtifactModel]
 ) -> str:
-    return json.dumps(step.config.parameters, sort_keys=True)
+    step_name = step.config.name
+    input_artifact_ids: Dict[str, str] = {
+        input_name: str(artifact.id)
+        for input_name, artifact in input_artifacts.items()
+    }
+    param_str = json.dumps(step.config.parameters, sort_keys=True)
+    input_str = json.dumps(input_artifact_ids, sort_keys=True)
+    cache_data = step_name + param_str + input_str
+    return cache_data
 
 
 def generate_artifact_uri(
