@@ -42,22 +42,41 @@ Sometimes it's useful to provide more logs to give more context to the issue at 
 See below.
 
 ## How to search Slack for answers
+We recommend that you join our Slack channel and use the built-in Slack search function. 
+
+But if the chat happens more than 90 days in the past, then the next option is to use `crow.dev`.
 Go to https://open.crowd.dev/zenml and type your query in the search bar.
 
 ## How to see logs on the client and server
 
+You can see the server logs by tapping into the Kubernetes pod where the server is running, with something like this:
+```shell
+$ kubectl -n zenml-server-hamza get pod
+NAME                            READY   STATUS    RESTARTS   AGE
+zenml-server-549b46d659-5n28m   1/1     Running   0          99m
+$ kubectl -n zenml-server-hamza logs zenml-server-549b46d659-5n28m
+```
 
-## How to toggle ZENML_LOGGING_VERBOSITY environment variable to show more logs
+The logs from a healthy server should look something like this
+```shell
+INFO:asyncio:Syncing pipeline runs...
+2022-10-19 09:09:18,195 - zenml.zen_stores.metadata_store - DEBUG - Fetched 4 steps for pipeline run '13'. (metadata_store.py:315)
+2022-10-19 09:09:18,359 - zenml.zen_stores.metadata_store - DEBUG - Fetched 0 inputs and 4 outputs for step 'importer'. (metadata_store.py:427)
+2022-10-19 09:09:18,461 - zenml.zen_stores.metadata_store - DEBUG - Fetched 0 inputs and 4 outputs for step 'importer'. (metadata_store.py:427)
+2022-10-19 09:09:18,516 - zenml.zen_stores.metadata_store - DEBUG - Fetched 2 inputs and 2 outputs for step 'normalizer'. (metadata_store.py:427)
+2022-10-19 09:09:18,606 - zenml.zen_stores.metadata_store - DEBUG - Fetched 0 inputs and 4 outputs for step 'importer'. (metadata_store.py:427)
+```
+
+
+## How to toggle `ZENML_LOGGING_VERBOSITY` environment variable to show more logs
 In the event that the default log is not helpful you can toggle the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
 
 The default value is
-
 ```shell
 ZENML_LOGGING_VERBOSITY=INFO
 ```
 
 You can pick other values such as `WARN`, `ERROR`, `CRITICAL`, `DEBUG` to change what's shown as logs.
-
 See [System Environment Variable](../guidelines/system-environmental-variables.md) for more information.
 
 ## Common errors
