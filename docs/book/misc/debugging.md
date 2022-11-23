@@ -3,11 +3,11 @@ description: A guide to debug common issues.
 ---
 
 # Debugging Guide
-A series of how-tos for efficient debugging and getting help.
+This page documents a series of how-tos for efficient debugging and getting help without losing any hair.
 
-## How to search Slack for answers
-Before posting on Slack it's a good idea to search on [GitHub issues](https://github.com/zenml-io/zenml/issues) or in our Slack
-to see if the issue you're facing already has a solution in place.
+## 🔍 How to search Slack for answers
+Before posting on Slack it's a good idea to search in Slack and [GitHub issues](https://github.com/zenml-io/zenml/issues)
+to see if the issue you're facing already has a solution in place. Also, check out the [Common errors](#❌-common-errors) section below.
 
 We recommend that you [join our Slack channel]((https://zenml.io/meet)) and use the built-in Slack search function at the top of the page. 
 Chances are you'd find your answers there.
@@ -17,18 +17,19 @@ If you'd like to view older chats, we recommend that you head to https://open.cr
 It should surface chats older than 90 days from our channel.
 In most cases, it's not very relevant, but it's there if you'd like to peer further into the past.
 
-## How to post on Slack
+If you can't find any clue, then it's time to post it on Slack.
+
+## 🎯 How to post on Slack
 When posting on Slack it's useful to provide the following information (when applicable) so that we get a 
-complete picture before providing a solution.
+complete picture before jumping into solutions.
 
 ### 1️⃣ System Information
 Let us know relevant information about your system.
-
-We recommend running the following in your terminal and attach the output to your question.
+We recommend running the following in your terminal and attaching the output to your question.
 
 `python -c "import zenml.environment; print(zenml.environment.get_system_details())"`
 
-The output should look something like:
+The output should look something like this:
 
 ```python
 ZenML version: 0.21.0
@@ -40,7 +41,7 @@ Integrations: ['airflow', 'graphviz']
 ```
 
 System information provides more context to your issue and also eliminates the need for anyone to ask when they're trying to help.  
-This increases the chances of your question getting answered and saves everyone's time.
+This increases the chances of your question getting answered and saves time for everyone.
 
 ### 2️⃣ What happened
 Tell us briefly:
@@ -53,24 +54,24 @@ Walk us through how to reproduce the same error you had step-by-step, whenever p
 
 ### 4️⃣ Relevant log output
 Attach relevant log outputs to help us understand what happened under the hood.
+Usually, the default log you see in your terminal is sufficient.
 
-Sometimes, the default log output does not help much to shed light on the issue.
+Sometimes, the default log output does not help to shed light on the issue.
 In this case, it's useful to provide additional logs.
 Additional logs are not shown by default, you'll have to toggle an environment variable for it.
 Read the next section to find out how.
 
-## How to toggle `ZENML_LOGGING_VERBOSITY` environment variable to show additional logs
-In the event that the default log is not helpful you can toggle the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
+## 🔄 How to toggle `ZENML_LOGGING_VERBOSITY` environment variable to show additional logs
+In the event that the default log is not helpful, you can toggle the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
 
 The default value is
 ```shell
 ZENML_LOGGING_VERBOSITY=INFO
 ```
-
-You can pick other values such as `WARN`, `ERROR`, `CRITICAL`, `DEBUG` to change what's shown as logs.
+You can pick other values such as `WARN`, `ERROR`, `CRITICAL`, `DEBUG` to change what's shown in the logs.
 See [System Environment Variable](../guidelines/system-environmental-variables.md) for more information on other environment variables that affect the behavior of ZenML.
 
-## How to see logs on the client and server
+## 📜 How to see logs on the client and server
 
 You can see the server logs by tapping into the Kubernetes pod where the server is running, with something like this:
 ```shell
@@ -90,7 +91,8 @@ INFO:asyncio:Syncing pipeline runs...
 2022-10-19 09:09:18,606 - zenml.zen_stores.metadata_store - DEBUG - Fetched 0 inputs and 4 outputs for step 'importer'. (metadata_store.py:427)
 ```
 
-## Common errors
+## ❌ Common errors
+This section documents frequently encountered issues and solutions among users in Slack.
 
 ### Error initializing rest store
 
@@ -112,7 +114,7 @@ sqlalchemy.exc.IntegrityError: (pymysql.err.IntegrityError) (1048, "Column 'step
 ```
 
 This happens when a step configuration is too long. 
-We changed the limit form 4K to 65K chars, but it could still happen if you have excessively long strings in your config.
+We changed the limit from 4K to 65K chars, but it could still happen if you have excessively long strings in your config.
 
 ### Install ZenML on Apple Silicon without Rosetta
 Our recommended, and tested approach is to install via `Rosetta`. 
