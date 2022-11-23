@@ -205,6 +205,8 @@ class Launcher:
             except:
                 current_step_run.status = ExecutionStatus.FAILED
                 Client().zen_store.update_run_step(current_step_run)
+                run.status = ExecutionStatus.FAILED
+                Client().zen_store.update_run(run)
                 logger.error(f"Failed to execute step `{self._step_name}`.")
 
                 for artifact_ in output_artifacts.values():
@@ -239,3 +241,10 @@ class Launcher:
 
         # TODO: do we need to update the run status here, or does that happen
         # on the SQL zen store automatically?
+        current_run_steps = Client().zen_store.list_run_steps(run_id=run.id)
+        status = ExecutionStatus.run_status(
+            step_statuses=[step_run.status for step_run in current_run_steps]
+        )
+        if status != run.status:
+            run.status = status
+            Client().zen_store.update_run(run)
