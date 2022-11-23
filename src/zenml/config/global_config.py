@@ -655,14 +655,20 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         return self._zen_store
 
-    def set_active_project(self, project: "ProjectResponseModel") -> None:
+    def set_active_project(
+        self, project: "ProjectResponseModel"
+    ) -> "ProjectResponseModel":
         """Set the project for the local client.
 
         Args:
             project: The project to set active.
+
+        Returns:
+            The project that was set active.
         """
         self.active_project_name = project.name
         self._active_project = project
+        return project
 
     def set_active_stack(self, stack: "StackResponseModel") -> None:
         self.active_stack_id = stack.id
@@ -670,23 +676,25 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     def get_active_project(self) -> "ProjectResponseModel":
         project_name = self.get_active_project_name()
 
-        if self._active_project is None:
-            project = self.zen_store.get_project(
-                project_name_or_id=project_name,
-            )
-            self.set_active_project(project)
+        if self._active_project is not None:
+            return self._active_project
 
-        return self._active_project
+        project = self.zen_store.get_project(
+            project_name_or_id=project_name,
+        )
+        return self.set_active_project(project)
 
     def get_active_project_name(self) -> str:
         if self.active_project_name is None:
             _ = self.zen_store
+            assert self.active_project_name is not None
 
         return self.active_project_name
 
     def get_active_stack_id(self) -> UUID:
         if self.active_stack_id is None:
             _ = self.zen_store
+            assert self.active_stack_id is not None
 
         return self.active_stack_id
 
