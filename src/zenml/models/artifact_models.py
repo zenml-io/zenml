@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing artifacts."""
+
 from typing import Optional
 from uuid import UUID
 
@@ -25,6 +27,8 @@ from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update
 
 
 class ArtifactBaseModel(BaseModel):
+    """Base model for artifacts."""
+
     name: str  # Name of the output in the parent step
 
     parent_step_id: UUID
@@ -48,7 +52,7 @@ class ArtifactBaseModel(BaseModel):
 
 
 class ArtifactResponseModel(ArtifactBaseModel, BaseResponseModel):
-    """Domain Model representing an artifact."""
+    """Response model for artifacts."""
 
 
 # ------- #
@@ -57,7 +61,7 @@ class ArtifactResponseModel(ArtifactBaseModel, BaseResponseModel):
 
 
 class ArtifactRequestModel(ArtifactBaseModel, BaseRequestModel):
-    """Domain Model representing an artifact."""
+    """Request model for artifacts."""
 
 
 # ------ #
@@ -67,4 +71,4 @@ class ArtifactRequestModel(ArtifactBaseModel, BaseRequestModel):
 
 @update
 class ArtifactUpdateModel(ArtifactRequestModel):
-    """"""
+    """Update model for artifacts."""

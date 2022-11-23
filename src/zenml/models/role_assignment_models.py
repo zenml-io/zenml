@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing role assignments."""
+
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import UUID
 
@@ -30,10 +32,21 @@ if TYPE_CHECKING:
 
 
 class RoleAssignmentBaseModel(BaseModel):
-    """Domain model for role assignments."""
+    """Base model for role assignments."""
 
     @root_validator(pre=True)
     def check_team_or_user(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Check that either a team or a user is set.
+        
+        Args:
+            values: The values to validate.
+        
+        Returns:
+            The validated values.
+        
+        Raises:
+            ValueError: If both or neither team and user are set.
+        """
         if not values.get("team") and not values.get("user"):
             raise ValueError("Either team or user is required")
         elif values.get("team") and values.get("user"):
@@ -47,6 +60,8 @@ class RoleAssignmentBaseModel(BaseModel):
 
 
 class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
+    """Request model for role assignments using UUIDs for all entities."""
+
     project: Optional[UUID] = Field(
         None, title="The project that the role is limited to."
     )
@@ -89,7 +104,7 @@ class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
 
 
 class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
-    """"""
+    """Response model for role assignments with all entities hydrated."""
 
     project: Optional["ProjectResponseModel"] = Field(
         title="The project scope of this role assignment.", default=None

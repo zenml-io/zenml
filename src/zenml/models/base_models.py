@@ -111,11 +111,14 @@ class ShareableResponseModel(ProjectScopedResponseModel):
 
 
 class BaseRequestModel(AnalyticsTrackedModelMixin):
-    """ """
+    """Base request model.
+
+    Used as a base class for all request models.
+    """
 
 
 class UserOwnedRequestModel(BaseRequestModel):
-    """Base user-owned domain model.
+    """Base user-owned request model.
 
     Used as a base class for all domain models that are "owned" by a user.
     """
@@ -124,7 +127,7 @@ class UserOwnedRequestModel(BaseRequestModel):
 
 
 class ProjectScopedRequestModel(UserOwnedRequestModel):
-    """Base project-scoped domain model.
+    """Base project-scoped request domain model.
 
     Used as a base class for all domain models that are project-scoped.
     """
@@ -151,10 +154,12 @@ class ShareableRequestModel(ProjectScopedRequestModel):
 # ------------- #
 # UPDATE MODELS #
 # ------------- #
+
 T = TypeVar("T", bound="BaseRequestModel")
 
 
 def update(_cls: Type[T]) -> Type[T]:
+    """TODO: @bcdurak describe what this does."""
     for field in _cls.__fields__:
         new_field = _cls.__fields__[field]
         new_field.required = False

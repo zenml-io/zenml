@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing stack components."""
 
 from typing import Any, Dict
 
@@ -31,6 +32,8 @@ from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 # BASE #
 # ---- #
 class ComponentBaseModel(BaseModel):
+    """Base model for stack components."""
+
     name: str = Field(
         title="The name of the stack component.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
@@ -54,7 +57,7 @@ class ComponentBaseModel(BaseModel):
 
 
 class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
-    """Model describing the Component."""
+    """Response model for stack components."""
 
 
 # ------- #
@@ -63,7 +66,7 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
 
 
 class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
-    """ """
+    """Request model for stack components."""
 
 
 # ------ #
@@ -73,4 +76,4 @@ class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
 
 @update
 class ComponentUpdateModel(ComponentRequestModel):
-    """"""
+    """Update model for stack components."""

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing projects."""
 
 from pydantic import BaseModel, Field
 
@@ -25,7 +26,7 @@ from zenml.models.constants import (
 # BASE #
 # ---- #
 class ProjectBaseModel(BaseModel):
-    """"""
+    """Base model for projects."""
 
     name: str = Field(
         title="The unique name of the project.",
@@ -44,7 +45,7 @@ class ProjectBaseModel(BaseModel):
 
 
 class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
-    """"""
+    """Response model for projects."""
 
 
 # ------- #
@@ -53,7 +54,7 @@ class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
 
 
 class ProjectRequestModel(ProjectBaseModel, BaseRequestModel):
-    """"""
+    """Request model for projects."""
 
 
 # ------ #
@@ -63,4 +64,4 @@ class ProjectRequestModel(ProjectBaseModel, BaseRequestModel):
 
 @update
 class ProjectUpdateModel(ProjectRequestModel):
-    """"""
+    """Update model for projects."""
