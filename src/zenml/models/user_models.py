@@ -190,6 +190,11 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
     teams: Optional[List["TeamResponseModel"]] = Field(
         title="The list of teams for this user."
     )
+    email: Optional[str] = Field(
+        default="",
+        title="The email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
 
     def generate_access_token(self, permissions: List[str]) -> str:
         """Generates an access token.
@@ -211,12 +216,6 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
 
 class UserAuthModel(UserBaseModel, BaseResponseModel):
     """TODO @alexejpenner describe what this does."""
-
-    email: Optional[str] = Field(
-        default="",
-        title="The email address associated with the account.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
-    )
 
     active: bool = Field(default=False, title="Active account.")
 
