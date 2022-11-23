@@ -355,7 +355,7 @@ def update_stack(
         secrets_manager: Name of the new secrets manager for this stack.
         feature_store: Name of the new feature store for this stack.
         model_deployer: Name of the new model deployer for this stack.
-        experiment_tracker_name: Name of the new experiment tracker for this
+        experiment_tracker: Name of the new experiment tracker for this
             stack.
         alerter: Name of the new alerter for this stack.
         annotator: Name of the new annotator for this stack.
