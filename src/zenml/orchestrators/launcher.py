@@ -74,13 +74,12 @@ class Launcher:
 
     def launch(self) -> None:
         # TODO: Create run here instead
-        start_time = time.time()
         logger.info(f"Step `{self._step_name}` has started.")
 
         run = Client().zen_store.get_run(self._run_name)
         current_run_steps = Client().zen_store.list_run_steps(run_id=run.id)
 
-        # Z1) Get input artifacts of current run
+        # 1. Get input artifacts of current run
         current_run_input_artifacts: Dict[str, ArtifactModel] = {}
         for name, inp_ in self._step.spec.inputs.items():
             for s in current_run_steps:
@@ -100,12 +99,12 @@ class Launcher:
             else:
                 assert False
 
-        # Z2) generate cache key for current step
+        # 2. Generate cache key for current step
         cache_key = generate_cache_key(
             step=self._step, input_artifacts=current_run_input_artifacts
         )
 
-        # Z3) Register step run
+        # 3. Register step run
         parent_step_ids = []
 
         for upstream_step in self._step.spec.upstream_steps:
@@ -113,9 +112,9 @@ class Launcher:
                 if run_step.entrypoint_name == upstream_step:
                     parent_step_ids.append(run_step.id)
 
-        # RMTFX: Get parent step names from pipeline spec, get their IDs from the run model
         input_artifact_ids = {
-            k: a.id for k, a in current_run_input_artifacts.items()
+            key: artifact.id
+            for key, artifact in current_run_input_artifacts.items()
         }
         current_step_run = StepRunModel(
             name=self._step_name,
@@ -135,7 +134,7 @@ class Launcher:
         )
         Client().zen_store.create_run_step(current_step_run)
 
-        # Z4) query zen store for all step runs with same cache key
+        # 4. query zen store for all step runs with same cache key
 
         all_step_runs = Client().zen_store.list_run_steps()
         cache_candidates = [
@@ -163,31 +162,31 @@ class Launcher:
             #   - Register the new output artifacts
             input_artifacts: Dict[str, BaseArtifact] = {}
             for name, artifact_model in current_run_input_artifacts.items():
-                artifact = BaseArtifact()
-                artifact.name = name
-                artifact.uri = artifact_model.uri
-                artifact.materializer = artifact_model.materializer
-                artifact.datatype = artifact_model.data_type
-                input_artifacts[name] = artifact
+                artifact_ = BaseArtifact()
+                artifact_.name = name
+                artifact_.uri = artifact_model.uri
+                artifact_.materializer = artifact_model.materializer
+                artifact_.datatype = artifact_model.data_type
+                input_artifacts[name] = artifact_
 
             output_artifacts: Dict[str, BaseArtifact] = {}
             for name, _ in self._step.config.outputs.items():
-                artifact = BaseArtifact()
-                artifact.name = name
-                artifact.uri = generate_artifact_uri(
+                artifact_ = BaseArtifact()
+                artifact_.name = name
+                artifact_.uri = generate_artifact_uri(
                     artifact_store=self._stack.artifact_store,
                     step_run=current_step_run,
                     output_name=name,
                 )
-                output_artifacts[name] = artifact
+                output_artifacts[name] = artifact_
 
-                if fileio.exists(artifact.uri):
+                if fileio.exists(artifact_.uri):
                     raise RuntimeError("Artifact already exists")
 
-                fileio.makedirs(artifact.uri)
+                fileio.makedirs(artifact_.uri)
 
             executor = StepExecutor(step=self._step)
-
+            start_time = time.time()
             try:
                 executor.execute(
                     input_artifacts=input_artifacts,
@@ -200,22 +199,27 @@ class Launcher:
                 Client().zen_store.update_run_step(current_step_run)
                 logger.error(f"Failed to execute step `{self._step_name}`.")
 
-                for artifact in output_artifacts.values():
+                for artifact_ in output_artifacts.values():
                     try:
-                        if fileio.isdir(artifact.uri):
-                            fileio.rmtree(artifact.uri)
+                        if fileio.isdir(artifact_.uri):
+                            fileio.rmtree(artifact_.uri)
                     except:
                         pass
                 raise
+            duration = time.time() - start_time
+            logger.info(
+                f"Step `{self._step_name}` has finished in "
+                f"{string_utils.get_human_readable_time(duration)}."
+            )
 
             output_artifact_ids = {}
-            for name, artifact in output_artifacts.items():
+            for name, artifact_ in output_artifacts.items():
                 artifact_model = ArtifactModel(
                     name=name,
-                    type=artifact.artifact_type.name,
-                    uri=artifact.uri,
-                    materializer=artifact.materializer,
-                    data_type=artifact.datatype,
+                    type=artifact_.artifact_type.name,
+                    uri=artifact_.uri,
+                    materializer=artifact_.materializer,
+                    data_type=artifact_.datatype,
                 )
                 Client().zen_store.create_artifact(artifact_model)
                 output_artifact_ids[name] = artifact_model.id
@@ -224,11 +228,6 @@ class Launcher:
             current_step_run.status = ExecutionStatus.COMPLETED
             current_step_run.end_time = datetime.now()
             Client().zen_store.update_run_step(current_step_run)
-        duration = time.time() - start_time
-        logger.info(
-            f"Step `{self._step_name}` has finished in "
-            f"{string_utils.get_human_readable_time(duration)}."
-        )
 
         # TODO: do we need to update the run status here, or does that happen
         # on the SQL zen store automatically?

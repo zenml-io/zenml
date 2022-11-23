@@ -554,7 +554,6 @@ class SqlZenStore(BaseZenStore):
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
     _engine: Optional[Engine] = None
-    _metadata_store: Optional["MetadataStore"] = None
     _alembic: Optional[Alembic] = None
 
     @property
@@ -570,20 +569,6 @@ class SqlZenStore(BaseZenStore):
         if not self._engine:
             raise ValueError("Store not initialized")
         return self._engine
-
-    @property
-    def metadata_store(self) -> "MetadataStore":
-        """The metadata store.
-
-        Returns:
-            The metadata store.
-
-        Raises:
-            ValueError: If the store is not initialized.
-        """
-        if not self._metadata_store:
-            raise ValueError("Store not initialized")
-        return self._metadata_store
 
     @property
     def runs_inside_server(self) -> bool:
