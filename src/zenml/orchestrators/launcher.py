@@ -85,27 +85,30 @@ class Launcher:
         logger.info(f"Step `{self._step_name}` has started.")
 
         run = Client().zen_store.get_run(self._run_name)
-        current_run_steps = Client().zen_store.list_run_steps(run_id=run.id)
+        current_run_steps = {
+            run_step.entrypoint_name: run_step
+            for run_step in Client().zen_store.list_run_steps(run_id=run.id)
+        }
 
         # 1. Get input artifacts of current run
         current_run_input_artifacts: Dict[str, ArtifactModel] = {}
         for name, inp_ in self._step.spec.inputs.items():
-            for s in current_run_steps:
-                if s.entrypoint_name == inp_.step_name:
-                    for (
-                        artifact_name,
-                        artifact_id,
-                    ) in s.output_artifacts.items():
-                        if artifact_name == inp_.output_name:
-                            artifact = Client().zen_store.get_artifact(
-                                artifact_id
-                            )
-                            current_run_input_artifacts[name] = artifact
-                            break
+            try:
+                s = current_run_steps[inp_.step_name]
+            except KeyError:
+                raise RuntimeError(
+                    f"No step `{inp_.step_name}` found in current run."
+                )
 
-                    break
-            else:
-                assert False
+            try:
+                artifact_id = s.output_artifacts[inp_.output_name]
+            except KeyError:
+                raise RuntimeError(
+                    f"No output `{inp_.output_name}` found for step `{inp_.step_name}`."
+                )
+
+            artifact = Client().zen_store.get_artifact(artifact_id)
+            current_run_input_artifacts[name] = artifact
 
         # 2. Generate cache key for current step
         cache_key = generate_cache_key(
@@ -116,9 +119,8 @@ class Launcher:
         parent_step_ids = []
 
         for upstream_step in self._step.spec.upstream_steps:
-            for run_step in current_run_steps:
-                if run_step.entrypoint_name == upstream_step:
-                    parent_step_ids.append(run_step.id)
+            run_step = current_run_steps[upstream_step]
+            parent_step_ids.append(run_step.id)
 
         input_artifact_ids = {
             key: artifact.id
@@ -140,7 +142,6 @@ class Launcher:
             start_time=datetime.now(),
             enable_cache=self._step.config.enable_cache,
         )
-        Client().zen_store.create_run_step(current_step_run)
 
         # 4. query zen store for all step runs with same cache key
 
@@ -150,6 +151,8 @@ class Launcher:
             for step_run in all_step_runs
             if step_run.id != current_step_run.id
             and step_run.cache_key == cache_key
+            and step_run.status
+            in {ExecutionStatus.COMPLETED, ExecutionStatus.CACHED}
         ]
 
         if cache_candidates:
@@ -161,13 +164,15 @@ class Launcher:
             current_step_run.output_artifacts = cached_step_run.output_artifacts
             current_step_run.status = ExecutionStatus.CACHED
             current_step_run.end_time = current_step_run.start_time
-            Client().zen_store.update_run_step(current_step_run)
+            Client().zen_store.create_run_step(current_step_run)
 
             logger.info(f"Using cached version of `{self._step_name}`.")
         else:
             # if no step run exists:
             #   - Run code
             #   - Register the new output artifacts
+            Client().zen_store.create_run_step(current_step_run)
+
             input_artifacts: Dict[str, BaseArtifact] = {}
             for name, artifact_model in current_run_input_artifacts.items():
                 artifact_ = BaseArtifact()
