@@ -421,9 +421,7 @@ def test_updating_user_succeeds(
 
     new_user_name = "blupus"
     user_update = UserUpdateModel(name=new_user_name)
-    sql_store["store"].update_user(
-        user_id=new_user.id, user_update=user_update
-    )
+    sql_store["store"].update_user(user_id=new_user.id, user_update=user_update)
 
     assert sql_store["store"].get_user(new_user_name) is not None
     with pytest.raises(KeyError):

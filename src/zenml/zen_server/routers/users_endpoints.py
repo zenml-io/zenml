@@ -224,9 +224,7 @@ def activate_user(
         )
     user_update.active = True
     user_update.activation_token = None
-    return zen_store().update_user(
-        user_id=user.id, user_update=user_update
-    )
+    return zen_store().update_user(user_id=user.id, user_update=user_update)
 
 
 @router.put(
@@ -251,9 +249,7 @@ def deactivate_user(
 
     user_update = UserUpdateModel(active=False)
     token = user_update.generate_activation_token()
-    user = zen_store().update_user(
-        user_id=user.id, user_update=user_update
-    )
+    user = zen_store().update_user(user_id=user.id, user_update=user_update)
     # add back the original unhashed activation token
     user.activation_token = token
     return user
@@ -324,9 +320,7 @@ def email_opt_in_response(
             email_opted_in=user_response.email_opted_in,
         )
 
-        return zen_store().update_user(
-            user_id=user.id, user_update=user_update
-        )
+        return zen_store().update_user(user_id=user.id, user_update=user_update)
     else:
         raise NotAuthorizedError(
             "Users can not opt in on behalf of another " "user."
