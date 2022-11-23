@@ -47,7 +47,7 @@ from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import PipelineRunModel
-from zenml.orchestrators.launcher.portable import launcher
+from zenml.orchestrators.launcher import Launcher
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.utils import source_utils, uuid_utils
 
@@ -282,11 +282,12 @@ class BaseOrchestrator(StackComponent, ABC):
             for name, s in self._active_deployment.steps.items()
             if s.config.name == step.config.name
         ][0]
-        launcherv2 = launcher.Launcherv2(
+        launcher = Launcher(
             step=step,
             step_name=step_name,
             run_name=run_model.name,
             pipeline_config=self._active_deployment.pipeline,
+            stack=stack,
         )
 
         # If a step operator is used, the current environment will not be the
@@ -297,7 +298,7 @@ class BaseOrchestrator(StackComponent, ABC):
         else:
             stack.prepare_step_run(info=step_run_info)
             try:
-                launcherv2.launch()
+                launcher.launch()
             except:  # noqa: E722
 
                 self._publish_failed_run(run_name_or_id=run_model.name)
