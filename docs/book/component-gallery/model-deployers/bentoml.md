@@ -133,11 +133,20 @@ bento_builder = bento_builder_step(
 )
 ```
 
+The Bento Builder step can be used in any orchestration pipeline that you
+create with ZenML. The step will build the bento bundle and save it to the
+used artifact store. Which can be used to serve the model in a local setting
+using the BentoML Model Deployer Step, or to a remote setting using the
+bentoctl or Yatai. This gives you the flexibility to package your model
+in a way that is ready for different deployment scenarios. 
+
 ### ZenML BentoML Deployer step
 
 We have now built our bento bundle, and we can use the built-in bento deployer
 step to deploy the bento bundle to our local http server. The following example
 shows how to call the built-in bento deployer step within a ZenML pipeline.
+
+Note: the bentoml deployer step can only be used in a local environment.
 
 ```python
 # Import the step and parameters class
@@ -156,7 +165,7 @@ bentoml_model_deployer = bentoml_model_deployer_step(
 )
 ```
 
-### ZenML BentoML Pipeline example
+### ZenML BentoML Pipeline examples
 
 Once all the steps have been defined, we can create a ZenML pipeline and run it.
 The bento builder step expects to get the trained model as an input, so we need
@@ -165,6 +174,9 @@ or load the model from a previous run. Then the deployer step expects to get the
 bento bundle as an input, so we need to make sure either we have a previous step
 that builds the bento bundle and outputs it or load the bento bundle from a previous
 run or external source.
+
+The following example shows how to create a ZenML pipeline that trains a model,
+builds a bento bundle and deploys it to a local http server.
 
 ```python
 # Import the pipeline to use the pipeline decorator
@@ -190,7 +202,41 @@ def bentoml_pipeline(
 
 ```
 
-### Predicting with the deployed model
+In more complex scenarios, you might want to build a pipeline that trains a model,
+builds a bento bundle in a remote environement. Then creates a new pipeline that
+retreives the bento bundle and deploys it to a local http server, or to a cloud
+provider. The following example shows a pipeline example that does exactly that.
+
+```python
+# Import the pipeline to use the pipeline decorator
+from zenml.pipelines import pipeline
+
+# Pipeline definition
+@pipeline
+def remote_train_pipeline(
+    importer,
+    trainer,
+    evaluator,
+    bento_builder,
+):
+    """Link all the steps and artifacts together"""
+    train_dataloader, test_dataloader = importer()
+    model = trainer(train_dataloader)
+    accuracy = evaluator(test_dataloader=test_dataloader, model=model)
+    bento = bento_builder(model=model)
+
+@pipeline
+def local_deploy_pipeline(
+    bento_loader,
+    deployer,
+):
+    """Link all the steps and artifacts together"""
+    bento = bento_loader()
+    deployer(deploy_decision=decision, bento=bento)
+
+```
+
+### Predicting with the local deployed model
 
 Once the model has been deployed we can use the BentoML client to send requests
 to the deployed model. ZenML will automatically create a BentoML client for you
@@ -219,6 +265,12 @@ def predictor(
         result = to_labels(prediction[0])
         rich_print(f"Prediction for {img} is {result}")
 ```
+
+Deploying and testing locally is a great way to get started and test your
+model. However, a real-world scenario will most likely require you to deploy
+your model to a remote environment. The next section will show you how to
+deploy the Bento you built with ZenML pipelines to a cloud environment using 
+the bentoctl CLI.
 
 ### From Local to Cloud with bentoctl
 
