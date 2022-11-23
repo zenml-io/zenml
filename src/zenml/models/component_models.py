@@ -15,15 +15,19 @@
 
 from typing import Any, Dict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from zenml.enums import StackComponentType
+from zenml.logger import get_logger
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
     update,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.utils import secret_utils
+
+logger = get_logger(__name__)
 
 # TODO: Add example schemas and analytics fields
 
@@ -67,6 +71,15 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
 
 class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
     """Request model for stack components."""
+
+    @validator("name")
+    def name_cant_be_a_secret_reference(cls, name):
+        if secret_utils.is_secret_reference(name):
+            raise ValueError(
+                "Passing the `name` attribute of a stack component as a "
+                "secret reference is not allowed."
+            )
+        return name
 
 
 # ------ #

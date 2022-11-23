@@ -143,9 +143,12 @@ def register_stub_orchestrator_flavor() -> None:
     flavor_registry._flavors[flavor.type].pop(flavor.name)
 
 
-def test_stack_component_prevents_secret_references_for_some_attributes():
+def test_stack_component_prevents_secret_references_for_some_attributes(
+    clean_client, register_stub_orchestrator_flavor
+):
     """Tests that the stack component prevents secret references for the name
     attribute and all attributes with associated pydantic validators."""
+
     with pytest.raises(ValueError):
         # Can't have a secret reference for the name
         _get_stub_orchestrator(name="{{secret.key}}")
@@ -153,13 +156,19 @@ def test_stack_component_prevents_secret_references_for_some_attributes():
     with pytest.raises(ValueError):
         # Can't have a secret reference for an attribute that requires
         # pydantic validation
-        _get_stub_orchestrator(
-            name="test", attribute_with_validator="{{secret.key}}"
+        clean_client.register_stack_component(
+            name="test",
+            configuration={"attribute_with_validator": "{{secret.key}}"},
+            flavor="TEST",
+            component_type=StackComponentType.ORCHESTRATOR,
         )
 
     with does_not_raise():
-        _get_stub_orchestrator(
-            name="test", attribute_without_validator="{{secret.key}}"
+        clean_client.register_stack_component(
+            name="test",
+            configuration={"attribute_without_validator": "{{secret.key}}"},
+            flavor="TEST",
+            component_type=StackComponentType.ORCHESTRATOR,
         )
 
 
