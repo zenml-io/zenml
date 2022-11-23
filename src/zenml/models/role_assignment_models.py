@@ -74,29 +74,6 @@ class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
 
     role: UUID = Field(title="The role.")
 
-    @root_validator
-    def ensure_single_entity(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validates that either `user` or `team` is set.
-
-        Args:
-            values: The values to validate.
-
-        Returns:
-            The validated values.
-
-        Raises:
-            ValueError: If neither `user` nor `team` is set.
-        """
-        user = values.get("user", None)
-        team = values.get("team", None)
-        if user and team:
-            raise ValueError("Only `user` or `team` is allowed.")
-
-        if not (user or team):
-            raise ValueError("Missing `user` or `team` for role assignment.")
-
-        return values
-
 
 # -------- #
 # RESPONSE #
