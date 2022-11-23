@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Functionality for reading, writing and managing files."""
-
 import fnmatch
 import os
 from pathlib import Path
@@ -28,6 +27,7 @@ from typing import (
 )
 
 from zenml.constants import REMOTE_FS_PREFIX
+from zenml.io import local_filesystem  # noqa
 from zenml.io.filesystem_registry import default_filesystem_registry
 from zenml.logger import get_logger
 

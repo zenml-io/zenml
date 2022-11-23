@@ -12,17 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-"""Utility functions for Steps.
-
-The collection of utility functions/classes are inspired by their original
-implementation of the Tensorflow Extended team, which can be found here:
-
-https://github.com/tensorflow/tfx/blob/master/tfx/dsl/component/experimental
-/decorators.py
-
-This version is heavily adjusted to work with the Pipeline-Step paradigm which
-is proposed by ZenML.
-"""
+"""Utility functions and classes to run ZenML steps."""
 
 from __future__ import absolute_import, division, print_function
 

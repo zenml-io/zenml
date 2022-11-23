@@ -43,7 +43,7 @@ class LocalFilesystem(Filesystem):
     https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py
     """
 
-    SSUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
+    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
 
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:

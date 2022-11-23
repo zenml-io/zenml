@@ -33,7 +33,7 @@ from zenml.io.fileio import (
 )
 
 if TYPE_CHECKING:
-    from tfx.dsl.io.filesystem import PathType
+    from zenml.io.filesystem import PathType
 
 
 def get_global_config_directory() -> str:

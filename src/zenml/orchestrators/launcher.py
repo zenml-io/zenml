@@ -19,12 +19,11 @@ import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict
 
-from tfx.dsl.io import fileio
-
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 from zenml.steps.utils import StepExecutor
@@ -233,10 +232,10 @@ class Launcher:
             for name, artifact_ in output_artifacts.items():
                 artifact_model = ArtifactModel(
                     name=name,
-                    type=artifact_.artifact_type.name,
+                    type=artifact_.TYPE_NAME,
                     uri=artifact_.uri,
                     materializer=artifact_.materializer,
-                    data_type=artifact_.datatype,
+                    data_type=artifact_.data_type,
                 )
                 Client().zen_store.create_artifact(artifact_model)
                 output_artifact_ids[name] = artifact_model.id
