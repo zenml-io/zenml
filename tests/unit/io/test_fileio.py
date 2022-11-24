@@ -158,7 +158,7 @@ def test_copy_raises_error_when_file_exists(tmp_path) -> None:
     the desired location"""
     io_utils.create_file_if_not_exists(os.path.join(tmp_path, "test_file.txt"))
     io_utils.create_file_if_not_exists(os.path.join(tmp_path, "test_file2.txt"))
-    with pytest.raises(OSError):
+    with pytest.raises(FileExistsError):
         fileio.copy(
             os.path.join(tmp_path, "test_file.txt"),
             os.path.join(tmp_path, "test_file2.txt"),
