@@ -157,12 +157,7 @@ class Launcher:
         self._stack = stack
 
     def launch(self) -> None:
-        """Launches the step.
-
-        Raises:
-            RuntimeError: If the input artifacts could not be resolved or if
-                any of the output artifacts already exist.
-        """
+        """Launches the step."""
         # TODO: Create run here instead
 
         logger.info(f"Step `{self._step_name}` has started.")
