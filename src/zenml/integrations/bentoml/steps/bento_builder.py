@@ -14,7 +14,7 @@
 """Implementation of the BentoML bento builder step."""
 import importlib
 import os
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import bentoml
 from bentoml import bentos
@@ -55,8 +55,8 @@ class BentoMLBuilderParameters(BaseParameters):
     description: Optional[str] = None
     include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
-    python: Optional[Dict[str, str]] = None
-    docker: Optional[Dict[str, str]] = None
+    python: Optional[Dict[str, Any]] = None
+    docker: Optional[Dict[str, Any]] = None
     working_dir: Optional[str] = None
 
 
