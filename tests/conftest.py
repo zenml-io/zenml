@@ -487,14 +487,14 @@ def remote_container_registry():
     )
 
 
+@step
+def _empty_step() -> None:
+    """Empty step for testing."""
+
+
 @pytest.fixture
 def empty_step():
     """Pytest fixture that returns an empty (no input, no output) step."""
-
-    @step
-    def _empty_step() -> None:
-        pass
-
     return _empty_step
 
 
@@ -544,13 +544,14 @@ def unconnected_two_step_pipeline():
     return _pipeline
 
 
+@step
+def _int_output_step() -> int:
+    return 1
+
+
 @pytest.fixture
 def int_step_output():
-    @step
-    def _step() -> int:
-        return 1
-
-    return _step()()
+    return _int_output_step()()
 
 
 @pytest.fixture
