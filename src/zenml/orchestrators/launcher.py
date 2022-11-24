@@ -383,7 +383,7 @@ class Launcher:
                         info=step_run_info,
                         entrypoint_command=entrypoint_command,
                     )
-                except:
+                except Exception:
                     self._cleanup_failed_run(
                         pipeline_run=run,
                         step_run=current_step_run,
@@ -400,7 +400,7 @@ class Launcher:
                         run_name=self._run_name,
                         pipeline_config=self._pipeline_config,
                     )
-                except:
+                except Exception:
                     self._cleanup_failed_run(
                         pipeline_run=run,
                         step_run=current_step_run,
