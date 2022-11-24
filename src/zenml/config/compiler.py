@@ -358,15 +358,21 @@ class Compiler:
         Returns:
             The sorted steps.
         """
-        from zenml.orchestrators.dag_runner import ThreadedDagRunner
+        from zenml.orchestrators.dag_runner import reverse_dag
+        from zenml.orchestrators.topsort import topsorted_layers
 
-        # Sort step names using multi-threaded topological sort
+        # Sort step names using topological sort
         dag: Dict[str, List[str]] = {
             step.name: list(step.upstream_steps) for step in steps.values()
         }
-        sorted_step_names: List[str] = []
-        run_fn = lambda step_name: sorted_step_names.append(step_name)
-        ThreadedDagRunner(dag, run_fn).run()
+        reversed_dag: Dict[str, List[str]] = reverse_dag(dag)
+        layers = topsorted_layers(
+            nodes=[step.name for step in steps.values()],
+            get_node_id_fn=lambda node: node,
+            get_parent_nodes=lambda node: dag[node],
+            get_child_nodes=lambda node: reversed_dag[node],
+        )
+        sorted_step_names = [step for layer in layers for step in layer]
 
         # Construct pipeline name to step mapping
         step_name_to_name_in_pipeline: Dict[str, str] = {
