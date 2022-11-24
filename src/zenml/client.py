@@ -1256,7 +1256,6 @@ class Client(metaclass=ClientMetaClass):
             artifact_id = artifact_dict.pop("id")
             artifact = ArtifactModel.parse_obj(artifact_dict)
             artifact.updated = datetime.now()
-            artifact.mlmd_id = None
             self.zen_store.create_artifact(artifact)
             artifact_id_mapping[str(artifact_id)] = artifact.id
 
@@ -1270,7 +1269,6 @@ class Client(metaclass=ClientMetaClass):
             pipeline_run.project = self.active_project.id
             pipeline_run.stack_id = None
             pipeline_run.pipeline_id = None
-            pipeline_run.mlmd_id = None
             pipeline_run = self.zen_store.create_run(pipeline_run)
             for step_dict in steps:
                 step_id = step_dict.pop("id")
@@ -1289,8 +1287,6 @@ class Client(metaclass=ClientMetaClass):
                     for output_name, artifact_id in step.output_artifacts.items()
                 }
                 step.updated = datetime.now()
-                step.mlmd_id = None
-                step.mlmd_parent_step_ids = []
                 step = self.zen_store.create_run_step(step)
                 step_id_mapping[str(step_id)] = step.id
 

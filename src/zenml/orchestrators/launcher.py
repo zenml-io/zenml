@@ -300,7 +300,6 @@ class Launcher:
             entrypoint_name=self._step.config.name,
             parameters=parameters,
             step_configuration=self._step.dict(),
-            mlmd_parent_step_ids=[],
             cache_key=cache_key,
             output_artifacts={},
             caching_parameters=self._step.config.caching_parameters,

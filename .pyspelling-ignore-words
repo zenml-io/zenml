@@ -329,6 +329,7 @@ InferenceServices
 Initialization
 InitializationException
 Initializations
+InputResolutionError
 IntegrationError
 Intitialization
 InvalidKeyError

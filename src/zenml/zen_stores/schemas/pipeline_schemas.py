@@ -184,8 +184,6 @@ class PipelineRunSchema(SQLModel, table=True):
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
 
-    mlmd_id: Optional[int] = Field(default=None, nullable=True)
-
     @classmethod
     def from_create_model(
         cls,
@@ -218,7 +216,6 @@ class PipelineRunSchema(SQLModel, table=True):
             git_sha=run.git_sha,
             zenml_version=run.zenml_version,
             pipeline=pipeline,
-            mlmd_id=run.mlmd_id,
         )
 
     def from_update_model(self, model: PipelineRunModel) -> "PipelineRunSchema":
@@ -230,7 +227,6 @@ class PipelineRunSchema(SQLModel, table=True):
         Returns:
             The updated `PipelineRunSchema`.
         """
-        self.mlmd_id = model.mlmd_id
         self.status = model.status
         self.end_time = model.end_time
         self.updated = datetime.now()
@@ -258,7 +254,6 @@ class PipelineRunSchema(SQLModel, table=True):
             num_steps=self.num_steps,
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,
-            mlmd_id=self.mlmd_id,
             created=self.created,
             updated=self.updated,
         )
@@ -296,8 +291,6 @@ class StepRunSchema(SQLModel, table=True):
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     num_outputs: Optional[int]
 
-    mlmd_id: Optional[int] = Field(default=None, nullable=True)
-
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
 
@@ -328,7 +321,6 @@ class StepRunSchema(SQLModel, table=True):
             caching_parameters=json.dumps(model.caching_parameters),
             docstring=model.docstring,
             num_outputs=model.num_outputs,
-            mlmd_id=model.mlmd_id,
         )
 
     def from_update_model(self, model: StepRunModel) -> "StepRunSchema":
@@ -348,7 +340,6 @@ class StepRunSchema(SQLModel, table=True):
     def to_model(
         self,
         parent_step_ids: List[UUID],
-        mlmd_parent_step_ids: List[int],
         input_artifacts: Dict[str, UUID],
         output_artifacts: Dict[str, UUID],
     ) -> StepRunModel:
@@ -356,7 +347,6 @@ class StepRunSchema(SQLModel, table=True):
 
         Args:
             parent_step_ids: The parent step ids to link to the step.
-            mlmd_parent_step_ids: The parent step ids in MLMD.
             input_artifacts: The input artifacts to link to the step.
             output_artifacts: The output artifacts to link to the step.
 
@@ -387,8 +377,6 @@ class StepRunSchema(SQLModel, table=True):
             caching_parameters=caching_parameters,
             docstring=self.docstring,
             num_outputs=self.num_outputs,
-            mlmd_id=self.mlmd_id,
-            mlmd_parent_step_ids=mlmd_parent_step_ids,
             created=self.created,
             updated=self.updated,
         )
@@ -422,7 +410,7 @@ class StepRunParentsSchema(SQLModel, table=True):
 class ArtifactSchema(SQLModel, table=True):
     """SQL Model for artifacts of steps."""
 
-    __tablename__ = "artifacts"
+    __tablename__ = "artifact"
 
     id: UUID = Field(primary_key=True)
     name: str  # Name of the output in the parent step
@@ -443,8 +431,6 @@ class ArtifactSchema(SQLModel, table=True):
     uri: str
     materializer: str
     data_type: str
-
-    mlmd_id: Optional[int] = Field(default=None, nullable=True)
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -467,7 +453,6 @@ class ArtifactSchema(SQLModel, table=True):
             uri=model.uri,
             materializer=model.materializer,
             data_type=model.data_type,
-            mlmd_id=model.mlmd_id,
         )
 
     def to_model(self) -> ArtifactModel:
@@ -484,7 +469,6 @@ class ArtifactSchema(SQLModel, table=True):
             uri=self.uri,
             materializer=self.materializer,
             data_type=self.data_type,
-            mlmd_id=self.mlmd_id,
             created=self.created,
             updated=self.updated,
         )

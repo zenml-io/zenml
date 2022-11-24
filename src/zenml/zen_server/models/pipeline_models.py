@@ -128,7 +128,6 @@ class CreatePipelineRunRequest(ProjectScopedCreateRequest[PipelineRunModel]):
     status: ExecutionStatus
     pipeline_configuration: Dict[str, Any]
     num_steps: int
-    mlmd_id: Optional[int]
 
 
 class HydratedPipelineRunModel(PipelineRunModel):

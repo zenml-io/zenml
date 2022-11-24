@@ -608,7 +608,6 @@ def sample_step_model() -> StepRunModel:
         parents_step_ids=[0],
         entrypoint_name="sample_entrypoint",
         parameters={},
-        mlmd_parent_step_ids=[],
         pipeline_run_id=uuid4(),
         parent_step_ids=[],
         input_artifacts={},

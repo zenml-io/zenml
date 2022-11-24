@@ -2673,19 +2673,6 @@ class SqlZenStore(BaseZenStore):
                     f"'{pipeline_run.id}' already exists."
                 )
 
-            # Check if pipeline run with same name MLMD ID already exists.
-            if pipeline_run.mlmd_id is not None:
-                existing_mlmd_id_run = session.exec(
-                    select(PipelineRunSchema).where(
-                        PipelineRunSchema.mlmd_id == pipeline_run.mlmd_id
-                    )
-                ).first()
-                if existing_mlmd_id_run is not None:
-                    raise EntityExistsError(
-                        f"Unable to create pipeline run: A pipeline run with "
-                        f"MLMD ID '{pipeline_run.mlmd_id}' already exists."
-                    )
-
             # Query stack
             if pipeline_run.stack_id is not None:
                 stack = session.exec(
@@ -2886,19 +2873,6 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
 
-            # Check if the step already exists
-            if step_run.mlmd_id is not None:
-                existing_step_run = session.exec(
-                    select(StepRunSchema).where(
-                        StepRunSchema.mlmd_id == step_run.mlmd_id
-                    )
-                ).first()
-                if existing_step_run is not None:
-                    raise EntityExistsError(
-                        f"Unable to create step '{step_run.name}': A step with "
-                        f"MLMD ID '{step_run.mlmd_id}' already exists."
-                    )
-
             # Check if the pipeline run exists
             run = session.exec(
                 select(PipelineRunSchema).where(
@@ -2960,7 +2934,6 @@ class SqlZenStore(BaseZenStore):
 
             return step_schema.to_model(
                 parent_step_ids=step_run.parent_step_ids,
-                mlmd_parent_step_ids=step_run.mlmd_parent_step_ids,
                 input_artifacts=step_run.input_artifacts,
                 output_artifacts=step_run.output_artifacts,
             )
@@ -3161,11 +3134,6 @@ class SqlZenStore(BaseZenStore):
                 .where(StepRunParentsSchema.parent_id == StepRunSchema.id)
             ).all()
             parent_step_ids = [parent_step.id for parent_step in parent_steps]
-            mlmd_parent_step_ids = [
-                parent_step.mlmd_id
-                for parent_step in parent_steps
-                if parent_step.mlmd_id is not None
-            ]
 
             # Get input artifacts.
             input_artifact_list = session.exec(
@@ -3194,7 +3162,6 @@ class SqlZenStore(BaseZenStore):
             # Convert to model.
             return step_run.to_model(
                 parent_step_ids=parent_step_ids,
-                mlmd_parent_step_ids=mlmd_parent_step_ids,
                 input_artifacts=input_artifacts,
                 output_artifacts=output_artifacts,
             )
@@ -3277,7 +3244,6 @@ class SqlZenStore(BaseZenStore):
 
             return existing_step_run.to_model(
                 parent_step_ids=step_run.parent_step_ids,
-                mlmd_parent_step_ids=step_run.mlmd_parent_step_ids,
                 input_artifacts=step_run.input_artifacts,
                 output_artifacts=step_run.output_artifacts,
             )

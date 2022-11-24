@@ -88,8 +88,6 @@ spec:
             {{- end }}
             - name: ZENML_SERVER_DEPLOYMENT_TYPE
               value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
-            - name: ZENML_SERVER_METADATA_SYNC_PERIOD
-              value: {{ .Values.zenml.metadataSyncPeriod | default 30 | quote }}
 
             {{- if and .Values.grpcMetadata.enabled .Values.zenml.database.url }}
 

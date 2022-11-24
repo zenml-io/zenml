@@ -92,9 +92,6 @@ class PipelineRunModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
     zenml_version: Optional[str] = current_zenml_version
     git_sha: Optional[str] = Field(default_factory=get_git_sha)
 
-    # ID in MLMD - needed for some metadata store methods.
-    mlmd_id: Optional[int]  # Modeled as Optional, so we can remove it later.
-
 
 class StepRunModel(DomainModel):
     """Domain Model representing a step in a pipeline run."""
@@ -122,10 +119,6 @@ class StepRunModel(DomainModel):
     num_outputs: Optional[int]
     caching_parameters: Dict[str, Any]
 
-    # IDs in MLMD - needed for some metadata store methods
-    mlmd_id: Optional[int]
-    mlmd_parent_step_ids: List[int]
-
 
 class ArtifactModel(DomainModel):
     """Domain Model representing an artifact."""
@@ -138,6 +131,3 @@ class ArtifactModel(DomainModel):
     uri: str
     materializer: str
     data_type: str
-
-    # IDs in MLMD - needed for some metadata store methods
-    mlmd_id: Optional[int]
