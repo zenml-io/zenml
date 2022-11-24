@@ -173,9 +173,6 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         Args:
             step: The step to run.
             deployment: The deployment configuration.
-
-        Returns:
-            Optional execution info of the run.
         """
         orchestrator = Client().active_stack.orchestrator
         orchestrator._prepare_run(deployment=deployment)

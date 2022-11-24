@@ -170,9 +170,6 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Args:
             step: The step to be executed
-
-        Returns:
-            The execution info of the step.
         """
         assert self._active_deployment
 

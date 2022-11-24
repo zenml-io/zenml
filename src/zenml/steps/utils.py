@@ -211,6 +211,18 @@ class StepExecutor:
         run_name: str,
         pipeline_config: PipelineConfiguration,
     ) -> None:
+        """Executes the step.
+
+        Args:
+            input_artifacts: The input artifacts of the step.
+            output_artifacts: The output artifacts of the step.
+            run_name: The name of the run.
+            pipeline_config: The pipeline configuration.
+
+        Raises:
+            StepInterfaceError: If the output signature of the step does not
+                match the actual output of the step.
+        """
         from zenml.steps import BaseParameters
 
         step_name = self.configuration.name

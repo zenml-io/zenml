@@ -347,11 +347,7 @@ class BaseArtifactStore(StackComponent):
         self._register()
 
     def _register(self) -> None:
-        """Create and register a filesystem within the filesystem registry.
-
-        Args:
-            priority: The priority of the filesystem.
-        """
+        """Create and register a filesystem within the filesystem registry."""
         from zenml.io.filesystem import BaseFilesystem
         from zenml.io.filesystem_registry import default_filesystem_registry
 

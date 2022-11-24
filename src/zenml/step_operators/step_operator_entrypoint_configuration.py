@@ -70,12 +70,6 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         Args:
             step: The step to run.
             deployment: The deployment configuration.
-
-        Raises:
-            RuntimeError: If the step executor class does not exist.
-
-        Returns:
-            Step execution info.
         """
         # Make sure the artifact store is loaded before we load the execution
         # info
