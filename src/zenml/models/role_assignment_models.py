@@ -75,6 +75,7 @@ class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
         title="The team the role is assigned to.", default=None
     )
 
+
 # ------- #
 # REQUEST #
 # ------- #
@@ -94,5 +95,3 @@ class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
     )
 
     role: UUID = Field(title="The role.")
-
-

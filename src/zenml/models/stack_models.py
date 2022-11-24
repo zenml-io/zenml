@@ -72,6 +72,15 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
         "instances of components of this type."
     )
 
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the stack components to the stack analytics metadata.
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        metadata.update({ct: c[0].id for ct, c in self.components.items()})
+        return metadata
+
     @property
     def is_valid(self) -> bool:
         """Check if the stack is valid.
@@ -128,6 +137,15 @@ class StackRequestModel(StackBaseModel, ShareableRequestModel):
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the stack components to the stack analytics metadata.
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        metadata.update({ct: c[0] for ct, c in self.components.items()})
+        return metadata
 
     @property
     def is_valid(self) -> bool:

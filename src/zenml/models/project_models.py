@@ -51,6 +51,7 @@ class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
 
+
 # ------- #
 # REQUEST #
 # ------- #
