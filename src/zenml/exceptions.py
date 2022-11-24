@@ -257,3 +257,7 @@ class IllegalOperationError(ZenMLBaseException):
 
 class SettingsResolvingError(ZenMLBaseException):
     """Raised when resolving settings failed."""
+
+
+class InputResolutionError(ZenMLBaseException):
+    """Raised when step input resolving failed."""
