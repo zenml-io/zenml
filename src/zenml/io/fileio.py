@@ -32,16 +32,16 @@ from zenml.io.filesystem_registry import default_filesystem_registry
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.io.filesystem import Filesystem, PathType
+    from zenml.io.filesystem import BaseFilesystem, PathType
 
 logger = get_logger(__name__)
 
 
-def _get_filesystem(path: "PathType") -> Type["Filesystem"]:
+def _get_filesystem(path: "PathType") -> Type["BaseFilesystem"]:
     """Returns a filesystem class for a given path from the registry.
 
     Args:
-        path: Path to the file.
+        path: The path to the file.
 
     Returns:
         The filesystem class.
@@ -50,14 +50,14 @@ def _get_filesystem(path: "PathType") -> Type["Filesystem"]:
 
 
 def open(path: "PathType", mode: str = "r") -> Any:  # noqa
-    """Open a file at the given path.
+    """Opens a file.
 
     Args:
-        path: Path to the file.
-        mode: Mode to open the file in.
+        path: The path to the file.
+        mode: The mode to open the file in.
 
     Returns:
-        The file object.
+        The opened file.
     """
     return _get_filesystem(path).open(path, mode=mode)
 
@@ -95,23 +95,9 @@ def exists(path: "PathType") -> bool:
         path: The path to check.
 
     Returns:
-        `True` if the given path exists.
+        `True` if the given path exists, `False` otherwise.
     """
     return _get_filesystem(path).exists(path)
-
-
-def remove(path: "PathType") -> None:
-    """Remove the file at the given path. Dangerous operation.
-
-    Args:
-        path: Path to the file to remove.
-
-    Raises:
-        FileNotFoundError: If the file does not exist.
-    """
-    if not exists(path):
-        raise FileNotFoundError(f"{convert_to_str(path)} does not exist!")
-    _get_filesystem(path).remove(path)
 
 
 def glob(pattern: "PathType") -> List["PathType"]:
@@ -133,7 +119,7 @@ def isdir(path: "PathType") -> bool:
         path: The path to check.
 
     Returns:
-        `True` if the given path is a directory.
+        `True` if the given path is a directory, `False` otherwise.
     """
     return _get_filesystem(path).isdir(path)
 
@@ -150,25 +136,25 @@ def is_root(path: str) -> bool:
     return Path(path).parent == Path(path)
 
 
-def listdir(dir_path: str, only_file_names: bool = False) -> List[str]:
-    """Returns a list of files under dir.
+def listdir(path: str, only_file_names: bool = False) -> List[str]:
+    """Lists all files in a directory.
 
     Args:
-        dir_path: Path in filesystem.
-        only_file_names: Returns only file names if True.
+        path: The path to the directory.
+        only_file_names: If True, only return the file names, not the full path.
 
     Returns:
-        List of full qualified paths.
+        A list of files in the directory.
     """
     try:
         return [
-            os.path.join(dir_path, convert_to_str(f))
+            os.path.join(path, convert_to_str(f))
             if not only_file_names
             else convert_to_str(f)
-            for f in _get_filesystem(dir_path).listdir(dir_path)
+            for f in _get_filesystem(path).listdir(path)
         ]
     except IOError:
-        logger.debug(f"Dir {dir_path} not found.")
+        logger.debug(f"Dir {path} not found.")
         return []
 
 
@@ -176,7 +162,7 @@ def makedirs(path: "PathType") -> None:
     """Make a directory at the given path, recursively creating parents.
 
     Args:
-        path: Path to the directory.
+        path: The path to the directory.
     """
     _get_filesystem(path).makedirs(path)
 
@@ -185,13 +171,27 @@ def mkdir(path: "PathType") -> None:
     """Make a directory at the given path; parent directory must exist.
 
     Args:
-        path: Path to the directory.
+        path: The path to the directory.
     """
     _get_filesystem(path).mkdir(path)
 
 
+def remove(path: "PathType") -> None:
+    """Remove the file at the given path. Dangerous operation.
+
+    Args:
+        path: The path to the file to remove.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+    """
+    if not exists(path):
+        raise FileNotFoundError(f"{convert_to_str(path)} does not exist!")
+    _get_filesystem(path).remove(path)
+
+
 def rename(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
-    """Rename source file to destination file.
+    """Rename a file.
 
     Args:
         src: The path of the file to rename.
@@ -201,8 +201,8 @@ def rename(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
             raise a FileExistsError otherwise.
 
     Raises:
-        FileExistsError: If a file already exists at the destination
-            and overwrite is not set to `True`.
+        NotImplementedError: If the source and destination filesystems are not
+            the same.
     """
     src_fs = _get_filesystem(src)
     dst_fs = _get_filesystem(dst)
@@ -216,10 +216,10 @@ def rename(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
 
 
 def rmtree(dir_path: str) -> None:
-    """Deletes dir recursively. Dangerous operation.
+    """Deletes a directory recursively. Dangerous operation.
 
     Args:
-        dir_path: Dir to delete.
+        dir_path: The path to the directory to delete.
 
     Raises:
         TypeError: If the path is not pointing to a directory.
@@ -231,10 +231,10 @@ def rmtree(dir_path: str) -> None:
 
 
 def stat(path: "PathType") -> Any:
-    """Return the stat descriptor for a given file path.
+    """Get the stat descriptor for a given file path.
 
     Args:
-        path: Path to the file.
+        path: The path to the file.
 
     Returns:
         The stat descriptor.
@@ -250,7 +250,7 @@ def walk(
     """Return an iterator that walks the contents of the given directory.
 
     Args:
-        top: Path of directory to walk.
+        top: The path of directory to walk.
         topdown: Whether to walk directories topdown or bottom-up.
         onerror: Callable that gets called if an error occurs.
 
@@ -267,7 +267,7 @@ def find_files(dir_path: "PathType", pattern: str) -> Iterable[str]:
     """Find files in a directory that match pattern.
 
     Args:
-        dir_path: Path to directory.
+        dir_path: The path to directory.
         pattern: pattern like *.png.
 
     Yields:
@@ -334,7 +334,7 @@ def resolve_relative_path(path: str) -> str:
     """Takes relative path and resolves it absolutely.
 
     Args:
-      path: Local path in filesystem.
+        path: Local path in filesystem.
 
     Returns:
         Resolved path.
@@ -350,8 +350,8 @@ def copy_dir(
     """Copies dir from source to destination.
 
     Args:
-        source_dir: Path to copy from.
-        destination_dir: Path to copy to.
+        source_dir: The path to copy from.
+        destination_dir: The path to copy to.
         overwrite: Boolean. If false, function throws an error before overwrite.
     """
     for source_file in listdir(source_dir):
@@ -381,7 +381,7 @@ def get_grandparent(dir_path: str) -> str:
     """Get grandparent of dir.
 
     Args:
-        dir_path: Path to directory.
+        dir_path: The path to directory.
 
     Returns:
         The input paths parents parent.
@@ -393,7 +393,7 @@ def get_parent(dir_path: str) -> str:
     """Get parent of dir.
 
     Args:
-        dir_path: Path to directory.
+        dir_path: The path to directory.
 
     Returns:
         Parent (stem) of the dir as a string.
@@ -405,10 +405,10 @@ def convert_to_str(path: "PathType") -> str:
     """Converts a "PathType" to a str using UTF-8.
 
     Args:
-        path: Path to convert.
+        path: The path to convert.
 
     Returns:
-        Path as a string.
+        The path as a string.
     """
     if isinstance(path, str):
         return path

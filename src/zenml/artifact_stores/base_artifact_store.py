@@ -346,18 +346,18 @@ class BaseArtifactStore(StackComponent):
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
         self._register()
 
-    def _register(self, priority: int = 5) -> None:
+    def _register(self) -> None:
         """Create and register a filesystem within the filesystem registry.
 
         Args:
             priority: The priority of the filesystem.
         """
-        from zenml.io.filesystem import Filesystem
+        from zenml.io.filesystem import BaseFilesystem
         from zenml.io.filesystem_registry import default_filesystem_registry
 
         filesystem_class = type(
             self.__class__.__name__,
-            (Filesystem,),
+            (BaseFilesystem,),
             {
                 "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
                 "open": staticmethod(_sanitize_paths(self.open)),

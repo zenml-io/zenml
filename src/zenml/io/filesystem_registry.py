@@ -32,7 +32,7 @@ from threading import Lock
 from typing import TYPE_CHECKING, Dict, Type
 
 if TYPE_CHECKING:
-    from zenml.io.filesystem import Filesystem, PathType
+    from zenml.io.filesystem import BaseFilesystem, PathType
 
 
 class FileIORegistry:
@@ -40,14 +40,14 @@ class FileIORegistry:
 
     def __init__(self) -> None:
         """Initialize the registry."""
-        self._filesystems: Dict["PathType", Type["Filesystem"]] = {}
+        self._filesystems: Dict["PathType", Type["BaseFilesystem"]] = {}
         self._registration_lock = Lock()
 
-    def register(self, filesystem_cls: Type["Filesystem"]) -> None:
+    def register(self, filesystem_cls: Type["BaseFilesystem"]) -> None:
         """Register a filesystem implementation.
 
         Args:
-          filesystem_cls: Subclass of `zenml.io.filesystem.Filesystem`.
+            filesystem_cls: Subclass of `zenml.io.filesystem.Filesystem`.
         """
         with self._registration_lock:
             for scheme in filesystem_cls.SUPPORTED_SCHEMES:
@@ -60,12 +60,23 @@ class FileIORegistry:
 
     def get_filesystem_for_scheme(
         self, scheme: "PathType"
-    ) -> Type["Filesystem"]:
-        """Get filesystem plugin for given scheme string."""
+    ) -> Type["BaseFilesystem"]:
+        """Get filesystem plugin for given scheme string.
+
+        Args:
+            scheme: The scheme to get the filesystem for.
+
+        Returns:
+            The filesystem plugin for the given scheme.
+
+        Raises:
+            ValueError: If no filesystem plugin is registered for the given
+                scheme.
+        """
         if isinstance(scheme, bytes):
             scheme = scheme.decode("utf-8")
         if scheme not in self._filesystems:
-            raise Exception(
+            raise ValueError(
                 f"No filesystems were found for the scheme: "
                 f"{scheme}. Please make sure that you are using "
                 f"the right path and the all the necessary "
@@ -73,8 +84,21 @@ class FileIORegistry:
             )
         return self._filesystems[scheme]
 
-    def get_filesystem_for_path(self, path: "PathType") -> Type["Filesystem"]:
-        """Get filesystem plugin for given path."""
+    def get_filesystem_for_path(
+        self, path: "PathType"
+    ) -> Type["BaseFilesystem"]:
+        """Get filesystem plugin for given path.
+
+        Args:
+            path: The path to get the filesystem for.
+
+        Returns:
+            The filesystem plugin for the given path.
+
+        Raises:
+            ValueError: If no filesystem plugin is registered for the given
+                path.
+        """
         # Assume local path by default, but extract filesystem prefix if available.
         if isinstance(path, str):
             path_bytes = path.encode("utf-8")
