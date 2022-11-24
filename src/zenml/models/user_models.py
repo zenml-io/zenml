@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update_model
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.utils.enum_utils import StrEnum
 
@@ -184,7 +184,21 @@ class UserBaseModel(BaseModel):
 
 
 class UserResponseModel(UserBaseModel, BaseResponseModel):
-    """Response model for users. TODO @alexejpenner describe what this does."""
+    """Response model for users.
+
+    This returns the activation_token (which is required for the
+    user-invitation-flow of the frontend. This also optionally includes the
+    team the user is a part of. The email is returned optionally as well
+    for use by the analytics on the client-side.
+    """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "name",
+        "full_name",
+        "active",
+        "email_opted_in",
+    ]
 
     activation_token: Optional[str] = Field(default=None)
     teams: Optional[List["TeamResponseModel"]] = Field(
@@ -215,7 +229,11 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
 
 
 class UserAuthModel(UserBaseModel, BaseResponseModel):
-    """TODO @alexejpenner describe what this does."""
+    """Authentication Model for the User.
+
+    This model is only used server-side. The server endpoints can use this model
+    to authenticate the user credentials (Token, Password).
+    """
 
     active: bool = Field(default=False, title="Active account.")
 
@@ -318,11 +336,11 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
         # even when the user or password is not set, we still want to execute
         # the password hash verification to protect against response discrepancy
         # attacks (https://cwe.mitre.org/data/definitions/204.html)
-        token_hash: Optional[str] = None
+        password_hash: Optional[str] = None
         if user is not None and user.password is not None:  # and user.active:
-            token_hash = user.get_hashed_password()
+            password_hash = user.get_hashed_password()
         pwd_context = cls._get_crypt_context()
-        return cast(bool, pwd_context.verify(plain_password, token_hash))
+        return cast(bool, pwd_context.verify(plain_password, password_hash))
 
     @classmethod
     def verify_access_token(cls, token: str) -> Optional["UserAuthModel"]:
@@ -388,7 +406,19 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
 
 
 class UserRequestModel(UserBaseModel, BaseRequestModel):
-    """Request model for users. TODO @alexejpenner describe what this does."""
+    """Request model for users.
+
+    This model is used to create a user. The email field is optional but is
+    more commonly set on the UpdateRequestModel which inherits from this model.
+    Users can also optionally set their password during creation.
+    """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "name",
+        "full_name",
+        "active",
+        "email_opted_in",
+    ]
 
     email: Optional[str] = Field(
         default=None,
@@ -456,28 +486,24 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
 # ------ #
 
 
-@update
+@update_model
 class UserUpdateModel(UserRequestModel):
     """Update model for users."""
 
     @root_validator
     def user_email_updates(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """TODO @alexejpenner describe what this does."""
+        """Validate that the UserUpdateModel conform to the email-opt-in-flow."""
+        # When someone sets the email, or updates the email and hasn't
+        #  before explicitly opted out, they are opted in
         if values["email"] is not None:
             if values["email_opted_in"] is None:
                 values["email_opted_in"] = True
 
-            if values["email_opted_in"] is False:
+        # It should not be possible to do opt in without an email
+        if values["email_opted_in"] is True:
+            if values["email"] is None:
                 raise ValueError(
-                    "You can not update the email of a user while setting "
-                    "email opt-in to False."
+                    "Please provide an email, when you are opting-in with "
+                    "your email."
                 )
-
-        if values["email_opted_in"] is not None:
-            if values["email_opted_in"] is True:
-                if values["email"] is None:
-                    raise ValueError(
-                        "Please provide an email, when you are opting-in with "
-                        "your email."
-                    )
         return values

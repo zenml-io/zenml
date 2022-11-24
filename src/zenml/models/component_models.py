@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing stack components."""
 
-from typing import Any, Dict
+from typing import Any, ClassVar, Dict, List
 
 from pydantic import BaseModel, Field, validator
 
@@ -22,14 +22,12 @@ from zenml.logger import get_logger
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
-    update,
+    update_model,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.utils import secret_utils
 
 logger = get_logger(__name__)
-
-# TODO: Add example schemas and analytics fields
 
 
 # ---- #
@@ -63,6 +61,15 @@ class ComponentBaseModel(BaseModel):
 class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
     """Response model for stack components."""
 
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "type",
+        "flavor",
+        "project",
+        "user",
+        "is_shared",
+    ]
+
 
 # ------- #
 # REQUEST #
@@ -71,6 +78,14 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
 
 class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
     """Request model for stack components."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "type",
+        "flavor",
+        "project",
+        "user",
+        "is_shared",
+    ]
 
     @validator("name")
     def name_cant_be_a_secret_reference(cls, name: str) -> str:
@@ -87,6 +102,6 @@ class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
 # ------ #
 
 
-@update
+@update_model
 class ComponentUpdateModel(ComponentRequestModel):
     """Update model for stack components."""

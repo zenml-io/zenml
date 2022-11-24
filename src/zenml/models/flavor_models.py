@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing stack component flavors."""
 
-from typing import Optional
+from typing import ClassVar, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -23,8 +23,6 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.models.constants import MODEL_CONFIG_SCHEMA_MAX_LENGTH
-
-# TODO: Add example schemas and analytics fields
 
 # ---- #
 # BASE #
@@ -60,6 +58,14 @@ class FlavorBaseModel(BaseModel):
 class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
     """Response model for stack component flavors."""
 
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "type",
+        "integration",
+        "project",
+        "user",
+    ]
+
 
 # ------- #
 # REQUEST #
@@ -68,3 +74,10 @@ class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
 
 class FlavorRequestModel(FlavorBaseModel, ProjectScopedRequestModel):
     """Request model for stack component flavors."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "type",
+        "integration",
+        "project",
+        "user",
+    ]
