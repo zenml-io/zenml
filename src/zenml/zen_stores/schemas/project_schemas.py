@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Projects."""
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 
-from sqlmodel import Field, Relationship
+from sqlmodel import Relationship
 
 from zenml.models import (
     ProjectRequestModel,
