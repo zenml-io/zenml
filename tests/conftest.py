@@ -572,7 +572,7 @@ def step_context_with_no_output():
 @pytest.fixture
 def step_context_with_single_output():
     materializers = {"output_1": BaseMaterializer}
-    artifacts = {"output_1": BaseArtifact()}
+    artifacts = {"output_1": BaseArtifact(uri="")}
 
     return StepContext(
         step_name="",
@@ -587,7 +587,10 @@ def step_context_with_two_outputs():
         "output_1": BaseMaterializer,
         "output_2": BaseMaterializer,
     }
-    artifacts = {"output_1": BaseArtifact(), "output_2": BaseArtifact()}
+    artifacts = {
+        "output_1": BaseArtifact(uri=""),
+        "output_2": BaseArtifact(uri=""),
+    }
 
     return StepContext(
         step_name="",
