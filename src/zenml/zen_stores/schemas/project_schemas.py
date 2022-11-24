@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Projects."""
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 
-from sqlmodel import Field, Relationship
+from sqlmodel import Relationship
 
 from zenml.models import (
     ProjectRequestModel,
@@ -41,7 +41,7 @@ class ProjectSchema(NamedSchema, table=True):
 
     __tablename__ = "workspace"
 
-    description: Optional[str] = Field(nullable=True)
+    description: str
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
