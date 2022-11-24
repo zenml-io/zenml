@@ -130,7 +130,7 @@ class BaseRequestModel(AnalyticsTrackedModelMixin):
     """
 
 
-class UserOwnedRequestModel(BaseRequestModel):
+class UserScopedRequestModel(BaseRequestModel):
     """Base user-owned request model.
 
     Used as a base class for all domain models that are "owned" by a user.
@@ -139,7 +139,7 @@ class UserOwnedRequestModel(BaseRequestModel):
     user: UUID = Field(title="The id of the user that created this resource.")
 
 
-class ProjectScopedRequestModel(UserOwnedRequestModel):
+class ProjectScopedRequestModel(UserScopedRequestModel):
     """Base project-scoped request domain model.
 
     Used as a base class for all domain models that are project-scoped.
