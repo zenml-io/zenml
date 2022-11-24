@@ -26,7 +26,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base class for ZenML artifacts."""
-from typing import Any
+
+
+from typing import Optional
 
 
 class BaseArtifact:
@@ -38,18 +40,26 @@ class BaseArtifact:
 
     TYPE_NAME: str = "BaseArtifact"
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        uri: str,
+        materializer: str,
+        data_type: str,
+        name: Optional[str] = None,
+    ) -> None:
         """Init method for BaseArtifact.
 
         Args:
-            *args: Positional arguments.
-            **kwargs: Keyword arguments.
+            uri: The URI of the artifact.
+            materializer: The materializer of the artifact.
+            data_type: The data type of the artifact.
+            name: The name of the artifact.
         """
         self.set_zenml_artifact_type()
-        self.name = None
-        self.uri = None
-        self.materializer = None
-        self.data_type = None
+        self.uri = uri
+        self.materializer = materializer
+        self.data_type = data_type
+        self.name = name
 
     @classmethod
     def set_zenml_artifact_type(cls) -> None:

@@ -253,11 +253,12 @@ class Launcher:
             input_artifacts: Dict[str, BaseArtifact] = {}
             for name, artifact_model in current_run_input_artifacts.items():
                 # TODO: make sure this is the correct artifact class
-                artifact_ = BaseArtifact()
-                artifact_.name = name
-                artifact_.uri = artifact_model.uri
-                artifact_.materializer = artifact_model.materializer
-                artifact_.data_type = artifact_model.data_type
+                artifact_ = BaseArtifact(
+                    uri=artifact_model.uri,
+                    materializer=artifact_model.materializer,
+                    data_type=artifact_model.data_type,
+                    name=name,
+                )
                 input_artifacts[name] = artifact_
 
             output_artifacts: Dict[str, BaseArtifact] = {}
