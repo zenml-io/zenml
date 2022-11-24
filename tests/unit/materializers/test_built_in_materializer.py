@@ -24,9 +24,7 @@ def _test_materialization(
     type_, example, artifact_uri=None, validation_function=None
 ):
     materializer_class = default_materializer_registry[type_]
-    mock_artifact = DataArtifact()
-    if artifact_uri:
-        mock_artifact.uri = artifact_uri
+    mock_artifact = DataArtifact(uri=artifact_uri or "")
     materializer = materializer_class(mock_artifact)
     data_path = os.path.abspath(mock_artifact.uri)
     existing_files = os.listdir(data_path)
