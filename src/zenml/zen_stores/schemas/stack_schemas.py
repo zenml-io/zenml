@@ -26,11 +26,8 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import (
-        PipelineRunSchema,
-        StackComponentSchema,
-        StackUpdateModel,
-    )
+    from zenml.models.stack_models import StackUpdateModel
+    from zenml.zen_stores.schemas import PipelineRunSchema, StackComponentSchema
 
 
 class StackCompositionSchema(SQLModel, table=True):
@@ -97,6 +94,15 @@ class StackSchema(ShareableSchema, table=True):
         stack_update: "StackUpdateModel",
         components: List["StackComponentSchema"],
     ) -> "StackSchema":
+        """Updates a stack schema with a stack update model.
+
+        Args:
+            stack_update: `StackUpdateModel` to update the stack with.
+            components: List of `StackComponentSchema` to update the stack with.
+
+        Returns:
+            The updated StackSchema.
+        """
         for field, value in stack_update.dict(exclude_unset=True).items():
             if field == "components":
                 self.components = components
@@ -114,10 +120,10 @@ class StackSchema(ShareableSchema, table=True):
         return self
 
     def to_model(self) -> "StackResponseModel":
-        """Creates a `HydratedStackModel` from an instance of a 'StackSchema'.
+        """Converts the schema to a model.
 
         Returns:
-            a 'HydratedStackModel'.
+            The converted model.
         """
         return StackResponseModel(
             id=self.id,

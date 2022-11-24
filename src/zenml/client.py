@@ -28,7 +28,7 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -40,6 +40,7 @@ from zenml.constants import (
 from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.exceptions import (
     AlreadyExistsException,
+    EntityExistsError,
     IllegalOperationError,
     InitializationException,
     ValidationError,
@@ -97,8 +98,20 @@ class ClientConfiguration(FileSyncModel):
     active_stack_id: Optional[UUID]
 
     @property
-    def active_workspace(self):
-        return self._active_workspace
+    def active_workspace(self) -> ProjectResponseModel:
+        """Get the active project for the local client.
+
+        Returns:
+            The active project.
+        """
+        if self._active_workspace:
+            return self._active_workspace
+        else:
+            raise RuntimeError(
+                "No active project is configured. Run "
+                "`zenml project set WORKSPACE_NAME` to set the active "
+                "project."
+            )
 
     def set_active_workspace(self, workspace: "WorkspaceResponseModel") -> None:
         """Set the workspace for the local client.
@@ -541,6 +554,17 @@ class Client(metaclass=ClientMetaClass):
         initial_role: Optional[str] = None,
         password: Optional[str] = None,
     ) -> UserResponseModel:
+        """Create a new user.
+
+        Args:
+            name: The name of the user.
+            initial_role: Optionally, an initial role to assign to the user.
+            password: The password of the user. If not provided, the user will
+                be created with empty password.
+
+        Returns:
+            The model of the created user.
+        """
         user = UserRequestModel(name=name, password=password or None)
         if self.zen_store.type != StoreType.REST:
             user.active = password != ""
@@ -559,7 +583,9 @@ class Client(metaclass=ClientMetaClass):
 
         return created_user
 
-    def get_user(self, name_id_or_prefix: str) -> UserResponseModel:
+    def get_user(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> UserResponseModel:
         """Gets a user.
 
         Args:
@@ -611,6 +637,18 @@ class Client(metaclass=ClientMetaClass):
         updated_email: Optional[str] = None,
         updated_email_opt_in: Optional[bool] = None,
     ) -> UserResponseModel:
+        """Update a user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to update.
+            updated_name: The new name of the user.
+            updated_full_name: The new full name of the user.
+            updated_email: The new email of the user.
+            updated_email_opt_in: The new email opt-in status of the user.
+
+        Returns:
+            The updated user.
+        """
         user = self.get_user(name_id_or_prefix=user_name_or_id)
         user_update = UserUpdateModel()
         if updated_name:
@@ -626,14 +664,16 @@ class Client(metaclass=ClientMetaClass):
             user_update.email_opted_in = updated_email_opt_in
 
         return self.zen_store.update_user(
-            user_name_or_id=user.id, user_update=user_update
+            user_id=user.id, user_update=user_update
         )
 
     # ---- #
     # TEAM #
     # ---- #
 
-    def get_team(self, name_id_or_prefix: str) -> TeamResponseModel:
+    def get_team(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> TeamResponseModel:
         """Gets a team.
 
         Args:
@@ -666,8 +706,11 @@ class Client(metaclass=ClientMetaClass):
         """Create a team.
 
         Args:
-            name: Name of the new team
-            users: Users of the new team
+            name: Name of the team.
+            users: Users to add to the team.
+
+        Returns:
+            The created team.
         """
         user_list = []
         if users:
@@ -696,25 +739,43 @@ class Client(metaclass=ClientMetaClass):
         remove_users: Optional[List[str]] = None,
         add_users: Optional[List[str]] = None,
     ) -> TeamResponseModel:
+        """Update a team.
+
+        Args:
+            team_name_or_id: The name or ID of the team to update.
+            new_name: The new name of the team.
+            remove_users: The users to remove from the team.
+            add_users: The users to add to the team.
+
+        Returns:
+            The updated team.
+
+        Raises:
+            RuntimeError: If the same user is in both `remove_users` and
+                `add_users`.
+        """
         team = self.get_team(team_name_or_id)
 
         team_update = TeamUpdateModel()
+
         if new_name:
             team_update.name = new_name
 
-        team_users: Optional[List[UUID]] = None
+        if remove_users is not None and add_users is not None:
+            union_add_rm = set(remove_users) & set(add_users)
+            if union_add_rm:
+                raise RuntimeError(
+                    f"The `remove_user` and `add_user` "
+                    f"options both contain the same value(s): "
+                    f"`{union_add_rm}`. Please rerun command and make sure "
+                    f"that the same user does not show up for "
+                    f"`remove_user` and `add_user`."
+                )
 
-        union_add_rm = set(remove_users) & set(add_users)
-        if union_add_rm:
-            raise RuntimeError(
-                f"The `remove_user` and `add_user` "
-                f"options both contain the same value(s): "
-                f"`{union_add_rm}`. Please rerun command and make sure "
-                f"that the same user does not show up for "
-                f"`remove_user` and `add_user`."
-            )
         # Only if permissions are being added or removed will they need to be
         #  set for the update model
+        team_users = []
+
         if remove_users or add_users:
             team_users = [u.id for u in team.users]
         if remove_users:
@@ -742,7 +803,9 @@ class Client(metaclass=ClientMetaClass):
     # ROLES #
     # ----- #
 
-    def get_role(self, name_id_or_prefix: str) -> RoleResponseModel:
+    def get_role(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> RoleResponseModel:
         """Gets a role.
 
         Args:
@@ -796,7 +859,7 @@ class Client(metaclass=ClientMetaClass):
         remove_permission: Optional[List[str]] = None,
         add_permission: Optional[List[str]] = None,
     ) -> RoleResponseModel:
-        """Updates a rele.
+        """Updates a role.
 
         Args:
             name_id_or_prefix: The name or ID of the role.
@@ -806,44 +869,50 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The updated role.
+
+        Raises:
+            RuntimeError: If the same permission is in both the
+                `remove_permission` and `add_permission` lists.
         """
         role = self.get_role(name_id_or_prefix=name_id_or_prefix)
 
         role_update = RoleUpdateModel()
 
-        role_permissions = None
+        if remove_permission is not None and add_permission is not None:
+            union_add_rm = set(remove_permission) & set(add_permission)
+            if union_add_rm:
+                raise RuntimeError(
+                    f"The `remove_permission` and `add_permission` "
+                    f"options both contain the same value(s): "
+                    f"`{union_add_rm}`. Please rerun command and make sure "
+                    f"that the same role does not show up for "
+                    f"`remove_permission` and `add_permission`."
+                )
 
-        union_add_rm = set(remove_permission) & set(add_permission)
-        if union_add_rm:
-            raise RuntimeError(
-                f"The `remove_permission` and `add_permission` "
-                f"options both contain the same value(s): "
-                f"`{union_add_rm}`. Please rerun command and make sure "
-                f"that the same role does not show up for "
-                f"`remove_permission` and `add_permission`."
-            )
         # Only if permissions are being added or removed will they need to be
         #  set for the update model
         if remove_permission or add_permission:
             role_permissions = role.permissions
-        if remove_permission:
-            for rm_p in remove_permission:
-                if rm_p in PermissionType:
-                    try:
-                        role_permissions.remove(PermissionType(rm_p))
-                    except KeyError:
-                        logger.warning(
-                            f"Role {remove_permission} was already not "
-                            f"part of the {role} Role."
-                        )
-        if add_permission:
-            for add_p in add_permission:
-                if add_p in PermissionType.values():
-                    # Set won't throw an error if the item was already in it
-                    role_permissions.add(PermissionType(add_p))
 
-        if role_permissions:
-            role_update.permissions = set(role_permissions)
+            if remove_permission:
+                for rm_p in remove_permission:
+                    if rm_p in PermissionType:
+                        try:
+                            role_permissions.remove(PermissionType(rm_p))
+                        except KeyError:
+                            logger.warning(
+                                f"Role {remove_permission} was already not "
+                                f"part of the {role} Role."
+                            )
+            if add_permission:
+                for add_p in add_permission:
+                    if add_p in PermissionType.values():
+                        # Set won't throw an error if the item was already in it
+                        role_permissions.add(PermissionType(add_p))
+
+            if role_permissions is not None:
+                role_update.permissions = set(role_permissions)
+
         if new_name:
             role_update.name = new_name
 
@@ -873,11 +942,17 @@ class Client(metaclass=ClientMetaClass):
         """Get a role assignment.
 
         Args:
-            role_name_or_id: Role to assign
-            user_or_team_name_or_id: team to assign the role to
-            is_user: Whether to interpret the user_or_team_name_or_id field as
-                user (=True) or team (=False)
-            workspace_name_or_id: workspace scope within which to assign the role
+            role_name_or_id: The name or ID of the role.
+            user_or_team_name_or_id: The name or ID of the user or team.
+            is_user: Whether to interpret the `user_or_team_name_or_id` field as
+                user (=True) or team (=False).
+            workspace_name_or_id: workspace scope within which to assign the role.
+
+        Returns:
+            The role assignment.
+
+        Raises:
+            RuntimeError: If the role assignment does not exist.
         """
         if is_user:
             role_assignments = self.zen_store.list_role_assignments(
@@ -912,12 +987,15 @@ class Client(metaclass=ClientMetaClass):
         """Create a role assignment.
 
         Args:
-            role_name_or_id: Role to assign
-            user_or_team_name_or_id: team to assign the role to
-            is_user: Whether to interpret the user_or_team_name_or_id field as
-                user (=True) or team (=False)
-            workspace_name_or_id: workspace scope within which to assign the role
+            role_name_or_id: Name or ID of the role to assign.
+            user_or_team_name_or_id: Name or ID of the user or team to assign
+                the role to.
+            is_user: Whether to interpret the `user_or_team_name_or_id` field as
+                user (=True) or team (=False).
+            workspace_name_or_id: workspace scope within which to assign the role.
 
+        Returns:
+            The newly created role assignment.
         """
         role = self.get_role(name_id_or_prefix=role_name_or_id)
         workspace = None
@@ -975,8 +1053,19 @@ class Client(metaclass=ClientMetaClass):
         team_name_or_id: Optional[str] = None,
         workspace_name_or_id: Optional[str] = None,
     ) -> List[RoleAssignmentResponseModel]:
+        """List role assignments.
+
+        Args:
+            role_name_or_id: Only list assignments for this role
+            user_name_or_id: Only list assignments for this user
+            team_name_or_id: Only list assignments for this team
+            project_name_or_id: Only list assignments in this project
+
+        Returns:
+            List of role assignments
+        """
         return self.zen_store.list_role_assignments(
-            workspace_name_or_id=workspace_name_or_id,
+            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
             role_name_or_id=role_name_or_id,
             user_name_or_id=user_name_or_id,
             team_name_or_id=team_name_or_id,
@@ -1026,8 +1115,10 @@ class Client(metaclass=ClientMetaClass):
             )
         return workspace
 
-    def get_workspace(self, name_id_or_prefix: str) -> WorkspaceResponseModel:
-        """Gets a workspace.
+    def get_workspace(
+        self, name_id_or_prefix: Optional[Union[UUID, str]]
+    ) -> WorkspaceResponseModel:
+        """Gets a project.
 
         Args:
             name_id_or_prefix: The name or ID of the workspace.
@@ -1035,6 +1126,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The Workspace
         """
+        if not name_id_or_prefix:
+            return self.active_project
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=WorkspaceResponseModel,
             get_method=self.zen_store.get_workspace,
@@ -1048,8 +1141,11 @@ class Client(metaclass=ClientMetaClass):
         """Create a new workspace.
 
         Args:
-            name: Name of the workspace
-            description: Description of the workspace
+            name: Name of the workspace.
+            description: Description of the workspace.
+
+        Returns:
+            The created workspace.
         """
         return self.zen_store.create_workspace(
             WorkspaceRequestModel(name=name, description=description)
@@ -1057,18 +1153,21 @@ class Client(metaclass=ClientMetaClass):
 
     def update_workspace(
         self,
-        name: str,
+        name_id_or_prefix: Optional[Union[UUID, str]],
         new_name: Optional[str] = None,
         new_description: Optional[str] = None,
     ) -> "WorkspaceResponseModel":
-        """Create a new workspace.
+        """Update a workspace.
 
         Args:
-            name: Name of the workspace
-            new_name: Name of the workspace
-            new_description: Description of the workspace
+            name_id_or_prefix: Name, ID or prefix of the workspace to update.
+            new_name: New name of the workspace.
+            new_description: New description of the workspace.
+
+        Returns:
+            The updated workspace.
         """
-        workspace = self.get_workspace(name_id_or_prefix=name)
+        workspace = self.get_workspace(name_id_or_prefix=name_id_or_prefix)
         workspace_update = WorkspaceUpdateModel()
         if new_name:
             workspace_update.name = new_name
@@ -1144,14 +1243,15 @@ class Client(metaclass=ClientMetaClass):
     def get_stack(
         self, name_id_or_prefix: Optional[Union[UUID, str]] = None
     ) -> "StackResponseModel":
-        """Get Stack.
+        """Get a stack by name, ID or prefix.
+
+        If no name, ID or prefix is provided, the active stack is returned.
 
         Args:
-            name_id_or_prefix: ID of the pipeline.
+            name_id_or_prefix: The name, ID or prefix of the stack.
 
-        Raises:
-            KeyError: If the name_id_or_prefix does not uniquely identify one
-                stack
+        Returns:
+            The stack.
         """
         if name_id_or_prefix is not None:
             return self._get_entity_by_id_or_name_or_prefix(
@@ -1178,8 +1278,11 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The model of the registered stack.
-        """
 
+        Raises:
+            ValueError: If the stack contains private components and is
+                attempted to be registered as shared.
+        """
         stack_components = dict()
 
         for c_type, c_identifier in components.items():
@@ -1218,24 +1321,31 @@ class Client(metaclass=ClientMetaClass):
 
     def update_stack(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
         description: Optional[str] = None,
         component_updates: Optional[
-            Dict[StackComponentType, List[Optional[str]]]
+            Dict[StackComponentType, List[Union[UUID, str]]]
         ] = None,
     ) -> "StackResponseModel":
         """Updates a stack and its components.
 
         Args:
-            name_id_or_prefix: The name, id or the id prefix of the
-                stack which is getting updated.
-            name: the updated name of the stack
-            is_shared: the updated shared status of the stack
-            description: the updated description of the stack
+            name_id_or_prefix: The name, id or prefix of the stack to update.
+            name: the new name of the stack.
+            is_shared: the new shared status of the stack.
+            description: the new description of the stack.
             component_updates: dictionary which maps stack component types to
-                updated list of names.
+                lists of new stack component names or ids.
+
+        Returns:
+            The model of the updated stack.
+
+        Raises:
+            ValueError: If the stack contains private components and is
+                attempted to be shared.
+            EntityExistsError: If the stack name is already taken.
         """
         # First, get the stack
         stack = self.get_stack(name_id_or_prefix=name_id_or_prefix)
@@ -1253,7 +1363,7 @@ class Client(metaclass=ClientMetaClass):
                 name=name, is_shared=shared_status
             )
             if existing_stacks:
-                raise ValueError(
+                raise EntityExistsError(
                     "There are already existing stacks with the name "
                     f"'{name}'."
                 )
@@ -1263,7 +1373,7 @@ class Client(metaclass=ClientMetaClass):
         if is_shared:
             existing_stacks = self.list_stacks(name=name, is_shared=True)
             if existing_stacks:
-                raise ValueError(
+                raise EntityExistsError(
                     "There are already existing shared stacks with the name "
                     f"'{name}'."
                 )
@@ -1290,22 +1400,21 @@ class Client(metaclass=ClientMetaClass):
 
         # Get the current components
         if component_updates:
-            components = {}
+            components_dict = {}
             for component_type, component_list in stack.components.items():
-                if component_list is not None:
-                    components[component_type] = [c.id for c in component_list]
+                components_dict[component_type] = [c.id for c in component_list]
 
-            for component_type, component_list in component_updates.items():
-                if component_list is not None:
-                    components[component_type] = [
+            for component_type, component_id_list in component_updates.items():
+                if component_id_list is not None:
+                    components_dict[component_type] = [
                         self.get_stack_component(
                             name_id_or_prefix=c,
                             component_type=component_type,
                         ).id
-                        for c in component_list
+                        for c in component_id_list
                     ]
 
-            update_model.components = components
+            update_model.components = components_dict
 
         return self.zen_store.update_stack(
             stack_id=stack.id,
@@ -1352,10 +1461,21 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List["StackResponseModel"]:
-        """"""
+        """Lists all stacks.
+
+        Args:
+            workspace_name_or_id: The name or id of the workspace to filter by.
+            user_name_or_id: The name or id of the user to filter by.
+            component_id: The id of the component to filter by.
+            name: The name of the stack to filter by.
+            is_shared: The shared status of the stack to filter by.
+
+        Returns:
+            A list of stacks.
+        """
         return self.zen_store.list_stacks(
-            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
-            user_name_or_id=user_name_or_id or self.active_user.id,
+            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,,
+            user_name_or_id=user_name_or_id,
             component_id=component_id,
             name=name,
             is_shared=is_shared,
@@ -1474,6 +1594,10 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The registered stack component.
+
+        Raises:
+            KeyError: If no name_id_or_prefix is provided and no such component
+                is part of the active stack.
         """
         if name_id_or_prefix is not None:
             return self._get_component_by_id_or_name_or_prefix(
@@ -1501,17 +1625,29 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List["ComponentResponseModel"]:
-        """"""
+        """Lists all registered stack components.
+
+        Args:
+            workspace_name_or_id: The name or id of the workspace to filter by.
+            user_name_or_id: The name or id of the user to filter by.
+            component_type: The type of the component to filter by.
+            flavor_name: The name of the flavor to filter by.
+            name: The name of the component to filter by.
+            is_shared: The shared status of the component to filter by.
+
+        Returns:
+            A list of stack components.
+        """
         return self.zen_store.list_stack_components(
             workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
-            user_name_or_id=user_name_or_id or self.active_user.id,
+            user_name_or_id=user_name_or_id,
             type=component_type,
             flavor_name=flavor_name,
             name=name,
             is_shared=is_shared,
         )
 
-    def register_stack_component(
+    def create_stack_component(
         self,
         name: str,
         flavor: str,
@@ -1522,11 +1658,11 @@ class Client(metaclass=ClientMetaClass):
         """Registers a stack component.
 
         Args:
-            name:
-            flavor:
-            component_type:
-            configuration:
-            is_shared:
+            name: The name of the stack component.
+            flavor: The flavor of the stack component.
+            component_type: The type of the stack component.
+            configuration: The configuration of the stack component.
+            is_shared: Whether the stack component is shared or not.
 
         Returns:
             The model of the registered component.
@@ -1541,10 +1677,10 @@ class Client(metaclass=ClientMetaClass):
         from zenml.stack import Flavor
 
         flavor_class = Flavor.from_model(flavor_model)
-        configuration = flavor_class.config_class(**configuration)
+        configuration_obj = flavor_class.config_class(**configuration)
 
         self._validate_stack_component_configuration(
-            component_type, configuration=configuration
+            component_type, configuration=configuration_obj
         )
 
         create_component_model = ComponentRequestModel(
@@ -1564,7 +1700,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_stack_component(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Optional[Union[UUID, str]],
         component_type: StackComponentType,
         name: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
@@ -1573,14 +1709,18 @@ class Client(metaclass=ClientMetaClass):
         """Updates a stack component.
 
         Args:
-            name_id_or_prefix:
-            component_type:
-            name:
-            configuration:
-            is_shared:
+            name_id_or_prefix: The name, id or prefix of the stack component to
+                update.
+            component_type: The type of the stack component to update.
+            name: The new name of the stack component.
+            configuration: The new configuration of the stack component.
+            is_shared: The new shared status of the stack component.
 
         Returns:
-            The updated component.
+            The updated stack component.
+
+        Raises:
+            EntityExistsError: If the new name is already taken.
         """
         # Get the existing component model
         component = self.get_stack_component(
@@ -1602,7 +1742,7 @@ class Client(metaclass=ClientMetaClass):
                 component_type=component_type,
             )
             if existing_components:
-                raise ValueError(
+                raise EntityExistsError(
                     f"There are already existing "
                     f"{'shared' if shared_status else 'unshared'} components "
                     f"with the name '{name}'."
@@ -1614,7 +1754,7 @@ class Client(metaclass=ClientMetaClass):
                 name=name, is_shared=True, component_type=component_type
             )
             if existing_components:
-                raise ValueError(
+                raise EntityExistsError(
                     f"There are already existing shared components with "
                     f"the name '{name}'"
                 )
@@ -1767,9 +1907,6 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The stack component flavor.
-
-        Raises:
-            KeyError: if the stack component flavor doesn't exist.
         """
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=FlavorResponseModel,
@@ -1792,6 +1929,8 @@ class Client(metaclass=ClientMetaClass):
 
     def list_flavors(
         self,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List["FlavorResponseModel"]:
         """Fetches all the flavor models.
 
@@ -1801,7 +1940,10 @@ class Client(metaclass=ClientMetaClass):
         from zenml.stack.flavor_registry import flavor_registry
 
         zenml_flavors = flavor_registry.flavors
-        custom_flavors = self.zen_store.list_flavors()
+        custom_flavors = self.zen_store.list_flavors(
+            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
+            user_name_or_id=user_name_or_id,
+        )
         return zenml_flavors + custom_flavors
 
     def get_flavors_by_type(
@@ -1894,7 +2036,7 @@ class Client(metaclass=ClientMetaClass):
     # - PIPELINES -
     # -------------
 
-    def register_pipeline(
+    def create_pipeline(
         self,
         pipeline_name: str,
         pipeline_spec: "PipelineSpec",
@@ -1919,9 +2061,9 @@ class Client(metaclass=ClientMetaClass):
             AlreadyExistsException: If there is an existing pipeline in the
                 workspace with the same name but a different configuration.
         """
-
         existing_pipelines = self.zen_store.list_pipelines(
             name=pipeline_name,
+            workspace_name_or_id=self.active_workspace.id,
         )
 
         # A) If there is no pipeline with this name, register a new pipeline.
@@ -1982,28 +2124,26 @@ class Client(metaclass=ClientMetaClass):
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
 
-        Raises:
-            KeyError: If the name_id_or_prefix does not uniquely identify one
-                pipeline
+        Returns:
+            A list of pipelines.
         """
-
         return self.zen_store.list_pipelines(
-            workspace_name_or_id=workspace_name_or_id,
+            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
             user_name_or_id=user_name_or_id,
             name=name,
         )
 
-    def get_pipeline(self, name_id_or_prefix: str) -> PipelineResponseModel:
-        """List pipelines.
+    def get_pipeline(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> PipelineResponseModel:
+        """Get a pipeline by name, id or prefix.
 
         Args:
-            name_id_or_prefix: ID of the pipeline.
+            name_id_or_prefix: The name, id or prefix of the pipeline.
 
-        Raises:
-            KeyError: If the name_id_or_prefix does not uniquely identify one
-                pipeline
+        Returns:
+            The pipeline.
         """
-
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=PipelineResponseModel,
             get_method=self.zen_store.get_pipeline,
@@ -2017,12 +2157,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, id or prefix id of the pipeline
                 to delete.
-
-        Raises:
-            KeyError: If the name_id_or_prefix does not uniquely identify one
-                pipeline
         """
-
         pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
@@ -2071,8 +2206,6 @@ class Client(metaclass=ClientMetaClass):
         Args:
             filename: The filename from which to import the pipeline runs.
         """
-        from datetime import datetime
-
         from zenml.utils.yaml_utils import read_yaml
 
         step_id_mapping: Dict[str, UUID] = {}
@@ -2080,20 +2213,19 @@ class Client(metaclass=ClientMetaClass):
         yaml_data = read_yaml(filename)
         for pipeline_run_dict in yaml_data:
             steps = pipeline_run_dict.pop("steps")
-            pipeline_run_dict.pop("id")
+            pipeline_run_dict["id"] = uuid4()
+            pipeline_run_dict["user"] = self.active_user.id
+            pipeline_run_dict["workspace"] = self.active_workspace.id
+            pipeline_run_dict["stack"] = None
+            pipeline_run_dict["pipeline"] = None
             pipeline_run = PipelineRunRequestModel.parse_obj(pipeline_run_dict)
-            pipeline_run.updated = datetime.now()
-            pipeline_run.user = self.active_user.id
-            pipeline_run.workspace = self.active_workspace.id
-            pipeline_run.stack = None
-            pipeline_run.pipeline = None
             pipeline_run.mlmd_id = None
-            pipeline_run = self.zen_store.create_run(pipeline_run)
+            pipeline_run_response = self.zen_store.create_run(pipeline_run)
             for step_dict in steps:
                 artifacts = step_dict.pop("output_artifacts")
                 step_id = step_dict.pop("id")
                 step = StepRunRequestModel.parse_obj(step_dict)
-                step.pipeline_run_id = pipeline_run.id
+                step.pipeline_run_id = pipeline_run_response.id
                 step.parent_step_ids = [
                     step_id_mapping[str(parent_step_id)]
                     for parent_step_id in step.parent_step_ids
@@ -2102,24 +2234,22 @@ class Client(metaclass=ClientMetaClass):
                     input_name: artifact_id_mapping[str(artifact_id)]
                     for input_name, artifact_id in step.input_artifacts.items()
                 }
-                step.updated = datetime.now()
                 step.mlmd_id = None
                 step.mlmd_parent_step_ids = []
-                step = self.zen_store.create_run_step(step)
-                step_id_mapping[str(step_id)] = step.id
+                step_response = self.zen_store.create_run_step(step)
+                step_id_mapping[str(step_id)] = step_response.id
                 for artifact_dict in artifacts:
                     artifact_id = artifact_dict.pop("id")
                     artifact = ArtifactRequestModel.parse_obj(artifact_dict)
-                    artifact.parent_step_id = step.id
+                    artifact.parent_step_id = step_response.id
                     artifact.producer_step_id = step_id_mapping[
                         str(artifact.producer_step_id)
                     ]
-                    artifact.updated = datetime.now()
                     artifact.mlmd_id = None
                     artifact.mlmd_parent_step_id = None
                     artifact.mlmd_producer_step_id = None
-                    artifact = self.zen_store.create_artifact(artifact)
-                    artifact_id_mapping[str(artifact_id)] = artifact.id
+                    artifact_response = self.zen_store.create_artifact(artifact)
+                    artifact_id_mapping[str(artifact_id)] = artifact_response.id
         logger.info(f"Imported {len(yaml_data)} pipeline runs from {filename}.")
 
     def migrate_pipeline_runs(
@@ -2207,6 +2337,7 @@ class Client(metaclass=ClientMetaClass):
 
             num_steps = len(steps)
             pipeline_run = PipelineRunRequestModel(
+                id=uuid4(),
                 user=self.active_user.id,  # Old user might not exist.
                 workspace=self.active_workspace.id,  # Old workspace might not exist.
                 name=mlmd_run.name,
@@ -2299,11 +2430,11 @@ class Client(metaclass=ClientMetaClass):
             A list of all pipeline runs.
         """
         return self.zen_store.list_runs(
-            workspace_name_or_id=workspace_name_or_id,
+            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
+            user_name_or_id=user_name_or_id,
             stack_id=stack_id,
             component_id=component_id,
             run_name=run_name,
-            user_name_or_id=user_name_or_id,
             pipeline_id=pipeline_id,
             unlisted=unlisted,
         )
@@ -2312,16 +2443,14 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
     ) -> PipelineRunResponseModel:
-        """List pipelines.
+        """Gets a pipeline run by name, ID, or prefix.
 
         Args:
-            name_id_or_prefix: ID of the pipeline run.
+            name_id_or_prefix: Name, ID, or prefix of the pipeline run.
 
-        Raises:
-            KeyError: If the name_id_or_prefix does not uniquely identify one
-                pipeline
+        Returns:
+            The pipeline run.
         """
-
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=PipelineRunResponseModel,
             get_method=self.zen_store.get_run,
@@ -2336,7 +2465,7 @@ class Client(metaclass=ClientMetaClass):
 
     def _get_component_by_id_or_name_or_prefix(
         self,
-        name_id_or_prefix: str,
+        name_id_or_prefix: Union[str, UUID],
         component_type: StackComponentType,
     ) -> "ComponentResponseModel":
         """Fetches a component of given type using the name, id or partial id.
@@ -2353,11 +2482,17 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If no stack with the given name exists.
         """
         # First interpret as full UUID
+
         try:
-            component_id = UUID(str(name_id_or_prefix))
-            return self.zen_store.get_stack_component(component_id)
+            if isinstance(name_id_or_prefix, UUID):
+                return self.zen_store.get_stack_component(name_id_or_prefix)
+            else:
+                entity_id = UUID(name_id_or_prefix)
+                return self.zen_store.get_stack_component(entity_id)
         except ValueError:
             pass
+
+        name_id_or_prefix = str(name_id_or_prefix)
 
         components = self.zen_store.list_stack_components(
             name=name_id_or_prefix,
@@ -2403,13 +2538,16 @@ class Client(metaclass=ClientMetaClass):
     def _get_entity_by_id_or_name_or_prefix(
         self,
         response_model: Type[AnyResponseModel],
-        get_method: Callable,
-        list_method: Callable,
+        get_method: Callable[..., AnyResponseModel],
+        list_method: Callable[..., List[AnyResponseModel]],
         name_id_or_prefix: Union[str, UUID],
     ) -> "AnyResponseModel":
         """Fetches an entity using the name, id or partial id.
 
         Args:
+            response_model: The response model to use for the entity.
+            get_method: The method to use to fetch the entity by id.
+            list_method: The method to use to fetch all entities.
             name_id_or_prefix: The id, name or partial id of the entity to
                 fetch.
 
@@ -2435,7 +2573,7 @@ class Client(metaclass=ClientMetaClass):
                 workspace_name_or_id=self.active_workspace.id,
             )
         else:
-            entities: List[AnyResponseModel] = list_method(
+            entities = list_method(
                 name=name_id_or_prefix,
             )
 

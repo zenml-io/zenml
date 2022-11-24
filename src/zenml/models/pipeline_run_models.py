@@ -1,3 +1,18 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Models representing pipeline runs."""
+
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
@@ -50,7 +65,11 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
 # ---- #
 # BASE #
 # ---- #
+
+
 class PipelineRunBaseModel(BaseModel):
+    """Base model for pipeline runs."""
+
     name: str = Field(
         title="The name of the pipeline run.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
@@ -76,9 +95,7 @@ class PipelineRunBaseModel(BaseModel):
 class PipelineRunResponseModel(
     PipelineRunBaseModel, WorkspaceScopedResponseModel
 ):
-    """Pipeline model with User and Workspace fully hydrated."""
-
-    status: ExecutionStatus = Field(title="The status of the run.")
+    """Pipeline run model with user, workspace, pipeline, and stack hydrated."""
 
     pipeline: Optional["PipelineResponseModel"] = Field(
         title="The pipeline this run belongs to."
@@ -94,7 +111,7 @@ class PipelineRunResponseModel(
 
 
 class PipelineRunRequestModel(PipelineRunBaseModel, WorkspaceScopedRequestModel):
-    """Domain Model representing a pipeline run."""
+    """Pipeline run model with user, workspace, pipeline, and stack as UUIDs."""
 
     id: UUID
     stack: Optional[UUID]  # Might become None if the stack is deleted.
@@ -108,4 +125,4 @@ class PipelineRunRequestModel(PipelineRunBaseModel, WorkspaceScopedRequestModel)
 
 @update
 class PipelineRunUpdateModel(PipelineRunRequestModel):
-    """"""
+    """Pipeline run update model."""

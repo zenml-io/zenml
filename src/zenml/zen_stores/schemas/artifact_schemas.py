@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""SQLModel implementation of artifact tables."""
+
 
 from typing import Optional
 from uuid import UUID
@@ -60,6 +62,14 @@ class ArtifactSchema(NamedSchema, table=True):
     def from_request(
         cls, artifact_request: ArtifactRequestModel
     ) -> "ArtifactSchema":
+        """Convert an `ArtifactRequestModel` to an `ArtifactSchema`.
+
+        Args:
+            artifact_request: The request model to convert.
+
+        Returns:
+            The converted schema.
+        """
         return cls(
             name=artifact_request.name,
             parent_step_id=artifact_request.parent_step_id,

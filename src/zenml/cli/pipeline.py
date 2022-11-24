@@ -138,9 +138,7 @@ def list_pipeline_runs(
             cli_utils.declare("No pipeline runs registered.")
             return
 
-        cli_utils.print_pipeline_runs_table(
-            client=client, pipeline_runs=pipeline_runs
-        )
+        cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs)
 
 
 @runs.command("export", help="Export all pipeline runs to a YAML file.")

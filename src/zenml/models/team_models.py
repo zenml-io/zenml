@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing teams."""
 
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
 
 
 class TeamBaseModel(BaseModel):
-    """"""
+    """Base model for teams."""
 
     name: str = Field(
         title="The unique name of the team.",
@@ -44,7 +45,7 @@ class TeamBaseModel(BaseModel):
 
 
 class TeamResponseModel(TeamBaseModel, BaseResponseModel):
-    """"""
+    """Response model for teams."""
 
     users: List["UserResponseModel"] = Field(
         title="The list of users within this team."
@@ -52,6 +53,11 @@ class TeamResponseModel(TeamBaseModel, BaseResponseModel):
 
     @property
     def user_ids(self) -> List[UUID]:
+        """Returns a list of user IDs that are part of this team.
+
+        Returns:
+            A list of user IDs.
+        """
         if self.users:
             return [u.id for u in self.users]
         else:
@@ -59,6 +65,11 @@ class TeamResponseModel(TeamBaseModel, BaseResponseModel):
 
     @property
     def user_names(self) -> List[str]:
+        """Returns a list of user names that are part of this team.
+
+        Returns:
+            A list of user names.
+        """
         if self.users:
             return [u.name for u in self.users]
         else:
@@ -71,7 +82,7 @@ class TeamResponseModel(TeamBaseModel, BaseResponseModel):
 
 
 class TeamRequestModel(TeamBaseModel, BaseRequestModel):
-    """"""
+    """Request model for teams."""
 
     users: Optional[List[UUID]] = Field(
         title="The list of users within this team."
@@ -85,4 +96,4 @@ class TeamRequestModel(TeamBaseModel, BaseRequestModel):
 
 @update
 class TeamUpdateModel(TeamRequestModel):
-    """"""
+    """Update model for teams."""

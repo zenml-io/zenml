@@ -51,7 +51,10 @@ from zenml.models import (
     UserRequestModel,
     UserResponseModel,
 )
+from zenml.models.artifact_models import ArtifactRequestModel
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.pipeline_run_models import PipelineRunRequestModel
+from zenml.models.step_run_models import StepRunRequestModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
@@ -662,10 +665,7 @@ def sample_project_model() -> WorkspaceResponseModel:
 
 
 @pytest.fixture
-def sample_step_model(
-    sample_user_model: UserResponseModel,
-    sample_project_model: WorkspaceResponseModel,
-) -> StepRunResponseModel:
+def sample_step_model() -> StepRunResponseModel:
     """Return a sample step model for testing purposes"""
     return StepRunResponseModel(
         id=uuid4(),
@@ -681,8 +681,25 @@ def sample_step_model(
         status=ExecutionStatus.COMPLETED,
         created=datetime.now(),
         updated=datetime.now(),
-        user=sample_user_model,
-        project=sample_project_model,
+        docstring="",
+        mlmd_id=0,
+    )
+
+
+@pytest.fixture
+def sample_step_request_model() -> StepRunRequestModel:
+    """Return a sample step model for testing purposes"""
+    return StepRunRequestModel(
+        name="sample_step",
+        parents_step_ids=[0],
+        entrypoint_name="sample_entrypoint",
+        parameters={},
+        mlmd_parent_step_ids=[],
+        pipeline_run_id=uuid4(),
+        parent_step_ids=[],
+        input_artifacts={},
+        step_configuration={},
+        status=ExecutionStatus.COMPLETED,
         docstring="",
         mlmd_id=0,
     )
@@ -714,6 +731,20 @@ def sample_pipeline_run_model(
 
 
 @pytest.fixture
+def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
+    """Return sample pipeline run view for testing purposes"""
+    return PipelineRunRequestModel(
+        id=uuid4(),
+        name="sample_run_name",
+        pipeline_configuration={},
+        num_steps=1,
+        status=ExecutionStatus.COMPLETED,
+        user=uuid4(),
+        project=uuid4(),
+    )
+
+
+@pytest.fixture
 def sample_pipeline_run_view(
     sample_step_view, sample_pipeline_run_model
 ) -> PipelineRunView:
@@ -732,6 +763,23 @@ def sample_artifact_model() -> ArtifactResponseModel:
     """Return a sample artifact model for testing purposes"""
     return ArtifactResponseModel(
         id=uuid4(),
+        name="sample_artifact",
+        uri="sample_uri",
+        type=ArtifactType.DATA,
+        materializer="sample_materializer",
+        data_type="sample_data_type",
+        parent_step_id=uuid4(),
+        producer_step_id=uuid4(),
+        is_cached=False,
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def sample_artifact_request_model() -> ArtifactRequestModel:
+    """Return a sample artifact model for testing purposes"""
+    return ArtifactRequestModel(
         name="sample_artifact",
         uri="sample_uri",
         type=ArtifactType.DATA,

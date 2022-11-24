@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ForwardRef, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 from uuid import UUID
 
 from pydantic import Field
@@ -23,6 +23,7 @@ from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 if TYPE_CHECKING:
     from zenml.models.workspace_models import WorkspaceResponseModel
     from zenml.models.user_models import UserResponseModel
+
 
 # --------------- #
 # RESPONSE MODELS #
@@ -73,7 +74,7 @@ class UserScopedResponseModel(BaseResponseModel):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: Optional[ForwardRef("UserResponseModel")] = Field(
+    user: Optional["UserResponseModel"] = Field(
         title="The user that created this resource.", nullable=True
     )
 
@@ -84,7 +85,7 @@ class WorkspaceScopedResponseModel(UserScopedResponseModel):
     Used as a base class for all domain models that are workspace-scoped.
     """
 
-    workspace: ForwardRef("WorkspaceResponseModel") = Field(
+    workspace: "WorkspaceResponseModel" = Field(
         title="The workspace of this resource."
     )
 
@@ -110,11 +111,14 @@ class ShareableResponseModel(WorkspaceScopedResponseModel):
 
 
 class BaseRequestModel(AnalyticsTrackedModelMixin):
-    """ """
+    """Base request model.
+
+    Used as a base class for all request models.
+    """
 
 
 class UserOwnedRequestModel(BaseRequestModel):
-    """Base user-owned domain model.
+    """Base user-owned request model.
 
     Used as a base class for all domain models that are "owned" by a user.
     """
@@ -123,7 +127,7 @@ class UserOwnedRequestModel(BaseRequestModel):
 
 
 class WorkspaceScopedRequestModel(UserOwnedRequestModel):
-    """Base workspace-scoped domain model.
+    """Base workspace-scoped request domain model.
 
     Used as a base class for all domain models that are workspace-scoped.
     """
@@ -150,13 +154,14 @@ class ShareableRequestModel(WorkspaceScopedRequestModel):
 # ------------- #
 # UPDATE MODELS #
 # ------------- #
+
 T = TypeVar("T", bound="BaseRequestModel")
 
 
 def update(_cls: Type[T]) -> Type[T]:
-    for field in _cls.__fields__:
-        new_field = _cls.__fields__[field]
-        new_field.required = False
-        new_field.allow_none = True
+    """TODO: @bcdurak describe what this does."""
+    for _, value in _cls.__fields__.items():
+        value.required = False
+        value.allow_none = True
 
     return _cls

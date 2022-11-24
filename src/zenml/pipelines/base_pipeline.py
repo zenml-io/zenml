@@ -491,7 +491,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             ]
             pipeline_spec = PipelineSpec(steps=step_specs)
 
-            pipeline_id = Client().register_pipeline(
+            pipeline_id = Client().create_pipeline(
                 pipeline_name=pipeline_deployment.pipeline.name,
                 pipeline_spec=pipeline_spec,
                 pipeline_docstring=self.__doc__,

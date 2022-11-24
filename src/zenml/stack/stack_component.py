@@ -12,19 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack Component class."""
-import textwrap
 from abc import ABC
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Set, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Extra, root_validator
+from pydantic import BaseModel, Extra
 
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
-from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
 from zenml.models import ComponentResponseModel
 from zenml.utils import secret_utils, settings_utils
@@ -114,7 +112,7 @@ class StackComponentConfig(BaseModel, ABC):
 
         Concrete stack component configuration classes should override this
         method to return True if the stack component is running in a remote
-        location and it needs to access the ZenML database.
+        location, and it needs to access the ZenML database.
 
         This designation is used to determine if the stack component can be
         used with a local ZenML database or if it requires a remote ZenML
@@ -266,7 +264,7 @@ class StackComponent:
         config: StackComponentConfig,
         flavor: str,
         type: StackComponentType,
-        user: UUID,
+        user: Optional[UUID],
         workspace: UUID,
         created: datetime,
         updated: datetime,
@@ -340,8 +338,13 @@ class StackComponent:
 
         configuration = flavor.config_class(**component_model.configuration)
 
+        if component_model.user is not None:
+            user_id = component_model.user.id
+        else:
+            user_id = None
+
         return flavor.implementation_class(
-            user=component_model.user.id,
+            user=user_id,
             workspace=component_model.workspace.id,
             name=component_model.name,
             id=component_model.id,
@@ -628,84 +631,3 @@ class StackComponent:
             A string representation of the stack component.
         """
         return self.__repr__()
-
-    @root_validator(skip_on_failure=True)
-    def _ensure_stack_component_complete(cls, values: Dict[str, Any]) -> Any:
-        """Ensures that the stack component is complete.
-
-        Args:
-            values: The values of the stack component.
-
-        Returns:
-            The values of the stack component.
-
-        Raises:
-            StackComponentInterfaceError: If the stack component is not
-                implemented correctly.
-        """
-        try:
-            stack_component_type = getattr(cls, "type")
-            assert stack_component_type in StackComponentType
-        except (AttributeError, AssertionError):
-            raise StackComponentInterfaceError(
-                textwrap.dedent(
-                    """
-                    When you are working with any classes which subclass from
-                    `zenml.stack.StackComponent` please make sure that your
-                    class has a ClassVar named `type` and its value is set to a
-                    `StackComponentType` from `from zenml.enums import
-                    StackComponentType`.
-
-                    In most of the cases, this is already done for you within
-                    the implementation of the base concept.
-
-                    Example:
-
-                    class BaseArtifactStore(StackComponent):
-                        # Instance Variables
-                        path: str
-
-                        # Class Variables
-                        type: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
-                    """
-                )
-            )
-
-        try:
-            getattr(cls, "flavor")
-        except AttributeError:
-            raise StackComponentInterfaceError(
-                textwrap.dedent(
-                    """
-                    When you are working with any classes which subclass from
-                    `zenml.stack.StackComponent` please make sure that your
-                    class has a defined ClassVar `flavor`.
-
-                    Example:
-
-                    class LocalArtifactStore(BaseArtifactStore):
-
-                        ...
-
-                        # Define flavor as a ClassVar
-                        flavor: ClassVar[str] = "local"
-
-                        ...
-                    """
-                )
-            )
-
-        return values
-
-    def __eq__(self, other: object) -> bool:
-        """Checks if two stack components are equal.
-
-        Args:
-            other: The other stack component to compare to.
-
-        Returns:
-            True if the stack components are equal, False otherwise.
-        """
-        if isinstance(other, StackComponent):
-            return self.to_model() == other.to_model()
-        return NotImplemented

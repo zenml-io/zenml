@@ -63,7 +63,7 @@ class PipelineSchema(NamedSchema, table=True):
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
-        sa_relationship_kwargs={"order_by": "desc(PipelineRunSchema.created)"},
+        sa_relationship_kwargs={"order_by": "asc(PipelineRunSchema.created)"},
     )
 
     def to_model(
@@ -113,7 +113,14 @@ class PipelineSchema(NamedSchema, table=True):
     def update(
         self, pipeline_update: "PipelineUpdateModel"
     ) -> "PipelineSchema":
-        """"""
+        """Update a `PipelineSchema` with a `PipelineUpdateModel`.
+
+        Args:
+            pipeline_update: The update model.
+
+        Returns:
+            The updated `PipelineSchema`.
+        """
         if pipeline_update.name:
             self.name = pipeline_update.name
 

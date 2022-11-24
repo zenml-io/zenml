@@ -71,6 +71,14 @@ class StackComponentSchema(ShareableSchema, table=True):
     def update(
         self, component_update: ComponentUpdateModel
     ) -> "StackComponentSchema":
+        """Updates a `StackSchema` from a `ComponentUpdateModel`.
+
+        Args:
+            component_update: The `ComponentUpdateModel` to update from.
+
+        Returns:
+            The updated `StackComponentSchema`.
+        """
         for field, value in component_update.dict(
             exclude_unset=True, exclude={"workspace", "user"}
         ).items():

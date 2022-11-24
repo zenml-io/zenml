@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 
 @track(event=AnalyticsEvent.GET_PIPELINES)
 def get_pipelines() -> List["PipelineView"]:
-    """Fetches all post-execution pipeline views in the active project.
+    """Fetches all post-execution pipeline views in the active workspace.
 
     Returns:
         A list of post-execution pipeline views.
@@ -39,7 +39,7 @@ def get_pipelines() -> List["PipelineView"]:
     # TODO: [server] handle the active stack correctly
     client = Client()
     pipelines = client.zen_store.list_pipelines(
-        project_name_or_id=client.active_project.id
+        workspace_name_or_id=client.active_workspace.id
     )
     return [PipelineView(model) for model in pipelines]
 
@@ -115,18 +115,18 @@ def get_pipeline(
         )
 
     client = Client()
-    active_project_id = client.active_project.id
+    active_workspace_id = client.active_workspace.id
 
     pipeline_models = client.list_pipelines(
         name=pipeline_name,
-        project_name_or_id=active_project_id,
+        workspace_name_or_id=active_workspace_id,
     )
     if len(pipeline_models) == 1:
         return PipelineView(pipeline_models[0])
     elif len(pipeline_models) > 1:
         raise RuntimeError(
             f"Pipeline_name `{pipeline_name}` not unique within Workspace "
-            f"`{active_project_id}`."
+            f"`{active_workspace_id}`."
         )
     else:
         return None
@@ -200,8 +200,9 @@ class PipelineView:
         """
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
+        active_workspace_id = Client().active_workspace.id
         runs = Client().zen_store.list_runs(
-            project_name_or_id=self._model.workspace,
+            workspace_name_or_id=active_workspace_id,
             pipeline_id=self._model.id,
         )
         return [PipelineRunView(run) for run in runs]

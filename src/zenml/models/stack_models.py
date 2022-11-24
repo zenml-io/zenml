@@ -1,3 +1,18 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Models representing stacks."""
+
 import json
 from typing import Any, Dict, List
 from uuid import UUID
@@ -25,6 +40,8 @@ from zenml.models.constants import (
 
 
 class StackBaseModel(BaseModel):
+    """Base model for stacks."""
+
     name: str = Field(
         title="The name of the stack.", max_length=MODEL_NAME_FIELD_MAX_LENGTH
     )
@@ -51,6 +68,7 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
     @property
     def is_valid(self) -> bool:
         """Check if the stack is valid.
+
         Returns:
             True if the stack is valid, False otherwise.
         """
@@ -91,6 +109,8 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 
 
 class StackRequestModel(StackBaseModel, ShareableRequestModel):
+    """Stack model with components, user and project as UUIDs."""
+
     components: Dict[StackComponentType, List[UUID]] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
@@ -99,6 +119,7 @@ class StackRequestModel(StackBaseModel, ShareableRequestModel):
     @property
     def is_valid(self) -> bool:
         """Check if the stack is valid.
+
         Returns:
             True if the stack is valid, False otherwise.
         """

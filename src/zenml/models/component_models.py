@@ -11,18 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing stack components."""
 
 from typing import Any, Dict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from zenml.enums import StackComponentType
+from zenml.logger import get_logger
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
     update,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.utils import secret_utils
+
+logger = get_logger(__name__)
 
 # TODO: Add example schemas and analytics fields
 
@@ -31,6 +36,8 @@ from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 # BASE #
 # ---- #
 class ComponentBaseModel(BaseModel):
+    """Base model for stack components."""
+
     name: str = Field(
         title="The name of the stack component.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
@@ -54,7 +61,7 @@ class ComponentBaseModel(BaseModel):
 
 
 class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
-    """Model describing the Component."""
+    """Response model for stack components."""
 
 
 # ------- #
@@ -63,7 +70,16 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
 
 
 class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
-    """ """
+    """Request model for stack components."""
+
+    @validator("name")
+    def name_cant_be_a_secret_reference(cls, name: str) -> str:
+        if secret_utils.is_secret_reference(name):
+            raise ValueError(
+                "Passing the `name` attribute of a stack component as a "
+                "secret reference is not allowed."
+            )
+        return name
 
 
 # ------ #
@@ -73,4 +89,4 @@ class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
 
 @update
 class ComponentUpdateModel(ComponentRequestModel):
-    """"""
+    """Update model for stack components."""

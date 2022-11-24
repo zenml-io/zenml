@@ -29,7 +29,6 @@ from zenml.constants import (
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
 from zenml.enums import PermissionType, StackComponentType, StoreType
-from zenml.exceptions import StackExistsError
 from zenml.logger import get_logger
 from zenml.models import (
     ComponentRequestModel,
@@ -347,9 +346,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                     active_stack = self._get_or_create_default_stack(
                         active_workspace
                     )
-                elif (
-                    not active_stack.is_shared
-                    and active_stack.user.id != self.active_user.id
+                elif not active_stack.is_shared and (
+                    not active_stack.user
+                    or (active_stack.user.id != self.active_user.id)
                 ):
                     logger.warning(
                         "The current %s active stack is not shared and not "
@@ -401,7 +400,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                 user_name_or_id=self.active_user.id,
             )
         except KeyError:
-            return self._create_default_stack(
+            return self._create_default_stack(  # type: ignore[no-any-return]
                 workspace_name_or_id=workspace.id,
                 user_name_or_id=self.active_user.id,
             )
@@ -410,7 +409,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         try:
             return self._default_workspace
         except KeyError:
-            return self._create_default_workspace()
+            return self._create_default_workspace()  # type: ignore[no-any-return]
 
     # ------
     # Stacks
@@ -441,18 +440,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         """
         workspace = self.get_workspace(workspace_name_or_id=workspace_name_or_id)
         user = self.get_user(user_name_or_id=user_name_or_id)
-        try:
-            self._get_default_stack(
-                workspace_name_or_id=workspace_name_or_id,
-                user_name_or_id=user_name_or_id,
-            )
-        except KeyError:
-            pass
-        else:
-            raise StackExistsError(
-                f"Default stack already exists for user "
-                f"{user.name} in workspace {workspace.name}"
-            )
 
         logger.info(
             f"Creating default stack for user '{user.name}' in workspace "

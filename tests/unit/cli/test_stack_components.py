@@ -204,7 +204,7 @@ def test_remove_attribute_component_succeeds(clean_client, test_flavor) -> None:
         updated=datetime.now(),
     )
 
-    orchestrator_response = clean_client.register_stack_component(
+    orchestrator_response = clean_client.create_stack_component(
         name=orchestrator.name,
         component_type=orchestrator.type,
         flavor=orchestrator.flavor,
@@ -297,7 +297,7 @@ def test_remove_attribute_component_required_attribute_fails(
         updated=datetime.now(),
     )
 
-    orchestrator_response = clean_client.register_stack_component(
+    orchestrator_response = clean_client.create_stack_component(
         name=orchestrator.name,
         component_type=orchestrator.type,
         flavor=orchestrator.flavor,

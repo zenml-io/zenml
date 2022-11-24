@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing workspaces."""
 
 from pydantic import BaseModel, Field
 
@@ -25,7 +26,7 @@ from zenml.models.constants import (
 # BASE #
 # ---- #
 class WorkspaceBaseModel(BaseModel):
-    """"""
+    """Base model for workspaces."""
 
     name: str = Field(
         title="The unique name of the workspace.",
@@ -44,7 +45,7 @@ class WorkspaceBaseModel(BaseModel):
 
 
 class WorkspaceResponseModel(WorkspaceBaseModel, BaseResponseModel):
-    """"""
+    """Response model for workspaces."""
 
 
 # ------- #
@@ -53,7 +54,7 @@ class WorkspaceResponseModel(WorkspaceBaseModel, BaseResponseModel):
 
 
 class WorkspaceRequestModel(WorkspaceBaseModel, BaseRequestModel):
-    """"""
+    """Request model for workspaces."""
 
 
 # ------ #
@@ -63,4 +64,4 @@ class WorkspaceRequestModel(WorkspaceBaseModel, BaseRequestModel):
 
 @update
 class WorkspaceUpdateModel(WorkspaceRequestModel):
-    """"""
+    """Update model for workspaces."""

@@ -35,7 +35,8 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
     """Get the user.
 
     Args:
-        user_name_or_id: The name or ID of the user."""
+        user_name_or_id: The name or ID of the user.
+    """
     cli_utils.print_active_config()
     client = Client()
     if not user_name_or_id:
@@ -156,7 +157,7 @@ def create_user(
             cli_utils.declare(
                 f"The created user account is currently inactive. You can "
                 f"activate it by visiting the dashboard at the following URL:\n"
-                f"{client.zen_store.url}/signup?user={str(new_user.id)}&username={new_user.name}&token={new_user.activation_token.get_secret_value()}\n"
+                f"{client.zen_store.url}/signup?user={str(new_user.id)}&username={new_user.name}&token={new_user.activation_token}\n"
             )
 
 

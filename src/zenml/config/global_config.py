@@ -397,7 +397,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             if active_user.email_opted_in is not None:
                 self.record_email_opt_in_out(
                     opted_in=active_user.email_opted_in,
-                    email=None,  # TODO clean this up
+                    email=active_user.email,
                     source=AnalyticsEventSource.ZENML_SERVER,
                 )
 
@@ -655,38 +655,70 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         return self._zen_store
 
-    def set_active_workspace(self, workspace: "WorkspaceResponseModel") -> None:
+    def set_active_workspace(
+        self, workspace: "WorkspaceResponseModel"
+    ) -> "WorkspaceResponseModel":
         """Set the workspace for the local client.
 
         Args:
             workspace: The workspace to set active.
+
+        Returns:
+            The workspace that was set active.
         """
         self.active_workspace_name = workspace.name
         self._active_workspace = workspace
+        return workspace
 
     def set_active_stack(self, stack: "StackResponseModel") -> None:
+        """Set the active stack for the local client.
+
+        Args:
+            stack: The model of the stack to set active.
+        """
         self.active_stack_id = stack.id
 
-    def get_active_workspace(self):
+    def get_active_workspace(self) -> "WorkspaceResponseModel":
+        """Get a model of the active workspace for the local client.
+
+        Returns:
+            The model of the active workspace.
+        """
         workspace_name = self.get_active_workspace_name()
 
-        if self._active_workspace is None:
-            workspace = self.zen_store.get_workspace(
-                workspace_name_or_id=workspace_name,
-            )
-            self.set_active_workspace(workspace)
+        if self._active_workspace is not None:
+            return self._active_workspace
 
-        return self._active_workspace
+        workspace = self.zen_store.get_workspace(
+            workspace_name_or_id=workspace_name,
+        )
+        return self.set_active_workspace(workspace)
 
     def get_active_workspace_name(self) -> str:
+        """Get the name of the active workspace.
+
+        If the active workspace doesn't exist yet, the ZenStore is reinitialized.
+
+        Returns:
+            The name of the active workspace.
+        """
         if self.active_workspace_name is None:
             _ = self.zen_store
+            assert self.active_workspace_name is not None
 
         return self.active_workspace_name
 
     def get_active_stack_id(self) -> UUID:
+        """Get the ID of the active stack.
+
+        If the active stack doesn't exist yet, the ZenStore is reinitialized.
+
+        Returns:
+            The active stack ID.
+        """
         if self.active_stack_id is None:
             _ = self.zen_store
+            assert self.active_stack_id is not None
 
         return self.active_stack_id
 

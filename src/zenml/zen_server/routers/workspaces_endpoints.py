@@ -30,6 +30,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import PermissionType, StackComponentType
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ComponentRequestModel,
     ComponentResponseModel,
@@ -272,9 +273,17 @@ def create_stack(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    # TODO: Raise nice messages
-    assert stack.workspace == workspace.id
-    assert stack.user == auth_context.user.id
+    if stack.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating stacks outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if stack.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating stacks for a user other than yourself "
+            f"is not supported."
+        )
 
     return zen_store().create_stack(stack=stack)
 
@@ -360,9 +369,17 @@ def create_stack_component(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    # TODO: Raise nice messages
-    assert component.workspace == workspace.id
-    assert component.user == auth_context.user.id
+    if component.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating components outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if component.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating components for a user other than yourself "
+            f"is not supported."
+        )
 
     # TODO: [server] if possible it should validate here that the configuration
     #  conforms to the flavor
@@ -431,9 +448,18 @@ def create_flavor(
         The created stack component flavor.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
-    # TODO: Raise nice messages
-    assert flavor.workspace == workspace.id
-    assert flavor.user == auth_context.user.id
+
+    if flavor.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating flavors outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if flavor.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating flavors for a user other than yourself "
+            f"is not supported."
+        )
 
     created_flavor = zen_store().create_flavor(
         flavor=flavor,
@@ -497,9 +523,17 @@ def create_pipeline(
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    # TODO: Raise nice messages
-    assert pipeline.workspace == workspace.id
-    assert pipeline.user == auth_context.user.id
+    if pipeline.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating pipelines outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if pipeline.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating pipelines for a user other than yourself "
+            f"is not supported."
+        )
 
     return zen_store().create_pipeline(pipeline=pipeline)
 
@@ -531,9 +565,18 @@ def create_pipeline_run(
         The created pipeline run.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
-    # TODO: Raise nice messages
-    assert pipeline_run.workspace == workspace.id
-    assert pipeline_run.user == auth_context.user.id
+
+    if pipeline_run.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if pipeline_run.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs  for a user other than yourself "
+            f"is not supported."
+        )
 
     if get_if_exists:
         return zen_store().get_or_create_run(pipeline_run=pipeline_run)
@@ -560,8 +603,6 @@ def get_workspace_statistics(
     Returns:
         All pipelines within the workspace.
     """
-    # TODO: [server] instead of actually querying all the rows, we should
-    #  use zen_store methods that just return counts
     zen_store().list_runs()
     return {
         "stacks": len(

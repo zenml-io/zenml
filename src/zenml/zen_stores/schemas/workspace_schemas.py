@@ -41,7 +41,7 @@ class WorkspaceSchema(NamedSchema, table=True):
 
     __tablename__ = "workspace"
 
-    description: Optional[str] = Field(nullable=True)
+    description: str
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="workspace", sa_relationship_kwargs={"cascade": "delete"}
@@ -78,7 +78,16 @@ class WorkspaceSchema(NamedSchema, table=True):
         """
         return cls(name=workspace.name, description=workspace.description)
 
-    def update(self, workspace_update: WorkspaceUpdateModel):
+    def update(self, workspace_update: WorkspaceUpdateModel) -> "ProjectSchema":
+        """Update a `ProjectSchema` from a `ProjectUpdateModel`.
+
+        Args:
+            workspace_update: The `ProjectUpdateModel` from which to update the
+                schema.
+
+        Returns:
+            The updated `ProjectSchema`.
+        """
         for field, value in workspace_update.dict(exclude_unset=True).items():
             setattr(self, field, value)
 
