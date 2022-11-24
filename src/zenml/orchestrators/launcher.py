@@ -176,10 +176,6 @@ class Launcher:
             current_run_input_artifacts[name] = artifact
 
         # 2. Generate cache key for current step
-        cache_enabled = (
-            self._pipeline_config.enable_cache
-            and self._step.config.enable_cache
-        )
         cache_key = generate_cache_key(
             step=self._step,
             artifact_store=self._stack.artifact_store,
@@ -218,19 +214,18 @@ class Launcher:
             enable_cache=self._step.config.enable_cache,
         )
 
+        cache_enabled = (
+            self._pipeline_config.enable_cache
+            and self._step.config.enable_cache
+        )
         cache_used = False
-
         if cache_enabled:
             # 4. query zen store for all step runs with same cache key
-            all_step_runs = Client().zen_store.list_run_steps()
-            cache_candidates = [
-                step_run
-                for step_run in all_step_runs
-                if step_run.id != current_step_run.id
-                and step_run.cache_key == cache_key
-                and step_run.status
-                in {ExecutionStatus.COMPLETED, ExecutionStatus.CACHED}
-            ]
+            cache_candidates = Client().zen_store.list_run_steps(
+                project_id=Client().active_project.id,
+                cache_key=cache_key,
+                status=ExecutionStatus.COMPLETED,
+            )
 
             if cache_candidates:
                 # if exists, use latest run and do the following:
@@ -335,9 +330,9 @@ class Launcher:
 
         # TODO: do we need to update the run status here, or does that happen
         # on the SQL zen store automatically?
-        all_step_runs = Client().zen_store.list_run_steps(run_id=run.id)
+        steps_in_current_run = Client().zen_store.list_run_steps(run_id=run.id)
         status = ExecutionStatus.run_status(
-            step_statuses=[step_run.status for step_run in all_step_runs]
+            step_statuses=[step_run.status for step_run in steps_in_current_run]
         )
         if status != run.status:
             run.status = status

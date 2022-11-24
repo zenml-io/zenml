@@ -47,12 +47,18 @@ router = APIRouter(
 @handle_exceptions
 def list_run_steps(
     run_id: Optional[UUID] = None,
+    project_id: Optional[str] = None,
+    cache_key: Optional[str] = None,
+    status: Optional[ExecutionStatus] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[StepRunModel]:
     """Get run steps according to query filters.
 
     Args:
-        run_id: The URI of the pipeline run by which to filter.
+        run_id: The ID of the pipeline run by which to filter.
+        project_id: The ID of the project by which to filter.
+        cache_key: The cache key by which to filter.
+        status: The status by which to filter.
 
     Returns:
         The run steps according to query filters.

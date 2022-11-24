@@ -50,7 +50,7 @@ from zenml.constants import (
     USERS,
     VERSION_1,
 )
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
     DoesNotExistException,
@@ -1397,15 +1397,22 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_run_steps(
-        self, run_id: Optional[UUID] = None
+        self,
+        run_id: Optional[UUID] = None,
+        project_id: Optional[UUID] = None,
+        cache_key: Optional[str] = None,
+        status: Optional[ExecutionStatus] = None,
     ) -> List[StepRunModel]:
-        """Get all run steps.
+        """Get all step runs.
 
         Args:
             run_id: If provided, only return steps for this pipeline run.
+            project_id: If provided, only return step runs in this project.
+            cache_key: If provided, only return steps with this cache key.
+            status: If provided, only return steps with this status.
 
         Returns:
-            A list of all run steps.
+            A list of step runs.
         """
         filters = locals()
         filters.pop("self")

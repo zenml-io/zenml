@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import (
     ArtifactModel,
     ComponentModel,
@@ -1078,15 +1078,22 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_run_steps(
-        self, run_id: Optional[UUID] = None
+        self,
+        run_id: Optional[UUID] = None,
+        project_id: Optional[UUID] = None,
+        cache_key: Optional[str] = None,
+        status: Optional[ExecutionStatus] = None,
     ) -> List[StepRunModel]:
-        """Get all run steps.
+        """Get all step runs.
 
         Args:
             run_id: If provided, only return steps for this pipeline run.
+            project_id: If provided, only return step runs in this project.
+            cache_key: If provided, only return steps with this cache key.
+            status: If provided, only return steps with this status.
 
         Returns:
-            A list of all run steps.
+            A list of step runs.
         """
 
     @abstractmethod
