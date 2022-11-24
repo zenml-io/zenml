@@ -799,8 +799,7 @@ The TCP port and the host address that the dashboard uses to listen for
 connections can also be customized. Using an IP address that is not the default
 `localhost` or 127.0.0.1 is especially useful if you're running some type of
 local ZenML orchestrator, such as the k3d Kubeflow orchestrator or Docker
-orchestrator, that can't directly access you loopback interface and therefore
-cannot connect to the local ZenML server.
+orchestrator, that cannot directly connect to the local ZenML server.
 
 For example, to start the dashboard on port 9000 and have it listen
 on all locally available interfaces on your machine, run:
