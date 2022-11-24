@@ -832,15 +832,16 @@ def generate_stack_component_logs_command(
         client = Client()
 
         if not name_or_id:
-            component_model = client.active_stack_model.components.get(
+            component_models = client.active_stack_model.components.get(
                 component_type, []
             )
-            if len(component_model) == 0:
+            if len(component_models) == 0:
                 cli_utils.error(
                     f"Cannot describe any {component_type} since the active "
                     f"stack has no {component_type} and no name or id was "
                     f"provided."
                 )
+            component_model = component_models[0]
         else:
             try:
                 component_model = (
