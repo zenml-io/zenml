@@ -31,12 +31,12 @@ if TYPE_CHECKING:
 class NeptuneExperimentTrackerConfig(BaseExperimentTrackerConfig):
     """Config for the Neptune experiment tracker.
 
-    If attributes are left as None, neptune init_run
+    If attributes are left as None, the neptune.init_run() method
     will try to find the relevant values in the environment
 
     Attributes:
-        project: name of the neptune project you want to log the metadata to
-        api_token: your secret api key to neptune
+        project: name of the Neptune project you want to log the metadata to
+        api_token: your Neptune API token
     """
 
     project: Optional[str] = None
@@ -47,7 +47,7 @@ class NeptuneExperimentTrackerSettings(BaseSettings):
     """Settings for the Neptune experiment tracker.
 
     Attributes:
-        tags: Tags for the neptune run.
+        tags: Tags for the Neptune run.
     """
     tags: Set[str] = set()
 
@@ -104,9 +104,9 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         return NeptuneExperimentTrackerSettings
 
     def prepare_step_run(self, info: "StepRunInfo") -> None:
-        """Initializes neptune run and stores it in the run_state object.
+        """Initializes a Neptune run and stores it in the run_state object.
 
-        The run object can then be accessed later from other places e.g. step.
+        The run object can then be accessed later from other places, such as a step.
 
         Args:
             info: Info about the step that was executed.
@@ -119,7 +119,7 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         self.run_state.tags = list(settings.tags)
 
     def cleanup_step_run(self, info: "StepRunInfo") -> None:
-        """If the current step is the last step of the pipeline, stop neptune run.
+        """If the current step is the last step of the pipeline, stop the Neptune run.
 
         Args:
             info: Info about the step that was executed.

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Module containing objects allowing to store the state of neptune run across the project."""
+"""Contains objects that create a Neptune run and store its state throughout the pipeline."""
 
 import hashlib
 from typing import List
@@ -28,12 +28,12 @@ _INTEGRATION_VERSION_KEY = "source_code/integrations/zenml"
 
 
 class InvalidExperimentTrackerSelected(Exception):
-    """Raised if neptune run is fetched while using a different experiment tracker."""
+    """Raised if a Neptune run is fetched while using a different experiment tracker."""
     pass
 
 
 class RunProvider(metaclass=SingletonMetaClass):
-    """Singleton object used to store and persist neptune run state across the pipeline."""
+    """Singleton object used to store and persist a Neptune run state across the pipeline."""
     def __init__(self):
         """Initialize RunProvider. Called with no arguments."""
         self._active_run = None
@@ -47,16 +47,16 @@ class RunProvider(metaclass=SingletonMetaClass):
         """Getter for project name.
 
         Returns:
-            Name of the project fed to the RunProvider.
+            Name of the project passed to the RunProvider.
         """
         return self._project
 
     @property
     def token(self) -> str:
-        """Getter for api token.
+        """Getter for API token.
 
         Returns:
-            Neptune API token fed to the RunProvider.
+            Neptune API token passed to the RunProvider.
         """
         return self._token
 
@@ -74,7 +74,7 @@ class RunProvider(metaclass=SingletonMetaClass):
         """Getter for run tags.
 
         Returns:
-            Tags associated with neptune run.
+            Tags associated with a Neptune run.
         """
         return self._tags
 
@@ -83,16 +83,16 @@ class RunProvider(metaclass=SingletonMetaClass):
         """Setter for project name.
 
         Args:
-            project: neptune project name
+            project: Neptune project name
         """
         self._project = project
 
     @token.setter
     def token(self, token: str):
-        """Setter for api token.
+        """Setter for API token.
 
         Args:
-            token: neptune API token
+            token: Neptune API token
         """
         self._token = token
 
@@ -110,13 +110,13 @@ class RunProvider(metaclass=SingletonMetaClass):
         """Setter for run tags.
 
         Args:
-            tags: list of tags associated with neptune run
+            tags: list of tags associated with a Neptune run
         """
         self._tags = tags
 
     @property
     def active_run(self) -> neptune.metadata_containers.Run:
-        """Either gets active neptune run or initializes a new one.
+        """Either gets an active Neptune run or initializes a new one.
 
         Returns:
             Neptune run object
@@ -134,20 +134,20 @@ class RunProvider(metaclass=SingletonMetaClass):
 
 
 def get_neptune_run() -> neptune.metadata_containers.Run:
-    """Helper function to fetch existing neptune run or create a new one.
+    """Helper function to fetch an existing Neptune run or create a new one.
 
     Returns:
-        neptune run object
+        Neptune run object
 
     Raises:
-        InvalidExperimentTrackerSelected: when called while using an experiment tracker other than neptune
+        InvalidExperimentTrackerSelected: when called while using an experiment tracker other than Neptune
     """
     client = Client()
     experiment_tracker = client.active_stack.experiment_tracker
     if experiment_tracker.flavor == NEPTUNE:
         return experiment_tracker.run_state.active_run
     raise InvalidExperimentTrackerSelected(
-        "Fetching neptune run works only with neptune flavor of"
-        "experiment tracker selected. Current selection is %s"
+        "Fetching a Neptune run works only with the 'neptune' flavor of "
+        "the experiment tracker. The flavor currently selected is %s"
         % experiment_tracker.flavor
     )

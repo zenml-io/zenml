@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Some constants for reading env vars."""
+"""Some constants for reading environment variables."""
 
 NEPTUNE_PROJECT = "NEPTUNE_PROJECT"
 NEPTUNE_API_TOKEN = "NEPTUNE_API_TOKEN"
