@@ -50,6 +50,7 @@ from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
+from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import ProvisioningError
@@ -61,10 +62,6 @@ from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
 from zenml.integrations.kubeflow.orchestrators import (
     local_deployment_utils,
     utils,
-)
-from zenml.integrations.kubeflow.orchestrators.kubeflow_entrypoint_configuration import (
-    METADATA_UI_PATH_OPTION,
-    KubeflowEntrypointConfiguration,
 )
 from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
     KFP_VERSION,
@@ -374,21 +371,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             container_op: The kubeflow container operation to configure.
             settings: Orchestrator settings for this step.
         """
-        # Path to a metadata file that will be displayed in the KFP UI
-        # This metadata file needs to be in a mounted emptyDir to avoid
-        # sporadic failures with the (not mature) PNS executor
-        # See these links for more information about limitations of PNS +
-        # security context:
-        # https://www.kubeflow.org/docs/components/pipelines/installation/localcluster-deployment/#deploying-kubeflow-pipelines
-        # https://argoproj.github.io/argo-workflows/empty-dir/
-        # KFP will switch to the Emissary executor (soon), when this emptyDir
-        # mount will not be necessary anymore, but for now it's still in alpha
-        # status (https://www.kubeflow.org/docs/components/pipelines/installation/choose-executor/#emissary-executor)
-        volumes: Dict[str, k8s_client.V1Volume] = {
-            "/outputs": k8s_client.V1Volume(
-                name="outputs", empty_dir=k8s_client.V1EmptyDirVolumeSource()
-            ),
-        }
+        volumes: Dict[str, k8s_client.V1Volume] = {}
 
         stack = Client().active_stack
 
@@ -557,17 +540,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
             for step_name, step in deployment.steps.items():
                 # The command will be needed to eventually call the python step
                 # within the docker container
-                command = (
-                    KubeflowEntrypointConfiguration.get_entrypoint_command()
-                )
+                command = StepEntrypointConfiguration.get_entrypoint_command()
 
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
-                metadata_ui_path = "/outputs/mlpipeline-ui-metadata.json"
                 arguments = (
-                    KubeflowEntrypointConfiguration.get_entrypoint_arguments(
+                    StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,
-                        **{METADATA_UI_PATH_OPTION: metadata_ui_path},
                     )
                 )
 
@@ -583,9 +562,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     image=image_name,
                     command=command,
                     arguments=arguments,
-                    output_artifact_paths={
-                        "mlpipeline-ui-metadata": metadata_ui_path,
-                    },
                 )
 
                 settings = cast(
