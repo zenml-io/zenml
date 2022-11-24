@@ -29,8 +29,6 @@ from zenml.utils import secret_utils
 
 logger = get_logger(__name__)
 
-# TODO: Add example schemas and analytics fields
-
 
 # ---- #
 # BASE #

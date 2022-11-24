@@ -24,8 +24,6 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import MODEL_CONFIG_SCHEMA_MAX_LENGTH
 
-# TODO: Add example schemas and analytics fields
-
 # ---- #
 # BASE #
 # ---- #
