@@ -41,7 +41,7 @@ class ProjectSchema(NamedSchema, table=True):
 
     __tablename__ = "workspace"
 
-    description: Optional[str] = Field(nullable=True)
+    description: str
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
