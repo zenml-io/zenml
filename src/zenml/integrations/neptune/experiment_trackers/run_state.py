@@ -18,9 +18,13 @@ from typing import List
 
 import neptune.new as neptune
 
+import zenml
 from zenml.client import Client
 from zenml.integrations.constants import NEPTUNE
 from zenml.utils.singleton import SingletonMetaClass
+
+
+_INTEGRATION_VERSION_KEY = "source_code/integrations/zenml"
 
 
 class InvalidExperimentTrackerSelected(Exception):
@@ -124,7 +128,7 @@ class RunProvider(metaclass=SingletonMetaClass):
                 custom_run_id=hashlib.md5(self.run_name.encode()).hexdigest(),
                 tags=self.tags,
             )
-
+            run[_INTEGRATION_VERSION_KEY] = zenml.__version__
             self._active_run = run
         return self._active_run
 
