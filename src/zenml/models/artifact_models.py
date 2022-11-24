@@ -19,7 +19,7 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from zenml.enums import ArtifactType
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update_model
 
 # ---- #
 # BASE #
@@ -69,6 +69,6 @@ class ArtifactRequestModel(ArtifactBaseModel, BaseRequestModel):
 # ------ #
 
 
-@update
+@update_model
 class ArtifactUpdateModel(ArtifactRequestModel):
     """Update model for artifacts."""

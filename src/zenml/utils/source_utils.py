@@ -53,7 +53,6 @@ from typing import (
     Union,
 )
 
-from zenml import __version__, constants
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.logger import get_logger
@@ -63,20 +62,6 @@ logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.stack.flavor import Flavor
     from zenml.stack.stack_component import StackComponentConfig
-
-
-def is_standard_pin(pin: str) -> bool:
-    """Returns `True` if pin is valid ZenML pin, else False.
-
-    Args:
-        pin: potential ZenML pin like 'zenml_0.1.1'
-
-    Returns:
-        `True` if pin is valid ZenML pin, else False.
-    """
-    if pin.startswith(f"{constants.APP_NAME}_"):
-        return True
-    return False
 
 
 def is_inside_repository(file_path: str) -> bool:
@@ -122,45 +107,38 @@ def is_third_party_module(file_path: str) -> bool:
     )
 
 
-def create_zenml_pin() -> str:
-    """Creates a ZenML pin for source pinning from release version.
-
-    Returns:
-        ZenML pin.
-    """
-    return f"{constants.APP_NAME}_{__version__}"
-
-
-def resolve_standard_source(source: str) -> str:
-    """Creates a ZenML pin for source pinning from release version.
+def is_internal_source(source: str) -> bool:
+    """Returns `True` if source is an internal ZenML source.
 
     Args:
-        source: class_source e.g. this.module.Class.
+        source: Python source  e.g. this.module.Class
 
     Returns:
-        ZenML pin.
-
-    Raises:
-        AssertionError: If source is already pinned.
-    """
-    if "@" in source:
-        raise AssertionError(f"source {source} is already pinned.")
-    pin = create_zenml_pin()
-    return f"{source}@{pin}"
-
-
-def is_standard_source(source: str) -> bool:
-    """Returns `True` if source is a standard ZenML source.
-
-    Args:
-        source: class_source e.g. this.module.Class[@pin].
-
-    Returns:
-        `True` if source is a standard ZenML source, else `False`.
+        `True` if source is an internal ZenML source, else `False`.
     """
     if source.split(".")[0] == "zenml":
         return True
     return False
+
+
+def remove_internal_version_pin(source: str) -> str:
+    """Removes an internal version pin of a source string.
+
+    This function returns the input source if no pin is found.
+
+    Example:
+        `zenml.client.Client@0.21.0` -> `zenml.client.Client`
+
+    Args:
+        source: The source from which to remove the pin.
+
+    Returns:
+        The source with removed pin.
+    """
+    if "@" not in source:
+        return source
+
+    return source.split("@", 1)[0]
 
 
 def get_module_source_from_module(module: ModuleType) -> str:
@@ -393,8 +371,8 @@ def resolve_class(class_: Type[Any], replace_main_module: bool = True) -> str:
         source_path e.g. this.module.Class.
     """
     initial_source = class_.__module__ + "." + class_.__name__
-    if is_standard_source(initial_source):
-        return resolve_standard_source(initial_source)
+    if is_internal_source(initial_source):
+        return initial_source
 
     try:
         file_path = inspect.getfile(class_)
@@ -402,7 +380,7 @@ def resolve_class(class_: Type[Any], replace_main_module: bool = True) -> str:
         # builtin file
         return initial_source
 
-    if initial_source.startswith("__main__"):
+    if class_.__module__ == "__main__":
         if not replace_main_module:
             return initial_source
 
@@ -488,8 +466,7 @@ def load_source_path_class(
     if not import_path and repo_root:
         import_path = str(repo_root)
 
-    if "@" in source:
-        source = source.split("@")[0]
+    source = remove_internal_version_pin(source)
 
     if import_path is not None:
         with prepend_python_path([import_path]):

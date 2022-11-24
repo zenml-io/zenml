@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 """Models representing projects."""
 
+from typing import ClassVar, List
+
 from pydantic import BaseModel, Field
 
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update_model
 from zenml.models.constants import (
     MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,
@@ -47,6 +49,8 @@ class ProjectBaseModel(BaseModel):
 class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
     """Response model for projects."""
 
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
+
 
 # ------- #
 # REQUEST #
@@ -62,6 +66,6 @@ class ProjectRequestModel(ProjectBaseModel, BaseRequestModel):
 # ------ #
 
 
-@update
+@update_model
 class ProjectUpdateModel(ProjectRequestModel):
     """Update model for projects."""

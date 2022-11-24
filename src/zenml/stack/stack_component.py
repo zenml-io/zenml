@@ -12,19 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack Component class."""
-import textwrap
 from abc import ABC
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Set, Type, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Extra, root_validator
+from pydantic import BaseModel, Extra
 
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
-from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
 from zenml.models import ComponentResponseModel
 from zenml.utils import secret_utils, settings_utils

@@ -19,7 +19,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.enums import ExecutionStatus
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update_model
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 
 # ---- #
@@ -71,6 +71,6 @@ class StepRunRequestModel(StepRunBaseModel, BaseRequestModel):
 # ------ #
 # UPDATE #
 # ------ #
-@update
+@update_model
 class StepRunUpdateModel(StepRunRequestModel):
     """Update model for step runs."""
