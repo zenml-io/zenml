@@ -179,6 +179,11 @@ class StepExecutor:
                 )
             return artifact
 
+        if not artifact.materializer:
+            raise RuntimeError(
+                f"Cannot load input artifact {artifact.name} because it has no "
+                "materializer."
+            )
         materializer_class = source_utils.load_source_path_class(
             artifact.materializer
         )

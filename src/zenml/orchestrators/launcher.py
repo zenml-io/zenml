@@ -268,12 +268,13 @@ class Launcher:
                 ] = source_utils.load_and_validate_class(
                     artifact_config.artifact_source, expected_class=BaseArtifact
                 )
-                artifact_ = artifact_class()
-                artifact_.name = name
-                artifact_.uri = generate_artifact_uri(
-                    artifact_store=self._stack.artifact_store,
-                    step_run=current_step_run,
-                    output_name=name,
+                artifact_ = artifact_class(
+                    uri=generate_artifact_uri(
+                        artifact_store=self._stack.artifact_store,
+                        step_run=current_step_run,
+                        output_name=name,
+                    ),
+                    name=name,
                 )
                 output_artifacts[name] = artifact_
 

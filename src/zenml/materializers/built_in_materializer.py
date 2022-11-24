@@ -271,9 +271,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             for path_, type_str in zip(metadata["paths"], metadata["types"]):
                 type_ = find_type_by_str(type_str)
                 materializer_class = default_materializer_registry[type_]
-                mock_artifact = DataArtifact(
-                    uri=path_, materializer="", data_type=""
-                )
+                mock_artifact = DataArtifact(uri=path_)
                 materializer = materializer_class(mock_artifact)
                 element = materializer.handle_input(type_)
                 outputs.append(element)
@@ -332,9 +330,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             paths.append(element_path)
             types.append(str(type_))
             materializer_class = default_materializer_registry[type_]
-            mock_artifact = DataArtifact(
-                uri=element_path, materializer="", data_type=""
-            )
+            mock_artifact = DataArtifact(uri=element_path)
             mock_artifact.uri = element_path
             materializer = materializer_class(mock_artifact)
             materializers.append(materializer)

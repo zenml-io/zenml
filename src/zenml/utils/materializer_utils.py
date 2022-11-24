@@ -109,6 +109,14 @@ def model_from_model_artifact(model_artifact: ModelArtifact) -> Any:
     Returns:
         The ML model object loaded into memory.
     """
+    if not model_artifact.materializer:
+        raise RuntimeError(
+            "Cannot load model from model artifact without materializer."
+        )
+    if not model_artifact.data_type:
+        raise RuntimeError(
+            "Cannot load model from model artifact without data type."
+        )
     materializer_class = source_utils.load_source_path_class(
         model_artifact.materializer
     )

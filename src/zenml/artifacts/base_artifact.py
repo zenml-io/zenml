@@ -43,8 +43,8 @@ class BaseArtifact:
     def __init__(
         self,
         uri: str,
-        materializer: str,
-        data_type: str,
+        materializer: Optional[str] = None,
+        data_type: Optional[str] = None,
         name: Optional[str] = None,
     ) -> None:
         """Init method for BaseArtifact.
