@@ -31,7 +31,6 @@ from zenml.models.constants import (
     MODEL_NAME_FIELD_MAX_LENGTH,
 )
 
-
 # ---- #
 # BASE #
 # ---- #

@@ -24,7 +24,11 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update_model
+from zenml.models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update_model,
+)
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.utils.enum_utils import StrEnum
 

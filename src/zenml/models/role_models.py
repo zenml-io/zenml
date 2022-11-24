@@ -18,7 +18,11 @@ from typing import ClassVar, List, Set
 from pydantic import BaseModel, Field
 
 from zenml.enums import PermissionType
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update_model
+from zenml.models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update_model,
+)
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 
 # ---- #

@@ -17,7 +17,11 @@ from typing import ClassVar, List
 
 from pydantic import BaseModel, Field
 
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update_model
+from zenml.models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update_model,
+)
 from zenml.models.constants import (
     MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,

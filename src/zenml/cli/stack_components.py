@@ -724,7 +724,6 @@ def generate_stack_component_logs_command(
                 )
                 return
 
-
         if not log_file or not fileio.exists(log_file):
             cli_utils.warning(
                 f"Unable to find log file for {display_name} "

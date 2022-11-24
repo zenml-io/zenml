@@ -32,6 +32,7 @@ from uuid import UUID, uuid4
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
+    ENV_ZENML_ACTIVE_STACK_NAME,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
     REPOSITORY_DIRECTORY_NAME,
@@ -79,7 +80,6 @@ from zenml.models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
-from zenml.constants import ENV_ZENML_ACTIVE_STACK_NAME
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec

@@ -19,7 +19,11 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from zenml.enums import ArtifactType
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update_model
+from zenml.models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update_model,
+)
 
 # ---- #
 # BASE #
