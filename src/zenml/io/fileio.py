@@ -77,7 +77,7 @@ def copy(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
     src_fs = _get_filesystem(src)
     dst_fs = _get_filesystem(dst)
     if src_fs is dst_fs:
-        src_fs.copy(src, dst, overwrite=overwrite)
+        src_fs.copyfile(src, dst, overwrite=overwrite)
     else:
         if not overwrite and exists(dst):
             raise FileExistsError(

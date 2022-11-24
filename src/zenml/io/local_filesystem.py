@@ -47,91 +47,91 @@ class LocalFilesystem(BaseFilesystem):
 
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:
-        """Opens a file.
+        """Open a file at the given path.
 
         Args:
             name: The path to the file.
-            mode: The mode to open the file in.
+            mode: The mode to open the file.
 
         Returns:
-            The opened file.
+            Any: The file object.
         """
         return open(name, mode=mode)
 
     @staticmethod
-    def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         """Copy a file from the source to the destination.
 
         Args:
-            src: The path of the file to copy.
-            dst: The path to copy the source file to.
+            src: The source path.
+            dst: The destination path.
             overwrite: Whether to overwrite the destination file if it exists.
 
         Raises:
-            FileExistsError: If a file already exists at the destination and
-                `overwrite` is not set to `True`.
+            FileExistsError: If the destination file exists and overwrite is
+                False.
         """
         if not overwrite and os.path.exists(dst):
             raise FileExistsError(
                 f"Destination file {str(dst)} already exists and argument "
-                f"`overwrite` is set to False."
+                f"`overwrite` is false."
             )
-        shutil.copyfile(src, dst)
+        shutil.copyfile(src, dst)  # type: ignore[type-var, arg-type]
 
     @staticmethod
     def exists(path: PathType) -> bool:
-        """Check whether a given path exists.
+        """Returns `True` if the given path exists.
 
         Args:
             path: The path to check.
 
         Returns:
-            `True` if the given path exists, `False` otherwise.
+            bool: Whether the path exists.
         """
         return os.path.exists(path)
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
-        """Find all files matching the given pattern.
+        """Return the paths that match a glob pattern.
 
         Args:
-            pattern: The pattern to match.
+            pattern: The glob pattern.
 
         Returns:
-            A list of paths matching the pattern.
+            List[PathType]: The paths that match the glob pattern.
         """
-        return glob.glob(pattern)
+        return glob.glob(pattern)  # type: ignore[type-var]
 
     @staticmethod
     def isdir(path: PathType) -> bool:
-        """Check whether the given path is a directory.
+        """Returns whether the given path points to a directory.
 
         Args:
             path: The path to check.
 
         Returns:
-            `True` if the given path is a directory, `False` otherwise.
+            bool: Whether the path points to a directory.
         """
         return os.path.isdir(path)
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
-        """Lists all files in a directory.
+        """Returns a list of files under a given directory in the filesystem.
 
         Args:
             path: The path to the directory.
 
         Returns:
-            A list of files in the directory.
+            List[PathType]: The list of files under the given directory.
         """
-        return os.listdir(path)
+        return os.listdir(path)  # type:ignore[return-value]
 
     @staticmethod
     def makedirs(path: PathType) -> None:
         """Make a directory at the given path, recursively creating parents.
 
         Args:
-            path: Path to the directory.
+            path: The path to the directory.
         """
         os.makedirs(path, exist_ok=True)
 
@@ -140,7 +140,7 @@ class LocalFilesystem(BaseFilesystem):
         """Make a directory at the given path; parent directory must exist.
 
         Args:
-            path: Path to the directory.
+            path: The path to the directory.
         """
         os.mkdir(path)
 
@@ -149,50 +149,49 @@ class LocalFilesystem(BaseFilesystem):
         """Remove the file at the given path. Dangerous operation.
 
         Args:
-            path: The path to the file to remove.
+            path: The path to the file.
         """
         os.remove(path)
 
     @staticmethod
     def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
-        """Rename a file.
+        """Rename source file to destination file.
 
         Args:
             src: The path of the file to rename.
             dst: The path to rename the source file to.
             overwrite: If a file already exists at the destination, this
-                method will overwrite it if overwrite=`True` and
-                raise a FileExistsError otherwise.
+                method will overwrite it if overwrite=`True`
 
         Raises:
-            FileExistsError: If a file already exists at the destination
-                and overwrite is not set to `True`.
+            FileExistsError: If the destination file exists and overwrite is
+                False.
         """
         if not overwrite and os.path.exists(dst):
             raise FileExistsError(
-                f"Destination file {str(dst)} already exists and argument "
-                f"`overwrite` is set to False."
+                f"Destination path {str(dst)} already exists and argument "
+                f"`overwrite` is false."
             )
         os.rename(src, dst)
 
     @staticmethod
     def rmtree(path: PathType) -> None:
-        """Deletes a directory recursively. Dangerous operation.
+        """Deletes dir recursively. Dangerous operation.
 
         Args:
-            path: The path to the directory to delete.
+            path: The path to the directory.
         """
         shutil.rmtree(path)
 
     @staticmethod
     def stat(path: PathType) -> Any:
-        """Get the stat descriptor for a given file path.
+        """Return the stat descriptor for a given file path.
 
         Args:
             path: The path to the file.
 
         Returns:
-            The stat descriptor.
+            Any: The stat descriptor for the file.
         """
         return os.stat(path)
 
@@ -205,16 +204,19 @@ class LocalFilesystem(BaseFilesystem):
         """Return an iterator that walks the contents of the given directory.
 
         Args:
-            top: The path of directory to walk.
+            top: Path of directory to walk.
             topdown: Whether to walk directories topdown or bottom-up.
             onerror: Callable that gets called if an error occurs.
 
         Yields:
-            A tuple which contains the path of the current directory path, a
-            list of directories inside the current directory, and a list of
-            files inside the current directory.
+            An Iterable of Tuples, each of which contain the path of the
+            current directory path, a list of directories inside the
+            current directory and a list of files inside the current
+            directory.
         """
-        yield from os.walk(top, topdown=topdown, onerror=onerror)
+        yield from os.walk(  # type: ignore[type-var, misc]
+            top, topdown=topdown, onerror=onerror
+        )
 
 
 default_filesystem_registry.register(LocalFilesystem)
