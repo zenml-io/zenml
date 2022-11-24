@@ -234,6 +234,9 @@ def register_stack(
     if set_stack:
         client.activate_stack(created_stack.id)
 
+        scope = "repository" if client.uses_local_configuration else "global"
+        cli_utils.declare(f"Active {scope} stack set to:'{created_stack.name}'")
+
 
 @stack.command(
     "update",
