@@ -172,7 +172,11 @@ T = TypeVar("T", bound="BaseRequestModel")
 
 
 def update_model(_cls: Type[T]) -> Type[T]:
-    """TODO: @bcdurak describe what this does."""
+    """Base update model.
+
+    This is used as a decorator on top of request models to convert them
+    into update models where the fields are optional and can be set to None.
+    """
     for _, value in _cls.__fields__.items():
         value.required = False
         value.allow_none = True
