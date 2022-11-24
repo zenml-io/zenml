@@ -39,9 +39,9 @@ def test_step_decorator_creates_class_in_same_module_as_decorated_function():
 
 
 def test_define_step_with_shared_input_and_output_name():
-    """Tests that defining a step with a shared input and output name raises
-    a StepInterfaceError."""
-    with pytest.raises(StepInterfaceError):
+    """Tests that defining a step with a shared input and output name does not
+    raise a StepInterfaceError."""
+    with does_not_raise():
 
         @step
         def some_step(shared_name: int) -> Output(shared_name=int):
