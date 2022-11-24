@@ -167,4 +167,4 @@ class StackRequestModel(StackBaseModel, ShareableRequestModel):
 
 @update_model
 class StackUpdateModel(StackRequestModel):
-    """beautiful."""
+    """The update model for stacks."""
