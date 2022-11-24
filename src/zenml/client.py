@@ -32,7 +32,7 @@ from uuid import UUID, uuid4
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
-    ENV_ZENML_ACTIVE_STACK_NAME,
+    ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
     REPOSITORY_DIRECTORY_NAME,
@@ -1210,8 +1210,8 @@ class Client(metaclass=ClientMetaClass):
         """
         stack: Optional["StackResponseModel"] = None
 
-        if ENV_ZENML_ACTIVE_STACK_NAME in os.environ:
-            return self.get_stack(ENV_ZENML_ACTIVE_STACK_NAME)
+        if ENV_ZENML_ACTIVE_STACK_ID in os.environ:
+            return self.get_stack(ENV_ZENML_ACTIVE_STACK_ID)
 
         if self._config:
             stack = self.get_stack(self._config.active_stack_id)
