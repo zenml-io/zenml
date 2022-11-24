@@ -25,7 +25,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for zenml.orchestrators.topsort.py.
+"""Tests for `zenml.orchestrators.topsort.py`.
 
 Implementation heavily inspired by TFX:
 https://github.com/tensorflow/tfx/blob/master/tfx/utils/topsort_test.py
@@ -39,8 +39,8 @@ from zenml.orchestrators.topsort import topsorted_layers
 
 @attr.s
 class Node:
-    # Some users topsort PipelineNode protos, which are not hashable.
-    # To accomodate this, do not make this dataclass hashable.
+    """An unhashable class for testing."""
+
     name = attr.ib()
     upstream_nodes = attr.ib()
     downstream_nodes = attr.ib()

@@ -274,7 +274,7 @@ class BaseOrchestrator(StackComponent, ABC):
         """Set run status to failed.
 
         Args:
-            run_name_or_id: The name or ID of the run that failed.
+            run: The model of the run that failed.
         """
         client = Client()
         run.status = ExecutionStatus.FAILED

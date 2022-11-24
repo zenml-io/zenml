@@ -938,6 +938,7 @@ dct
 de
 dec
 decodable
+deduplicated
 deepchecks
 defaultdict
 deployer
@@ -1462,6 +1463,7 @@ ui
 uncomment
 unconfigured
 unencrypted
+unhashable
 unhashed
 uninstallation
 unix
@@ -1475,6 +1477,7 @@ unstaged
 unsynced
 untracked
 untyped
+unvisited
 updatable
 uptime
 upvote

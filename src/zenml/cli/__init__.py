@@ -755,13 +755,6 @@ connecting to the new ZenML deployment, you can then import again like this:
 zenml pipeline runs import FILENAME.yaml
 ```
 
-If you would like to migrate old pipeline runs from a legacy metadata store from
-ZenML versions < 0.20.0, you can do so by running the following command:
-
-```bash
-zenml pipeline runs migrate METADATA_STORE_PATH
-```
-
 Managing the local ZenML Dashboard
 ----------------------------------
 
