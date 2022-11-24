@@ -136,7 +136,7 @@ def is_root(path: str) -> bool:
     return Path(path).parent == Path(path)
 
 
-def listdir(path: str, only_file_names: bool = False) -> List[str]:
+def listdir(path: str, only_file_names: bool = True) -> List[str]:
     """Lists all files in a directory.
 
     Args:
@@ -342,28 +342,6 @@ def resolve_relative_path(path: str) -> str:
     if is_remote(path):
         return path
     return str(Path(path).resolve())
-
-
-def copy_dir(
-    source_dir: str, destination_dir: str, overwrite: bool = False
-) -> None:
-    """Copies dir from source to destination.
-
-    Args:
-        source_dir: The path to copy from.
-        destination_dir: The path to copy to.
-        overwrite: Boolean. If false, function throws an error before overwrite.
-    """
-    for source_file in listdir(source_dir):
-        source_file_path = Path(source_file)
-        destination_name = os.path.join(destination_dir, source_file_path.name)
-        if isdir(source_file):
-            copy_dir(source_file, destination_name, overwrite)
-        else:
-            create_dir_recursive_if_not_exists(
-                str(Path(destination_name).parent)
-            )
-            copy(str(source_file_path), str(destination_name), overwrite)
 
 
 def move(source: str, destination: str, overwrite: bool = False) -> None:

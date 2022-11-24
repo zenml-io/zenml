@@ -22,7 +22,6 @@ from types import GeneratorType
 import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis.strategies import text
-from tfx.dsl.io.filesystem import NotFoundError
 
 from zenml.constants import REMOTE_FS_PREFIX
 from zenml.io import fileio
@@ -130,9 +129,8 @@ def test_listdir_returns_empty_list_when_dir_doesnt_exist(
     sample_file, tmp_path
 ):
     """list_dir should return an empty list when the directory doesn't exist"""
-    with pytest.raises(NotFoundError):
-        not_a_real_dir = os.path.join(tmp_path, sample_file)
-        fileio.listdir(not_a_real_dir)
+    not_a_real_dir = os.path.join(tmp_path, sample_file)
+    assert fileio.listdir(not_a_real_dir) == []
 
 
 @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
@@ -141,7 +139,7 @@ def test_open_returns_error_when_file_nonexistent(
     tmp_path, not_a_file: str
 ) -> None:
     """Test that open returns a file object"""
-    with pytest.raises(NotFoundError):
+    with pytest.raises(FileNotFoundError):
         fileio.open(os.path.join(tmp_path, not_a_file), "rb")
 
 
@@ -215,7 +213,7 @@ def test_mkdir_function(tmp_path) -> None:
 
 def test_mkdir_function_when_parent_doesnt_exist(tmp_path) -> None:
     """Test that mkdir creates a directory"""
-    with pytest.raises(NotFoundError):
+    with pytest.raises(FileNotFoundError):
         fileio.mkdir(os.path.join(tmp_path, "not_a_dir/still_not_a_dir"))
 
 
@@ -263,7 +261,7 @@ def test_stat_returns_a_stat_result_object(tmp_path) -> None:
 
 def test_stat_raises_error_when_file_doesnt_exist(tmp_path) -> None:
     """Test that stat raises an error when the file doesn't exist"""
-    with pytest.raises(NotFoundError):
+    with pytest.raises(FileNotFoundError):
         fileio.stat(os.path.join(tmp_path, "not_a_file.txt"))
 
 
@@ -311,13 +309,16 @@ def test_resolve_relative_path(tmp_path) -> None:
 
 def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:
     """Test that copy_dir copies a directory from source to destination"""
-    io_utils.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
-    io_utils.copy_dir(
-        os.path.join(tmp_path),
-        os.path.join(tmp_path, "test_dir_copy"),
-    )
-    assert os.path.exists(os.path.join(tmp_path, "test_dir_copy"))
-    assert os.path.exists(os.path.join(tmp_path, "test_dir_copy/new_file.txt"))
+    source_dir = os.path.join(tmp_path)
+    target_dir = os.path.join(tmp_path, "test_dir_copy")
+    source_file = os.path.join(source_dir, "new_file.txt")
+    target_file = os.path.join(target_dir, "new_file.txt")
+    io_utils.create_file_if_not_exists(source_file)
+    assert os.path.exists(source_file)
+    assert not os.path.exists(target_dir)
+    io_utils.copy_dir(source_dir, target_dir)
+    assert os.path.exists(target_dir)
+    assert os.path.exists(target_file)
 
 
 def test_move_moves_a_file_from_source_to_destination(tmp_path) -> None:
