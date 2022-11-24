@@ -246,3 +246,17 @@ def test_class_importing_by_path():
 
     with pytest.raises(AttributeError):
         source_utils.import_class_by_path("zenml.client.NotAClass")
+
+
+def test_internal_pin_removal():
+    """Tests that removing the internal pin removal works."""
+    assert (
+        source_utils.remove_internal_version_pin(
+            "zenml.client.Client@zenml_0.21.0"
+        )
+        == "zenml.client.Client"
+    )
+    assert (
+        source_utils.remove_internal_version_pin("zenml.client.Client")
+        == "zenml.client.Client"
+    )
