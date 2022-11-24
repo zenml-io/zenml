@@ -77,7 +77,7 @@ class FileIORegistry:
             scheme = scheme.decode("utf-8")
         if scheme not in self._filesystems:
             raise ValueError(
-                f"No filesystems were found for the scheme: "
+                f"No file systems were found for the scheme: "
                 f"{scheme}. Please make sure that you are using "
                 f"the right path and the all the necessary "
                 f"integrations are properly installed."

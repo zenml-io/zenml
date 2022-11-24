@@ -167,6 +167,9 @@ class StepExecutor:
 
         Returns:
             The artifact value.
+
+        Raises:
+            RuntimeError: If the artifact has no materializer.
         """
         # Skip materialization for BaseArtifact and its subtypes.
         if issubclass(data_type, BaseArtifact):

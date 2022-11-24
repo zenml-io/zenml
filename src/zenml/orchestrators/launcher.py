@@ -331,9 +331,9 @@ class Launcher:
 
         # TODO: do we need to update the run status here, or does that happen
         # on the SQL zen store automatically?
-        current_run_steps = Client().zen_store.list_run_steps(run_id=run.id)
+        all_step_runs = Client().zen_store.list_run_steps(run_id=run.id)
         status = ExecutionStatus.run_status(
-            step_statuses=[step_run.status for step_run in current_run_steps]
+            step_statuses=[step_run.status for step_run in all_step_runs]
         )
         if status != run.status:
             run.status = status

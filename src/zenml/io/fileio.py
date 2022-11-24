@@ -201,7 +201,7 @@ def rename(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
             raise a FileExistsError otherwise.
 
     Raises:
-        NotImplementedError: If the source and destination filesystems are not
+        NotImplementedError: If the source and destination file systems are not
             the same.
     """
     src_fs = _get_filesystem(src)
@@ -211,7 +211,7 @@ def rename(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
     else:
         raise NotImplementedError(
             f"Renaming from {convert_to_str(src)} to {convert_to_str(dst)} "
-            f"using different filesystems plugins is currently not supported."
+            f"using different file systems plugins is currently not supported."
         )
 
 

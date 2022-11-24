@@ -108,6 +108,9 @@ def model_from_model_artifact(model_artifact: ModelArtifact) -> Any:
 
     Returns:
         The ML model object loaded into memory.
+
+    Raises:
+        RuntimeError: If the model artifact has no materializer or data type.
     """
     if not model_artifact.materializer:
         raise RuntimeError(
