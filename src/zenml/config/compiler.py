@@ -347,7 +347,7 @@ class Compiler:
     def _get_sorted_steps(
         steps: Dict[str, "BaseStep"]
     ) -> List[Tuple[str, "BaseStep"]]:
-        """Sorts the steps of a pipeline.
+        """Sorts the steps of a pipeline using topological sort.
 
         The resulting list of steps will be in an order that can be executed
         sequentially without any conflicts.
@@ -358,10 +358,30 @@ class Compiler:
         Returns:
             The sorted steps.
         """
-        # TODO: implement topological sort
-        return [
-            (name_in_pipeline, step) for name_in_pipeline, step in steps.items()
+        from zenml.orchestrators.dag_runner import ThreadedDagRunner
+
+        # Sort step names using multi-threaded topological sort
+        dag: Dict[str, List[str]] = {
+            step.name: list(step.upstream_steps) for step in steps.values()
+        }
+        sorted_step_names: List[str] = []
+        run_fn = lambda step_name: sorted_step_names.append(step_name)
+        ThreadedDagRunner(dag, run_fn).run()
+
+        # Construct pipeline name to step mapping
+        step_name_to_name_in_pipeline: Dict[str, str] = {
+            step.name: name_in_pipeline
+            for name_in_pipeline, step in steps.items()
+        }
+        sorted_names_in_pipeline: List[str] = [
+            step_name_to_name_in_pipeline[step_name]
+            for step_name in sorted_step_names
         ]
+        sorted_steps: List[Tuple[str, "BaseStep"]] = [
+            (name_in_pipeline, steps[name_in_pipeline])
+            for name_in_pipeline in sorted_names_in_pipeline
+        ]
+        return sorted_steps
 
     @staticmethod
     def _ensure_required_stack_components_exist(
