@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base Step for ZenML."""
 
-import collections
 import inspect
 import random
 from abc import abstractmethod
@@ -22,7 +21,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Counter,
     Dict,
     List,
     Mapping,
@@ -207,25 +205,6 @@ class BaseStepMeta(type):
         cls.OUTPUT_SIGNATURE = parse_return_type_annotations(
             step_function_signature.annotations,
         )
-
-        # Raise an exception if input and output names of a step overlap as
-        # tfx requires them to be unique
-        # TODO [ENG-155]: Can we prefix inputs and outputs to avoid this
-        #  restriction?
-        counter: Counter[str] = collections.Counter()
-        counter.update(list(cls.INPUT_SIGNATURE))
-        counter.update(list(cls.OUTPUT_SIGNATURE))
-        if cls.PARAMETERS_CLASS:
-            counter.update(list(cls.PARAMETERS_CLASS.__fields__.keys()))
-
-        shared_keys = {k for k in counter.elements() if counter[k] > 1}
-        if shared_keys:
-            raise StepInterfaceError(
-                f"The following keys are overlapping in the input, output and "
-                f"config parameter names of step '{name}': {shared_keys}. "
-                f"Please make sure that your input, output and config "
-                f"parameter names are unique."
-            )
 
         return cls
 
