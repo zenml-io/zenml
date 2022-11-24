@@ -12,24 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from uuid import uuid4
-from datetime import datetime
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
+from uuid import uuid4
 
 import pytest
 
-
+from zenml.artifact_stores import LocalArtifactStore, LocalArtifactStoreConfig
+from zenml.enums import StackComponentType
 from zenml.integrations.neptune.experiment_trackers import (
     NeptuneExperimentTracker,
     NeptuneExperimentTrackerConfig,
 )
-from zenml.stack import Stack
-from zenml.enums import StackComponentType
 from zenml.orchestrators import LocalOrchestrator
-from zenml.artifact_stores import (
-    LocalArtifactStore,
-    LocalArtifactStoreConfig,
-)
+from zenml.stack import Stack
 from zenml.stack.stack_component import StackComponentConfig
 
 
@@ -81,16 +77,22 @@ def local_artifact_store() -> LocalArtifactStore:
     )
 
 
-def test_neptune_experiment_tracker_attributes(neptune_experiment_tracker) -> None:
+def test_neptune_experiment_tracker_attributes(
+    neptune_experiment_tracker,
+) -> None:
     """Tests that the basic attributes of the neptune experiment tracker are set
     correctly."""
-    assert neptune_experiment_tracker.type == StackComponentType.EXPERIMENT_TRACKER
+    assert (
+        neptune_experiment_tracker.type == StackComponentType.EXPERIMENT_TRACKER
+    )
     assert neptune_experiment_tracker.flavor == "neptune"
 
 
-def test_neptune_experiment_tracker_stack_validation(neptune_experiment_tracker,
-                                                     local_orchestrator,
-                                                     local_artifact_store,) -> None:
+def test_neptune_experiment_tracker_stack_validation(
+    neptune_experiment_tracker,
+    local_orchestrator,
+    local_artifact_store,
+) -> None:
     """Tests that a stack with neptune experiment tracker is valid."""
     with does_not_raise():
         Stack(

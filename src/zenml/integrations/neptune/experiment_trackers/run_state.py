@@ -23,17 +23,16 @@ from zenml.client import Client
 from zenml.integrations.constants import NEPTUNE
 from zenml.utils.singleton import SingletonMetaClass
 
-
 _INTEGRATION_VERSION_KEY = "source_code/integrations/zenml"
 
 
 class InvalidExperimentTrackerSelected(Exception):
     """Raised if a Neptune run is fetched while using a different experiment tracker."""
-    pass
 
 
 class RunProvider(metaclass=SingletonMetaClass):
     """Singleton object used to store and persist a Neptune run state across the pipeline."""
+
     def __init__(self):
         """Initialize RunProvider. Called with no arguments."""
         self._active_run = None

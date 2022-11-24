@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Optional, Set, Type, cast
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
@@ -22,7 +23,6 @@ from zenml.experiment_trackers.base_experiment_tracker import (
 )
 from zenml.integrations.neptune.experiment_trackers.run_state import RunProvider
 from zenml.utils.secret_utils import SecretField
-from zenml.client import Client
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -49,6 +49,7 @@ class NeptuneExperimentTrackerSettings(BaseSettings):
     Attributes:
         tags: Tags for the Neptune run.
     """
+
     tags: Set[str] = set()
 
 
@@ -111,7 +112,9 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         Args:
             info: Info about the step that was executed.
         """
-        settings = cast(NeptuneExperimentTrackerSettings, self.get_settings(info))
+        settings = cast(
+            NeptuneExperimentTrackerSettings, self.get_settings(info)
+        )
 
         self.run_state.token = self.config.api_token
         self.run_state.project = self.config.project

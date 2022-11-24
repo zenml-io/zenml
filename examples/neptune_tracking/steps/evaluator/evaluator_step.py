@@ -15,10 +15,11 @@
 import numpy as np
 import tensorflow as tf
 
-from zenml.integrations.neptune.experiment_trackers.run_state import get_neptune_run
-
-from zenml.steps import step
 from zenml.client import Client
+from zenml.integrations.neptune.experiment_trackers.run_state import (
+    get_neptune_run,
+)
+from zenml.steps import step
 
 
 @step(experiment_tracker=Client().active_stack.experiment_tracker.name)
