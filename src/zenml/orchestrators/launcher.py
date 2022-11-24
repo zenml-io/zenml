@@ -17,7 +17,8 @@ import hashlib
 import os
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple, Type
+from uuid import UUID
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
@@ -40,7 +41,7 @@ logger = get_logger(__name__)
 def generate_cache_key(
     step: Step,
     artifact_store: "BaseArtifactStore",
-    input_artifacts: Dict[str, ArtifactModel],
+    input_artifact_ids: Dict[str, UUID],
 ) -> str:
     """Generates a cache key for a step run.
 
@@ -53,7 +54,7 @@ def generate_cache_key(
     Args:
         step: The step to generate the cache key for.
         artifact_store: The artifact store to use.
-        input_artifacts: The input artifacts to use.
+        input_artifact_ids: The input artifact IDs for the step.
 
     Returns:
         A cache key.
@@ -68,9 +69,12 @@ def generate_cache_key(
         hash_.update(key.encode())
         hash_.update(str(value).encode())
 
-    for name, artifact in input_artifacts.items():
+    for name, artifact_id in input_artifact_ids.items():
         hash_.update(name.encode())
-        hash_.update(artifact.id.bytes)
+        hash_.update(artifact_id.bytes)
+
+    for output_name in step.config.outputs:
+        hash_.update(output_name.encode())
 
     # TODO: include output artifacts and cache params
 
@@ -98,6 +102,17 @@ def generate_artifact_uri(
         output_name,
         str(step_run.id),
     )
+
+
+def remove_artifact_dirs(artifacts: Sequence[BaseArtifact]) -> None:
+    """Removes the artifact directories.
+
+    Args:
+        artifacts: Artifacts for which to remove the directories.
+    """
+    for artifact in artifacts:
+        if fileio.isdir(artifact.uri):
+            fileio.rmtree(artifact.uri)
 
 
 class Launcher:
@@ -149,50 +164,20 @@ class Launcher:
         logger.info(f"Step `{self._step_name}` has started.")
 
         run = Client().zen_store.get_run(self._run_name)
-        current_run_steps = {
-            run_step.entrypoint_name: run_step
-            for run_step in Client().zen_store.list_run_steps(run_id=run.id)
-        }
 
-        # 1. Get input artifacts of current run
-        current_run_input_artifacts: Dict[str, ArtifactModel] = {}
-        for name, inp_ in self._step.spec.inputs.items():
-            try:
-                s = current_run_steps[inp_.step_name]
-            except KeyError:
-                raise RuntimeError(
-                    f"No step `{inp_.step_name}` found in current run."
-                )
-
-            try:
-                artifact_id = s.output_artifacts[inp_.output_name]
-            except KeyError:
-                raise RuntimeError(
-                    f"No output `{inp_.output_name}` found for step "
-                    f"`{inp_.step_name}`."
-                )
-
-            artifact = Client().zen_store.get_artifact(artifact_id)
-            current_run_input_artifacts[name] = artifact
+        # 1. Get input artifacts IDs of current run
+        input_artifact_ids, parent_step_ids = self._resolve_inputs(
+            run_id=run.id
+        )
 
         # 2. Generate cache key for current step
         cache_key = generate_cache_key(
             step=self._step,
             artifact_store=self._stack.artifact_store,
-            input_artifacts=current_run_input_artifacts,
+            input_artifact_ids=input_artifact_ids,
         )
 
         # 3. Register step run
-        parent_step_ids = []
-
-        for upstream_step in self._step.spec.upstream_steps:
-            run_step = current_run_steps[upstream_step]
-            parent_step_ids.append(run_step.id)
-
-        input_artifact_ids = {
-            key: artifact.id
-            for key, artifact in current_run_input_artifacts.items()
-        }
         parameters = {
             key: str(value)
             for key, value in self._step.config.parameters.items()
@@ -249,38 +234,12 @@ class Launcher:
             #   - Register the new output artifacts
             Client().zen_store.create_run_step(current_step_run)
 
-            input_artifacts: Dict[str, BaseArtifact] = {}
-            for name, artifact_model in current_run_input_artifacts.items():
-                # TODO: make sure this is the correct artifact class
-                artifact_ = BaseArtifact(
-                    uri=artifact_model.uri,
-                    materializer=artifact_model.materializer,
-                    data_type=artifact_model.data_type,
-                    name=name,
-                )
-                input_artifacts[name] = artifact_
-
-            output_artifacts: Dict[str, BaseArtifact] = {}
-            for name, artifact_config in self._step.config.outputs.items():
-                artifact_class: Type[
-                    BaseArtifact
-                ] = source_utils.load_and_validate_class(
-                    artifact_config.artifact_source, expected_class=BaseArtifact
-                )
-                artifact_ = artifact_class(
-                    uri=generate_artifact_uri(
-                        artifact_store=self._stack.artifact_store,
-                        step_run=current_step_run,
-                        output_name=name,
-                    ),
-                    name=name,
-                )
-                output_artifacts[name] = artifact_
-
-                if fileio.exists(artifact_.uri):
-                    raise RuntimeError("Artifact already exists")
-
-                fileio.makedirs(artifact_.uri)
+            input_artifacts = self._prepare_input_artifacts(
+                input_artifact_ids=input_artifact_ids
+            )
+            output_artifacts = self._prepare_output_artifacts(
+                step_run=current_step_run
+            )
 
             executor = StepExecutor(step=self._step)
             start_time = time.time()
@@ -292,19 +251,17 @@ class Launcher:
                     pipeline_config=self._pipeline_config,
                 )
             except:
+                logger.error(f"Failed to execute step `{self._step_name}`.")
                 current_step_run.status = ExecutionStatus.FAILED
                 Client().zen_store.update_run_step(current_step_run)
                 run.status = ExecutionStatus.FAILED
                 Client().zen_store.update_run(run)
-                logger.error(f"Failed to execute step `{self._step_name}`.")
 
-                for artifact_ in output_artifacts.values():
-                    try:
-                        if fileio.isdir(artifact_.uri):
-                            fileio.rmtree(artifact_.uri)
-                    except:
-                        pass
+                remove_artifact_dirs(artifacts=list(output_artifacts.values()))
+
+                logger.debug("Finished failed step execution cleanup.")
                 raise
+
             duration = time.time() - start_time
             logger.info(
                 f"Step `{self._step_name}` has finished in "
@@ -337,3 +294,115 @@ class Launcher:
         if status != run.status:
             run.status = status
             Client().zen_store.update_run(run)
+
+    def _resolve_inputs(
+        self, run_id: UUID
+    ) -> Tuple[Dict[str, UUID], List[UUID]]:
+        """Resolves inputs for the current step.
+
+        Args:
+            run_id: The ID of the current pipeline run.
+
+        Raises:
+            RuntimeError: If input resolving failed due to a missing step or
+                output.
+
+        Returns:
+            The IDs of the input artifacts and the IDs of parent steps of the
+            current step.
+        """
+        current_run_steps = {
+            run_step.entrypoint_name: run_step
+            for run_step in Client().zen_store.list_run_steps(run_id=run_id)
+        }
+
+        input_artifact_ids: Dict[str, UUID] = {}
+        for name, input_ in self._step.spec.inputs.items():
+            try:
+                step_run = current_run_steps[input_.step_name]
+            except KeyError:
+                raise RuntimeError(
+                    f"No step `{input_.step_name}` found in current run."
+                )
+
+            try:
+                artifact_id = step_run.output_artifacts[input_.output_name]
+            except KeyError:
+                raise RuntimeError(
+                    f"No output `{input_.output_name}` found for step "
+                    f"`{input_.step_name}`."
+                )
+
+            input_artifact_ids[name] = artifact_id
+
+        parent_step_ids = [
+            current_run_steps[upstream_step].id
+            for upstream_step in self._step.spec.upstream_steps
+        ]
+
+        return input_artifact_ids, parent_step_ids
+
+    def _prepare_input_artifacts(
+        self, input_artifact_ids: Dict[str, UUID]
+    ) -> Dict[str, BaseArtifact]:
+        """Prepares the input artifacts to run the current step.
+
+        Args:
+            input_artifact_ids: IDs of all input artifacts for the step.
+
+        Returns:
+            The input artifacts.
+        """
+        input_artifacts: Dict[str, BaseArtifact] = {}
+        for name, artifact_id in input_artifact_ids.items():
+            # TODO: make sure this is the correct artifact class
+            artifact_model = Client().zen_store.get_artifact(
+                artifact_id=artifact_id
+            )
+            artifact_ = BaseArtifact(
+                uri=artifact_model.uri,
+                materializer=artifact_model.materializer,
+                data_type=artifact_model.data_type,
+                name=name,
+            )
+            input_artifacts[name] = artifact_
+
+        return input_artifacts
+
+    def _prepare_output_artifacts(
+        self, step_run: StepRunModel
+    ) -> Dict[str, BaseArtifact]:
+        """Prepares the output artifacts to run the current step.
+
+        Args:
+            step_run: The step run for which to prepare the artifacts.
+
+        Raises:
+            RuntimeError: If the artifact URI already exists.
+
+        Returns:
+            The output artifacts.
+        """
+        output_artifacts: Dict[str, BaseArtifact] = {}
+        for name, artifact_config in self._step.config.outputs.items():
+            artifact_class: Type[
+                BaseArtifact
+            ] = source_utils.load_and_validate_class(
+                artifact_config.artifact_source, expected_class=BaseArtifact
+            )
+            artifact_uri = generate_artifact_uri(
+                artifact_store=self._stack.artifact_store,
+                step_run=step_run,
+                output_name=name,
+            )
+            if fileio.exists(artifact_uri):
+                raise RuntimeError("Artifact already exists")
+            fileio.makedirs(artifact_uri)
+
+            artifact_ = artifact_class(
+                name=name,
+                uri=artifact_uri,
+            )
+            output_artifacts[name] = artifact_
+
+        return output_artifacts

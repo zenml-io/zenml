@@ -156,20 +156,20 @@ class BaseOrchestrator(StackComponent, ABC):
             Orchestrator-specific return value.
         """
         self._prepare_run(deployment=deployment)
-
-        result = self.prepare_or_run_pipeline(
-            deployment=deployment, stack=stack
-        )
-
-        self._cleanup_run()
+        try:
+            result = self.prepare_or_run_pipeline(
+                deployment=deployment, stack=stack
+            )
+        finally:
+            self._cleanup_run()
 
         return result
 
     def run_step(self, step: "Step") -> None:
-        """This sets up a component launcher and executes the given step.
+        """Runs the given step.
 
         Args:
-            step: The step to be executed
+            step: The step to run.
         """
         assert self._active_deployment
 
@@ -244,7 +244,6 @@ class BaseOrchestrator(StackComponent, ABC):
     def _cleanup_run(self) -> None:
         """Cleans up the active run."""
         self._active_deployment = None
-        self._active_pb2_pipeline = None
 
     def get_run_id_for_orchestrator_run_id(
         self, orchestrator_run_id: str
