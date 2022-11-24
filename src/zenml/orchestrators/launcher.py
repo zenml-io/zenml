@@ -25,6 +25,7 @@ from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import InputResolutionError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models.pipeline_models import (
@@ -68,6 +69,7 @@ def generate_cache_key(
     hash_ = hashlib.md5()
 
     hash_.update(step.spec.source.encode())
+    # TODO: should this include the pipeline name? It does in tfx
     # TODO: maybe this should be the ID instead? Or completely removed?
     hash_.update(artifact_store.path.encode())
 
@@ -416,6 +418,9 @@ class Launcher:
             )
 
             output_artifact_ids = {}
+            # TODO: using step operators, the output artifacts here are not
+            # populated. We need to write them to the artifact store and read again
+            # here
             for name, artifact_ in output_artifacts.items():
                 artifact_model = ArtifactModel(
                     name=name,
@@ -451,8 +456,8 @@ class Launcher:
             run_id: The ID of the current pipeline run.
 
         Raises:
-            RuntimeError: If input resolving failed due to a missing step or
-                output.
+            InputResolutionError: If input resolving failed due to a missing
+                step or output.
 
         Returns:
             The IDs of the input artifacts and the IDs of parent steps of the
@@ -468,14 +473,14 @@ class Launcher:
             try:
                 step_run = current_run_steps[input_.step_name]
             except KeyError:
-                raise RuntimeError(
+                raise InputResolutionError(
                     f"No step `{input_.step_name}` found in current run."
                 )
 
             try:
                 artifact_id = step_run.output_artifacts[input_.output_name]
             except KeyError:
-                raise RuntimeError(
+                raise InputResolutionError(
                     f"No output `{input_.output_name}` found for step "
                     f"`{input_.step_name}`."
                 )
