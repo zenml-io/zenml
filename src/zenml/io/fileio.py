@@ -38,17 +38,42 @@ logger = get_logger(__name__)
 
 
 def _get_filesystem(path: "PathType") -> Type["Filesystem"]:
-    """Returns a filesystem class for a given path from the registry"""
+    """Returns a filesystem class for a given path from the registry.
+
+    Args:
+        path: Path to the file.
+
+    Returns:
+        The filesystem class.
+    """
     return default_filesystem_registry.get_filesystem_for_path(path)
 
 
 def open(path: "PathType", mode: str = "r") -> Any:  # noqa
-    """Open a file at the given path."""
+    """Open a file at the given path.
+
+    Args:
+        path: Path to the file.
+        mode: Mode to open the file in.
+
+    Returns:
+        The file object.
+    """
     return _get_filesystem(path).open(path, mode=mode)
 
 
 def copy(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
-    """Copy a file from the source to the destination."""
+    """Copy a file from the source to the destination.
+
+    Args:
+        src: The path of the file to copy.
+        dst: The path to copy the source file to.
+        overwrite: Whether to overwrite the destination file if it exists.
+
+    Raises:
+        FileExistsError: If a file already exists at the destination and
+            `overwrite` is not set to `True`.
+    """
     src_fs = _get_filesystem(src)
     dst_fs = _get_filesystem(dst)
     if src_fs is dst_fs:
@@ -64,24 +89,52 @@ def copy(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
 
 
 def exists(path: "PathType") -> bool:
-    """Returns `True` if the given path exists."""
+    """Check whether a given path exists.
+
+    Args:
+        path: The path to check.
+
+    Returns:
+        `True` if the given path exists.
+    """
     return _get_filesystem(path).exists(path)
 
 
 def remove(path: "PathType") -> None:
-    """Remove the file at the given path. Dangerous operation."""
+    """Remove the file at the given path. Dangerous operation.
+
+    Args:
+        path: Path to the file to remove.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+    """
     if not exists(path):
         raise FileNotFoundError(f"{convert_to_str(path)} does not exist!")
     _get_filesystem(path).remove(path)
 
 
 def glob(pattern: "PathType") -> List["PathType"]:
-    """Return the paths that match a glob pattern."""
+    """Find all files matching the given pattern.
+
+    Args:
+        pattern: The pattern to match.
+
+    Returns:
+        A list of paths matching the pattern.
+    """
     return _get_filesystem(pattern).glob(pattern)
 
 
 def isdir(path: "PathType") -> bool:
-    """Returns whether the given path points to a directory."""
+    """Check whether the given path is a directory.
+
+    Args:
+        path: The path to check.
+
+    Returns:
+        `True` if the given path is a directory.
+    """
     return _get_filesystem(path).isdir(path)
 
 
@@ -120,12 +173,20 @@ def listdir(dir_path: str, only_file_names: bool = False) -> List[str]:
 
 
 def makedirs(path: "PathType") -> None:
-    """Make a directory at the given path, recursively creating parents."""
+    """Make a directory at the given path, recursively creating parents.
+
+    Args:
+        path: Path to the directory.
+    """
     _get_filesystem(path).makedirs(path)
 
 
 def mkdir(path: "PathType") -> None:
-    """Make a directory at the given path; parent directory must exist."""
+    """Make a directory at the given path; parent directory must exist.
+
+    Args:
+        path: Path to the directory.
+    """
     _get_filesystem(path).mkdir(path)
 
 
@@ -170,7 +231,14 @@ def rmtree(dir_path: str) -> None:
 
 
 def stat(path: "PathType") -> Any:
-    """Return the stat descriptor for a given file path."""
+    """Return the stat descriptor for a given file path.
+
+    Args:
+        path: Path to the file.
+
+    Returns:
+        The stat descriptor.
+    """
     return _get_filesystem(path).stat(path)
 
 
@@ -234,25 +302,12 @@ def create_file_if_not_exists(
     Args:
         file_path: Local path in filesystem.
         file_contents: Contents of file.
-
     """
     full_path = Path(file_path)
     if not exists(file_path):
         create_dir_recursive_if_not_exists(str(full_path.parent))
         with open(str(full_path), "w") as f:
             f.write(file_contents)
-
-
-def append_file(file_path: str, file_contents: str) -> None:
-    """Appends file_contents to file.
-
-    Args:
-        file_path: Local path in filesystem.
-        file_contents: Contents of file.
-    """
-    # with file_io.FileIO(file_path, mode='a') as f:
-    #     f.write(file_contents)
-    raise NotImplementedError
 
 
 def create_dir_if_not_exists(dir_path: str) -> None:
@@ -347,7 +402,14 @@ def get_parent(dir_path: str) -> str:
 
 
 def convert_to_str(path: "PathType") -> str:
-    """Converts a "PathType" to a str using UTF-8."""
+    """Converts a "PathType" to a str using UTF-8.
+
+    Args:
+        path: Path to convert.
+
+    Returns:
+        Path as a string.
+    """
     if isinstance(path, str):
         return path
     else:

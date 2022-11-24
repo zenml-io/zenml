@@ -39,6 +39,7 @@ class FileIORegistry:
     """Registry of pluggable filesystem implementations."""
 
     def __init__(self) -> None:
+        """Initialize the registry."""
         self._filesystems: Dict["PathType", Type["Filesystem"]] = {}
         self._registration_lock = Lock()
 

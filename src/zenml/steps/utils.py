@@ -114,6 +114,11 @@ class StepExecutor:
     """Class to execute ZenML steps."""
 
     def __init__(self, step: "Step"):
+        """Initializes the step executor.
+
+        Args:
+            step: The step to execute.
+        """
         self._step = step
 
     @property

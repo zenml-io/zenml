@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module defines a generic Launcher for all TFleX nodes."""
+"""This module defines a generic Launcher for all ZenML steps."""
 
 import hashlib
 import os
@@ -42,6 +42,22 @@ def generate_cache_key(
     artifact_store: "BaseArtifactStore",
     input_artifacts: Dict[str, ArtifactModel],
 ) -> str:
+    """Generates a cache key for a step run.
+
+    The cache key is a MD5 hash of the step name, the step parameters, and the
+    input artifacts.
+
+    If the cache key is the same for two step runs, we conclude that the step
+    runs are identical and can be cached.
+
+    Args:
+        step: The step to generate the cache key for.
+        artifact_store: The artifact store to use.
+        input_artifacts: The input artifacts to use.
+
+    Returns:
+        A cache key.
+    """
     hash_ = hashlib.md5()
 
     hash_.update(step.spec.source.encode())
@@ -66,6 +82,16 @@ def generate_artifact_uri(
     step_run: "StepRunModel",
     output_name: str,
 ) -> str:
+    """Generates a URI for an output artifact.
+
+    Args:
+        artifact_store: The artifact store on which the artifact will be stored.
+        step_run: The step run that created the artifact.
+        output_name: The name of the output in the step run for this artifact.
+
+    Returns:
+        The URI of the output artifact.
+    """
     return os.path.join(
         artifact_store.path,
         step_run.entrypoint_name,
@@ -75,6 +101,19 @@ def generate_artifact_uri(
 
 
 class Launcher:
+    """This class is responsible for launching a step of a ZenML pipeline.
+
+    It does the following:
+    1. Query ZenML to resolve the input artifacts of the step,
+    2. Generate a cache key based on the step name, parameters, and
+        input artifacts and check if the step can be cached,
+    3. Register the step run with ZenML,
+    4. If not cached, call the `StepExecutor` to execute the step,
+    5. If execution was successful, register the output artifacts with ZenML,
+    6. Update the step run status,
+    7. Update the pipeline run status.
+    """
+
     def __init__(
         self,
         step: Step,
@@ -83,6 +122,15 @@ class Launcher:
         pipeline_config: "PipelineConfiguration",
         stack: "Stack",
     ):
+        """Initializes the launcher.
+
+        Args:
+            step: The step to launch.
+            step_name: The name of the step.
+            run_name: The name of the pipeline run.
+            pipeline_config: The pipeline configuration.
+            stack: The stack on which the pipeline is running.
+        """
         self._step = step
         self._step_name = step_name
         self._run_name = run_name
@@ -90,6 +138,7 @@ class Launcher:
         self._stack = stack
 
     def launch(self) -> None:
+        """Launches the step."""
         # TODO: Create run here instead
 
         logger.info(f"Step `{self._step_name}` has started.")
@@ -114,7 +163,8 @@ class Launcher:
                 artifact_id = s.output_artifacts[inp_.output_name]
             except KeyError:
                 raise RuntimeError(
-                    f"No output `{inp_.output_name}` found for step `{inp_.step_name}`."
+                    f"No output `{inp_.output_name}` found for step "
+                    f"`{inp_.step_name}`."
                 )
 
             artifact = Client().zen_store.get_artifact(artifact_id)
