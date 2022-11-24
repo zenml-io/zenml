@@ -21,14 +21,18 @@ def test_step_spec_equality():
     assert StepSpec(
         source="zenml.integrations.airflow.AirflowIntegration",
         upstream_steps=[],
+        inputs={},
     ) == StepSpec(
         source="zenml.integrations.airflow.AirflowIntegration@zenml_1.0.0",
         upstream_steps=[],
+        inputs={},
     )
     assert StepSpec(
         source="zenml.integrations.airflow.AirflowIntegration",
         upstream_steps=[],
+        inputs={},
     ) != StepSpec(
         source="zenml.integrations.airflow.NotAirflowIntegration",
         upstream_steps=[],
+        inputs={},
     )
