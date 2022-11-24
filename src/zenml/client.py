@@ -622,11 +622,6 @@ class Client(metaclass=ClientMetaClass):
             IllegalOperationError: If the user to delete is the active user.
         """
         user = self.get_user(user_name_or_id)
-        if self.zen_store.active_user_name == user.name:
-            raise IllegalOperationError(
-                "You cannot delete yourself. If you wish to delete your active "
-                "user account, please contact your ZenML administrator."
-            )
         self.zen_store.delete_user(user_name_or_id=user.name)
 
     def update_user(
@@ -2482,15 +2477,15 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If no stack with the given name exists.
         """
         # First interpret as full UUID
-
-        try:
-            if isinstance(name_id_or_prefix, UUID):
-                return self.zen_store.get_stack_component(name_id_or_prefix)
-            else:
+        if isinstance(name_id_or_prefix, UUID):
+            return self.zen_store.get_stack_component(name_id_or_prefix)
+        else:
+            try:
                 entity_id = UUID(name_id_or_prefix)
+            except ValueError:
+                pass
+            else:
                 return self.zen_store.get_stack_component(entity_id)
-        except ValueError:
-            pass
 
         name_id_or_prefix = str(name_id_or_prefix)
 
@@ -2558,14 +2553,15 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If no entity with the given name exists.
         """
         # First interpret as full UUID
-        try:
-            if isinstance(name_id_or_prefix, UUID):
-                return get_method(name_id_or_prefix)
-            else:
+        if isinstance(name_id_or_prefix, UUID):
+            return get_method(name_id_or_prefix)
+        else:
+            try:
                 entity_id = UUID(name_id_or_prefix)
+            except ValueError:
+                pass
+            else:
                 return get_method(entity_id)
-        except ValueError:
-            pass
 
         if "project" in response_model.__fields__:
             entities: List[AnyResponseModel] = list_method(
@@ -2595,7 +2591,7 @@ class Client(metaclass=ClientMetaClass):
             filtered_entities = [
                 entity
                 for entity in entities
-                if str(entity.id).startswith(name_id_or_prefix)  # type: ignore[arg-type]
+                if str(entity.id).startswith(name_id_or_prefix)
             ]
             if len(filtered_entities) > 1:
                 raise KeyError(
