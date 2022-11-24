@@ -133,8 +133,7 @@ def update_run(
     """
     if run_model.user and run_model.user != auth_context.user.id:
         raise IllegalOperationError(
-            "Changing the user of a run to another user "
-            f"is not supported."
+            "Changing the user of a run to another user " f"is not supported."
         )
 
     return zen_store().update_run(run_id=run_id, run_update=run_model)
