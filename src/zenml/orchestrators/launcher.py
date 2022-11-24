@@ -197,6 +197,10 @@ class Launcher:
             key: artifact.id
             for key, artifact in current_run_input_artifacts.items()
         }
+        parameters = {
+            key: str(value)
+            for key, value in self._step.config.parameters.items()
+        }
         current_step_run = StepRunModel(
             name=self._step_name,
             pipeline_run_id=run.id,
@@ -204,7 +208,7 @@ class Launcher:
             input_artifacts=input_artifact_ids,
             status=ExecutionStatus.RUNNING,
             entrypoint_name=self._step.config.name,
-            parameters=self._step.config.parameters,
+            parameters=parameters,
             step_configuration=self._step.dict(),
             mlmd_parent_step_ids=[],
             cache_key=cache_key,
