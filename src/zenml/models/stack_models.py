@@ -23,7 +23,7 @@ from zenml.enums import StackComponentType
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
-    update,
+    update_model,
 )
 from zenml.models.component_models import ComponentResponseModel
 from zenml.models.constants import (
@@ -168,6 +168,6 @@ class StackRequestModel(StackBaseModel, ShareableRequestModel):
 # ------ #
 
 
-@update
+@update_model
 class StackUpdateModel(StackRequestModel):
     """beautiful."""

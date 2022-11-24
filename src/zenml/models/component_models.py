@@ -22,7 +22,7 @@ from zenml.logger import get_logger
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
-    update,
+    update_model,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.utils import secret_utils
@@ -104,6 +104,6 @@ class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
 # ------ #
 
 
-@update
+@update_model
 class ComponentUpdateModel(ComponentRequestModel):
     """Update model for stack components."""

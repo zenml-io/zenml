@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update_model
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
@@ -96,6 +96,6 @@ class TeamRequestModel(TeamBaseModel, BaseRequestModel):
 # ------ #
 
 
-@update
+@update_model
 class TeamUpdateModel(TeamRequestModel):
     """Update model for teams."""

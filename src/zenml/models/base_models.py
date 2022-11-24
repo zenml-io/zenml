@@ -171,7 +171,7 @@ class ShareableRequestModel(ProjectScopedRequestModel):
 T = TypeVar("T", bound="BaseRequestModel")
 
 
-def update(_cls: Type[T]) -> Type[T]:
+def update_model(_cls: Type[T]) -> Type[T]:
     """TODO: @bcdurak describe what this does."""
     for _, value in _cls.__fields__.items():
         value.required = False
