@@ -17,20 +17,15 @@ import os
 from typing import TYPE_CHECKING, Any, Type
 
 import numpy as np
-import pyarrow as pa
-import pyarrow.parquet as pq
 
 from zenml.artifacts import DataArtifact
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-DATA_FILENAME = "data.parquet"
-SHAPE_FILENAME = "shape.json"
-DATA_VAR = "data_var"
+NUMPY_FILENAME = "data.npy"
 
 
 class NumpyMaterializer(BaseMaterializer):
@@ -39,8 +34,8 @@ class NumpyMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (np.ndarray,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> "NDArray[Any]":
-        """Reads numpy array from parquet file.
+    def handle_input(self, data_type: Type[Any]) -> "Any":
+        """Reads numpy array from npy file.
 
         Args:
             data_type: The type of the data to read.
@@ -49,32 +44,19 @@ class NumpyMaterializer(BaseMaterializer):
             The numpy array.
         """
         super().handle_input(data_type)
-        shape_dict = yaml_utils.read_json(
-            os.path.join(self.artifact.uri, SHAPE_FILENAME)
-        )
-        shape_tuple = tuple(shape_dict.values())
         with fileio.open(
-            os.path.join(self.artifact.uri, DATA_FILENAME), "rb"
+            os.path.join(self.artifact.uri, NUMPY_FILENAME), "rb"
         ) as f:
-            input_stream = pa.input_stream(f)
-            data = pq.read_table(input_stream)
-        vals = getattr(data.to_pandas(), DATA_VAR).values
-        return np.reshape(vals, shape_tuple)
+            return np.load(f, allow_pickle=True)  # type: ignore
 
     def handle_return(self, arr: "NDArray[Any]") -> None:
-        """Writes a np.ndarray to the artifact store as a parquet file.
+        """Writes a np.ndarray to the artifact store as a npy file.
 
         Args:
             arr: The numpy array to write.
         """
         super().handle_return(arr)
-        yaml_utils.write_json(
-            os.path.join(self.artifact.uri, SHAPE_FILENAME),
-            {str(i): x for i, x in enumerate(arr.shape)},
-        )
-        pa_table = pa.table({DATA_VAR: arr.flatten()})
         with fileio.open(
-            os.path.join(self.artifact.uri, DATA_FILENAME), "wb"
+            os.path.join(self.artifact.uri, NUMPY_FILENAME), "wb"
         ) as f:
-            stream = pa.output_stream(f)
-            pq.write_table(pa_table, stream)
+            np.save(f, arr)  # type: ignore
