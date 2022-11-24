@@ -98,7 +98,7 @@ class ClientConfiguration(FileSyncModel):
     active_stack_id: Optional[UUID]
 
     @property
-    def active_workspace(self) -> ProjectResponseModel:
+    def active_workspace(self) -> WorkspaceResponseModel:
         """Get the active project for the local client.
 
         Returns:
@@ -1474,7 +1474,7 @@ class Client(metaclass=ClientMetaClass):
             A list of stacks.
         """
         return self.zen_store.list_stacks(
-            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,,
+            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
             user_name_or_id=user_name_or_id,
             component_id=component_id,
             name=name,
