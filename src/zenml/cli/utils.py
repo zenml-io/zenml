@@ -415,11 +415,15 @@ def print_active_config() -> None:
         declare(f"Using the SQL database: '{gc.store.url}'.")
     elif gc.store.type == StoreType.REST:
         declare(f"Connected to the ZenML server: '{gc.store.url}'")
-    if gc.get_active_project_name():
-        scope = "repository" if client.uses_local_configuration else "global"
+    if client.uses_local_configuration:
+        declare(
+            f"Running with active project: '{client.active_project.name}' "
+            "(repository)"
+        )
+    else:
         declare(
             f"Running with active project: '{gc.get_active_project_name()}' "
-            f"({scope})"
+            "(global)"
         )
 
 
