@@ -59,10 +59,7 @@ from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
     KubeflowOrchestratorConfig,
     KubeflowOrchestratorSettings,
 )
-from zenml.integrations.kubeflow.orchestrators import (
-    local_deployment_utils,
-    utils,
-)
+from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
     KFP_VERSION,
 )
