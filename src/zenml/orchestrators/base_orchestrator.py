@@ -14,13 +14,12 @@
 """Base orchestrator class."""
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 from uuid import UUID
 
 from pydantic import root_validator
 
 from zenml.client import Client
-from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
 from zenml.models import PipelineRunModel
@@ -173,16 +172,7 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         assert self._active_deployment
 
-        run_model = self._create_or_reuse_run()
-
-        step_run_info = StepRunInfo(
-            config=step.config,
-            pipeline=self._active_deployment.pipeline,
-            run_name=run_model.name,
-        )
-
-        stack = Client().active_stack
-
+        run = self._create_or_reuse_run()
         step_name = [
             name
             for name, s in self._active_deployment.steps.items()
@@ -191,26 +181,12 @@ class BaseOrchestrator(StackComponent, ABC):
         launcher = Launcher(
             step=step,
             step_name=step_name,
-            run_name=run_model.name,
+            run_name=run.name,
             pipeline_config=self._active_deployment.pipeline,
-            stack=stack,
+            stack=Client().active_stack,
         )
 
-        # If a step operator is used, the current environment will not be the
-        # one executing the step function code and therefore we don't need to
-        # run any preparation
-        if step.config.step_operator:
-            ...  # TODO
-        else:
-            stack.prepare_step_run(info=step_run_info)
-            try:
-                launcher.launch()
-            except:  # noqa: E722
-
-                self._publish_failed_run(run_name_or_id=run_model.name)
-                raise
-            finally:
-                stack.cleanup_step_run(info=step_run_info)
+        launcher.launch()
 
     @staticmethod
     def requires_resources_in_orchestration_environment(
@@ -294,14 +270,13 @@ class BaseOrchestrator(StackComponent, ABC):
         return client.zen_store.get_or_create_run(run_model)
 
     @staticmethod
-    def _publish_failed_run(run_name_or_id: Union[str, UUID]) -> None:
+    def _publish_failed_run(run: PipelineRunModel) -> None:
         """Set run status to failed.
 
         Args:
             run_name_or_id: The name or ID of the run that failed.
         """
         client = Client()
-        run = client.zen_store.get_run(run_name_or_id)
         run.status = ExecutionStatus.FAILED
         client.zen_store.update_run(run)
 

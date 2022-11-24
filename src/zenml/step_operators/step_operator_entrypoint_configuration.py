@@ -14,18 +14,27 @@
 """Abstract base class for entrypoint configurations that run a single step."""
 
 from typing import TYPE_CHECKING, Any, List, Set
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.entrypoints.step_entrypoint_configuration import (
+    STEP_NAME_OPTION,
     StepEntrypointConfiguration,
 )
+from zenml.orchestrators.launcher import (
+    Launcher,
+    prepare_input_artifacts,
+    prepare_output_artifacts,
+)
+from zenml.steps.utils import StepExecutor
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
 
-EXECUTION_INFO_PATH_OPTION = "execution_info_path"
+PIPELINE_RUN_ID_OPTION = "pipeline_run_id"
+STEP_RUN_ID_OPTION = "step_run_id"
 
 
 class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
@@ -39,7 +48,10 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             The superclass options as well as an option for the path to the
             execution info.
         """
-        return super().get_entrypoint_options() | {EXECUTION_INFO_PATH_OPTION}
+        return super().get_entrypoint_options() | {
+            PIPELINE_RUN_ID_OPTION,
+            STEP_RUN_ID_OPTION,
+        }
 
     @classmethod
     def get_entrypoint_arguments(
@@ -56,8 +68,10 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             execution info.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
-            f"--{EXECUTION_INFO_PATH_OPTION}",
-            kwargs[EXECUTION_INFO_PATH_OPTION],
+            f"--{PIPELINE_RUN_ID_OPTION}",
+            kwargs[PIPELINE_RUN_ID_OPTION],
+            f"--{STEP_RUN_ID_OPTION}",
+            kwargs[STEP_RUN_ID_OPTION],
         ]
 
     def _run_step(
@@ -75,18 +89,48 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         # info
         stack = Client().active_stack
 
-        execution_info_path = self.entrypoint_args[EXECUTION_INFO_PATH_OPTION]
-        execution_info = self._load_execution_info(execution_info_path)
+        step_name = self.entrypoint_args[STEP_NAME_OPTION]
+        pipeline_run_id = self.entrypoint_args[PIPELINE_RUN_ID_OPTION]
+        step_run_id = self.entrypoint_args[STEP_RUN_ID_OPTION]
+
+        pipeline_run = Client().zen_store.get_run(
+            run_name_or_id=UUID(pipeline_run_id)
+        )
+        step_run = Client().zen_store.get_run_step(
+            step_run_id=UUID(step_run_id)
+        )
 
         step_run_info = StepRunInfo(
             config=step.config,
             pipeline=deployment.pipeline,
-            run_name=execution_info.pipeline_run_id,
+            run_name=pipeline_run.name,
         )
+
+        launcher = Launcher(
+            step=step,
+            step_name=step_name,
+            run_name=pipeline_run.name,
+            pipeline_config=deployment.pipeline,
+            stack=stack,
+        )
+        input_artifact_ids, _ = launcher._resolve_inputs(run_id=pipeline_run.id)
+
+        input_artifacts = prepare_input_artifacts(
+            input_artifact_ids=input_artifact_ids
+        )
+        output_artifacts = prepare_output_artifacts(
+            step_run=step_run, stack=stack, step=step
+        )
+
+        executor = StepExecutor(step=step)
 
         stack.prepare_step_run(info=step_run_info)
         try:
-            # TODO: run
-            ...
+            executor.execute(
+                input_artifacts=input_artifacts,
+                output_artifacts=output_artifacts,
+                run_name=pipeline_run.name,
+                pipeline_config=deployment.pipeline,
+            )
         finally:
             stack.cleanup_step_run(info=step_run_info)

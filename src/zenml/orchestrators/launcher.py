@@ -23,10 +23,15 @@ from uuid import UUID
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import Step
+from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+from zenml.models.pipeline_models import (
+    ArtifactModel,
+    PipelineRunModel,
+    StepRunModel,
+)
 from zenml.steps.utils import StepExecutor
 from zenml.utils import source_utils, string_utils
 
@@ -34,6 +39,7 @@ if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.pipeline_configurations import PipelineConfiguration
     from zenml.stack import Stack
+    from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
 
@@ -117,6 +123,108 @@ def remove_artifact_dirs(artifacts: Sequence[BaseArtifact]) -> None:
     for artifact in artifacts:
         if fileio.isdir(artifact.uri):
             fileio.rmtree(artifact.uri)
+
+
+def get_step_operator(
+    stack: "Stack", step_operator_name: str
+) -> "BaseStepOperator":
+    """Fetches the step operator from the stack.
+
+    Args:
+        stack: Stack on which the step is being executed.
+        step_operator_name: Name of the step operator to get.
+
+    Returns:
+        The step operator to run a step.
+
+    Raises:
+        RuntimeError: If no active step operator is found.
+    """
+    step_operator = stack.step_operator
+
+    # the two following errors should never happen as the stack gets
+    # validated before running the pipeline
+    if not step_operator:
+        raise RuntimeError(
+            f"No step operator specified for active stack '{stack.name}'."
+        )
+
+    if step_operator_name != step_operator.name:
+        raise RuntimeError(
+            f"No step operator named '{step_operator_name}' in active "
+            f"stack '{stack.name}'."
+        )
+
+    return step_operator
+
+
+def prepare_input_artifacts(
+    input_artifact_ids: Dict[str, UUID]
+) -> Dict[str, BaseArtifact]:
+    """Prepares the input artifacts to run the current step.
+
+    Args:
+        input_artifact_ids: IDs of all input artifacts for the step.
+
+    Returns:
+        The input artifacts.
+    """
+    input_artifacts: Dict[str, BaseArtifact] = {}
+    for name, artifact_id in input_artifact_ids.items():
+        # TODO: make sure this is the correct artifact class
+        artifact_model = Client().zen_store.get_artifact(
+            artifact_id=artifact_id
+        )
+        artifact_ = BaseArtifact(
+            uri=artifact_model.uri,
+            materializer=artifact_model.materializer,
+            data_type=artifact_model.data_type,
+            name=name,
+        )
+        input_artifacts[name] = artifact_
+
+    return input_artifacts
+
+
+def prepare_output_artifacts(
+    step_run: "StepRunModel", stack: "Stack", step: "Step"
+) -> Dict[str, BaseArtifact]:
+    """Prepares the output artifacts to run the current step.
+
+    Args:
+        step_run: The step run for which to prepare the artifacts.
+        stack: The stack on which the pipeline is running.
+        step: The step configuration.
+
+    Raises:
+        RuntimeError: If the artifact URI already exists.
+
+    Returns:
+        The output artifacts.
+    """
+    output_artifacts: Dict[str, BaseArtifact] = {}
+    for name, artifact_config in step.config.outputs.items():
+        artifact_class: Type[
+            BaseArtifact
+        ] = source_utils.load_and_validate_class(
+            artifact_config.artifact_source, expected_class=BaseArtifact
+        )
+        artifact_uri = generate_artifact_uri(
+            artifact_store=stack.artifact_store,
+            step_run=step_run,
+            output_name=name,
+        )
+        if fileio.exists(artifact_uri):
+            raise RuntimeError("Artifact already exists")
+        fileio.makedirs(artifact_uri)
+
+        artifact_ = artifact_class(
+            name=name,
+            uri=artifact_uri,
+        )
+        output_artifacts[name] = artifact_
+
+    return output_artifacts
 
 
 class Launcher:
@@ -238,33 +346,73 @@ class Launcher:
             #   - Register the new output artifacts
             Client().zen_store.create_run_step(current_step_run)
 
-            input_artifacts = self._prepare_input_artifacts(
+            input_artifacts = prepare_input_artifacts(
                 input_artifact_ids=input_artifact_ids
             )
-            output_artifacts = self._prepare_output_artifacts(
-                step_run=current_step_run
+            output_artifacts = prepare_output_artifacts(
+                step_run=current_step_run, stack=self._stack, step=self._step
             )
 
-            executor = StepExecutor(step=self._step)
+            step_run_info = StepRunInfo(
+                config=self._step.config,
+                pipeline=self._pipeline_config,
+                run_name=run.name,
+            )
+
             start_time = time.time()
-            try:
-                executor.execute(
-                    input_artifacts=input_artifacts,
-                    output_artifacts=output_artifacts,
-                    run_name=self._run_name,
-                    pipeline_config=self._pipeline_config,
+
+            if self._step.config.step_operator:
+                from zenml.step_operators.step_operator_entrypoint_configuration import (
+                    StepOperatorEntrypointConfiguration,
                 )
-            except:
-                logger.error(f"Failed to execute step `{self._step_name}`.")
-                current_step_run.status = ExecutionStatus.FAILED
-                Client().zen_store.update_run_step(current_step_run)
-                run.status = ExecutionStatus.FAILED
-                Client().zen_store.update_run(run)
 
-                remove_artifact_dirs(artifacts=list(output_artifacts.values()))
+                step_operator = get_step_operator(
+                    stack=self._stack,
+                    step_operator_name=self._step.config.step_operator,
+                )
 
-                logger.debug("Finished failed step execution cleanup.")
-                raise
+                entrypoint_command = StepOperatorEntrypointConfiguration.get_entrypoint_command() + StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
+                    step_name=self._step_name,
+                    pipeline_run_id=str(run.id),
+                    step_run_id=str(current_step_run.id),
+                )
+
+                logger.info(
+                    "Using step operator `%s` to run step `%s`.",
+                    step_operator.name,
+                    self._step_name,
+                )
+                try:
+                    step_operator.launch(
+                        info=step_run_info,
+                        entrypoint_command=entrypoint_command,
+                    )
+                except:
+                    self._cleanup_failed_run(
+                        pipeline_run=run,
+                        step_run=current_step_run,
+                        artifacts=list(output_artifacts.values()),
+                    )
+                    raise
+            else:
+                executor = StepExecutor(step=self._step)
+                self._stack.prepare_step_run(info=step_run_info)
+                try:
+                    executor.execute(
+                        input_artifacts=input_artifacts,
+                        output_artifacts=output_artifacts,
+                        run_name=self._run_name,
+                        pipeline_config=self._pipeline_config,
+                    )
+                except:
+                    self._cleanup_failed_run(
+                        pipeline_run=run,
+                        step_run=current_step_run,
+                        artifacts=list(output_artifacts.values()),
+                    )
+                    raise
+                finally:
+                    self._stack.cleanup_step_run(info=step_run_info)
 
             duration = time.time() - start_time
             logger.info(
@@ -346,67 +494,18 @@ class Launcher:
 
         return input_artifact_ids, parent_step_ids
 
-    def _prepare_input_artifacts(
-        self, input_artifact_ids: Dict[str, UUID]
-    ) -> Dict[str, BaseArtifact]:
-        """Prepares the input artifacts to run the current step.
+    def _cleanup_failed_run(
+        self,
+        pipeline_run: PipelineRunModel,
+        step_run: StepRunModel,
+        artifacts: Sequence[BaseArtifact],
+    ) -> None:
+        logger.error(f"Failed to execute step `{self._step_name}`.")
+        step_run.status = ExecutionStatus.FAILED
+        Client().zen_store.update_run_step(step_run)
+        pipeline_run.status = ExecutionStatus.FAILED
+        Client().zen_store.update_run(pipeline_run)
 
-        Args:
-            input_artifact_ids: IDs of all input artifacts for the step.
+        remove_artifact_dirs(artifacts=artifacts)
 
-        Returns:
-            The input artifacts.
-        """
-        input_artifacts: Dict[str, BaseArtifact] = {}
-        for name, artifact_id in input_artifact_ids.items():
-            # TODO: make sure this is the correct artifact class
-            artifact_model = Client().zen_store.get_artifact(
-                artifact_id=artifact_id
-            )
-            artifact_ = BaseArtifact(
-                uri=artifact_model.uri,
-                materializer=artifact_model.materializer,
-                data_type=artifact_model.data_type,
-                name=name,
-            )
-            input_artifacts[name] = artifact_
-
-        return input_artifacts
-
-    def _prepare_output_artifacts(
-        self, step_run: StepRunModel
-    ) -> Dict[str, BaseArtifact]:
-        """Prepares the output artifacts to run the current step.
-
-        Args:
-            step_run: The step run for which to prepare the artifacts.
-
-        Raises:
-            RuntimeError: If the artifact URI already exists.
-
-        Returns:
-            The output artifacts.
-        """
-        output_artifacts: Dict[str, BaseArtifact] = {}
-        for name, artifact_config in self._step.config.outputs.items():
-            artifact_class: Type[
-                BaseArtifact
-            ] = source_utils.load_and_validate_class(
-                artifact_config.artifact_source, expected_class=BaseArtifact
-            )
-            artifact_uri = generate_artifact_uri(
-                artifact_store=self._stack.artifact_store,
-                step_run=step_run,
-                output_name=name,
-            )
-            if fileio.exists(artifact_uri):
-                raise RuntimeError("Artifact already exists")
-            fileio.makedirs(artifact_uri)
-
-            artifact_ = artifact_class(
-                name=name,
-                uri=artifact_uri,
-            )
-            output_artifacts[name] = artifact_
-
-        return output_artifacts
+        logger.debug("Finished failed step execution cleanup.")
