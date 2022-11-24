@@ -26,7 +26,7 @@ NEPTUNE_MODEL_EXPERIMENT_TRACKER_FLAVOR = "neptune"
 
 # Create a Subclass of the Integration Class
 class NeptuneIntegration(Integration):
-    """Definition of Neptune integration for ZenML."""
+    """Definition of the neptune.ai integration with ZenML."""
 
     NAME = NEPTUNE
     REQUIREMENTS = [
