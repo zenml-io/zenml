@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing teams."""
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, ClassVar, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -47,6 +47,8 @@ class TeamBaseModel(BaseModel):
 class TeamResponseModel(TeamBaseModel, BaseResponseModel):
     """Response model for teams."""
 
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
+
     users: List["UserResponseModel"] = Field(
         title="The list of users within this team."
     )
@@ -65,10 +67,10 @@ class TeamResponseModel(TeamBaseModel, BaseResponseModel):
 
     @property
     def user_names(self) -> List[str]:
-        """Returns a list of user names that are part of this team.
+        """Returns a list names of users that are part of this team.
 
         Returns:
-            A list of user names.
+            A list of names of users.
         """
         if self.users:
             return [u.name for u in self.users]

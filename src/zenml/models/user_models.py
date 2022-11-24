@@ -186,6 +186,14 @@ class UserBaseModel(BaseModel):
 class UserResponseModel(UserBaseModel, BaseResponseModel):
     """Response model for users. TODO @alexejpenner describe what this does."""
 
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "name",
+        "full_name",
+        "active",
+        "email_opted_in",
+    ]
+
     activation_token: Optional[str] = Field(default=None)
     teams: Optional[List["TeamResponseModel"]] = Field(
         title="The list of teams for this user."
@@ -389,6 +397,13 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
 
 class UserRequestModel(UserBaseModel, BaseRequestModel):
     """Request model for users. TODO @alexejpenner describe what this does."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "name",
+        "full_name",
+        "active",
+        "email_opted_in",
+    ]
 
     email: Optional[str] = Field(
         default=None,

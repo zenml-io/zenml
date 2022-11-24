@@ -54,6 +54,27 @@ class RoleAssignmentBaseModel(BaseModel):
         return values
 
 
+# -------- #
+# RESPONSE #
+# -------- #
+
+
+class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
+    """Response model for role assignments with all entities hydrated."""
+
+    project: Optional["ProjectResponseModel"] = Field(
+        title="The project scope of this role assignment.", default=None
+    )
+    team: Optional["TeamResponseModel"] = Field(
+        title="The team the role is assigned to.", default=None
+    )
+    user: Optional["UserResponseModel"] = Field(
+        title="The team the role is assigned to.", default=None
+    )
+    role: "RoleResponseModel" = Field(
+        title="The team the role is assigned to.", default=None
+    )
+
 # ------- #
 # REQUEST #
 # ------- #
@@ -75,23 +96,3 @@ class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
     role: UUID = Field(title="The role.")
 
 
-# -------- #
-# RESPONSE #
-# -------- #
-
-
-class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
-    """Response model for role assignments with all entities hydrated."""
-
-    project: Optional["ProjectResponseModel"] = Field(
-        title="The project scope of this role assignment.", default=None
-    )
-    team: Optional["TeamResponseModel"] = Field(
-        title="The team the role is assigned to.", default=None
-    )
-    user: Optional["UserResponseModel"] = Field(
-        title="The team the role is assigned to.", default=None
-    )
-    role: "RoleResponseModel" = Field(
-        title="The team the role is assigned to.", default=None
-    )

@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Models representing projects."""
 
+from typing import ClassVar, List
+
 from pydantic import BaseModel, Field
 
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update
@@ -47,6 +49,7 @@ class ProjectBaseModel(BaseModel):
 class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
     """Response model for projects."""
 
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
 
 # ------- #
 # REQUEST #

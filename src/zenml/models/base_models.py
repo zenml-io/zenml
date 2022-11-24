@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
 from uuid import UUID
 
 from pydantic import Field
@@ -78,6 +78,13 @@ class UserScopedResponseModel(BaseResponseModel):
         title="The user that created this resource.", nullable=True
     )
 
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Fetches the analytics metadata for user scoped models."""
+        metadata = super().get_analytics_metadata()
+        if self.user is not None:
+            metadata["user"] = self.user.id
+        return metadata
+
 
 class ProjectScopedResponseModel(UserScopedResponseModel):
     """Base project-scoped domain model.
@@ -88,6 +95,12 @@ class ProjectScopedResponseModel(UserScopedResponseModel):
     project: "ProjectResponseModel" = Field(
         title="The project of this resource."
     )
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Fetches the analytics metadata for project scoped models."""
+        metadata = super().get_analytics_metadata()
+        metadata["project"] = self.project.id
+        return metadata
 
 
 class ShareableResponseModel(ProjectScopedResponseModel):

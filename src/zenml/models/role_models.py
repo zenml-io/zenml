@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing roles that can be assigned to users or teams."""
 
-from typing import Set
+from typing import ClassVar, List, Set
 
 from pydantic import BaseModel, Field
 
@@ -43,6 +43,8 @@ class RoleBaseModel(BaseModel):
 
 class RoleResponseModel(RoleBaseModel, BaseResponseModel):
     """Response model for roles."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
 
 
 # ------- #
