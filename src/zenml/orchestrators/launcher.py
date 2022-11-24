@@ -65,18 +65,22 @@ def generate_cache_key(
     # TODO: maybe this should be the ID instead? Or completely removed?
     hash_.update(artifact_store.path.encode())
 
-    for key, value in sorted(step.config.parameters.items()):
-        hash_.update(key.encode())
-        hash_.update(str(value).encode())
-
     for name, artifact_id in input_artifact_ids.items():
         hash_.update(name.encode())
         hash_.update(artifact_id.bytes)
 
-    for output_name in step.config.outputs:
-        hash_.update(output_name.encode())
+    for name, output in step.config.outputs.items():
+        hash_.update(name.encode())
+        hash_.update(output.artifact_source.encode())
+        hash_.update(output.materializer_source.encode())
 
-    # TODO: include output artifacts and cache params
+    for key, value in sorted(step.config.parameters.items()):
+        hash_.update(key.encode())
+        hash_.update(str(value).encode())
+
+    for key, value in sorted(step.config.caching_parameters.items()):
+        hash_.update(key.encode())
+        hash_.update(str(value).encode())
 
     return hash_.hexdigest()
 
@@ -194,7 +198,7 @@ class Launcher:
             mlmd_parent_step_ids=[],
             cache_key=cache_key,
             output_artifacts={},
-            caching_parameters={},
+            caching_parameters=self._step.config.caching_parameters,
             start_time=datetime.now(),
             enable_cache=self._step.config.enable_cache,
         )

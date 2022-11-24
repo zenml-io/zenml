@@ -56,6 +56,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     enable_cache: bool
+    caching_parameters: Mapping[str, Any] = {}
     inputs: Mapping[str, PartialArtifactConfiguration] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
@@ -82,6 +83,7 @@ class StepConfiguration(PartialStepConfiguration):
         return ResourceSettings.parse_obj(model_or_dict)
 
 
+# TODO: rename
 class OutputSpec(StrictBaseModel):
     """Step output specification."""
 

@@ -14,7 +14,6 @@
 """Base Step for ZenML."""
 
 import inspect
-import random
 from abc import abstractmethod
 from collections import defaultdict
 from typing import (
@@ -55,14 +54,12 @@ from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
-    INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
-    PARAM_PIPELINE_PARAMETER_NAME,
     PARAM_SETTINGS,
     PARAM_STEP_NAME,
     PARAM_STEP_OPERATOR,
@@ -361,50 +358,34 @@ class BaseStep(metaclass=BaseStepMeta):
         self._upstream_steps.add(step.name)
 
     @property
-    def _internal_execution_parameters(self) -> Dict[str, Any]:
-        """Internal ZenML execution parameters for this step.
+    def caching_parameters(self) -> Dict[str, Any]:
+        """Caching parameters for this step.
 
         Returns:
-            A dictionary containing the ZenML internal execution parameters
+            A dictionary containing the caching parameters
         """
-        parameters = {
-            PARAM_PIPELINE_PARAMETER_NAME: self.pipeline_parameter_name,
-        }
+        parameters = {}
 
-        if self.enable_cache:
-            # Caching is enabled so we compute a hash of the step function code
-            # and materializers to catch changes in the step behavior
+        source_object = (
+            self.entrypoint
+            if self._created_by_functional_api()
+            else self.__class__
+        )
+        parameters["step_source"] = source_utils.get_hashed_source(
+            source_object
+        )
 
-            # If the step was defined using the functional api, only track
-            # changes to the entrypoint function. Otherwise track changes to
-            # the entire step class.
-            source_object = (
-                self.entrypoint
-                if self._created_by_functional_api()
-                else self.__class__
-            )
-            parameters["step_source"] = source_utils.get_hashed_source(
-                source_object
-            )
+        for name, output in self.configuration.outputs.items():
+            if output.materializer_source:
+                key = f"{name}_materializer_source"
+                materializer_class = source_utils.load_source_path_class(
+                    output.materializer_source
+                )
+                parameters[key] = source_utils.get_hashed_source(
+                    materializer_class
+                )
 
-            for name, output in self.configuration.outputs.items():
-                if output.materializer_source:
-                    key = f"{name}_materializer_source"
-                    materializer_class = source_utils.load_source_path_class(
-                        output.materializer_source
-                    )
-                    parameters[key] = source_utils.get_hashed_source(
-                        materializer_class
-                    )
-        else:
-            # Add a random string to the execution properties to disable caching
-            random_string = f"{random.getrandbits(128):032x}"
-            parameters["disable_cache"] = random_string
-
-        return {
-            INTERNAL_EXECUTION_PARAMETER_PREFIX + key: value
-            for key, value in parameters.items()
-        }
+        return parameters
 
     def _apply_class_configuration(self, options: Dict[str, Any]) -> None:
         """Applies the configurations specified on the step class.
@@ -1036,7 +1017,10 @@ class BaseStep(metaclass=BaseStepMeta):
         self._validate_inputs(inputs)
 
         self._configuration = self._configuration.copy(
-            update={"inputs": inputs}
+            update={
+                "inputs": inputs,
+                "caching_parameters": self.caching_parameters,
+            }
         )
 
         complete_configuration = StepConfiguration.parse_obj(
