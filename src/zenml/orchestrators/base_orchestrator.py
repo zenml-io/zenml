@@ -460,7 +460,7 @@ class BaseOrchestrator(StackComponent, ABC):
             name=run_name,
             orchestrator_run_id=orchestrator_run_id,
             user=client.active_user.id,
-            project=client.active_project.id,
+            workspace=client.active_workspace.id,
             stack=self._active_deployment.stack_id,
             pipeline=self._active_deployment.pipeline_id,
             status=ExecutionStatus.RUNNING,

@@ -59,7 +59,7 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
-        "project",
+        "workspace",
         "user",
         "is_shared",
     ]
@@ -122,10 +122,10 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 
 
 class StackRequestModel(StackBaseModel, ShareableRequestModel):
-    """Stack model with components, user and project as UUIDs."""
+    """Stack model with components, user and workspace as UUIDs."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "project",
+        "workspace",
         "user",
         "is_shared",
     ]

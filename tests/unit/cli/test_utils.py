@@ -29,7 +29,7 @@ SAMPLE_CUSTOM_ARGUMENTS = [
     '--best_cat="aria"',
 ]
 SAMPLE_ROLE = "cat_feeder"
-SAMPLE_PROJECT = "cat_prj"
+SAMPLE_WORKSPACE = "cat_prj"
 
 
 # ----- #
@@ -95,14 +95,14 @@ def create_sample_role(clean_client: Client) -> RoleResponseModel:
     )
 
 
-def create_sample_project(clean_client: Client) -> WorkspaceResponseModel:
+def create_sample_workspace(clean_client: Client) -> WorkspaceResponseModel:
     """Fixture to get a global configuration with a  role.
 
     Args:
         clean_client: Clean client
     """
-    return clean_client.create_project(
-        name=SAMPLE_PROJECT,
-        description="This project aims to ensure world domination for all "
+    return clean_client.create_workspace(
+        name=SAMPLE_WORKSPACE,
+        description="This workspace aims to ensure world domination for all "
         "cat-kind.",
     )

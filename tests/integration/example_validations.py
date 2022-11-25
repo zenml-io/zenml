@@ -106,7 +106,7 @@ def mlflow_tracking_example_validation():
     # activate the stack set up and used by the example
     client = Client()
     stack = client.zen_store.list_stacks(
-        project_name_or_id=client.active_project.id,
+        workspace_name_or_id=client.active_workspace.id,
         user_name_or_id=client.active_user.id,
         name="mlflow_stack",
     )

@@ -221,12 +221,12 @@ def sql_store() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
         ),
         track_analytics=False,
     )
-    default_project = store.list_projects()[0]
+    default_workspace = store.list_workspaces()[0]
     default_stack = store.list_stacks()[0]
     active_user = store.list_users()[0]
     yield {
         "store": store,
-        "default_project": default_project,
+        "default_workspace": default_workspace,
         "default_stack": default_stack,
         "active_user": active_user,
     }
@@ -243,7 +243,7 @@ def sql_store_with_run() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     )
     store = GlobalConfiguration().zen_store
 
-    default_project = store.list_projects()[0]
+    default_workspace = store.list_workspaces()[0]
     default_stack = store.list_stacks()[0]
     active_user = store.list_users()[0]
 
@@ -266,7 +266,7 @@ def sql_store_with_run() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
 
     yield {
         "store": store,
-        "default_project": default_project,
+        "default_workspace": default_workspace,
         "default_stack": default_stack,
         "active_user": active_user,
         "pipeline_run": pipeline_run,
@@ -285,7 +285,7 @@ def sql_store_with_runs() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     )
     store = GlobalConfiguration().zen_store
 
-    default_project = store.list_projects()[0]
+    store.list_workspaces()[0]
     default_stack = store.list_stacks()[0]
     active_user = store.list_users()[0]
 
@@ -309,7 +309,7 @@ def sql_store_with_runs() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
 
     yield {
         "store": store,
-        "default_project": default_project,
+        "default_workspace": default_project,
         "default_stack": default_stack,
         "active_user": active_user,
         "pipeline_runs": pipeline_runs,

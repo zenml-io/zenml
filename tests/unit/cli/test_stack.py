@@ -39,7 +39,7 @@ NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 
 
 def _create_local_orchestrator(
-    repo: Client, user: Optional[UUID] = None, project: Optional[UUID] = None
+    repo: Client, user: Optional[UUID] = None, workspace: Optional[UUID] = None
 ):
     """Returns a local orchestrator."""
     return LocalOrchestrator(
@@ -49,14 +49,14 @@ def _create_local_orchestrator(
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=user or repo.active_user.id,
-        project=project or repo.active_project.id,
+        workspace=workspace or repo.active_workspace.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
 
 
 def _create_local_artifact_store(
-    repo: Client, user: Optional[UUID] = None, project: Optional[UUID] = None
+    repo: Client, user: Optional[UUID] = None, workspace: Optional[UUID] = None
 ):
     """Fixture that creates a local artifact store for testing."""
     return LocalArtifactStore(
@@ -66,7 +66,7 @@ def _create_local_artifact_store(
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
         user=user or repo.active_user.id,
-        project=project or repo.active_project.id,
+        workspace=workspace or repo.active_workspace.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -80,7 +80,7 @@ def _create_local_secrets_manager(client: Client):
         flavor="local",
         type=StackComponentType.SECRETS_MANAGER,
         user=client.active_user.id,
-        project=client.active_project.id,
+        workspace=client.active_workspace.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -520,7 +520,7 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
             flavor="local",
             configuration={},
             user=other_user.id,
-            project=clean_client.active_project.id,
+            workspace=clean_client.active_project.id,
         )
     )
 

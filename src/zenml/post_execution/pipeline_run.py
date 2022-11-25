@@ -40,10 +40,10 @@ def get_run(name: str) -> "PipelineRunView":
         RuntimeError: If multiple runs with the given name exist.
     """
     client = Client()
-    active_project_id = client.active_project.id
+    active_workspace_id = client.active_workspace.id
     runs = client.zen_store.list_runs(
         run_name=name,
-        project_name_or_id=active_project_id,
+        workspace_name_or_id=active_workspace_id,
     )
 
     # TODO: [server] this error handling could be improved
@@ -66,7 +66,7 @@ def get_unlisted_runs() -> List["PipelineRunView"]:
     """
     client = Client()
     runs = client.zen_store.list_runs(
-        project_name_or_id=client.active_project.id,
+        workspace_name_or_id=client.active_workspace.id,
         unlisted=True,
     )
     return [PipelineRunView(model) for model in runs]

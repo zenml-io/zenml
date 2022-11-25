@@ -97,9 +97,9 @@ class WorkspaceScopedResponseModel(UserScopedResponseModel):
     )
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for project scoped models."""
+        """Fetches the analytics metadata for workspace scoped models."""
         metadata = super().get_analytics_metadata()
-        metadata["project"] = self.project.id
+        metadata["workspace"] = self.workspace.id
         return metadata
 
 
@@ -140,7 +140,7 @@ class UserScopedRequestModel(BaseRequestModel):
 
 
 class WorkspaceScopedRequestModel(UserScopedRequestModel):
-    """Base project-scoped request domain model.
+    """Base workspace-scoped request domain model.
 
     Used as a base class for all domain models that are workspace-scoped.
     """

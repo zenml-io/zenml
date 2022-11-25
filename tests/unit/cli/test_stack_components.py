@@ -199,7 +199,7 @@ def test_remove_attribute_component_succeeds(clean_client, test_flavor) -> None:
         flavor=test_flavor.name,
         type=test_flavor.type,
         user=clean_client.active_user.id,
-        project=clean_client.active_project.id,
+        workspace=clean_client.active_workspace.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -292,7 +292,7 @@ def test_remove_attribute_component_required_attribute_fails(
         flavor=test_flavor.name,
         type=test_flavor.type,
         user=clean_client.active_user.id,
-        project=clean_client.active_project.id,
+        workspace=clean_client.active_workspace.id,
         created=datetime.now(),
         updated=datetime.now(),
     )

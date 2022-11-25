@@ -100,18 +100,18 @@ class ClientConfiguration(FileSyncModel):
 
     @property
     def active_workspace(self) -> WorkspaceResponseModel:
-        """Get the active project for the local client.
+        """Get the active workspace for the local client.
 
         Returns:
-            The active project.
+            The active workspace.
         """
         if self._active_workspace:
             return self._active_workspace
         else:
             raise RuntimeError(
-                "No active project is configured. Run "
-                "`zenml project set WORKSPACE_NAME` to set the active "
-                "project."
+                "No active workspace is configured. Run "
+                "`zenml workspace set WORKSPACE_NAME` to set the active "
+                "workspace."
             )
 
     def set_active_workspace(self, workspace: "WorkspaceResponseModel") -> None:
@@ -1057,7 +1057,7 @@ class Client(metaclass=ClientMetaClass):
             role_name_or_id: Only list assignments for this role
             user_name_or_id: Only list assignments for this user
             team_name_or_id: Only list assignments for this team
-            project_name_or_id: Only list assignments in this project
+            workspace_name_or_id: Only list assignments in this workspace
 
         Returns:
             List of role assignments
@@ -1117,7 +1117,7 @@ class Client(metaclass=ClientMetaClass):
     def get_workspace(
         self, name_id_or_prefix: Optional[Union[UUID, str]]
     ) -> WorkspaceResponseModel:
-        """Gets a project.
+        """Gets a workspace.
 
         Args:
             name_id_or_prefix: The name or ID of the workspace.

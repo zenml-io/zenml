@@ -49,19 +49,19 @@ from zenml.models.team_models import TeamUpdateModel
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
-    DEFAULT_PROJECT_NAME,
     DEFAULT_USERNAME,
+    DEFAULT_WORKSPACE_NAME,
     BaseZenStore,
 )
 
 DEFAULT_NAME = "default"
 
 #  .--------
-# | PROJECTS
+# | WORKSPACES
 # '---------
 
 
-def test_only_one_default_project_present(
+def test_only_one_default_workspace_present(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
     """Tests that only one default project can be created."""
@@ -84,9 +84,9 @@ def test_get_project_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
     """Tests getting a project."""
-    assert sql_store["default_project"].name == DEFAULT_PROJECT_NAME
+    assert sql_store["default_project"].name == DEFAULT_WORKSPACE_NAME
     with does_not_raise():
-        sql_store["store"].get_project(DEFAULT_PROJECT_NAME)
+        sql_store["store"].get_project(DEFAULT_WORKSPACE_NAME)
         sql_store["store"].get_project(sql_store["default_project"].id)
 
 
@@ -102,8 +102,8 @@ def test_updating_default_project_fails(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
     """Tests updating the default project."""
-    default_project = sql_store["store"].get_project(DEFAULT_PROJECT_NAME)
-    assert default_project.name == DEFAULT_PROJECT_NAME
+    default_project = sql_store["store"].get_project(DEFAULT_WORKSPACE_NAME)
+    assert default_project.name == DEFAULT_WORKSPACE_NAME
     project_update = WorkspaceUpdateModel(
         name="aria_project",
         description="Aria has taken possession of this project.",

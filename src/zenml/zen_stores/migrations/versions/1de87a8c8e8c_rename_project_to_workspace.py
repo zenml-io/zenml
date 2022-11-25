@@ -8,7 +8,6 @@ Create Date: 2022-11-24 14:08:56.377347
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
-import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -213,4 +212,3 @@ def downgrade() -> None:
         _create_fk_constraint(
             source, target, source_column, target_column, ondelete
         )
-

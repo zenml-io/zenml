@@ -50,9 +50,9 @@ class PipelineBaseModel(BaseModel):
 
 
 class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
-    """Pipeline response model user, project, runs, and status hydrated."""
+    """Pipeline response model user, workspace, runs, and status hydrated."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project", "user"]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "workspace", "user"]
 
     runs: Optional[List["PipelineRunResponseModel"]] = Field(
         title="A list of the last x Pipeline Runs."
@@ -70,7 +70,7 @@ class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
 class PipelineRequestModel(PipelineBaseModel, WorkspaceScopedRequestModel):
     """Pipeline request model."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["project", "user"]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["workspace", "user"]
 
 
 # ------ #

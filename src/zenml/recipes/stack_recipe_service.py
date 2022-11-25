@@ -216,7 +216,7 @@ class StackRecipeService(TerraformService):
         }
 
         if provider == "gcp":
-            config["project_id"] = self.terraform_client.output(
+            config["workspace_id"] = self.terraform_client.output(
                 WORKSPACE_ID_OUTPUT, full_value=True
             )
 

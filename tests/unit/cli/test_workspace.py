@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 from click.testing import CliRunner
 
-from tests.unit.cli.test_utils import SAMPLE_PROJECT, create_sample_project
+from tests.unit.cli.test_utils import SAMPLE_WORKSPACE, create_sample_project
 from zenml.cli.cli import cli
-from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
+from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
 
 
 def test_create_project_succeeds(
@@ -26,7 +26,7 @@ def test_create_project_succeeds(
     runner = CliRunner()
     result = runner.invoke(
         project_create_command,
-        [SAMPLE_PROJECT],
+        [SAMPLE_WORKSPACE],
     )
     assert result.exit_code == 0
 
@@ -40,7 +40,7 @@ def test_create_existing_project_fails(
     runner = CliRunner()
     result = runner.invoke(
         project_create_command,
-        [SAMPLE_PROJECT],
+        [SAMPLE_WORKSPACE],
     )
     assert result.exit_code == 1
 
@@ -55,7 +55,7 @@ def test_update_existing_project_succeeds(
     result = runner.invoke(
         project_update_command,
         [
-            SAMPLE_PROJECT,
+            SAMPLE_WORKSPACE,
             "--name=dog_prj",
             "--description='Project to ensure world domination for dog-kind.'",
         ],
@@ -72,7 +72,7 @@ def test_update_default_project_name_fails(
     result = runner.invoke(
         project_update_command,
         [
-            DEFAULT_PROJECT_NAME,
+            DEFAULT_WORKSPACE_NAME,
             "--name=doc_prj",
         ],
     )
@@ -89,7 +89,7 @@ def test_delete_project_succeeds(
     result = runner.invoke(
         project_delete_command,
         [
-            SAMPLE_PROJECT,
+            SAMPLE_WORKSPACE,
         ],
     )
     assert result.exit_code == 1
@@ -104,7 +104,7 @@ def test_delete_default_project_fails(
     result = runner.invoke(
         project_delete_command,
         [
-            DEFAULT_PROJECT_NAME,
+            DEFAULT_WORKSPACE_NAME,
         ],
     )
     assert result.exit_code == 1
