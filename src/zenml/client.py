@@ -1063,8 +1063,7 @@ class Client(metaclass=ClientMetaClass):
             List of role assignments
         """
         return self.zen_store.list_role_assignments(
-            workspace_name_or_id=workspace_name_or_id
-            or self.active_workspace.id,
+            workspace_name_or_id=workspace_name_or_id,
             role_name_or_id=role_name_or_id,
             user_name_or_id=user_name_or_id,
             team_name_or_id=team_name_or_id,
@@ -1763,7 +1762,7 @@ class Client(metaclass=ClientMetaClass):
             existing_components = self.list_stack_components(
                 name=current_name, is_shared=True, component_type=component_type
             )
-            if existing_components:
+            if any([e.id != component.id for e in existing_components]):
                 raise EntityExistsError(
                     f"There are already existing shared components with "
                     f"the name '{current_name}'"
