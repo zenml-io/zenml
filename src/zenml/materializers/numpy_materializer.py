@@ -48,6 +48,10 @@ class NumpyMaterializer(BaseMaterializer):
         Args:
             data_type: The type of the data to read.
 
+
+        Raises:
+            ImportError: If pyarrow is not installed.
+
         Returns:
             The numpy array.
         """
