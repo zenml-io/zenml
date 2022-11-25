@@ -22,12 +22,12 @@ from zenml.entrypoints.step_entrypoint_configuration import (
     STEP_NAME_OPTION,
     StepEntrypointConfiguration,
 )
+from zenml.orchestrators.executor import StepExecutor
 from zenml.orchestrators.launcher import (
     Launcher,
     prepare_input_artifacts,
     prepare_output_artifacts,
 )
-from zenml.steps.utils import StepExecutor
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment

@@ -29,7 +29,7 @@ from zenml.exceptions import InputResolutionError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
-from zenml.steps.utils import StepExecutor
+from zenml.orchestrators.executor import StepExecutor
 from zenml.utils import source_utils, string_utils
 
 if TYPE_CHECKING:
