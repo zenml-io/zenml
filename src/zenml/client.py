@@ -1370,11 +1370,14 @@ class Client(metaclass=ClientMetaClass):
             update_model.name = name
 
         if is_shared:
-            existing_stacks = self.list_stacks(name=name, is_shared=True)
+            current_name = update_model.name or stack.name
+            existing_stacks = self.list_stacks(
+                name=current_name, is_shared=True
+            )
             if existing_stacks:
                 raise EntityExistsError(
                     "There are already existing shared stacks with the name "
-                    f"'{name}'."
+                    f"'{current_name}'."
                 )
 
             for component_type, components in stack.components.items():
