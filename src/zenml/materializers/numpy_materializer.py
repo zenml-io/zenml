@@ -20,12 +20,20 @@ import numpy as np
 
 from zenml.artifacts import DataArtifact
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
+logger = get_logger(__name__)
+
+
 NUMPY_FILENAME = "data.npy"
+
+DATA_FILENAME = "data.parquet"
+SHAPE_FILENAME = "shape.json"
+DATA_VAR = "data_var"
 
 
 class NumpyMaterializer(BaseMaterializer):
@@ -44,10 +52,45 @@ class NumpyMaterializer(BaseMaterializer):
             The numpy array.
         """
         super().handle_input(data_type)
-        with fileio.open(
-            os.path.join(self.artifact.uri, NUMPY_FILENAME), "rb"
-        ) as f:
-            return np.load(f, allow_pickle=True)  # type: ignore
+
+        numpy_file = os.path.join(self.artifact.uri, NUMPY_FILENAME)
+
+        if fileio.exists(numpy_file):
+            with fileio.open(numpy_file, "rb") as f:
+                return np.load(f, allow_pickle=True)  # type: ignore
+        elif fileio.exists(os.path.join(self.artifact.uri, DATA_FILENAME)):
+            logger.warning(
+                "A legacy artifact was found. "
+                "This artifact was created with an older version of "
+                "ZenML. You can still use it, but it will be "
+                "converted to the new format on the next materialization."
+            )
+            try:
+                # Import old materializer dependencies
+                import pyarrow as pa  # type: ignore
+                import pyarrow.parquet as pq  # type: ignore
+
+                from zenml.utils import yaml_utils
+
+                # Read numpy array from parquet file
+                shape_dict = yaml_utils.read_json(
+                    os.path.join(self.artifact.uri, SHAPE_FILENAME)
+                )
+                shape_tuple = tuple(shape_dict.values())
+                with fileio.open(
+                    os.path.join(self.artifact.uri, DATA_FILENAME), "rb"
+                ) as f:
+                    input_stream = pa.input_stream(f)
+                    data = pq.read_table(input_stream)
+                vals = getattr(data.to_pandas(), DATA_VAR).values
+                return np.reshape(vals, shape_tuple)
+            except ImportError:
+                raise ImportError(
+                    "You have an old version of the NumpyMaterializer",
+                    "DataArtifact. stored in the artifact store.",
+                    "Please install pyarrow to read parquet files.",
+                    "You can do so by running `pip install pyarrow`.",
+                )
 
     def handle_return(self, arr: "NDArray[Any]") -> None:
         """Writes a np.ndarray to the artifact store as a npy file.
