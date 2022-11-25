@@ -41,6 +41,7 @@ if TYPE_CHECKING:
     from uuid import UUID
 
     from zenml.config.step_configurations import Step
+    from zenml.models import StepRunModel
 
 logger = get_logger(__name__)
 
@@ -147,6 +148,7 @@ class StepExecutor:
 
         Args:
             step: The step to execute.
+            step_run: The step run mode.
         """
         self._step = step
         self._step_run = step_run

@@ -777,7 +777,7 @@ class Client(metaclass=ClientMetaClass):
             component_type: The type of the component.
             configuration: The component configuration to validate.
         """
-        from zenml.enums import StackComponentType, StoreType
+        from zenml.enums import StoreType
 
         if configuration.is_remote and self.zen_store.is_local_store():
             if self.zen_store.type != StoreType.REST:
