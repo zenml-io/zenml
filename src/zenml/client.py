@@ -780,15 +780,7 @@ class Client(metaclass=ClientMetaClass):
         from zenml.enums import StackComponentType, StoreType
 
         if configuration.is_remote and self.zen_store.is_local_store():
-            if self.zen_store.type == StoreType.REST:
-                logger.warning(
-                    "You are configuring a stack component that is running "
-                    "remotely while using a local database. The component "
-                    "may not be able to reach the local database and will "
-                    "therefore not be functional. Please consider deploying "
-                    "and/or using a remote ZenML server instead."
-                )
-            else:
+            if self.zen_store.type != StoreType.REST:
                 logger.warning(
                     "You are configuring a stack component that is running "
                     "remotely while using a local ZenML server. The component "
@@ -804,19 +796,6 @@ class Client(metaclass=ClientMetaClass):
                 "other users. You should consider using a non-local stack "
                 "component alternative instead."
             )
-            if component_type in [
-                StackComponentType.ORCHESTRATOR,
-                StackComponentType.STEP_OPERATOR,
-            ]:
-                logger.warning(
-                    "You are configuring a stack component that is running "
-                    "pipeline code on your local host while connected to a "
-                    "remote ZenML server. This will significantly affect the "
-                    "performance of your pipelines. You will likely encounter "
-                    "long running times caused by network latency. You should "
-                    "consider using a non-local stack component alternative "
-                    "instead."
-                )
 
     def register_stack_component(
         self,
