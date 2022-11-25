@@ -139,7 +139,7 @@ def delete_role(role_name_or_id: str) -> None:
 
 @role.command("assign", help="Assign a role.")
 @click.argument("role_name_or_id", type=str, required=True)
-@click.option("--project", "project_name_or_id", type=str, required=False)
+@click.option("--workspace", "workspace_name_or_id", type=str, required=False)
 @click.option(
     "--user", "user_names_or_ids", type=str, required=False, multiple=True
 )
@@ -150,7 +150,7 @@ def assign_role(
     role_name_or_id: str,
     user_names_or_ids: Tuple[str],
     team_names_or_ids: Tuple[str],
-    project_name_or_id: Optional[str] = None,
+    workspace_name_or_id: Optional[str] = None,
 ) -> None:
     """Assign a role.
 
@@ -158,7 +158,7 @@ def assign_role(
         role_name_or_id: Name or IDs of the role to assign.
         user_names_or_ids : Names or IDs of users to assign the role to.
         team_names_or_ids: Names or IDs of teams to assign the role to.
-        project_name_or_id: Name or IDs of a project in which to assign the
+        workspace_name_or_id: Name or IDs of a workspace in which to assign the
             role. If this is not provided, the role will be assigned globally.
     """
     cli_utils.print_active_config()
@@ -170,7 +170,7 @@ def assign_role(
                 role_name_or_id=role_name_or_id,
                 user_or_team_name_or_id=user_name_or_id,
                 is_user=True,
-                project_name_or_id=project_name_or_id,
+                workspace_name_or_id=workspace_name_or_id,
             )
         except KeyError as err:
             cli_utils.error(str(err))
@@ -188,7 +188,7 @@ def assign_role(
                 role_name_or_id=role_name_or_id,
                 user_or_team_name_or_id=team_name_or_id,
                 is_user=False,
-                project_name_or_id=project_name_or_id,
+                workspace_name_or_id=workspace_name_or_id,
             )
         except KeyError as err:
             cli_utils.error(str(err))
@@ -202,7 +202,7 @@ def assign_role(
 
 @role.command("revoke", help="Revoke a role.")
 @click.argument("role_name_or_id", type=str, required=True)
-@click.option("--project", "project_name_or_id", type=str, required=False)
+@click.option("--workspace", "workspace_name_or_id", type=str, required=False)
 @click.option(
     "--user", "user_names_or_ids", type=str, required=False, multiple=True
 )
@@ -213,7 +213,7 @@ def revoke_role(
     role_name_or_id: str,
     user_names_or_ids: Tuple[str],
     team_names_or_ids: Tuple[str],
-    project_name_or_id: Optional[str] = None,
+    workspace_name_or_id: Optional[str] = None,
 ) -> None:
     """Revoke a role.
 
@@ -221,7 +221,7 @@ def revoke_role(
         role_name_or_id: Name or IDs of the role to revoke.
         user_names_or_ids: Names or IDs of users from which to revoke the role.
         team_names_or_ids: Names or IDs of teams from which to revoke the role.
-        project_name_or_id: Name or IDs of a project in which to revoke the
+        workspace_name_or_id: Name or IDs of a workspace in which to revoke the
             role. If this is not provided, the role will be revoked globally.
     """
     cli_utils.print_active_config()
@@ -233,7 +233,7 @@ def revoke_role(
                 role_name_or_id=role_name_or_id,
                 user_or_team_name_or_id=user_name_or_id,
                 is_user=True,
-                project_name_or_id=project_name_or_id,
+                workspace_name_or_id=workspace_name_or_id,
             )
         except KeyError as err:
             cli_utils.warning(str(err))
@@ -250,7 +250,7 @@ def revoke_role(
                 role_name_or_id=role_name_or_id,
                 user_or_team_name_or_id=team_name_or_id,
                 is_user=False,
-                project_name_or_id=project_name_or_id,
+                workspace_name_or_id=workspace_name_or_id,
             )
         except KeyError as err:
             cli_utils.warning(str(err))
@@ -268,7 +268,7 @@ def assignment() -> None:
 
 @assignment.command("list")
 @click.option("--role", "role_name_or_id", type=str, required=False)
-@click.option("--project", "project_name_or_id", type=str, required=False)
+@click.option("--workspace", "workspace_name_or_id", type=str, required=False)
 @click.option(
     "--user",
     "user_name_or_id",
@@ -278,14 +278,14 @@ def assignment() -> None:
 def list_role_assignments(
     role_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
-    project_name_or_id: Optional[str] = None,
+    workspace_name_or_id: Optional[str] = None,
 ) -> None:
     """List all role assignments.
 
     Args:
         role_name_or_id: Name or ID of a role to list role assignments for.
         user_name_or_id: Name or ID of a user to list role assignments for.
-        project_name_or_id: Name or ID of a project to list role assignments
+        workspace_name_or_id: Name or ID of a workspace to list role assignments
             for.
     """
     cli_utils.print_active_config()
@@ -293,7 +293,7 @@ def list_role_assignments(
     role_assignments = Client().list_role_assignment(
         role_name_or_id=role_name_or_id,
         user_name_or_id=user_name_or_id,
-        project_name_or_id=project_name_or_id,
+        workspace_name_or_id=workspace_name_or_id,
     )
     if not role_assignments:
         cli_utils.declare("No roles assigned.")

@@ -102,7 +102,7 @@ def update_workspace(
     cli_utils.print_active_config()
     try:
         Client().update_workspace(
-            name=workspace_name,
+            name_id_or_prefix=workspace_name,
             new_name=new_name,
             new_description=new_description,
         )

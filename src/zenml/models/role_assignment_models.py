@@ -84,8 +84,8 @@ class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
 class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
     """Request model for role assignments using UUIDs for all entities."""
 
-    project: Optional[UUID] = Field(
-        None, title="The project that the role is limited to."
+    workspace: Optional[UUID] = Field(
+        None, title="The workspace that the role is limited to."
     )
     team: Optional[UUID] = Field(
         None, title="The team that the role is assigned to."

@@ -101,7 +101,7 @@ def register_feature_store_subcommands() -> None:
         feature_views = feature_store.get_feature_views()  # type: ignore[attr-defined]
         declare(f"Feature views: {feature_views}")
 
-    @feature.command("get-project")
+    @feature.command("get-workspace")
     @click.pass_obj
     def get_project(feature_store: "BaseFeatureStore") -> None:
         """Get the current project name from the feature store.

@@ -102,7 +102,7 @@ def test_delete_default_workspace_fails(
     workspace_delete_command = cli.commands["workspace"].commands["delete"]
     runner = CliRunner()
     result = runner.invoke(
-        project_delete_command,
+        workspace_delete_command,
         [
             DEFAULT_WORKSPACE_NAME,
         ],

@@ -65,7 +65,7 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
         "id",
         "type",
         "flavor",
-        "project",
+        "workspace",
         "user",
         "is_shared",
     ]
@@ -82,7 +82,7 @@ class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "type",
         "flavor",
-        "project",
+        "workspace",
         "user",
         "is_shared",
     ]

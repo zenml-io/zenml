@@ -87,89 +87,89 @@ def test_get_workspace_succeeds(
     assert sql_store["default_workspace"].name == DEFAULT_WORKSPACE_NAME
     with does_not_raise():
         sql_store["store"].get_workspace(DEFAULT_WORKSPACE_NAME)
-        sql_store["store"].get_workspace(sql_store["default_project"].id)
+        sql_store["store"].get_workspace(sql_store["default_workspace"].id)
 
 
-def test_getting_nonexistent_project_fails(
+def test_getting_nonexistent_workspace_fails(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests getting a nonexistent project raises an error."""
+    """Tests getting a nonexistent workspace raises an error."""
     with pytest.raises(KeyError):
-        sql_store["store"].get_project("blupus_project")
+        sql_store["store"].get_workspace("blupus_workspace")
 
 
-def test_updating_default_project_fails(
+def test_updating_default_workspace_fails(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests updating the default project."""
-    default_project = sql_store["store"].get_project(DEFAULT_WORKSPACE_NAME)
-    assert default_project.name == DEFAULT_WORKSPACE_NAME
-    project_update = WorkspaceUpdateModel(
-        name="aria_project",
-        description="Aria has taken possession of this project.",
+    """Tests updating the default workspace."""
+    default_workspace = sql_store["store"].get_workspace(DEFAULT_WORKSPACE_NAME)
+    assert default_workspace.name == DEFAULT_WORKSPACE_NAME
+    workspace_update = WorkspaceUpdateModel(
+        name="aria_workspace",
+        description="Aria has taken possession of this workspace.",
     )
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_project(
-            project_id=default_project.id, project_update=project_update
+        sql_store["store"].update_workspace(
+            workspace_id=default_workspace.id, workspace_update=workspace_update
         )
 
 
-def test_updating_project_succeeds(
+def test_updating_workspace_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests updating a project."""
-    new_project = WorkspaceRequestModel(name="arias_project")
-    new_project = sql_store["store"].create_project(new_project)
+    """Tests updating a workspace."""
+    new_workspace = WorkspaceRequestModel(name="arias_workspace")
+    new_workspace = sql_store["store"].create_workspace(new_workspace)
 
-    new_name = "axls_project"
-    project_update = WorkspaceUpdateModel(
-        name=new_name, description="Axl has taken possession of this project."
+    new_name = "axls_workspace"
+    workspace_update = WorkspaceUpdateModel(
+        name=new_name, description="Axl has taken possession of this workspace."
     )
 
     with does_not_raise():
-        sql_store["store"].update_project(
-            project_id=new_project.id, project_update=project_update
+        sql_store["store"].update_workspace(
+            workspace_id=new_workspace.id, workspace_update=workspace_update
         )
     with does_not_raise():
-        sql_store["store"].get_project(project_name_or_id=new_name)
+        sql_store["store"].get_workspace(workspace_name_or_id=new_name)
 
 
-def test_updating_nonexisting_project_raises_error(
+def test_updating_nonexisting_workspace_raises_error(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests updating a nonexistent project raises an error."""
-    project_update = WorkspaceUpdateModel(name="arias_project")
+    """Tests updating a nonexistent workspace raises an error."""
+    workspace_update = WorkspaceUpdateModel(name="arias_workspace")
     with pytest.raises(KeyError):
-        sql_store["store"].update_project(
-            project_id=uuid.uuid4(), project_update=project_update
+        sql_store["store"].update_workspace(
+            workspace_id=uuid.uuid4(), workspace_update=workspace_update
         )
 
 
-def test_deleting_project_succeeds(
+def test_deleting_workspace_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests deleting a project."""
-    new_project = WorkspaceRequestModel(name="axls_project")
-    new_project = sql_store["store"].create_project(new_project)
+    """Tests deleting a workspace."""
+    new_workspace = WorkspaceRequestModel(name="axls_workspace")
+    new_workspace = sql_store["store"].create_workspace(new_workspace)
     with does_not_raise():
-        sql_store["store"].delete_project("axls_project")
-    assert len(sql_store["store"].list_projects()) == 1
+        sql_store["store"].delete_workspace("axls_workspace")
+    assert len(sql_store["store"].list_workspaces()) == 1
 
 
-def test_deleting_default_project_fails(
+def test_deleting_default_workspace_fails(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests deleting the default project."""
+    """Tests deleting the default workspace."""
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].delete_project(DEFAULT_NAME)
+        sql_store["store"].delete_workspace(DEFAULT_NAME)
 
 
-def test_deleting_nonexistent_project_raises_error(
+def test_deleting_nonexistent_workspace_raises_error(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests deleting a nonexistent project raises an error."""
+    """Tests deleting a nonexistent workspace raises an error."""
     with pytest.raises(KeyError):
-        sql_store["store"].delete_project("blupus_project")
+        sql_store["store"].delete_workspace("blupus_workspace")
 
 
 #  .-----
@@ -656,7 +656,7 @@ def test_assigning_role_to_user_succeeds(
         role=sql_store_with_user_team_role["role"].id,
         user=sql_store_with_user_team_role["user"].id,
         is_user=True,
-        project=None,
+        workspace=None,
     )
     with does_not_raise():
         (
@@ -676,7 +676,7 @@ def test_assigning_role_to_team_succeeds(
         role=sql_store_with_user_team_role["role"].id,
         team=sql_store_with_user_team_role["team"].id,
         is_user=True,
-        project=None,
+        workspace=None,
     )
     with does_not_raise():
         (
@@ -696,7 +696,7 @@ def test_assigning_role_if_assignment_already_exists_fails(
         role=sql_store_with_user_team_role["role"].id,
         user=sql_store_with_user_team_role["user"].id,
         is_user=True,
-        project=None,
+        workspace=None,
     )
     with does_not_raise():
         (
@@ -722,7 +722,7 @@ def test_revoking_role_for_user_succeeds(
         role=sql_store_with_user_team_role["role"].id,
         user=sql_store_with_user_team_role["user"].id,
         is_user=True,
-        project=None,
+        workspace=None,
     )
     with does_not_raise():
         role_assignment = sql_store_with_user_team_role[
@@ -747,7 +747,7 @@ def test_revoking_role_for_team_succeeds(
         role=sql_store_with_user_team_role["role"].id,
         team=sql_store_with_user_team_role["team"].id,
         is_user=True,
-        project=None,
+        workspace=None,
     )
     with does_not_raise():
         role_assignment = sql_store_with_user_team_role[
@@ -799,12 +799,12 @@ def test_list_stacks_succeeds(
     assert len(sql_store["store"].list_stacks()) == 1
 
 
-def test_list_stacks_fails_with_nonexistent_project(
+def test_list_stacks_fails_with_nonexistent_workspace(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests listing stacks fails with nonexistent project."""
+    """Tests listing stacks fails with nonexistent workspace."""
     with pytest.raises(KeyError):
-        sql_store["store"].list_stacks(project_name_or_id=uuid.uuid4())
+        sql_store["store"].list_stacks(workspace_name_or_id=uuid.uuid4())
 
 
 def test_get_stack_succeeds(
@@ -831,10 +831,10 @@ def test_register_stack_succeeds(
     new_stack = StackRequestModel(
         name="arias_stack",
         components={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
-    # TODO: [server] inject user and project into stack as well
+    # TODO: [server] inject user and workspace into stack as well
     sql_store["store"].create_stack(
         stack=new_stack,
     )
@@ -850,11 +850,11 @@ def test_register_stack_fails_when_stack_exists(
     new_stack = StackRequestModel(
         name=DEFAULT_NAME,
         components={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with pytest.raises(StackExistsError):
-        # TODO: [server] inject user and project into stack as well
+        # TODO: [server] inject user and workspace into stack as well
         sql_store["store"].create_stack(
             stack=new_stack,
         )
@@ -868,7 +868,7 @@ def test_updating_stack_succeeds(
         name="arias_stack",
         description="Aria likes her stacks.",
         components={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     new_stack = sql_store["store"].create_stack(
@@ -926,7 +926,7 @@ def test_deleting_stack_succeeds(
     new_stack = StackRequestModel(
         name="arias_stack",
         components={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     new_stack = sql_store["store"].create_stack(
@@ -959,17 +959,17 @@ def test_deleting_a_stack_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests deleting stack."""
-    # TODO: [server] inject user and project into stack as well
+    # TODO: [server] inject user and workspace into stack as well
     new_stack = StackRequestModel(
         name="arias_stack",
         components={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     sql_store["store"].create_stack(
         stack=new_stack,
     )
-    stacks = sql_store["store"].list_stacks(project_name_or_id=DEFAULT_NAME)
+    stacks = sql_store["store"].list_stacks(workspace_name_or_id=DEFAULT_NAME)
     assert len(stacks) == 2
     new_stack = [stack for stack in stacks if stack.name == "arias_stack"][0]
     sql_store["store"].delete_stack(new_stack.id)
@@ -1001,12 +1001,12 @@ def test_create_pipeline_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests creating pipeline."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
@@ -1020,12 +1020,12 @@ def test_creating_identical_pipeline_fails(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests creating identical pipeline fails."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
@@ -1040,12 +1040,12 @@ def test_get_pipeline_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting pipeline."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
@@ -1068,12 +1068,12 @@ def test_list_pipelines_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing pipelines."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
@@ -1087,12 +1087,12 @@ def test_update_pipeline_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating pipeline."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
@@ -1114,12 +1114,12 @@ def test_updating_nonexistent_pipeline_fails(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating nonexistent pipeline fails."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     pipeline_update = PipelineUpdateModel(
         name="blupus_ka_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
@@ -1133,12 +1133,12 @@ def test_deleting_pipeline_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests deleting pipeline."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
@@ -1201,7 +1201,7 @@ def test_list_runs_returns_nothing_when_no_runs_exist(
     assert len(runs) == 0
 
     with pytest.raises(KeyError):
-        sql_store["store"].list_runs(project_name_or_id=uuid.uuid4())
+        sql_store["store"].list_runs(workspace_name_or_id=uuid.uuid4())
 
     false_stack_runs = sql_store["store"].list_runs(stack_id=uuid.uuid4())
     assert len(false_stack_runs) == 0
@@ -1322,7 +1322,7 @@ def test_create_stack_component_succeeds(
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
         configuration={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
@@ -1342,7 +1342,7 @@ def test_create_component_fails_when_same_name(
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
         configuration={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     sql_store["store"].create_stack_component(component=stack_component)
@@ -1373,7 +1373,7 @@ def test_list_stack_components_succeeds(
 ):
     """Tests listing stack components."""
     stack_components = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name
+        workspace_name_or_id=sql_store["default_workspace"].name
     )
     assert len(stack_components) == 2
     component_types = [component.type for component in stack_components]
@@ -1381,13 +1381,13 @@ def test_list_stack_components_succeeds(
     assert StackComponentType.ARTIFACT_STORE in component_types
 
 
-def test_list_stack_components_fails_when_project_does_not_exist(
+def test_list_stack_components_fails_when_workspace_does_not_exist(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests listing stack components fails when project does not exist."""
+    """Tests listing stack components fails when workspace does not exist."""
     with pytest.raises(KeyError):
         sql_store["store"].list_stack_components(
-            project_name_or_id=uuid.uuid4()
+            workspace_name_or_id=uuid.uuid4()
         )
 
 
@@ -1396,14 +1396,14 @@ def test_list_stack_components_works_with_filters(
 ):
     """Tests listing stack components works with filters."""
     artifact_stores = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
+        workspace_name_or_id=sql_store["default_workspace"].name,
         type=StackComponentType.ARTIFACT_STORE,
     )
     assert len(artifact_stores) == 1
     assert artifact_stores[0].type == StackComponentType.ARTIFACT_STORE
 
     orchestrators = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
+        workspace_name_or_id=sql_store["default_workspace"].name,
         type=StackComponentType.ORCHESTRATOR,
     )
     assert len(orchestrators) == 1
@@ -1415,19 +1415,19 @@ def test_list_stack_components_lists_nothing_for_nonexistent_filters(
 ):
     """Tests listing stack components lists nothing for nonexistent filters."""
     flavor_filtered = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
+        workspace_name_or_id=sql_store["default_workspace"].name,
         flavor_name="nonexistent",
     )
     assert len(flavor_filtered) == 0
 
     with pytest.raises(KeyError):
         sql_store["store"].list_stack_components(
-            project_name_or_id=sql_store["default_project"].name,
+            workspace_name_or_id=sql_store["default_workspace"].name,
             user_name_or_id=uuid.uuid4(),
         )
 
     name_filtered = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
+        workspace_name_or_id=sql_store["default_workspace"].name,
         name="nonexistent",
     )
     assert len(name_filtered) == 0
@@ -1443,7 +1443,7 @@ def test_update_stack_component_succeeds(
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
         configuration={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
@@ -1465,13 +1465,13 @@ def test_update_default_stack_component_fails(
 ):
     """Tests that updating default stack components fails."""
     default_artifact_store = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
+        workspace_name_or_id=sql_store["default_workspace"].name,
         type=StackComponentType.ARTIFACT_STORE,
         name="default",
     )[0]
 
     default_orchestrator = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
+        workspace_name_or_id=sql_store["default_workspace"].name,
         type=StackComponentType.ORCHESTRATOR,
         name="default",
     )[0]
@@ -1500,7 +1500,7 @@ def test_update_stack_component_fails_when_component_does_not_exist(
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
         configuration={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with pytest.raises(KeyError):
@@ -1519,14 +1519,14 @@ def test_delete_stack_component_succeeds(
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
         configuration={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     created_component = sql_store["store"].create_stack_component(
         component=stack_component
     )
     orchestrators = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
+        workspace_name_or_id=sql_store["default_workspace"].name,
         type=StackComponentType.ORCHESTRATOR,
     )
     assert len(orchestrators) == 2
@@ -1535,7 +1535,7 @@ def test_delete_stack_component_succeeds(
             component_id=created_component.id
         )
         orchestrators = sql_store["store"].list_stack_components(
-            project_name_or_id=sql_store["default_project"].name,
+            workspace_name_or_id=sql_store["default_workspace"].name,
             type=StackComponentType.ORCHESTRATOR,
         )
     assert len(orchestrators) == 1
@@ -1550,13 +1550,13 @@ def test_delete_default_stack_component_fails(
 ):
     """Tests that deleting default stack components is prohibited."""
     default_artifact_store = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
+        workspace_name_or_id=sql_store["default_workspace"].name,
         type=StackComponentType.ARTIFACT_STORE,
         name="default",
     )[0]
 
     default_orchestrator = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
+        workspace_name_or_id=sql_store["default_workspace"].name,
         type=StackComponentType.ORCHESTRATOR,
         name="default",
     )[0]
@@ -1591,7 +1591,7 @@ def test_create_stack_component_flavor_succeeds(
         type=StackComponentType.ORCHESTRATOR,
         config_schema="default",
         source=".",
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
@@ -1599,7 +1599,7 @@ def test_create_stack_component_flavor_succeeds(
         blupus_flavor_id = (
             sql_store["store"]
             .list_flavors(
-                project_name_or_id=sql_store["default_project"].name,
+                workspace_name_or_id=sql_store["default_workspace"].name,
                 component_type=StackComponentType.ORCHESTRATOR,
                 name=flavor_name,
             )[0]
@@ -1621,7 +1621,7 @@ def test_create_stack_component_fails_when_flavor_already_exists(
         type=StackComponentType.ORCHESTRATOR,
         config_schema="default",
         source=".",
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
@@ -1631,7 +1631,7 @@ def test_create_stack_component_fails_when_flavor_already_exists(
         type=StackComponentType.ORCHESTRATOR,
         config_schema="default",
         source=".",
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with pytest.raises(EntityExistsError):
@@ -1648,7 +1648,7 @@ def test_get_flavor_succeeds(
         type=StackComponentType.ARTIFACT_STORE,
         config_schema="default",
         source=".",
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
@@ -1678,7 +1678,7 @@ def test_list_flavors_succeeds(
         type=StackComponentType.ARTIFACT_STORE,
         config_schema="default",
         source=".",
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
@@ -1687,12 +1687,12 @@ def test_list_flavors_succeeds(
         assert sql_store["store"].list_flavors()[0].name == flavor_name
 
 
-def test_list_flavors_fails_with_nonexistent_project(
+def test_list_flavors_fails_with_nonexistent_workspace(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests listing stack component flavors fails with nonexistent project."""
+    """Tests listing stack component flavors fails with nonexistent workspace."""
     with pytest.raises(KeyError):
         sql_store["store"].list_flavors(
-            project_name_or_id="nonexistent",
+            workspace_name_or_id="nonexistent",
             component_type=StackComponentType.ORCHESTRATOR,
         )

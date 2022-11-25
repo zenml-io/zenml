@@ -72,4 +72,4 @@ class WorkspaceRequestModel(WorkspaceBaseModel, BaseRequestModel):
 
 @update_model
 class WorkspaceUpdateModel(WorkspaceRequestModel):
-    """Update model for projects."""
+    """Update model for workspaces."""
