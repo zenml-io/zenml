@@ -433,10 +433,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
         Returns:
             The model of the created default stack.
-
-        Raises:
-            StackExistsError: If a default stack already exists for the
-                user in the supplied project.
         """
         project = self.get_project(project_name_or_id=project_name_or_id)
         user = self.get_user(user_name_or_id=user_name_or_id)

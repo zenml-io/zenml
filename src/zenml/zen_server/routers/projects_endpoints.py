@@ -270,6 +270,10 @@ def create_stack(
 
     Returns:
         The created stack.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the stack
+            does not match the current project or authenticated user.
     """
     project = zen_store().get_project(project_name_or_id)
 
@@ -282,7 +286,7 @@ def create_stack(
     if stack.user != auth_context.user.id:
         raise IllegalOperationError(
             "Creating stacks for a user other than yourself "
-            f"is not supported."
+            "is not supported."
         )
 
     return zen_store().create_stack(stack=stack)
@@ -366,6 +370,10 @@ def create_stack_component(
 
     Returns:
         The created stack component.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the stack
+            component does not match the current project or authenticated user.
     """
     project = zen_store().get_project(project_name_or_id)
 
@@ -378,7 +386,7 @@ def create_stack_component(
     if component.user != auth_context.user.id:
         raise IllegalOperationError(
             "Creating components for a user other than yourself "
-            f"is not supported."
+            "is not supported."
         )
 
     # TODO: [server] if possible it should validate here that the configuration
@@ -446,6 +454,11 @@ def create_flavor(
 
     Returns:
         The created stack component flavor.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the stack
+            component flavor does not match the current project or authenticated
+            user.
     """
     project = zen_store().get_project(project_name_or_id)
 
@@ -458,7 +471,7 @@ def create_flavor(
     if flavor.user != auth_context.user.id:
         raise IllegalOperationError(
             "Creating flavors for a user other than yourself "
-            f"is not supported."
+            "is not supported."
         )
 
     created_flavor = zen_store().create_flavor(
@@ -520,6 +533,10 @@ def create_pipeline(
 
     Returns:
         The created pipeline.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the pipeline
+            does not match the current project or authenticated user.
     """
     project = zen_store().get_project(project_name_or_id)
 
@@ -532,7 +549,7 @@ def create_pipeline(
     if pipeline.user != auth_context.user.id:
         raise IllegalOperationError(
             "Creating pipelines for a user other than yourself "
-            f"is not supported."
+            "is not supported."
         )
 
     return zen_store().create_pipeline(pipeline=pipeline)
@@ -563,6 +580,10 @@ def create_pipeline_run(
 
     Returns:
         The created pipeline run.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the pipeline
+            run does not match the current project or authenticated user.
     """
     project = zen_store().get_project(project_name_or_id)
 
@@ -574,8 +595,8 @@ def create_pipeline_run(
         )
     if pipeline_run.user != auth_context.user.id:
         raise IllegalOperationError(
-            "Creating pipeline runs  for a user other than yourself "
-            f"is not supported."
+            "Creating pipeline runs for a user other than yourself "
+            "is not supported."
         )
 
     if get_if_exists:

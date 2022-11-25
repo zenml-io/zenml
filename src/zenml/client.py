@@ -104,6 +104,9 @@ class ClientConfiguration(FileSyncModel):
 
         Returns:
             The active project.
+
+        Raises:
+            RuntimeError: If no active project is set.
         """
         if self._active_project:
             return self._active_project
@@ -618,9 +621,6 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             user_name_or_id: The name or ID of the user to delete.
-
-        Raises:
-            IllegalOperationError: If the user to delete is the active user.
         """
         user = self.get_user(user_name_or_id)
         self.zen_store.delete_user(user_name_or_id=user.name)
@@ -1932,6 +1932,10 @@ class Client(metaclass=ClientMetaClass):
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List["FlavorResponseModel"]:
         """Fetches all the flavor models.
+
+        Args:
+            project_name_or_id: The name or id of the project to filter by.
+            user_name_or_id: The name or id of the user to filter by.
 
         Returns:
             A list of all the flavor models.
