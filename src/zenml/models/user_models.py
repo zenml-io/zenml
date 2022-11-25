@@ -496,7 +496,18 @@ class UserUpdateModel(UserRequestModel):
 
     @root_validator
     def user_email_updates(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate that the UserUpdateModel conform to the email-opt-in-flow."""
+        """Validate that the UserUpdateModel conforms to the email-opt-in-flow.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+
+        Raises:
+            ValueError: If the email was not provided when the email_opted_in
+                field was set to True.
+        """
         # When someone sets the email, or updates the email and hasn't
         #  before explicitly opted out, they are opted in
         if values["email"] is not None:
