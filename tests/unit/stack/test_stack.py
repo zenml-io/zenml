@@ -50,7 +50,7 @@ def test_initializing_a_stack_from_components(
 def test_initializing_a_stack_with_missing_components():
     """Tests that initializing a stack with missing components fails."""
     with pytest.raises(TypeError):
-        Stack.from_components(name="", components={}).validate()
+        Stack.from_components(id=uuid4(), name="", components={}).validate()
 
 
 def test_initializing_a_stack_with_wrong_components(local_orchestrator):
@@ -63,7 +63,9 @@ def test_initializing_a_stack_with_wrong_components(local_orchestrator):
     }
 
     with pytest.raises(TypeError):
-        Stack.from_components(name="", components=components).validate()
+        Stack.from_components(
+            id=uuid4(), name="", components=components
+        ).validate()
 
 
 def test_stack_returns_all_its_components(

@@ -11,9 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
 from contextlib import ExitStack as does_not_raise
-from datetime import datetime
 from typing import Type
 from uuid import uuid4
 
@@ -21,6 +19,7 @@ import pytest
 from pydantic import ValidationError, validator
 
 from zenml.enums import StackComponentType
+from zenml.models import ComponentRequestModel
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestrator,
     BaseOrchestratorConfig,
@@ -30,7 +29,6 @@ from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManagerConfig,
 )
 from zenml.stack.flavor_registry import flavor_registry
-from zenml.stack.stack import Stack
 
 
 def test_stack_component_default_method_implementations(stub_component):
@@ -124,17 +122,14 @@ class StubOrchestratorFlavor(BaseOrchestratorFlavor):
         return StubOrchestrator
 
 
-def _get_stub_orchestrator(name, repo=None, **kwargs):
-    return StubOrchestrator(
+def _get_stub_orchestrator(name, repo=None, **kwargs) -> ComponentRequestModel:
+    return ComponentRequestModel(
         name=name,
-        id=uuid4(),
-        config=StubOrchestratorConfig(**kwargs),
+        configuration=StubOrchestratorConfig(**kwargs),
         flavor="TEST",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4() if repo is None else repo.active_user.id,
         project=uuid4() if repo is None else repo.active_project.id,
-        created=datetime.now(),
-        updated=datetime.now(),
     )
 
 
@@ -148,9 +143,12 @@ def register_stub_orchestrator_flavor() -> None:
     flavor_registry._flavors[flavor.type].pop(flavor.name)
 
 
-def test_stack_component_prevents_secret_references_for_some_attributes():
+def test_stack_component_prevents_secret_references_for_some_attributes(
+    clean_client, register_stub_orchestrator_flavor
+):
     """Tests that the stack component prevents secret references for the name
     attribute and all attributes with associated pydantic validators."""
+
     with pytest.raises(ValueError):
         # Can't have a secret reference for the name
         _get_stub_orchestrator(name="{{secret.key}}")
@@ -158,13 +156,19 @@ def test_stack_component_prevents_secret_references_for_some_attributes():
     with pytest.raises(ValueError):
         # Can't have a secret reference for an attribute that requires
         # pydantic validation
-        _get_stub_orchestrator(
-            name="test", attribute_with_validator="{{secret.key}}"
+        clean_client.create_stack_component(
+            name="test",
+            configuration={"attribute_with_validator": "{{secret.key}}"},
+            flavor="TEST",
+            component_type=StackComponentType.ORCHESTRATOR,
         )
 
     with does_not_raise():
-        _get_stub_orchestrator(
-            name="test", attribute_without_validator="{{secret.key}}"
+        clean_client.create_stack_component(
+            name="test",
+            configuration={"attribute_without_validator": "{{secret.key}}"},
+            flavor="TEST",
+            component_type=StackComponentType.ORCHESTRATOR,
         )
 
 
@@ -173,101 +177,102 @@ def test_stack_component_secret_reference_resolving(
 ):
     """Tests that the stack component resolves secrets if possible."""
 
-    from zenml.artifact_stores import (
-        LocalArtifactStore,
-        LocalArtifactStoreConfig,
-    )
+    from zenml.artifact_stores import LocalArtifactStoreConfig
 
-    artifact_store = LocalArtifactStore(
+    new_artifact_store = clean_client.create_stack_component(
         name="local",
-        id=uuid4(),
-        config=LocalArtifactStoreConfig(),
+        configuration=LocalArtifactStoreConfig().dict(),
         flavor="local",
-        type=StackComponentType.ARTIFACT_STORE,
-        user=clean_client.active_user.id,
-        project=clean_client.active_project.id,
-        created=datetime.now(),
-        updated=datetime.now(),
+        component_type=StackComponentType.ARTIFACT_STORE,
     )
-    clean_client.register_stack_component(artifact_store.to_model())
-
-    component = _get_stub_orchestrator(
+    new_orchestrator = clean_client.create_stack_component(
         name="stub_orchestrator",
-        repo=clean_client,
-        attribute_without_validator="{{secret.key}}",
+        component_type=StackComponentType.ORCHESTRATOR,
+        configuration=StubOrchestratorConfig(
+            attribute_without_validator="{{secret.key}}"
+        ).dict(),
+        flavor="TEST",
     )
-    clean_client.register_stack_component(component.to_model())
+
+    new_stack = clean_client.create_stack(
+        name="new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: new_artifact_store.name,
+            StackComponentType.ORCHESTRATOR: new_orchestrator.name,
+        },
+    )
+
     with pytest.raises(RuntimeError):
         # not part of the active stack
-        _ = component.config.attribute_without_validator
+        o = StubOrchestrator.from_model(new_orchestrator)
+        _ = o.config.attribute_without_validator
 
-    stack = Stack(
-        id=uuid4(),
-        name="aria",
-        artifact_store=artifact_store,
-        orchestrator=component,
-    )
-    stack_model = stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-
-    clean_client.register_stack(stack_model)
-    clean_client.activate_stack(stack_model)
+    clean_client.activate_stack(new_stack.id)
 
     with pytest.raises(RuntimeError):
         # no secret manager in stack
-        _ = component.config.attribute_without_validator
+        o = StubOrchestrator.from_model(new_orchestrator)
+        _ = o.config.attribute_without_validator
 
     from zenml.secrets_managers import LocalSecretsManager
 
-    secrets_manager = LocalSecretsManager(
-        name="",
-        id=uuid4(),
-        config=LocalSecretsManagerConfig(),
+    new_secrets_manager = clean_client.create_stack_component(
+        name="new_secrets_manager",
+        component_type=StackComponentType.SECRETS_MANAGER,
         flavor="local",
-        type=StackComponentType.SECRETS_MANAGER,
-        user=clean_client.active_user.id,
-        project=clean_client.active_project.id,
-        created=datetime.now(),
-        updated=datetime.now(),
+        configuration=LocalSecretsManagerConfig().dict(),
     )
-    clean_client.register_stack_component(secrets_manager.to_model())
 
-    stack_model.components["secrets_manager"] = [secrets_manager.id]
-    clean_client.update_stack(stack_model)
+    clean_client.update_stack(
+        name_id_or_prefix=new_stack.id,
+        component_updates={
+            StackComponentType.SECRETS_MANAGER: [new_secrets_manager.name]
+        },
+    )
 
     with pytest.raises(KeyError):
         # secret doesn't exist
-        _ = component.config.attribute_without_validator
+        o = StubOrchestrator.from_model(new_orchestrator)
+        _ = o.config.attribute_without_validator
 
     from zenml.secret import ArbitrarySecretSchema
 
     secret_without_correct_key = ArbitrarySecretSchema(
         name="secret", wrong_key="value"
     )
-    secrets_manager.register_secret(secret_without_correct_key)
+
+    x = LocalSecretsManager.from_model(new_secrets_manager)
+    x.register_secret(secret_without_correct_key)
 
     with pytest.raises(KeyError):
         # key doesn't exist
-        _ = component.config.attribute_without_validator
+        o = StubOrchestrator.from_model(new_orchestrator)
+        _ = o.config.attribute_without_validator
 
     secret_with_correct_key = ArbitrarySecretSchema(name="secret", key="value")
-    secrets_manager.update_secret(secret_with_correct_key)
+    x.update_secret(secret_with_correct_key)
 
     with does_not_raise():
-        assert component.config.attribute_without_validator == "value"
+        o = StubOrchestrator.from_model(new_orchestrator)
+        assert o.config.attribute_without_validator == "value"
 
 
-def test_stack_component_serialization_does_not_resolve_secrets():
+def test_stack_component_serialization_does_not_resolve_secrets(
+    clean_client, register_stub_orchestrator_flavor
+):
     """Tests that all the serialization methods of a stack component don't
     resolve secret references."""
     secret_ref = "{{name.key}}"
-    component = _get_stub_orchestrator(
-        name="", attribute_without_validator=secret_ref
+
+    new_orchestrator = clean_client.create_stack_component(
+        name="stub_orchestrator",
+        component_type=StackComponentType.ORCHESTRATOR,
+        configuration=StubOrchestratorConfig(
+            attribute_without_validator=secret_ref,
+        ).dict(),
+        flavor="TEST",
     )
-    assert component.config.dict()["attribute_without_validator"] == secret_ref
-    assert dict(component.config)["attribute_without_validator"] == secret_ref
     assert (
-        json.loads(component.config.json())["attribute_without_validator"]
+        new_orchestrator.configuration["attribute_without_validator"]
         == secret_ref
     )

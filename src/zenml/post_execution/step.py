@@ -18,7 +18,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
-from zenml.models import StepRunModel
+from zenml.models import StepRunResponseModel
 from zenml.post_execution.artifact import ArtifactView
 
 
@@ -28,7 +28,7 @@ class StepView:
     This can be used to query artifact information associated with a pipeline step.
     """
 
-    def __init__(self, model: StepRunModel):
+    def __init__(self, model: StepRunResponseModel):
         """Initializes a post-execution step object.
 
         In most cases `StepView` objects should not be created manually
