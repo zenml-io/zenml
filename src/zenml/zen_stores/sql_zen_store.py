@@ -17,18 +17,7 @@ import logging
 import os
 import re
 from pathlib import Path, PurePath
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-    cast,
-)
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union, cast
 from uuid import UUID
 
 from pydantic import root_validator
@@ -114,9 +103,6 @@ from zenml.zen_stores.schemas import (
     UserSchema,
 )
 
-if TYPE_CHECKING:
-    pass
-
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
 SelectOfScalar.inherit_cache = True
@@ -171,13 +157,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     ssl_verify_server_cert: bool = False
     pool_size: int = 20
     max_overflow: int = 20
-
-    # TODO: deprecate
-    grpc_metadata_host: Optional[str] = None
-    grpc_metadata_port: Optional[int] = None
-    grpc_metadata_ssl_ca: Optional[str] = None
-    grpc_metadata_ssl_key: Optional[str] = None
-    grpc_metadata_ssl_cert: Optional[str] = None
 
     @root_validator
     def _validate_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
