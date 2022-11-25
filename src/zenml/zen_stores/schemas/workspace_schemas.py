@@ -80,7 +80,9 @@ class WorkspaceSchema(NamedSchema, table=True):
         """
         return cls(name=workspace.name, description=workspace.description)
 
-    def update(self, workspace_update: WorkspaceUpdateModel) -> "ProjectSchema":
+    def update(
+        self, workspace_update: WorkspaceUpdateModel
+    ) -> "WorkspaceSchema":
         """Update a `ProjectSchema` from a `ProjectUpdateModel`.
 
         Args:
