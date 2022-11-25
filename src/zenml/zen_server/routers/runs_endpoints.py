@@ -130,6 +130,9 @@ def update_run(
 
     Returns:
         The updated run model.
+
+    Raises:
+        IllegalOperationError: When trying to change the user of a run.
     """
     if run_model.user and run_model.user != auth_context.user.id:
         raise IllegalOperationError(

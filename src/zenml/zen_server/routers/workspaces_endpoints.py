@@ -270,6 +270,10 @@ def create_stack(
 
     Returns:
         The created stack.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the stack
+            does not match the current project or authenticated user.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -366,6 +370,10 @@ def create_stack_component(
 
     Returns:
         The created stack component.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the stack
+            component does not match the current project or authenticated user.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -446,6 +454,11 @@ def create_flavor(
 
     Returns:
         The created stack component flavor.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the stack
+            component flavor does not match the current project or authenticated
+            user.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -520,6 +533,10 @@ def create_pipeline(
 
     Returns:
         The created pipeline.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the pipeline
+            does not match the current project or authenticated user.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -563,6 +580,10 @@ def create_pipeline_run(
 
     Returns:
         The created pipeline run.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the pipeline
+            run does not match the current project or authenticated user.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
 
@@ -574,7 +595,7 @@ def create_pipeline_run(
         )
     if pipeline_run.user != auth_context.user.id:
         raise IllegalOperationError(
-            "Creating pipeline runs  for a user other than yourself "
+            "Creating pipeline runs for a user other than yourself "
             "is not supported."
         )
 

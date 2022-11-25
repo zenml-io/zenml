@@ -437,10 +437,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
         Returns:
             The model of the created default stack.
-
-        Raises:
-            StackExistsError: If a default stack already exists for the
-                user in the supplied workspace.
         """
         workspace = self.get_workspace(
             workspace_name_or_id=workspace_name_or_id

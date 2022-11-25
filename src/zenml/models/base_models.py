@@ -79,7 +79,11 @@ class UserScopedResponseModel(BaseResponseModel):
     )
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for user scoped models."""
+        """Fetches the analytics metadata for user scoped models.
+
+        Returns:
+            The analytics metadata.
+        """
         metadata = super().get_analytics_metadata()
         if self.user is not None:
             metadata["user"] = self.user.id
@@ -97,7 +101,11 @@ class WorkspaceScopedResponseModel(UserScopedResponseModel):
     )
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for workspace scoped models."""
+        """Fetches the analytics metadata for workspace scoped models.
+
+        Returns:
+            The analytics metadata.
+        """
         metadata = super().get_analytics_metadata()
         metadata["workspace"] = self.workspace.id
         return metadata
@@ -178,6 +186,12 @@ def update_model(_cls: Type[T]) -> Type[T]:
 
     This is used as a decorator on top of request models to convert them
     into update models where the fields are optional and can be set to None.
+
+    Args:
+        _cls: The class to decorate
+
+    Returns:
+        The decorated class.
     """
     for _, value in _cls.__fields__.items():
         value.required = False

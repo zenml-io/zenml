@@ -54,20 +54,27 @@ def list_stacks(
         user_name_or_id: Optionally filter by name or ID of the user.
         component_id: Optionally filter by component that is part of the stack.
         name: Optionally filter by stack name
-        is_shared: Optionally filter by shared status of the stack
+        is_shared: Defines whether to return shared stacks or the private stacks
+            of the user. If not set, both are returned.
         auth_context: Authentication Context
 
     Returns:
         All stacks.
     """
-    stacks = zen_store().list_stacks(
-        workspace_name_or_id=workspace_name_or_id,
-        user_name_or_id=user_name_or_id or auth_context.user.id,
-        component_id=component_id,
-        is_shared=False,
-        name=name,
-    )
-    # In case the user didn't explicitly filter for is shared == False
+    stacks: List[StackResponseModel] = []
+
+    # Get private stacks unless `is_shared` is set to True
+    if is_shared is None or not is_shared:
+        own_stacks = zen_store().list_stacks(
+            workspace_name_or_id=workspace_name_or_id,
+            user_name_or_id=user_name_or_id or auth_context.user.id,
+            component_id=component_id,
+            is_shared=False,
+            name=name,
+        )
+        stacks += own_stacks
+
+    # Get shared stacks unless `is_shared` is set to False
     if is_shared is None or is_shared:
         shared_stacks = zen_store().list_stacks(
             workspace_name_or_id=workspace_name_or_id,

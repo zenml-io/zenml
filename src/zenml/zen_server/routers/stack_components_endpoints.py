@@ -61,7 +61,8 @@ def list_stack_components(
         name: Optionally filter by component name
         type: Optionally filter by component type
         flavor_name: Optionally filter by flavor
-        is_shared: Optionally filter by shared status of the component
+        is_shared: Defines whether to return shared stack components or the
+            private stack components of the user. If not set, both are returned.
         auth_context: Authentication Context
 
     Returns:
@@ -69,15 +70,21 @@ def list_stack_components(
     """
     # TODO: Implement a sensible filtering mechanism
 
-    components = zen_store().list_stack_components(
-        name=name,
-        user_name_or_id=user_name_or_id or auth_context.user.id,
-        workspace_name_or_id=workspace_name_or_id,
-        flavor_name=flavor_name,
-        type=type,
-        is_shared=False,
-    )
-    # In case the user didn't explicitly filter for is shared == False
+    components: List[ComponentResponseModel] = []
+
+    # Get private stack components unless `is_shared` is set to True
+    if is_shared is None or not is_shared:
+        own_components = zen_store().list_stack_components(
+            name=name,
+            user_name_or_id=user_name_or_id or auth_context.user.id,
+            workspace_name_or_id=workspace_name_or_id,
+            flavor_name=flavor_name,
+            type=type,
+            is_shared=False,
+        )
+        components += own_components
+
+    # Get shared stacks unless `is_shared` is set to False
     if is_shared is None or is_shared:
         shared_components = zen_store().list_stack_components(
             workspace_name_or_id=workspace_name_or_id,
@@ -87,8 +94,8 @@ def list_stack_components(
             type=type,
             is_shared=True,
         )
-
         components += shared_components
+
     return components
 
 

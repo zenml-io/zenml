@@ -104,6 +104,9 @@ class ClientConfiguration(FileSyncModel):
 
         Returns:
             The active workspace.
+
+        Raises:
+            RuntimeError: If no active workspace is set.
         """
         if self._active_workspace:
             return self._active_workspace
@@ -618,9 +621,6 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             user_name_or_id: The name or ID of the user to delete.
-
-        Raises:
-            IllegalOperationError: If the user to delete is the active user.
         """
         user = self.get_user(user_name_or_id)
         self.zen_store.delete_user(user_name_or_id=user.name)
@@ -1375,11 +1375,14 @@ class Client(metaclass=ClientMetaClass):
             update_model.name = name
 
         if is_shared:
-            existing_stacks = self.list_stacks(name=name, is_shared=True)
+            current_name = update_model.name or stack.name
+            existing_stacks = self.list_stacks(
+                name=current_name, is_shared=True
+            )
             if existing_stacks:
                 raise EntityExistsError(
                     "There are already existing shared stacks with the name "
-                    f"'{name}'."
+                    f"'{current_name}'."
                 )
 
             for component_type, components in stack.components.items():
@@ -1388,11 +1391,11 @@ class Client(metaclass=ClientMetaClass):
                         raise ValueError(
                             f"A Stack can only be shared when all its "
                             f"components are also shared. Component "
-                            f"{component_type}:{c.name} is not shared. Set "
+                            f"'{component_type}:{c.name}' is not shared. Set "
                             f"the {component_type} to shared like this and "
                             f"then try re-sharing your stack:\n "
                             f"`zenml {component_type.replace('_', '-')} "
-                            f"share {c.id}`\n. Alternatively, you can rerun "
+                            f"share {c.id}`\nAlternatively, you can rerun "
                             f"your command with `-r` to recursively "
                             f"share all components within the stack."
                         )
@@ -1756,13 +1759,14 @@ class Client(metaclass=ClientMetaClass):
             update_model.name = name
 
         if is_shared is not None:
+            current_name = update_model.name or component.name
             existing_components = self.list_stack_components(
-                name=name, is_shared=True, component_type=component_type
+                name=current_name, is_shared=True, component_type=component_type
             )
             if existing_components:
                 raise EntityExistsError(
                     f"There are already existing shared components with "
-                    f"the name '{name}'"
+                    f"the name '{current_name}'"
                 )
             update_model.is_shared = is_shared
 
@@ -1939,6 +1943,10 @@ class Client(metaclass=ClientMetaClass):
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List["FlavorResponseModel"]:
         """Fetches all the flavor models.
+
+        Args:
+            project_name_or_id: The name or id of the project to filter by.
+            user_name_or_id: The name or id of the user to filter by.
 
         Returns:
             A list of all the flavor models.
