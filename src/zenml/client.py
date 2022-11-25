@@ -1061,7 +1061,7 @@ class Client(metaclass=ClientMetaClass):
             List of role assignments
         """
         return self.zen_store.list_role_assignments(
-            project_name_or_id=project_name_or_id or self.active_project.id,
+            project_name_or_id=project_name_or_id,
             role_name_or_id=role_name_or_id,
             user_name_or_id=user_name_or_id,
             team_name_or_id=team_name_or_id,
