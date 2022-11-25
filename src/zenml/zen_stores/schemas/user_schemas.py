@@ -97,7 +97,16 @@ class UserSchema(NamedSchema, table=True):
             The updated `UserSchema`.
         """
         for field, value in user_update.dict(exclude_unset=True).items():
-            setattr(self, field, value)
+            if field == 'password':
+                setattr(self, field, user_update.create_hashed_password())
+            elif field == 'activation_token':
+                setattr(
+                    self,
+                    field,
+                    user_update.create_hashed_activation_token()
+                )
+            else:
+                setattr(self, field, value)
 
         self.updated = datetime.now()
         return self
