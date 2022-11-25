@@ -22,11 +22,7 @@ from pydantic import root_validator
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
-from zenml.models import (
-    PipelineRunRequestModel,
-    PipelineRunResponseModel,
-    PipelineRunUpdateModel,
-)
+from zenml.models import PipelineRunRequestModel, PipelineRunResponseModel
 from zenml.orchestrators.launcher import Launcher
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.utils import uuid_utils
@@ -271,18 +267,6 @@ class BaseOrchestrator(StackComponent, ABC):
         )
 
         return client.zen_store.get_or_create_run(run_model)
-
-    @staticmethod
-    def _publish_failed_run(run_id: UUID) -> None:
-        """Set run status to failed.  TODO: delete this method.
-
-        Args:
-            run: The model of the run that failed.
-        """
-        Client().zen_store.update_run(
-            run_id=run_id,
-            run_update=PipelineRunUpdateModel(status=ExecutionStatus.FAILED),
-        )
 
 
 class BaseOrchestratorFlavor(Flavor):

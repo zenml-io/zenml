@@ -100,6 +100,7 @@ class StepRunSchema(NamedSchema, table=True):
         Args:
             parent_step_ids: The parent step ids to link to the step.
             input_artifacts: The input artifacts to link to the step.
+            output_artifacts: The output artifacts to link to the step.
 
         Returns:
             The created StepRunModel.

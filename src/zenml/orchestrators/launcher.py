@@ -240,7 +240,7 @@ def get_cached_step_run(cache_key: str) -> Optional[StepRunResponseModel]:
     project which has the same cache key and was successfully executed.
 
     Args:
-        step_run: The step run to check for caching.
+        cache_key: The cache key of the step.
 
     Returns:
         The existing step run if the step can be cached, otherwise None.
@@ -596,8 +596,8 @@ class Launcher:
 
         Args:
             pipeline_run: The pipeline run.
-            step_run (StepRunModel): _description_
-            artifacts (Sequence[BaseArtifact]): _description_
+            step_run: The step run.
+            artifacts: The output artifacts of the step.
         """
         logger.error(f"Failed to execute step `{self._step_name}`.")
         Client().zen_store.update_run_step(

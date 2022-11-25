@@ -3124,6 +3124,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated step run.
+
+        Raises:
+            KeyError: if the step run doesn't exist.
         """
         with Session(self.engine) as session:
 

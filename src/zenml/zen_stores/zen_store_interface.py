@@ -1026,6 +1026,9 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The updated step run.
+
+        Raises:
+            KeyError: if the step run doesn't exist.
         """
 
     @abstractmethod
