@@ -1386,11 +1386,11 @@ class Client(metaclass=ClientMetaClass):
                         raise ValueError(
                             f"A Stack can only be shared when all its "
                             f"components are also shared. Component "
-                            f"{component_type}:{c.name} is not shared. Set "
+                            f"'{component_type}:{c.name}' is not shared. Set "
                             f"the {component_type} to shared like this and "
                             f"then try re-sharing your stack:\n "
                             f"`zenml {component_type.replace('_', '-')} "
-                            f"share {c.id}`\n. Alternatively, you can rerun "
+                            f"share {c.id}`\nAlternatively, you can rerun "
                             f"your command with `-r` to recursively "
                             f"share all components within the stack."
                         )
