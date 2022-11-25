@@ -25,6 +25,7 @@ from typing import (
     List,
     NoReturn,
     Optional,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -239,7 +240,8 @@ def print_pydantic_models(
                         items.setdefault(k, []).append(str(v.name))
                     else:
                         items.setdefault(k, []).append(str(v.id))
-
+            elif isinstance(value, Set) or isinstance(value, List):
+                items[k] = [str(v) for v in value]
             else:
                 items[k] = str(value)
         # prepend an active marker if a function to mark active was passed
