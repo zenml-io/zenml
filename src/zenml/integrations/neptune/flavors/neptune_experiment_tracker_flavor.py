@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Neptune experiment tracker flavor."""
 
+__all__ = ["NeptuneExperimentTrackerConfig", "NeptuneExperimentTrackerFlavor"]
+
 from typing import Type
 
 from zenml.experiment_trackers.base_experiment_tracker import (
