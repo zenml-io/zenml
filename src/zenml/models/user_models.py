@@ -430,7 +430,7 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
 
-    password: Optional[str] = Field(default=None, exclude=True)
+    password: Optional[str] = Field(default=None)
     activation_token: Optional[str] = Field(default=None)
 
     class Config:
