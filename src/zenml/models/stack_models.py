@@ -71,6 +71,7 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Add the stack components to the stack analytics metadata.
+
         Returns:
             Dict of analytics metadata.
         """
@@ -137,6 +138,7 @@ class StackRequestModel(StackBaseModel, ShareableRequestModel):
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Add the stack components to the stack analytics metadata.
+
         Returns:
             Dict of analytics metadata.
         """

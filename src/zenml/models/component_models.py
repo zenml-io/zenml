@@ -89,6 +89,7 @@ class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
 
     @validator("name")
     def name_cant_be_a_secret_reference(cls, name: str) -> str:
+        """Validator to ensure that the given name is not a secret reference."""
         if secret_utils.is_secret_reference(name):
             raise ValueError(
                 "Passing the `name` attribute of a stack component as a "
