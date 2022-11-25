@@ -22,7 +22,11 @@ from pydantic import root_validator
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
-from zenml.models import PipelineRunModel
+from zenml.models import (
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
+    PipelineRunUpdateModel,
+)
 from zenml.orchestrators.launcher import Launcher
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.utils import uuid_utils
@@ -185,7 +189,6 @@ class BaseOrchestrator(StackComponent, ABC):
             pipeline_config=self._active_deployment.pipeline,
             stack=Client().active_stack,
         )
-
         launcher.launch()
 
     @staticmethod
@@ -235,7 +238,7 @@ class BaseOrchestrator(StackComponent, ABC):
         run_id_seed = f"{self.id}-{orchestrator_run_id}"
         return uuid_utils.generate_uuid_from_string(run_id_seed)
 
-    def _create_or_reuse_run(self) -> PipelineRunModel:
+    def _create_or_reuse_run(self) -> PipelineRunResponseModel:
         """Creates a run or reuses an existing one.
 
         Returns:
@@ -253,14 +256,14 @@ class BaseOrchestrator(StackComponent, ABC):
         logger.debug("Creating run with ID: %s, name: %s", run_id, run_name)
 
         client = Client()
-        run_model = PipelineRunModel(
+        run_model = PipelineRunRequestModel(
             id=run_id,
             name=run_name,
             orchestrator_run_id=orchestrator_run_id,
             user=client.active_user.id,
             project=client.active_project.id,
-            stack_id=self._active_deployment.stack_id,
-            pipeline_id=self._active_deployment.pipeline_id,
+            stack=self._active_deployment.stack_id,
+            pipeline=self._active_deployment.pipeline_id,
             enable_cache=self._active_deployment.pipeline.enable_cache,
             status=ExecutionStatus.RUNNING,
             pipeline_configuration=self._active_deployment.pipeline.dict(),
@@ -270,15 +273,16 @@ class BaseOrchestrator(StackComponent, ABC):
         return client.zen_store.get_or_create_run(run_model)
 
     @staticmethod
-    def _publish_failed_run(run: PipelineRunModel) -> None:
-        """Set run status to failed.
+    def _publish_failed_run(run_id: UUID) -> None:
+        """Set run status to failed.  TODO: delete this method.
 
         Args:
             run: The model of the run that failed.
         """
-        client = Client()
-        run.status = ExecutionStatus.FAILED
-        client.zen_store.update_run(run)
+        Client().zen_store.update_run(
+            run_id=run_id,
+            run_update=PipelineRunUpdateModel(status=ExecutionStatus.FAILED),
+        )
 
 
 class BaseOrchestratorFlavor(Flavor):

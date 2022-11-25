@@ -24,31 +24,18 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
     LocalArtifactStoreConfig,
 )
-from zenml.cli.stack import (
-    delete_stack,
-    describe_stack,
-    export_stack,
-    import_stack,
-    register_stack,
-    remove_stack_component,
-    rename_stack,
-    share_stack,
-    update_stack,
-)
+from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.enums import StackComponentType
-from zenml.models import StackModel, UserModel
+from zenml.models import ComponentRequestModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
     LocalSecretsManagerConfig,
 )
-from zenml.stack import Stack
 
 NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
-
-# TODO [ENG-828]: Add tests for these commands using REST, SQL and local options
 
 
 def _create_local_orchestrator(
@@ -85,378 +72,464 @@ def _create_local_artifact_store(
     )
 
 
-def _create_local_secrets_manager(repo: Client):
+def _create_local_secrets_manager(client: Client):
     return LocalSecretsManager(
         name="arias_secrets_manager",
         id=uuid4(),
         config=LocalSecretsManagerConfig(),
         flavor="local",
         type=StackComponentType.SECRETS_MANAGER,
-        user=repo.active_user.id,
-        project=repo.active_project.id,
-        share_stack=False,
+        user=client.active_user.id,
+        project=client.active_project.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
 
 
-def test_stack_describe_contains_local_stack() -> None:
+def test_describe_stack_contains_local_stack() -> None:
     """Test that the stack describe command contains the default local stack"""
     runner = CliRunner()
-    result = runner.invoke(describe_stack)
+    describe_command = cli.commands["stack"].commands["describe"]
+    result = runner.invoke(describe_command)
     assert result.exit_code == 0
     assert "default" in result.output
 
 
 @pytest.mark.parametrize("not_a_stack", NOT_STACKS)
-def test_stack_describe_fails_for_bad_input(
+def test_describe_stack_bad_input_fails(
     not_a_stack: str,
 ) -> None:
-    """Test that the stack describe command fails when passing in bad parameters"""
+    """Test if the stack describe fails when passing in bad parameters"""
     runner = CliRunner()
-    result = runner.invoke(describe_stack, [not_a_stack])
+    describe_command = cli.commands["stack"].commands["describe"]
+    result = runner.invoke(describe_command, [not_a_stack])
     assert result.exit_code == 1
 
 
-def test_updating_default_stack_fails(clean_client) -> None:
+def test_update_stack_update_on_default_fails(clean_client) -> None:
     """Test stack update of default stack is prohibited."""
     # first we set the active stack to a non-default stack
-    original_stack = clean_client.active_stack
+    original_stack = clean_client.active_stack_model
 
     new_artifact_store = _create_local_artifact_store(clean_client)
-    clean_client.register_stack_component(new_artifact_store.to_model())
+
+    clean_client.create_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.dict(),
+    )
 
     runner = CliRunner()
+    update_command = cli.commands["stack"].commands["update"]
     result = runner.invoke(
-        update_stack, ["default", "-a", new_artifact_store.name]
+        update_command, ["default", "-a", new_artifact_store.name]
     )
     assert result.exit_code == 1
 
-    default_stack = [s for s in clean_client.stacks if s.name == "default"][0]
+    default_stack = clean_client.get_stack("default")
     assert (
         default_stack.components[StackComponentType.ARTIFACT_STORE][0].id
-        == original_stack.artifact_store.id
+        == original_stack.components[StackComponentType.ARTIFACT_STORE][0].id
     )
 
 
-def test_updating_active_stack_succeeds(clean_client) -> None:
+def test_update_stack_active_stack_succeeds(clean_client) -> None:
     """Test stack update of active stack succeeds."""
     # first we set the active stack to a non-default stack
-    registered_stack = clean_client.active_stack
-    new_stack = Stack(
-        id=uuid4(),
+    registered_stack = clean_client.active_stack_model
+
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
-        orchestrator=registered_stack.orchestrator,
-        artifact_store=registered_stack.artifact_store,
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+        },
     )
-    stack_model = new_stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-    clean_client.register_stack(stack_model)
-    clean_client.activate_stack(new_stack)
+
+    clean_client.activate_stack(stack_name_id_or_prefix=new_stack.id)
 
     new_artifact_store = _create_local_artifact_store(clean_client)
-    clean_client.register_stack_component(new_artifact_store.to_model())
 
+    clean_client.create_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.dict(),
+    )
     runner = CliRunner()
-    result = runner.invoke(update_stack, ["-a", new_artifact_store.name])
+
+    update_command = cli.commands["stack"].commands["update"]
+
+    result = runner.invoke(update_command, ["-a", new_artifact_store.name])
     assert result.exit_code == 0
-    assert clean_client.active_stack.artifact_store == new_artifact_store
+
+    assert (
+        clean_client.active_stack_model.components[
+            StackComponentType.ARTIFACT_STORE
+        ][0].name
+        == new_artifact_store.name
+    )
 
 
 def test_updating_non_active_stack_succeeds(clean_client) -> None:
-    """Test stack update of pre-existing component of non-active stack succeeds."""
-    registered_stack = clean_client.active_stack
-    new_stack = Stack(
-        id=uuid4(),
-        name="arias_new_stack",
-        orchestrator=registered_stack.orchestrator,
-        artifact_store=registered_stack.artifact_store,
-    )
-    stack_model = new_stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-    clean_client.register_stack(stack_model)
+    """Test if stack update of existing stack of non-active stack succeeds."""
+    registered_stack = clean_client.active_stack_model
 
-    new_orchestrator = _create_local_orchestrator(clean_client)
-    clean_client.register_stack_component(new_orchestrator.to_model())
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    new_stack = clean_client.create_stack(
+        name="arias_new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+        },
+    )
+
+    orchestrator = _create_local_orchestrator(clean_client)
+
+    new_orchestrator = clean_client.create_stack_component(
+        name=orchestrator.name,
+        flavor=orchestrator.flavor,
+        component_type=orchestrator.type,
+        configuration=orchestrator.config.dict(),
+    )
 
     runner = CliRunner()
+
+    stack_update_command = cli.commands["stack"].commands["update"]
+
     result = runner.invoke(
-        update_stack, ["arias_new_stack", "-o", new_orchestrator.name]
+        stack_update_command, [new_stack.name, "-o", new_orchestrator.name]
     )
     assert result.exit_code == 0
 
-    updated_stack = Stack.from_model(
-        clean_client.zen_store.get_stack(stack_model.id).to_hydrated_model()
+    assert (
+        clean_client.get_stack(str(new_stack.id))
+        .components.get(StackComponentType.ORCHESTRATOR)[0]
+        .name
+        == new_orchestrator.name
     )
-    assert updated_stack.orchestrator == new_orchestrator
 
 
-def test_adding_to_stack_succeeds(clean_client) -> None:
+def test_update_stack_adding_component_succeeds(clean_client) -> None:
     """Test stack update by adding a new component to a stack
     succeeds."""
     # first we create and activate a non-default stack
-    registered_stack = clean_client.active_stack
-    new_stack = Stack(
-        id=uuid4(),
+    registered_stack = clean_client.active_stack_model
+
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
-        orchestrator=registered_stack.orchestrator,
-        artifact_store=registered_stack.artifact_store,
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+        },
     )
-    stack_model = new_stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-    clean_client.register_stack(stack_model)
-    clean_client.activate_stack(new_stack)
+    clean_client.activate_stack(new_stack.id)
 
     local_secrets_manager = _create_local_secrets_manager(clean_client)
-    clean_client.register_stack_component(local_secrets_manager.to_model())
+
+    local_secrets_manager_model = clean_client.create_stack_component(
+        name=local_secrets_manager.name,
+        flavor=local_secrets_manager.flavor,
+        component_type=local_secrets_manager.type,
+        configuration=local_secrets_manager.config.dict(),
+    )
 
     runner = CliRunner()
-    result = runner.invoke(update_stack, ["-x", local_secrets_manager.name])
+    update_command = cli.commands["stack"].commands["update"]
+    result = runner.invoke(update_command, ["-x", local_secrets_manager.name])
 
-    active_stack = clean_client.active_stack_model
+    new_stack = clean_client.get_stack(new_stack.id)
 
     assert result.exit_code == 0
-    assert StackComponentType.SECRETS_MANAGER in active_stack.components.keys()
+    assert StackComponentType.SECRETS_MANAGER in new_stack.components.keys()
+    assert new_stack.components[StackComponentType.SECRETS_MANAGER] is not None
     assert (
-        active_stack.components[StackComponentType.SECRETS_MANAGER] is not None
-    )
-    assert (
-        active_stack.components[StackComponentType.SECRETS_MANAGER][0].id
-        == local_secrets_manager.id
+        new_stack.components[StackComponentType.SECRETS_MANAGER][0].id
+        == local_secrets_manager_model.id
     )
 
 
-def test_adding_to_default_stack_fails(clean_client) -> None:
+def test_update_stack_adding_to_default_stack_fails(clean_client) -> None:
     """Test stack update by adding a new component to the default stack
     is prohibited."""
     # first we set the active stack to a non-default stack
-    registered_stack = clean_client.active_stack
-    new_stack = Stack(
-        id=uuid4(),
+    registered_stack = clean_client.active_stack_model
+
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
-        orchestrator=registered_stack.orchestrator,
-        artifact_store=registered_stack.artifact_store,
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+        },
     )
-    stack_model = new_stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-    clean_client.register_stack(stack_model)
-    clean_client.activate_stack(new_stack)
+    clean_client.activate_stack(new_stack.id)
 
     local_secrets_manager = _create_local_secrets_manager(clean_client)
-    clean_client.register_stack_component(local_secrets_manager.to_model())
+
+    local_secrets_manager_model = clean_client.create_stack_component(
+        name=local_secrets_manager.name,
+        flavor=local_secrets_manager.flavor,
+        component_type=local_secrets_manager.type,
+        configuration=local_secrets_manager.config.dict(),
+    )
 
     runner = CliRunner()
+    update_command = cli.commands["stack"].commands["update"]
     result = runner.invoke(
-        update_stack, ["default", "-x", local_secrets_manager.name]
+        update_command, ["default", "-x", local_secrets_manager_model.name]
     )
     assert result.exit_code == 1
 
-    default_stack = [s for s in clean_client.stacks if s.name == "default"][0]
+    default_stack = clean_client.get_stack("default")
     assert (
         StackComponentType.SECRETS_MANAGER
         not in default_stack.components.keys()
     )
 
 
-def test_updating_nonexistent_stack_fails(clean_client) -> None:
+def test_update_stack_nonexistent_stack_fails(clean_client) -> None:
     """Test stack update of nonexistent stack fails."""
     local_secrets_manager = _create_local_secrets_manager(clean_client)
-    clean_client.register_stack_component(local_secrets_manager.to_model())
+
+    local_secrets_manager_model = clean_client.create_stack_component(
+        name=local_secrets_manager.name,
+        flavor=local_secrets_manager.flavor,
+        component_type=local_secrets_manager.type,
+        configuration=local_secrets_manager.config.dict(),
+    )
 
     runner = CliRunner()
+    update_command = cli.commands["stack"].commands["update"]
     result = runner.invoke(
-        update_stack, ["not_a_stack", "-x", local_secrets_manager.name]
+        update_command, ["not_a_stack", "-x", local_secrets_manager_model.name]
     )
 
     assert result.exit_code == 1
     assert clean_client.active_stack.secrets_manager is None
 
 
-def test_renaming_nonexistent_stack_fails(clean_client) -> None:
+def test_rename_stack_nonexistent_stack_fails(clean_client) -> None:
     """Test stack rename of nonexistent stack fails."""
     runner = CliRunner()
-    result = runner.invoke(rename_stack, ["not_a_stack", "a_new_stack"])
+    rename_command = cli.commands["stack"].commands["rename"]
+    result = runner.invoke(rename_command, ["not_a_stack", "a_new_stack"])
     assert result.exit_code == 1
 
 
-def test_renaming_stack_to_same_name_as_existing_stack_fails(
-    clean_client,
-) -> None:
+def test_rename_stack_new_name_with_existing_name_fails(clean_client) -> None:
     runner = CliRunner()
-    result = runner.invoke(rename_stack, ["not_a_stack", "default"])
+    rename_command = cli.commands["stack"].commands["rename"]
+    result = runner.invoke(rename_command, ["not_a_stack", "default"])
     assert result.exit_code == 1
 
 
-def test_renaming_default_stack_fails(clean_client) -> None:
+def test_rename_stack_default_stack_fails(clean_client) -> None:
     """Test stack rename of default stack fails."""
     runner = CliRunner()
-    result = runner.invoke(rename_stack, ["default", "axls_new_stack"])
+    rename_command = cli.commands["stack"].commands["rename"]
+    result = runner.invoke(rename_command, ["default", "axls_new_stack"])
     assert result.exit_code == 1
-    assert len([s for s in clean_client.stacks if s.name == "default"]) == 1
+    assert len(clean_client.list_stacks(name="default")) == 1
 
 
-def test_renaming_active_stack_succeeds(clean_client) -> None:
+def test_rename_stack_active_stack_succeeds(clean_client) -> None:
     """Test stack rename of active stack fails."""
     # first we set the active stack to a non-default stack
-    registered_stack = clean_client.active_stack
-    new_stack = Stack(
-        id=uuid4(),
-        name="arias_new_stack",
-        orchestrator=registered_stack.orchestrator,
-        artifact_store=registered_stack.artifact_store,
-    )
-    stack_model = new_stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-    clean_client.register_stack(stack_model)
-    clean_client.activate_stack(new_stack)
+    registered_stack = clean_client.active_stack_model
 
-    runner = CliRunner()
-    result = runner.invoke(rename_stack, ["arias_new_stack", "axls_new_stack"])
-    assert result.exit_code == 0
-    assert clean_client.active_stack_model.name == "axls_new_stack"
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
 
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
 
-def test_renaming_non_active_stack_succeeds(clean_client) -> None:
-    """Test stack rename of non-active stack succeeds."""
-    registered_stack = clean_client.active_stack
-    new_stack = Stack(
-        id=uuid4(),
+    new_stack = clean_client.create_stack(
         name="arias_stack",
-        orchestrator=registered_stack.orchestrator,
-        artifact_store=registered_stack.artifact_store,
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+        },
     )
-    stack_model = new_stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-    clean_client.register_stack(stack_model)
+    clean_client.activate_stack(new_stack.id)
 
     runner = CliRunner()
-    result = runner.invoke(rename_stack, ["arias_stack", "arias_renamed_stack"])
+    rename_command = cli.commands["stack"].commands["rename"]
+    result = runner.invoke(rename_command, ["arias_stack", "axls_stack"])
     assert result.exit_code == 0
-    assert (
-        clean_client.zen_store.get_stack(stack_model.id).name
-        == "arias_renamed_stack"
+    assert clean_client.active_stack_model.name == "axls_stack"
+
+
+def test_rename_stack_non_active_stack_succeeds(clean_client) -> None:
+    """Test stack rename of non-active stack succeeds."""
+    registered_stack = clean_client.active_stack_model
+
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    new_stack = clean_client.create_stack(
+        name="arias_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+        },
     )
+
+    runner = CliRunner()
+    rename_command = cli.commands["stack"].commands["rename"]
+    result = runner.invoke(rename_command, ["arias_stack", "axls_stack"])
+    assert result.exit_code == 0
+    assert clean_client.get_stack(new_stack.id).name == "axls_stack"
 
 
 def test_sharing_nonexistent_stack_fails(clean_client: Client) -> None:
     """Test stack rename of nonexistent stack fails."""
     runner = CliRunner()
-    result = runner.invoke(share_stack, ["not_a_stack"])
+    share_command = cli.commands["stack"].commands["share"]
+    result = runner.invoke(share_command, ["not_a_stack"])
     assert result.exit_code == 1
 
 
-def test_sharing_default_stack_fails(
-    clean_client: Client,
-) -> None:
+def test_sharing_default_stack_fails(clean_client: Client) -> None:
     runner = CliRunner()
-    result = runner.invoke(share_stack, ["default"])
+    share_command = cli.commands["stack"].commands["share"]
+    result = runner.invoke(share_command, ["default"])
     assert result.exit_code == 1
 
-    default_stack = [s for s in clean_client.stacks if s.name == "default"][0]
+    default_stack = clean_client.get_stack("default")
     assert default_stack.is_shared is False
 
 
-def test_share_stack_that_is_already_shared_by_other_user_fails(
+def test_share_stack_that_is_already_shared_fails(
     clean_client: Client,
 ) -> None:
-    # first we create a new non-default stack
-    new_orchestrator = _create_local_orchestrator(clean_client)
-    clean_client.register_stack_component(new_orchestrator.to_model())
     new_artifact_store = _create_local_artifact_store(clean_client)
-    clean_client.register_stack_component(new_artifact_store.to_model())
 
-    new_stack = Stack(
-        id=uuid4(),
+    new_artifact_store_model = clean_client.create_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.dict(),
+        is_shared=True,
+    )
+
+    new_orchestrator = _create_local_orchestrator(clean_client)
+
+    new_orchestrator_model = clean_client.create_stack_component(
+        name=new_orchestrator.name,
+        flavor=new_orchestrator.flavor,
+        component_type=new_orchestrator.type,
+        configuration=new_orchestrator.config.dict(),
+        is_shared=True,
+    )
+
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
-        orchestrator=new_orchestrator,
-        artifact_store=new_artifact_store,
+        components={
+            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
+            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
+        },
+        is_shared=True,
     )
-    stack_model = new_stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-    clean_client.register_stack(stack_model)
-
-    other_user = UserModel(name="Arias_Evil_Twin")
-    other_user = clean_client.zen_store.create_user(other_user)
-
-    other_orchestrator = _create_local_orchestrator(
-        clean_client, user=other_user.id
-    )
-    clean_client.register_stack_component(other_orchestrator.to_model())
-    other_artifact_store = _create_local_artifact_store(
-        clean_client, user=other_user.id
-    )
-    clean_client.register_stack_component(other_artifact_store.to_model())
-
-    other_stack = Stack(
-        id=uuid4(),
-        name="arias_new_stack",
-        orchestrator=other_orchestrator,
-        artifact_store=other_artifact_store,
-    )
-    other_stack_model = other_stack.to_model(
-        user=other_user.id, project=clean_client.active_project.id
-    )
-    other_stack_model.is_shared = True
-    clean_client.register_stack(other_stack_model)
 
     runner = CliRunner()
-
-    result = runner.invoke(share_stack, ["arias_new_stack"])
+    share_command = cli.commands["stack"].commands["share"]
+    result = runner.invoke(share_command, ["arias_new_stack"])
     assert result.exit_code == 1
 
-    arias_stack = [
-        s for s in clean_client.stacks if s.name == "arias_new_stack"
-    ][0]
-    assert arias_stack.is_shared is False
+    arias_stack = clean_client.get_stack(new_stack.name)
+    assert arias_stack.is_shared is True
 
 
+# This test will only be relevant once the rest_zen_store is used as backend
+@pytest.mark.skip
 def test_share_stack_when_component_is_already_shared_by_other_user_fails(
     clean_client: Client,
 ) -> None:
     """When sharing a stack all the components are also shared, so if a
     component with the same name is already shared this should fail."""
-    # first we create a new non-default stack
-    new_orchestrator = _create_local_orchestrator(clean_client)
-    clean_client.register_stack_component(new_orchestrator.to_model())
     new_artifact_store = _create_local_artifact_store(clean_client)
-    clean_client.register_stack_component(new_artifact_store.to_model())
 
-    new_stack = Stack(
-        id=uuid4(),
+    new_artifact_store_model = clean_client.create_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.dict(),
+    )
+
+    new_orchestrator = _create_local_orchestrator(clean_client)
+
+    new_orchestrator_model = clean_client.create_stack_component(
+        name=new_orchestrator.name,
+        flavor=new_orchestrator.flavor,
+        component_type=new_orchestrator.type,
+        configuration=new_orchestrator.config.dict(),
+    )
+
+    clean_client.create_stack(
         name="arias_new_stack",
-        orchestrator=new_orchestrator,
-        artifact_store=new_artifact_store,
+        components={
+            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
+            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
+        },
     )
-    stack_model = new_stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-    clean_client.register_stack(stack_model)
 
-    other_user = UserModel(name="Arias_Evil_Twin")
-    other_user = clean_client.zen_store.create_user(other_user)
-
-    other_orchestrator = _create_local_orchestrator(
-        clean_client, user=other_user.id
+    other_user = clean_client.create_user(name="Arias_Evil_Twin")
+    clean_client.zen_store.create_stack_component(
+        component=ComponentRequestModel(
+            name=new_orchestrator.name,
+            is_shared=True,
+            type=StackComponentType.ORCHESTRATOR,
+            flavor="local",
+            configuration={},
+            user=other_user.id,
+            project=clean_client.active_project.id,
+        )
     )
-    orchestrator_model = other_orchestrator.to_model()
-    orchestrator_model.is_shared = True
-    clean_client.register_stack_component(orchestrator_model)
 
     runner = CliRunner()
-
-    result = runner.invoke(share_stack, ["arias_new_stack"])
+    share_command = cli.commands["stack"].commands["share"]
+    result = runner.invoke(share_command, ["arias_new_stack"])
     assert result.exit_code == 1
 
-    arias_stack = [
-        s for s in clean_client.stacks if s.name == "arias_new_stack"
-    ][0]
+    arias_stack = clean_client.get_stack("arias_new_stack")
     assert arias_stack.is_shared is False
 
 
@@ -466,8 +539,9 @@ def test_create_shared_stack_when_component_is_private_fails(
     """When sharing a stack all the components should also be shared, so if a
     component is not shared this should fail."""
     runner = CliRunner()
+    register_command = cli.commands["stack"].commands["register"]
     result = runner.invoke(
-        register_stack,
+        register_command,
         ["default2", "-o", "default", "-a", "default", "--share"],
     )
     assert result.exit_code == 1
@@ -478,30 +552,54 @@ def test_add_private_component_to_shared_stack_fails(
 ) -> None:
     """When sharing a stack all the components are also shared, so if a
     component with the same name is already shared this should fail."""
-    runner = CliRunner()
-    local_secrets_manager = _create_local_secrets_manager(clean_client)
-    clean_client.register_stack_component(local_secrets_manager.to_model())
-    local_orchestrator = _create_local_orchestrator(clean_client)
-    clean_client.register_stack_component(local_orchestrator.to_model())
-    local_artifact_store = _create_local_artifact_store(clean_client)
-    clean_client.register_stack_component(local_artifact_store.to_model())
+    # Shared component
+    shared_artifact_store = _create_local_artifact_store(clean_client)
 
-    clean_client.register_stack(
-        stack=StackModel(
-            name="axls_stack",
-            components={
-                StackComponentType.ORCHESTRATOR: [local_orchestrator.id],
-                StackComponentType.ARTIFACT_STORE: [local_artifact_store.id],
-            },
-            user=clean_client.active_user.id,
+    other_user = clean_client.create_user(name="Arias_Evil_Twin")
+    clean_client.zen_store.create_stack_component(
+        component=ComponentRequestModel(
+            name=shared_artifact_store.name,
+            is_shared=True,
+            type=StackComponentType.ARTIFACT_STORE,
+            flavor="local",
+            configuration={},
+            user=other_user.id,
             project=clean_client.active_project.id,
         )
     )
-    result = runner.invoke(share_stack, ["axls_stack", "-r"])
-    assert result.exit_code == 0
-    result = runner.invoke(
-        update_stack, ["axls_stack", "-x", "arias_secrets_manager"]
+
+    # Non-shared components
+    new_artifact_store = _create_local_artifact_store(clean_client)
+
+    new_artifact_store_model = clean_client.create_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.dict(),
     )
+
+    new_orchestrator = _create_local_orchestrator(clean_client)
+
+    new_orchestrator_model = clean_client.create_stack_component(
+        name=new_orchestrator.name,
+        flavor=new_orchestrator.flavor,
+        component_type=new_orchestrator.type,
+        configuration=new_orchestrator.config.dict(),
+    )
+
+    # Register non-shared stack with non-shared components
+    new_stack = clean_client.create_stack(
+        name="arias_new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.id,
+            StackComponentType.ORCHESTRATOR: new_orchestrator_model.id,
+        },
+    )
+
+    # Share stack where the shared versions of components already exists
+    runner = CliRunner()
+    share_command = cli.commands["stack"].commands["share"]
+    result = runner.invoke(share_command, [new_stack.name, "-r"])
     assert result.exit_code == 1
 
 
@@ -510,114 +608,197 @@ def test_share_stack_when_component_is_private_fails(
 ) -> None:
     """When sharing a stack all the components are also shared, so if a
     component with the same name is already shared this should fail."""
+    # Non-shared components
+    new_artifact_store = _create_local_artifact_store(clean_client)
+
+    new_artifact_store_model = clean_client.create_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.dict(),
+    )
+
+    new_orchestrator = _create_local_orchestrator(clean_client)
+
+    new_orchestrator_model = clean_client.create_stack_component(
+        name=new_orchestrator.name,
+        flavor=new_orchestrator.flavor,
+        component_type=new_orchestrator.type,
+        configuration=new_orchestrator.config.dict(),
+    )
+
+    # Register non-shared stack with non-shared components
+    new_stack = clean_client.create_stack(
+        name="arias_new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
+            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
+        },
+    )
+
+    # Share stack where the shared versions of components already exists
     runner = CliRunner()
-    result = runner.invoke(share_stack, ["default"])
+    share_command = cli.commands["stack"].commands["share"]
+    result = runner.invoke(share_command, [new_stack.name])
     assert result.exit_code == 1
 
 
 def test_remove_component_from_nonexistent_stack_fails(clean_client) -> None:
     """Test stack remove-component of nonexistent stack fails."""
     runner = CliRunner()
-    result = runner.invoke(remove_stack_component, ["not_a_stack", "-x"])
+    remove_command = cli.commands["stack"].commands["remove-component"]
+    result = runner.invoke(remove_command, ["not_a_stack", "-x"])
     assert result.exit_code == 1
 
 
-def test_remove_core_component_from_stack_fails(clean_client) -> None:
+def test_remove_component_core_component_fails(clean_client) -> None:
     """Test stack remove-component of core component fails."""
     # first we create a non-default stack
-    registered_stack = clean_client.active_stack
-    new_stack = Stack(
-        id=uuid4(),
+    new_artifact_store = _create_local_artifact_store(clean_client)
+
+    new_artifact_store_model = clean_client.create_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.dict(),
+    )
+
+    new_orchestrator = _create_local_orchestrator(clean_client)
+
+    new_orchestrator_model = clean_client.create_stack_component(
+        name=new_orchestrator.name,
+        flavor=new_orchestrator.flavor,
+        component_type=new_orchestrator.type,
+        configuration=new_orchestrator.config.dict(),
+    )
+
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
-        orchestrator=registered_stack.orchestrator,
-        artifact_store=registered_stack.artifact_store,
+        components={
+            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
+            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
+        },
     )
-    stack_model = new_stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-    clean_client.register_stack(stack_model)
 
     runner = CliRunner()
-    result = runner.invoke(remove_stack_component, ["arias_new_stack", "-o"])
+    remove_command = cli.commands["stack"].commands["remove-component"]
+    result = runner.invoke(remove_command, [new_stack.name, "-o"])
     assert result.exit_code != 0
-    arias_stack = [
-        s for s in clean_client.stacks if s.name == "arias_new_stack"
-    ][0]
 
+    arias_stack = clean_client.get_stack(new_stack.name)
     assert StackComponentType.ORCHESTRATOR in arias_stack.components
 
 
-def test_remove_non_core_component_from_stack_succeeds(clean_client) -> None:
+def test_remove_component_non_core_component_succeeds(clean_client) -> None:
     """Test stack remove-component of non-core component succeeds."""
     # first we create a non-default stack
-    local_secrets_manager = _create_local_secrets_manager(clean_client)
-    clean_client.register_stack_component(local_secrets_manager.to_model())
+    new_artifact_store = _create_local_artifact_store(clean_client)
 
-    registered_stack = clean_client.active_stack
-    new_stack = Stack(
-        id=uuid4(),
+    new_artifact_store_model = clean_client.create_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.dict(),
+    )
+
+    new_orchestrator = _create_local_orchestrator(clean_client)
+
+    new_orchestrator_model = clean_client.create_stack_component(
+        name=new_orchestrator.name,
+        flavor=new_orchestrator.flavor,
+        component_type=new_orchestrator.type,
+        configuration=new_orchestrator.config.dict(),
+    )
+
+    new_secrets_manager = _create_local_secrets_manager(clean_client)
+
+    new_secrets_manager_model = clean_client.create_stack_component(
+        name=new_secrets_manager.name,
+        flavor=new_secrets_manager.flavor,
+        component_type=new_secrets_manager.type,
+        configuration=new_secrets_manager.config.dict(),
+    )
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
-        orchestrator=registered_stack.orchestrator,
-        artifact_store=registered_stack.artifact_store,
-        secrets_manager=local_secrets_manager,
+        components={
+            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
+            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
+            StackComponentType.SECRETS_MANAGER: new_secrets_manager_model.name,
+        },
     )
-    stack_model = new_stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-    clean_client.register_stack(stack_model)
+    clean_client.activate_stack(new_stack.id)
 
     runner = CliRunner()
-
-    result = runner.invoke(remove_stack_component, ["arias_new_stack", "-x"])
+    remove_command = cli.commands["stack"].commands["remove-component"]
+    result = runner.invoke(remove_command, [new_stack.name, "-x"])
     assert result.exit_code == 0
-    assert clean_client.active_stack.secrets_manager is None
+    assert (
+        StackComponentType.SECRETS_MANAGER
+        not in clean_client.active_stack_model.components
+    )
 
 
-def test_deleting_stack_with_flag_succeeds(clean_client) -> None:
+def test_delete_stack_with_flag_succeeds(clean_client) -> None:
     """Test stack delete with flag succeeds."""
-    new_stack = Stack(
-        id=uuid4(),
+    registered_stack = clean_client.active_stack_model
+
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
-        orchestrator=clean_client.active_stack.orchestrator,
-        artifact_store=clean_client.active_stack.artifact_store,
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+        },
     )
-    stack_model = new_stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-    clean_client.register_stack(stack_model)
     runner = CliRunner()
-    result = runner.invoke(delete_stack, ["arias_new_stack", "-y"])
+    delete_command = cli.commands["stack"].commands["delete"]
+    result = runner.invoke(delete_command, [new_stack.name, "-y"])
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_client.zen_store.get_stack(stack_model.id)
+        clean_client.zen_store.get_stack(new_stack.id)
 
 
-def test_deleting_default_stack_fails(clean_client) -> None:
+def test_delete_stack_default_stack_fails(clean_client) -> None:
     """Test stack delete default stack fails."""
     # first we set the active stack to a non-default stack
-    registered_stack = clean_client.active_stack
-    new_stack = Stack(
-        id=uuid4(),
+    registered_stack = clean_client.active_stack_model
+
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    new_stack = clean_client.create_stack(
         name="arias_new_stack",
-        orchestrator=registered_stack.orchestrator,
-        artifact_store=registered_stack.artifact_store,
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+        },
     )
-    stack_model = new_stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
-    )
-    clean_client.register_stack(stack_model)
-    clean_client.activate_stack(new_stack)
+    clean_client.activate_stack(new_stack.name)
 
     runner = CliRunner()
-    result = runner.invoke(delete_stack, ["default", "-y"])
+    delete_command = cli.commands["stack"].commands["delete"]
+    result = runner.invoke(delete_command, ["default", "-y"])
     assert result.exit_code == 1
-    assert len([s for s in clean_client.stacks if s.name == "default"]) == 1
+    assert clean_client.get_stack("default")
 
 
 def test_stack_export(clean_client) -> None:
     """Test exporting default stack succeeds."""
     runner = CliRunner()
-    result = runner.invoke(export_stack, ["default", "default.yaml"])
+    export_command = cli.commands["stack"].commands["export"]
+    result = runner.invoke(export_command, ["default", "default.yaml"])
     assert result.exit_code == 0
     assert os.path.exists("default.yaml")
 
@@ -625,39 +806,58 @@ def test_stack_export(clean_client) -> None:
 def test_stack_export_delete_import(clean_client) -> None:
     """Test exporting, deleting, then importing a stack succeeds."""
     # create new stack
-    artifact_store = _create_local_artifact_store(clean_client)
+    new_artifact_store = _create_local_artifact_store(clean_client)
 
-    clean_client.register_stack_component(artifact_store.to_model())
-    orchestrator = _create_local_orchestrator(clean_client)
+    new_artifact_store_model = clean_client.create_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.dict(),
+    )
 
-    clean_client.register_stack_component(orchestrator.to_model())
-    stack_name = "arias_new_stack"
-    stack = Stack(
-        id=uuid4(),
-        name=stack_name,
-        orchestrator=orchestrator,
-        artifact_store=artifact_store,
+    new_orchestrator = _create_local_orchestrator(clean_client)
+
+    new_orchestrator_model = clean_client.create_stack_component(
+        name=new_orchestrator.name,
+        flavor=new_orchestrator.flavor,
+        component_type=new_orchestrator.type,
+        configuration=new_orchestrator.config.dict(),
     )
-    stack_model = stack.to_model(
-        user=clean_client.active_user.id, project=clean_client.active_project.id
+
+    new_stack_model = clean_client.create_stack(
+        name="arias_new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
+            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
+        },
     )
-    clean_client.register_stack(stack_model)
 
     # export stack
-    runner = CliRunner()
     file_name = "arias_new_stack.yaml"
-    result = runner.invoke(export_stack, [stack_name, file_name])
+
+    runner = CliRunner()
+    export_command = cli.commands["stack"].commands["export"]
+    result = runner.invoke(export_command, [new_stack_model.name, file_name])
     assert result.exit_code == 0
     assert os.path.exists("arias_new_stack.yaml")
 
     # delete stack and corresponding components
-    clean_client.deregister_stack(stack_model)
-    clean_client.deregister_stack_component(orchestrator.to_model())
-    clean_client.deregister_stack_component(artifact_store.to_model())
+    clean_client.delete_stack(name_id_or_prefix=new_stack_model.name)
+    clean_client.deregister_stack_component(
+        name_id_or_prefix=new_orchestrator_model.name,
+        component_type=StackComponentType.ORCHESTRATOR,
+    )
+    clean_client.deregister_stack_component(
+        name_id_or_prefix=new_artifact_store_model.name,
+        component_type=StackComponentType.ARTIFACT_STORE,
+    )
     with pytest.raises(KeyError):
-        clean_client.zen_store.get_stack(stack_model.id)
+        clean_client.zen_store.get_stack(new_stack_model.id)
 
     # import stack
-    result = runner.invoke(import_stack, [stack_name, "--filename", file_name])
+    import_command = cli.commands["stack"].commands["import"]
+    result = runner.invoke(
+        import_command, [new_stack_model.name, "--filename", file_name]
+    )
     assert result.exit_code == 0
-    assert len(clean_client.zen_store.list_stacks(name="arias_new_stack")) > 0
+    assert clean_client.get_stack(new_stack_model.name)

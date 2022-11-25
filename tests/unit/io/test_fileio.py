@@ -218,7 +218,7 @@ def test_mkdir_function_when_parent_doesnt_exist(tmp_path) -> None:
 
 
 def test_rename_function(tmp_path) -> None:
-    """Test that rename renames a file"""
+    """Test that renames a file"""
     io_utils.create_file_if_not_exists(os.path.join(tmp_path, "test_file.txt"))
     fileio.rename(
         os.path.join(tmp_path, "test_file.txt"),

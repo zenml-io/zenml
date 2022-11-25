@@ -28,7 +28,15 @@ from zenml.enums import ExecutionStatus
 from zenml.exceptions import InputResolutionError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
+from zenml.models.pipeline_run_models import (
+    PipelineRunResponseModel,
+    PipelineRunUpdateModel,
+)
+from zenml.models.step_run_models import (
+    StepRunRequestModel,
+    StepRunResponseModel,
+    StepRunUpdateModel,
+)
 from zenml.orchestrators.executor import StepExecutor
 from zenml.utils import source_utils, string_utils
 
@@ -91,7 +99,7 @@ def generate_cache_key(
 
 def generate_artifact_uri(
     artifact_store: "BaseArtifactStore",
-    step_run: "StepRunModel",
+    step_run: "StepRunResponseModel",
     output_name: str,
 ) -> str:
     """Generates a URI for an output artifact.
@@ -185,7 +193,7 @@ def prepare_input_artifacts(
 
 
 def prepare_output_artifacts(
-    step_run: "StepRunModel", stack: "Stack", step: "Step"
+    step_run: "StepRunResponseModel", stack: "Stack", step: "Step"
 ) -> Dict[str, BaseArtifact]:
     """Prepares the output artifacts to run the current step.
 
@@ -225,7 +233,7 @@ def prepare_output_artifacts(
     return output_artifacts
 
 
-def get_cached_step_run(step_run: StepRunModel) -> Optional[StepRunModel]:
+def get_cached_step_run(cache_key: str) -> Optional[StepRunResponseModel]:
     """If a given step can be cached, get the corresponding existing step run.
 
     A step run can be cached if there is an existing step run in the same
@@ -239,7 +247,7 @@ def get_cached_step_run(step_run: StepRunModel) -> Optional[StepRunModel]:
     """
     cache_candidates = Client().zen_store.list_run_steps(
         project_id=Client().active_project.id,
-        cache_key=step_run.cache_key,
+        cache_key=cache_key,
         status=ExecutionStatus.COMPLETED,
     )
     if cache_candidates:
@@ -248,7 +256,7 @@ def get_cached_step_run(step_run: StepRunModel) -> Optional[StepRunModel]:
     return None
 
 
-def update_pipeline_run_status(pipeline_run: PipelineRunModel) -> None:
+def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
     """Updates the status of the current pipeline run.
 
     Args:
@@ -266,7 +274,10 @@ def update_pipeline_run_status(pipeline_run: PipelineRunModel) -> None:
         pass
     if status != pipeline_run.status:
         pipeline_run.status = status
-        Client().zen_store.update_run(pipeline_run)
+        Client().zen_store.update_run(
+            run_id=pipeline_run.id,
+            run_update=PipelineRunUpdateModel(status=status),
+        )
 
 
 class Launcher:
@@ -332,7 +343,7 @@ class Launcher:
             key: str(value)
             for key, value in self._step.config.parameters.items()
         }
-        step_run = StepRunModel(
+        step_run = StepRunRequestModel(
             name=self._step_name,
             pipeline_run_id=pipeline_run.id,
             parent_step_ids=parent_step_ids,
@@ -355,27 +366,27 @@ class Launcher:
         )
 
         if cache_enabled:
-            cached_step_run = get_cached_step_run(step_run)
+            cached_step_run = get_cached_step_run(cache_key=cache_key)
             if cached_step_run:
                 logger.info(f"Using cached version of `{self._step_name}`.")
                 step_run.output_artifacts = cached_step_run.output_artifacts
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
-                Client().zen_store.create_run_step(step_run)
+                step_run_response = Client().zen_store.create_run_step(step_run)
                 update_pipeline_run_status(pipeline_run=pipeline_run)
                 return
 
         # 5. If not cached, register and run the step
-        Client().zen_store.create_run_step(step_run)
+        step_run_response = Client().zen_store.create_run_step(step_run)
         input_artifacts = prepare_input_artifacts(
-            input_artifact_ids=step_run.input_artifacts,
+            input_artifact_ids=step_run_response.input_artifacts,
         )
         output_artifacts = prepare_output_artifacts(
-            step_run=step_run, stack=self._stack, step=self._step
+            step_run=step_run_response, stack=self._stack, step=self._step
         )
         self._run_step(
             pipeline_run=pipeline_run,
-            step_run=step_run,
+            step_run=step_run_response,
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
         )
@@ -432,8 +443,8 @@ class Launcher:
 
     def _run_step(
         self,
-        pipeline_run: PipelineRunModel,
-        step_run: StepRunModel,
+        pipeline_run: PipelineRunResponseModel,
+        step_run: StepRunResponseModel,
         input_artifacts: Dict[str, BaseArtifact],
         output_artifacts: Dict[str, BaseArtifact],
     ) -> None:
@@ -480,8 +491,8 @@ class Launcher:
     def _run_step_with_step_operator(
         self,
         step_operator_name: str,
-        pipeline_run: PipelineRunModel,
-        step_run: StepRunModel,
+        pipeline_run: PipelineRunResponseModel,
+        step_run: StepRunResponseModel,
         input_artifacts: Dict[str, BaseArtifact],
         output_artifacts: Dict[str, BaseArtifact],
         step_run_info: StepRunInfo,
@@ -535,8 +546,8 @@ class Launcher:
 
     def _run_step_without_step_operator(
         self,
-        pipeline_run: PipelineRunModel,
-        step_run: StepRunModel,
+        pipeline_run: PipelineRunResponseModel,
+        step_run: StepRunResponseModel,
         input_artifacts: Dict[str, BaseArtifact],
         output_artifacts: Dict[str, BaseArtifact],
         step_run_info: StepRunInfo,
@@ -574,8 +585,8 @@ class Launcher:
 
     def _cleanup_failed_run(
         self,
-        pipeline_run: PipelineRunModel,
-        step_run: StepRunModel,
+        pipeline_run: PipelineRunResponseModel,
+        step_run: StepRunResponseModel,
         artifacts: Sequence[BaseArtifact],
     ) -> None:
         """Clean up a failed step run.
@@ -589,10 +600,21 @@ class Launcher:
             artifacts (Sequence[BaseArtifact]): _description_
         """
         logger.error(f"Failed to execute step `{self._step_name}`.")
-        step_run.status = ExecutionStatus.FAILED
-        Client().zen_store.update_run_step(step_run)
+        Client().zen_store.update_run_step(
+            step_run_id=step_run.id,
+            step_run_update=StepRunUpdateModel(
+                status=ExecutionStatus.FAILED,
+                end_time=datetime.now(),
+            ),
+        )
         pipeline_run.status = ExecutionStatus.FAILED
         pipeline_run.end_time = datetime.now()
-        Client().zen_store.update_run(pipeline_run)
+        Client().zen_store.update_run(
+            run_id=pipeline_run.id,
+            run_update=PipelineRunUpdateModel(
+                status=ExecutionStatus.FAILED,
+                end_time=datetime.now(),
+            ),
+        )
         remove_artifact_dirs(artifacts=artifacts)
         logger.debug("Finished failed step execution cleanup.")

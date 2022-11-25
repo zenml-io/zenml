@@ -13,24 +13,45 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import (
-    ArtifactModel,
-    ComponentModel,
-    FlavorModel,
-    HydratedStackModel,
-    PipelineModel,
-    PipelineRunModel,
-    ProjectModel,
-    RoleAssignmentModel,
-    RoleModel,
-    StackModel,
-    StepRunModel,
-    TeamModel,
-    UserModel,
+    ArtifactRequestModel,
+    ArtifactResponseModel,
+    ComponentRequestModel,
+    ComponentResponseModel,
+    ComponentUpdateModel,
+    FlavorRequestModel,
+    FlavorResponseModel,
+    PipelineRequestModel,
+    PipelineResponseModel,
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
+    PipelineRunUpdateModel,
+    PipelineUpdateModel,
+    ProjectRequestModel,
+    ProjectResponseModel,
+    ProjectUpdateModel,
+    RoleAssignmentRequestModel,
+    RoleAssignmentResponseModel,
+    RoleRequestModel,
+    RoleResponseModel,
+    RoleUpdateModel,
+    StackRequestModel,
+    StackResponseModel,
+    StackUpdateModel,
+    StepRunRequestModel,
+    StepRunResponseModel,
+    StepRunUpdateModel,
+    TeamRequestModel,
+    TeamResponseModel,
+    TeamUpdateModel,
+    UserAuthModel,
+    UserRequestModel,
+    UserResponseModel,
+    UserUpdateModel,
 )
 from zenml.models.server_models import ServerModel
 
@@ -57,7 +78,8 @@ class ZenStoreInterface(ABC):
          the resource and return the updated resource.
        * get methods - retrieve a single existing resource identified by a
          unique key or identifier from the store. These methods should always
-         return a resource and raise an exception if the resource does not exist.
+         return a resource and raise an exception if the resource does not
+         exist.
        * list methods - retrieve a list of resources from the store. These
          methods should accept a set of filter parameters that can be used to
          filter the list of resources retrieved from the store.
@@ -127,10 +149,7 @@ class ZenStoreInterface(ABC):
     # ------
 
     @abstractmethod
-    def create_stack(
-        self,
-        stack: StackModel,
-    ) -> StackModel:
+    def create_stack(self, stack: StackRequestModel) -> StackResponseModel:
         """Create a new stack.
 
         Args:
@@ -145,7 +164,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_stack(self, stack_id: UUID) -> StackModel:
+    def get_stack(self, stack_id: UUID) -> StackResponseModel:
         """Get a stack by its unique ID.
 
         Args:
@@ -166,8 +185,7 @@ class ZenStoreInterface(ABC):
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        hydrated: bool = False,
-    ) -> Union[List[StackModel], List[HydratedStackModel]]:
+    ) -> List[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -178,7 +196,6 @@ class ZenStoreInterface(ABC):
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
-            hydrated: Flag to decide whether to return hydrated models
 
 
         Returns:
@@ -190,13 +207,13 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_stack(
-        self,
-        stack: StackModel,
-    ) -> StackModel:
+        self, stack_id: UUID, stack_update: StackUpdateModel
+    ) -> StackResponseModel:
         """Update a stack.
 
         Args:
-            stack: The stack to use for the update.
+            stack_id: The ID of the stack update.
+            stack_update: The update request on the stack.
 
         Returns:
             The updated stack.
@@ -222,9 +239,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def create_stack_component(
-        self,
-        component: ComponentModel,
-    ) -> ComponentModel:
+        self, component: ComponentRequestModel
+    ) -> ComponentResponseModel:
         """Create a stack component.
 
         Args:
@@ -247,7 +263,7 @@ class ZenStoreInterface(ABC):
         flavor_name: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[ComponentModel]:
+    ) -> List[ComponentResponseModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
@@ -268,7 +284,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_stack_component(self, component_id: UUID) -> ComponentModel:
+    def get_stack_component(self, component_id: UUID) -> ComponentResponseModel:
         """Get a stack component by ID.
 
         Args:
@@ -284,12 +300,14 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_stack_component(
         self,
-        component: ComponentModel,
-    ) -> ComponentModel:
+        component_id: UUID,
+        component_update: ComponentUpdateModel,
+    ) -> ComponentResponseModel:
         """Update an existing stack component.
 
         Args:
-            component: The stack component to use for the update.
+            component_id: The ID of the stack component to update.
+            component_update: The update to be applied to the stack component.
 
         Returns:
             The updated stack component.
@@ -310,23 +328,6 @@ class ZenStoreInterface(ABC):
             ValueError: if the stack component is part of one or more stacks.
         """
 
-    @abstractmethod
-    def get_stack_component_side_effects(
-        self,
-        component_id: UUID,
-        run_id: UUID,
-        pipeline_id: UUID,
-        stack_id: UUID,
-    ) -> Dict[Any, Any]:
-        """Get the side effects of a stack component.
-
-        Args:
-            component_id: The ID of the stack component to get side effects for.
-            run_id: The ID of the run to get side effects for.
-            pipeline_id: The ID of the pipeline to get side effects for.
-            stack_id: The ID of the stack to get side effects for.
-        """
-
     # -----------------------
     # Stack component flavors
     # -----------------------
@@ -334,8 +335,8 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def create_flavor(
         self,
-        flavor: FlavorModel,
-    ) -> FlavorModel:
+        flavor: FlavorRequestModel,
+    ) -> FlavorResponseModel:
         """Creates a new stack component flavor.
 
         Args:
@@ -350,11 +351,11 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_flavor(self, flavor_id: UUID) -> FlavorModel:
+    def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
         """Get a stack component flavor by ID.
 
         Args:
-            flavor_id: The ID of the stack component flavor to get.
+            flavor_id: The ID of the flavor to get.
 
         Returns:
             The stack component flavor.
@@ -371,7 +372,7 @@ class ZenStoreInterface(ABC):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[FlavorModel]:
+    ) -> List[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
@@ -391,20 +392,6 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_flavor(self, flavor: FlavorModel) -> FlavorModel:
-        """Update an existing stack component flavor.
-
-        Args:
-            flavor: The stack component flavor to use for the update.
-
-        Returns:
-            The updated stack component flavor.
-
-        Raises:
-            KeyError: if the stack component flavor doesn't exist.
-        """
-
-    @abstractmethod
     def delete_flavor(self, flavor_id: UUID) -> None:
         """Delete a stack component flavor.
 
@@ -418,7 +405,6 @@ class ZenStoreInterface(ABC):
     # -----
     # Users
     # -----
-
     @property
     @abstractmethod
     def active_user_name(self) -> str:
@@ -429,7 +415,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def create_user(self, user: UserModel) -> UserModel:
+    def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
 
         Args:
@@ -443,7 +429,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserModel:
+    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
         """Gets a specific user.
 
         Args:
@@ -456,21 +442,37 @@ class ZenStoreInterface(ABC):
             KeyError: If no user with the given name or ID exists.
         """
 
-    # TODO: [ALEX] add filtering param(s)
     @abstractmethod
-    def list_users(self) -> List[UserModel]:
+    def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
+        """Gets the auth model to a specific user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+
+        Returns:
+            The requested user, if it was found.
+        """
+
+    @abstractmethod
+    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
         """List all users.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all users.
         """
 
     @abstractmethod
-    def update_user(self, user: UserModel) -> UserModel:
+    def update_user(
+        self, user_id: UUID, user_update: UserUpdateModel
+    ) -> UserResponseModel:
         """Updates an existing user.
 
         Args:
-            user: The user model to use for the update.
+            user_id: The id of the user to update.
+            user_update: The update to be applied to the user.
 
         Returns:
             The updated user.
@@ -490,34 +492,12 @@ class ZenStoreInterface(ABC):
             KeyError: If no user with the given ID exists.
         """
 
-    @abstractmethod
-    def user_email_opt_in(
-        self,
-        user_name_or_id: Union[str, UUID],
-        user_opt_in_response: bool,
-        email: Optional[str] = None,
-    ) -> UserModel:
-        """Persist user response to the email prompt.
-
-        Args:
-            user_name_or_id: The name or the ID of the user.
-            user_opt_in_response: Whether this email should be associated
-                with the user id in the telemetry
-            email: The users email
-
-        Returns:
-            The updated user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-
     # -----
     # Teams
     # -----
 
     @abstractmethod
-    def create_team(self, team: TeamModel) -> TeamModel:
+    def create_team(self, team: TeamRequestModel) -> TeamResponseModel:
         """Creates a new team.
 
         Args:
@@ -528,7 +508,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamModel:
+    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamResponseModel:
         """Gets a specific team.
 
         Args:
@@ -542,19 +522,25 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_teams(self) -> List[TeamModel]:
+    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
         """List all teams.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all teams.
         """
 
     @abstractmethod
-    def update_team(self, team: TeamModel) -> TeamModel:
+    def update_team(
+        self, team_id: UUID, team_update: TeamUpdateModel
+    ) -> TeamResponseModel:
         """Update an existing team.
 
         Args:
-            team: The team to use for the update.
+            team_id: The ID of the team to be updated.
+            team_update: The update to be applied to the team.
 
         Returns:
             The updated team.
@@ -574,82 +560,12 @@ class ZenStoreInterface(ABC):
             KeyError: If no team with the given ID exists.
         """
 
-    # ---------------
-    # Team membership
-    # ---------------
-
-    @abstractmethod
-    def get_users_for_team(
-        self, team_name_or_id: Union[str, UUID]
-    ) -> List[UserModel]:
-        """Fetches all users of a team.
-
-        Args:
-            team_name_or_id: The name or ID of the team for which to get users.
-
-        Returns:
-            A list of all users that are part of the team.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
-        """
-
-    @abstractmethod
-    def get_teams_for_user(
-        self, user_name_or_id: Union[str, UUID]
-    ) -> List[TeamModel]:
-        """Fetches all teams for a user.
-
-        Args:
-            user_name_or_id: The name or ID of the user for which to get all
-                teams.
-
-        Returns:
-            A list of all teams that the user is part of.
-
-        Raises:
-            KeyError: If no user with the given ID exists.
-        """
-
-    @abstractmethod
-    def add_user_to_team(
-        self,
-        user_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Adds a user to a team.
-
-        Args:
-            user_name_or_id: Name or ID of the user to add to the team.
-            team_name_or_id: Name or ID of the team to which to add the user to.
-
-        Raises:
-            KeyError: If the team or user does not exist.
-        """
-
-    @abstractmethod
-    def remove_user_from_team(
-        self,
-        user_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
-    ) -> None:
-        """Removes a user from a team.
-
-        Args:
-            user_name_or_id: Name or ID of the user to remove from the team.
-            team_name_or_id: Name or ID of the team from which to remove the user.
-
-        Raises:
-            KeyError: If the team or user does not exist.
-        """
-
     # -----
     # Roles
     # -----
 
-    # TODO: consider using team_id instead
     @abstractmethod
-    def create_role(self, role: RoleModel) -> RoleModel:
+    def create_role(self, role: RoleRequestModel) -> RoleResponseModel:
         """Creates a new role.
 
         Args:
@@ -662,9 +578,8 @@ class ZenStoreInterface(ABC):
             EntityExistsError: If a role with the given name already exists.
         """
 
-    # TODO: consider using team_id instead
     @abstractmethod
-    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleModel:
+    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
         """Gets a specific role.
 
         Args:
@@ -677,21 +592,26 @@ class ZenStoreInterface(ABC):
             KeyError: If no role with the given name exists.
         """
 
-    # TODO: [ALEX] add filtering param(s)
     @abstractmethod
-    def list_roles(self) -> List[RoleModel]:
+    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
         """List all roles.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all roles.
         """
 
     @abstractmethod
-    def update_role(self, role: RoleModel) -> RoleModel:
+    def update_role(
+        self, role_id: UUID, role_update: RoleUpdateModel
+    ) -> RoleResponseModel:
         """Update an existing role.
 
         Args:
-            role: The role to use for the update.
+            role_id: The ID of the role to be updated.
+            role_update: The update to be applied to the role.
 
         Returns:
             The updated role.
@@ -714,6 +634,42 @@ class ZenStoreInterface(ABC):
     # ----------------
     # Role assignments
     # ----------------
+    @abstractmethod
+    def create_role_assignment(
+        self, role_assignment: RoleAssignmentRequestModel
+    ) -> RoleAssignmentResponseModel:
+        """Creates a new role assignment.
+
+        Args:
+            role_assignment: The role assignment model to create.
+
+        Returns:
+            The newly created role assignment.
+        """
+
+    @abstractmethod
+    def get_role_assignment(
+        self, role_assignment_id: UUID
+    ) -> RoleAssignmentResponseModel:
+        """Gets a specific role assignment.
+
+        Args:
+            role_assignment_id: ID of the role assignment to get.
+
+        Returns:
+            The requested role assignment.
+
+        Raises:
+            KeyError: If no role assignment with the given ID exists.
+        """
+
+    @abstractmethod
+    def delete_role_assignment(self, role_assignment_id: UUID) -> None:
+        """Delete a specific role assignment.
+
+        Args:
+            role_assignment_id: The ID of the specific role assignment
+        """
 
     @abstractmethod
     def list_role_assignments(
@@ -722,7 +678,7 @@ class ZenStoreInterface(ABC):
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentModel]:
+    ) -> List[RoleAssignmentResponseModel]:
         """List all role assignments.
 
         Args:
@@ -739,58 +695,14 @@ class ZenStoreInterface(ABC):
             A list of all role assignments.
         """
 
-    @abstractmethod
-    def assign_role(
-        self,
-        role_name_or_id: Union[str, UUID],
-        user_or_team_name_or_id: Union[str, UUID],
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        is_user: bool = True,
-    ) -> None:
-        """Assigns a role to a user or team, scoped to a specific project.
-
-        Args:
-            role_name_or_id: Name or ID of the role to assign.
-            user_or_team_name_or_id: Name or ID of the user or team to which to
-                assign the role.
-            is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_name_or_id: Optional Name or ID of a project in which to
-                assign the role. If this is not provided, the role will be
-                assigned globally.
-
-        Raises:
-            EntityExistsError: If the role assignment already exists.
-        """
-
-    @abstractmethod
-    def revoke_role(
-        self,
-        role_name_or_id: Union[str, UUID],
-        user_or_team_name_or_id: Union[str, UUID],
-        is_user: bool = True,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> None:
-        """Revokes a role from a user or team for a given project.
-
-        Args:
-            role_name_or_id: ID of the role to revoke.
-            user_or_team_name_or_id: Name or ID of the user or team from which
-                to revoke the role.
-            is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_name_or_id: Optional ID of a project in which to revoke
-                the role. If this is not provided, the role will be revoked
-                globally.
-
-        Raises:
-            KeyError: If the role, user, team, or project does not exists.
-        """
-
     # --------
     # Projects
     # --------
 
     @abstractmethod
-    def create_project(self, project: ProjectModel) -> ProjectModel:
+    def create_project(
+        self, project: ProjectRequestModel
+    ) -> ProjectResponseModel:
         """Creates a new project.
 
         Args:
@@ -804,7 +716,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_project(self, project_name_or_id: Union[UUID, str]) -> ProjectModel:
+    def get_project(
+        self, project_name_or_id: Union[UUID, str]
+    ) -> ProjectResponseModel:
         """Get an existing project by name or ID.
 
         Args:
@@ -817,21 +731,28 @@ class ZenStoreInterface(ABC):
             KeyError: If there is no such project.
         """
 
-    # TODO: [ALEX] add filtering param(s)
     @abstractmethod
-    def list_projects(self) -> List[ProjectModel]:
+    def list_projects(
+        self, name: Optional[str] = None
+    ) -> List[ProjectResponseModel]:
         """List all projects.
+
+        Args:
+            name: Optionally filter by name
 
         Returns:
             A list of all projects.
         """
 
     @abstractmethod
-    def update_project(self, project: ProjectModel) -> ProjectModel:
+    def update_project(
+        self, project_id: UUID, project_update: ProjectUpdateModel
+    ) -> ProjectResponseModel:
         """Update an existing project.
 
         Args:
-            project: The project to use for the update.
+            project_id: The ID of the project to be updated.
+            project_update: The update to be applied to the project.
 
         Returns:
             The updated project.
@@ -857,8 +778,8 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def create_pipeline(
         self,
-        pipeline: PipelineModel,
-    ) -> PipelineModel:
+        pipeline: PipelineRequestModel,
+    ) -> PipelineResponseModel:
         """Creates a new pipeline in a project.
 
         Args:
@@ -873,7 +794,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_pipeline(self, pipeline_id: UUID) -> PipelineModel:
+    def get_pipeline(self, pipeline_id: UUID) -> PipelineResponseModel:
         """Get a pipeline with a given ID.
 
         Args:
@@ -892,11 +813,12 @@ class ZenStoreInterface(ABC):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-    ) -> List[PipelineModel]:
+    ) -> List[PipelineResponseModel]:
         """List all pipelines in the project.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this project.
+            project_name_or_id: If provided, only list pipelines in this
+                project.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
 
@@ -908,11 +830,16 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
+    def update_pipeline(
+        self,
+        pipeline_id: UUID,
+        pipeline_update: PipelineUpdateModel,
+    ) -> PipelineResponseModel:
         """Updates a pipeline.
 
         Args:
-            pipeline: The pipeline to use for the update.
+            pipeline_id: The ID of the pipeline to be updated.
+            pipeline_update: The update to be applied.
 
         Returns:
             The updated pipeline.
@@ -937,7 +864,9 @@ class ZenStoreInterface(ABC):
     # --------------
 
     @abstractmethod
-    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
+    def create_run(
+        self, pipeline_run: PipelineRunRequestModel
+    ) -> PipelineRunResponseModel:
         """Creates a pipeline run.
 
         Args:
@@ -952,7 +881,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run(self, run_name_or_id: Union[str, UUID]) -> PipelineRunModel:
+    def get_run(
+        self, run_name_or_id: Union[str, UUID]
+    ) -> PipelineRunResponseModel:
         """Gets a pipeline run.
 
         Args:
@@ -967,8 +898,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_or_create_run(
-        self, pipeline_run: PipelineRunModel
-    ) -> PipelineRunModel:
+        self, pipeline_run: PipelineRunRequestModel
+    ) -> PipelineRunResponseModel:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -991,7 +922,7 @@ class ZenStoreInterface(ABC):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-    ) -> List[PipelineRunModel]:
+    ) -> List[PipelineRunResponseModel]:
         """Gets all pipeline runs.
 
         Args:
@@ -1010,34 +941,17 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
+    def update_run(
+        self, run_id: UUID, run_update: PipelineRunUpdateModel
+    ) -> PipelineRunResponseModel:
         """Updates a pipeline run.
 
         Args:
-            run: The pipeline run to use for the update.
+            run_id: The ID of the pipeline run to update.
+            run_update: The update to be applied to the pipeline run.
 
         Returns:
             The updated pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    # TODO: Figure out what exactly gets returned from this
-    @abstractmethod
-    def get_run_component_side_effects(
-        self,
-        run_id: UUID,
-        component_id: Optional[UUID] = None,
-    ) -> Dict[str, Any]:
-        """Gets the side effects for a component in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-            component_id: The ID of the component to get.
-
-        Returns:
-            The side effects for the component in the pipeline run.
 
         Raises:
             KeyError: if the pipeline run doesn't exist.
@@ -1048,7 +962,9 @@ class ZenStoreInterface(ABC):
     # ------------------
 
     @abstractmethod
-    def create_run_step(self, step_run: StepRunModel) -> StepRunModel:
+    def create_run_step(
+        self, step_run: StepRunRequestModel
+    ) -> StepRunResponseModel:
         """Creates a step run.
 
         Args:
@@ -1063,7 +979,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run_step(self, step_run_id: UUID) -> StepRunModel:
+    def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
         """Get a step run by ID.
 
         Args:
@@ -1083,7 +999,7 @@ class ZenStoreInterface(ABC):
         project_id: Optional[UUID] = None,
         cache_key: Optional[str] = None,
         status: Optional[ExecutionStatus] = None,
-    ) -> List[StepRunModel]:
+    ) -> List[StepRunResponseModel]:
         """Get all step runs.
 
         Args:
@@ -1097,23 +1013,25 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_run_step(self, step_run: StepRunModel) -> StepRunModel:
+    def update_run_step(
+        self,
+        step_run_id: UUID,
+        step_run_update: StepRunUpdateModel,
+    ) -> StepRunResponseModel:
         """Updates a step run.
 
         Args:
-            step_run: The step run to update.
+            step_run_id: The ID of the step to update.
+            step_run_update: The update to be applied to the step.
 
         Returns:
             The updated step run.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
         """
 
     @abstractmethod
     def get_run_step_input_artifacts(
         self, step_run_id: UUID
-    ) -> Dict[str, ArtifactModel]:
+    ) -> Dict[str, ArtifactResponseModel]:
         """Get the input artifacts for a step run.
 
         Args:
@@ -1129,7 +1047,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_run_step_output_artifacts(
         self, step_run_id: UUID
-    ) -> Dict[str, ArtifactModel]:
+    ) -> Dict[str, ArtifactResponseModel]:
         """Get the output artifacts for a step run.
 
         Args:
@@ -1147,7 +1065,9 @@ class ZenStoreInterface(ABC):
     # ---------
 
     @abstractmethod
-    def create_artifact(self, artifact: ArtifactModel) -> ArtifactModel:
+    def create_artifact(
+        self, artifact: ArtifactRequestModel
+    ) -> ArtifactResponseModel:
         """Creates an artifact.
 
         Args:
@@ -1158,7 +1078,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_artifact(self, artifact_id: UUID) -> ArtifactModel:
+    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
         """Gets an artifact.
 
         Args:
@@ -1175,7 +1095,7 @@ class ZenStoreInterface(ABC):
     def list_artifacts(
         self,
         artifact_uri: Optional[str] = None,
-    ) -> List[ArtifactModel]:
+    ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
@@ -1186,8 +1106,13 @@ class ZenStoreInterface(ABC):
             A list of all artifacts.
         """
 
+    # ------------------------
+    # Internal utility methods
+    # ------------------------
     @abstractmethod
-    def get_artifact_producer_step(self, artifact_id: UUID) -> StepRunModel:
+    def get_artifact_producer_step(
+        self, artifact_id: UUID
+    ) -> StepRunResponseModel:
         """Gets the producer step for an artifact.
 
         Args:

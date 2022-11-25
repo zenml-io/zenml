@@ -27,7 +27,8 @@ from zenml.enums import ExecutionStatus
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models import ArtifactModel
+from zenml.models.artifact_models import ArtifactRequestModel
+from zenml.models.step_run_models import StepRunUpdateModel
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
@@ -40,7 +41,7 @@ if TYPE_CHECKING:
     from uuid import UUID
 
     from zenml.config.step_configurations import Step
-    from zenml.models import StepRunModel
+    from zenml.models.step_run_models import StepRunResponseModel
 
 logger = get_logger(__name__)
 
@@ -58,22 +59,22 @@ def register_output_artifacts(
     """
     output_artifact_ids = {}
     for name, artifact_ in output_artifacts.items():
-        artifact_model = ArtifactModel(
+        artifact_model = ArtifactRequestModel(
             name=name,
             type=artifact_.TYPE_NAME,
             uri=artifact_.uri,
             materializer=artifact_.materializer,
             data_type=artifact_.data_type,
         )
-        Client().zen_store.create_artifact(artifact_model)
-        output_artifact_ids[name] = artifact_model.id
+        artifact_response = Client().zen_store.create_artifact(artifact_model)
+        output_artifact_ids[name] = artifact_response.id
     return output_artifact_ids
 
 
 class StepExecutor:
     """Class to execute ZenML steps."""
 
-    def __init__(self, step: "Step", step_run: "StepRunModel"):
+    def __init__(self, step: "Step", step_run: "StepRunResponseModel"):
         """Initializes the step executor.
 
         Args:
@@ -299,7 +300,11 @@ class StepExecutor:
             output_artifacts=output_artifacts
         )
 
-        self._step_run.output_artifacts = output_artifact_ids
-        self._step_run.status = ExecutionStatus.COMPLETED
-        self._step_run.end_time = datetime.now()
-        Client().zen_store.update_run_step(self._step_run)
+        Client().zen_store.update_run_step(
+            step_run_id=self._step_run.id,
+            step_run_update=StepRunUpdateModel(
+                output_artifacts=output_artifact_ids,
+                status=ExecutionStatus.COMPLETED,
+                end_time=datetime.now(),
+            ),
+        )

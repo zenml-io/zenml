@@ -17,7 +17,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import LABEL_STUDIO
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 LABEL_STUDIO_ANNOTATOR_FLAVOR = "label_studio"

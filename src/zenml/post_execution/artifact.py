@@ -18,7 +18,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.logger import get_logger
-from zenml.models.pipeline_models import ArtifactModel
+from zenml.models import ArtifactResponseModel
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
@@ -34,7 +34,7 @@ class ArtifactView:
     execution.
     """
 
-    def __init__(self, model: ArtifactModel):
+    def __init__(self, model: ArtifactResponseModel):
         """Initializes a post-execution artifact object.
 
         In most cases `ArtifactView` objects should not be created manually but

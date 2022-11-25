@@ -13,32 +13,32 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
-import json
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.enums import ArtifactType, ExecutionStatus
-from zenml.models import PipelineModel, PipelineRunModel
-from zenml.models.pipeline_models import ArtifactModel, StepRunModel
-from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
+from zenml.models.pipeline_models import PipelineResponseModel
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
-from zenml.zen_stores.schemas.stack_schemas import StackSchema
-from zenml.zen_stores.schemas.user_management_schemas import UserSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
+
+if TYPE_CHECKING:
+    from zenml.models import PipelineUpdateModel
+    from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 
 
-class PipelineSchema(SQLModel, table=True):
+class PipelineSchema(NamedSchema, table=True):
     """SQL Model for pipelines."""
 
     __tablename__ = "pipeline"
 
-    id: UUID = Field(primary_key=True)
-    name: str
+    docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    spec: str = Field(sa_column=Column(TEXT, nullable=False))
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -58,469 +58,77 @@ class PipelineSchema(SQLModel, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
+
     user: "UserSchema" = Relationship(back_populates="pipelines")
-
-    docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    spec: str = Field(sa_column=Column(TEXT, nullable=False))
-
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
+        sa_relationship_kwargs={"order_by": "asc(PipelineRunSchema.created)"},
     )
 
-    @classmethod
-    def from_create_model(cls, pipeline: PipelineModel) -> "PipelineSchema":
-        """Create a `PipelineSchema` from a `PipelineModel`.
-
-        Args:
-            pipeline: The `PipelineModel` to create the schema from.
-
-        Returns:
-            The created `PipelineSchema`.
-        """
-        return cls(
-            id=pipeline.id,
-            name=pipeline.name,
-            project_id=pipeline.project,
-            user_id=pipeline.user,
-            docstring=pipeline.docstring,
-            spec=pipeline.spec.json(sort_keys=True),
-        )
-
-    def from_update_model(self, model: PipelineModel) -> "PipelineSchema":
-        """Update a `PipelineSchema` from a PipelineModel.
-
-        Args:
-            model: The `PipelineModel` to update the schema from.
-
-        Returns:
-            The updated `PipelineSchema`.
-        """
-        self.name = model.name
-        self.updated = datetime.now()
-        self.docstring = model.docstring
-        self.spec = model.spec.json(sort_keys=True)
-        return self
-
-    def to_model(self) -> "PipelineModel":
+    def to_model(
+        self,
+        _block_recursion: bool = False,
+        last_x_runs: int = 3,
+    ) -> "PipelineResponseModel":
         """Convert a `PipelineSchema` to a `PipelineModel`.
+
+        Args:
+            _block_recursion: Don't recursively fill attributes
+            last_x_runs: How many runs to use for the execution status
 
         Returns:
             The created PipelineModel.
         """
-        return PipelineModel(
-            id=self.id,
-            name=self.name,
-            project=self.project_id,
-            user=self.user_id,
-            docstring=self.docstring,
-            spec=PipelineSpec.parse_raw(self.spec),
-            created=self.created,
-            updated=self.updated,
-        )
-
-
-class PipelineRunSchema(SQLModel, table=True):
-    """SQL Model for pipeline runs."""
-
-    __tablename__ = "pipeline_run"
-
-    id: UUID = Field(primary_key=True)
-    name: str
-
-    project_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    project: "ProjectSchema" = Relationship(back_populates="runs")
-
-    user_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=UserSchema.__tablename__,
-        source_column="user_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-    user: "UserSchema" = Relationship(back_populates="runs")
-
-    stack_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=StackSchema.__tablename__,
-        source_column="stack_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-    stack: "StackSchema" = Relationship(back_populates="runs")
-
-    pipeline_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=PipelineSchema.__tablename__,
-        source_column="pipeline_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-    pipeline: PipelineSchema = Relationship(back_populates="runs")
-
-    orchestrator_run_id: Optional[str] = Field(nullable=True)
-
-    enable_cache: Optional[bool] = Field(nullable=True)
-    start_time: Optional[datetime] = Field(nullable=True)
-    end_time: Optional[datetime] = Field(nullable=True)
-    status: ExecutionStatus
-    pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
-    num_steps: Optional[int]
-    zenml_version: str
-    git_sha: Optional[str] = Field(nullable=True)
-
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
-
-    @classmethod
-    def from_create_model(
-        cls,
-        run: PipelineRunModel,
-        pipeline: Optional[PipelineSchema] = None,
-    ) -> "PipelineRunSchema":
-        """Create a `PipelineRunSchema` from a `PipelineRunModel`.
-
-        Args:
-            run: The `PipelineRunModel` to create the schema from.
-            pipeline: The `PipelineSchema` to link to the run.
-
-        Returns:
-            The created `PipelineRunSchema`.
-        """
-        return cls(
-            id=run.id,
-            name=run.name,
-            orchestrator_run_id=run.orchestrator_run_id,
-            stack_id=run.stack_id,
-            project_id=run.project,
-            user_id=run.user,
-            pipeline_id=run.pipeline_id,
-            enable_cache=run.enable_cache,
-            start_time=run.start_time,
-            end_time=run.end_time,
-            status=run.status,
-            pipeline_configuration=json.dumps(run.pipeline_configuration),
-            num_steps=run.num_steps,
-            git_sha=run.git_sha,
-            zenml_version=run.zenml_version,
-            pipeline=pipeline,
-        )
-
-    def from_update_model(self, model: PipelineRunModel) -> "PipelineRunSchema":
-        """Update a `PipelineRunSchema` from a `PipelineRunModel`.
-
-        Args:
-            model: The `PipelineRunModel` to update the schema from.
-
-        Returns:
-            The updated `PipelineRunSchema`.
-        """
-        self.status = model.status
-        self.end_time = model.end_time
-        self.updated = datetime.now()
-        return self
-
-    def to_model(self) -> PipelineRunModel:
-        """Convert a `PipelineRunSchema` to a `PipelineRunModel`.
-
-        Returns:
-            The created `PipelineRunModel`.
-        """
-        return PipelineRunModel(
-            id=self.id,
-            name=self.name,
-            orchestrator_run_id=self.orchestrator_run_id,
-            stack_id=self.stack_id,
-            project=self.project_id,
-            user=self.user_id,
-            pipeline_id=self.pipeline_id,
-            enable_cache=self.enable_cache,
-            start_time=self.start_time,
-            end_time=self.end_time,
-            status=self.status,
-            pipeline_configuration=json.loads(self.pipeline_configuration),
-            num_steps=self.num_steps,
-            git_sha=self.git_sha,
-            zenml_version=self.zenml_version,
-            created=self.created,
-            updated=self.updated,
-        )
-
-
-class StepRunSchema(SQLModel, table=True):
-    """SQL Model for steps of pipeline runs."""
-
-    __tablename__ = "step_run"
-
-    id: UUID = Field(primary_key=True)
-    name: str
-
-    pipeline_run_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=PipelineRunSchema.__tablename__,
-        source_column="pipeline_run_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-
-    enable_cache: Optional[bool] = Field(nullable=True)
-    code_hash: Optional[str] = Field(nullable=True)
-    cache_key: Optional[str] = Field(nullable=True)
-    start_time: Optional[datetime] = Field(nullable=True)
-    end_time: Optional[datetime] = Field(nullable=True)
-    status: ExecutionStatus
-    entrypoint_name: str
-    parameters: str = Field(sa_column=Column(TEXT, nullable=False))
-    step_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
-    caching_parameters: Optional[str] = Field(
-        sa_column=Column(TEXT, nullable=True)
-    )
-    docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    num_outputs: Optional[int]
-
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
-
-    @classmethod
-    def from_create_model(cls, model: StepRunModel) -> "StepRunSchema":
-        """Create a `StepRunSchema` from a `StepRunModel`.
-
-        Args:
-            model: The `StepRunModel` to create the schema from.
-
-        Returns:
-            The created `StepRunSchema`.
-
-        """
-        return cls(
-            id=model.id,
-            name=model.name,
-            pipeline_run_id=model.pipeline_run_id,
-            enable_cache=model.enable_cache,
-            code_hash=model.code_hash,
-            cache_key=model.cache_key,
-            start_time=model.start_time,
-            end_time=model.end_time,
-            status=model.status,
-            entrypoint_name=model.entrypoint_name,
-            parameters=json.dumps(model.parameters),
-            step_configuration=json.dumps(model.step_configuration),
-            caching_parameters=json.dumps(model.caching_parameters),
-            docstring=model.docstring,
-            num_outputs=model.num_outputs,
-        )
-
-    def from_update_model(self, model: StepRunModel) -> "StepRunSchema":
-        """Update a `StepRunSchema` from a `StepRunModel`.
-
-        Args:
-            model: The `StepRunModel` to update the schema from.
-
-        Returns:
-            The updated `StepRunSchema`.
-        """
-        self.status = model.status
-        self.end_time = model.end_time
-        self.updated = datetime.now()
-        return self
-
-    def to_model(
-        self,
-        parent_step_ids: List[UUID],
-        input_artifacts: Dict[str, UUID],
-        output_artifacts: Dict[str, UUID],
-    ) -> StepRunModel:
-        """Convert a `StepRunSchema` to a `StepRunModel`.
-
-        Args:
-            parent_step_ids: The parent step ids to link to the step.
-            input_artifacts: The input artifacts to link to the step.
-            output_artifacts: The output artifacts to link to the step.
-
-        Returns:
-            The created StepRunModel.
-        """
-        if self.caching_parameters:
-            caching_parameters = json.loads(self.caching_parameters)
+        x_runs = self.runs[:last_x_runs]
+        status_last_x_runs = []
+        for run in x_runs:
+            status_last_x_runs.append(run.status)
+        if _block_recursion:
+            return PipelineResponseModel(
+                id=self.id,
+                name=self.name,
+                project=self.project.to_model(),
+                user=self.user.to_model(),
+                docstring=self.docstring,
+                spec=PipelineSpec.parse_raw(self.spec),
+                created=self.created,
+                updated=self.updated,
+                status=status_last_x_runs,
+            )
         else:
-            caching_parameters = {}
+            return PipelineResponseModel(
+                id=self.id,
+                name=self.name,
+                project=self.project.to_model(),
+                user=self.user.to_model(),
+                runs=[r.to_model(True) for r in self.runs],
+                docstring=self.docstring,
+                spec=PipelineSpec.parse_raw(self.spec),
+                created=self.created,
+                updated=self.updated,
+                status=status_last_x_runs,
+            )
 
-        return StepRunModel(
-            id=self.id,
-            name=self.name,
-            pipeline_run_id=self.pipeline_run_id,
-            parent_step_ids=parent_step_ids,
-            input_artifacts=input_artifacts,
-            output_artifacts=output_artifacts,
-            enable_cache=self.enable_cache,
-            code_hash=self.code_hash,
-            cache_key=self.cache_key,
-            start_time=self.start_time,
-            end_time=self.end_time,
-            status=self.status,
-            entrypoint_name=self.entrypoint_name,
-            parameters=json.loads(self.parameters),
-            step_configuration=json.loads(self.step_configuration),
-            caching_parameters=caching_parameters,
-            docstring=self.docstring,
-            num_outputs=self.num_outputs,
-            created=self.created,
-            updated=self.updated,
-        )
-
-
-class StepRunParentsSchema(SQLModel, table=True):
-    """SQL Model that defines the order of steps."""
-
-    __tablename__ = "step_run_parents"
-
-    parent_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=StepRunSchema.__tablename__,
-        source_column="parent_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-        primary_key=True,
-    )
-    child_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=StepRunSchema.__tablename__,
-        source_column="child_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-        primary_key=True,
-    )
-
-
-class ArtifactSchema(SQLModel, table=True):
-    """SQL Model for artifacts of steps."""
-
-    __tablename__ = "artifact"
-
-    id: UUID = Field(primary_key=True)
-    name: str  # Name of the output in the parent step
-
-    artifact_store_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=StackComponentSchema.__tablename__,
-        source_column="artifact_store_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
-    artifact_store: "StackComponentSchema" = Relationship(
-        back_populates="artifacts"
-    )
-
-    type: ArtifactType
-    uri: str
-    materializer: str
-    data_type: str
-
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
-
-    @classmethod
-    def from_create_model(cls, model: ArtifactModel) -> "ArtifactSchema":
-        """Create an `ArtifactSchema` from an `ArtifactModel`.
+    def update(
+        self, pipeline_update: "PipelineUpdateModel"
+    ) -> "PipelineSchema":
+        """Update a `PipelineSchema` with a `PipelineUpdateModel`.
 
         Args:
-            model: The `ArtifactModel` to create the schema from.
+            pipeline_update: The update model.
 
         Returns:
-            The created `ArtifactSchema`.
+            The updated `PipelineSchema`.
         """
-        return cls(
-            id=model.id,
-            name=model.name,
-            artifact_store_id=model.artifact_store_id,
-            type=model.type,
-            uri=model.uri,
-            materializer=model.materializer,
-            data_type=model.data_type,
-        )
+        if pipeline_update.name:
+            self.name = pipeline_update.name
 
-    def to_model(self) -> ArtifactModel:
-        """Convert an `ArtifactSchema` to an `ArtifactModel`.
+        if pipeline_update.docstring:
+            self.docstring = pipeline_update.docstring
 
-        Returns:
-            The created `ArtifactModel`.
-        """
-        return ArtifactModel(
-            id=self.id,
-            name=self.name,
-            artifact_store_id=self.artifact_store_id,
-            type=self.type,
-            uri=self.uri,
-            materializer=self.materializer,
-            data_type=self.data_type,
-            created=self.created,
-            updated=self.updated,
-        )
+        if pipeline_update.spec:
+            self.spec = pipeline_update.spec.json(sort_keys=True)
 
-
-class StepRunInputArtifactSchema(SQLModel, table=True):
-    """SQL Model that defines which artifacts are inputs to which step."""
-
-    __tablename__ = "step_run_input_artifact"
-
-    step_run_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=StepRunSchema.__tablename__,
-        source_column="step_run_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-        primary_key=True,
-    )
-    artifact_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ArtifactSchema.__tablename__,
-        source_column="artifact_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-        primary_key=True,
-    )
-    name: str
-
-
-class StepRunOutputArtifactSchema(SQLModel, table=True):
-    """SQL Model that defines which artifacts are outputs of which step."""
-
-    __tablename__ = "step_run_output_artifact"
-
-    step_run_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=StepRunSchema.__tablename__,
-        source_column="step_run_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-        primary_key=True,
-    )
-    artifact_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=ArtifactSchema.__tablename__,
-        source_column="artifact_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-        primary_key=True,
-    )
-    name: str
+        self.updated = datetime.now()
+        return self

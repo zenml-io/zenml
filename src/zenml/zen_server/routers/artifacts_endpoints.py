@@ -21,7 +21,8 @@ from fastapi import APIRouter, Security
 
 from zenml.constants import API, ARTIFACTS, PRODUCER_STEP, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+from zenml.models import ArtifactRequestModel, ArtifactResponseModel
+from zenml.models.step_run_models import StepRunResponseModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -34,7 +35,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[ArtifactModel],
+    response_model=List[ArtifactResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -42,7 +43,7 @@ def list_artifacts(
     artifact_uri: Optional[str] = None,
     parent_step_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[ArtifactModel]:
+) -> List[ArtifactResponseModel]:
     """Get artifacts according to query filters.
 
     Args:
@@ -64,14 +65,14 @@ def list_artifacts(
 
 @router.post(
     "",
-    response_model=ArtifactModel,
+    response_model=ArtifactResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_artifact(
-    artifact: ArtifactModel,
+    artifact: ArtifactRequestModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ArtifactModel:
+) -> ArtifactResponseModel:
     """Create a new artifact.
 
     Args:
@@ -85,14 +86,14 @@ def create_artifact(
 
 @router.get(
     "/{artifact_id}",
-    response_model=ArtifactModel,
+    response_model=ArtifactResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_artifact(
     artifact_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> ArtifactModel:
+) -> ArtifactResponseModel:
     """Get an artifact by ID.
 
     Args:
@@ -106,14 +107,14 @@ def get_artifact(
 
 @router.get(
     "/{artifact_id}" + PRODUCER_STEP,
-    response_model=StepRunModel,
+    response_model=StepRunResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_artifact_producer_step_id(
     artifact_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> StepRunModel:
+) -> StepRunResponseModel:
     """Gets the producer step for an artifact.
 
     Args:
