@@ -429,9 +429,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 container_op=container_op, settings=settings.pod_settings
             )
 
-        # Mounts configmap containing Metadata gRPC server configuration.
-        container_op.apply(utils.mount_config_map_op("metadata-grpc-configmap"))
-
         # Disable caching in KFP v1 only works like this, replace by the second
         # line in the future
         container_op.execution_options.caching_strategy.max_cache_staleness = (
