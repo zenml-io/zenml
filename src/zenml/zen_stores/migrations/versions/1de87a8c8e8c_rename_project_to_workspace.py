@@ -5,7 +5,8 @@ Revises: 0.22.0
 Create Date: 2022-11-24 14:08:56.377347
 
 """
-from typing import Tuple, List
+from collections import defaultdict
+from typing import Tuple, List, Dict
 
 import sqlmodel
 from alembic import op
@@ -87,147 +88,31 @@ def _create_fk_constraint(
         )
 
 
-def _get_changes() -> Tuple[
-    List[str],
-    List[str],
-    List[str],
-    List[Tuple[str, str, str, str, str]],
-    List[Tuple[str, str, str, str, str]],
-]:
-    """Define the data that should be changed in the schema.
-
-    Returns:
-        A tuple of four lists:
-        - old table names
-        - new table names
-        - new table names of tables that should have a `NOT NULL` constraint
-            on the `project_id` column
-        - old foreign key constraints:
-            (source, target, source_column, target_column, ondelete)
-        - new foreign key constraints
-            (source, target, source_column, target_column, ondelete)
-    """
-    # Define all the tables that should be renamed
-    table_name_mapping: Dict[str, str] = {
-        "roleschema": "role",
-        "stepinputartifactschema": "step_run_input_artifact",
-        "userroleassignmentschema": "user_role_assignment",
-        "steprunorderschema": "step_run_parents",
-        "teamschema": "team",
-        "artifactschema": "artifacts",
-        "pipelinerunschema": "pipeline_run",
-        "steprunschema": "step_run",
-        "teamassignmentschema": "team_assignment",
-        "projectschema": "workspace",
-        "flavorschema": "flavor",
-        "userschema": "user",
-        "stackcomponentschema": "stack_component",
-        "pipelineschema": "pipeline",
-        "stackcompositionschema": "stack_composition",
-        "teamroleassignmentschema": "team_role_assignment",
-        "stackschema": "stack",
-        "rolepermissionschema": "role_permission",
-    }
-    reversed_table_name_mapping = {v: k for k, v in table_name_mapping.items()}
-    old_table_names = list(table_name_mapping.keys())
-    new_table_names = list(table_name_mapping.values())
-
-    # Define all foreign key constraints that need to be adjusted
-    project_user_fk_tables = [
-        "stack_component",
-        "flavor",
-        "pipeline",
-        "pipeline_run",
-        "stack",
-    ]
-    new_fk_constraints: List[Tuple[str, str, str, str, str]] = [
-        *[
-            (source, "workspace", "project_id", "id", "CASCADE")
-            for source in project_user_fk_tables
-        ],  # 5
-        *[
-            (source, "user", "user_id", "id", "SET NULL")
-            for source in project_user_fk_tables
-        ],  # 10
-        ("stack_composition", "stack", "stack_id", "id", "CASCADE"),  # 11
-        (
-            "stack_composition",
-            "stack_component",
-            "component_id",
-            "id",
-            "CASCADE",
-        ),  # 12
-        ("pipeline_run", "pipeline", "pipeline_id", "id", "SET NULL"),  # 13
-        ("pipeline_run", "stack", "stack_id", "id", "SET NULL"),  # 14
-        ("step_run", "pipeline_run", "pipeline_run_id", "id", "CASCADE"),  # 15
-        (
-            "step_run_input_artifact",
-            "step_run",
-            "step_id",
-            "id",
-            "CASCADE",
-        ),  # 16
-        (
-            "step_run_input_artifact",
-            "artifacts",
-            "artifact_id",
-            "id",
-            "CASCADE",
-        ),  # 17
-        ("step_run_parents", "step_run", "parent_id", "id", "CASCADE"),  # 18
-        ("step_run_parents", "step_run", "child_id", "id", "CASCADE"),  # 19
-        ("artifacts", "step_run", "producer_step_id", "id", "CASCADE"),  # 20
-        ("artifacts", "step_run", "parent_step_id", "id", "CASCADE"),  # 21
-        ("team_assignment", "user", "user_id", "id", "CASCADE"),  # 22
-        ("team_assignment", "team", "team_id", "id", "CASCADE"),  # 23
-        ("team_role_assignment", "team", "team_id", "id", "CASCADE"),  # 24
-        ("team_role_assignment", "role", "role_id", "id", "CASCADE"),  # 25
-        (
-            "team_role_assignment",
-            "workspace",
-            "project_id",
-            "id",
-            "CASCADE",
-        ),  # 26
-        ("user_role_assignment", "user", "user_id", "id", "CASCADE"),  # 27
-        ("user_role_assignment", "role", "role_id", "id", "CASCADE"),  # 28
-        (
-            "user_role_assignment",
-            "workspace",
-            "project_id",
-            "id",
-            "CASCADE",
-        ),  # 29
-        ("role_permission", "role", "role_id", "id", "CASCADE"),  # 30
-    ]
-    old_fk_constraints = [
-        (
-            reversed_table_name_mapping[source],
-            reversed_table_name_mapping[target],
-            source_col,
-            target_col,
-            ondelete,
-        )
-        for source, target, source_col, target_col, ondelete in new_fk_constraints
-    ]
-    return (
-        old_table_names,
-        new_table_names,
-        project_user_fk_tables,
-        old_fk_constraints,
-        new_fk_constraints,
-    )
-
-
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-    (
-        old_table_names,
-        new_table_names,
-        project_not_null_tables,
-        old_fk_constraints,
-        new_fk_constraints,
-    ) = _get_changes()
+
+    table_names: List[str] = [
+        'flavor',
+        'pipeline',
+        'pipeline_run',
+        'stack',
+        'stack_component',
+        'team_role_assignment',
+        'user_role_assignment'
+    ]
+
+    new_fk_constraints: List[Tuple[str, str, str, str, str]] = [
+        *[
+            (source, "workspace", "workspace_id", "id", "CASCADE")
+            for source in table_names
+        ],
+    ]
+    old_fk_constraints = [
+        *[
+            (source, "workspace", "project_id", "id", "CASCADE")
+            for source in table_names
+        ],
+    ]
 
     engine_name = op.get_bind().engine.name
 
@@ -251,15 +136,9 @@ def upgrade() -> None:
         _drop_fk_constraint(source, constraint_name)
 
     # Rename tables
-    for old_table_name, new_table_name in zip(old_table_names, new_table_names):
-        op.rename_table(old_table_name, new_table_name)
-
-    # Set `project_id` to `NOT NULL` where appropriate.
-    for table_name in project_not_null_tables:
-        with op.batch_alter_table(table_name, schema=None) as batch_op:
-            batch_op.alter_column(
-                "project_id", existing_type=sa.CHAR(length=32), nullable=False
-            )
+    for table in table_names:
+        with op.batch_alter_table(table, schema=None) as batch_op:
+            batch_op.alter_column('project_id', 'workspace_id')
 
     # Create new foreign key constraints
     for (
@@ -272,51 +151,6 @@ def upgrade() -> None:
         _create_fk_constraint(
             source, target, source_column, target_column, ondelete
         )
-
-    # # ### commands auto generated by Alembic - please adjust! ###
-    # with op.batch_alter_table('flavor', schema=None) as batch_op:
-    #     batch_op.alter_column('project_id')
-    #     batch_op.drop_constraint('fk_flavor_project_id_workspace', type_='foreignkey')
-    #     batch_op.create_foreign_key('fk_flavor_workspace_id_workspace', 'workspace', ['workspace_id'], ['id'], ondelete='CASCADE')
-    #     batch_op.drop_column('project_id')
-    #
-    # with op.batch_alter_table('pipeline', schema=None) as batch_op:
-    #     batch_op.add_column(sa.Column('workspace_id', sqlmodel.sql.sqltypes.GUID(), nullable=False))
-    #     batch_op.drop_constraint('fk_pipeline_project_id_workspace', type_='foreignkey')
-    #     batch_op.create_foreign_key('fk_pipeline_workspace_id_workspace', 'workspace', ['workspace_id'], ['id'], ondelete='CASCADE')
-    #     batch_op.drop_column('project_id')
-    #
-    # with op.batch_alter_table('pipeline_run', schema=None) as batch_op:
-    #     batch_op.add_column(sa.Column('workspace_id', sqlmodel.sql.sqltypes.GUID(), nullable=False))
-    #     batch_op.drop_constraint('fk_pipeline_run_project_id_workspace', type_='foreignkey')
-    #     batch_op.create_foreign_key('fk_pipeline_run_workspace_id_workspace', 'workspace', ['workspace_id'], ['id'], ondelete='CASCADE')
-    #     batch_op.drop_column('project_id')
-    #
-    # with op.batch_alter_table('stack', schema=None) as batch_op:
-    #     batch_op.add_column(sa.Column('workspace_id', sqlmodel.sql.sqltypes.GUID(), nullable=False))
-    #     batch_op.drop_constraint('fk_stack_project_id_workspace', type_='foreignkey')
-    #     batch_op.create_foreign_key('fk_stack_workspace_id_workspace', 'workspace', ['workspace_id'], ['id'], ondelete='CASCADE')
-    #     batch_op.drop_column('project_id')
-    #
-    # with op.batch_alter_table('stack_component', schema=None) as batch_op:
-    #     batch_op.add_column(sa.Column('workspace_id', sqlmodel.sql.sqltypes.GUID(), nullable=False))
-    #     batch_op.drop_constraint('fk_stack_component_project_id_workspace', type_='foreignkey')
-    #     batch_op.create_foreign_key('fk_stack_component_workspace_id_workspace', 'workspace', ['workspace_id'], ['id'], ondelete='CASCADE')
-    #     batch_op.drop_column('project_id')
-    #
-    # with op.batch_alter_table('team_role_assignment', schema=None) as batch_op:
-    #     batch_op.add_column(sa.Column('workspace_id', sqlmodel.sql.sqltypes.GUID(), nullable=True))
-    #     batch_op.drop_constraint('fk_team_role_assignment_project_id_workspace', type_='foreignkey')
-    #     batch_op.create_foreign_key('fk_team_role_assignment_workspace_id_workspace', 'workspace', ['workspace_id'], ['id'], ondelete='CASCADE')
-    #     batch_op.drop_column('project_id')
-    #
-    # with op.batch_alter_table('user_role_assignment', schema=None) as batch_op:
-    #     batch_op.add_column(sa.Column('workspace_id', sqlmodel.sql.sqltypes.GUID(), nullable=True))
-    #     batch_op.drop_constraint('fk_user_role_assignment_project_id_workspace', type_='foreignkey')
-    #     batch_op.create_foreign_key('fk_user_role_assignment_workspace_id_workspace', 'workspace', ['workspace_id'], ['id'], ondelete='CASCADE')
-    #     batch_op.drop_column('project_id')
-
-    # ### end Alembic commands ###
 
 
 def downgrade() -> None:
