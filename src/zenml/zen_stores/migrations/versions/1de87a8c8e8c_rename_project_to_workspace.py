@@ -135,10 +135,10 @@ def upgrade() -> None:
             raise NotImplementedError(f"Unsupported engine: {engine_name}")
         _drop_fk_constraint(source, constraint_name)
 
-    # Rename tables
+    # Rename columns
     for table in table_names:
         with op.batch_alter_table(table, schema=None) as batch_op:
-            batch_op.alter_column('project_id', 'workspace_id')
+            batch_op.alter_column('project_id', new_column_name='workspace_id')
 
     # Create new foreign key constraints
     for (
