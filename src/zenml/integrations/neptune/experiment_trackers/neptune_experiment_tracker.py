@@ -26,8 +26,8 @@ from zenml.integrations.neptune.flavors import (
 )
 
 if TYPE_CHECKING:
-    from zenml.config.step_run_info import StepRunInfo
     from zenml.config.base_settings import BaseSettings
+    from zenml.config.step_run_info import StepRunInfo
 
 
 class NeptuneExperimentTracker(BaseExperimentTracker):

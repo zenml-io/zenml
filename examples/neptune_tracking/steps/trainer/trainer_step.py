@@ -17,12 +17,10 @@ import tensorflow as tf
 from neptune.new.integrations.tensorflow_keras import NeptuneCallback
 
 from zenml.client import Client
-from zenml.integrations.neptune.experiment_trackers import (
-    NeptuneExperimentTrackerSettings,
-)
 from zenml.integrations.neptune.experiment_trackers.run_state import (
     get_neptune_run,
 )
+from zenml.integrations.neptune.flavors import NeptuneExperimentTrackerSettings
 from zenml.integrations.tensorflow.materializers.keras_materializer import (
     KerasMaterializer,
 )
