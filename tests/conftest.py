@@ -309,7 +309,7 @@ def sql_store_with_runs() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
 
     yield {
         "store": store,
-        "default_workspace": default_project,
+        "default_workspace": default_workspace,
         "default_stack": default_stack,
         "active_user": active_user,
         "pipeline_runs": pipeline_runs,
@@ -327,13 +327,13 @@ def sql_store_with_team() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     )
     new_team = TeamRequestModel(name="arias_team")
     store.create_team(new_team)
-    default_project = store.list_projects()[0]
+    default_workspace = store.list_workspaces()[0]
     default_stack = store.list_stacks()[0]
     active_user = store.list_users()[0]
     default_team = store.list_teams()[0]
     yield {
         "store": store,
-        "default_project": default_project,
+        "default_workspace": default_workspace,
         "default_stack": default_stack,
         "active_user": active_user,
         "default_team": default_team,
@@ -364,15 +364,15 @@ def sql_store_with_user_team_role() -> Dict[
     new_user = UserRequestModel(name="axl")
     new_user = store.create_user(new_user)
 
-    new_project = WorkspaceRequestModel(name="axl_prj")
-    new_project = store.create_project(new_project)
+    new_workspace = WorkspaceRequestModel(name="axl_prj")
+    new_workspace = store.create_workspace(new_workspace)
 
     yield {
         "store": store,
         "user": new_user,
         "team": new_team,
         "role": new_role,
-        "project": new_project,
+        "workspace": new_workspace,
     }
 
 
@@ -423,7 +423,7 @@ def local_stack():
         flavor="default",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -434,7 +434,7 @@ def local_stack():
         flavor="default",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -456,7 +456,7 @@ def local_orchestrator():
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -472,7 +472,7 @@ def local_artifact_store():
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -495,7 +495,7 @@ def remote_artifact_store():
         flavor="gcp",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -511,7 +511,7 @@ def local_container_registry():
         flavor="default",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -523,11 +523,11 @@ def remote_container_registry():
     return BaseContainerRegistry(
         name="",
         id=uuid4(),
-        config=BaseContainerRegistryConfig(uri="gcr.io/my-project"),
+        config=BaseContainerRegistryConfig(uri="gcr.io/my-workspace"),
         flavor="default",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -654,8 +654,8 @@ def sample_user_model() -> UserResponseModel:
 
 
 @pytest.fixture
-def sample_project_model() -> WorkspaceResponseModel:
-    """Return a sample project model for testing purposes"""
+def sample_workspace_model() -> WorkspaceResponseModel:
+    """Return a sample workspace model for testing purposes"""
     return WorkspaceResponseModel(
         id=uuid4(),
         name="axl",
@@ -714,7 +714,7 @@ def sample_step_view(sample_step_model) -> StepView:
 @pytest.fixture
 def sample_pipeline_run_model(
     sample_user_model: UserResponseModel,
-    sample_project_model: WorkspaceResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
 ) -> PipelineRunResponseModel:
     """Return sample pipeline run view for testing purposes"""
     return PipelineRunResponseModel(
@@ -726,7 +726,7 @@ def sample_pipeline_run_model(
         created=datetime.now(),
         updated=datetime.now(),
         user=sample_user_model,
-        project=sample_project_model,
+        workspace=sample_workspace_model,
     )
 
 
@@ -740,7 +740,7 @@ def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
     )
 
 
