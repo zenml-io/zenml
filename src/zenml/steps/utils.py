@@ -19,21 +19,27 @@ from __future__ import absolute_import, division, print_function
 import inspect
 import sys
 import typing
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Type
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
+from zenml.enums import ExecutionStatus
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.models import ArtifactModel
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.step_output import Output
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from zenml.config.step_configurations import Step
 
 logger = get_logger(__name__)
@@ -108,16 +114,42 @@ def parse_return_type_annotations(
     return output_signature
 
 
+def register_output_artifacts(
+    output_artifacts: Dict[str, BaseArtifact]
+) -> Dict[str, "UUID"]:
+    """Registers the given output artifacts.
+
+    Args:
+        output_artifacts: The output artifacts to register.
+
+    Returns:
+        The IDs of the registered output artifacts.
+    """
+    output_artifact_ids = {}
+    for name, artifact_ in output_artifacts.items():
+        artifact_model = ArtifactModel(
+            name=name,
+            type=artifact_.TYPE_NAME,
+            uri=artifact_.uri,
+            materializer=artifact_.materializer,
+            data_type=artifact_.data_type,
+        )
+        Client().zen_store.create_artifact(artifact_model)
+        output_artifact_ids[name] = artifact_model.id
+    return output_artifact_ids
+
+
 class StepExecutor:
     """Class to execute ZenML steps."""
 
-    def __init__(self, step: "Step"):
+    def __init__(self, step: "Step", step_run: "StepRunModel"):
         """Initializes the step executor.
 
         Args:
             step: The step to execute.
         """
         self._step = step
+        self._step_run = step_run
 
     @property
     def configuration(self) -> StepConfiguration:
@@ -331,16 +363,11 @@ class StepExecutor:
                     data=return_value,
                 )
 
-        # Write the executor output to the artifact store so the executor
-        # operator (potentially not running on the same machine) can read it
-        # to populate the metadata store
+        output_artifact_ids = register_output_artifacts(
+            output_artifacts=output_artifacts
+        )
 
-        # executor_output = execution_result_pb2.ExecutorOutput()
-        # outputs_utils.populate_output_artifact(executor_output, output_dict)
-
-        # logger.debug(
-        #     "Writing executor output to '%s'.",
-        #     self._context.executor_output_uri,
-        # )
-        # with fileio.open(self._context.executor_output_uri, "wb") as f:
-        #     f.write(executor_output.SerializeToString())
+        self._step_run.output_artifacts = output_artifact_ids
+        self._step_run.status = ExecutionStatus.COMPLETED
+        self._step_run.end_time = datetime.now()
+        Client().zen_store.update_run_step(self._step_run)

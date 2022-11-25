@@ -122,7 +122,7 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             step_run=step_run, stack=stack, step=step
         )
 
-        executor = StepExecutor(step=step)
+        executor = StepExecutor(step=step, step_run=step_run)
 
         stack.prepare_step_run(info=step_run_info)
         try:

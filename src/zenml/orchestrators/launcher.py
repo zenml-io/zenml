@@ -28,11 +28,7 @@ from zenml.enums import ExecutionStatus
 from zenml.exceptions import InputResolutionError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models.pipeline_models import (
-    ArtifactModel,
-    PipelineRunModel,
-    StepRunModel,
-)
+from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
 from zenml.steps.utils import StepExecutor
 from zenml.utils import source_utils, string_utils
 
@@ -229,31 +225,6 @@ def prepare_output_artifacts(
     return output_artifacts
 
 
-def register_output_artifacts(
-    output_artifacts: Dict[str, BaseArtifact]
-) -> Dict[str, UUID]:
-    """Registers the given output artifacts.
-
-    Args:
-        output_artifacts: The output artifacts to register.
-
-    Returns:
-        The IDs of the registered output artifacts.
-    """
-    output_artifact_ids = {}
-    for name, artifact_ in output_artifacts.items():
-        artifact_model = ArtifactModel(
-            name=name,
-            type=artifact_.TYPE_NAME,
-            uri=artifact_.uri,
-            materializer=artifact_.materializer,
-            data_type=artifact_.data_type,
-        )
-        Client().zen_store.create_artifact(artifact_model)
-        output_artifact_ids[name] = artifact_model.id
-    return output_artifact_ids
-
-
 def get_cached_step_run(step_run: StepRunModel) -> Optional[StepRunModel]:
     """If a given step can be cached, get the corresponding existing step run.
 
@@ -289,6 +260,10 @@ def update_pipeline_run_status(pipeline_run: PipelineRunModel) -> None:
     status = ExecutionStatus.run_status(
         step_statuses=[step_run.status for step_run in steps_in_current_run]
     )
+    run_finished = len(steps_in_current_run) == pipeline_run.num_steps
+    if not run_finished and status == ExecutionStatus.COMPLETED:
+        # Don't update to completed as not all steps are finished
+        pass
     if status != pipeline_run.status:
         pipeline_run.status = status
         Client().zen_store.update_run(pipeline_run)
@@ -378,7 +353,7 @@ class Launcher:
             self._pipeline_config.enable_cache
             and self._step.config.enable_cache
         )
-        cached_step_run: Optional[StepRunModel] = None
+
         if cache_enabled:
             cached_step_run = get_cached_step_run(step_run)
             if cached_step_run:
@@ -404,18 +379,6 @@ class Launcher:
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
         )
-
-        # 6. If execution was successful, register the output artifacts
-        # TODO: using step operators, the output artifacts here are not
-        # populated. We need to write them to the artifact store and read again
-        # here
-        output_artifact_ids = register_output_artifacts(output_artifacts)
-
-        # 7. Update step run status
-        step_run.output_artifacts = output_artifact_ids
-        step_run.status = ExecutionStatus.COMPLETED
-        step_run.end_time = datetime.now()
-        Client().zen_store.update_run_step(step_run)
 
         # 8. Update the pipeline run status
         update_pipeline_run_status(pipeline_run=pipeline_run)
@@ -590,7 +553,7 @@ class Launcher:
         Raises:
             Exception: If the step failed to run.
         """
-        executor = StepExecutor(step=self._step)
+        executor = StepExecutor(step=self._step, step_run=step_run)
         self._stack.prepare_step_run(info=step_run_info)
         try:
             executor.execute(
