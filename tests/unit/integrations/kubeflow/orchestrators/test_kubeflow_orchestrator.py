@@ -35,7 +35,7 @@ def _get_kubeflow_orchestrator() -> KubeflowOrchestrator:
         flavor="kubeflow",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

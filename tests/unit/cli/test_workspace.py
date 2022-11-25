@@ -13,47 +13,47 @@
 #  permissions and limitations under the License.
 from click.testing import CliRunner
 
-from tests.unit.cli.test_utils import SAMPLE_WORKSPACE, create_sample_project
+from tests.unit.cli.test_utils import SAMPLE_WORKSPACE, create_sample_workspace
 from zenml.cli.cli import cli
 from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
 
 
-def test_create_project_succeeds(
+def test_create_workspace_succeeds(
     clean_client,
 ) -> None:
     """Test that creating a new role succeeds."""
-    project_create_command = cli.commands["project"].commands["create"]
+    workspace_create_command = cli.commands["workspace"].commands["create"]
     runner = CliRunner()
     result = runner.invoke(
-        project_create_command,
+        workspace_create_command,
         [SAMPLE_WORKSPACE],
     )
     assert result.exit_code == 0
 
 
-def test_create_existing_project_fails(
+def test_create_existing_workspace_fails(
     clean_client,
 ) -> None:
     """Test that creating a new role succeeds."""
-    create_sample_project(clean_client)
-    project_create_command = cli.commands["project"].commands["create"]
+    create_sample_workspace(clean_client)
+    workspace_create_command = cli.commands["workspace"].commands["create"]
     runner = CliRunner()
     result = runner.invoke(
-        project_create_command,
+        workspace_create_command,
         [SAMPLE_WORKSPACE],
     )
     assert result.exit_code == 1
 
 
-def test_update_existing_project_succeeds(
+def test_update_existing_workspace_succeeds(
     clean_client,
 ) -> None:
     """Test that creating a new role succeeds."""
-    create_sample_project(clean_client)
-    project_update_command = cli.commands["project"].commands["update"]
+    create_sample_workspace(clean_client)
+    workspace_update_command = cli.commands["workspace"].commands["update"]
     runner = CliRunner()
     result = runner.invoke(
-        project_update_command,
+        workspace_update_command,
         [
             SAMPLE_WORKSPACE,
             "--name=dog_prj",
@@ -63,14 +63,14 @@ def test_update_existing_project_succeeds(
     assert result.exit_code == 0
 
 
-def test_update_default_project_name_fails(
+def test_update_default_workspace_name_fails(
     clean_client,
 ) -> None:
     """Test that creating a new role succeeds."""
-    project_update_command = cli.commands["project"].commands["update"]
+    workspace_update_command = cli.commands["workspace"].commands["update"]
     runner = CliRunner()
     result = runner.invoke(
-        project_update_command,
+        workspace_update_command,
         [
             DEFAULT_WORKSPACE_NAME,
             "--name=doc_prj",
@@ -79,15 +79,15 @@ def test_update_default_project_name_fails(
     assert result.exit_code == 1
 
 
-def test_delete_project_succeeds(
+def test_delete_workspace_succeeds(
     clean_client,
 ) -> None:
     """Test that creating a new role succeeds."""
-    create_sample_project(clean_client)
-    project_delete_command = cli.commands["project"].commands["delete"]
+    create_sample_workspace(clean_client)
+    workspace_delete_command = cli.commands["workspace"].commands["delete"]
     runner = CliRunner()
     result = runner.invoke(
-        project_delete_command,
+        workspace_delete_command,
         [
             SAMPLE_WORKSPACE,
         ],
@@ -95,11 +95,11 @@ def test_delete_project_succeeds(
     assert result.exit_code == 1
 
 
-def test_delete_default_project_fails(
+def test_delete_default_workspace_fails(
     clean_client,
 ) -> None:
     """Test that creating a new role succeeds."""
-    project_delete_command = cli.commands["project"].commands["delete"]
+    workspace_delete_command = cli.commands["workspace"].commands["delete"]
     runner = CliRunner()
     result = runner.invoke(
         project_delete_command,

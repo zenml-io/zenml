@@ -31,7 +31,7 @@ def test_deepchecks_data_validator_attributes():
         flavor="deepchecks",
         type=StackComponentType.DATA_VALIDATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

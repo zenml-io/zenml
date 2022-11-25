@@ -64,30 +64,30 @@ DEFAULT_NAME = "default"
 def test_only_one_default_workspace_present(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests that only one default project can be created."""
-    assert len(sql_store["store"].list_projects()) == 1
+    """Tests that only one default workspace can be created."""
+    assert len(sql_store["store"].list_workspaces()) == 1
 
 
-def test_project_creation_succeeds(
+def test_workspace_creation_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests project creation."""
-    assert len(sql_store["store"].list_projects()) == 1
-    new_project = WorkspaceRequestModel(name="arias_project")
-    sql_store["store"].create_project(new_project)
-    projects_list = sql_store["store"].list_projects()
-    assert len(projects_list) == 2
-    assert "arias_project" in [p.name for p in projects_list]
+    """Tests workspace creation."""
+    assert len(sql_store["store"].list_workspaces()) == 1
+    new_workspace = WorkspaceRequestModel(name="arias_workspace")
+    sql_store["store"].create_workspace(new_workspace)
+    workspaces_list = sql_store["store"].list_workspaces()
+    assert len(workspaces_list) == 2
+    assert "arias_workspace" in [p.name for p in workspaces_list]
 
 
-def test_get_project_succeeds(
+def test_get_workspace_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests getting a project."""
-    assert sql_store["default_project"].name == DEFAULT_WORKSPACE_NAME
+    """Tests getting a workspace."""
+    assert sql_store["default_workspace"].name == DEFAULT_WORKSPACE_NAME
     with does_not_raise():
-        sql_store["store"].get_project(DEFAULT_WORKSPACE_NAME)
-        sql_store["store"].get_project(sql_store["default_project"].id)
+        sql_store["store"].get_workspace(DEFAULT_WORKSPACE_NAME)
+        sql_store["store"].get_workspace(sql_store["default_project"].id)
 
 
 def test_getting_nonexistent_project_fails(

@@ -36,7 +36,7 @@ def _get_gcp_artifact_store(**kwargs):
         flavor="gcp",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

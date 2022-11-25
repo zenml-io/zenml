@@ -132,12 +132,12 @@ def test_prepend_group_name_to_keys(parametrized_input: ZenMLSecret):
         id=uuid4(),
         config=GCPSecretsManagerConfig(
             scope="none",
-            project_id="fake_project",
+            workspace_id="fake_workspace",
         ),
         flavor="gcp",
         type=StackComponentType.SECRETS_MANAGER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

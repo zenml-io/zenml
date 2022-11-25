@@ -60,7 +60,7 @@ def test_base_secrets_manager_prevents_secret_references():
             flavor="default",
             type=StackComponentType.SECRETS_MANAGER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -73,7 +73,7 @@ def test_base_secrets_manager_prevents_secret_references():
             flavor="default",
             type=StackComponentType.SECRETS_MANAGER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )

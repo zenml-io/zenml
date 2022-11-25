@@ -79,7 +79,7 @@ def get_secrets_manager(
     elif flavor == "gcp":
         configuration.update(
             dict(
-                project_id="zenml-secrets-manager",
+                workspace_id="zenml-secrets-manager",
             )
         )
     elif flavor == "azure":

@@ -63,7 +63,7 @@ def test_mlflow_experiment_tracker_attributes() -> None:
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -82,7 +82,7 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -94,7 +94,7 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -105,7 +105,7 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -116,7 +116,7 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         flavor="gcp",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -155,7 +155,7 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -171,7 +171,7 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -189,7 +189,7 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -207,7 +207,7 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -224,7 +224,7 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -241,7 +241,7 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -263,7 +263,7 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -288,7 +288,7 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

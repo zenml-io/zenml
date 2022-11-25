@@ -38,7 +38,7 @@ def local_secrets_manager():
         flavor="default",
         type=StackComponentType.SECRETS_MANAGER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

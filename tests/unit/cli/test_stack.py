@@ -520,7 +520,7 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
             flavor="local",
             configuration={},
             user=other_user.id,
-            workspace=clean_client.active_project.id,
+            workspace=clean_client.active_workspace.id,
         )
     )
 
@@ -564,7 +564,7 @@ def test_add_private_component_to_shared_stack_fails(
             flavor="local",
             configuration={},
             user=other_user.id,
-            project=clean_client.active_project.id,
+            workspace=clean_client.active_workspace.id,
         )
     )
 
