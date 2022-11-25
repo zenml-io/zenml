@@ -29,7 +29,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
-    Union,
+    Union, Iterable, Set,
 )
 
 import click
