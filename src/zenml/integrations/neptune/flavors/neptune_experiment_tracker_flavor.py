@@ -13,18 +13,51 @@
 #  permissions and limitations under the License.
 """Neptune experiment tracker flavor."""
 
-__all__ = ["NeptuneExperimentTrackerConfig", "NeptuneExperimentTrackerFlavor"]
+__all__ = [
+    "NeptuneExperimentTrackerConfig",
+    "NeptuneExperimentTrackerFlavor",
+    "NeptuneExperimentTrackerSettings",
+]
 
-from typing import Type
+from typing import TYPE_CHECKING, Optional, Set, Type
 
+from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
+    BaseExperimentTrackerConfig,
     BaseExperimentTrackerFlavor,
 )
 from zenml.integrations.neptune import NEPTUNE_MODEL_EXPERIMENT_TRACKER_FLAVOR
-from zenml.integrations.neptune.experiment_trackers import (
-    NeptuneExperimentTracker,
-    NeptuneExperimentTrackerConfig,
-)
+from zenml.utils.secret_utils import SecretField
+
+if TYPE_CHECKING:
+    from zenml.integrations.neptune.experiment_trackers import (
+        NeptuneExperimentTracker,
+    )
+
+
+class NeptuneExperimentTrackerConfig(BaseExperimentTrackerConfig):
+    """Config for the Neptune experiment tracker.
+
+    If attributes are left as None, the neptune.init_run() method
+    will try to find the relevant values in the environment
+
+    Attributes:
+        project: name of the Neptune project you want to log the metadata to
+        api_token: your Neptune API token
+    """
+
+    project: Optional[str] = None
+    api_token: Optional[str] = SecretField()
+
+
+class NeptuneExperimentTrackerSettings(BaseSettings):
+    """Settings for the Neptune experiment tracker.
+
+    Attributes:
+        tags: Tags for the Neptune run.
+    """
+
+    tags: Set[str] = set()
 
 
 class NeptuneExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
