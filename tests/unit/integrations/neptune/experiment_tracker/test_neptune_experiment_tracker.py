@@ -22,8 +22,8 @@ from zenml.artifact_stores import LocalArtifactStore, LocalArtifactStoreConfig
 from zenml.enums import StackComponentType
 from zenml.integrations.neptune.experiment_trackers import (
     NeptuneExperimentTracker,
-    NeptuneExperimentTrackerConfig,
 )
+from zenml.integrations.neptune.flavors import NeptuneExperimentTrackerConfig
 from zenml.orchestrators import LocalOrchestrator
 from zenml.stack import Stack
 from zenml.stack.stack_component import StackComponentConfig
