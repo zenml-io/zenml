@@ -54,27 +54,6 @@ class RoleAssignmentBaseModel(BaseModel):
         return values
 
 
-# ------- #
-# REQUEST #
-# ------- #
-
-
-class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
-    """Request model for role assignments using UUIDs for all entities."""
-
-    workspace: Optional[UUID] = Field(
-        None, title="The project that the role is limited to."
-    )
-    team: Optional[UUID] = Field(
-        None, title="The team that the role is assigned to."
-    )
-    user: Optional[UUID] = Field(
-        None, title="The user that the role is assigned to."
-    )
-
-    role: UUID = Field(title="The role.")
-
-
 # -------- #
 # RESPONSE #
 # -------- #
@@ -95,3 +74,24 @@ class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
     role: "RoleResponseModel" = Field(
         title="The team the role is assigned to.", default=None
     )
+
+
+# ------- #
+# REQUEST #
+# ------- #
+
+
+class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
+    """Request model for role assignments using UUIDs for all entities."""
+
+    project: Optional[UUID] = Field(
+        None, title="The project that the role is limited to."
+    )
+    team: Optional[UUID] = Field(
+        None, title="The team that the role is assigned to."
+    )
+    user: Optional[UUID] = Field(
+        None, title="The user that the role is assigned to."
+    )
+
+    role: UUID = Field(title="The role.")

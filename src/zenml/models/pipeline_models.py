@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import List, Optional
+from typing import ClassVar, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -22,7 +22,7 @@ from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
-    update,
+    update_model,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
@@ -52,6 +52,8 @@ class PipelineBaseModel(BaseModel):
 class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
     """Pipeline response model user, project, runs, and status hydrated."""
 
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project", "user"]
+
     runs: Optional[List["PipelineRunResponseModel"]] = Field(
         title="A list of the last x Pipeline Runs."
     )
@@ -68,12 +70,14 @@ class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
 class PipelineRequestModel(PipelineBaseModel, WorkspaceScopedRequestModel):
     """Pipeline request model."""
 
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["project", "user"]
+
 
 # ------ #
 # UPDATE #
 # ------ #
 
 
-@update
+@update_model
 class PipelineUpdateModel(PipelineRequestModel):
     """Pipeline update model."""

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
 from uuid import UUID
 
 from pydantic import Field
@@ -78,6 +78,13 @@ class UserScopedResponseModel(BaseResponseModel):
         title="The user that created this resource.", nullable=True
     )
 
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Fetches the analytics metadata for user scoped models."""
+        metadata = super().get_analytics_metadata()
+        if self.user is not None:
+            metadata["user"] = self.user.id
+        return metadata
+
 
 class WorkspaceScopedResponseModel(UserScopedResponseModel):
     """Base workspace-scoped domain model.
@@ -88,6 +95,12 @@ class WorkspaceScopedResponseModel(UserScopedResponseModel):
     workspace: "WorkspaceResponseModel" = Field(
         title="The workspace of this resource."
     )
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Fetches the analytics metadata for project scoped models."""
+        metadata = super().get_analytics_metadata()
+        metadata["project"] = self.project.id
+        return metadata
 
 
 class ShareableResponseModel(WorkspaceScopedResponseModel):
@@ -117,7 +130,7 @@ class BaseRequestModel(AnalyticsTrackedModelMixin):
     """
 
 
-class UserOwnedRequestModel(BaseRequestModel):
+class UserScopedRequestModel(BaseRequestModel):
     """Base user-owned request model.
 
     Used as a base class for all domain models that are "owned" by a user.
@@ -126,8 +139,8 @@ class UserOwnedRequestModel(BaseRequestModel):
     user: UUID = Field(title="The id of the user that created this resource.")
 
 
-class WorkspaceScopedRequestModel(UserOwnedRequestModel):
-    """Base workspace-scoped request domain model.
+class WorkspaceScopedRequestModel(UserScopedRequestModel):
+    """Base project-scoped request domain model.
 
     Used as a base class for all domain models that are workspace-scoped.
     """
@@ -160,8 +173,12 @@ class ShareableRequestModel(WorkspaceScopedRequestModel):
 T = TypeVar("T", bound="BaseRequestModel")
 
 
-def update(_cls: Type[T]) -> Type[T]:
-    """TODO: @bcdurak describe what this does."""
+def update_model(_cls: Type[T]) -> Type[T]:
+    """Base update model.
+
+    This is used as a decorator on top of request models to convert them
+    into update models where the fields are optional and can be set to None.
+    """
     for _, value in _cls.__fields__.items():
         value.required = False
         value.allow_none = True

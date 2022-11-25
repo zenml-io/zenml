@@ -13,9 +13,15 @@
 #  permissions and limitations under the License.
 """Models representing workspaces."""
 
+from typing import ClassVar, List
+
 from pydantic import BaseModel, Field
 
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update
+from zenml.models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update_model,
+)
 from zenml.models.constants import (
     MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,
@@ -47,6 +53,8 @@ class WorkspaceBaseModel(BaseModel):
 class WorkspaceResponseModel(WorkspaceBaseModel, BaseResponseModel):
     """Response model for workspaces."""
 
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
+
 
 # ------- #
 # REQUEST #
@@ -62,6 +70,6 @@ class WorkspaceRequestModel(WorkspaceBaseModel, BaseRequestModel):
 # ------ #
 
 
-@update
+@update_model
 class WorkspaceUpdateModel(WorkspaceRequestModel):
-    """Update model for workspaces."""
+    """Update model for projects."""

@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from types import TracebackType
 from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, Union
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -346,6 +347,10 @@ class AnalyticsContext:
                         "database_type": str(server_info.database_type),
                     }
                 )
+
+        for k, v in properties.items():
+            if isinstance(v, UUID):
+                properties[k] = str(v)
 
         analytics.track(self.user_id, event, properties)
 

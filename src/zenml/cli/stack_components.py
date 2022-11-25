@@ -724,24 +724,31 @@ def generate_stack_component_logs_command(
                 )
                 return
 
-            if follow:
-                try:
-                    with open(log_file, "r") as f:
-                        # seek to the end of the file
-                        f.seek(0, 2)
+        if not log_file or not fileio.exists(log_file):
+            cli_utils.warning(
+                f"Unable to find log file for {display_name} "
+                f"'{component.name}'."
+            )
+            return
 
-                        while True:
-                            line = f.readline()
-                            if not line:
-                                time.sleep(0.1)
-                                continue
-                            line = line.rstrip("\n")
-                            click.echo(line)
-                except KeyboardInterrupt:
-                    cli_utils.declare(f"Stopped following {display_name} logs.")
-            else:
+        if follow:
+            try:
                 with open(log_file, "r") as f:
-                    click.echo(f.read())
+                    # seek to the end of the file
+                    f.seek(0, 2)
+
+                    while True:
+                        line = f.readline()
+                        if not line:
+                            time.sleep(0.1)
+                            continue
+                        line = line.rstrip("\n")
+                        click.echo(line)
+            except KeyboardInterrupt:
+                cli_utils.declare(f"Stopped following {display_name} logs.")
+        else:
+            with open(log_file, "r") as f:
+                click.echo(f.read())
 
     return stack_component_logs_command
 
