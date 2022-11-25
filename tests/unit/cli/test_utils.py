@@ -16,10 +16,10 @@ from zenml.cli.utils import parse_name_and_extra_arguments
 from zenml.client import Client
 from zenml.enums import PermissionType
 from zenml.models import (
-    WorkspaceResponseModel,
     RoleResponseModel,
     TeamResponseModel,
     UserResponseModel,
+    WorkspaceResponseModel,
 )
 
 SAMPLE_CUSTOM_ARGUMENTS = [

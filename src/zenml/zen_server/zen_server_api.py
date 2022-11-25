@@ -33,7 +33,6 @@ from zenml.zen_server.routers import (
     metadata_config_endpoints,
     metadata_sync_endpoints,
     pipelines_endpoints,
-    workspaces_endpoints,
     role_assignments_endpoints,
     roles_endpoints,
     runs_endpoints,
@@ -43,6 +42,7 @@ from zenml.zen_server.routers import (
     steps_endpoints,
     teams_endpoints,
     users_endpoints,
+    workspaces_endpoints,
 )
 from zenml.zen_server.utils import (
     ROOT_URL_PATH,

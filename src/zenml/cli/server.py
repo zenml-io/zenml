@@ -564,7 +564,8 @@ def status() -> None:
     scope = "repository" if client.uses_local_configuration else "global"
     cli_utils.declare(f"The current user is: '{client.active_user.name}'")
     cli_utils.declare(
-        f"The active workspace is: '{client.active_workspace.name}' " f"({scope})"
+        f"The active workspace is: '{client.active_workspace.name}' "
+        f"({scope})"
     )
     cli_utils.declare(
         f"The active stack is: '{client.active_stack_model.name}' ({scope})"

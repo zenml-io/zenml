@@ -21,10 +21,10 @@ from pydantic import BaseModel, Field, root_validator
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 
 if TYPE_CHECKING:
-    from zenml.models.workspace_models import WorkspaceResponseModel
     from zenml.models.role_models import RoleResponseModel
     from zenml.models.team_models import TeamResponseModel
     from zenml.models.user_models import UserResponseModel
+    from zenml.models.workspace_models import WorkspaceResponseModel
 
 # ---- #
 # BASE #

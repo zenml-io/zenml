@@ -77,9 +77,6 @@ from zenml.models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     RoleRequestModel,
@@ -98,6 +95,9 @@ from zenml.models import (
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
@@ -122,7 +122,6 @@ from zenml.zen_stores.schemas import (
     FlavorSchema,
     PipelineRunSchema,
     PipelineSchema,
-    WorkspaceSchema,
     RoleSchema,
     StackComponentSchema,
     StackSchema,
@@ -133,6 +132,7 @@ from zenml.zen_stores.schemas import (
     TeamSchema,
     UserRoleAssignmentSchema,
     UserSchema,
+    WorkspaceSchema,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.role_schemas import RolePermissionSchema
@@ -2400,7 +2400,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if workspace with the given name already exists
             existing_workspace = session.exec(
-                select(WorkspaceSchema).where(WorkspaceSchema.name == workspace.name)
+                select(WorkspaceSchema).where(
+                    WorkspaceSchema.name == workspace.name
+                )
             ).first()
             if existing_workspace is not None:
                 raise EntityExistsError(
@@ -2450,7 +2452,9 @@ class SqlZenStore(BaseZenStore):
             query = select(WorkspaceSchema)
             if name:
                 query = query.where(WorkspaceSchema.name == name)
-            workspaces = session.exec(query.order_by(WorkspaceSchema.name)).all()
+            workspaces = session.exec(
+                query.order_by(WorkspaceSchema.name)
+            ).all()
 
             return [workspace.to_model() for workspace in workspaces]
 
@@ -2473,7 +2477,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_workspace = session.exec(
-                select(WorkspaceSchema).where(WorkspaceSchema.id == workspace_id)
+                select(WorkspaceSchema).where(
+                    WorkspaceSchema.id == workspace_id
+                )
             ).first()
             if existing_workspace is None:
                 raise KeyError(
@@ -2882,7 +2888,9 @@ class SqlZenStore(BaseZenStore):
                 workspace = self._get_workspace_schema(
                     workspace_name_or_id, session=session
                 )
-                query = query.where(PipelineRunSchema.workspace_id == workspace.id)
+                query = query.where(
+                    PipelineRunSchema.workspace_id == workspace.id
+                )
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
             if component_id:
@@ -3757,7 +3765,8 @@ class SqlZenStore(BaseZenStore):
         new_run = PipelineRunRequestModel(
             name=mlmd_run.name,
             mlmd_id=mlmd_run.mlmd_id,
-            workspace=mlmd_run.workspace or self._default_workspace.id,  # For legacy
+            workspace=mlmd_run.workspace
+            or self._default_workspace.id,  # For legacy
             user=mlmd_run.user or self._default_user.id,  # For legacy
             stack=mlmd_run.stack_id,
             pipeline=mlmd_run.pipeline_id,

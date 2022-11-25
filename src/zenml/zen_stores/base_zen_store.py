@@ -23,17 +23,15 @@ import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
-    ENV_ZENML_DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
+    ENV_ZENML_DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
 from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models import (
     ComponentRequestModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     RoleRequestModel,
@@ -42,6 +40,8 @@ from zenml.models import (
     StackResponseModel,
     UserRequestModel,
     UserResponseModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
 )
 from zenml.models.server_models import (
     ServerDatabaseType,
@@ -305,7 +305,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
         if active_workspace_name_or_id:
             try:
-                active_workspace = self.get_workspace(active_workspace_name_or_id)
+                active_workspace = self.get_workspace(
+                    active_workspace_name_or_id
+                )
             except KeyError:
                 active_workspace = self._get_or_create_default_workspace()
 
@@ -335,7 +337,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                     "Resetting the active stack to default.",
                     config_name,
                 )
-                active_stack = self._get_or_create_default_stack(active_workspace)
+                active_stack = self._get_or_create_default_stack(
+                    active_workspace
+                )
             else:
                 if active_stack.workspace.id != active_workspace.id:
                     logger.warning(
@@ -438,7 +442,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             StackExistsError: If a default stack already exists for the
                 user in the supplied workspace.
         """
-        workspace = self.get_workspace(workspace_name_or_id=workspace_name_or_id)
+        workspace = self.get_workspace(
+            workspace_name_or_id=workspace_name_or_id
+        )
         user = self.get_user(user_name_or_id=user_name_or_id)
 
         logger.info(
@@ -680,7 +686,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         Returns:
             The default workspace name.
         """
-        return os.getenv(ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME)
+        return os.getenv(
+            ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME
+        )
 
     @property
     def _default_workspace(self) -> WorkspaceResponseModel:

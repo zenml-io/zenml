@@ -33,8 +33,6 @@ from zenml.models import (
     FlavorRequestModel,
     PipelineRequestModel,
     PipelineUpdateModel,
-    WorkspaceRequestModel,
-    WorkspaceUpdateModel,
     RoleAssignmentRequestModel,
     RoleRequestModel,
     RoleUpdateModel,
@@ -43,6 +41,8 @@ from zenml.models import (
     TeamRequestModel,
     UserRequestModel,
     UserUpdateModel,
+    WorkspaceRequestModel,
+    WorkspaceUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.team_models import TeamUpdateModel

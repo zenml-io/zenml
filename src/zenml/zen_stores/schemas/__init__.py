@@ -18,7 +18,6 @@ from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.role_schemas import (
     RoleSchema,
     TeamRoleAssignmentSchema,
@@ -35,6 +34,7 @@ from zenml.zen_stores.schemas.team_schemas import (
     TeamSchema,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 __all__ = [
     "StackComponentSchema",

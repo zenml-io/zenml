@@ -48,7 +48,6 @@ from zenml.constants import (
     METADATA_CONFIG,
     METADATA_SYNC,
     PIPELINES,
-    WORKSPACES,
     ROLE_ASSIGNMENTS,
     ROLES,
     RUNS,
@@ -58,6 +57,7 @@ from zenml.constants import (
     TEAMS,
     USERS,
     VERSION_1,
+    WORKSPACES,
 )
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
@@ -84,9 +84,6 @@ from zenml.models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     RoleRequestModel,
@@ -103,6 +100,9 @@ from zenml.models import (
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
 from zenml.models.base_models import (
     BaseRequestModel,

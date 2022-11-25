@@ -21,13 +21,13 @@ from zenml.constants import (
     API,
     FLAVORS,
     PIPELINES,
-    WORKSPACES,
     ROLES,
     RUNS,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
     VERSION_1,
+    WORKSPACES,
 )
 from zenml.enums import PermissionType, StackComponentType
 from zenml.exceptions import IllegalOperationError
@@ -40,12 +40,12 @@ from zenml.models import (
     PipelineResponseModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
     RoleAssignmentResponseModel,
     StackRequestModel,
     StackResponseModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -614,7 +614,9 @@ def get_workspace_statistics(
             )
         ),
         "pipelines": len(
-            zen_store().list_pipelines(workspace_name_or_id=workspace_name_or_id)
+            zen_store().list_pipelines(
+                workspace_name_or_id=workspace_name_or_id
+            )
         ),
         "runs": len(
             zen_store().list_runs(workspace_name_or_id=workspace_name_or_id)

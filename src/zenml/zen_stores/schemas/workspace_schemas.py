@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Workspaces."""
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 
-from sqlmodel import Field, Relationship
+from sqlmodel import Relationship
 
 from zenml.models import (
     WorkspaceRequestModel,
@@ -67,7 +67,9 @@ class WorkspaceSchema(NamedSchema, table=True):
     )
 
     @classmethod
-    def from_request(cls, workspace: WorkspaceRequestModel) -> "WorkspaceSchema":
+    def from_request(
+        cls, workspace: WorkspaceRequestModel
+    ) -> "WorkspaceSchema":
         """Create a `WorkspaceSchema` from a `WorkspaceResponseModel`.
 
         Args:

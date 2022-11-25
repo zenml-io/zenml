@@ -176,12 +176,15 @@ def delete_workspace(workspace_name_or_id: str) -> None:
 
 # Deprecated project commands #
 
+
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def project() -> None:
     """Deprecated commands for workspace management."""
-    cli_utils.warning('The project command is deprecated and is renamed to '
-                      'workspace. Please use '
-                      '`zenml workspace <COMMAND> [OPTIONS]` instead.')
+    cli_utils.warning(
+        "The project command is deprecated and is renamed to "
+        "workspace. Please use "
+        "`zenml workspace <COMMAND> [OPTIONS]` instead."
+    )
 
 
 project.add_command(list_workspaces)

@@ -43,13 +43,13 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
     ArtifactResponseModel,
     PipelineRunResponseModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
     RoleRequestModel,
     StepRunResponseModel,
     TeamRequestModel,
     UserRequestModel,
     UserResponseModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
 )
 from zenml.models.artifact_models import ArtifactRequestModel
 from zenml.models.base_models import BaseResponseModel

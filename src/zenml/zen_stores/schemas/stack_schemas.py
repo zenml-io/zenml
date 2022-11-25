@@ -21,9 +21,9 @@ from sqlmodel import Relationship, SQLModel
 
 from zenml.models import StackResponseModel
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.models.stack_models import StackUpdateModel

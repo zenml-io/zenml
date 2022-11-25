@@ -21,8 +21,8 @@ from pydantic import Field
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 if TYPE_CHECKING:
-    from zenml.models.workspace_models import WorkspaceResponseModel
     from zenml.models.user_models import UserResponseModel
+    from zenml.models.workspace_models import WorkspaceResponseModel
 
 
 # --------------- #
@@ -132,7 +132,9 @@ class WorkspaceScopedRequestModel(UserOwnedRequestModel):
     Used as a base class for all domain models that are workspace-scoped.
     """
 
-    workspace: UUID = Field(title="The workspace to which this resource belongs.")
+    workspace: UUID = Field(
+        title="The workspace to which this resource belongs."
+    )
 
 
 class ShareableRequestModel(WorkspaceScopedRequestModel):

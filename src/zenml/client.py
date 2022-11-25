@@ -56,9 +56,6 @@ from zenml.models import (
     PipelineResponseModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     RoleRequestModel,
@@ -73,6 +70,9 @@ from zenml.models import (
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.team_models import TeamUpdateModel
@@ -1000,7 +1000,9 @@ class Client(metaclass=ClientMetaClass):
         role = self.get_role(name_id_or_prefix=role_name_or_id)
         workspace = None
         if workspace_name_or_id:
-            workspace = self.get_workspace(name_id_or_prefix=workspace_name_or_id)
+            workspace = self.get_workspace(
+                name_id_or_prefix=workspace_name_or_id
+            )
         if is_user:
             user = self.get_user(name_id_or_prefix=user_or_team_name_or_id)
             role_assignment = RoleAssignmentRequestModel(
@@ -1065,7 +1067,8 @@ class Client(metaclass=ClientMetaClass):
             List of role assignments
         """
         return self.zen_store.list_role_assignments(
-            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
+            workspace_name_or_id=workspace_name_or_id
+            or self.active_workspace.id,
             role_name_or_id=role_name_or_id,
             user_name_or_id=user_name_or_id,
             team_name_or_id=team_name_or_id,
@@ -1194,7 +1197,9 @@ class Client(metaclass=ClientMetaClass):
                 f"Workspace '{workspace_name_or_id}' cannot be deleted since it is "
                 "currently active. Please set another workspace as active first."
             )
-        self.zen_store.delete_workspace(workspace_name_or_id=workspace_name_or_id)
+        self.zen_store.delete_workspace(
+            workspace_name_or_id=workspace_name_or_id
+        )
 
     # ------ #
     # STACKS #
@@ -1474,7 +1479,8 @@ class Client(metaclass=ClientMetaClass):
             A list of stacks.
         """
         return self.zen_store.list_stacks(
-            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
+            workspace_name_or_id=workspace_name_or_id
+            or self.active_workspace.id,
             user_name_or_id=user_name_or_id,
             component_id=component_id,
             name=name,
@@ -1639,7 +1645,8 @@ class Client(metaclass=ClientMetaClass):
             A list of stack components.
         """
         return self.zen_store.list_stack_components(
-            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
+            workspace_name_or_id=workspace_name_or_id
+            or self.active_workspace.id,
             user_name_or_id=user_name_or_id,
             type=component_type,
             flavor_name=flavor_name,
@@ -1941,7 +1948,8 @@ class Client(metaclass=ClientMetaClass):
 
         zenml_flavors = flavor_registry.flavors
         custom_flavors = self.zen_store.list_flavors(
-            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
+            workspace_name_or_id=workspace_name_or_id
+            or self.active_workspace.id,
             user_name_or_id=user_name_or_id,
         )
         return zenml_flavors + custom_flavors
@@ -2128,7 +2136,8 @@ class Client(metaclass=ClientMetaClass):
             A list of pipelines.
         """
         return self.zen_store.list_pipelines(
-            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
+            workspace_name_or_id=workspace_name_or_id
+            or self.active_workspace.id,
             user_name_or_id=user_name_or_id,
             name=name,
         )
@@ -2430,7 +2439,8 @@ class Client(metaclass=ClientMetaClass):
             A list of all pipeline runs.
         """
         return self.zen_store.list_runs(
-            workspace_name_or_id=workspace_name_or_id or self.active_workspace.id,
+            workspace_name_or_id=workspace_name_or_id
+            or self.active_workspace.id,
             user_name_or_id=user_name_or_id,
             stack_id=stack_id,
             component_id=component_id,

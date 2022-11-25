@@ -28,10 +28,10 @@ from zenml.models import (
 )
 from zenml.models.role_assignment_models import RoleAssignmentResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.team_schemas import TeamSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class RoleSchema(NamedSchema, table=True):

@@ -110,7 +110,9 @@ class PipelineRunResponseModel(
 # ------- #
 
 
-class PipelineRunRequestModel(PipelineRunBaseModel, WorkspaceScopedRequestModel):
+class PipelineRunRequestModel(
+    PipelineRunBaseModel, WorkspaceScopedRequestModel
+):
     """Pipeline run model with user, workspace, pipeline, and stack as UUIDs."""
 
     id: UUID

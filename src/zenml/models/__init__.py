@@ -34,11 +34,6 @@ from zenml.models.pipeline_run_models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
 )
-from zenml.models.workspace_models import (
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-    WorkspaceUpdateModel,
-)
 from zenml.models.role_assignment_models import (
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
@@ -68,6 +63,11 @@ from zenml.models.user_models import (
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
+)
+from zenml.models.workspace_models import (
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
 
 ComponentResponseModel.update_forward_refs(
