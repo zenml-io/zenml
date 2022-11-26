@@ -38,7 +38,7 @@ def _test_runner(dag: Dict[str, List[str]], correct_results: List[int]):
     """Utility function to test running a given DAG."""
     run_fn = MockRunFn()
     with does_not_raise():
-        ThreadedDagRunner(dag, run_fn).run()
+        ThreadedDagRunner(dag, run_fn).run(unlisted=True)
     assert run_fn.result in correct_results
 
 

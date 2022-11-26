@@ -47,4 +47,4 @@ def _test_materializer(
 
     test_pipeline(
         read_step=read_step().with_return_materializers(materializer)
-    ).run()
+    ).run(unlisted=True)

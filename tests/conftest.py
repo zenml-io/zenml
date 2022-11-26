@@ -260,7 +260,7 @@ def sql_store_with_run() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
         value = step_one()
         step_two(value)
 
-    test_pipeline(step_one=step_one(), step_two=step_two()).run()
+    test_pipeline(step_one=step_one(), step_two=step_two()).run(unlisted=True)
     pipeline_run = store.list_runs()[0]
     pipeline_step = store.list_run_steps(pipeline_run.id)[1]
 
@@ -303,7 +303,9 @@ def sql_store_with_runs() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
         step_two(value)
 
     for _ in range(10):
-        test_pipeline(step_one=step_one(), step_two=step_two()).run()
+        test_pipeline(step_one=step_one(), step_two=step_two()).run(
+            unlisted=True
+        )
 
     pipeline_runs = store.list_runs()
 
