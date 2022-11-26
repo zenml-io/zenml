@@ -33,7 +33,7 @@ from zenml.artifact_stores.local_artifact_store import (
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_DEBUG, TEST_STEP_INPUT_INT
+from zenml.constants import ENV_ZENML_DEBUG
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
@@ -232,8 +232,20 @@ def sql_store() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     }
 
 
+@step
+def constant_int_output_test_step() -> int:
+    return 7
+
+
+@step
+def int_plus_one_test_step(input: int) -> int:
+    return input + 1
+
+
 @pytest.fixture
-def sql_store_with_run() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
+def sql_store_with_run(
+    connected_two_step_pipeline,
+) -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
 
     GlobalConfiguration().set_store(
@@ -247,20 +259,11 @@ def sql_store_with_run() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     default_stack = store.list_stacks()[0]
     active_user = store.list_users()[0]
 
-    @step
-    def step_one() -> int:
-        return TEST_STEP_INPUT_INT
-
-    @step
-    def step_two(input: int) -> int:
-        return input + 1
-
-    @pipeline
-    def test_pipeline(step_one, step_two):
-        value = step_one()
-        step_two(value)
-
-    test_pipeline(step_one=step_one(), step_two=step_two()).run(unlisted=True)
+    pipeline_instance = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step(),
+        step_2=int_plus_one_test_step(),
+    )
+    pipeline_instance.run(unlisted=True)
     pipeline_run = store.list_runs()[0]
     pipeline_step = store.list_run_steps(pipeline_run.id)[1]
 
@@ -275,7 +278,9 @@ def sql_store_with_run() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
 
 
 @pytest.fixture
-def sql_store_with_runs() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
+def sql_store_with_runs(
+    connected_two_step_pipeline,
+) -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
 
     GlobalConfiguration().set_store(
@@ -289,23 +294,12 @@ def sql_store_with_runs() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     default_stack = store.list_stacks()[0]
     active_user = store.list_users()[0]
 
-    @step
-    def step_one() -> int:
-        return TEST_STEP_INPUT_INT
-
-    @step
-    def step_two(input: int) -> int:
-        return input + 1
-
-    @pipeline
-    def test_pipeline(step_one, step_two):
-        value = step_one()
-        step_two(value)
-
     for _ in range(10):
-        test_pipeline(step_one=step_one(), step_two=step_two()).run(
-            unlisted=True
+        pipeline_instance = connected_two_step_pipeline(
+            step_1=constant_int_output_test_step(),
+            step_2=int_plus_one_test_step(),
         )
+        pipeline_instance.run(unlisted=True)
 
     pipeline_runs = store.list_runs()
 
@@ -588,6 +582,18 @@ def unconnected_two_step_pipeline():
     def _pipeline(step_1, step_2):
         step_1()
         step_2()
+
+    return _pipeline
+
+
+@pytest.fixture
+def connected_two_step_pipeline():
+    """Pytest fixture that returns a pipeline which takes two steps
+    `step_1` and `step_2` that are connected."""
+
+    @pipeline
+    def _pipeline(step_1, step_2):
+        step_2(step_1())
 
     return _pipeline
 

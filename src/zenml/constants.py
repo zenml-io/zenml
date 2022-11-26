@@ -198,8 +198,7 @@ MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
 # model metadata yaml file name
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 
-# testing constants
-TEST_STEP_INPUT_INT = 7
+# orchestrator constants
 ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator_docker_image"
 DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE = ".zenml_deployment_config.yaml"
 
