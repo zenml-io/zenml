@@ -27,7 +27,7 @@ def test_handle_int_env_var():
 
 
 def _test_materializer(
-    step_output: Any, materializer: BaseMaterializer
+    step_output: Any, materializer: "BaseMaterializer"
 ) -> None:
     """Helper function to simplify materializer testing.
 

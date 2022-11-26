@@ -19,7 +19,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import SPARK
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 SPARK_KUBERNETES_STEP_OPERATOR = "spark-kubernetes"

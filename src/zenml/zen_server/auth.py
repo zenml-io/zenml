@@ -29,11 +29,8 @@ from pydantic import BaseModel
 from zenml.constants import API, ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models.user_management_models import (
-    JWTToken,
-    JWTTokenType,
-    UserModel,
-)
+from zenml.models import UserResponseModel
+from zenml.models.user_models import JWTToken, JWTTokenType, UserAuthModel
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_server.utils import ROOT_URL_PATH, zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
@@ -52,7 +49,7 @@ class AuthScheme(StrEnum):
 class AuthContext(BaseModel):
     """The authentication context."""
 
-    user: UserModel
+    user: UserResponseModel
 
 
 def authentication_scheme() -> AuthScheme:
@@ -75,8 +72,8 @@ def authenticate_credentials(
 ) -> Optional[AuthContext]:
     """Verify if user authentication credentials are valid.
 
-    This function can be used to validate all of the supplied
-    user credentials to cover a range of possibilities:
+    This function can be used to validate all supplied user credentials to
+    cover a range of possibilities:
 
      * username+password
      * access token (with embedded user id)
@@ -92,28 +89,31 @@ def authenticate_credentials(
         The authenticated account details, if the account is valid, otherwise
         None.
     """
-    user: Optional[UserModel] = None
+    user: Optional[UserAuthModel] = None
     auth_context: Optional[AuthContext] = None
     if user_name_or_id:
         try:
-            user = zen_store().get_user(user_name_or_id)
-            auth_context = AuthContext(user=user)
+            user = zen_store().get_auth_user(user_name_or_id)
+            user_model = zen_store().get_user(user_name_or_id=user_name_or_id)
+            auth_context = AuthContext(user=user_model)
         except KeyError:
             # even when the user does not exist, we still want to execute the
             # password/token verification to protect against response discrepancy
             # attacks (https://cwe.mitre.org/data/definitions/204.html)
             pass
     if password is not None:
-        if not UserModel.verify_password(password, user):
+        if not UserAuthModel.verify_password(password, user):
             return None
     elif access_token is not None:
-        user = UserModel.verify_access_token(access_token)
+        user = UserAuthModel.verify_access_token(access_token)
         if not user:
             return None
-        auth_context = AuthContext(user=user)
+        user_model = zen_store().get_user(user_name_or_id=user.id)
+        auth_context = AuthContext(user=user_model)
     elif activation_token is not None:
-        if not UserModel.verify_activation_token(activation_token, user):
+        if not UserAuthModel.verify_activation_token(activation_token, user):
             return None
+
     return auth_context
 
 

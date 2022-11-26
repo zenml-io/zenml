@@ -11,20 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import datetime
 from contextlib import ExitStack as does_not_raise
 from uuid import uuid4
 
 import pytest
 
 from zenml.enums import ArtifactType
-from zenml.models.pipeline_models import ArtifactModel
+from zenml.models import ArtifactResponseModel
 from zenml.post_execution.artifact import ArtifactView
 
 
 def _create_artifact_view(materializer: str, data_type: str) -> ArtifactView:
     """Creates an artifact view with the given materializer and data type."""
     return ArtifactView(
-        ArtifactModel(
+        ArtifactResponseModel(
             id=uuid4(),
             type=ArtifactType.DATA,
             uri="",
@@ -37,6 +38,8 @@ def _create_artifact_view(materializer: str, data_type: str) -> ArtifactView:
             name="",
             parent_step_id=uuid4(),
             producer_step_id=uuid4(),
+            created=datetime.datetime.now(),
+            updated=datetime.datetime.now(),
         )
     )
 
