@@ -43,7 +43,7 @@ class NumpyMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> "Any":
-        """Reads numpy array from npy file.
+        """Reads a numpy array from a `.npy` file.
 
         Args:
             data_type: The type of the data to read.
@@ -90,14 +90,14 @@ class NumpyMaterializer(BaseMaterializer):
                 return np.reshape(vals, shape_tuple)
             except ImportError:
                 raise ImportError(
-                    "You have an old version of the NumpyMaterializer",
-                    "DataArtifact. stored in the artifact store.",
-                    "Please install pyarrow to read parquet files.",
-                    "You can do so by running `pip install pyarrow`.",
+                    "You have an old version of a `NumpyMaterializer` ",
+                    "data artifact stored in the artifact store ",
+                    "as a `.parquet` file, which requires `pyarrow` for reading. ",
+                    "You can install `pyarrow` by running `pip install pyarrow`.",
                 )
 
     def handle_return(self, arr: "NDArray[Any]") -> None:
-        """Writes a np.ndarray to the artifact store as a npy file.
+        """Writes a np.ndarray to the artifact store as a `.npy` file.
 
         Args:
             arr: The numpy array to write.
