@@ -252,6 +252,7 @@ FV
 FacetStatisticsVisualizer
 FastAPI
 FastaiLearnerMaterializer
+fastparquet
 FeastFeatureStore
 FeastFeatureStoreConfig
 FeastHistoricalFeaturesConfig

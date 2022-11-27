@@ -14,17 +14,21 @@
 """Materializer for Pandas."""
 
 import os
-import tempfile
 from typing import Any, Type, Union
 
 import pandas as pd
 
 from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+
+logger = get_logger(__name__)
 
 DEFAULT_FILENAME = "df.parquet.gzip"
 COMPRESSION_TYPE = "gzip"
+
+DATAFRAME_FILENAME = "df.pkl"
 
 
 class PandasMaterializer(BaseMaterializer):
@@ -40,37 +44,63 @@ class PandasMaterializer(BaseMaterializer):
     def handle_input(
         self, data_type: Type[Any]
     ) -> Union[pd.DataFrame, pd.Series]:
-        """Reads pd.DataFrame or pd.Series from a parquet file.
+        """Reads pd.DataFrame or pd.Series from a pickled file.
 
         Args:
             data_type: The type of the data to read.
+
+        Raises:
+            ImportError: If pyarrow or fastparquet is not installed.
 
         Returns:
             The pandas dataframe or series.
         """
         super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        dataframe_file = os.path.join(self.artifact.uri, DATAFRAME_FILENAME)
 
-        # Create a temporary folder
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+        if fileio.exists(dataframe_file):
+            with fileio.open(dataframe_file, "rb") as f:
+                df = pd.read_pickle(f)
 
-        # Copy from artifact store to temporary file
-        fileio.copy(filepath, temp_file)
+        elif fileio.exists(os.path.join(self.artifact.uri, DEFAULT_FILENAME)):
+            logger.warning(
+                "A legacy artifact was found. "
+                "This artifact was created with an older version of "
+                "ZenML. You can still use it, but it will be "
+                "converted to the new format on the next materialization."
+            )
+            try:
+                import fastparquet  # type: ignore
+                import pyarrow  # type: ignore
 
-        # Load the model from the temporary file
-        df = pd.read_parquet(temp_file)
+                with fileio.open(
+                    os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
+                ) as f:
+                    df = pd.read_parquet(f)
 
-        # Cleanup and return
-        fileio.rmtree(temp_dir)
+            except ImportError:
+                raise ImportError(
+                    "You have an old version of a `PandasMaterializer` ",
+                    "data artifact stored in the artifact store ",
+                    "as a `.parquet` file, which requires `pyarrow` and ",
+                    "`fastparquet`for reading, You can install `pyarrow` & ",
+                    "`fastparquet` by running `pip install pyarrow fastparquet`.",
+                )
 
-        if issubclass(data_type, pd.Series):
-            # Taking the first column if its a series as the assumption
-            # is that there will only be one
-            assert len(df.columns) == 1
-            df = df[df.columns[0]]
+        # validate the type of the data.
+        def is_dataframe_or_series(
+            df: Union[pd.DataFrame, pd.Series]
+        ) -> Union[pd.DataFrame, pd.Series]:
+            if issubclass(data_type, pd.Series):
+                # Taking the first column if its a series as the assumption
+                # is that there will only be one
+                assert len(df.columns) == 1
+                df = df[df.columns[0]]
+                return df
+            else:
+                return df
 
-        return df
+        return is_dataframe_or_series(df)
 
     def handle_return(self, df: Union[pd.DataFrame, pd.Series]) -> None:
         """Writes a pandas dataframe or series to the specified filename.
@@ -79,18 +109,7 @@ class PandasMaterializer(BaseMaterializer):
             df: The pandas dataframe or series to write.
         """
         super().handle_return(df)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-
-        if isinstance(df, pd.Series):
-            df = df.to_frame(name="series")
-
-        # Create a temporary file to store the model
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".gzip", delete=False
+        with fileio.open(
+            os.path.join(self.artifact.uri, DATAFRAME_FILENAME), "wb"
         ) as f:
-            df.to_parquet(f.name, compression=COMPRESSION_TYPE)
-            fileio.copy(f.name, filepath)
-
-        # Close and remove the temporary file
-        f.close()
-        fileio.remove(f.name)
+            df.to_pickle(f)
