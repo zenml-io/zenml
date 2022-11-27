@@ -131,25 +131,9 @@ def upgrade() -> None:
 
     table_names, new_fk_constraints, old_fk_constraints = _get_changes()
 
-    engine_name = op.get_bind().engine.name
-
-    # Under MySQL, we need to sort the old foreign keys by source table and
-    # source column first since the default foreign key names contain the
-    # foreign key number.
-    if engine_name == "mysql":
-        old_fk_constraints.sort(key=lambda x: (x[0], x[2]))
-    source_table_fk_constraint_counts: Dict[str, int] = defaultdict(int)
-
     # Drop old foreign key constraints.
     for source, target, source_column, _, _ in old_fk_constraints:
-        if engine_name == "sqlite":
-            constraint_name = _fk_constraint_name(source, target, source_column)
-        elif engine_name == "mysql":
-            source_table_fk_constraint_counts[source] += 1
-            fk_num = source_table_fk_constraint_counts[source]
-            constraint_name = f"{source}_ibfk_{fk_num}"
-        else:
-            raise NotImplementedError(f"Unsupported engine: {engine_name}")
+        constraint_name = _fk_constraint_name(source, target, source_column)
         _drop_fk_constraint(source, constraint_name)
 
     # Rename columns
@@ -175,25 +159,9 @@ def downgrade() -> None:
 
     table_names, new_fk_constraints, old_fk_constraints = _get_changes()
 
-    engine_name = op.get_bind().engine.name
-
-    # Under MySQL, we need to sort the old foreign keys by source table and
-    # source column first since the default foreign key names contain the
-    # foreign key number.
-    if engine_name == "mysql":
-        new_fk_constraints.sort(key=lambda x: (x[0], x[2]))
-    source_table_fk_constraint_counts: Dict[str, int] = defaultdict(int)
-
     # Drop old foreign key constraints.
     for source, target, source_column, _, _ in new_fk_constraints:
-        if engine_name == "sqlite":
-            constraint_name = _fk_constraint_name(source, target, source_column)
-        elif engine_name == "mysql":
-            source_table_fk_constraint_counts[source] += 1
-            fk_num = source_table_fk_constraint_counts[source]
-            constraint_name = f"{source}_ibfk_{fk_num}"
-        else:
-            raise NotImplementedError(f"Unsupported engine: {engine_name}")
+        constraint_name = _fk_constraint_name(source, target, source_column)
         _drop_fk_constraint(source, constraint_name)
 
     # Rename columns
