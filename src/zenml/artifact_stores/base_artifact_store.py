@@ -44,7 +44,6 @@ from typing import (
 )
 
 from pydantic import root_validator
-from tfx.dsl.io.fileio import NotFoundError
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
@@ -87,6 +86,8 @@ def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
         try:
             return _func(*args, **kwargs)
         except FileNotFoundError as e:
+            from tfx.dsl.io.fileio import NotFoundError
+
             raise NotFoundError() from e
 
     return inner_function

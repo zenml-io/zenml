@@ -352,7 +352,7 @@ def data_quality_profiler(
 
     # validation pre-processing (e.g. dataset preparation) can take place here
 
-    profile = Profile(sections=[DataQualityProfileSection])
+    profile = Profile(sections=[DataQualityProfileSection()])
     profile.calculate(
         reference_data=dataset,
     )
