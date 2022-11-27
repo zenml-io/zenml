@@ -33,7 +33,9 @@ https://github.com/tensorflow/tfx/blob/master/tfx/utils/topsort.py
 
 from typing import Callable, List, Sequence, TypeVar
 
-from absl import logging
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 NodeT = TypeVar("NodeT")
 
@@ -79,7 +81,7 @@ def topsorted_layers(
         for inner_node in func(node):
             inner_node_id = get_node_id_fn(inner_node)
             if inner_node_id in seen_inner_node_ids:
-                logging.warning(
+                logger.warning(
                     "Duplicate node_id %s found when calling %s on node %s. "
                     "This entry will be ignored.",
                     inner_node_id,
@@ -87,7 +89,7 @@ def topsorted_layers(
                     node,
                 )
             elif inner_node_id not in node_ids:
-                logging.warning(
+                logger.warning(
                     "node_id %s found when calling %s on node %s, but this node_id is "
                     "not found in the set of input nodes %s. This entry will be "
                     "ignored.",
