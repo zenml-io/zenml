@@ -253,7 +253,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
         config_path: str,
         load_config_path: Optional[PurePath] = None,
     ) -> "StoreConfiguration":
-        """Create a copy of the store config using a different configuration path.
+        """Create a copy of the store config using a different path.
 
         This method is used to create a copy of the store configuration that can
         be loaded using a different configuration path or in the context of a
@@ -519,16 +519,12 @@ class RestZenStore(BaseZenStore):
     ) -> StackResponseModel:
         """Update a stack.
 
-
         Args:
             stack_id: The ID of the stack update.
             stack_update: The update request on the stack.
 
         Returns:
             The updated stack.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
         """
         return self._update_resource(
             resource_id=stack_id,
@@ -787,8 +783,9 @@ class RestZenStore(BaseZenStore):
         Args:
             user_name_or_id: The name or ID of the user to get.
 
-        Returns:
-            The requested user, if it was found.
+        Raises:
+            NotImplementedError: This method is only available for the
+                SQLZenStore.
         """
         raise NotImplementedError(
             "This method is only designed for use"
@@ -820,19 +817,19 @@ class RestZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
-        self, user_name_or_id: Union[str, UUID], user_update: UserUpdateModel
+        self, user_id: UUID, user_update: UserUpdateModel
     ) -> UserResponseModel:
         """Updates an existing user.
 
         Args:
-            user_name_or_id: The id of the user to update.
+            user_id: The id of the user to update.
             user_update: The update to be applied to the user.
 
         Returns:
             The updated user.
         """
         return self._update_resource(
-            resource_id=user_name_or_id,
+            resource_id=user_id,
             resource_update=user_update,
             route=USERS,
             response_model=UserResponseModel,
@@ -919,9 +916,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated team.
-
-        Raises:
-            KeyError: if the team does not exist.
         """
         return self._update_resource(
             resource_id=team_id,
@@ -962,7 +956,6 @@ class RestZenStore(BaseZenStore):
             response_model=RoleResponseModel,
         )
 
-    # TODO: Should it be name or id or just id?
     def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleResponseModel:
         """Gets a specific role.
 
@@ -1087,10 +1080,10 @@ class RestZenStore(BaseZenStore):
         )
 
     def delete_role_assignment(self, role_assignment_id: UUID) -> None:
-        """Delete a specific role assignment
+        """Delete a specific role assignment.
 
         Args:
-            role_assignment_id: The Id of the specific role assignment
+            role_assignment_id: The ID of the specific role assignment
         """
         self._delete_resource(
             resource_id=role_assignment_id,
@@ -1255,7 +1248,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             project_name_or_id: If provided, only list pipelines in this
-            project.
+                project.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
             params: Parameters for pagination (page and size)
@@ -1357,7 +1350,10 @@ class RestZenStore(BaseZenStore):
             The pipeline run.
         """
         return self._create_project_scoped_resource(
-            resource=pipeline_run, route=RUNS, params={"get_if_exists": True}
+            resource=pipeline_run,
+            route=RUNS,
+            response_model=PipelineRunResponseModel,
+            params={"get_if_exists": True},
         )
 
     def list_runs(
@@ -1471,6 +1467,7 @@ class RestZenStore(BaseZenStore):
         return self._list_resources(
             route=STEPS,
             resource_model=StepRunResponseModel,
+            response_model=StepRunResponseModel,
             **filters,
         )
 
@@ -1562,6 +1559,7 @@ class RestZenStore(BaseZenStore):
         return self._list_resources(
             route=ARTIFACTS,
             resource_model=ArtifactResponseModel,
+            response_model=ArtifactResponseModel,
             **filters,
         )
 
@@ -1953,7 +1951,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             route: The resource REST API route to use.
-            resource_model: Model to use to serialize the response body.
+            response_model: Model to use to serialize the response body.
             filters: Filter parameters to use in the query.
 
         Returns:

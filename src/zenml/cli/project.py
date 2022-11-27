@@ -102,7 +102,7 @@ def update_project(
     cli_utils.print_active_config()
     try:
         Client().update_project(
-            name=project_name,
+            name_id_or_prefix=project_name,
             new_name=new_name,
             new_description=new_description,
         )
@@ -117,7 +117,8 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
     """Get the project.
 
     Args:
-        project_name_or_id: The name or ID of the project to set as active."""
+        project_name_or_id: The name or ID of the project to set as active.
+    """
     warn_unsupported_non_default_project()
     client = Client()
     if not project_name_or_id:

@@ -28,6 +28,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus, PermissionType
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
@@ -104,6 +105,7 @@ def get_run(
 
     Args:
         run_id: ID of the pipeline run to get.
+
     Returns:
         The pipeline run.
     """
@@ -132,11 +134,15 @@ def update_run(
 
     Returns:
         The updated run model.
-    """
-    # TODO add some warnings/errors around this
-    run_model.user = auth_context.user.id
 
-    # TODO use id as well
+    Raises:
+        IllegalOperationError: When trying to change the user of a run.
+    """
+    if run_model.user and run_model.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Changing the user of a run to another user is not supported."
+        )
+
     return zen_store().update_run(run_id=run_id, run_update=run_model)
 
 

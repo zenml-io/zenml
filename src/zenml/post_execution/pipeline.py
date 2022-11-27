@@ -200,8 +200,9 @@ class PipelineView:
         """
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
+        active_project_id = Client().active_project.id
         runs = Client().zen_store.list_runs(
-            project_name_or_id=self._model.project,
+            project_name_or_id=active_project_id,
             pipeline_id=self._model.id,
         )
         return [PipelineRunView(run) for run in runs]

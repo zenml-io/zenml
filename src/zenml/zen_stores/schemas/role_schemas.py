@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""SQLModel implementation of roles that can be assigned to users or teams."""
+
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
@@ -60,6 +62,14 @@ class RoleSchema(NamedSchema, table=True):
         return cls(name=model.name)
 
     def update(self, role_update: RoleUpdateModel) -> "RoleSchema":
+        """Update a `RoleSchema` from a `RoleUpdateModel`.
+
+        Args:
+            role_update: The `RoleUpdateModel` from which to update the schema.
+
+        Returns:
+            The updated `RoleSchema`.
+        """
         for field, value in role_update.dict(
             exclude_unset=True, exclude={"permissions"}
         ).items():
@@ -124,7 +134,15 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
     def from_request(
         cls, role_assignment: RoleAssignmentRequestModel
     ) -> "UserRoleAssignmentSchema":
-        """ """
+        """Create a `UserRoleAssignmentSchema` from a `RoleAssignmentRequestModel`.
+
+        Args:
+            role_assignment: The `RoleAssignmentRequestModel` from which to
+                create the schema.
+
+        Returns:
+            The created `UserRoleAssignmentSchema`.
+        """
         return cls(
             role_id=role_assignment.role,
             user_id=role_assignment.user,
@@ -187,7 +205,15 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
     def from_request(
         cls, role_assignment: RoleAssignmentRequestModel
     ) -> "TeamRoleAssignmentSchema":
-        """ """
+        """Create a `TeamRoleAssignmentSchema` from a `RoleAssignmentRequestModel`.
+
+        Args:
+            role_assignment: The `RoleAssignmentRequestModel` from which to
+                create the schema.
+
+        Returns:
+            The created `TeamRoleAssignmentSchema`.
+        """
         return cls(
             role_id=role_assignment.role,
             team_id=role_assignment.team,

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing users."""
 
 import re
 from datetime import datetime, timedelta
@@ -23,7 +24,11 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel, update
+from zenml.models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update_model,
+)
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.utils.enum_utils import StrEnum
 
@@ -145,7 +150,7 @@ class JWTToken(BaseModel):
 
 
 class UserBaseModel(BaseModel):
-    """"""
+    """Base model for users."""
 
     name: str = Field(
         title="The unique username for the account.",
@@ -183,12 +188,31 @@ class UserBaseModel(BaseModel):
 
 
 class UserResponseModel(UserBaseModel, BaseResponseModel):
-    """"""
+    """Response model for users.
 
+    This returns the activation_token (which is required for the
+    user-invitation-flow of the frontend. This also optionally includes the
+    team the user is a part of. The email is returned optionally as well
+    for use by the analytics on the client-side.
+    """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "name",
+        "full_name",
+        "active",
+        "email_opted_in",
+    ]
+
+    activation_token: Optional[str] = Field(default=None)
     teams: Optional[List["TeamResponseModel"]] = Field(
         title="The list of teams for this user."
     )
-    activation_token: Optional[str] = Field(default=None)
+    email: Optional[str] = Field(
+        default="",
+        title="The email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
 
     def generate_access_token(self, permissions: List[str]) -> str:
         """Generates an access token.
@@ -208,19 +232,37 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
         ).encode()
 
 
-class UserAuthModel(UserResponseModel, BaseResponseModel):
-    """"""
+class UserAuthModel(UserBaseModel, BaseResponseModel):
+    """Authentication Model for the User.
 
-    email: Optional[str] = Field(
-        default="",
-        title="The email address associated with the account.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
-    )
+    This model is only used server-side. The server endpoints can use this model
+    to authenticate the user credentials (Token, Password).
+    """
 
     active: bool = Field(default=False, title="Active account.")
 
     activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
     password: Optional[SecretStr] = Field(default=None, exclude=True)
+    teams: Optional[List["TeamResponseModel"]] = Field(
+        title="The list of teams for this user."
+    )
+
+    def generate_access_token(self, permissions: List[str]) -> str:
+        """Generates an access token.
+
+        Generates an access token and returns it.
+
+        Args:
+            permissions: Permissions to add to the token
+
+        Returns:
+            The generated access token.
+        """
+        return JWTToken(
+            token_type=JWTTokenType.ACCESS_TOKEN,
+            user_id=self.id,
+            permissions=permissions,
+        ).encode()
 
     @classmethod
     def _is_hashed_secret(cls, secret: SecretStr) -> bool:
@@ -298,11 +340,11 @@ class UserAuthModel(UserResponseModel, BaseResponseModel):
         # even when the user or password is not set, we still want to execute
         # the password hash verification to protect against response discrepancy
         # attacks (https://cwe.mitre.org/data/definitions/204.html)
-        token_hash: Optional[str] = None
+        password_hash: Optional[str] = None
         if user is not None and user.password is not None:  # and user.active:
-            token_hash = user.get_hashed_password()
+            password_hash = user.get_hashed_password()
         pwd_context = cls._get_crypt_context()
-        return cast(bool, pwd_context.verify(plain_password, token_hash))
+        return cast(bool, pwd_context.verify(plain_password, password_hash))
 
     @classmethod
     def verify_access_token(cls, token: str) -> Optional["UserAuthModel"]:
@@ -368,7 +410,19 @@ class UserAuthModel(UserResponseModel, BaseResponseModel):
 
 
 class UserRequestModel(UserBaseModel, BaseRequestModel):
-    """"""
+    """Request model for users.
+
+    This model is used to create a user. The email field is optional but is
+    more commonly set on the UpdateRequestModel which inherits from this model.
+    Users can also optionally set their password during creation.
+    """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "name",
+        "full_name",
+        "active",
+        "email_opted_in",
+    ]
 
     email: Optional[str] = Field(
         default=None,
@@ -376,7 +430,7 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
 
-    password: Optional[str] = Field(default=None, exclude=True)
+    password: Optional[str] = Field(default=None)
     activation_token: Optional[str] = Field(default=None)
 
     class Config:
@@ -436,28 +490,35 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
 # ------ #
 
 
-@update
+@update_model
 class UserUpdateModel(UserRequestModel):
-    """"""
+    """Update model for users."""
 
     @root_validator
-    def user_email_updates(cls, values):
-        """"""
+    def user_email_updates(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate that the UserUpdateModel conforms to the email-opt-in-flow.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+
+        Raises:
+            ValueError: If the email was not provided when the email_opted_in
+                field was set to True.
+        """
+        # When someone sets the email, or updates the email and hasn't
+        #  before explicitly opted out, they are opted in
         if values["email"] is not None:
             if values["email_opted_in"] is None:
                 values["email_opted_in"] = True
 
-            if values["email_opted_in"] is False:
+        # It should not be possible to do opt in without an email
+        if values["email_opted_in"] is True:
+            if values["email"] is None:
                 raise ValueError(
-                    "You can not update the email of a user while setting "
-                    "email opt-in to False."
+                    "Please provide an email, when you are opting-in with "
+                    "your email."
                 )
-
-        if values["email_opted_in"] is not None:
-            if values["email_opted_in"] is True:
-                if values["email"] is None:
-                    raise ValueError(
-                        "Please provide an email, when you are opting-in with "
-                        "your email."
-                    )
         return values

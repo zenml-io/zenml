@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing role assignments."""
+
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import UUID
 
@@ -30,38 +32,11 @@ if TYPE_CHECKING:
 
 
 class RoleAssignmentBaseModel(BaseModel):
-    """Domain model for role assignments."""
+    """Base model for role assignments."""
 
     @root_validator(pre=True)
     def check_team_or_user(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if not values.get("team") and not values.get("user"):
-            raise ValueError("Either team or user is required")
-        elif values.get("team") and values.get("user"):
-            raise ValueError("An assignment can not contain a user and team")
-        return values
-
-
-# ------- #
-# REQUEST #
-# ------- #
-
-
-class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
-    project: Optional[UUID] = Field(
-        None, title="The project that the role is limited to."
-    )
-    team: Optional[UUID] = Field(
-        None, title="The team that the role is assigned to."
-    )
-    user: Optional[UUID] = Field(
-        None, title="The user that the role is assigned to."
-    )
-
-    role: UUID = Field(title="The role.")
-
-    @root_validator
-    def ensure_single_entity(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validates that either `user` or `team` is set.
+        """Check that either a team or a user is set.
 
         Args:
             values: The values to validate.
@@ -70,16 +45,12 @@ class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
             The validated values.
 
         Raises:
-            ValueError: If neither `user` nor `team` is set.
+            ValueError: If both or neither team and user are set.
         """
-        user = values.get("user", None)
-        team = values.get("team", None)
-        if user and team:
-            raise ValueError("Only `user` or `team` is allowed.")
-
-        if not (user or team):
-            raise ValueError("Missing `user` or `team` for role assignment.")
-
+        if not values.get("team") and not values.get("user"):
+            raise ValueError("Either team or user is required")
+        elif values.get("team") and values.get("user"):
+            raise ValueError("An assignment can not contain a user and team")
         return values
 
 
@@ -89,7 +60,7 @@ class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
 
 
 class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
-    """"""
+    """Response model for role assignments with all entities hydrated."""
 
     project: Optional["ProjectResponseModel"] = Field(
         title="The project scope of this role assignment.", default=None
@@ -103,3 +74,24 @@ class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
     role: "RoleResponseModel" = Field(
         title="The team the role is assigned to.", default=None
     )
+
+
+# ------- #
+# REQUEST #
+# ------- #
+
+
+class RoleAssignmentRequestModel(RoleAssignmentBaseModel, BaseRequestModel):
+    """Request model for role assignments using UUIDs for all entities."""
+
+    project: Optional[UUID] = Field(
+        None, title="The project that the role is limited to."
+    )
+    team: Optional[UUID] = Field(
+        None, title="The team that the role is assigned to."
+    )
+    user: Optional[UUID] = Field(
+        None, title="The user that the role is assigned to."
+    )
+
+    role: UUID = Field(title="The role.")

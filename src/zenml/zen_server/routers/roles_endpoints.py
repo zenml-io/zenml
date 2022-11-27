@@ -45,7 +45,7 @@ def list_roles(
     """Returns a list of all roles.
 
     Args:
-        name: Name to filter with
+        name: Optional name of the role to filter by.
         params: Parameters for pagination (page and size)
 
     Returns:
@@ -114,7 +114,7 @@ def update_role(
     # noqa: DAR401
 
     Args:
-        role_name_or_id: Name or ID of the role.
+        role_id: The ID of the role.
         role_update: Role update.
 
     Returns:

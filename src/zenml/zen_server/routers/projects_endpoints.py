@@ -31,6 +31,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import PermissionType, StackComponentType
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ComponentRequestModel,
     ComponentResponseModel,
@@ -42,6 +43,7 @@ from zenml.models import (
     PipelineRunResponseModel,
     ProjectRequestModel,
     ProjectResponseModel,
+    ProjectUpdateModel,
     RoleAssignmentResponseModel,
     StackRequestModel,
     StackResponseModel,
@@ -131,8 +133,8 @@ def get_project(
 )
 @handle_exceptions
 def update_project(
-    project_name_or_id: Union[str, UUID],
-    project_update: ProjectRequestModel,
+    project_name_or_id: UUID,
+    project_update: ProjectUpdateModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> ProjectResponseModel:
     """Get a project for given name.
@@ -280,12 +282,24 @@ def create_stack(
 
     Returns:
         The created stack.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the stack
+            does not match the current project or authenticated user.
     """
     project = zen_store().get_project(project_name_or_id)
 
-    # TODO: Raise nice messages
-    assert stack.project == project.id
-    assert stack.user == auth_context.user.id
+    if stack.project != project.id:
+        raise IllegalOperationError(
+            "Creating stacks outside of the project scope "
+            f"of this endpoint `{project_name_or_id}` is "
+            f"not supported."
+        )
+    if stack.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating stacks for a user other than yourself "
+            "is not supported."
+        )
 
     return zen_store().create_stack(stack=stack)
 
@@ -370,12 +384,24 @@ def create_stack_component(
 
     Returns:
         The created stack component.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the stack
+            component does not match the current project or authenticated user.
     """
     project = zen_store().get_project(project_name_or_id)
 
-    # TODO: Raise nice messages
-    assert component.project == project.id
-    assert component.user == auth_context.user.id
+    if component.project != project.id:
+        raise IllegalOperationError(
+            "Creating components outside of the project scope "
+            f"of this endpoint `{project_name_or_id}` is "
+            f"not supported."
+        )
+    if component.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating components for a user other than yourself "
+            "is not supported."
+        )
 
     # TODO: [server] if possible it should validate here that the configuration
     #  conforms to the flavor
@@ -446,11 +472,25 @@ def create_flavor(
 
     Returns:
         The created stack component flavor.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the stack
+            component flavor does not match the current project or authenticated
+            user.
     """
     project = zen_store().get_project(project_name_or_id)
-    # TODO: Raise nice messages
-    assert flavor.project == project.id
-    assert flavor.user == auth_context.user.id
+
+    if flavor.project != project.id:
+        raise IllegalOperationError(
+            "Creating flavors outside of the project scope "
+            f"of this endpoint `{project_name_or_id}` is "
+            f"not supported."
+        )
+    if flavor.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating flavors for a user other than yourself "
+            "is not supported."
+        )
 
     created_flavor = zen_store().create_flavor(
         flavor=flavor,
@@ -514,12 +554,24 @@ def create_pipeline(
 
     Returns:
         The created pipeline.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the pipeline
+            does not match the current project or authenticated user.
     """
     project = zen_store().get_project(project_name_or_id)
 
-    # TODO: Raise nice messages
-    assert pipeline.project == project.id
-    assert pipeline.user == auth_context.user.id
+    if pipeline.project != project.id:
+        raise IllegalOperationError(
+            "Creating pipelines outside of the project scope "
+            f"of this endpoint `{project_name_or_id}` is "
+            f"not supported."
+        )
+    if pipeline.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating pipelines for a user other than yourself "
+            "is not supported."
+        )
 
     return zen_store().create_pipeline(pipeline=pipeline)
 
@@ -549,11 +601,24 @@ def create_pipeline_run(
 
     Returns:
         The created pipeline run.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the pipeline
+            run does not match the current project or authenticated user.
     """
     project = zen_store().get_project(project_name_or_id)
-    # TODO: Raise nice messages
-    assert pipeline_run.project == project.id
-    assert pipeline_run.user == auth_context.user.id
+
+    if pipeline_run.project != project.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs outside of the project scope "
+            f"of this endpoint `{project_name_or_id}` is "
+            f"not supported."
+        )
+    if pipeline_run.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs for a user other than yourself "
+            "is not supported."
+        )
 
     if get_if_exists:
         return zen_store().get_or_create_run(pipeline_run=pipeline_run)
@@ -580,8 +645,6 @@ def get_project_statistics(
     Returns:
         All pipelines within the project.
     """
-    # TODO: [server] instead of actually querying all the rows, we should
-    #  use zen_store methods that just return counts
     zen_store().list_runs()
     # TODO: with pagination, this won't work anymore
     return {

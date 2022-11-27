@@ -56,22 +56,29 @@ def list_stacks(
         user_name_or_id: Optionally filter by name or ID of the user.
         component_id: Optionally filter by component that is part of the stack.
         name: Optionally filter by stack name
-        is_shared: Optionally filter by shared status of the stack
+        is_shared: Defines whether to return shared stacks or the private stacks
+            of the user. If not set, both are returned.
         params: Parameters for pagination (page and size)
         auth_context: Authentication Context
 
     Returns:
         All stacks.
     """
-    stacks = zen_store().list_stacks(
-        project_name_or_id=project_name_or_id,
-        user_name_or_id=user_name_or_id or auth_context.user.id,
-        component_id=component_id,
-        is_shared=False,
-        name=name,
-        params=params,
-    )
-    # In case the user didn't explicitly filter for is shared == False
+    stacks: Page[StackResponseModel] = []
+
+    # Get private stacks unless `is_shared` is set to True
+    if is_shared is None or not is_shared:
+        own_stacks = zen_store().list_stacks(
+            project_name_or_id=project_name_or_id,
+            user_name_or_id=user_name_or_id or auth_context.user.id,
+            component_id=component_id,
+            is_shared=False,
+            name=name,
+            params=params,
+        )
+        stacks += own_stacks
+
+    # Get shared stacks unless `is_shared` is set to False
     if is_shared is None or is_shared:
         shared_stacks = zen_store().list_stacks(
             project_name_or_id=project_name_or_id,
@@ -147,4 +154,4 @@ def delete_stack(
     Args:
         stack_id: Name of the stack.
     """
-    zen_store().delete_stack(stack_id)  # aka 'deregister_stack'
+    zen_store().delete_stack(stack_id)  # aka 'delete_stack'

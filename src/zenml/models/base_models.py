@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ForwardRef, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
 from uuid import UUID
 
 from pydantic import Field
@@ -23,6 +23,7 @@ from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 if TYPE_CHECKING:
     from zenml.models.project_models import ProjectResponseModel
     from zenml.models.user_models import UserResponseModel
+
 
 # --------------- #
 # RESPONSE MODELS #
@@ -73,9 +74,20 @@ class UserScopedResponseModel(BaseResponseModel):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: Optional[ForwardRef("UserResponseModel")] = Field(
+    user: Optional["UserResponseModel"] = Field(
         title="The user that created this resource.", nullable=True
     )
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Fetches the analytics metadata for user scoped models.
+
+        Returns:
+            The analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        if self.user is not None:
+            metadata["user"] = self.user.id
+        return metadata
 
 
 class ProjectScopedResponseModel(UserScopedResponseModel):
@@ -84,9 +96,19 @@ class ProjectScopedResponseModel(UserScopedResponseModel):
     Used as a base class for all domain models that are project-scoped.
     """
 
-    project: ForwardRef("ProjectResponseModel") = Field(
+    project: "ProjectResponseModel" = Field(
         title="The project of this resource."
     )
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Fetches the analytics metadata for project scoped models.
+
+        Returns:
+            The analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        metadata["project"] = self.project.id
+        return metadata
 
 
 class ShareableResponseModel(ProjectScopedResponseModel):
@@ -110,11 +132,14 @@ class ShareableResponseModel(ProjectScopedResponseModel):
 
 
 class BaseRequestModel(AnalyticsTrackedModelMixin):
-    """ """
+    """Base request model.
+
+    Used as a base class for all request models.
+    """
 
 
-class UserOwnedRequestModel(BaseRequestModel):
-    """Base user-owned domain model.
+class UserScopedRequestModel(BaseRequestModel):
+    """Base user-owned request model.
 
     Used as a base class for all domain models that are "owned" by a user.
     """
@@ -122,8 +147,8 @@ class UserOwnedRequestModel(BaseRequestModel):
     user: UUID = Field(title="The id of the user that created this resource.")
 
 
-class ProjectScopedRequestModel(UserOwnedRequestModel):
-    """Base project-scoped domain model.
+class ProjectScopedRequestModel(UserScopedRequestModel):
+    """Base project-scoped request domain model.
 
     Used as a base class for all domain models that are project-scoped.
     """
@@ -150,13 +175,24 @@ class ShareableRequestModel(ProjectScopedRequestModel):
 # ------------- #
 # UPDATE MODELS #
 # ------------- #
+
 T = TypeVar("T", bound="BaseRequestModel")
 
 
-def update(_cls: Type[T]) -> Type[T]:
-    for field in _cls.__fields__:
-        new_field = _cls.__fields__[field]
-        new_field.required = False
-        new_field.allow_none = True
+def update_model(_cls: Type[T]) -> Type[T]:
+    """Base update model.
+
+    This is used as a decorator on top of request models to convert them
+    into update models where the fields are optional and can be set to None.
+
+    Args:
+        _cls: The class to decorate
+
+    Returns:
+        The decorated class.
+    """
+    for _, value in _cls.__fields__.items():
+        value.required = False
+        value.allow_none = True
 
     return _cls

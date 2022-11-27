@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Pydantic models for the various concepts in ZenML."""
+
 from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
@@ -139,6 +141,7 @@ __all__ = [
     "StepRunUpdateModel",
     "TeamRequestModel",
     "TeamResponseModel",
+    "TeamUpdateModel",
     "UserRequestModel",
     "UserResponseModel",
     "UserUpdateModel",

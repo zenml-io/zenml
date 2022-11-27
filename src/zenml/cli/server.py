@@ -553,6 +553,7 @@ def status() -> None:
 
     store_cfg = gc.store
 
+    cli_utils.declare(f"Using configuration from: '{gc.config_directory}'")
     if client.root:
         cli_utils.declare(f"Active repository root: {client.root}")
     if store_cfg is not None:

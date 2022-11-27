@@ -63,25 +63,32 @@ def list_stack_components(
         name: Optionally filter by component name
         type: Optionally filter by component type
         flavor_name: Optionally filter by flavor
-        is_shared: Optionally filter by shared status of the component
+        is_shared: Defines whether to return shared stack components or the
+            private stack components of the user. If not set, both are returned.
         params: Parameters for pagination (page and size)
         auth_context: Authentication Context
 
     Returns:
         List of stack components for a specific type.
     """
-    # TODO: Implement a sensible filtering mechanism
+    # TODO: Implement a sensible filtering mechanism on the sql zen_store side
 
-    components = zen_store().list_stack_components(
-        name=name,
-        user_name_or_id=user_name_or_id or auth_context.user.id,
-        project_name_or_id=project_name_or_id,
-        flavor_name=flavor_name,
-        type=type,
-        is_shared=False,
-        params=params,
-    )
-    # In case the user didn't explicitly filter for is shared == False
+    components: Page[ComponentResponseModel] = []
+
+    # Get private stack components unless `is_shared` is set to True
+    if is_shared is None or not is_shared:
+        own_components = zen_store().list_stack_components(
+            name=name,
+            user_name_or_id=user_name_or_id or auth_context.user.id,
+            project_name_or_id=project_name_or_id,
+            flavor_name=flavor_name,
+            type=type,
+            is_shared=False,
+            params=params,
+        )
+        components += own_components
+
+    # Get shared stacks unless `is_shared` is set to False
     if is_shared is None or is_shared:
         shared_components = zen_store().list_stack_components(
             project_name_or_id=project_name_or_id,
@@ -92,8 +99,8 @@ def list_stack_components(
             is_shared=True,
             params=params,
         )
-
         components += shared_components
+
     return components
 
 
@@ -105,7 +112,6 @@ def list_stack_components(
 @handle_exceptions
 def get_stack_component(
     component_id: UUID,
-    hydrated: bool = False,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> ComponentResponseModel:
     """Returns the requested stack component.

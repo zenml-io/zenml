@@ -19,6 +19,7 @@ import uuid
 from pathlib import PurePath
 from secrets import token_hex
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from uuid import UUID
 
 from packaging import version
 from pydantic import BaseModel, Field, ValidationError, validator
@@ -396,7 +397,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             if active_user.email_opted_in is not None:
                 self.record_email_opt_in_out(
                     opted_in=active_user.email_opted_in,
-                    email=None,  # TODO clean this up
+                    email=active_user.email,
                     source=AnalyticsEventSource.ZENML_SERVER,
                 )
 
@@ -654,26 +655,72 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         return self._zen_store
 
-    def set_active_project(self, project: "ProjectResponseModel") -> None:
+    def set_active_project(
+        self, project: "ProjectResponseModel"
+    ) -> "ProjectResponseModel":
         """Set the project for the local client.
 
         Args:
             project: The project to set active.
+
+        Returns:
+            The project that was set active.
         """
         self.active_project_name = project.name
         self._active_project = project
+        return project
 
     def set_active_stack(self, stack: "StackResponseModel") -> None:
+        """Set the active stack for the local client.
+
+        Args:
+            stack: The model of the stack to set active.
+        """
         self.active_stack_id = stack.id
 
-    @property
-    def active_project(self) -> Optional["ProjectResponseModel"]:
-        if not self._active_project and self.active_project_name:
-            project = self.zen_store.get_project(
-                project_name_or_id=self.active_project_name,
-            )
-            self.set_active_project(project)
-        return self._active_project
+    def get_active_project(self) -> "ProjectResponseModel":
+        """Get a model of the active project for the local client.
+
+        Returns:
+            The model of the active project.
+        """
+        project_name = self.get_active_project_name()
+
+        if self._active_project is not None:
+            return self._active_project
+
+        project = self.zen_store.get_project(
+            project_name_or_id=project_name,
+        )
+        return self.set_active_project(project)
+
+    def get_active_project_name(self) -> str:
+        """Get the name of the active project.
+
+        If the active project doesn't exist yet, the ZenStore is reinitialized.
+
+        Returns:
+            The name of the active project.
+        """
+        if self.active_project_name is None:
+            _ = self.zen_store
+            assert self.active_project_name is not None
+
+        return self.active_project_name
+
+    def get_active_stack_id(self) -> UUID:
+        """Get the ID of the active stack.
+
+        If the active stack doesn't exist yet, the ZenStore is reinitialized.
+
+        Returns:
+            The active stack ID.
+        """
+        if self.active_stack_id is None:
+            _ = self.zen_store
+            assert self.active_stack_id is not None
+
+        return self.active_stack_id
 
     def record_email_opt_in_out(
         self, opted_in: bool, email: Optional[str], source: AnalyticsEventSource
@@ -702,7 +749,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             or opted_in
             and not self.user_email_opt_in
         ):
-
             # When the user opts out giving the email for the first time, or
             # when the user opts in after opting out (e.g. when connecting to
             # a new server where the account has opt-in enabled), we want to

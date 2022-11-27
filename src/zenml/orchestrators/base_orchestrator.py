@@ -375,7 +375,7 @@ class BaseOrchestrator(StackComponent, ABC):
             try:
                 execution_info = self._execute_step(component_launcher)
             except:  # noqa: E722
-                self._publish_failed_run(run_name_or_id=run_model.name)
+                self._publish_failed_run(run_name_or_id=run_model.id)
                 raise
             finally:
                 stack.cleanup_step_run(info=step_run_info)
@@ -461,8 +461,8 @@ class BaseOrchestrator(StackComponent, ABC):
             orchestrator_run_id=orchestrator_run_id,
             user=client.active_user.id,
             project=client.active_project.id,
-            stack_id=self._active_deployment.stack_id,
-            pipeline_id=self._active_deployment.pipeline_id,
+            stack=self._active_deployment.stack_id,
+            pipeline=self._active_deployment.pipeline_id,
             status=ExecutionStatus.RUNNING,
             pipeline_configuration=self._active_deployment.pipeline.dict(),
             num_steps=len(self._active_deployment.steps),

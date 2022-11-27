@@ -1,6 +1,21 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""SQLModel implementation of step run tables."""
+
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -15,9 +30,6 @@ from zenml.models.step_run_models import (
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
-
-if TYPE_CHECKING:
-    pass
 
 
 class StepRunSchema(NamedSchema, table=True):
@@ -45,6 +57,14 @@ class StepRunSchema(NamedSchema, table=True):
 
     @classmethod
     def from_request(cls, request: StepRunRequestModel) -> "StepRunSchema":
+        """Create a step run schema from a step run request model.
+
+        Args:
+            request: The step run request model.
+
+        Returns:
+            The step run schema.
+        """
         return cls(
             name=request.name,
             pipeline_run_id=request.pipeline_run_id,
@@ -67,8 +87,8 @@ class StepRunSchema(NamedSchema, table=True):
 
         Args:
             parent_step_ids: The parent step ids to link to the step.
-            mlmd_parent_step_ids: The parent step ids in MLMD.
-            input_artifacts:
+            mlmd_parent_step_ids: The parent step ids in MLMD
+            input_artifacts: The input artifacts to link to the step.
 
         Returns:
             The created StepRunModel.
@@ -92,7 +112,15 @@ class StepRunSchema(NamedSchema, table=True):
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":
-        """For steps only the execution status is mutable"""
+        """Update a step run schema with a step run update model.
+
+        Args:
+            step_update: The step run update model.
+
+        Returns:
+            The updated step run schema.
+        """
+        # For steps only the execution status is mutable.
         if "status" in step_update.__fields_set__ and step_update.status:
             self.status = step_update.status
 
@@ -126,10 +154,10 @@ class StepRunParentsSchema(SQLModel, table=True):
     )
 
 
-class StepRunArtifactSchema(SQLModel, table=True):
+class StepRunInputArtifactSchema(SQLModel, table=True):
     """SQL Model that defines which artifacts are inputs to which step."""
 
-    __tablename__ = "step_run_artifact"
+    __tablename__ = "step_run_input_artifact"
 
     step_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -142,7 +170,7 @@ class StepRunArtifactSchema(SQLModel, table=True):
     )
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target="artifacts",  # ArtifactSchema.__tablename__,
+        target="artifacts",  # `ArtifactSchema.__tablename__`
         source_column="artifact_id",
         target_column="id",
         ondelete="CASCADE",

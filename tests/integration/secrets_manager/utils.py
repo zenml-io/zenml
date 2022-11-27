@@ -112,7 +112,7 @@ def get_secrets_manager(
         raise RuntimeError(
             f"Secrets manager flavor {flavor} not covered in unit tests"
         )
-    secrets_manager_model = client.register_stack_component(
+    secrets_manager_model = client.create_stack_component(
         name=name,
         component_type=StackComponentType.SECRETS_MANAGER,
         flavor=flavor,

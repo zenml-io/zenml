@@ -421,9 +421,7 @@ def test_updating_user_succeeds(
 
     new_user_name = "blupus"
     user_update = UserUpdateModel(name=new_user_name)
-    sql_store["store"].update_user(
-        user_name_or_id=new_user.id, user_update=user_update
-    )
+    sql_store["store"].update_user(user_id=new_user.id, user_update=user_update)
 
     assert sql_store["store"].get_user(new_user_name) is not None
     with pytest.raises(KeyError):
@@ -440,7 +438,7 @@ def test_updating_default_user_fails(
     user_update.name = "axl"
     with pytest.raises(IllegalOperationError):
         sql_store["store"].update_user(
-            user_name_or_id=DEFAULT_USERNAME, user_update=user_update
+            user_id=default_user.id, user_update=user_update
         )
 
 
@@ -452,7 +450,7 @@ def test_updating_nonexistent_user_fails(
 
     with pytest.raises(KeyError):
         sql_store["store"].update_user(
-            user_name_or_id=uuid.uuid4(), user_update=new_user
+            user_id=uuid.uuid4(), user_update=new_user
         )
 
 
@@ -883,7 +881,7 @@ def test_updating_stack_succeeds(
     )
     assert sql_store["store"].get_stack(new_stack.id) is not None
     assert sql_store["store"].get_stack(new_stack.id).name == new_stack_name
-    # Ensure unset fields of the UpdateModel are not changed
+    # Ensure unset fields of the `UpdateModel` are not changed
     assert (
         sql_store["store"].get_stack(new_stack.id).description
         == new_stack.description

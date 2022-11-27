@@ -472,6 +472,7 @@ class ZenStoreInterface(ABC):
             KeyError: If no user with the given name or ID exists.
         """
 
+    @abstractmethod
     def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
         """Gets the auth model to a specific user.
 
@@ -500,12 +501,12 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_user(
-        self, user_name_or_id: Union[str, UUID], user_update: UserUpdateModel
+        self, user_id: UUID, user_update: UserUpdateModel
     ) -> UserResponseModel:
         """Updates an existing user.
 
         Args:
-            user_name_or_id: The id of the user to update.
+            user_id: The id of the user to update.
             user_update: The update to be applied to the user.
 
         Returns:
@@ -682,20 +683,37 @@ class ZenStoreInterface(ABC):
     def create_role_assignment(
         self, role_assignment: RoleAssignmentRequestModel
     ) -> RoleAssignmentResponseModel:
-        """"""
+        """Creates a new role assignment.
+
+        Args:
+            role_assignment: The role assignment model to create.
+
+        Returns:
+            The newly created role assignment.
+        """
 
     @abstractmethod
     def get_role_assignment(
         self, role_assignment_id: UUID
     ) -> RoleAssignmentResponseModel:
-        """"""
-
-    @abstractmethod
-    def delete_role_assignment(self, role_assignment_id: UUID) -> UUID:
-        """Delete a specific role assignment
+        """Gets a specific role assignment.
 
         Args:
-            role_assignment_id: The Id of the specific role assignment
+            role_assignment_id: ID of the role assignment to get.
+
+        Returns:
+            The requested role assignment.
+
+        Raises:
+            KeyError: If no role assignment with the given ID exists.
+        """
+
+    @abstractmethod
+    def delete_role_assignment(self, role_assignment_id: UUID) -> None:
+        """Delete a specific role assignment.
+
+        Args:
+            role_assignment_id: The ID of the specific role assignment
         """
 
     @abstractmethod

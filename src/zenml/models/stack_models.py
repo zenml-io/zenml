@@ -1,5 +1,20 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Models representing stacks."""
+
 import json
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -8,7 +23,7 @@ from zenml.enums import StackComponentType
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
-    update,
+    update_model,
 )
 from zenml.models.component_models import ComponentResponseModel
 from zenml.models.constants import (
@@ -16,15 +31,14 @@ from zenml.models.constants import (
     MODEL_NAME_FIELD_MAX_LENGTH,
 )
 
-# TODO: Add example schemas and analytics fields
-
-
 # ---- #
 # BASE #
 # ---- #
 
 
 class StackBaseModel(BaseModel):
+    """Base model for stacks."""
+
     name: str = Field(
         title="The name of the stack.", max_length=MODEL_NAME_FIELD_MAX_LENGTH
     )
@@ -43,14 +57,32 @@ class StackBaseModel(BaseModel):
 class StackResponseModel(StackBaseModel, ShareableResponseModel):
     """Stack model with Components, User and Project fully hydrated."""
 
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "project",
+        "user",
+        "is_shared",
+    ]
+
     components: Dict[StackComponentType, List[ComponentResponseModel]] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )
 
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the stack components to the stack analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        metadata.update({ct: c[0].id for ct, c in self.components.items()})
+        return metadata
+
     @property
     def is_valid(self) -> bool:
         """Check if the stack is valid.
+
         Returns:
             True if the stack is valid, False otherwise.
         """
@@ -91,14 +123,33 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 
 
 class StackRequestModel(StackBaseModel, ShareableRequestModel):
+    """Stack model with components, user and project as UUIDs."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "project",
+        "user",
+        "is_shared",
+    ]
+
     components: Dict[StackComponentType, List[UUID]] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )
 
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the stack components to the stack analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        metadata.update({ct: c[0] for ct, c in self.components.items()})
+        return metadata
+
     @property
     def is_valid(self) -> bool:
         """Check if the stack is valid.
+
         Returns:
             True if the stack is valid, False otherwise.
         """
@@ -116,6 +167,6 @@ class StackRequestModel(StackBaseModel, ShareableRequestModel):
 # ------ #
 
 
-@update
+@update_model
 class StackUpdateModel(StackRequestModel):
-    """beautiful."""
+    """The update model for stacks."""

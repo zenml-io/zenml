@@ -128,7 +128,7 @@ from zenml.zen_stores.schemas import (
     RoleSchema,
     StackComponentSchema,
     StackSchema,
-    StepRunArtifactSchema,
+    StepRunInputArtifactSchema,
     StepRunParentsSchema,
     StepRunSchema,
     TeamRoleAssignmentSchema,
@@ -136,7 +136,7 @@ from zenml.zen_stores.schemas import (
     UserRoleAssignmentSchema,
     UserSchema,
 )
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.role_schemas import RolePermissionSchema
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
@@ -153,7 +153,7 @@ if TYPE_CHECKING:
         MLMDStepRunModel,
     )
 
-AnyBaseSchema = TypeVar("AnyBaseSchema", bound=BaseSchema)
+AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -814,10 +814,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The registered stack.
-
-        Raises:
-            KeyError: If one or more of the stack's components are not
-                registered in the store.
         """
         with Session(self.engine) as session:
             self._fail_if_stack_with_name_exists_for_user(
@@ -980,7 +976,7 @@ class SqlZenStore(BaseZenStore):
                         stack=stack_update, session=session
                     )
 
-            components = None
+            components = []
             if stack_update.components:
                 filters = [
                     (StackComponentSchema.id == component_id)
@@ -1094,15 +1090,19 @@ class SqlZenStore(BaseZenStore):
             project = self._get_project_schema(
                 project_name_or_id=stack.project, session=session
             )
-            owner_of_shared = self._get_user_schema(
-                existing_shared_stack.user_id, session=session
-            )
-
-            raise StackExistsError(
+            error_msg = (
                 f"Unable to share stack with name '{stack.name}': Found an "
                 f"existing shared stack with the same name in project "
-                f"'{project.name}' owned by '{owner_of_shared.name}'."
+                f"'{project.name}'"
             )
+            if existing_shared_stack.user_id:
+                owner_of_shared = self._get_user_schema(
+                    existing_shared_stack.user_id, session=session
+                )
+                error_msg += f" owned by '{owner_of_shared.name}'."
+            else:
+                error_msg += ", which is currently not owned by any user."
+            raise StackExistsError(error_msg)
 
     # ----------------
     # Stack components
@@ -1286,7 +1286,10 @@ class SqlZenStore(BaseZenStore):
             # In case of a renaming update, make sure no component of the same
             # type already exists with that name
             if component_update.name:
-                if existing_component.name != component_update.name:
+                if (
+                    existing_component.name != component_update.name
+                    and existing_component.user_id is not None
+                ):
                     self._fail_if_component_with_name_type_exists_for_user(
                         name=component_update.name,
                         component_type=existing_component.type,
@@ -1706,12 +1709,12 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
-        self, user_name_or_id: Union[str, UUID], user_update: UserUpdateModel
+        self, user_id: UUID, user_update: UserUpdateModel
     ) -> UserResponseModel:
         """Updates an existing user.
 
         Args:
-            user_name_or_id: The id of the user to update.
+            user_id: The id of the user to update.
             user_update: The update to be applied to the user.
 
         Returns:
@@ -1722,9 +1725,7 @@ class SqlZenStore(BaseZenStore):
                 for the default user account.
         """
         with Session(self.engine) as session:
-            existing_user = self._get_user_schema(
-                user_name_or_id, session=session
-            )
+            existing_user = self._get_user_schema(user_id, session=session)
             if (
                 existing_user.name == self._default_user_name
                 and "name" in user_update.__fields_set__
@@ -1872,7 +1873,7 @@ class SqlZenStore(BaseZenStore):
             # Update the team
             existing_team.update(team_update=team_update)
             existing_team.users = []
-            if "users" in team_update.__fields_set__:
+            if "users" in team_update.__fields_set__ and team_update.users:
                 for user in team_update.users:
                     existing_team.users.append(
                         self._get_user_schema(
@@ -2226,6 +2227,9 @@ class SqlZenStore(BaseZenStore):
             role_name_or_id: Name or ID of the role to assign.
             user_name_or_id: Name or ID of the user to which to assign the role.
 
+        Returns:
+            A model of the role assignment.
+
         Raises:
             EntityExistsError: If the role assignment already exists.
         """
@@ -2278,6 +2282,9 @@ class SqlZenStore(BaseZenStore):
                 role. If this is not provided, the role will be assigned
                 globally.
 
+        Returns:
+            A model of the role assignment.
+
         Raises:
             EntityExistsError: If the role assignment already exists.
         """
@@ -2319,24 +2326,47 @@ class SqlZenStore(BaseZenStore):
     def create_role_assignment(
         self, role_assignment: RoleAssignmentRequestModel
     ) -> RoleAssignmentResponseModel:
-        """Assigns a role to a user or team, scoped to a specific project."""
+        """Assigns a role to a user or team, scoped to a specific project.
+
+        Args:
+            role_assignment: The role assignment to create.
+
+        Returns:
+            The created role assignment.
+
+        Raises:
+            ValueError: If neither a user nor a team is specified.
+        """
         if role_assignment.user:
             return self._assign_role_to_user(
                 role_name_or_id=role_assignment.role,
                 user_name_or_id=role_assignment.user,
                 project_name_or_id=role_assignment.project,
             )
-        elif role_assignment.team:
+        if role_assignment.team:
             return self._assign_role_to_team(
                 role_name_or_id=role_assignment.role,
                 team_name_or_id=role_assignment.team,
                 project_name_or_id=role_assignment.project,
             )
+        raise ValueError(
+            "Role assignment must be assigned to either a user or a team."
+        )
 
     def get_role_assignment(
         self, role_assignment_id: UUID
     ) -> RoleAssignmentResponseModel:
-        """"""
+        """Gets a role assignment by ID.
+
+        Args:
+            role_assignment_id: ID of the role assignment to get.
+
+        Returns:
+            The role assignment.
+
+        Raises:
+            KeyError: If the role assignment does not exist.
+        """
         with Session(self.engine) as session:
             user_role = session.exec(
                 select(UserRoleAssignmentSchema).where(
@@ -2356,17 +2386,18 @@ class SqlZenStore(BaseZenStore):
             if team_role:
                 return team_role.to_model()
 
-            if user_role is None and team_role is None:
-                raise KeyError(
-                    f"RoleAssignment with ID {role_assignment_id} "
-                    f"not found."
-                )
+            raise KeyError(
+                f"RoleAssignment with ID {role_assignment_id} not found."
+            )
 
     def delete_role_assignment(self, role_assignment_id: UUID) -> None:
-        """Delete a specific role assignment
+        """Delete a specific role assignment.
 
         Args:
-            role_assignment_id: The Id of the specific role assignment
+            role_assignment_id: The ID of the specific role assignment.
+
+        Raises:
+            KeyError: If the role assignment does not exist.
         """
         with Session(self.engine) as session:
             user_role = session.exec(
@@ -2388,8 +2419,7 @@ class SqlZenStore(BaseZenStore):
 
             if user_role is None and team_role is None:
                 raise KeyError(
-                    f"RoleAssignment with ID {role_assignment_id} "
-                    f"not found."
+                    f"RoleAssignment with ID {role_assignment_id} not found."
                 )
             else:
                 session.commit()
@@ -2489,6 +2519,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             IllegalOperationError: if the project is the default project.
+            KeyError: if the project does not exist.
         """
         with Session(self.engine) as session:
             existing_project = session.exec(
@@ -2773,19 +2804,34 @@ class SqlZenStore(BaseZenStore):
                         f"MLMD ID '{pipeline_run.mlmd_id}' already exists."
                     )
 
-            # Query stack
-            if pipeline_run.stack is None:
-                logger.warning(
-                    f"No stack found for this run. "
-                    f"Creating pipeline run '{pipeline_run.name}' without "
-                    "linked stack."
-                )
+            # Query stack to ensure it exists in the DB
+            stack_id = None
+            if pipeline_run.stack is not None:
+                stack_id = session.exec(
+                    select(StackSchema.id).where(
+                        StackSchema.id == pipeline_run.stack
+                    )
+                ).first()
+                if stack_id is None:
+                    logger.warning(
+                        f"No stack found for this run. "
+                        f"Creating pipeline run '{pipeline_run.name}' without "
+                        "linked stack."
+                    )
 
-            if pipeline_run.pipeline is None:
-                logger.warning(
-                    f"No pipeline found. Creating pipeline run "
-                    f"'{pipeline_run.name}' as unlisted run."
-                )
+            # Query pipeline to ensure it exists in the DB
+            pipeline_id = None
+            if pipeline_run.pipeline is not None:
+                pipeline_id = session.exec(
+                    select(PipelineSchema.id).where(
+                        PipelineSchema.id == pipeline_run.pipeline
+                    )
+                ).first()
+                if pipeline_id is None:
+                    logger.warning(
+                        f"No pipeline found. Creating pipeline run "
+                        f"'{pipeline_run.name}' as unlisted run."
+                    )
 
             configuration = json.dumps(pipeline_run.pipeline_configuration)
 
@@ -2793,10 +2839,10 @@ class SqlZenStore(BaseZenStore):
                 id=pipeline_run.id,
                 name=pipeline_run.name,
                 orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                stack_id=pipeline_run.stack,
+                stack_id=stack_id,
                 project_id=pipeline_run.project,
                 user_id=pipeline_run.user,
-                pipeline_id=pipeline_run.pipeline,
+                pipeline_id=pipeline_id,
                 status=pipeline_run.status,
                 pipeline_configuration=configuration,
                 num_steps=pipeline_run.num_steps,
@@ -2842,8 +2888,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
-        # We want to have the create statement in the try block since running it
-        # first will reduce concurrency issues.
+        # We want to have the 'create' statement in the try block since running
+        # it first will reduce concurrency issues.
         try:
             return self.create_run(pipeline_run)
         except EntityExistsError:
@@ -3120,15 +3166,15 @@ class SqlZenStore(BaseZenStore):
 
             # Check if the input is already set.
             assignment = session.exec(
-                select(StepRunArtifactSchema)
-                .where(StepRunArtifactSchema.step_id == step_id)
-                .where(StepRunArtifactSchema.artifact_id == artifact_id)
+                select(StepRunInputArtifactSchema)
+                .where(StepRunInputArtifactSchema.step_id == step_id)
+                .where(StepRunInputArtifactSchema.artifact_id == artifact_id)
             ).first()
             if assignment is not None:
                 return
 
             # Save the input assignment in the database.
-            assignment = StepRunArtifactSchema(
+            assignment = StepRunInputArtifactSchema(
                 step_id=step_id, artifact_id=artifact_id, name=name
             )
             session.add(assignment)
@@ -3187,9 +3233,9 @@ class SqlZenStore(BaseZenStore):
             # Get input artifacts.
             input_artifact_list = session.exec(
                 select(
-                    StepRunArtifactSchema.artifact_id,
-                    StepRunArtifactSchema.name,
-                ).where(StepRunArtifactSchema.step_id == step.id)
+                    StepRunInputArtifactSchema.artifact_id,
+                    StepRunInputArtifactSchema.name,
+                ).where(StepRunInputArtifactSchema.step_id == step.id)
             ).all()
             input_artifacts = {
                 input_artifact[1]: input_artifact[0]
@@ -3284,9 +3330,11 @@ class SqlZenStore(BaseZenStore):
                     f"{step_id}: No step with this ID found."
                 )
             query_result = session.exec(
-                select(ArtifactSchema, StepRunArtifactSchema)
-                .where(ArtifactSchema.id == StepRunArtifactSchema.artifact_id)
-                .where(StepRunArtifactSchema.step_id == step_id)
+                select(ArtifactSchema, StepRunInputArtifactSchema)
+                .where(
+                    ArtifactSchema.id == StepRunInputArtifactSchema.artifact_id
+                )
+                .where(StepRunInputArtifactSchema.step_id == step_id)
             ).all()
             return {
                 step_input_artifact.name: artifact.to_model()
@@ -3384,10 +3432,10 @@ class SqlZenStore(BaseZenStore):
     @staticmethod
     def _get_schema_by_name_or_id(
         object_name_or_id: Union[str, UUID],
-        schema_class: Type[AnyBaseSchema],
+        schema_class: Type[AnyNamedSchema],
         schema_name: str,
         session: Session,
-    ) -> AnyBaseSchema:
+    ) -> AnyNamedSchema:
         """Query a schema by its 'name' or 'id' field.
 
         Args:
@@ -4036,7 +4084,9 @@ class SqlZenStore(BaseZenStore):
         is_failed = status == ExecutionStatus.FAILED
         is_done = status in (ExecutionStatus.COMPLETED, ExecutionStatus.CACHED)
         if is_failed or (is_done and all_synced):
-            run_model.status = status
-            self.update_run(run_model)
+            self.update_run(
+                run_id=run_model.id,
+                run_update=PipelineRunUpdateModel(status=status),
+            )
 
         return run_model

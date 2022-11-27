@@ -25,6 +25,7 @@ from typing import (
     List,
     NoReturn,
     Optional,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -183,7 +184,7 @@ M = TypeVar("M", bound=BaseModel)
 def print_pydantic_models(
     models: List[M],
     columns: Optional[List[str]] = None,
-    exclude_columns: List[str] = (),
+    exclude_columns: Optional[List[str]] = None,
     is_active: Optional[Callable[[M], bool]] = None,
 ) -> None:
     """Prints the list of Pydantic models in a table.
@@ -197,6 +198,8 @@ def print_pydantic_models(
         is_active: Optional function that marks as row as active.
 
     """
+    if exclude_columns is None:
+        exclude_columns = list()
 
     def __dictify(model: M) -> Dict[str, str]:
         """Helper function to map over the list to turn Models into dicts.
@@ -210,7 +213,7 @@ def print_pydantic_models(
         # Explicitly defined columns take precedence over exclude columns
         if not columns:
             include_columns = [
-                k for k in model.dict().keys() if k not in exclude_columns
+                k for k in model.dict().keys() if k not in exclude_columns  # type: ignore[operator]
             ]
         else:
             include_columns = columns
@@ -219,7 +222,7 @@ def print_pydantic_models(
 
         for k in include_columns:
             value = getattr(model, k)
-            # In case the response model contains nested BaseResponseModels
+            # In case the response model contains nested `BaseResponseModels`
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
             if isinstance(value, BaseResponseModel):
@@ -228,7 +231,7 @@ def print_pydantic_models(
                 else:
                     items[k] = str(value.id)
 
-            # If it is a list of BaseResponseModels access each Model within
+            # If it is a list of `BaseResponseModels` access each Model within
             #  the list and extract either name or id
             elif isinstance(value, list) and issubclass(
                 model.__fields__[k].type_, BaseResponseModel
@@ -238,7 +241,8 @@ def print_pydantic_models(
                         items.setdefault(k, []).append(str(v.name))
                     else:
                         items.setdefault(k, []).append(str(v.id))
-
+            elif isinstance(value, Set) or isinstance(value, List):
+                items[k] = [str(v) for v in value]
             else:
                 items[k] = str(value)
         # prepend an active marker if a function to mark active was passed
@@ -346,10 +350,15 @@ def print_stack_component_configuration(
         component: The stack component to print.
         active_status: Whether the stack component is active.
     """
+    if component.user:
+        user_name = component.user.name
+    else:
+        user_name = "[DELETED]"
+
     declare(
         f"{component.type.value.title()} '{component.name}' of flavor "
         f"'{component.flavor}' with id '{component.id}' is owned by "
-        f"user '{component.user.name}' and is "
+        f"user '{user_name}' and is "
         f"'{'shared' if component.is_shared else 'private'}'."
     )
 
@@ -409,11 +418,15 @@ def print_active_config() -> None:
         declare(f"Using the SQL database: '{gc.store.url}'.")
     elif gc.store.type == StoreType.REST:
         declare(f"Connected to the ZenML server: '{gc.store.url}'")
-    if gc.active_project:
-        scope = "repository" if client.uses_local_configuration else "global"
+    if client.uses_local_configuration:
         declare(
-            f"Running with active project: '{gc.active_project.name}' "
-            f"({scope})"
+            f"Running with active project: '{client.active_project.name}' "
+            "(repository)"
+        )
+    else:
+        declare(
+            f"Running with active project: '{gc.get_active_project_name()}' "
+            "(global)"
         )
 
 
@@ -875,12 +888,18 @@ def print_stacks_table(
     active_stack_model_id = client.active_stack_model.id
     for stack in stacks:
         is_active = stack.id == active_stack_model_id
+
+        if stack.user:
+            user_name = stack.user.name
+        else:
+            user_name = "[DELETED]"
+
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,
             "STACK ID": stack.id,
             "SHARED": get_shared_emoji(stack.is_shared),
-            "OWNER": stack.user.name,
+            "OWNER": user_name,
             **{
                 component_type.upper(): components[0].name
                 for component_type, components in stack.components.items()
@@ -927,7 +946,7 @@ def print_components_table(
             "COMPONENT ID": component.id,
             "FLAVOR": component.flavor,
             "SHARED": get_shared_emoji(component.is_shared),
-            "OWNER": component.user.name,
+            "OWNER": f"{component.user.name if component.user else 'DELETED!'}",
         }
         configurations.append(component_config)
     print_table(configurations)
@@ -975,16 +994,21 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
 
 def print_pipeline_runs_table(
-    client: "Client", pipeline_runs: List["PipelineRunResponseModel"]
+    pipeline_runs: List["PipelineRunResponseModel"],
 ) -> None:
     """Print a prettified list of all pipeline runs supplied to this method.
 
     Args:
-        client: Repository instance
         pipeline_runs: List of pipeline runs
     """
     runs_dicts = []
     for pipeline_run in pipeline_runs:
+
+        if pipeline_run.user:
+            user_name = pipeline_run.user.name
+        else:
+            user_name = "[DELETED]"
+
         if pipeline_run.pipeline is None:
             pipeline_name = "unlisted"
         else:
@@ -1001,7 +1025,7 @@ def print_pipeline_runs_table(
             "RUN ID": pipeline_run.id,
             "STATUS": status_emoji,
             "STACK": stack_name,
-            "OWNER": pipeline_run.user.name,
+            "OWNER": user_name,
         }
         runs_dicts.append(run_dict)
     print_table(runs_dicts)

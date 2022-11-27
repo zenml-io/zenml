@@ -63,7 +63,7 @@ class PipelineSchema(NamedSchema, table=True):
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
-        sa_relationship_kwargs={"order_by": "desc(PipelineRunSchema.created)"},
+        sa_relationship_kwargs={"order_by": "asc(PipelineRunSchema.created)"},
     )
 
     def to_model(
@@ -102,7 +102,7 @@ class PipelineSchema(NamedSchema, table=True):
                 name=self.name,
                 project=self.project.to_model(),
                 user=self.user.to_model(),
-                runs=[r.to_model(not _block_recursion) for r in self.runs],
+                runs=[r.to_model(True) for r in self.runs],
                 docstring=self.docstring,
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,
@@ -113,7 +113,14 @@ class PipelineSchema(NamedSchema, table=True):
     def update(
         self, pipeline_update: "PipelineUpdateModel"
     ) -> "PipelineSchema":
-        """"""
+        """Update a `PipelineSchema` with a `PipelineUpdateModel`.
+
+        Args:
+            pipeline_update: The update model.
+
+        Returns:
+            The updated `PipelineSchema`.
+        """
         if pipeline_update.name:
             self.name = pipeline_update.name
 

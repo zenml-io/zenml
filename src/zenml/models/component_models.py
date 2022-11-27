@@ -11,26 +11,31 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Models representing stack components."""
 
-from typing import Any, Dict
+from typing import Any, ClassVar, Dict, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from zenml.enums import StackComponentType
+from zenml.logger import get_logger
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
-    update,
+    update_model,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.utils import secret_utils
 
-# TODO: Add example schemas and analytics fields
+logger = get_logger(__name__)
 
 
 # ---- #
 # BASE #
 # ---- #
 class ComponentBaseModel(BaseModel):
+    """Base model for stack components."""
+
     name: str = Field(
         title="The name of the stack component.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
@@ -54,7 +59,16 @@ class ComponentBaseModel(BaseModel):
 
 
 class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
-    """Model describing the Component."""
+    """Response model for stack components."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "type",
+        "flavor",
+        "project",
+        "user",
+        "is_shared",
+    ]
 
 
 # ------- #
@@ -63,7 +77,35 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
 
 
 class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
-    """ """
+    """Request model for stack components."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "type",
+        "flavor",
+        "project",
+        "user",
+        "is_shared",
+    ]
+
+    @validator("name")
+    def name_cant_be_a_secret_reference(cls, name: str) -> str:
+        """Validator to ensure that the given name is not a secret reference.
+
+        Args:
+            name: The name to validate.
+
+        Returns:
+            The name if it is not a secret reference.
+
+        Raises:
+            ValueError: If the name is a secret reference.
+        """
+        if secret_utils.is_secret_reference(name):
+            raise ValueError(
+                "Passing the `name` attribute of a stack component as a "
+                "secret reference is not allowed."
+            )
+        return name
 
 
 # ------ #
@@ -71,6 +113,6 @@ class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
 # ------ #
 
 
-@update
+@update_model
 class ComponentUpdateModel(ComponentRequestModel):
-    """"""
+    """Update model for stack components."""
