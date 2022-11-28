@@ -129,9 +129,6 @@ def update_run(
 
     Returns:
         The updated run model.
-
-    Raises:
-        IllegalOperationError: When trying to change the user of a run.
     """
     return zen_store().update_run(run_id=run_id, run_update=run_model)
 

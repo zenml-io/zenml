@@ -562,7 +562,7 @@ class Launcher:
                     output_artifacts=output_artifacts,
                     step_run_info=step_run_info,
                 )
-        except:
+        except:  # noqa: E722
             self._cleanup_failed_run(
                 pipeline_run=pipeline_run,
                 step_run=step_run,
@@ -594,9 +594,6 @@ class Launcher:
             input_artifacts: The input artifacts of the current step.
             output_artifacts: The output artifacts of the current step.
             step_run_info: Additional information needed to run the step.
-
-        Raises:
-            Exception: If the step operator failed to run the step.
         """
         from zenml.step_operators.step_operator_entrypoint_configuration import (
             StepOperatorEntrypointConfiguration,
@@ -639,9 +636,6 @@ class Launcher:
             input_artifacts: The input artifacts of the current step.
             output_artifacts: The output artifacts of the current step.
             step_run_info: Additional information needed to run the step.
-
-        Raises:
-            Exception: If the step failed to run.
         """
         executor = StepExecutor(step=self._step, step_run=step_run)
         self._stack.prepare_step_run(info=step_run_info)

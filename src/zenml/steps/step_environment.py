@@ -70,7 +70,7 @@ class StepEnvironment(BaseEnvironmentComponent):
 
     @property
     def run_name(self) -> str:
-        """The name of the current pipeline run
+        """The name of the current pipeline run.
 
         Returns:
             The name of the current pipeline run.
