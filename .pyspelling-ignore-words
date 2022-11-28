@@ -132,6 +132,7 @@ CheckpointResult
 ClassVar
 ClassifierMixin
 ClickException
+CliRunner
 CloudSQL
 ClusterRole
 ClusterRoleBinding
@@ -543,6 +544,7 @@ RGW
 RIL
 RL
 RedPill
+Reenable
 Reproducibility
 RequestSource
 ResourceConfiguration
@@ -717,8 +719,10 @@ Uncategorized
 Unregistering
 UpdateComponentRequest
 UpdateFlavorRequest
+UpdateRequestModel
 UserConfigurableProfiler
 UserGuide
+UserUpdateModel
 UsingWithRDS
 Util
 VPC
@@ -1042,6 +1046,7 @@ fm
 fn
 formatter
 fromisoformat
+frontend
 fs
 fsspec
 func

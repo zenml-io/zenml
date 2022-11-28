@@ -12,14 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Projects."""
-
 from datetime import datetime
 from typing import TYPE_CHECKING, List
-from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Relationship
 
-from zenml.models import ProjectModel
+from zenml.models import (
+    ProjectRequestModel,
+    ProjectResponseModel,
+    ProjectUpdateModel,
+)
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -33,16 +36,12 @@ if TYPE_CHECKING:
     )
 
 
-class ProjectSchema(SQLModel, table=True):
+class ProjectSchema(NamedSchema, table=True):
     """SQL Model for projects."""
 
     __tablename__ = "workspace"
 
-    id: UUID = Field(primary_key=True)
-    name: str
     description: str
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
@@ -68,37 +67,43 @@ class ProjectSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_create_model(cls, project: ProjectModel) -> "ProjectSchema":
-        """Create a `ProjectSchema` from a `ProjectModel`.
+    def from_request(cls, project: ProjectRequestModel) -> "ProjectSchema":
+        """Create a `ProjectSchema` from a `ProjectResponseModel`.
 
         Args:
-            project: The `ProjectModel` from which to create the schema.
+            project: The `ProjectResponseModel` from which to create the schema.
 
         Returns:
             The created `ProjectSchema`.
         """
-        return cls(
-            id=project.id, name=project.name, description=project.description
-        )
+        return cls(name=project.name, description=project.description)
 
-    def from_update_model(self, model: ProjectModel) -> "ProjectSchema":
-        """Update a `ProjectSchema` from a `ProjectModel`.
+    def update(self, project_update: ProjectUpdateModel) -> "ProjectSchema":
+        """Update a `ProjectSchema` from a `ProjectUpdateModel`.
 
         Args:
-            model: The `ProjectModel` from which to update the schema.
+            project_update: The `ProjectUpdateModel` from which to update the
+                schema.
 
         Returns:
             The updated `ProjectSchema`.
         """
-        self.name = model.name
-        self.description = model.description
+        for field, value in project_update.dict(exclude_unset=True).items():
+            setattr(self, field, value)
+
         self.updated = datetime.now()
         return self
 
-    def to_model(self) -> ProjectModel:
-        """Convert a `ProjectSchema` to a `ProjectModel`.
+    def to_model(self) -> ProjectResponseModel:
+        """Convert a `ProjectSchema` to a `ProjectResponseModel`.
 
         Returns:
-            The converted `ProjectModel`.
+            The converted `ProjectResponseModel`.
         """
-        return ProjectModel.parse_obj(self)
+        return ProjectResponseModel(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            created=self.created,
+            updated=self.updated,
+        )

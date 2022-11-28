@@ -20,7 +20,7 @@ from fastapi import APIRouter, Security
 
 from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
-from zenml.models import FlavorModel
+from zenml.models import FlavorResponseModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -33,7 +33,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[FlavorModel],
+    response_model=List[FlavorResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -44,7 +44,7 @@ def list_flavors(
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[FlavorModel]:
+) -> List[FlavorResponseModel]:
     """Returns all flavors.
 
     Args:
@@ -57,30 +57,25 @@ def list_flavors(
     Returns:
         All flavors.
     """
-    flavors_list = zen_store().list_flavors(
+    return zen_store().list_flavors(
         project_name_or_id=project_name_or_id,
         component_type=component_type,
         user_name_or_id=user_name_or_id,
         is_shared=is_shared,
         name=name,
     )
-    # if hydrated:
-    #     return [flavor.to_hydrated_model() for flavor in flavors_list]
-    # else:
-    #     return flavors_list
-    return flavors_list
 
 
 @router.get(
     "/{flavor_id}",
-    response_model=FlavorModel,
+    response_model=FlavorResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_flavor(
     flavor_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> FlavorModel:
+) -> FlavorResponseModel:
     """Returns the requested flavor.
 
     Args:
@@ -91,31 +86,6 @@ def get_flavor(
     """
     flavor = zen_store().get_flavor(flavor_id)
     return flavor
-
-
-@router.put(
-    "/{flavor_id}",
-    response_model=FlavorModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def update_flavor(
-    flavor_id: UUID,
-    flavor: FlavorModel,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> FlavorModel:
-    """Updates a stack.
-
-    Args:
-        flavor_id: ID of the flavor.
-        flavor: Flavor to use for the update.
-
-    Returns:
-        The updated flavor.
-    """
-    flavor.id = flavor_id
-    updated_flavor = zen_store().update_flavor(flavor=flavor)
-    return updated_flavor
 
 
 @router.delete(

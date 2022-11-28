@@ -20,10 +20,8 @@ Sagemaker.
 """
 from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import AWS
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 AWS_SECRET_MANAGER_FLAVOR = "aws"

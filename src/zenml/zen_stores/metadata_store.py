@@ -23,18 +23,9 @@ from ml_metadata import proto
 from ml_metadata.metadata_store import metadata_store
 from ml_metadata.proto import Artifact, metadata_store_pb2
 from pydantic import BaseModel, Extra
-from tfx.dsl.compiler.constants import PIPELINE_RUN_CONTEXT_TYPE_NAME
 
-from zenml.artifacts.constants import (
-    DATATYPE_PROPERTY_KEY,
-    MATERIALIZER_PROPERTY_KEY,
-)
 from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.logger import get_logger
-from zenml.steps.utils import (
-    INTERNAL_EXECUTION_PARAMETER_PREFIX,
-    PARAM_PIPELINE_PARAMETER_NAME,
-)
 from zenml.utils.proto_utils import (
     MLMD_CONTEXT_MODEL_IDS_PROPERTY_NAME,
     MLMD_CONTEXT_NUM_OUTPUTS_PROPERTY_NAME,
@@ -165,6 +156,11 @@ class MetadataStore:
         Raises:
             KeyError: If the execution is not associated with a step.
         """
+        from zenml.steps.utils import (
+            INTERNAL_EXECUTION_PARAMETER_PREFIX,
+            PARAM_PIPELINE_PARAMETER_NAME,
+        )
+
         impl_name = self.step_type_mapping[execution.type_id].split(".")[-1]
 
         step_name_property = execution.custom_properties.get(
@@ -247,7 +243,7 @@ class MetadataStore:
                         [current_event.artifact_id]
                     )
                     # should be output type and should NOT be the same id as
-                    # the execution we are querying and it should be BEFORE
+                    # the execution we are querying, and it should be BEFORE
                     # the time of the current event.
                     if e.type == e.OUTPUT
                     and e.execution_id != current_event.execution_id
@@ -334,6 +330,8 @@ class MetadataStore:
         Returns:
             A mapping run name -> ID for all runs registered in MLMD.
         """
+        from tfx.dsl.compiler.constants import PIPELINE_RUN_CONTEXT_TYPE_NAME
+
         run_contexts = self.store.get_contexts_by_type(
             PIPELINE_RUN_CONTEXT_TYPE_NAME
         )
@@ -409,6 +407,11 @@ class MetadataStore:
         Returns:
             A model of the artifact.
         """
+        from zenml.artifacts.constants import (
+            DATATYPE_PROPERTY_KEY,
+            MATERIALIZER_PROPERTY_KEY,
+        )
+
         # maps artifact types to their string representation
         artifact_type_mapping = {
             type_.id: type_.name for type_ in self.store.get_artifact_types()

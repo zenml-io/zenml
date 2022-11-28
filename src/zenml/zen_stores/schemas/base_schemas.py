@@ -11,3 +11,30 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base classes for SQLModel schemas."""
+
+
+from datetime import datetime
+from uuid import UUID, uuid4
+
+from sqlmodel import Field, SQLModel
+
+
+class BaseSchema(SQLModel):
+    """Base SQL Model for ZenML entities."""
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
+
+
+class NamedSchema(BaseSchema):
+    """Base Named SQL Model."""
+
+    name: str
+
+
+class ShareableSchema(NamedSchema):
+    """Base shareable SQL Model."""
+
+    is_shared: bool
