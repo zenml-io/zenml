@@ -33,6 +33,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import root_validator
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
@@ -570,11 +571,28 @@ class SqlZenStore(BaseZenStore):
             url=url, connect_args=connect_args, **engine_args
         )
 
+        # SQLite: As long as the parent directory exists, SQLAlchemy will
+        # automatically create the database.
         local_path = self.config.get_local_path(url)
         if local_path and not fileio.exists(local_path):
-            # If the parent directory does not exist, SQLAlchemy does not
-            # automatically create the database
             fileio.makedirs(os.path.dirname(local_path))
+
+        # MySQL: We might need to create the database manually.
+        # To do so, we create a new engine that connects to the `mysql` database
+        # and then create the desired database.
+        # See https://stackoverflow.com/a/8977109
+        if (
+            self.config.driver == SQLDatabaseDriver.MYSQL
+            and self.config.database
+        ):
+            master_url = self._engine.url._replace(database="mysql")
+            master_engine = create_engine(
+                url=master_url, connect_args=connect_args, **engine_args
+            )
+            query = f"CREATE DATABASE IF NOT EXISTS {self.config.database}"
+            conn = master_engine.connect()
+            conn.execute(text(query))
+            conn.close()
 
         self._alembic = Alembic(self.engine)
         if (
