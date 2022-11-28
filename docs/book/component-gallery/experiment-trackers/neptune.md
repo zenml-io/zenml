@@ -4,61 +4,61 @@ description: How to log and visualize experiments with neptune.ai
 
 The Neptune Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md)
 flavor provided with the Neptune-ZenML integration that uses
-[the Neptune.ai experiment tracking platform](https://neptune.ai/product/experiment-tracking)
+[neptune.ai](https://neptune.ai/product/experiment-tracking)
 to log and visualize information from your pipeline steps (e.g. models, parameters,
 metrics).
 
 ## When would you want to use it?
 
-[Neptune.ai](https://neptune.ai/product/experiment-tracking) is a very
+[Neptune](https://neptune.ai/product/experiment-tracking) is a
 popular platform that you would normally use in the iterative ML experimentation
-phase to track and visualize experiment results. That doesn't mean that it
-cannot be repurposed to track and visualize the results produced by your
+phase to track and visualize experiment results. Neptune can also
+track and visualize the results produced by your
 automated pipeline runs, as you make the transition towards a more production
 oriented workflow.
 
-You should use the Neptune.ai Experiment Tracker:
-* if you have already been using Neptune.ai to track experiment results
+You should use the Neptune Experiment Tracker:
+* if you have already been using neptune.ai to track experiment results
 for your project and would like to continue doing so as you are incorporating 
 MLOps workflows and best practices in your project through ZenML.
 * if you are looking for a more visually interactive way of navigating the
 results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
-* if you would like to connect ZenML to Neptune.ai to share the artifacts
+* if you would like to connect ZenML to neptune.ai to share the artifacts
 and metrics logged by your pipelines with your team, organization or external
 stakeholders
 
 You should consider one of the other [Experiment Tracker flavors](./experiment-trackers.md#experiment-tracker-flavors)
-if you have never worked with Neptune.ai before and would rather use
+if you have never worked with neptune.ai before and would rather use
 another experiment tracking tool that you are more familiar with.
 
 ## How do you deploy it?
 
-The Neptune.ai Experiment Tracker flavor is provided by the MLflow ZenML
-integration, you need to install it on your local machine to be able to register
-a Weights & Biases Experiment Tracker and add it to your stack:
+The Neptune Experiment Tracker flavor is provided by the Neptune-ZenML
+integration. You need to install it on your local machine to be able to register
+the Neptune Experiment Tracker and add it to your stack:
 
 ```shell
 zenml integration install neptune -y
 ```
 
-The Neptune.ai Experiment Tracker needs to be configured with the
-credentials required to connect to the Neptune.ai platform using API-token.
+The Neptune. Experiment Tracker needs to be configured with the
+credentials required to connect to Neptune using an API token.
 
 ### Authentication Methods
 
-You need to configure the following credentials for authentication to the
-Neptune.ai platform:
+You need to configure the following credentials for authentication to
+Neptune:
 
-* `api_token`: API key token of your Neptune.ai account. If left blank, Neptune will
+* `api_token`: API key token of your Neptune account. If left blank, Neptune will
 attempt to retrieve it from your environment variables.
-* `project`: The name of the project where you're sending the new run. If
-the project is not specified, Neptune will attempt to retrieve it from your environment variables.
+* `project`: The name of the project where you're sending the new run, in the form "workspace-name/project-name".
+If the project is not specified, Neptune will attempt to retrieve it from your environment variables.
 
 
 {% tabs %}
 {% tab title="Basic Authentication" %}
 
-This option configures the credentials for the Weights & Biases platform
+This option configures the credentials for neptune.ai
 directly as stack component attributes.
 
 {% hint style="warning" %}
@@ -67,7 +67,7 @@ stored securely and will be clearly visible in the stack configuration.
 {% endhint %}
 
 ```shell
-# Register the Weights & Biases experiment tracker
+# Register the Neptune experiment tracker
 zenml experiment-tracker register neptune_experiment_tracker --flavor=neptune \ 
     --project=<project_name> --api_token=<token>
 
@@ -79,26 +79,26 @@ zenml stack register custom_stack -e neptune_experiment_tracker ... --set
 {% tab title="Secrets Manager (Recommended)" %}
 
 This method requires you to include a [Secrets Manager](../secrets-managers/secrets-managers.md)
-in your stack and configure a ZenML secret to store the Neptune.ai
+in your stack and configure a ZenML secret to store the neptune.ai
 credentials securely.
 
 {% hint style="warning" %}
 **This method is not yet supported!**
 
-We are actively working on adding Secrets Manager support to the Neptune.ai
+We are actively working on adding Secrets Manager support to the Neptune
 Experiment Tracker.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
 
-For more, up-to-date information on the Neptune.ai Experiment Tracker
+For more, up-to-date information on the Neptune Experiment Tracker
 implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.neptune.experiment_trackers.neptune_experiment_tracker).
 
 ## How do you use it?
 
-To be able to log information from a ZenML pipeline step using the Neptune.ai Experiment Tracker component in the active stack, you need to enable an
-experiment tracker using the `@step` decorator. Then fetch Neptune run object and use
-logging capabilities as you would normally do, e.g.:
+To log information from a ZenML pipeline step using the Neptune Experiment Tracker component in the active stack, you need to enable an
+experiment tracker using the `@step` decorator. Then fetch the Neptune run object and use
+logging capabilities as you would normally do. For example:
 
 ```python
 import numpy as np
@@ -145,7 +145,7 @@ def tf_trainer(
 
 ### Additional configuration
 
-You can pass a set of tags to the neptune run by using the NeptuneExperimentTrackerSettings class like in the example
+You can pass a set of tags to the Neptune run by using the `NeptuneExperimentTrackerSettings` class, like in the example
 below:
 
 ```python
@@ -172,12 +172,12 @@ def my_step(
         y_test: np.ndarray,
         model: tf.keras.Model,
 ) -> float:
-    """Log metadata to neptune run"""
+    """Log metadata to Neptune run"""
     neptune_run = get_neptune_run()
     ...
 ```
 
 You can also check out our examples pages for working examples that use the
-Neptune.ai Experiment Tracker in their stacks:
+Neptune Experiment Tracker in their stacks:
 
-- [Track Experiments with Neptune.ai](https://github.com/zenml-io/zenml/tree/main/examples/neptune_tracking)
+- [Track Experiments with neptune.ai](https://github.com/zenml-io/zenml/tree/main/examples/neptune_tracking)
