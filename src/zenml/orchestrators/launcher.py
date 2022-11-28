@@ -268,12 +268,10 @@ def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
     status = ExecutionStatus.run_status(
         step_statuses=[step_run.status for step_run in steps_in_current_run]
     )
-    run_finished = len(steps_in_current_run) == pipeline_run.num_steps
-    if not run_finished and status == ExecutionStatus.COMPLETED:
-        # Don't update to completed as not all steps are finished
-        pass
-    if status != pipeline_run.status:
-        pipeline_run.status = status
+    is_failed = status == ExecutionStatus.FAILED
+    is_completed = status == ExecutionStatus.COMPLETED
+    all_steps_finished = len(steps_in_current_run) == pipeline_run.num_steps
+    if is_failed or (is_completed and all_steps_finished):
         Client().zen_store.update_run(
             run_id=pipeline_run.id,
             run_update=PipelineRunUpdateModel(status=status),
@@ -616,5 +614,6 @@ class Launcher:
                 end_time=datetime.now(),
             ),
         )
+        print(pipeline_run.id, pipeline_run.status)
         remove_artifact_dirs(artifacts=artifacts)
         logger.debug("Finished failed step execution cleanup.")
