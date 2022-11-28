@@ -824,7 +824,7 @@ def _import_stack_component(
         component_dict: Dict representation of the component to import.
 
     Returns:
-        The name of the imported component.
+        The ID of the imported component.
     """
     component_type = StackComponentType(component_type)
     name = component_dict["name"]

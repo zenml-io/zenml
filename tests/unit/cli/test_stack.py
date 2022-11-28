@@ -864,7 +864,7 @@ def test_stack_export_delete_import(clean_client) -> None:
 
 
 def test_stack_export_import_reuses_components(clean_client) -> None:
-    """Test exporting and then importing a stack."""
+    """Test exporting and then importing a stack reuses existing components."""
     # create new stack
     new_artifact_store = _create_local_artifact_store(clean_client)
 
