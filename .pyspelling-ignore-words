@@ -458,6 +458,7 @@ NOP
 NSJVO
 NUM
 NamedTemporaryFile
+NeptuneCallback
 NeuralProphet
 Ng
 NlNDr
@@ -705,6 +706,7 @@ TorchServe's
 TorchServeParameters
 TorchVision
 TrainerConfig
+TrainerParameters
 TypeError
 UI
 UI's
