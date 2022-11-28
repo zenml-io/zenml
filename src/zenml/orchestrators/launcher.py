@@ -641,5 +641,6 @@ class Launcher:
                 end_time=datetime.now(),
             ),
         )
+        print(pipeline_run.id, pipeline_run.status)
         remove_artifact_dirs(artifacts=artifacts)
         logger.debug("Finished failed step execution cleanup.")
