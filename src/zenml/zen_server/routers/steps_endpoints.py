@@ -52,7 +52,7 @@ router = APIRouter(
 @handle_exceptions
 def list_run_steps(
     run_id: Optional[UUID] = None,
-    project_id: Optional[str] = None,
+    project_id: Optional[UUID] = None,
     cache_key: Optional[str] = None,
     status: Optional[ExecutionStatus] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),

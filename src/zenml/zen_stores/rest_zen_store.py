@@ -1864,7 +1864,7 @@ class RestZenStore(BaseZenStore):
     def _update_resource(
         self,
         resource_id: UUID,
-        resource_update: BaseRequestModel,
+        resource_update: BaseModel,
         response_model: Type[AnyResponseModel],
         route: str,
     ) -> AnyResponseModel:
