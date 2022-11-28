@@ -57,7 +57,7 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         step_name = info.config.name
         client = Client()
 
-        current_pipeline = client.get_pipeline_by_name(pipeline_name)
+        current_pipeline = client.get_pipeline(pipeline_name)
         last_step = current_pipeline.spec.steps[-1]
         last_step_name = last_step.source.split(".")[-1]
 
