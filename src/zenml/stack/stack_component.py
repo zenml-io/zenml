@@ -514,6 +514,7 @@ class StackComponent:
 
         Args:
             info: Info about the step that was executed.
+            step_failed: Whether the step failed.
         """
 
     @property

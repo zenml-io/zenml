@@ -459,6 +459,7 @@ class _ZenMLStepExecutor(BaseExecutor):
             cache_enabled=self.configuration.enable_cache,
         ):
             return_values = step_function(**function_params)
+
         output_annotations = parse_return_type_annotations(spec.annotations)
         if len(output_annotations) > 0:
             # if there is only one output annotation (either directly specified
@@ -512,6 +513,7 @@ class _ZenMLStepExecutor(BaseExecutor):
         # to populate the metadata store
         executor_output = execution_result_pb2.ExecutorOutput()
         outputs_utils.populate_output_artifact(executor_output, output_dict)
+        
         logger.debug(
             "Writing executor output to '%s'.",
             self._context.executor_output_uri,

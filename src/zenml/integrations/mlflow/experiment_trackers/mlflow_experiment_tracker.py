@@ -200,6 +200,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
         Args:
             info: Info about the step that was executed.
+            step_failed: Whether the step failed or not.
         """
         status = "FAILED" if step_failed else "FINISHED"
         mlflow_utils.stop_zenml_mlflow_runs(status)
