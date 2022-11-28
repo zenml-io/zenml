@@ -68,7 +68,12 @@ def list_run_steps(
     Returns:
         The run steps according to query filters.
     """
-    return zen_store().list_run_steps(run_id=run_id)
+    return zen_store().list_run_steps(
+        run_id=run_id,
+        project_id=project_id,
+        cache_key=cache_key,
+        status=status,
+    )
 
 
 @router.post(
