@@ -75,7 +75,7 @@ def is_zenml_run(run: Run) -> bool:
 
 def stop_zenml_mlflow_runs(status: str) -> None:
     """Stops active ZenML Mlflow runs.
-    
+
     This function stops all MLflow active runs until no active run exists or
     a non-ZenML run is active.
 

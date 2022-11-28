@@ -513,7 +513,7 @@ class _ZenMLStepExecutor(BaseExecutor):
         # to populate the metadata store
         executor_output = execution_result_pb2.ExecutorOutput()
         outputs_utils.populate_output_artifact(executor_output, output_dict)
-        
+
         logger.debug(
             "Writing executor output to '%s'.",
             self._context.executor_output_uri,
