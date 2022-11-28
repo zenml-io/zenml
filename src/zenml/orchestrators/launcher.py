@@ -69,6 +69,55 @@ def get_step_name_in_pipeline(
     return step_name_mapping[step.config.name]
 
 
+def resolve_step_inputs(
+    step: "Step", run_id: UUID
+) -> Tuple[Dict[str, UUID], List[UUID]]:
+    """Resolves inputs for the current step.
+
+    Args:
+        step: The step for which to resolve the inputs.
+        run_id: The ID of the current pipeline run.
+
+    Raises:
+        InputResolutionError: If input resolving failed due to a missing
+            step or output.
+
+    Returns:
+        The IDs of the input artifacts and the IDs of parent steps of the
+        current step.
+    """
+    current_run_steps = {
+        run_step.entrypoint_name: run_step
+        for run_step in Client().zen_store.list_run_steps(run_id=run_id)
+    }
+
+    input_artifact_ids: Dict[str, UUID] = {}
+    for name, input_ in step.spec.inputs.items():
+        try:
+            step_run = current_run_steps[input_.step_name]
+        except KeyError:
+            raise InputResolutionError(
+                f"No step `{input_.step_name}` found in current run."
+            )
+
+        try:
+            artifact_id = step_run.output_artifacts[input_.output_name]
+        except KeyError:
+            raise InputResolutionError(
+                f"No output `{input_.output_name}` found for step "
+                f"`{input_.step_name}`."
+            )
+
+        input_artifact_ids[name] = artifact_id
+
+    parent_step_ids = [
+        current_run_steps[upstream_step].id
+        for upstream_step in step.spec.upstream_steps
+    ]
+
+    return input_artifact_ids, parent_step_ids
+
+
 def generate_cache_key(
     step: Step,
     artifact_store: "BaseArtifactStore",
@@ -197,7 +246,6 @@ def prepare_input_artifacts(
     """
     input_artifacts: Dict[str, BaseArtifact] = {}
     for name, artifact_id in input_artifact_ids.items():
-        # TODO: make sure this is the correct artifact class
         artifact_model = Client().zen_store.get_artifact(
             artifact_id=artifact_id
         )
@@ -369,8 +417,8 @@ class Launcher:
         pipeline_run = self._create_or_reuse_run()
 
         # 1. Get input artifacts IDs of current run
-        input_artifact_ids, parent_step_ids = self._resolve_inputs(
-            run_id=pipeline_run.id
+        input_artifact_ids, parent_step_ids = resolve_step_inputs(
+            step=self._step, run_id=pipeline_run.id
         )
 
         # 2. Generate cache key for current step
@@ -472,53 +520,6 @@ class Launcher:
 
         return client.zen_store.get_or_create_run(pipeline_run)
 
-    def _resolve_inputs(
-        self, run_id: UUID
-    ) -> Tuple[Dict[str, UUID], List[UUID]]:
-        """Resolves inputs for the current step.
-
-        Args:
-            run_id: The ID of the current pipeline run.
-
-        Raises:
-            InputResolutionError: If input resolving failed due to a missing
-                step or output.
-
-        Returns:
-            The IDs of the input artifacts and the IDs of parent steps of the
-            current step.
-        """
-        current_run_steps = {
-            run_step.entrypoint_name: run_step
-            for run_step in Client().zen_store.list_run_steps(run_id=run_id)
-        }
-
-        input_artifact_ids: Dict[str, UUID] = {}
-        for name, input_ in self._step.spec.inputs.items():
-            try:
-                step_run = current_run_steps[input_.step_name]
-            except KeyError:
-                raise InputResolutionError(
-                    f"No step `{input_.step_name}` found in current run."
-                )
-
-            try:
-                artifact_id = step_run.output_artifacts[input_.output_name]
-            except KeyError:
-                raise InputResolutionError(
-                    f"No output `{input_.output_name}` found for step "
-                    f"`{input_.step_name}`."
-                )
-
-            input_artifact_ids[name] = artifact_id
-
-        parent_step_ids = [
-            current_run_steps[upstream_step].id
-            for upstream_step in self._step.spec.upstream_steps
-        ]
-
-        return input_artifact_ids, parent_step_ids
-
     def _run_step(
         self,
         pipeline_run: PipelineRunResponseModel,
@@ -543,23 +544,32 @@ class Launcher:
 
         # Run the step.
         start_time = time.time()
-        if self._step.config.step_operator:
-            self._run_step_with_step_operator(
-                step_operator_name=self._step.config.step_operator,
+        try:
+            if self._step.config.step_operator:
+                self._run_step_with_step_operator(
+                    step_operator_name=self._step.config.step_operator,
+                    pipeline_run=pipeline_run,
+                    step_run=step_run,
+                    input_artifacts=input_artifacts,
+                    output_artifacts=output_artifacts,
+                    step_run_info=step_run_info,
+                )
+            else:
+                self._run_step_without_step_operator(
+                    pipeline_run=pipeline_run,
+                    step_run=step_run,
+                    input_artifacts=input_artifacts,
+                    output_artifacts=output_artifacts,
+                    step_run_info=step_run_info,
+                )
+        except:
+            self._cleanup_failed_run(
                 pipeline_run=pipeline_run,
                 step_run=step_run,
-                input_artifacts=input_artifacts,
-                output_artifacts=output_artifacts,
-                step_run_info=step_run_info,
+                artifacts=list(output_artifacts.values()),
             )
-        else:
-            self._run_step_without_step_operator(
-                pipeline_run=pipeline_run,
-                step_run=step_run,
-                input_artifacts=input_artifacts,
-                output_artifacts=output_artifacts,
-                step_run_info=step_run_info,
-            )
+            raise
+
         duration = time.time() - start_time
         logger.info(
             f"Step `{self._step_name}` has finished in "
@@ -609,18 +619,10 @@ class Launcher:
             step_operator.name,
             self._step_name,
         )
-        try:
-            step_operator.launch(
-                info=step_run_info,
-                entrypoint_command=entrypoint_command,
-            )
-        except Exception:
-            self._cleanup_failed_run(
-                pipeline_run=pipeline_run,
-                step_run=step_run,
-                artifacts=list(output_artifacts.values()),
-            )
-            raise
+        step_operator.launch(
+            info=step_run_info,
+            entrypoint_command=entrypoint_command,
+        )
 
     def _run_step_without_step_operator(
         self,
@@ -651,13 +653,6 @@ class Launcher:
                 run_name=pipeline_run.name,
                 pipeline_config=self._deployment.pipeline,
             )
-        except Exception:
-            self._cleanup_failed_run(
-                pipeline_run=pipeline_run,
-                step_run=step_run,
-                artifacts=list(output_artifacts.values()),
-            )
-            raise
         finally:
             self._stack.cleanup_step_run(info=step_run_info)
 
