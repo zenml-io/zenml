@@ -195,7 +195,11 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         if settings.nested:
             mlflow.start_run(run_name=info.config.name, nested=True, tags=tags)
 
-    def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
+    def cleanup_step_run(
+        self,
+        info: "StepRunInfo",
+        step_failed: bool,
+    ) -> None:
         """Stops active MLflow runs and resets the MLflow tracking uri.
 
         Args:

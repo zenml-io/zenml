@@ -724,12 +724,13 @@ class Stack:
             component.prepare_step_run(info=info)
 
     def cleanup_step_run(
-        self, info: "StepRunInfo", step_failed: Optional[bool] = False
+        self, info: "StepRunInfo", step_failed: bool = False
     ) -> None:
         """Cleans up resources after the step run is finished.
 
         Args:
             info: Info about the step that was executed.
+            step_failed: Whether the step failed.
         """
         for component in self._get_active_components_for_step(
             info.config

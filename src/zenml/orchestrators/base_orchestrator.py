@@ -379,7 +379,7 @@ class BaseOrchestrator(StackComponent, ABC):
                 stack.cleanup_step_run(info=step_run_info, step_failed=True)
                 raise
             finally:
-                stack.cleanup_step_run(info=step_run_info)
+                stack.cleanup_step_run(info=step_run_info, step_failed=False)
 
         return execution_info
 
