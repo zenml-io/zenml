@@ -1619,9 +1619,10 @@ class RestZenStore(BaseZenStore):
                     ": ".join(response.json().get("detail", (response.text,)))
                 )
         elif response.status_code == 422:
-            raise RuntimeError(
-                ": ".join(response.json().get("detail", (response.text,)))
-            )
+            msg = response.json().get("detail", response.text)
+            if isinstance(msg, list):
+                msg = msg[-1]
+            raise RuntimeError(msg)
         elif response.status_code == 500:
             raise RuntimeError(response.text)
         else:
