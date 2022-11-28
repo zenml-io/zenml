@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
 
-PIPELINE_RUN_ID_OPTION = "pipeline_run_id"
 STEP_RUN_ID_OPTION = "step_run_id"
 
 
@@ -48,7 +47,6 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             execution info.
         """
         return super().get_entrypoint_options() | {
-            PIPELINE_RUN_ID_OPTION,
             STEP_RUN_ID_OPTION,
         }
 
@@ -67,8 +65,6 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             execution info.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
-            f"--{PIPELINE_RUN_ID_OPTION}",
-            kwargs[PIPELINE_RUN_ID_OPTION],
             f"--{STEP_RUN_ID_OPTION}",
             kwargs[STEP_RUN_ID_OPTION],
         ]
@@ -88,11 +84,9 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         # info
         stack = Client().active_stack
 
-        pipeline_run_id = UUID(self.entrypoint_args[PIPELINE_RUN_ID_OPTION])
         step_run_id = UUID(self.entrypoint_args[STEP_RUN_ID_OPTION])
-
-        pipeline_run = Client().get_pipeline_run(pipeline_run_id)
         step_run = Client().zen_store.get_run_step(step_run_id)
+        pipeline_run = Client().get_pipeline_run(step_run.pipeline_run_id)
 
         step_run_info = StepRunInfo(
             config=step.config,

@@ -610,7 +610,6 @@ class Launcher:
             StepOperatorEntrypointConfiguration.get_entrypoint_command()
             + StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=self._step_name,
-                pipeline_run_id=str(pipeline_run.id),
                 step_run_id=str(step_run.id),
             )
         )
