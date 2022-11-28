@@ -70,7 +70,7 @@ def shared_kubeflow_repo(
         artifact_store=artifact_store,
         container_registry=container_registry,
     )
-    base_client.register_stack(kubeflow_stack)
+    base_client.create_stack(kubeflow_stack)
     base_client.activate_stack(kubeflow_stack.name)
 
     # Provision resources for the kubeflow stack

@@ -21,7 +21,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import S3
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 S3_ARTIFACT_STORE_FLAVOR = "s3"

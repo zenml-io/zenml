@@ -193,7 +193,7 @@ def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
 
 @cli.command("go")
 def go() -> None:
-    """Quickly explore ZenML with this walkthrough.
+    """Quickly explore ZenML with this walk-through.
 
     Raises:
         GitNotFoundError: If git is not installed.
@@ -300,11 +300,10 @@ def _prompt_email() -> bool:
             )
 
             # Add consent and email to user model
-
-            client.zen_store.user_email_opt_in(
-                client.active_user.id,
-                user_opt_in_response=True,
-                email=email,
+            client.update_user(
+                user_name_or_id=client.active_user.id,
+                updated_email=email,
+                updated_email_opt_in=True,
             )
             return True
     else:
@@ -313,8 +312,9 @@ def _prompt_email() -> bool:
         )
 
         # This is the case where user opts out
-        client.zen_store.user_email_opt_in(
-            client.active_user.id, user_opt_in_response=False
+        client.update_user(
+            client.active_user.id,
+            updated_email_opt_in=False,
         )
 
     return False

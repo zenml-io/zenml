@@ -159,7 +159,7 @@ class SagemakerStepOperator(BaseStepOperator):
         settings = cast(SagemakerStepOperatorSettings, self.get_settings(info))
 
         session = sagemaker.Session(default_bucket=self.config.bucket)
-        instance_type = settings.instance_type or "ml.t3.medium"
+        instance_type = settings.instance_type or "ml.m5.large"
         estimator = sagemaker.estimator.Estimator(
             image_name,
             self.config.role,
