@@ -350,6 +350,11 @@ class BaseArtifactStore(StackComponent):
         """Create and register a filesystem within the filesystem registry."""
         from zenml.io.filesystem import BaseFilesystem
         from zenml.io.filesystem_registry import default_filesystem_registry
+        from zenml.io.local_filesystem import LocalFilesystem
+
+        # Local filesystem is always registered, no point in doing it again.
+        if isinstance(self, LocalFilesystem):
+            return
 
         filesystem_class = type(
             self.__class__.__name__,

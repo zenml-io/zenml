@@ -177,7 +177,7 @@ def copy_dir(
             if source_path == destination_dir:
                 # if the destination is a subdirectory of the source, we skip
                 # copying it to avoid an infinite loop.
-                return
+                continue
             copy_dir(source_path, destination_path, overwrite)
         else:
             create_dir_recursive_if_not_exists(

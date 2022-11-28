@@ -145,24 +145,25 @@ def test_open_returns_error_when_file_nonexistent(
 
 def test_copy_moves_file_to_new_location(tmp_path) -> None:
     """Test that copy moves the file to the new location"""
-    io_utils.create_file_if_not_exists(os.path.join(tmp_path, "test_file.txt"))
-    fileio.copy(
-        os.path.join(tmp_path, "test_file.txt"),
-        os.path.join(tmp_path, "test_file2.txt"),
-    )
-    assert os.path.exists(os.path.join(tmp_path, "test_file2.txt"))
+    src = os.path.join(tmp_path, "test_file.txt")
+    dst = os.path.join(tmp_path, "test_file2.txt")
+    io_utils.create_file_if_not_exists(src)
+    assert not os.path.exists(dst)
+    fileio.copy(src, dst)
+    assert os.path.exists(dst)
 
 
 def test_copy_raises_error_when_file_exists(tmp_path) -> None:
     """Test that copy raises an error when the file already exists in
     the desired location"""
-    io_utils.create_file_if_not_exists(os.path.join(tmp_path, "test_file.txt"))
-    io_utils.create_file_if_not_exists(os.path.join(tmp_path, "test_file2.txt"))
+    src = os.path.join(tmp_path, "test_file.txt")
+    dst = os.path.join(tmp_path, "test_file2.txt")
+    io_utils.create_file_if_not_exists(src)
+    io_utils.create_file_if_not_exists(dst)
+    assert os.path.exists(src)
+    assert os.path.exists(dst)
     with pytest.raises(FileExistsError):
-        fileio.copy(
-            os.path.join(tmp_path, "test_file.txt"),
-            os.path.join(tmp_path, "test_file2.txt"),
-        )
+        fileio.copy(src, dst)
 
 
 def test_file_exists_function(tmp_path) -> None:
