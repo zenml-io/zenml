@@ -1,9 +1,9 @@
 ---
-description: How to log and visualize experiments with Neptune.ai
+description: How to log and visualize experiments with neptune.ai
 ---
 
-The Neptune.ai Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md)
-flavor provided with the Neptune.ai ZenML integration that uses
+The Neptune Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md)
+flavor provided with the Neptune-ZenML integration that uses
 [the Neptune.ai experiment tracking platform](https://neptune.ai/product/experiment-tracking)
 to log and visualize information from your pipeline steps (e.g. models, parameters,
 metrics).
