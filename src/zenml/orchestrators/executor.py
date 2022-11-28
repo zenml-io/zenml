@@ -246,11 +246,7 @@ class StepExecutor:
         # the pipeline runtime, such as the current step name and the current
         # pipeline run ID
         with StepEnvironment(
-            pipeline_name=pipeline_config.name,
-            pipeline_run_id=run_name,
-            step_name=step_name,
             step_run_info=step_run_info,
-            cache_enabled=self.configuration.enable_cache,
         ):
             return_values = step_entrypoint(**function_params)
 

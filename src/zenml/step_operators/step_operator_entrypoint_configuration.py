@@ -19,21 +19,19 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.entrypoints.step_entrypoint_configuration import (
-    STEP_NAME_OPTION,
     StepEntrypointConfiguration,
 )
 from zenml.orchestrators.executor import StepExecutor
 from zenml.orchestrators.launcher import (
-    Launcher,
     prepare_input_artifacts,
     prepare_output_artifacts,
+    resolve_step_inputs,
 )
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
 
-PIPELINE_RUN_ID_OPTION = "pipeline_run_id"
 STEP_RUN_ID_OPTION = "step_run_id"
 
 
@@ -49,7 +47,6 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             execution info.
         """
         return super().get_entrypoint_options() | {
-            PIPELINE_RUN_ID_OPTION,
             STEP_RUN_ID_OPTION,
         }
 
@@ -68,8 +65,6 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             execution info.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
-            f"--{PIPELINE_RUN_ID_OPTION}",
-            kwargs[PIPELINE_RUN_ID_OPTION],
             f"--{STEP_RUN_ID_OPTION}",
             kwargs[STEP_RUN_ID_OPTION],
         ]
@@ -89,12 +84,9 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         # info
         stack = Client().active_stack
 
-        step_name = self.entrypoint_args[STEP_NAME_OPTION]
-        pipeline_run_id = UUID(self.entrypoint_args[PIPELINE_RUN_ID_OPTION])
         step_run_id = UUID(self.entrypoint_args[STEP_RUN_ID_OPTION])
-
-        pipeline_run = Client().get_pipeline_run(pipeline_run_id)
         step_run = Client().zen_store.get_run_step(step_run_id)
+        pipeline_run = Client().get_pipeline_run(step_run.pipeline_run_id)
 
         step_run_info = StepRunInfo(
             config=step.config,
@@ -102,15 +94,9 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             run_name=pipeline_run.name,
         )
 
-        launcher = Launcher(
-            step=step,
-            step_name=step_name,
-            run_name=pipeline_run.name,
-            pipeline_config=deployment.pipeline,
-            stack=stack,
+        input_artifact_ids, _ = resolve_step_inputs(
+            step=step, run_id=pipeline_run.id
         )
-        input_artifact_ids, _ = launcher._resolve_inputs(run_id=pipeline_run.id)
-
         input_artifacts = prepare_input_artifacts(
             input_artifact_ids=input_artifact_ids
         )

@@ -52,10 +52,6 @@ def test_step_is_running():
         run_name="run_name",
     )
     with StepEnvironment(
-        pipeline_name="pipeline",
-        pipeline_run_id="run_id",
-        step_name="step",
-        cache_enabled=True,
         step_run_info=step_run_info,
     ):
         assert Environment().step_is_running is True

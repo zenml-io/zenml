@@ -171,7 +171,7 @@ class BaseOrchestrator(StackComponent, ABC):
             step=step,
             orchestrator_run_id=self.get_orchestrator_run_id(),
         )
-        return launcher.launch()
+        launcher.launch()
 
     @staticmethod
     def requires_resources_in_orchestration_environment(
