@@ -249,7 +249,9 @@ class BaseOrchestrator(StackComponent, ABC):
         time = datetime.now().strftime("%H_%M_%S_%f")
         run_name = self._active_deployment.run_name.format(date=date, time=time)
 
-        logger.debug("Creating run with ID: %s, name: %s", run_id, run_name)
+        logger.debug(
+            "Creating pipeline run with ID: %s, name: %s", run_id, run_name
+        )
 
         client = Client()
         run_model = PipelineRunRequestModel(

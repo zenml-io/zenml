@@ -90,15 +90,11 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         stack = Client().active_stack
 
         step_name = self.entrypoint_args[STEP_NAME_OPTION]
-        pipeline_run_id = self.entrypoint_args[PIPELINE_RUN_ID_OPTION]
-        step_run_id = self.entrypoint_args[STEP_RUN_ID_OPTION]
+        pipeline_run_id = UUID(self.entrypoint_args[PIPELINE_RUN_ID_OPTION])
+        step_run_id = UUID(self.entrypoint_args[STEP_RUN_ID_OPTION])
 
-        pipeline_run = Client().zen_store.get_run(
-            run_name_or_id=UUID(pipeline_run_id)
-        )
-        step_run = Client().zen_store.get_run_step(
-            step_run_id=UUID(step_run_id)
-        )
+        pipeline_run = Client().get_pipeline_run(pipeline_run_id)
+        step_run = Client().zen_store.get_run_step(step_run_id)
 
         step_run_info = StepRunInfo(
             config=step.config,

@@ -256,6 +256,28 @@ def get_cached_step_run(cache_key: str) -> Optional[StepRunResponseModel]:
     return None
 
 
+def get_pipeline_run_status(
+    step_statuses: List[ExecutionStatus], num_steps: int
+) -> ExecutionStatus:
+    """Gets the pipeline run status for the given step statuses.
+
+    Args:
+        step_statuses: The status of steps in this run.
+        num_steps: The total amount of steps in this run.
+
+    Returns:
+        The run status.
+    """
+    if ExecutionStatus.FAILED in step_statuses:
+        return ExecutionStatus.FAILED
+    if ExecutionStatus.RUNNING in step_statuses:
+        return ExecutionStatus.RUNNING
+    if len(step_statuses) < num_steps:
+        return ExecutionStatus.RUNNING
+
+    return ExecutionStatus.COMPLETED
+
+
 def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
     """Updates the status of the current pipeline run.
 
@@ -265,18 +287,21 @@ def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
     steps_in_current_run = Client().zen_store.list_run_steps(
         run_id=pipeline_run.id
     )
-    status = ExecutionStatus.run_status(
-        step_statuses=[step_run.status for step_run in steps_in_current_run]
+    run_status = get_pipeline_run_status(
+        step_statuses=[step_run.status for step_run in steps_in_current_run],
+        num_steps=pipeline_run.num_steps,
     )
-    run_finished = len(steps_in_current_run) == pipeline_run.num_steps
-    if not run_finished and status == ExecutionStatus.COMPLETED:
-        # Don't update to completed as not all steps are finished
-        pass
-    if status != pipeline_run.status:
-        pipeline_run.status = status
+
+    if run_status != pipeline_run.status:
+        if run_status in {ExecutionStatus.COMPLETED, ExecutionStatus.FAILED}:
+            run_update = PipelineRunUpdateModel(
+                status=run_status, end_time=datetime.now()
+            )
+        else:
+            run_update = PipelineRunUpdateModel(status=run_status)
+
         Client().zen_store.update_run(
-            run_id=pipeline_run.id,
-            run_update=PipelineRunUpdateModel(status=status),
+            run_id=pipeline_run.id, run_update=run_update
         )
 
 
@@ -340,7 +365,7 @@ class Launcher:
 
         # 3. Build a model for the current step run
         parameters = {
-            key: str(value)
+            key: str(value)  # TODO: this messes with pydantic serialization
             for key, value in self._step.config.parameters.items()
         }
         step_run = StepRunRequestModel(
@@ -372,7 +397,7 @@ class Launcher:
                 step_run.output_artifacts = cached_step_run.output_artifacts
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
-                step_run_response = Client().zen_store.create_run_step(step_run)
+                Client().zen_store.create_run_step(step_run)
                 update_pipeline_run_status(pipeline_run=pipeline_run)
                 return
 
