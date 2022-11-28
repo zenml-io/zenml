@@ -826,7 +826,6 @@ def _import_stack_component(
     Returns:
         The ID of the imported component.
     """
-    component_type = StackComponentType(component_type)
     name = component_dict["name"]
     flavor = component_dict["flavor"]
     config = component_dict["configuration"]
@@ -933,7 +932,9 @@ def import_stack(
 
     # import stack components
     component_ids = {}
-    for component_type, component_config in data["components"].items():
+    for component_type_str, component_config in data["components"].items():
+        component_type = StackComponentType(component_type_str)
+
         component_id = _import_stack_component(
             component_type=component_type,
             component_dict=component_config,
