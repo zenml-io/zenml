@@ -723,7 +723,9 @@ class Stack:
         ).values():
             component.prepare_step_run(info=info)
 
-    def cleanup_step_run(self, info: "StepRunInfo") -> None:
+    def cleanup_step_run(
+        self, info: "StepRunInfo", step_failed: bool = False
+    ) -> None:
         """Cleans up resources after the step run is finished.
 
         Args:
@@ -732,7 +734,7 @@ class Stack:
         for component in self._get_active_components_for_step(
             info.config
         ).values():
-            component.cleanup_step_run(info=info)
+            component.cleanup_step_run(info=info, step_failed=step_failed)
 
     @property
     def is_provisioned(self) -> bool:
