@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for users."""
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Security, status
+from fastapi import APIRouter, Depends, HTTPException, Security, status
 
 from zenml.constants import (
     ACTIVATE,
@@ -36,6 +36,7 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
+from zenml.models.page_model import Page, Params
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
@@ -68,23 +69,25 @@ current_user_router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[UserResponseModel],
+    response_model=Page[UserResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_users(
     name: Optional[str] = None,
+    params: Params = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[UserResponseModel]:
+) -> Page[UserResponseModel]:
     """Returns a list of all users.
 
     Args:
         name: Optionally filter by name
+        params: Parameters for pagination (page and size)
 
     Returns:
         A list of all users.
     """
-    return zen_store().list_users(name=name)
+    return zen_store().list_users(name=name, params=params)
 
 
 @router.post(
@@ -318,16 +321,17 @@ def email_opt_in_response(
 
 @router.get(
     "/{user_name_or_id}" + ROLES,
-    response_model=List[RoleAssignmentResponseModel],
+    response_model=Page[RoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_role_assignments_for_user(
+def list_role_assignments_for_user(
     user_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
     role_name_or_id: Optional[Union[str, UUID]] = None,
+    params: Params = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[RoleAssignmentResponseModel]:
+) -> Page[RoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a user.
 
     Args:
@@ -336,6 +340,7 @@ def get_role_assignments_for_user(
             the given project.
         role_name_or_id: If provided, only list assignments of the given
             role
+        params: Parameters for pagination (page and size)
 
     Returns:
         A list of all roles that are assigned to a user.
@@ -344,6 +349,7 @@ def get_role_assignments_for_user(
         user_name_or_id=user_name_or_id,
         project_name_or_id=project_name_or_id,
         role_name_or_id=role_name_or_id,
+        params=params,
     )
 
 

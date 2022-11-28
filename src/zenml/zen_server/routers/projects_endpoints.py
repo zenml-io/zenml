@@ -12,14 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for projects."""
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
     FLAVORS,
+    LIMIT_DEFAULT,
     PIPELINES,
     PROJECTS,
     ROLES,
@@ -47,6 +48,7 @@ from zenml.models import (
     StackRequestModel,
     StackResponseModel,
 )
+from zenml.models.page_model import Page, Params
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -59,23 +61,23 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[ProjectResponseModel],
+    response_model=Page[ProjectResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_projects(
-    name: Optional[str] = None,
+    params: Params = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[ProjectResponseModel]:
+) -> Page[ProjectResponseModel]:
     """Lists all projects in the organization.
 
     Args:
-        name: Optional name of the project to filter by.
+        params: Parameters for pagination (page and size)
 
     Returns:
         A list of projects.
     """
-    return zen_store().list_projects(name=name)
+    return zen_store().list_projects(params=params)
 
 
 @router.post(
@@ -171,7 +173,7 @@ def delete_project(
 
 @router.get(
     "/{project_name_or_id}" + ROLES,
-    response_model=List[RoleAssignmentResponseModel],
+    response_model=Page[RoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -179,8 +181,9 @@ def get_role_assignments_for_project(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     team_name_or_id: Optional[Union[str, UUID]] = None,
+    params: Params = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[RoleAssignmentResponseModel]:
+) -> Page[RoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a team.
 
     Args:
@@ -189,6 +192,7 @@ def get_role_assignments_for_project(
             given user.
         team_name_or_id: If provided, only list roles that are assigned to the
             given team.
+        params: Parameters for pagination (page and size)
 
     Returns:
         A list of all roles that are assigned to a team.
@@ -197,17 +201,19 @@ def get_role_assignments_for_project(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         team_name_or_id=team_name_or_id,
+        params=params,
     )
 
 
 @router.get(
     "/{project_name_or_id}" + STACKS,
-    response_model=List[StackResponseModel],
+    response_model=Page[StackResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_project_stacks(
     project_name_or_id: Union[str, UUID],
+    params: Params = Params(page=1, size=LIMIT_DEFAULT),
     user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[UUID] = None,
     name: Optional[str] = None,
@@ -215,13 +221,14 @@ def list_project_stacks(
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> List[StackResponseModel]:
+) -> Page[StackResponseModel]:
     """Get stacks that are part of a specific project.
 
     # noqa: DAR401
 
     Args:
         project_name_or_id: Name or ID of the project.
+        params: Parameters for pagination (page and size)
         user_name_or_id: Optionally filter by name or ID of the user.
         component_id: Optionally filter by component that is part of the stack.
         name: Optionally filter by stack name
@@ -231,6 +238,7 @@ def list_project_stacks(
     Returns:
         All stacks part of the specified project.
     """
+    # TODO: needs to be solved for pagination
     stacks = zen_store().list_stacks(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id or auth_context.user.id,
@@ -298,12 +306,13 @@ def create_stack(
 
 @router.get(
     "/{project_name_or_id}" + STACK_COMPONENTS,
-    response_model=List[ComponentResponseModel],
+    response_model=Page[ComponentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_project_stack_components(
     project_name_or_id: Union[str, UUID],
+    params: Params = Params(page=1, size=LIMIT_DEFAULT),
     user_name_or_id: Optional[Union[str, UUID]] = None,
     type: Optional[str] = None,
     name: Optional[str] = None,
@@ -312,13 +321,14 @@ def list_project_stack_components(
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> List[ComponentResponseModel]:
+) -> Page[ComponentResponseModel]:
     """List stack components that are part of a specific project.
 
     # noqa: DAR401
 
     Args:
         project_name_or_id: Name or ID of the project.
+        params: Parameters for pagination (page and size)
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by component name
         type: Optionally filter by component type
@@ -401,7 +411,7 @@ def create_stack_component(
 
 @router.get(
     "/{project_name_or_id}" + FLAVORS,
-    response_model=List[FlavorResponseModel],
+    response_model=Page[FlavorResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -411,8 +421,9 @@ def list_project_flavors(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
+    params: Params = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[FlavorResponseModel]:
+) -> Page[FlavorResponseModel]:
     """List stack components flavors of a certain type that are part of a project.
 
     # noqa: DAR401
@@ -423,6 +434,8 @@ def list_project_flavors(
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by flavor name.
         is_shared: Optionally filter by shared status of the flavor.
+        params: Parameters for pagination (page and size)
+
 
     Returns:
         All stack components of a certain type that are part of a project.
@@ -433,6 +446,7 @@ def list_project_flavors(
         user_name_or_id=user_name_or_id,
         is_shared=is_shared,
         name=name,
+        params=params,
     )
 
 
@@ -486,7 +500,7 @@ def create_flavor(
 
 @router.get(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=List[PipelineResponseModel],
+    response_model=Page[PipelineResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -494,8 +508,9 @@ def list_project_pipelines(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
+    params: Params = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[PipelineResponseModel]:
+) -> Page[PipelineResponseModel]:
     """Gets pipelines defined for a specific project.
 
     # noqa: DAR401
@@ -504,6 +519,7 @@ def list_project_pipelines(
         project_name_or_id: Name or ID of the project to get pipelines for.
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by pipeline name
+        params: Parameters for pagination (page and size)
 
     Returns:
         All pipelines within the project.
@@ -512,6 +528,7 @@ def list_project_pipelines(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         name=name,
+        params=params,
     )
 
 
@@ -671,19 +688,18 @@ def get_project_statistics(
         All pipelines within the project.
     """
     zen_store().list_runs()
+    # TODO: with pagination, this won't work anymore
     return {
-        "stacks": len(
-            zen_store().list_stacks(project_name_or_id=project_name_or_id)
-        ),
-        "components": len(
-            zen_store().list_stack_components(
-                project_name_or_id=project_name_or_id
-            )
-        ),
-        "pipelines": len(
-            zen_store().list_pipelines(project_name_or_id=project_name_or_id)
-        ),
-        "runs": len(
-            zen_store().list_runs(project_name_or_id=project_name_or_id)
-        ),
+        "stacks": zen_store()
+        .list_stacks(project_name_or_id=project_name_or_id)
+        .total,
+        "components": zen_store()
+        .list_stack_components(project_name_or_id=project_name_or_id)
+        .total,
+        "pipelines": zen_store()
+        .list_pipelines(project_name_or_id=project_name_or_id)
+        .total,
+        "runs": zen_store()
+        .list_runs(project_name_or_id=project_name_or_id)
+        .total,
     }

@@ -14,6 +14,7 @@
 """Client implementation."""
 import os
 from abc import ABCMeta
+from functools import partial
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -37,7 +38,7 @@ from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
     REPOSITORY_DIRECTORY_NAME,
-    handle_bool_env_var,
+    handle_bool_env_var, LIMIT_DEFAULT,
 )
 from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.exceptions import (
@@ -80,6 +81,8 @@ from zenml.models import (
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.page_model import Page, Params
+from zenml.models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -611,7 +614,7 @@ class Client(metaclass=ClientMetaClass):
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=UserResponseModel,
             get_method=self.zen_store.get_user,
-            list_method=self.zen_store.list_users,
+            list_method=self.list_users,
             name_id_or_prefix=name_id_or_prefix,
         )
 
@@ -624,7 +627,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The User
         """
-        return self.zen_store.list_users(name=name)
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_users,
+                name=name
+            )
+        )
 
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.
@@ -691,7 +699,7 @@ class Client(metaclass=ClientMetaClass):
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=TeamResponseModel,
             get_method=self.zen_store.get_team,
-            list_method=self.zen_store.list_teams,
+            list_method=self.list_teams,
             name_id_or_prefix=name_id_or_prefix,
         )
 
@@ -704,7 +712,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The Team
         """
-        return self.zen_store.list_teams(name=name)
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_teams,
+                name=name
+            )
+        )
 
     def create_team(
         self, name: str, users: Optional[List[str]] = None
@@ -823,7 +836,7 @@ class Client(metaclass=ClientMetaClass):
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=RoleResponseModel,
             get_method=self.zen_store.get_role,
-            list_method=self.zen_store.list_roles,
+            list_method=self.list_roles,
             name_id_or_prefix=name_id_or_prefix,
         )
 
@@ -836,7 +849,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The list of roles.
         """
-        return self.zen_store.list_roles(name=name)
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_roles,
+                name=name
+            )
+        )
 
     def create_role(
         self, name: str, permissions_list: List[str]
@@ -1068,11 +1086,14 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             List of role assignments
         """
-        return self.zen_store.list_role_assignments(
-            project_name_or_id=project_name_or_id,
-            role_name_or_id=role_name_or_id,
-            user_name_or_id=user_name_or_id,
-            team_name_or_id=team_name_or_id,
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_role_assignments,
+                role_name_or_id=role_name_or_id,
+                user_name_or_id=user_name_or_id,
+                team_name_or_id=team_name_or_id,
+                project_name_or_id=project_name_or_id
+            )
         )
 
     # ------- #
@@ -1264,7 +1285,7 @@ class Client(metaclass=ClientMetaClass):
             return self._get_entity_by_id_or_name_or_prefix(
                 response_model=StackResponseModel,
                 get_method=self.zen_store.get_stack,
-                list_method=self.zen_store.list_stacks,
+                list_method=self.list_stacks,
                 name_id_or_prefix=name_id_or_prefix,
             )
         else:
@@ -1483,12 +1504,15 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of stacks.
         """
-        return self.zen_store.list_stacks(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id,
-            component_id=component_id,
-            name=name,
-            is_shared=is_shared,
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_stacks,
+                project_name_or_id=project_name_or_id or self.active_project.id,
+                user_name_or_id=user_name_or_id,
+                component_id=component_id,
+                name=name,
+                is_shared=is_shared,
+            )
         )
 
     @track(event=AnalyticsEvent.SET_STACK)
@@ -1648,13 +1672,16 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of stack components.
         """
-        return self.zen_store.list_stack_components(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id,
-            type=component_type,
-            flavor_name=flavor_name,
-            name=name,
-            is_shared=is_shared,
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_stack_components,
+                project_name_or_id=project_name_or_id or self.active_project.id,
+                user_name_or_id=user_name_or_id,
+                type=component_type,
+                flavor_name=flavor_name,
+                name=name,
+                is_shared=is_shared,
+            )
         )
 
     def create_stack_component(
@@ -1934,9 +1961,10 @@ class Client(metaclass=ClientMetaClass):
         from zenml.stack.flavor_registry import flavor_registry
 
         zenml_flavors = flavor_registry.flavors
-        custom_flavors = self.zen_store.list_flavors(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id,
+        custom_flavors = self.depaginate(
+            list_command=partial(
+                self.zen_store.list_flavors,
+            )
         )
         return zenml_flavors + custom_flavors
 
@@ -2121,10 +2149,13 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of pipelines.
         """
-        return self.zen_store.list_pipelines(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id,
-            name=name,
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_pipelines,
+                project_name_or_id=project_name_or_id or self.active_project.id,
+                user_name_or_id=user_name_or_id,
+                name=name,
+            )
         )
 
     def get_pipeline(
@@ -2141,7 +2172,7 @@ class Client(metaclass=ClientMetaClass):
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=PipelineResponseModel,
             get_method=self.zen_store.get_pipeline,
-            list_method=self.zen_store.list_pipelines,
+            list_method=self.list_pipelines,
             name_id_or_prefix=name_id_or_prefix,
         )
 
@@ -2185,14 +2216,17 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of all pipeline runs.
         """
-        return self.zen_store.list_runs(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id,
-            stack_id=stack_id,
-            component_id=component_id,
-            name=run_name,
-            pipeline_id=pipeline_id,
-            unlisted=unlisted,
+        return self.depaginate(
+            list_command=partial(
+                self.zen_store.list_runs,
+                project_name_or_id=project_name_or_id or self.active_project.id,
+                stack_id=stack_id,
+                component_id=component_id,
+                run_name=run_name,
+                user_name_or_id=user_name_or_id,
+                pipeline_id=pipeline_id,
+                unlisted=unlisted,
+            )
         )
 
     def get_pipeline_run(
@@ -2210,7 +2244,7 @@ class Client(metaclass=ClientMetaClass):
         return self._get_entity_by_id_or_name_or_prefix(
             response_model=PipelineRunResponseModel,
             get_method=self.zen_store.get_run,
-            list_method=self.zen_store.list_runs,
+            list_method=self.list_runs,
             name_id_or_prefix=name_id_or_prefix,
         )
 
@@ -2480,7 +2514,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         response_model: Type[AnyResponseModel],
         get_method: Callable[..., AnyResponseModel],
-        list_method: Callable[..., List[AnyResponseModel]],
+        list_method: Callable[..., Page[AnyResponseModel]],
         name_id_or_prefix: Union[str, UUID],
     ) -> "AnyResponseModel":
         """Fetches an entity using the name, id or partial id.
@@ -2512,12 +2546,12 @@ class Client(metaclass=ClientMetaClass):
                 return get_method(entity_id)
 
         if "project" in response_model.__fields__:
-            entities: List[AnyResponseModel] = list_method(
+            entities: Page[AnyResponseModel] = list_method(
                 name=name_id_or_prefix,
                 project_name_or_id=self.active_project.id,
             )
         else:
-            entities = list_method(
+            entities: Page[AnyResponseModel] = list_method(
                 name=name_id_or_prefix,
             )
 
@@ -2525,7 +2559,7 @@ class Client(metaclass=ClientMetaClass):
             "_", " "
         )
 
-        if len(entities) > 1:
+        if len(entities.items) > 1:
             entity_list = "\n".join(
                 [
                     f"{getattr(entity, 'name', '')} ({entity.id})"
@@ -2538,7 +2572,7 @@ class Client(metaclass=ClientMetaClass):
                 f"Please specify by full or partial id."
             )
 
-        elif len(entities) == 1:
+        elif len(entities.items) == 1:
             return entities[0]
         else:
             logger.debug(
@@ -2555,7 +2589,7 @@ class Client(metaclass=ClientMetaClass):
 
             filtered_entities = [
                 entity
-                for entity in entities
+                for entity in entities.items
                 if str(entity.id).startswith(name_id_or_prefix)
             ]
             if len(filtered_entities) > 1:
@@ -2581,3 +2615,17 @@ class Client(metaclass=ClientMetaClass):
                     f"No {entity_label} with name or id prefix "
                     f"'{name_id_or_prefix}' exists."
                 )
+
+    def depaginate(
+            self,
+            list_command: Callable,
+    ) -> List[AnyResponseModel]:
+        params = Params(page=1)
+        first_page: Page[BaseResponseModel] = list_command(params=params)
+        list_of_entities = list(first_page.items)
+        if first_page.total_pages < 1:
+            for page in [1, first_page.total_pages]:
+                params = Params(page=page)
+                list_of_entities.append(list_command(params))
+
+        return list_of_entities

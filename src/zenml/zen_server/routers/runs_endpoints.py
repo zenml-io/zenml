@@ -15,7 +15,7 @@
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
@@ -33,6 +33,7 @@ from zenml.models import (
     PipelineRunUpdateModel,
     StepRunResponseModel,
 )
+from zenml.models.page_model import Page, Params
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -46,7 +47,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[PipelineRunResponseModel],
+    response_model=Page[PipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -58,8 +59,9 @@ def list_runs(
     component_id: Optional[UUID] = None,
     pipeline_id: Optional[UUID] = None,
     unlisted: bool = False,
+    params: Params = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[PipelineRunResponseModel]:
+) -> Page[PipelineRunResponseModel]:
     """Get pipeline runs according to query filters.
 
     Args:
@@ -71,6 +73,7 @@ def list_runs(
         pipeline_id: ID of the pipeline for which to filter runs.
         unlisted: If True, only return unlisted runs that are not
             associated with any pipeline.
+        params: Parameters for pagination (page and size)
 
     Returns:
         The pipeline runs according to query filters.
@@ -83,6 +86,7 @@ def list_runs(
         user_name_or_id=user_name_or_id,
         pipeline_id=pipeline_id,
         unlisted=unlisted,
+        params=params,
     )
 
 

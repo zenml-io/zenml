@@ -12,14 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for roles and role assignment."""
-from typing import List, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ROLES, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import RoleRequestModel, RoleResponseModel, RoleUpdateModel
+from zenml.models.page_model import Page, Params
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -32,23 +33,25 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[RoleResponseModel],
+    response_model=Page[RoleResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_roles(
     name: Optional[str] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[RoleResponseModel]:
+    params: Params = Depends(),
+) -> Page[RoleResponseModel]:
     """Returns a list of all roles.
 
     Args:
         name: Optional name of the role to filter by.
+        params: Parameters for pagination (page and size)
 
     Returns:
         List of all roles.
     """
-    return zen_store().list_roles(name=name)
+    return zen_store().list_roles(name=name, params=params)
 
 
 @router.post(

@@ -12,14 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for stack components."""
-from typing import List, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
 from zenml.models import ComponentResponseModel, ComponentUpdateModel
+from zenml.models.page_model import Page, Params
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -38,7 +39,7 @@ types_router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[ComponentResponseModel],
+    response_model=Page[ComponentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -49,10 +50,11 @@ def list_stack_components(
     name: Optional[str] = None,
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
+    params: Params = Depends(),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> List[ComponentResponseModel]:
+) -> Page[ComponentResponseModel]:
     """Get a list of all stack components for a specific type.
 
     Args:
@@ -63,14 +65,15 @@ def list_stack_components(
         flavor_name: Optionally filter by flavor
         is_shared: Defines whether to return shared stack components or the
             private stack components of the user. If not set, both are returned.
+        params: Parameters for pagination (page and size)
         auth_context: Authentication Context
 
     Returns:
         List of stack components for a specific type.
     """
-    # TODO: Implement a sensible filtering mechanism
+    # TODO: Implement a sensible filtering mechanism on the sql zen_store side
 
-    components: List[ComponentResponseModel] = []
+    components: Page[ComponentResponseModel] = []
 
     # Get private stack components unless `is_shared` is set to True
     if is_shared is None or not is_shared:
@@ -81,6 +84,7 @@ def list_stack_components(
             flavor_name=flavor_name,
             type=type,
             is_shared=False,
+            params=params,
         )
         components += own_components
 
@@ -93,6 +97,7 @@ def list_stack_components(
             name=name,
             type=type,
             is_shared=True,
+            params=params,
         )
         components += shared_components
 
@@ -165,13 +170,13 @@ def deregister_stack_component(
 
 @types_router.get(
     "",
-    response_model=List[str],
+    response_model=Page[str],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_stack_component_types(
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
-) -> List[str]:
+) -> Page[str]:
     """Get a list of all stack component types.
 
     Returns:

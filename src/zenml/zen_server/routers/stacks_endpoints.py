@@ -13,14 +13,15 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for stacks."""
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import StackResponseModel, StackUpdateModel
+from zenml.models.page_model import Page, Params
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -33,7 +34,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[StackResponseModel],
+    response_model=Page[StackResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -43,10 +44,11 @@ def list_stacks(
     component_id: Optional[UUID] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
+    params: Params = Depends(),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> List[StackResponseModel]:
+) -> Page[StackResponseModel]:
     """Returns all stacks.
 
     Args:
@@ -56,12 +58,13 @@ def list_stacks(
         name: Optionally filter by stack name
         is_shared: Defines whether to return shared stacks or the private stacks
             of the user. If not set, both are returned.
+        params: Parameters for pagination (page and size)
         auth_context: Authentication Context
 
     Returns:
         All stacks.
     """
-    stacks: List[StackResponseModel] = []
+    stacks: Page[StackResponseModel] = []
 
     # Get private stacks unless `is_shared` is set to True
     if is_shared is None or not is_shared:
@@ -71,6 +74,7 @@ def list_stacks(
             component_id=component_id,
             is_shared=False,
             name=name,
+            params=params,
         )
         stacks += own_stacks
 
@@ -82,6 +86,7 @@ def list_stacks(
             component_id=component_id,
             is_shared=True,
             name=name,
+            params=params,
         )
         stacks += shared_stacks
 

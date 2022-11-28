@@ -497,12 +497,12 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             user_name_or_id=user_name_or_id,
             name=DEFAULT_STACK_NAME,
         )
-        if len(default_stacks) == 0:
+        if default_stacks.total == 0:
             raise KeyError(
                 f"No default stack found for user {str(user_name_or_id)} in "
                 f"project {str(project_name_or_id)}"
             )
-        return default_stacks[0]
+        return default_stacks.items[0]
 
     # -----
     # Roles

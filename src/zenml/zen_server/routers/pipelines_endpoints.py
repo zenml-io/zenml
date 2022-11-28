@@ -15,7 +15,7 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
@@ -25,6 +25,7 @@ from zenml.models import (
     PipelineRunResponseModel,
     PipelineUpdateModel,
 )
+from zenml.models.page_model import Page, Params
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -37,7 +38,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[PipelineResponseModel],
+    response_model=Page[PipelineResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -46,13 +47,15 @@ def list_pipelines(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[PipelineResponseModel]:
+    params: Params = Depends(),
+) -> Page[PipelineResponseModel]:
     """Gets a list of pipelines.
 
     Args:
         project_name_or_id: Name or ID of the project to get pipelines for.
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by pipeline name
+        params: Parameters for pagination (page and size)
 
     Returns:
         List of pipeline objects.
@@ -61,6 +64,7 @@ def list_pipelines(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
         name=name,
+        params=params,
     )
 
 

@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 from uuid import UUID
 
+
+from zenml.constants import LIMIT_DEFAULT
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import (
     ArtifactRequestModel,
@@ -53,6 +55,7 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
+from zenml.models.page_model import Page, Params
 from zenml.models.server_models import ServerModel
 
 
@@ -177,12 +180,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stacks(
         self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[StackResponseModel]:
+    ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -193,6 +197,8 @@ class ZenStoreInterface(ABC):
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
+            params: Parameters for pagination (page and size)
+
 
 
         Returns:
@@ -254,16 +260,18 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stack_components(
         self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[ComponentResponseModel]:
+    ) -> Page[ComponentResponseModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
+            params: Parameters for pagination (page and size)
             project_name_or_id: The ID or name of the Project to which the stack
                 components belong
             user_name_or_id: Optionally filter stack components by the owner
@@ -369,7 +377,8 @@ class ZenStoreInterface(ABC):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[FlavorResponseModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
@@ -380,6 +389,7 @@ class ZenStoreInterface(ABC):
             name: Optionally filter flavors by name
             is_shared: Optionally filter out flavors by whether they are
                 shared or not
+            params: Parameters for pagination (page and size)
 
         Returns:
             List of all the stack component flavors matching the given criteria.
@@ -448,11 +458,16 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
+    def list_users(
+        self,
+        name: Optional[str] = None,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[UserResponseModel]:
         """List all users.
 
         Args:
             name: Optionally filter by name
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all users.
@@ -516,11 +531,16 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+    def list_teams(
+        self,
+        name: Optional[str] = None,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[TeamResponseModel]:
         """List all teams.
 
         Args:
             name: Optionally filter by name
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all teams.
@@ -587,11 +607,16 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
+    def list_roles(
+        self,
+        name: Optional[str] = None,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[RoleResponseModel]:
         """List all roles.
 
         Args:
             name: Optionally filter by name
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all roles.
@@ -672,7 +697,8 @@ class ZenStoreInterface(ABC):
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentResponseModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[RoleAssignmentResponseModel]:
         """List all role assignments.
 
         Args:
@@ -684,6 +710,7 @@ class ZenStoreInterface(ABC):
                 team
             user_name_or_id: If provided, only list assignments for the given
                 user
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all role assignments.
@@ -727,12 +754,15 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_projects(
-        self, name: Optional[str] = None
-    ) -> List[ProjectResponseModel]:
+        self,
+        name: Optional[str] = None,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[ProjectResponseModel]:
         """List all projects.
 
         Args:
             name: Optionally filter by name
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all projects.
@@ -807,7 +837,8 @@ class ZenStoreInterface(ABC):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-    ) -> List[PipelineResponseModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[PipelineResponseModel]:
         """List all pipelines in the project.
 
         Args:
@@ -815,6 +846,7 @@ class ZenStoreInterface(ABC):
                 project.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of pipelines.
@@ -916,7 +948,8 @@ class ZenStoreInterface(ABC):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-    ) -> List[PipelineRunResponseModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[PipelineRunResponseModel]:
         """Gets all pipeline runs.
 
         Args:
@@ -929,6 +962,7 @@ class ZenStoreInterface(ABC):
             pipeline_id: If provided, only return runs for this pipeline.
             unlisted: If True, only return unlisted runs that are not
                 associated with any pipeline (filter by `pipeline_id==None`).
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all pipeline runs.
@@ -1004,7 +1038,7 @@ class ZenStoreInterface(ABC):
         project_id: Optional[UUID] = None,
         cache_key: Optional[str] = None,
         status: Optional[ExecutionStatus] = None,
-    ) -> List[StepRunResponseModel]:
+    ) -> Page[StepRunResponseModel]:
         """Get all step runs.
 
         Args:
@@ -1072,9 +1106,7 @@ class ZenStoreInterface(ABC):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         artifact_uri: Optional[str] = None,
-        artifact_store_id: Optional[UUID] = None,
-        only_unused: bool = False,
-    ) -> List[ArtifactResponseModel]:
+    ) -> Page[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:

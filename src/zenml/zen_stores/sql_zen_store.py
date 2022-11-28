@@ -47,6 +47,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
+    LIMIT_DEFAULT,
 )
 from zenml.enums import (
     ExecutionStatus,
@@ -98,6 +99,7 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
+from zenml.models.page_model import Page, Params
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -825,15 +827,17 @@ class SqlZenStore(BaseZenStore):
 
     def list_stacks(
         self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[StackResponseModel]:
+    ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
+            params: Parameters for pagination (page and size)
             project_name_or_id: ID or name of the Project containing the stack
             user_name_or_id: Optionally filter stacks by their owner
             component_id: Optionally filter for stacks that contain the
@@ -865,9 +869,12 @@ class SqlZenStore(BaseZenStore):
             if is_shared is not None:
                 query = query.where(StackSchema.is_shared == is_shared)
 
-            stacks = session.exec(query.order_by(StackSchema.name)).all()
+            query = query.order_by(StackSchema.created)
+            paged_stacks = Page.paginate(
+                session=session, query=query, params=params
+            )
 
-            return [stack.to_model() for stack in stacks]
+            return paged_stacks
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
@@ -1128,16 +1135,18 @@ class SqlZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[ComponentResponseModel]:
+    ) -> Page[ComponentResponseModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
+            params: Parameters for pagination (page and size)
             project_name_or_id: The ID or name of the Project to which the stack
                 components belong
             user_name_or_id: Optionally filter stack components by the owner
@@ -1172,9 +1181,12 @@ class SqlZenStore(BaseZenStore):
             if is_shared is not None:
                 query = query.where(StackComponentSchema.is_shared == is_shared)
 
-            list_of_stack_components_in_db = session.exec(query).all()
+            query = query.order_by(StackComponentSchema.created)
+            paged_components = Page.paginate(
+                session=session, query=query, params=params
+            )
 
-            return [comp.to_model() for comp in list_of_stack_components_in_db]
+        return paged_components
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
@@ -1467,7 +1479,8 @@ class SqlZenStore(BaseZenStore):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[FlavorResponseModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
@@ -1479,6 +1492,7 @@ class SqlZenStore(BaseZenStore):
             name: Optionally filter flavors by name
             is_shared: Optionally filter out flavors by whether they are
                 shared or not
+            params: Parameters for pagination (page and size)
 
         Returns:
             List of all the stack component flavors matching the given criteria
@@ -1498,9 +1512,10 @@ class SqlZenStore(BaseZenStore):
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(FlavorSchema.user_id == user.id)
 
-            list_of_flavors_in_db = session.exec(query).all()
+            query.order_by(FlavorSchema.created)
+            flavors = Page.paginate(session, query, params)
 
-            return [flavor.to_model() for flavor in list_of_flavors_in_db]
+        return flavors
 
     @track(AnalyticsEvent.DELETED_FLAVOR)
     def delete_flavor(self, flavor_id: UUID) -> None:
@@ -1622,11 +1637,16 @@ class SqlZenStore(BaseZenStore):
                 activation_token=user.activation_token,
             )
 
-    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
+    def list_users(
+        self,
+        name: Optional[str] = None,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[UserResponseModel]:
         """List all users.
 
         Args:
             name: Optionally filter by name
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all users.
@@ -1635,9 +1655,11 @@ class SqlZenStore(BaseZenStore):
             query = select(UserSchema)
             if name:
                 query = query.where(UserSchema.name == name)
-            users = session.exec(query.order_by(UserSchema.name)).all()
 
-            return [user.to_model() for user in users]
+            query.order_by(PipelineSchema.created)
+            users = Page.paginate(session, query, params)
+
+        return users
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
@@ -1751,22 +1773,28 @@ class SqlZenStore(BaseZenStore):
             team = self._get_team_schema(team_name_or_id, session=session)
             return team.to_model()
 
-    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+    def list_teams(
+        self,
+        name: Optional[str] = None,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[TeamResponseModel]:
         """List all teams.
 
         Args:
             name: Optionally filter by name
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all teams.
         """
+        # TODO sorting missing
         with Session(self.engine) as session:
             query = select(TeamSchema)
             if name:
                 query = query.where(TeamSchema.name == name)
-            teams = session.exec(query.order_by(TeamSchema.name)).all()
-
-            return [team.to_model() for team in teams]
+            query = query.order_by(TeamSchema.created)
+            teams = Page.paginate(session, query, params)
+            return teams
 
     @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
@@ -1879,11 +1907,16 @@ class SqlZenStore(BaseZenStore):
             role = self._get_role_schema(role_name_or_id, session=session)
             return role.to_model()
 
-    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
+    def list_roles(
+        self,
+        name: Optional[str] = None,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[RoleResponseModel]:
         """List all roles.
 
         Args:
             name: Optionally filter by name
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all roles.
@@ -1892,9 +1925,11 @@ class SqlZenStore(BaseZenStore):
             query = select(RoleSchema)
             if name:
                 query = query.where(RoleSchema.name == name)
-            roles = session.exec(query.order_by(RoleSchema.name)).all()
 
-            return [role.to_model() for role in roles]
+            query.order_by(RoleSchema.created)
+            roles = Page.paginate(session, query, params)
+
+            return roles
 
     @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(
@@ -2021,7 +2056,8 @@ class SqlZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         role_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentResponseModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[RoleAssignmentResponseModel]:
         """List all user role assignments.
 
         Args:
@@ -2030,6 +2066,7 @@ class SqlZenStore(BaseZenStore):
             user_name_or_id: If provided, only list assignments for this user.
             role_name_or_id: If provided, only list assignments of the given
                 role
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of user role assignments.
@@ -2049,15 +2086,17 @@ class SqlZenStore(BaseZenStore):
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(UserRoleAssignmentSchema.user_id == user.id)
-            assignments = session.exec(query).all()
-            return [assignment.to_model() for assignment in assignments]
+            query.order_by(UserRoleAssignmentSchema.created)
+            assignments = Page.paginate(session, query, params)
+            return assignments
 
     def _list_team_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         role_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentResponseModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[RoleAssignmentResponseModel]:
         """List all team role assignments.
 
         Args:
@@ -2066,6 +2105,7 @@ class SqlZenStore(BaseZenStore):
             team_name_or_id: If provided, only list assignments for this team.
             role_name_or_id: If provided, only list assignments of the given
                 role
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of team role assignments.
@@ -2085,8 +2125,9 @@ class SqlZenStore(BaseZenStore):
             if team_name_or_id is not None:
                 team = self._get_team_schema(team_name_or_id, session=session)
                 query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
-            assignments = session.exec(query).all()
-            return [assignment.to_model() for assignment in assignments]
+            query.order_by(TeamRoleAssignmentSchema.created)
+            assignments = Page.paginate(session, query, params)
+            return assignments
 
     def list_role_assignments(
         self,
@@ -2094,7 +2135,8 @@ class SqlZenStore(BaseZenStore):
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentResponseModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[RoleAssignmentResponseModel]:
         """List all role assignments.
 
         Args:
@@ -2104,21 +2146,25 @@ class SqlZenStore(BaseZenStore):
                 role
             team_name_or_id: If provided, only list assignments for this team.
             user_name_or_id: If provided, only list assignments for this user.
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all role assignments.
         """
+        # TODO - this current solution will return twice the pagination limit
         user_role_assignments = self._list_user_role_assignments(
             project_name_or_id=project_name_or_id,
             user_name_or_id=user_name_or_id,
             role_name_or_id=role_name_or_id,
+            params=params,
         )
-        team_role_assignments = self._list_team_role_assignments(
-            project_name_or_id=project_name_or_id,
-            team_name_or_id=team_name_or_id,
-            role_name_or_id=role_name_or_id,
-        )
-        return user_role_assignments + team_role_assignments
+        # team_role_assignments = self._list_team_role_assignments(
+        #     project_name_or_id=project_name_or_id,
+        #     team_name_or_id=team_name_or_id,
+        #     role_name_or_id=role_name_or_id,
+        #     params=params,
+        # )
+        return user_role_assignments # + team_role_assignments
 
     def _assign_role_to_user(
         self,
@@ -2390,12 +2436,15 @@ class SqlZenStore(BaseZenStore):
         return project.to_model()
 
     def list_projects(
-        self, name: Optional[str] = None
-    ) -> List[ProjectResponseModel]:
+        self,
+        name: Optional[str] = None,
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[ProjectResponseModel]:
         """List all projects.
 
         Args:
             name: Optionally filter by name
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all projects.
@@ -2404,9 +2453,10 @@ class SqlZenStore(BaseZenStore):
             query = select(ProjectSchema)
             if name:
                 query = query.where(ProjectSchema.name == name)
-            projects = session.exec(query.order_by(ProjectSchema.name)).all()
+            query.order_by(ProjectSchema.created)
+            projects = Page.paginate(session, query, params)
 
-            return [project.to_model() for project in projects]
+        return projects
 
     @track(AnalyticsEvent.UPDATED_PROJECT)
     def update_project(
@@ -2555,7 +2605,8 @@ class SqlZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-    ) -> List[PipelineResponseModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[PipelineResponseModel]:
         """List all pipelines in the project.
 
         Args:
@@ -2563,6 +2614,7 @@ class SqlZenStore(BaseZenStore):
                 project.
             user_name_or_id: If provided, only list pipelines from this user.
             name: If provided, only list pipelines with this name.
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of pipelines.
@@ -2584,8 +2636,9 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(PipelineSchema.name == name)
 
             # Get all pipelines in the project
-            pipelines = session.exec(query).all()
-            return [pipeline.to_model() for pipeline in pipelines]
+            query.order_by(PipelineSchema.created)
+            pipelines = Page.paginate(session, query, params)
+            return pipelines
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
@@ -2795,7 +2848,8 @@ class SqlZenStore(BaseZenStore):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-    ) -> List[PipelineRunResponseModel]:
+        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+    ) -> Page[PipelineRunResponseModel]:
         """Gets all pipeline runs.
 
         Args:
@@ -2808,6 +2862,7 @@ class SqlZenStore(BaseZenStore):
             pipeline_id: If provided, only return runs for this pipeline.
             unlisted: If True, only return unlisted runs that are not
                 associated with any pipeline (filter by pipeline_id==None).
+            params: Parameters for pagination (page and size)
 
         Returns:
             A list of all pipeline runs.
@@ -2838,8 +2893,8 @@ class SqlZenStore(BaseZenStore):
                 user = self._get_user_schema(user_name_or_id, session=session)
                 query = query.where(PipelineRunSchema.user_id == user.id)
             query = query.order_by(PipelineRunSchema.created)
-            runs = session.exec(query).all()
-            return [run.to_model() for run in runs]
+            runs = Page.paginate(session, query, params)
+        return runs
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdateModel
