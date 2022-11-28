@@ -815,70 +815,51 @@ def export_stack(
 
 
 def _import_stack_component(
-    component_type: StackComponentType, component_config: Dict[str, Any]
+    component_type: StackComponentType, component_dict: Dict[str, Any]
 ) -> UUID:
     """Import a single stack component with given type/config.
 
     Args:
         component_type: The type of component to import.
-        component_config: The config of the component to import.
+        component_dict: Dict representation of the component to import.
 
     Returns:
         The name of the imported component.
     """
     component_type = StackComponentType(component_type)
-    component_name = component_config.pop("name")
-    component_flavor = component_config.pop("flavor")
-    component_id = component_config.pop("id")
-    component_shared = component_config.pop("is_shared")
+    name = component_dict["name"]
+    flavor = component_dict["flavor"]
+    config = component_dict["configuration"]
 
     # make sure component can be registered, otherwise ask for new name
     client = Client()
-    try:
-        other_component = client.zen_store.get_stack_component(
-            component_id=UUID(component_id)
-        )
-    except KeyError:
-        pass
-    else:
-        return other_component.id
 
     try:
         component = client.get_stack_component(
-            name_id_or_prefix=component_name,
+            name_id_or_prefix=name,
             component_type=component_type,
         )
-        if component:
-            # component with same name
+        if component.configuration == config:
+            return component.id
+        else:
             display_name = _component_display_name(component_type)
-            component_name = click.prompt(
+            name = click.prompt(
                 f"A component of type '{display_name}' with the name "
-                f"'{component_name}' already exists, "
+                f"'{name}' already exists, "
                 f"but is configured differently. "
                 f"Please choose a different name.",
                 type=str,
             )
-    except click.ClickException:
-        # component with same name
-        display_name = _component_display_name(component_type)
-        component_name = click.prompt(
-            f"A component of type '{display_name}' with the name "
-            f"'{component_name}' already exists, "
-            f"but is configured differently. "
-            f"Please choose a different name.",
-            type=str,
-        )
     except KeyError:
         pass
 
-    registered_component = client.create_stack_component(
-        name=component_name,
-        flavor=component_flavor,
-        configuration=component_config["configuration"],
+    component = client.create_stack_component(
+        name=name,
         component_type=component_type,
-        is_shared=component_shared == "True",
+        flavor=flavor,
+        configuration=config,
     )
-    return registered_component.id
+    return component.id
 
 
 @stack.command("import", help="Import a stack from YAML.")
@@ -890,9 +871,7 @@ def _import_stack_component(
     help="Import stack components even if the installed version of ZenML "
     "is different from the one specified in the stack YAML file",
 )
-@click.pass_context
 def import_stack(
-    ctx: click.Context,
     stack_name: str,
     filename: Optional[str],
     ignore_version_mismatch: bool = False,
@@ -900,7 +879,6 @@ def import_stack(
     """Import a stack from YAML.
 
     Args:
-        ctx: The click context.
         stack_name: The name of the stack to import.
         filename: The filename to import the stack from.
         ignore_version_mismatch: Import stack components even if
@@ -949,7 +927,7 @@ def import_stack(
     if client.list_stacks(name=stack_name):
         stack_name = click.prompt(
             f"Stack `{stack_name}` already exists. Please choose a different "
-            f"name.",
+            f"name",
             type=str,
         )
 
@@ -958,15 +936,12 @@ def import_stack(
     for component_type, component_config in data["components"].items():
         component_id = _import_stack_component(
             component_type=component_type,
-            component_config=component_config,
+            component_dict=component_config,
         )
-        component_ids[component_type] = str(component_id)
+        component_ids[component_type] = component_id
 
-    # register new stack
-    ctx.invoke(
-        register_stack,
-        stack_name=stack_name,
-        **component_ids,
+    Client().create_stack(
+        name=stack_name, components=component_ids, is_shared=False
     )
 
 
