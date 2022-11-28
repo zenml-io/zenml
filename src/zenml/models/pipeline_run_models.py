@@ -24,7 +24,6 @@ from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
-    update_model,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 
@@ -123,6 +122,8 @@ class PipelineRunRequestModel(PipelineRunBaseModel, ProjectScopedRequestModel):
 # ------ #
 
 
-@update_model
-class PipelineRunUpdateModel(PipelineRunRequestModel):
+class PipelineRunUpdateModel(BaseModel):
     """Pipeline run update model."""
+
+    status: Optional[ExecutionStatus] = None
+    end_time: Optional[datetime] = None

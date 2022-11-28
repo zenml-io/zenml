@@ -12,11 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base class for entrypoint configurations that run a single step."""
-
 from typing import TYPE_CHECKING, Any, List, Set
 
 from zenml.client import Client
-from zenml.entrypoints import utils as entrypoint_utils
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
@@ -90,8 +88,6 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
     ```
     """
 
-    # TODO: Figure out a replacement class for the TFX execution info that
-    # would be useful here
     def post_run(
         self,
         pipeline_name: str,
@@ -155,7 +151,6 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         integration_registry.activate_integrations()
 
         step = deployment_config.steps[step_name]
-        entrypoint_utils.load_and_configure_step(step)
         self._run_step(step, deployment=deployment_config)
 
         self.post_run(

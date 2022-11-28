@@ -13,19 +13,14 @@
 #  permissions and limitations under the License.
 """Base orchestrator class."""
 from abc import ABC, abstractmethod
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
-from uuid import UUID
 
 from pydantic import root_validator
 
-from zenml.client import Client
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.models import PipelineRunRequestModel, PipelineRunResponseModel
 from zenml.orchestrators.launcher import Launcher
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
-from zenml.utils import uuid_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -171,21 +166,12 @@ class BaseOrchestrator(StackComponent, ABC):
             step: The step to run.
         """
         assert self._active_deployment
-
-        run = self._create_or_reuse_run()
-        step_name = [
-            name
-            for name, s in self._active_deployment.steps.items()
-            if s.config.name == step.config.name
-        ][0]
         launcher = Launcher(
+            deployment=self._active_deployment,
             step=step,
-            step_name=step_name,
-            run_name=run.name,
-            pipeline_config=self._active_deployment.pipeline,
-            stack=Client().active_stack,
+            orchestrator_run_id=self.get_orchestrator_run_id(),
         )
-        launcher.launch()
+        return launcher.launch()
 
     @staticmethod
     def requires_resources_in_orchestration_environment(
@@ -219,54 +205,6 @@ class BaseOrchestrator(StackComponent, ABC):
     def _cleanup_run(self) -> None:
         """Cleans up the active run."""
         self._active_deployment = None
-
-    def get_run_id_for_orchestrator_run_id(
-        self, orchestrator_run_id: str
-    ) -> UUID:
-        """Generates a run ID from an orchestrator run id.
-
-        Args:
-            orchestrator_run_id: The orchestrator run id.
-
-        Returns:
-            The run id generated from the orchestrator run id.
-        """
-        run_id_seed = f"{self.id}-{orchestrator_run_id}"
-        return uuid_utils.generate_uuid_from_string(run_id_seed)
-
-    def _create_or_reuse_run(self) -> PipelineRunResponseModel:
-        """Creates a run or reuses an existing one.
-
-        Returns:
-            The created or existing run.
-        """
-        assert self._active_deployment
-        orchestrator_run_id = self.get_orchestrator_run_id()
-
-        run_id = self.get_run_id_for_orchestrator_run_id(orchestrator_run_id)
-
-        date = datetime.now().strftime("%Y_%m_%d")
-        time = datetime.now().strftime("%H_%M_%S_%f")
-        run_name = self._active_deployment.run_name.format(date=date, time=time)
-
-        logger.debug("Creating run with ID: %s, name: %s", run_id, run_name)
-
-        client = Client()
-        run_model = PipelineRunRequestModel(
-            id=run_id,
-            name=run_name,
-            orchestrator_run_id=orchestrator_run_id,
-            user=client.active_user.id,
-            project=client.active_project.id,
-            stack=self._active_deployment.stack_id,
-            pipeline=self._active_deployment.pipeline_id,
-            enable_cache=self._active_deployment.pipeline.enable_cache,
-            status=ExecutionStatus.RUNNING,
-            pipeline_configuration=self._active_deployment.pipeline.dict(),
-            num_steps=len(self._active_deployment.steps),
-        )
-
-        return client.zen_store.get_or_create_run(run_model)
 
 
 class BaseOrchestratorFlavor(Flavor):

@@ -93,7 +93,12 @@ class StepExecutor:
         """
         return self._step.config
 
-    def _load_step_function(self) -> Callable[..., Any]:
+    def _load_step_entrypoint(self) -> Callable[..., Any]:
+        """Load the step entrypoint function.
+
+        Returns:
+            The step entrypoint function.
+        """
         from zenml.steps import BaseStep
 
         step_class: Type[BaseStep] = source_utils.load_and_validate_class(
@@ -101,6 +106,7 @@ class StepExecutor:
         )
 
         step_instance = step_class()
+        step_instance._configuration = self._step.config
         return step_instance.entrypoint
 
     def _load_output_materializers(self) -> Dict[str, Type[BaseMaterializer]]:
@@ -197,14 +203,14 @@ class StepExecutor:
         from zenml.steps import BaseParameters
 
         step_name = self.configuration.name
-        step_function = self._load_step_function()
+        step_entrypoint = self._load_step_entrypoint()
         output_materializers = self._load_output_materializers()
 
         # Building the args for the entrypoint function
         function_params = {}
 
         # First, we parse the inputs, i.e., params and input artifacts.
-        spec = inspect.getfullargspec(inspect.unwrap(step_function))
+        spec = inspect.getfullargspec(inspect.unwrap(step_entrypoint))
         args = spec.args
 
         if args and args[0] == "self":
@@ -246,7 +252,7 @@ class StepExecutor:
             step_run_info=step_run_info,
             cache_enabled=self.configuration.enable_cache,
         ):
-            return_values = step_function(**function_params)
+            return_values = step_entrypoint(**function_params)
 
         output_annotations = parse_return_type_annotations(spec.annotations)
         if len(output_annotations) > 0:

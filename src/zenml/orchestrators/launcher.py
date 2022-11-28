@@ -29,6 +29,7 @@ from zenml.exceptions import InputResolutionError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models.pipeline_run_models import (
+    PipelineRunRequestModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
 )
@@ -37,16 +38,35 @@ from zenml.models.step_run_models import (
     StepRunResponseModel,
     StepRunUpdateModel,
 )
+from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.executor import StepExecutor
+from zenml.stack import Stack
 from zenml.utils import source_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
-    from zenml.config.pipeline_configurations import PipelineConfiguration
-    from zenml.stack import Stack
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
+
+
+def get_step_name_in_pipeline(
+    step: "Step", deployment: "PipelineDeployment"
+) -> str:
+    """Gets the step name of a step inside a pipeline.
+
+    Args:
+        step: The step for which to get the name.
+        deployment: The pipeline deployment that contains the step.
+
+    Returns:
+        The name of the step inside the pipeline.
+    """
+    step_name_mapping = {
+        step_.config.name: key for key, step_ in deployment.steps.items()
+    }
+    return step_name_mapping[step.config.name]
 
 
 def generate_cache_key(
@@ -256,25 +276,53 @@ def get_cached_step_run(cache_key: str) -> Optional[StepRunResponseModel]:
     return None
 
 
+def get_pipeline_run_status(
+    step_statuses: List[ExecutionStatus], num_steps: int
+) -> ExecutionStatus:
+    """Gets the pipeline run status for the given step statuses.
+
+    Args:
+        step_statuses: The status of steps in this run.
+        num_steps: The total amount of steps in this run.
+
+    Returns:
+        The run status.
+    """
+    if ExecutionStatus.FAILED in step_statuses:
+        return ExecutionStatus.FAILED
+    if ExecutionStatus.RUNNING in step_statuses:
+        return ExecutionStatus.RUNNING
+    if len(step_statuses) < num_steps:
+        return ExecutionStatus.RUNNING
+
+    return ExecutionStatus.COMPLETED
+
+
 def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
     """Updates the status of the current pipeline run.
 
     Args:
         pipeline_run: The model of the current pipeline run.
     """
+    assert pipeline_run.num_steps is not None
     steps_in_current_run = Client().zen_store.list_run_steps(
         run_id=pipeline_run.id
     )
-    status = ExecutionStatus.run_status(
-        step_statuses=[step_run.status for step_run in steps_in_current_run]
+    run_status = get_pipeline_run_status(
+        step_statuses=[step_run.status for step_run in steps_in_current_run],
+        num_steps=pipeline_run.num_steps,
     )
-    is_failed = status == ExecutionStatus.FAILED
-    is_completed = status == ExecutionStatus.COMPLETED
-    all_steps_finished = len(steps_in_current_run) == pipeline_run.num_steps
-    if is_failed or (is_completed and all_steps_finished):
+
+    if run_status != pipeline_run.status:
+        if run_status in {ExecutionStatus.COMPLETED, ExecutionStatus.FAILED}:
+            run_update = PipelineRunUpdateModel(
+                status=run_status, end_time=datetime.now()
+            )
+        else:
+            run_update = PipelineRunUpdateModel(status=run_status)
+
         Client().zen_store.update_run(
-            run_id=pipeline_run.id,
-            run_update=PipelineRunUpdateModel(status=status),
+            run_id=pipeline_run.id, run_update=run_update
         )
 
 
@@ -295,34 +343,30 @@ class Launcher:
 
     def __init__(
         self,
+        deployment: "PipelineDeployment",
         step: Step,
-        step_name: str,
-        run_name: str,
-        pipeline_config: "PipelineConfiguration",
-        stack: "Stack",
+        orchestrator_run_id: str,
     ):
         """Initializes the launcher.
 
         Args:
+            deployment: The pipeline deployment.
             step: The step to launch.
-            step_name: The name of the step.
-            run_name: The name of the pipeline run.
-            pipeline_config: The pipeline configuration.
-            stack: The stack on which the pipeline is running.
+            orchestrator_run_id: The orchestrator pipeline run id.
         """
+        self._deployment = deployment
         self._step = step
-        self._step_name = step_name
-        self._run_name = run_name
-        self._pipeline_config = pipeline_config
-        self._stack = stack
+        self._orchestrator_run_id = orchestrator_run_id
+        self._stack = Stack.from_model(Client().get_stack(deployment.stack_id))
+        self._step_name = get_step_name_in_pipeline(
+            step=step, deployment=deployment
+        )
 
     def launch(self) -> None:
         """Launches the step."""
-        # TODO: Create run here instead
-
         logger.info(f"Step `{self._step_name}` has started.")
 
-        pipeline_run = Client().zen_store.get_run(self._run_name)
+        pipeline_run = self._create_or_reuse_run()
 
         # 1. Get input artifacts IDs of current run
         input_artifact_ids, parent_step_ids = self._resolve_inputs(
@@ -338,7 +382,7 @@ class Launcher:
 
         # 3. Build a model for the current step run
         parameters = {
-            key: str(value)
+            key: str(value)  # TODO: this messes with pydantic serialization
             for key, value in self._step.config.parameters.items()
         }
         step_run = StepRunRequestModel(
@@ -359,7 +403,7 @@ class Launcher:
 
         # 4. Check if the step can be cached
         cache_enabled = (
-            self._pipeline_config.enable_cache
+            self._deployment.pipeline.enable_cache
             and self._step.config.enable_cache
         )
 
@@ -391,6 +435,42 @@ class Launcher:
 
         # 8. Update the pipeline run status
         update_pipeline_run_status(pipeline_run=pipeline_run)
+
+    def _create_or_reuse_run(self) -> PipelineRunResponseModel:
+        """Creates a run or reuses an existing one.
+
+        Returns:
+            The created or existing run.
+        """
+        run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
+            orchestrator=self._stack.orchestrator,
+            orchestrator_run_id=self._orchestrator_run_id,
+        )
+
+        date = datetime.now().strftime("%Y_%m_%d")
+        time = datetime.now().strftime("%H_%M_%S_%f")
+        run_name = self._deployment.run_name.format(date=date, time=time)
+
+        logger.debug(
+            "Creating pipeline run with ID: %s, name: %s", run_id, run_name
+        )
+
+        client = Client()
+        pipeline_run = PipelineRunRequestModel(
+            id=run_id,
+            name=run_name,
+            orchestrator_run_id=self._orchestrator_run_id,
+            user=client.active_user.id,
+            project=client.active_project.id,
+            stack=self._deployment.stack_id,
+            pipeline=self._deployment.pipeline_id,
+            enable_cache=self._deployment.pipeline.enable_cache,
+            status=ExecutionStatus.RUNNING,
+            pipeline_configuration=self._deployment.pipeline.dict(),
+            num_steps=len(self._deployment.steps),
+        )
+
+        return client.zen_store.get_or_create_run(pipeline_run)
 
     def _resolve_inputs(
         self, run_id: UUID
@@ -457,7 +537,7 @@ class Launcher:
         # Prepare step run information.
         step_run_info = StepRunInfo(
             config=self._step.config,
-            pipeline=self._pipeline_config,
+            pipeline=self._deployment.pipeline,
             run_name=pipeline_run.name,
         )
 
@@ -568,8 +648,8 @@ class Launcher:
             executor.execute(
                 input_artifacts=input_artifacts,
                 output_artifacts=output_artifacts,
-                run_name=self._run_name,
-                pipeline_config=self._pipeline_config,
+                run_name=pipeline_run.name,
+                pipeline_config=self._deployment.pipeline,
             )
         except Exception:
             self._cleanup_failed_run(
@@ -614,6 +694,5 @@ class Launcher:
                 end_time=datetime.now(),
             ),
         )
-        print(pipeline_run.id, pipeline_run.status)
         remove_artifact_dirs(artifacts=artifacts)
         logger.debug("Finished failed step execution cleanup.")
