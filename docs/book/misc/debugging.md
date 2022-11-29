@@ -74,10 +74,37 @@ See [System Environment Variable](../guidelines/system-environmental-variables.m
 Read more about how to set environment variables [here](https://linuxize.com/post/how-to-set-and-list-environment-variables-in-linux/).
 
 ## 📜 How to see logs on the client and server
+To see the logs of the local ZenML Server deployment run:
 
-You can see the server logs by tapping into the Kubernetes pod where the server is running, with something like this:
 ```shell
-$ kubectl -n zenml-server-hamza get pod
+zenml logs
+```
+
+To see the logs for ZenML Server deployed using Docker containers, first you have to get ID of the Docker container:
+
+```shell
+docker ps
+```
+
+and the view the logs from the container:
+```shell
+docker logs <ID>
+```
+
+To see logs for ZenML Server deployed on Kubernetes using Helm chart or `zenml deploy`, first get the pod name:
+```shell
+kubectl get pods -n <NAMESPACE_IN_WHICH_SERVER_IS_DEPLOYED>
+```
+
+and the view the logs:
+```shell
+kubectl logs <CONTAINER_NAME> -n <NAMESPACE> -c <CONTAINER_NAME>
+```
+
+For example
+
+```shell
+$ kubectl -n zenml-server-hamza get pods
 NAME                            READY   STATUS    RESTARTS   AGE
 zenml-server-549b46d659-5n28m   1/1     Running   0          99m
 $ kubectl -n zenml-server-hamza logs zenml-server-549b46d659-5n28m
