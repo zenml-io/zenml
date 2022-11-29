@@ -143,10 +143,14 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The updated step run schema.
         """
-        # For steps only the execution status is mutable.
-        if "status" in step_update.__fields_set__ and step_update.status:
-            self.status = step_update.status
-            self.end_time = step_update.end_time
+
+        for key, value in step_update.dict(
+            exclude_unset=True, exclude_none=True
+        ).items():
+            if key == "status":
+                self.status = value
+            if key == "end_time":
+                self.end_time = value
 
         self.updated = datetime.now()
 
