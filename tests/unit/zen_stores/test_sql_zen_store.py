@@ -1206,7 +1206,7 @@ def test_list_runs_returns_nothing_when_no_runs_exist(
     false_stack_runs = sql_store["store"].list_runs(stack_id=uuid.uuid4())
     assert len(false_stack_runs) == 0
 
-    false_run_name_runs = sql_store["store"].list_runs(run_name="not_arias_run")
+    false_run_name_runs = sql_store["store"].list_runs(name="not_arias_run")
     assert len(false_run_name_runs) == 0
 
     with pytest.raises(KeyError):
