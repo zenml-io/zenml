@@ -2271,7 +2271,7 @@ class Client(metaclass=ClientMetaClass):
             user_name_or_id=user_name_or_id,
             stack_id=stack_id,
             component_id=component_id,
-            run_name=run_name,
+            name=run_name,
             pipeline_id=pipeline_id,
             unlisted=unlisted,
         )
