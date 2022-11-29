@@ -426,44 +426,9 @@ class Launcher:
         )
         try:
             try:
-                # 1. Get input artifacts IDs of current run
-                input_artifact_ids, parent_step_ids = resolve_step_inputs(
-                    step=self._step, run_id=pipeline_run.id
+                execution_needed, step_run_response = self._prepare(
+                    step_run=step_run
                 )
-
-                # 2. Generate cache key for current step
-                cache_key = generate_cache_key(
-                    step=self._step,
-                    artifact_store=self._stack.artifact_store,
-                    input_artifact_ids=input_artifact_ids,
-                )
-
-                step_run.input_artifacts = input_artifact_ids
-                step_run.parent_step_ids = parent_step_ids
-                step_run.cache_key = cache_key
-
-                # 4. Check if the step can be cached
-                cache_enabled = (
-                    self._deployment.pipeline.enable_cache
-                    and self._step.config.enable_cache
-                )
-
-                execution_needed = True
-                if cache_enabled:
-                    cached_step_run = get_cached_step_run(cache_key=cache_key)
-                    if cached_step_run:
-                        logger.info(
-                            f"Using cached version of `{self._step_name}`."
-                        )
-                        execution_needed = False
-                        step_run.output_artifacts = (
-                            cached_step_run.output_artifacts
-                        )
-                        step_run.status = ExecutionStatus.CACHED
-                        step_run.end_time = step_run.start_time
-
-                # 5. If not cached, register and run the step
-                step_run_response = Client().zen_store.create_run_step(step_run)
             except:  # noqa: E722
                 step_run.status = ExecutionStatus.FAILED
                 step_run.end_time = datetime.now()
@@ -523,6 +488,51 @@ class Launcher:
         )
 
         return client.zen_store.get_or_create_run(pipeline_run)
+
+    def _prepare(
+        self, step_run: StepRunRequestModel
+    ) -> Tuple[bool, StepRunResponseModel]:
+        """Prepares running the step.
+
+        Args:
+            step_run: The step to run.
+
+        Returns:
+            Tuple that specifies whether the step needs to be executed as
+            well as the response model of the registered step run.
+        """
+        input_artifact_ids, parent_step_ids = resolve_step_inputs(
+            step=self._step, run_id=step_run.pipeline_run_id
+        )
+
+        cache_key = generate_cache_key(
+            step=self._step,
+            artifact_store=self._stack.artifact_store,
+            input_artifact_ids=input_artifact_ids,
+        )
+
+        step_run.input_artifacts = input_artifact_ids
+        step_run.parent_step_ids = parent_step_ids
+        step_run.cache_key = cache_key
+
+        cache_enabled = (
+            self._deployment.pipeline.enable_cache
+            and self._step.config.enable_cache
+        )
+
+        execution_needed = True
+        if cache_enabled:
+            cached_step_run = get_cached_step_run(cache_key=cache_key)
+            if cached_step_run:
+                logger.info(f"Using cached version of `{self._step_name}`.")
+                execution_needed = False
+                step_run.output_artifacts = cached_step_run.output_artifacts
+                step_run.status = ExecutionStatus.CACHED
+                step_run.end_time = step_run.start_time
+
+        step_run_response = Client().zen_store.create_run_step(step_run)
+
+        return execution_needed, step_run_response
 
     def _run_step(
         self,
