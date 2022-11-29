@@ -18,9 +18,12 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from uuid import UUID
 
+from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, SQLModel
 
+from zenml.config.step_configurations import Step
+from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.enums import ExecutionStatus
 from zenml.models.step_run_models import (
     StepRunRequestModel,
@@ -72,20 +75,30 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The step run schema.
         """
+        step_config = request.step.config
+
         return cls(
             name=request.name,
             pipeline_run_id=request.pipeline_run_id,
-            enable_cache=request.enable_cache,
-            code_hash=request.code_hash,
+            enable_cache=step_config.enable_cache,
+            code_hash=step_config.caching_parameters.get(
+                STEP_SOURCE_PARAMETER_NAME
+            ),
             cache_key=request.cache_key,
             start_time=request.start_time,
             end_time=request.end_time,
-            entrypoint_name=request.entrypoint_name,
-            parameters=json.dumps(request.parameters),
-            step_configuration=json.dumps(request.step_configuration),
-            caching_parameters=json.dumps(request.caching_parameters),
-            docstring=request.docstring,
-            num_outputs=request.num_outputs,
+            entrypoint_name=step_config.name,
+            parameters=json.dumps(
+                step_config.parameters, default=pydantic_encoder, sort_keys=True
+            ),
+            step_configuration=request.step.json(sort_keys=True),
+            caching_parameters=json.dumps(
+                step_config.caching_parameters,
+                default=pydantic_encoder,
+                sort_keys=True,
+            ),
+            docstring=step_config.docstring,
+            num_outputs=len(step_config.outputs),
             status=request.status,
         )
 
@@ -105,31 +118,20 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The created StepRunModel.
         """
-        if self.caching_parameters:
-            caching_parameters = json.loads(self.caching_parameters)
-        else:
-            caching_parameters = {}
         return StepRunResponseModel(
             id=self.id,
             name=self.name,
             pipeline_run_id=self.pipeline_run_id,
             parent_step_ids=parent_step_ids,
-            enable_cache=self.enable_cache,
-            code_hash=self.code_hash,
             cache_key=self.cache_key,
             start_time=self.start_time,
             end_time=self.end_time,
-            entrypoint_name=self.entrypoint_name,
-            parameters=json.loads(self.parameters),
-            step_configuration=json.loads(self.step_configuration),
-            caching_parameters=caching_parameters,
-            docstring=self.docstring,
+            step=Step.parse_raw(self.step_configuration),
             status=self.status,
             created=self.created,
             updated=self.updated,
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
-            num_outputs=self.num_outputs,
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":

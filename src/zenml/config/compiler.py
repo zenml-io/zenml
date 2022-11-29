@@ -326,7 +326,7 @@ class Compiler:
         )
 
         complete_step_configuration = StepConfiguration(
-            docstring=step.__doc__, **step.configuration.dict()
+            **step.configuration.dict()
         )
 
         return Step(spec=step_spec, config=complete_step_configuration)

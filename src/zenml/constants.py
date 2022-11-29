@@ -149,6 +149,7 @@ DEFAULT_SERVICE_START_STOP_TIMEOUT = 10
 DEFAULT_LOCAL_SERVICE_IP_ADDRESS = "127.0.0.1"
 ZEN_SERVER_ENTRYPOINT = "zenml.zen_server.zen_server_api:app"
 
+STEP_SOURCE_PARAMETER_NAME = "step_source"
 
 # API Endpoint paths:
 API = "/api"

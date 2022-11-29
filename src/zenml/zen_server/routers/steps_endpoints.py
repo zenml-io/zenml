@@ -203,7 +203,7 @@ def get_step_configuration(
     Returns:
         The step configuration.
     """
-    return zen_store().get_run_step(step_id).step_configuration
+    return zen_store().get_run_step(step_id).step.dict()
 
 
 @router.get(

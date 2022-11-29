@@ -56,6 +56,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     enable_cache: bool
+    docstring: Optional[str]
     caching_parameters: Mapping[str, Any] = {}
     inputs: Mapping[str, PartialArtifactConfiguration] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
@@ -64,7 +65,6 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 class StepConfiguration(PartialStepConfiguration):
     """Step configuration class."""
 
-    docstring: Optional[str]
     inputs: Mapping[str, ArtifactConfiguration] = {}
     outputs: Mapping[str, ArtifactConfiguration] = {}
 

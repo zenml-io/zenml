@@ -48,7 +48,7 @@ class LineageGraph(BaseModel):
         step_id = STEP_PREFIX + str(step.id)
         if self.root_step_id is None:
             self.root_step_id = step_id
-        step_config = step.step_configuration.get("config", {})
+        step_config = step.step_configuration.dict()
         if step_config:
             step_config = {
                 key: value

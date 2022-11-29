@@ -14,11 +14,12 @@
 """Models representing steps of pipeline runs."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
     BaseRequestModel,
@@ -39,22 +40,15 @@ class StepRunBaseModel(BaseModel):
         title="The name of the pipeline run step.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
+    step: Step
     pipeline_run_id: UUID
-    parent_step_ids: List[UUID]
-    input_artifacts: Dict[str, UUID]
-    output_artifacts: Dict[str, UUID]  # mapping from output name to artifact ID
-    enable_cache: Optional[bool]
-    code_hash: Optional[str]
-    cache_key: Optional[str]
-    start_time: Optional[datetime]
-    end_time: Optional[datetime]
     status: ExecutionStatus
-    entrypoint_name: str
-    parameters: Dict[str, str]
-    step_configuration: Dict[str, Any]
-    caching_parameters: Dict[str, Any]
-    docstring: Optional[str]
-    num_outputs: Optional[int]
+    parent_step_ids: List[UUID] = []
+    input_artifacts: Dict[str, UUID] = {}
+    output_artifacts: Dict[str, UUID] = {}
+    cache_key: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
 
 
 # -------- #

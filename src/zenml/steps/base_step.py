@@ -44,6 +44,7 @@ from zenml.config.step_configurations import (
     StepConfiguration,
     StepConfigurationUpdate,
 )
+from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -288,8 +289,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
         self._configuration = PartialStepConfiguration(
-            name=name,
-            enable_cache=enable_cache,
+            name=name, enable_cache=enable_cache, docstring=self.__doc__
         )
         self._apply_class_configuration(kwargs)
         self._verify_and_apply_init_params(*args, **kwargs)
@@ -371,7 +371,7 @@ class BaseStep(metaclass=BaseStepMeta):
             if self._created_by_functional_api()
             else self.__class__
         )
-        parameters["step_source"] = source_utils.get_hashed_source(
+        parameters[STEP_SOURCE_PARAMETER_NAME] = source_utils.get_hashed_source(
             source_object
         )
 

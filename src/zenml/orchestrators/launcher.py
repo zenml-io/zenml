@@ -87,7 +87,7 @@ def resolve_step_inputs(
         current step.
     """
     current_run_steps = {
-        run_step.entrypoint_name: run_step
+        run_step.step.config.name: run_step
         for run_step in Client().zen_store.list_run_steps(run_id=run_id)
     }
 
@@ -183,7 +183,7 @@ def generate_artifact_uri(
     """
     return os.path.join(
         artifact_store.path,
-        step_run.entrypoint_name,
+        step_run.step.config.name,
         output_name,
         str(step_run.id),
     )
@@ -438,18 +438,18 @@ class Launcher:
             step_run = StepRunRequestModel(
                 name=self._step_name,
                 pipeline_run_id=pipeline_run.id,
+                step=self._step,
                 parent_step_ids=parent_step_ids,
                 input_artifacts=input_artifact_ids,
                 status=ExecutionStatus.RUNNING,
-                entrypoint_name=self._step.config.name,
-                parameters=parameters,
-                step_configuration=self._step.dict(),
+                # entrypoint_name=self._step.config.name,
+                # parameters=parameters,
+                # step_configuration=self._step.dict(),
                 cache_key=cache_key,
-                output_artifacts={},
-                caching_parameters=self._step.config.caching_parameters,
+                # caching_parameters=self._step.config.caching_parameters,
                 start_time=datetime.now(),
-                enable_cache=self._step.config.enable_cache,
-                num_outputs=len(self._step.config.outputs),
+                # enable_cache=self._step.config.enable_cache,
+                # num_outputs=len(self._step.config.outputs),
             )
 
             # 4. Check if the step can be cached
