@@ -55,9 +55,22 @@ def register_output_artifacts(
 
     Returns:
         The IDs of the registered output artifacts.
+
+    Raises:
+        ValueError: If an artifact doesn't have a materializer or data type.
     """
     output_artifact_ids = {}
     for name, artifact_ in output_artifacts.items():
+        if artifact_.materializer is None:
+            raise ValueError(
+                f"Artifact {name} does not have a materializer. "
+                "Please set one before registering."
+            )
+        if artifact_.data_type is None:
+            raise ValueError(
+                f"Artifact {name} does not have a data type. "
+                "Please set one before registering."
+            )
         artifact_model = ArtifactRequestModel(
             name=name,
             type=artifact_.TYPE_NAME,
