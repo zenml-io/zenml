@@ -861,3 +861,56 @@ def test_stack_export_delete_import(clean_client) -> None:
     )
     assert result.exit_code == 0
     assert clean_client.get_stack(new_stack_model.name)
+
+
+def test_stack_export_import_reuses_components(clean_client) -> None:
+    """Test exporting and then importing a stack reuses existing components."""
+    # create new stack
+    new_artifact_store = _create_local_artifact_store(clean_client)
+
+    new_artifact_store_model = clean_client.create_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.dict(),
+    )
+
+    new_orchestrator = _create_local_orchestrator(clean_client)
+
+    new_orchestrator_model = clean_client.create_stack_component(
+        name=new_orchestrator.name,
+        flavor=new_orchestrator.flavor,
+        component_type=new_orchestrator.type,
+        configuration=new_orchestrator.config.dict(),
+    )
+
+    stack_name = "arias_new_stack"
+    old_stack_model = clean_client.create_stack(
+        name=stack_name,
+        components={
+            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
+            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
+        },
+    )
+
+    # export stack
+    file_name = "arias_new_stack.yaml"
+
+    runner = CliRunner()
+    export_command = cli.commands["stack"].commands["export"]
+    result = runner.invoke(export_command, [stack_name, file_name])
+    assert result.exit_code == 0
+    assert os.path.exists("arias_new_stack.yaml")
+
+    # delete stack but no components
+    clean_client.delete_stack(name_id_or_prefix=stack_name)
+
+    # import stack
+    import_command = cli.commands["stack"].commands["import"]
+    result = runner.invoke(import_command, [stack_name])
+    assert result.exit_code == 0
+    new_stack_model = clean_client.get_stack(stack_name)
+
+    # new stack but with the same, reused components
+    assert old_stack_model.id != new_stack_model.id
+    assert old_stack_model.components == new_stack_model.components
