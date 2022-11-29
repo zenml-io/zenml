@@ -123,7 +123,7 @@ INFO:asyncio:Syncing pipeline runs...
 ## ❌ Common errors
 This section documents frequently encountered issues and solutions among users in Slack.
 
-### Error initializing rest store
+### 💢 Error initializing rest store
 
 Typically, the error presents itself as: 
 
@@ -136,7 +136,7 @@ If you restarted your machine after deploying ZenML then you have to run `zenml 
 Local ZenML deployments don't survive machine restarts.
 
 
-### Column 'step_configuration' cannot be null
+### 💢 Column 'step_configuration' cannot be null
 
 ```bash
 sqlalchemy.exc.IntegrityError: (pymysql.err.IntegrityError) (1048, "Column 'step_configuration' cannot be null")
@@ -145,8 +145,55 @@ sqlalchemy.exc.IntegrityError: (pymysql.err.IntegrityError) (1048, "Column 'step
 This happens when a step configuration is too long. 
 We changed the limit from 4K to 65K chars, but it could still happen if you have excessively long strings in your config.
 
-### Install ZenML on Apple Silicon without Rosetta
-Our recommended, and tested approach is to install via `Rosetta`. 
+
+### 💢 'Nonetype' object has no attribute 'name'
+This is also a common error you might encounter when you do not have the necessary stack components registered on the stack.
+
+For example:
+
+```shell
+╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮
+│ /home/dnth/Documents/zenfiles/nba-pipeline/run_pipeline.py:24 in <module>                        │
+│                                                                                                  │
+│    21 │   reference_data_splitter,                                                               │
+│    22 │   TrainingSplitConfig,                                                                   │
+│    23 )                                                                                          │
+│ ❱  24 from steps.trainer import random_forest_trainer                                            │
+│    25 from steps.encoder import encode_columns_and_clean                                         │
+│    26 from steps.importer import (                                                               │
+│    27 │   import_season_schedule,                                                                │
+│                                                                                                  │
+│ /home/dnth/Documents/zenfiles/nba-pipeline/steps/trainer.py:24 in <module>                       │
+│                                                                                                  │
+│   21 │   max_depth: int = 10000                                                                  │
+│   22 │   target_col: str = "FG3M"                                                                │
+│   23                                                                                             │
+│ ❱ 24 @step(enable_cache=False, experiment_tracker=experiment_tracker.name)                       │
+│   25 def random_forest_trainer(                                                                  │
+│   26 │   train_df_x: pd.DataFrame,                                                               │
+│   27 │   train_df_y: pd.DataFrame,                                                               │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+AttributeError: 'NoneType' object has no attribute 'name'
+```
+
+In the above error snippet, the `step` on line 24 expect an experiment tracker but could not find it on the stack.
+To solve it, register an experiment tracker of your choice on the stack. For example
+
+```shell
+zenml experiment-tracker register mlflow_tracker  --flavor=mlflow
+```
+
+and update your stack with the experiment tracker:
+```shell
+zenml stack update -e mlflow_tracker
+```
+
+This also applies to all other [stack components](https://docs.zenml.io/component-gallery/categories).
+Read more about registering stacks [here](https://docs.zenml.io/starter-guide/stacks/registering-stacks).
+
+
+### 💢 Install ZenML on Apple Silicon without Rosetta
+Our recommended, and tested approach is to install via `Rosetta`.
 
 But a community member recently discovered a way to install ZenML on Apple Silicon without Rosetta.
 Join the conversation [here](https://open.crowd.dev/zenml/for-what-its-worth-i-was-able-to-successfully-install?q=&p=1).
