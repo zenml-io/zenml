@@ -33,6 +33,7 @@ from zenml.artifact_stores.local_artifact_store import (
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.step_configurations import Step
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
@@ -679,42 +680,40 @@ def sample_project_model() -> ProjectResponseModel:
 @pytest.fixture
 def sample_step_model() -> StepRunResponseModel:
     """Return a sample step model for testing purposes"""
+    step = Step.parse_obj(
+        {
+            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
+            "config": {"name": "step_name", "enable_cache": True},
+        }
+    )
+
     return StepRunResponseModel(
         id=uuid4(),
         name="sample_step",
-        parents_step_ids=[0],
-        entrypoint_name="sample_entrypoint",
-        parameters={},
         pipeline_run_id=uuid4(),
-        parent_step_ids=[],
-        input_artifacts={},
-        output_artifacts={},
-        step_configuration={},
-        caching_parameters={},
+        step=step,
         status=ExecutionStatus.COMPLETED,
         created=datetime.now(),
         updated=datetime.now(),
-        docstring="",
-        mlmd_id=0,
     )
 
 
 @pytest.fixture
 def sample_step_request_model() -> StepRunRequestModel:
     """Return a sample step model for testing purposes"""
+    step = Step.parse_obj(
+        {
+            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
+            "config": {"name": "step_name", "enable_cache": True},
+        }
+    )
+
     return StepRunRequestModel(
         name="sample_step",
         parents_step_ids=[0],
-        entrypoint_name="sample_entrypoint",
-        parameters={},
-        mlmd_parent_step_ids=[],
         pipeline_run_id=uuid4(),
-        parent_step_ids=[],
-        input_artifacts={},
-        step_configuration={},
         status=ExecutionStatus.COMPLETED,
-        docstring="",
-        mlmd_id=0,
+        step=step,
     )
 
 
