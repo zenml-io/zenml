@@ -41,7 +41,7 @@ the Neptune Experiment Tracker and add it to your stack:
 zenml integration install neptune -y
 ```
 
-The Neptune. Experiment Tracker needs to be configured with the
+The Neptune Experiment Tracker needs to be configured with the
 credentials required to connect to Neptune using an API token.
 
 ### Authentication Methods
@@ -49,7 +49,7 @@ credentials required to connect to Neptune using an API token.
 You need to configure the following credentials for authentication to
 Neptune:
 
-* `api_token`: API key token of your Neptune account. If left blank, Neptune will
+* `api_token`: [API key token](https://docs.neptune.ai/setup/setting_api_token) of your Neptune account. If left blank, Neptune will
 attempt to retrieve it from your environment variables.
 * `project`: The name of the project where you're sending the new run, in the form "workspace-name/project-name".
 If the project is not specified, Neptune will attempt to retrieve it from your environment variables.
