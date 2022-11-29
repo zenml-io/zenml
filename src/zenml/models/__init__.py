@@ -52,6 +52,7 @@ from zenml.models.stack_models import (
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
+    StackFilterModel
 )
 from zenml.models.step_run_models import (
     StepRunRequestModel,
@@ -145,6 +146,7 @@ __all__ = [
     "StackRequestModel",
     "StackResponseModel",
     "StackUpdateModel",
+    "StackFilterModel",
     "StepRunRequestModel",
     "StepRunResponseModel",
     "StepRunUpdateModel",

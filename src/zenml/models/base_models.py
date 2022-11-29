@@ -12,13 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base domain model definitions."""
+from __future__ import annotations
+
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar, Union, \
+    List
 from uuid import UUID
 
-from pydantic import Field
+from dataclasses import dataclass
+
+from fastapi import Query
+from pydantic import Field, BaseModel, root_validator, validator
 
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
+from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
     from zenml.models.project_models import ProjectResponseModel
@@ -245,4 +252,149 @@ def update_model(_cls: Type[T]) -> Type[T]:
         value.required = False
         value.allow_none = True
 
+    return _cls
+
+
+# ------------------ #
+# QUERY PARAM MODELS #
+# ------------------ #
+
+@dataclass
+class RawParams:
+    limit: int
+    offset: int
+
+
+class GenericFilterOps(StrEnum):
+    """Ops for all filters for string values on list methods"""
+
+    EQUALS = "equals"
+    CONTAINS = "contains"
+    GTE = "gte"
+    GT = "gt"
+    LTE = "lte"
+    LT = "lt"
+
+
+class Filter(BaseModel):
+    operation: GenericFilterOps
+    value: str
+
+
+class ListBaseModel(BaseModel):
+    dict_of_filters: Dict[str, Filter] = {}
+    sort_by: str = Query("created")
+
+    page: int = Query(1, ge=1, description="Page number")
+    size: int = Query(50, ge=1, le=100, description="Page size")
+
+    id: UUID = Query(None, description="Id for this resource")
+    created: datetime = Query(None, description="Created")
+    updated: datetime = Query(None, description="Updated")
+
+    def get_pagination_params(self) -> RawParams:
+        return RawParams(
+            limit=self.size,
+            offset=self.size * (self.page - 1),
+        )
+
+    @validator("sort_by", pre=True)
+    def sort_column(cls, v):
+        if v in ["sort_by", "dict_of_filters", "page", "size"]:
+            raise ValueError(
+                f"This resource can not be sorted by this field: '{v}'"
+            )
+        elif v in cls.__fields__:
+            return v
+        else:
+            raise ValueError(
+                "You can only sort by valid fields of this resource"
+            )
+
+    @root_validator()
+    def change(cls, values):
+        values["dict_of_filters"] = {}
+
+        for key, value in values.items():
+            if key not in ["sort_by", "dict_of_filters", "page", "size"] and value:
+                if isinstance(value, str):
+                    for op in GenericFilterOps.values():
+                        if value.startswith(f"{op}:"):
+                            values["dict_of_filters"][key] = Filter(
+                                operation=op, value=value.lstrip(op)
+                            )
+                    else:
+                        values["dict_of_filters"][key] = Filter(
+                            operation=GenericFilterOps("equals"), value=value
+                        )
+                else:
+                    values["dict_of_filters"][key] = Filter(
+                        operation=GenericFilterOps("equals"), value=value
+                    )
+        return values
+    #
+    # @validator("*", pre=True)
+    # def change(cls, v, values, config, field):
+    #     if field.type_ == Union[str, Filter]:
+    #         for op in StringFilterOps.values():
+    #             if not isinstance(v, UUID) and v.startswith(f'{op}:'):
+    #                 return Filter(operation=StringFilterOps(op),
+    #                               value=v.lstrip(op))
+    #         else:
+    #             return Filter(
+    #                 operation=StringFilterOps("equals"),
+    #                 value=v
+    #             )
+    #
+    #     if field.type_ == Union[str, UUID, Filter]:
+    #         if isinstance(v, str):
+    #             for op in StringFilterOps.values():
+    #                 if not isinstance(v, UUID) and v.startswith(f'{op}:'):
+    #                     return Filter(operation=StringFilterOps(op),
+    #                                   value=v.lstrip(op))
+    #         else:
+    #             return Filter(
+    #                 operation=StringFilterOps("equals"),
+    #                 value=v
+    #             )
+    #
+    #     elif field.type_ == Union[UUID, Filter]:
+    #         return Filter(
+    #             operation=GenericFilterOps("equals"),
+    #             value=str(v)
+    #         )
+    #
+    #     elif field.type_ == Union[int, Filter]:
+    #         for op in IntFilterOps.values():
+    #             if v.startswith(f'{op}:'):
+    #                 return Filter(operation=IntFilterOps(op),
+    #                               value=v.lstrip(op))
+    #         else:
+    #             return Filter(
+    #                 operation=IntFilterOps("equals"),
+    #                 value=int(v)
+    #             )
+    #
+    #     else:
+    #         return v
+
+
+R = TypeVar("R", bound="BaseResponseModel")
+
+
+def filter_model(_cls: Type[R]) -> Type[R]:
+    """Base update model.
+
+    This is used as a decorator on top of request models to convert them
+    into update models where the fields are optional and can be set to None.
+
+    Args:
+        _cls: The class to decorate
+
+    Returns:
+        The decorated class.
+    """
+    # TODO add methods to translate queries into the appropriate methods
+    for field in _cls.__fields__.keys():
+        _cls.__setattr__(field, Query(None, max_length=200))
     return _cls

@@ -33,7 +33,8 @@ from zenml.models import (
     PipelineRunUpdateModel,
     StepRunResponseModel,
 )
-from zenml.models.page_model import Page, Params
+from zenml.models.page_model import Page
+from zenml.models.base_models import ListBaseModel
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -59,7 +60,7 @@ def list_runs(
     component_id: Optional[UUID] = None,
     pipeline_id: Optional[UUID] = None,
     unlisted: bool = False,
-    params: Params = Depends(),
+    params: ListBaseModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineRunResponseModel]:
     """Get pipeline runs according to query filters.

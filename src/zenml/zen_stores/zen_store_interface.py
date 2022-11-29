@@ -53,9 +53,10 @@ from zenml.models import (
     UserAuthModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, StackFilterModel,
 )
-from zenml.models.page_model import Page, Params
+from zenml.models.page_model import Page
+from zenml.models.base_models import ListBaseModel
 from zenml.models.server_models import ServerModel
 
 
@@ -180,24 +181,12 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stacks(
         self,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
+        stack_filters: StackFilterModel
     ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
-            project_name_or_id: ID or name of the Project containing the stack
-            user_name_or_id: Optionally filter stacks by their owner
-            component_id: Optionally filter for stacks that contain the
-                          component
-            name: Optionally filter stacks by their name
-            is_shared: Optionally filter out stacks by whether they are shared
-                or not
-            params: Parameters for pagination (page and size)
+            stack_filters: All filter parameters including pagination params
 
 
 
@@ -260,7 +249,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stack_components(
         self,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
@@ -377,7 +366,7 @@ class ZenStoreInterface(ABC):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
@@ -461,7 +450,7 @@ class ZenStoreInterface(ABC):
     def list_users(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[UserResponseModel]:
         """List all users.
 
@@ -534,7 +523,7 @@ class ZenStoreInterface(ABC):
     def list_teams(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[TeamResponseModel]:
         """List all teams.
 
@@ -610,7 +599,7 @@ class ZenStoreInterface(ABC):
     def list_roles(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[RoleResponseModel]:
         """List all roles.
 
@@ -697,7 +686,7 @@ class ZenStoreInterface(ABC):
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[RoleAssignmentResponseModel]:
         """List all role assignments.
 
@@ -756,7 +745,7 @@ class ZenStoreInterface(ABC):
     def list_projects(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[ProjectResponseModel]:
         """List all projects.
 
@@ -837,7 +826,7 @@ class ZenStoreInterface(ABC):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[PipelineResponseModel]:
         """List all pipelines in the project.
 
@@ -948,7 +937,7 @@ class ZenStoreInterface(ABC):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[PipelineRunResponseModel]:
         """Gets all pipeline runs.
 

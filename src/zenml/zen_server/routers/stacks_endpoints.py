@@ -20,8 +20,8 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import StackResponseModel, StackUpdateModel
-from zenml.models.page_model import Page, Params
+from zenml.models import StackResponseModel, StackUpdateModel, StackFilterModel
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -32,6 +32,8 @@ router = APIRouter(
 )
 
 
+# stacks?id=startswith:c3f45a2&name=contains:baris
+
 @router.get(
     "",
     response_model=Page[StackResponseModel],
@@ -39,12 +41,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_stacks(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    component_id: Optional[UUID] = None,
-    name: Optional[str] = None,
-    is_shared: Optional[bool] = None,
-    params: Params = Depends(),
+    filters: StackFilterModel = Depends(),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -64,33 +61,33 @@ def list_stacks(
     Returns:
         All stacks.
     """
-    stacks: Page[StackResponseModel] = []
+    # stacks: Page[StackResponseModel] = []
+    #
+    # # Get private stacks unless `is_shared` is set to True
+    # if is_shared is None or not is_shared:
+    #     own_stacks = zen_store().list_stacks(
+    #         project_name_or_id=project_name_or_id,
+    #         user_name_or_id=user_name_or_id or auth_context.user.id,
+    #         component_id=component_id,
+    #         is_shared=False,
+    #         name=name,
+    #         params=params,
+    #     )
+    #     stacks += own_stacks
+    #
+    # # Get shared stacks unless `is_shared` is set to False
+    # if is_shared is None or is_shared:
+    #     shared_stacks = zen_store().list_stacks(
+    #         project_name_or_id=project_name_or_id,
+    #         user_name_or_id=user_name_or_id,
+    #         component_id=component_id,
+    #         is_shared=True,
+    #         name=name,
+    #         params=params,
+    #     )
+    #     stacks += shared_stacks
 
-    # Get private stacks unless `is_shared` is set to True
-    if is_shared is None or not is_shared:
-        own_stacks = zen_store().list_stacks(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id or auth_context.user.id,
-            component_id=component_id,
-            is_shared=False,
-            name=name,
-            params=params,
-        )
-        stacks += own_stacks
-
-    # Get shared stacks unless `is_shared` is set to False
-    if is_shared is None or is_shared:
-        shared_stacks = zen_store().list_stacks(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id,
-            component_id=component_id,
-            is_shared=True,
-            name=name,
-            params=params,
-        )
-        stacks += shared_stacks
-
-    return stacks
+    return zen_store().list_stacks(stack_filters=filters)
 
 
 @router.get(

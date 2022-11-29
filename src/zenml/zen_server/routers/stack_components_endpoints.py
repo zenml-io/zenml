@@ -20,7 +20,8 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
 from zenml.models import ComponentResponseModel, ComponentUpdateModel
-from zenml.models.page_model import Page, Params
+from zenml.models.page_model import Page
+from zenml.models.base_models import ListBaseModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -50,7 +51,7 @@ def list_stack_components(
     name: Optional[str] = None,
     flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    params: Params = Depends(),
+    params: ListBaseModel = Depends(),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),

@@ -108,9 +108,9 @@ from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    ProjectScopedResponseModel, ListBaseModel,
 )
-from zenml.models.page_model import Page, Params
+from zenml.models.page_model import Page
 from zenml.models.server_models import ServerModel
 from zenml.models.team_models import TeamUpdateModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -498,7 +498,7 @@ class RestZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
@@ -607,7 +607,7 @@ class RestZenStore(BaseZenStore):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
@@ -714,7 +714,7 @@ class RestZenStore(BaseZenStore):
     def list_users(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[UserResponseModel]:
         """List all users.
 
@@ -803,7 +803,7 @@ class RestZenStore(BaseZenStore):
     def list_teams(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[TeamResponseModel]:
         """List all teams.
 
@@ -892,7 +892,7 @@ class RestZenStore(BaseZenStore):
     def list_roles(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[RoleResponseModel]:
         """List all roles.
 
@@ -953,7 +953,7 @@ class RestZenStore(BaseZenStore):
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[RoleAssignmentResponseModel]:
         """List all role assignments.
 
@@ -1067,7 +1067,7 @@ class RestZenStore(BaseZenStore):
     def list_projects(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[ProjectResponseModel]:
         """List all projects.
 
@@ -1160,7 +1160,7 @@ class RestZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[PipelineResponseModel]:
         """List all pipelines in the project.
 
@@ -1282,7 +1282,7 @@ class RestZenStore(BaseZenStore):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[PipelineRunResponseModel]:
         """Gets all pipeline runs.
 

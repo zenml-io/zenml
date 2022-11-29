@@ -36,7 +36,8 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
-from zenml.models.page_model import Page, Params
+from zenml.models.page_model import Page
+from zenml.models.base_models import ListBaseModel
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
@@ -75,7 +76,7 @@ current_user_router = APIRouter(
 @handle_exceptions
 def list_users(
     name: Optional[str] = None,
-    params: Params = Depends(),
+    params: ListBaseModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[UserResponseModel]:
     """Returns a list of all users.
@@ -329,7 +330,7 @@ def list_role_assignments_for_user(
     user_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
     role_name_or_id: Optional[Union[str, UUID]] = None,
-    params: Params = Depends(),
+    params: ListBaseModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[RoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a user.

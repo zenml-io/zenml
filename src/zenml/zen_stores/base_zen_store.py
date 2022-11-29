@@ -40,7 +40,7 @@ from zenml.models import (
     StackRequestModel,
     StackResponseModel,
     UserRequestModel,
-    UserResponseModel,
+    UserResponseModel, StackFilterModel,
 )
 from zenml.models.server_models import (
     ServerDatabaseType,
@@ -245,16 +245,16 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             default_user = self._default_user
         except KeyError:
             default_user = self._create_default_user()
-        try:
-            self._get_default_stack(
-                project_name_or_id=default_project.id,
-                user_name_or_id=default_user.id,
-            )
-        except KeyError:
-            self._create_default_stack(
-                project_name_or_id=default_project.id,
-                user_name_or_id=default_user.id,
-            )
+        #try:
+        self._get_default_stack(
+            project_name_or_id=default_project.id,
+            user_name_or_id=default_user.id,
+        )
+        # except KeyError:
+        #     self._create_default_stack(
+        #         project_name_or_id=default_project.id,
+        #         user_name_or_id=default_user.id,
+        #     )
 
     @property
     def url(self) -> str:
@@ -493,9 +493,11 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             KeyError: if the project or default stack doesn't exist.
         """
         default_stacks = self.list_stacks(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id,
-            name=DEFAULT_STACK_NAME,
+            StackFilterModel(
+                project=project_name_or_id,
+                user=user_name_or_id,
+                name=DEFAULT_STACK_NAME
+            )
         )
         if default_stacks.total == 0:
             raise KeyError(

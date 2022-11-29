@@ -54,7 +54,7 @@ from sqlalchemy.orm import noload
 from sqlmodel import Session, func, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
-from zenml.models.base_models import BaseResponseModel
+from zenml.models.base_models import BaseResponseModel, ListBaseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 T = TypeVar("T", bound=BaseSchema)
@@ -98,7 +98,7 @@ class Page(GenericModel, Generic[B]):
     total: conint(ge=0)  # type: ignore
     items: Sequence[B]
 
-    __params_type__ = Params
+    __params_type__ = ListBaseModel
 
     @classmethod
     def create(
@@ -106,10 +106,10 @@ class Page(GenericModel, Generic[B]):
         items: Sequence[B],
         total: int,
         total_pages: int,
-        params: Params,
+        params: ListBaseModel,
     ) -> Page[B]:
 
-        if not isinstance(params, Params):
+        if not isinstance(params, ListBaseModel):
             raise ValueError("Page should be used with Params")
 
         return cls(
@@ -138,7 +138,7 @@ class Page(GenericModel, Generic[B]):
             The Domain Model representation of the DB resource
         """
         params = resolve_params(params)
-        raw_params = params.to_raw_params()
+        raw_params = params.get_pagination_params()
 
         if not isinstance(query, (Select, SelectOfScalar)):
             query = select(query)

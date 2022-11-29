@@ -101,10 +101,11 @@ def token(
         user_name_or_id=auth_context.user.id, project_name_or_id=None
     )
 
+    # TODO: This needs to happen at the sql level now
     permissions = set().union(
         *[
             zen_store().get_role(ra.role.id).permissions
-            for ra in role_assignments
+            for ra in role_assignments.items
         ]
     )
 

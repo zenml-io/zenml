@@ -16,8 +16,11 @@
 import base64
 import json
 import logging
+import math
 import os
 import re
+from contextvars import ContextVar
+from datetime import datetime, timedelta
 from pathlib import Path, PurePath
 from typing import (
     Any,
@@ -98,8 +101,10 @@ from zenml.models import (
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
+    StackFilterModel,
 )
-from zenml.models.page_model import Page, Params
+from zenml.models.page_model import Page
+from zenml.models.base_models import ListBaseModel, BaseResponseModel, Filter
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -138,10 +143,15 @@ from zenml.zen_stores.schemas import (
     TeamRoleAssignmentSchema,
     TeamSchema,
     UserRoleAssignmentSchema,
-    UserSchema,
+    UserSchema, BaseSchema,
 )
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
+AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+B = TypeVar("B", bound=BaseResponseModel)
+
+params_value: ContextVar[ListBaseModel] = ContextVar("params_value")
+
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -827,54 +837,86 @@ class SqlZenStore(BaseZenStore):
 
     def list_stacks(
         self,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
+        stack_filters: StackFilterModel
     ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
-            params: Parameters for pagination (page and size)
-            project_name_or_id: ID or name of the Project containing the stack
-            user_name_or_id: Optionally filter stacks by their owner
-            component_id: Optionally filter for stacks that contain the
-                          component
-            name: Optionally filter stacks by their name
-            is_shared: Optionally filter out stacks by whether they are shared
-                or not
+            stack_filters: All filter parameters including pagination params
 
         Returns:
             A list of all stacks matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Get a list of all stacks
+            # Manually create the query and add any custom clauses
             query = select(StackSchema)
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(StackSchema.project_id == project.id)
-            if user_name_or_id:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(StackSchema.user_id == user.id)
-            if component_id:
-                query = query.where(
-                    StackCompositionSchema.stack_id == StackSchema.id
-                ).where(StackCompositionSchema.component_id == component_id)
-            if name:
-                query = query.where(StackSchema.name == name)
-            if is_shared is not None:
-                query = query.where(StackSchema.is_shared == is_shared)
 
-            query = query.order_by(StackSchema.created)
-            paged_stacks = Page.paginate(
-                session=session, query=query, params=params
+            paged_stacks = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StackSchema,
+                filters=stack_filters
             )
-
+            # paged_stacks = Page.paginate(
+            #     session=session, query=query, params=stack_filters
+            # )
             return paged_stacks
+
+    @classmethod
+    def filter_and_paginate(
+        cls,
+        session: Session,
+        query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
+        table: Type[AnySchema],
+        filters: Optional[ListBaseModel] = None,
+    ) -> Page[B]:
+        """Given a query, select the range defined in params and return a Page instance with a list of Domain Models.
+
+        Args:
+            session: The SQLModel Session
+            query: The query to execute
+            table: The table to select from
+            filters: The filters to use, including pagination and sorting
+
+        Returns:
+            The Domain Model representation of the DB resource
+        """
+        breakpoint()
+        # Filtering
+        for column, filter in filters.dict_of_filters.items():
+            filter = Filter.parse_obj(filter)
+            if filter.operation == 'equals':
+                query = query.where(getattr(table, column) == filter.value)
+                logger.warning(f"Filtering Stack by {column} == {filter.value}")
+            elif filter.operation == 'contains':
+                query = query.where(getattr(table, column).like(f'%{filter.value}%'))
+                logger.warning(f"Filtering Stack by {column}.like({filter.value})")
+
+        # Sorting
+        query = query.order_by(getattr(table, filters.sort_by))
+
+        # Pagination
+        raw_pagination_params = filters.get_pagination_params()
+
+        total = session.scalar(
+            select(func.count("*")).select_from(
+                query.order_by(None).options(noload("*")).subquery()
+            )
+        )
+
+        total_pages = math.ceil(total / raw_pagination_params.limit)
+
+        items: List[AnySchema] = (
+            session.exec(
+                query.limit(raw_pagination_params.limit).offset(raw_pagination_params.offset)
+            )
+            .unique()
+            .all()
+        )
+
+        items: List[B] = [i.to_model() for i in items]
+
+        return Page.create(items, total, total_pages, filters)
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
@@ -1135,7 +1177,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
@@ -1479,7 +1521,7 @@ class SqlZenStore(BaseZenStore):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
@@ -1640,7 +1682,7 @@ class SqlZenStore(BaseZenStore):
     def list_users(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[UserResponseModel]:
         """List all users.
 
@@ -1776,7 +1818,7 @@ class SqlZenStore(BaseZenStore):
     def list_teams(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[TeamResponseModel]:
         """List all teams.
 
@@ -1910,7 +1952,7 @@ class SqlZenStore(BaseZenStore):
     def list_roles(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[RoleResponseModel]:
         """List all roles.
 
@@ -2056,7 +2098,7 @@ class SqlZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         role_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[RoleAssignmentResponseModel]:
         """List all user role assignments.
 
@@ -2095,7 +2137,7 @@ class SqlZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         role_name_or_id: Optional[Union[str, UUID]] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[RoleAssignmentResponseModel]:
         """List all team role assignments.
 
@@ -2135,7 +2177,7 @@ class SqlZenStore(BaseZenStore):
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[RoleAssignmentResponseModel]:
         """List all role assignments.
 
@@ -2438,7 +2480,7 @@ class SqlZenStore(BaseZenStore):
     def list_projects(
         self,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[ProjectResponseModel]:
         """List all projects.
 
@@ -2605,7 +2647,7 @@ class SqlZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[PipelineResponseModel]:
         """List all pipelines in the project.
 
@@ -2848,7 +2890,7 @@ class SqlZenStore(BaseZenStore):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-        params: Params = Params(page=1, size=LIMIT_DEFAULT),
+        params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
     ) -> Page[PipelineRunResponseModel]:
         """Gets all pipeline runs.
 

@@ -14,18 +14,23 @@
 """Models representing stacks."""
 
 import json
-from typing import Any, Dict, List
+from datetime import datetime
+from typing import Any, ClassVar, Dict, List, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from fastapi import Query
+from pydantic import BaseModel, Field, validator
 
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
-    update_model,
+    update_model, filter_model, ListBaseModel, Filter,
 )
 from zenml.models.component_models import ComponentResponseModel
+
+from zenml.utils.enum_utils import StrEnum
+
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 # ---- #
@@ -104,6 +109,28 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
         }
 
         return yaml_data
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class StackFilterModel(ListBaseModel):
+
+    is_shared: bool = Query(
+        None, description="If the stack is shared or private"
+    )
+    name: str = Query(None, description="Name of the stack", )
+    description: str = Query(
+        None, description="Description of the stack"
+    )
+    project_id: UUID = Query(
+        None, description="Project of the stack")
+    user_id: UUID = Query(
+        None, description="User of the stack")
+    component_id: UUID = Query(
+        None, description="Component in the stack")
 
 
 # ------- #

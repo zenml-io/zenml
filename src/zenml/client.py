@@ -80,8 +80,8 @@ from zenml.models import (
     UserUpdateModel,
 )
 from zenml.models.artifact_models import ArtifactResponseModel
-from zenml.models.base_models import BaseResponseModel
-from zenml.models.page_model import Page, Params
+from zenml.models.base_models import BaseResponseModel, ListBaseModel
+from zenml.models.page_model import Page
 from zenml.models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -2620,12 +2620,12 @@ class Client(metaclass=ClientMetaClass):
             self,
             list_command: Callable,
     ) -> List[AnyResponseModel]:
-        params = Params(page=1)
+        params = ListBaseModel(page=1)
         first_page: Page[BaseResponseModel] = list_command(params=params)
         list_of_entities = list(first_page.items)
         if first_page.total_pages < 1:
             for page in [1, first_page.total_pages]:
-                params = Params(page=page)
+                params = ListBaseModel(page=page)
                 list_of_entities.append(list_command(params))
 
         return list_of_entities
