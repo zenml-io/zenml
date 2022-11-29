@@ -56,11 +56,11 @@ class PandasMaterializer(BaseMaterializer):
         except ImportError:
             self.pyarrow_exists = False
             logger.warning(
-                "By default, `PandasMaterializer` stores data as a "
-                "`.csv` file. If you want to store data, in a more "
-                "efficient way, you can install `pyarrow` by running "
+                "By default, the `PandasMaterializer` stores data as a "
+                "`.csv` file. If you want to store data more efficiently, "
+                "you can install `pyarrow` by running "
                 "'`pip install pyarrow`'. This will allow `PandasMaterializer` "
-                "to store data as a `.parquet` file instead."
+                "to automatically store the data as a `.parquet` file instead."
             )
         finally:
             self.parquet_path = os.path.join(
@@ -71,7 +71,7 @@ class PandasMaterializer(BaseMaterializer):
     def handle_input(
         self, data_type: Type[Any]
     ) -> Union[pd.DataFrame, pd.Series]:
-        """Reads pd.DataFrame or pd.Series from a pickled file.
+        """Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.
 
         Args:
             data_type: The type of the data to read.
@@ -91,9 +91,9 @@ class PandasMaterializer(BaseMaterializer):
                 raise ImportError(
                     "You have an old version of a `PandasMaterializer` "
                     "data artifact stored in the artifact store "
-                    "as a `.parquet` file, which requires `pyarrow` and "
-                    "`fastparquet`for reading, You can install `pyarrow` & "
-                    "`fastparquet` by running `pip install pyarrow fastparquet`."
+                    "as a `.parquet` file, which requires `pyarrow` "
+                    "for reading, You can install `pyarrow` by running "
+                    "'`pip install pyarrow fastparquet`'."
                 )
         else:
             with fileio.open(self.csv_path, mode="rb") as f:
@@ -103,6 +103,14 @@ class PandasMaterializer(BaseMaterializer):
         def is_dataframe_or_series(
             df: Union[pd.DataFrame, pd.Series]
         ) -> Union[pd.DataFrame, pd.Series]:
+            """Checks if the data is a `pd.DataFrame` or `pd.Series`.
+
+            Args:
+                df: The data to check.
+
+            Returns:
+                The data if it is a `pd.DataFrame` or `pd.Series`.
+            """
             if issubclass(data_type, pd.Series):
                 # Taking the first column if its a series as the assumption
                 # is that there will only be one
