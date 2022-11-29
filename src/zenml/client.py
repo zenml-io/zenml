@@ -45,6 +45,7 @@ from zenml.exceptions import (
     IllegalOperationError,
     InitializationException,
     ValidationError,
+    ZenKeyError,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -2507,11 +2508,15 @@ class Client(metaclass=ClientMetaClass):
         )
 
         if len(components) > 1:
-            raise KeyError(
-                f"Multiple {component_type.value} components have been found "
-                f"for name '{name_id_or_prefix}'. The components listed "
-                f"above all share this name. Please specify the component by "
-                f"full or partial id."
+            component_list = "\n ".join(
+                [f"{c.name} ({c.id})" for c in components]
+            )
+            raise ZenKeyError(
+                f"Multiple {component_type.value} instances have been "
+                f"found for name '{name_id_or_prefix}': \n"
+                f"{component_list}.\n"
+                f"The {component_type.value} instances listed above all share "
+                f"this name. Please specify by full or partial id."
             )
         elif len(components) == 1:
             return components[0]
@@ -2527,10 +2532,14 @@ class Client(metaclass=ClientMetaClass):
             if str(component.id).startswith(name_id_or_prefix)
         ]
         if len(filtered_comps) > 1:
-            raise KeyError(
-                f"The components listed above all share the provided "
-                f"prefix '{name_id_or_prefix}' on their ids. Please "
-                f"provide more characters to uniquely identify only one "
+            filtered_component_list = "\n ".join(
+                [f"{fc.name} ({fc.id})" for fc in filtered_comps]
+            )
+            raise ZenKeyError(
+                f"The components listed below all share the provided "
+                f"prefix '{name_id_or_prefix}' on their ids:\n"
+                f"{filtered_component_list}.\n"
+                f"Please provide more characters to uniquely identify only one "
                 f"component."
             )
 
@@ -2586,12 +2595,21 @@ class Client(metaclass=ClientMetaClass):
             )
 
         if len(entities) > 1:
-            raise KeyError(
-                f"Multiple {response_model} have been found "
-                f"for name '{name_id_or_prefix}'. The {response_model} listed "
-                f"above all share this name. Please specify by "
-                f"full or partial id."
+            entity_label = list_method.__name__.replace("list_", "")
+            entity_list = "\n ".join(
+                [
+                    f"{getattr(entity, 'name', '')} ({entity.id})"
+                    for entity in entities
+                ]
             )
+            raise ZenKeyError(
+                f"Multiple {entity_label} have been "
+                f"found for name '{name_id_or_prefix}': \n"
+                f"{entity_list}.\n"
+                f"The {entity_label} listed above all share this name. Please "
+                f"specify by full or partial id."
+            )
+
         elif len(entities) == 1:
             return entities[0]
         else:
@@ -2606,11 +2624,20 @@ class Client(metaclass=ClientMetaClass):
                 if str(entity.id).startswith(name_id_or_prefix)
             ]
             if len(filtered_entities) > 1:
-                raise KeyError(
-                    f"The {response_model} listed above all share the provided "
-                    f"prefix '{name_id_or_prefix}' on their ids. Please "
-                    f"provide more characters to uniquely identify only one "
-                    f"{response_model}."
+                entity_label = list_method.__name__.replace("list_", "")
+                entity_list = "\n ".join(
+                    [
+                        f"{getattr(f_entity, 'name', '')} ({f_entity.id})"
+                        for f_entity in filtered_entities
+                    ]
+                )
+
+                raise ZenKeyError(
+                    f"Multiple {entity_label} have been found that share "
+                    f"the provided prefix '{name_id_or_prefix}' on their ids:\n"
+                    f"{entity_list}.\n"
+                    f"Please provide more characters to uniquely identify "
+                    f"only one of the {entity_label}."
                 )
 
             elif len(filtered_entities) == 1:
