@@ -19,16 +19,17 @@ from typing import Any, Type, Union
 import pandas as pd
 
 from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact
+from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 
 logger = get_logger(__name__)
 
-DEFAULT_FILENAME = "df.parquet.gzip"
+PARQUET_FILENAME = "df.parquet.gzip"
 COMPRESSION_TYPE = "gzip"
 
-DATAFRAME_FILENAME = "df.pkl"
+CSV_FILENAME = "df.csv"
 
 
 class PandasMaterializer(BaseMaterializer):
@@ -40,6 +41,32 @@ class PandasMaterializer(BaseMaterializer):
         StatisticsArtifact,
         SchemaArtifact,
     )
+
+    def __init__(self, artifact: "BaseArtifact"):
+        """Define `self.data_path`.
+
+        Args:
+            artifact: Artifact required by `BaseMaterializer.__init__()`.
+        """
+        super().__init__(artifact)
+        try:
+            import pyarrow  # type: ignore
+
+            self.pyarrow_exists = True
+        except ImportError:
+            self.pyarrow_exists = False
+            logger.warning(
+                "By default, `PandasMaterializer` stores data as a "
+                "`.csv` file. If you want to store data, in a more "
+                "efficient way, you can install `pyarrow` by running "
+                "'`pip install pyarrow`'. This will allow `PandasMaterializer` "
+                "to store data as a `.parquet` file instead."
+            )
+        finally:
+            self.parquet_path = os.path.join(
+                self.artifact.uri, PARQUET_FILENAME
+            )
+            self.csv_path = os.path.join(self.artifact.uri, CSV_FILENAME)
 
     def handle_input(
         self, data_type: Type[Any]
@@ -56,36 +83,21 @@ class PandasMaterializer(BaseMaterializer):
             The pandas dataframe or series.
         """
         super().handle_input(data_type)
-        dataframe_file = os.path.join(self.artifact.uri, DATAFRAME_FILENAME)
-
-        if fileio.exists(dataframe_file):
-            with fileio.open(dataframe_file, "rb") as f:
-                df = pd.read_pickle(f)
-
-        elif fileio.exists(os.path.join(self.artifact.uri, DEFAULT_FILENAME)):
-            logger.warning(
-                "A legacy artifact was found. "
-                "This artifact was created with an older version of "
-                "ZenML. You can still use it, but it will be "
-                "converted to the new format on the next materialization."
-            )
-            try:
-                import fastparquet  # type: ignore
-                import pyarrow  # type: ignore
-
-                with fileio.open(
-                    os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
-                ) as f:
+        if fileio.exists(self.parquet_path):
+            if self.pyarrow_exists:
+                with fileio.open(self.parquet_path, mode="rb") as f:
                     df = pd.read_parquet(f)
-
-            except ImportError:
+            else:
                 raise ImportError(
-                    "You have an old version of a `PandasMaterializer` ",
-                    "data artifact stored in the artifact store ",
-                    "as a `.parquet` file, which requires `pyarrow` and ",
-                    "`fastparquet`for reading, You can install `pyarrow` & ",
-                    "`fastparquet` by running `pip install pyarrow fastparquet`.",
+                    "You have an old version of a `PandasMaterializer` "
+                    "data artifact stored in the artifact store "
+                    "as a `.parquet` file, which requires `pyarrow` and "
+                    "`fastparquet`for reading, You can install `pyarrow` & "
+                    "`fastparquet` by running `pip install pyarrow fastparquet`."
                 )
+        else:
+            with fileio.open(self.csv_path, mode="rb") as f:
+                df = pd.read_csv(f)
 
         # validate the type of the data.
         def is_dataframe_or_series(
@@ -109,7 +121,9 @@ class PandasMaterializer(BaseMaterializer):
             df: The pandas dataframe or series to write.
         """
         super().handle_return(df)
-        with fileio.open(
-            os.path.join(self.artifact.uri, DATAFRAME_FILENAME), "wb"
-        ) as f:
-            df.to_pickle(f)
+        if self.pyarrow_exists:
+            with fileio.open(self.parquet_path, mode="wb") as f:
+                df.to_parquet(f, compression=COMPRESSION_TYPE)
+        else:
+            with fileio.open(self.csv_path, mode="wb") as f:
+                df.to_csv(f, index=False)
