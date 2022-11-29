@@ -21,6 +21,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Mapping,
     Optional,
     Set,
     Type,
@@ -1265,7 +1266,7 @@ class Client(metaclass=ClientMetaClass):
     def create_stack(
         self,
         name: str,
-        components: Dict[StackComponentType, Union[str, UUID]],
+        components: Mapping[StackComponentType, Union[str, UUID]],
         is_shared: bool = False,
     ) -> "StackResponseModel":
         """Registers a stack and its components.
