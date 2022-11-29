@@ -80,10 +80,6 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             step: The step to run.
             deployment: The deployment configuration.
         """
-        # Make sure the artifact store is loaded before we load the execution
-        # info
-        stack = Client().active_stack
-
         step_run_id = UUID(self.entrypoint_args[STEP_RUN_ID_OPTION])
         step_run = Client().zen_store.get_run_step(step_run_id)
         pipeline_run = Client().get_pipeline_run(step_run.pipeline_run_id)
@@ -92,8 +88,11 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             config=step.config,
             pipeline=deployment.pipeline,
             run_name=pipeline_run.name,
+            run_id=pipeline_run.id,
+            step_run_id=step_run_id,
         )
 
+        stack = Client().active_stack
         input_artifact_ids, _ = resolve_step_inputs(
             step=step, run_id=pipeline_run.id
         )
@@ -104,15 +103,9 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             step_run=step_run, stack=stack, step=step
         )
 
-        executor = StepExecutor(step=step, step_run=step_run)
-
-        stack.prepare_step_run(info=step_run_info)
-        try:
-            executor.execute(
-                input_artifacts=input_artifacts,
-                output_artifacts=output_artifacts,
-                run_name=pipeline_run.name,
-                pipeline_config=deployment.pipeline,
-            )
-        finally:
-            stack.cleanup_step_run(info=step_run_info)
+        executor = StepExecutor(step=step, stack=stack)
+        executor.execute(
+            input_artifacts=input_artifacts,
+            output_artifacts=output_artifacts,
+            step_run_info=step_run_info,
+        )

@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Type
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
-from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus
@@ -41,7 +40,7 @@ if TYPE_CHECKING:
     from uuid import UUID
 
     from zenml.config.step_configurations import Step
-    from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -74,15 +73,15 @@ def register_output_artifacts(
 class StepExecutor:
     """Class to execute ZenML steps."""
 
-    def __init__(self, step: "Step", step_run: "StepRunResponseModel"):
+    def __init__(self, step: "Step", stack: "Stack"):
         """Initializes the step executor.
 
         Args:
             step: The step to execute.
-            step_run: The step run mode.
+            stack: The stack on which the step should run.
         """
         self._step = step
-        self._step_run = step_run
+        self._stack = stack
 
     @property
     def configuration(self) -> StepConfiguration:
@@ -185,16 +184,14 @@ class StepExecutor:
         self,
         input_artifacts: Dict[str, BaseArtifact],
         output_artifacts: Dict[str, BaseArtifact],
-        run_name: str,
-        pipeline_config: PipelineConfiguration,
+        step_run_info: StepRunInfo,
     ) -> None:
         """Executes the step.
 
         Args:
             input_artifacts: The input artifacts of the step.
             output_artifacts: The output artifacts of the step.
-            run_name: The name of the run.
-            pipeline_config: The pipeline configuration.
+            step_run_info: The step run info.
 
         Raises:
             StepInterfaceError: If the output signature of the step does not
@@ -236,11 +233,6 @@ class StepExecutor:
                     input_artifacts[arg], arg_type
                 )
 
-        step_run_info = StepRunInfo(
-            config=self.configuration,
-            pipeline=pipeline_config,
-            run_name=run_name,
-        )
         # Wrap the execution of the step function in a step environment
         # that the step function code can access to retrieve information about
         # the pipeline runtime, such as the current step name and the current
@@ -248,7 +240,11 @@ class StepExecutor:
         with StepEnvironment(
             step_run_info=step_run_info,
         ):
-            return_values = step_entrypoint(**function_params)
+            self._stack.prepare_step_run(info=step_run_info)
+            try:
+                return_values = step_entrypoint(**function_params)
+            finally:
+                self._stack.cleanup_step_run(info=step_run_info)
 
         output_annotations = parse_return_type_annotations(spec.annotations)
         if len(output_annotations) > 0:
@@ -303,7 +299,7 @@ class StepExecutor:
         )
 
         Client().zen_store.update_run_step(
-            step_run_id=self._step_run.id,
+            step_run_id=step_run_info.step_run_id,
             step_run_update=StepRunUpdateModel(
                 output_artifacts=output_artifact_ids,
                 status=ExecutionStatus.COMPLETED,

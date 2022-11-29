@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import platform
+from uuid import uuid4
 
 import pytest
 
@@ -50,6 +51,8 @@ def test_step_is_running():
         config=StepConfiguration(enable_cache=True, name="step"),
         pipeline=PipelineConfiguration(enable_cache=True, name="pipeline"),
         run_name="run_name",
+        run_id=uuid4(),
+        step_run_id=uuid4(),
     )
     with StepEnvironment(
         step_run_info=step_run_info,
