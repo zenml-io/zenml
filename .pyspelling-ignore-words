@@ -252,6 +252,7 @@ FV
 FacetStatisticsVisualizer
 FastAPI
 FastaiLearnerMaterializer
+fastparquet
 FeastFeatureStore
 FeastFeatureStoreConfig
 FeastHistoricalFeaturesConfig
@@ -1240,6 +1241,7 @@ normalizer
 normed
 notodo
 np
+npy
 npz
 ns
 nullable
@@ -1305,6 +1307,7 @@ proxied
 pv
 pwd
 py
+pyarrow
 pydantic
 pyenv
 pylint
