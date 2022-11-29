@@ -43,8 +43,7 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         """Gets all options required for running with this configuration.
 
         Returns:
-            The superclass options as well as an option for the path to the
-            execution info.
+            The superclass options as well as an option for the step run id.
         """
         return super().get_entrypoint_options() | {
             STEP_RUN_ID_OPTION,
@@ -58,11 +57,10 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            **kwargs: Kwargs, must include the execution info path.
+            **kwargs: Kwargs, must include the step run id.
 
         Returns:
-            The superclass arguments as well as arguments for the path to the
-            execution info.
+            The superclass arguments as well as arguments for the step run id.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
             f"--{STEP_RUN_ID_OPTION}",
