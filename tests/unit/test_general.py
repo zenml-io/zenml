@@ -64,26 +64,26 @@ def _test_materializer(
     if materializer_class is None:
         materializer_class = default_materializer_registry[step_output_type]
 
-    mock_artifact = DataArtifact(uri=artifact_uri or "")
+    artifact_uri = os.path.abspath(artifact_uri or "")
+    mock_artifact = DataArtifact(uri=artifact_uri)
     materializer = materializer_class(mock_artifact)
-    data_path = os.path.abspath(mock_artifact.uri)
-    existing_files = os.listdir(data_path)
+    existing_files = os.listdir(artifact_uri)
     try:
         materializer.handle_return(step_output)
-        new_files = os.listdir(data_path)
+        new_files = os.listdir(artifact_uri)
         assert len(new_files) > len(existing_files)  # something was written
         loaded_data = materializer.handle_input(step_output_type)
         assert isinstance(loaded_data, step_output_type)  # correct type
         if validation_function:
-            validation_function(data_path)
+            validation_function(artifact_uri)
         return loaded_data
     finally:
-        new_files = os.listdir(data_path)
+        new_files = os.listdir(artifact_uri)
         created_files = [
             filename for filename in new_files if filename not in existing_files
         ]
         for filename in created_files:
-            full_path = os.path.join(data_path, filename)
+            full_path = os.path.join(artifact_uri, filename)
             if os.path.isdir(full_path):
                 shutil.rmtree(full_path)
             else:
