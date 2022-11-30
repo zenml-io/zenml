@@ -23,9 +23,9 @@ Here are a few places to start:
 * Search on [GitHub issues](https://github.com/zenml-io/zenml/issues).
 * Search the [docs](https://docs.zenml.io) using the search bar in the top right corner of the page.
 ![search](../assets/misc/doc_search_bar.png)
-* Check out the [Common errors](#-common-errors) section below.
 * Search on https://open.crowd.dev/zenml for issues older than 90 days on our Slack channel.
 ![search](../assets/misc/opendev_search_bar.png)
+* Check out the [Common errors](#-common-errors) section below.
 
 Chances are you'd find your answers there.
 If you can't find any clue, then it's time to post your question on Slack.
