@@ -881,11 +881,26 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 f"`zenml orchestrator update {self.name} "
                 "--kubeflow_hostname=<MY_KUBEFLOW_HOST>`"
             )
-        # try:
-        response = session.get(self.config.kubeflow_hostname)
-        # except requests.exceptions.ConnectionError:
-        #     raise requests.exceptions.ConnectionError("...")
-            
+        try:
+            response = session.get(self.config.kubeflow_hostname)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as errh:
+            raise RuntimeError(
+                f"Error while trying to fetch kubeflow cookie: {errh}"
+            )
+        except requests.exceptions.ConnectionError as errc:
+            raise RuntimeError(
+                f"Error while trying to fetch kubeflow cookie: {errc}"
+            )
+        except requests.exceptions.Timeout as errt:
+            raise RuntimeError(
+                f"Error while trying to fetch kubeflow cookie: {errt}"
+            )
+        except requests.exceptions.RequestException as err:
+            raise RuntimeError(
+                f"Error while trying to fetch kubeflow cookie: {err}"
+            )
+
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
         }
