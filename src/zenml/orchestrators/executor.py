@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -27,7 +27,10 @@ from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.artifact_models import ArtifactRequestModel
-from zenml.models.step_run_models import StepRunUpdateModel
+from zenml.models.step_run_models import (
+    StepRunResponseModel,
+    StepRunUpdateModel,
+)
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
@@ -45,10 +48,10 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def register_output_artifacts(
+def publish_output_artifacts(
     output_artifacts: Dict[str, BaseArtifact]
 ) -> Dict[str, "UUID"]:
-    """Registers the given output artifacts.
+    """Publishes the given output artifacts.
 
     Args:
         output_artifacts: The output artifacts to register.
@@ -83,6 +86,28 @@ def register_output_artifacts(
     return output_artifact_ids
 
 
+def publish_successful_step_run(
+    step_run_id: "UUID", output_artifact_ids: Dict[str, "UUID"]
+) -> StepRunResponseModel:
+    """Publishes a successful step run.
+
+    Args:
+        step_run_id: The ID of the step run to update.
+        output_artifact_ids: The output artifact IDs for the step run.
+
+    Returns:
+        The updated step run.
+    """
+    return Client().zen_store.update_run_step(
+        step_run_id=step_run_id,
+        step_run_update=StepRunUpdateModel(
+            status=ExecutionStatus.COMPLETED,
+            end_time=datetime.now(),
+            output_artifacts=output_artifact_ids,
+        ),
+    )
+
+
 class StepExecutor:
     """Class to execute ZenML steps."""
 
@@ -104,94 +129,6 @@ class StepExecutor:
             The step configuration.
         """
         return self._step.config
-
-    def _load_step_entrypoint(self) -> Callable[..., Any]:
-        """Load the step entrypoint function.
-
-        Returns:
-            The step entrypoint function.
-        """
-        from zenml.steps import BaseStep
-
-        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
-            self._step.spec.source, expected_class=BaseStep
-        )
-
-        step_instance = step_class()
-        step_instance._configuration = self._step.config
-        return step_instance.entrypoint
-
-    def _load_output_materializers(self) -> Dict[str, Type[BaseMaterializer]]:
-        """Loads the output materializers for the step.
-
-        Returns:
-            The step output materializers.
-        """
-        materializers = {}
-        for name, output in self.configuration.outputs.items():
-            materializer_class: Type[
-                BaseMaterializer
-            ] = source_utils.load_and_validate_class(
-                output.materializer_source, expected_class=BaseMaterializer
-            )
-            materializers[name] = materializer_class
-        return materializers
-
-    def _load_input_artifact(
-        self, artifact: BaseArtifact, data_type: Type[Any]
-    ) -> Any:
-        """Loads an input artifact.
-
-        Args:
-            artifact: The artifact to load.
-            data_type: The data type of the artifact value.
-
-        Returns:
-            The artifact value.
-
-        Raises:
-            RuntimeError: If the artifact has no materializer.
-        """
-        # Skip materialization for BaseArtifact and its subtypes.
-        if issubclass(data_type, BaseArtifact):
-            if data_type != type(artifact):
-                logger.warning(
-                    f"You specified the data_type `{data_type}` but the actual "
-                    f"artifact type from the previous step is "
-                    f"`{type(artifact)}`. Ignoring this for now, but please be "
-                    f"aware of this in your step code."
-                )
-            return artifact
-
-        if not artifact.materializer:
-            raise RuntimeError(
-                f"Cannot load input artifact {artifact.name} because it has no "
-                "materializer."
-            )
-        materializer_class = source_utils.load_source_path_class(
-            artifact.materializer
-        )
-        materializer = materializer_class(artifact)
-        return materializer.handle_input(data_type=data_type)
-
-    def _store_output_artifact(
-        self,
-        materializer_class: Type[BaseMaterializer],
-        materializer_source: str,
-        artifact: BaseArtifact,
-        data: Any,
-    ) -> None:
-        """Stores an output artifact.
-
-        Args:
-            materializer_class: The materializer class to store the artifact.
-            materializer_source: The source of the materializer class.
-            artifact: The artifact to store.
-            data: The data to store in the artifact.
-        """
-        artifact.materializer = materializer_source
-        artifact.data_type = source_utils.resolve_class(type(data))
-        materializer_class(artifact).handle_return(data)
 
     def execute(
         self,
@@ -307,15 +244,100 @@ class StepExecutor:
                     data=return_value,
                 )
 
-        output_artifact_ids = register_output_artifacts(
+        output_artifact_ids = publish_output_artifacts(
             output_artifacts=output_artifacts
         )
-
-        Client().zen_store.update_run_step(
+        publish_successful_step_run(
             step_run_id=step_run_info.step_run_id,
-            step_run_update=StepRunUpdateModel(
-                output_artifacts=output_artifact_ids,
-                status=ExecutionStatus.COMPLETED,
-                end_time=datetime.now(),
-            ),
+            output_artifact_ids=output_artifact_ids,
         )
+
+    def _load_step_entrypoint(self) -> Callable[..., Any]:
+        """Load the step entrypoint function.
+
+        Returns:
+            The step entrypoint function.
+        """
+        from zenml.steps import BaseStep
+
+        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
+            self._step.spec.source, expected_class=BaseStep
+        )
+
+        step_instance = step_class()
+        step_instance._configuration = self._step.config
+        return step_instance.entrypoint
+
+    def _load_output_materializers(self) -> Dict[str, Type[BaseMaterializer]]:
+        """Loads the output materializers for the step.
+
+        Returns:
+            The step output materializers.
+        """
+        materializers = {}
+        for name, output in self.configuration.outputs.items():
+            materializer_class: Type[
+                BaseMaterializer
+            ] = source_utils.load_and_validate_class(
+                output.materializer_source, expected_class=BaseMaterializer
+            )
+            materializers[name] = materializer_class
+        return materializers
+
+    def _load_input_artifact(
+        self, artifact: BaseArtifact, data_type: Type[Any]
+    ) -> Any:
+        """Loads an input artifact.
+
+        Args:
+            artifact: The artifact to load.
+            data_type: The data type of the artifact value.
+
+        Returns:
+            The artifact value.
+
+        Raises:
+            RuntimeError: If the artifact has no materializer.
+        """
+        # Skip materialization for BaseArtifact and its subtypes.
+        if issubclass(data_type, BaseArtifact):
+            if data_type != type(artifact):
+                logger.warning(
+                    f"You specified the data_type `{data_type}` but the actual "
+                    f"artifact type from the previous step is "
+                    f"`{type(artifact)}`. Ignoring this for now, but please be "
+                    f"aware of this in your step code."
+                )
+            return artifact
+
+        if not artifact.materializer:
+            raise RuntimeError(
+                f"Cannot load input artifact {artifact.name} because it has no "
+                "materializer."
+            )
+        materializer_class: Type[
+            BaseMaterializer
+        ] = source_utils.load_and_validate_class(
+            artifact.materializer, expected_class=BaseMaterializer
+        )
+        materializer = materializer_class(artifact)
+        return materializer.handle_input(data_type=data_type)
+
+    def _store_output_artifact(
+        self,
+        materializer_class: Type[BaseMaterializer],
+        materializer_source: str,
+        artifact: BaseArtifact,
+        data: Any,
+    ) -> None:
+        """Stores an output artifact.
+
+        Args:
+            materializer_class: The materializer class to store the artifact.
+            materializer_source: The source of the materializer class.
+            artifact: The artifact to store.
+            data: The data to store in the artifact.
+        """
+        artifact.materializer = materializer_source
+        artifact.data_type = source_utils.resolve_class(type(data))
+        materializer_class(artifact).handle_return(data)

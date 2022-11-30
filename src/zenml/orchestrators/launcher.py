@@ -13,11 +13,10 @@
 #  permissions and limitations under the License.
 """This module defines a generic Launcher for all ZenML steps."""
 
-import hashlib
 import os
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, Type
+from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple, Type
 from uuid import UUID
 
 from zenml.artifacts.base_artifact import BaseArtifact
@@ -31,13 +30,12 @@ from zenml.logger import get_logger
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
     PipelineRunResponseModel,
-    PipelineRunUpdateModel,
 )
 from zenml.models.step_run_models import (
     StepRunRequestModel,
     StepRunResponseModel,
-    StepRunUpdateModel,
 )
+from zenml.orchestrators import cache_utils, publish_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.executor import StepExecutor
 from zenml.stack import Stack
@@ -116,54 +114,6 @@ def resolve_step_inputs(
     ]
 
     return input_artifact_ids, parent_step_ids
-
-
-def generate_cache_key(
-    step: Step,
-    artifact_store: "BaseArtifactStore",
-    input_artifact_ids: Dict[str, UUID],
-) -> str:
-    """Generates a cache key for a step run.
-
-    The cache key is a MD5 hash of the step name, the step parameters, and the
-    input artifacts.
-
-    If the cache key is the same for two step runs, we conclude that the step
-    runs are identical and can be cached.
-
-    Args:
-        step: The step to generate the cache key for.
-        artifact_store: The artifact store to use.
-        input_artifact_ids: The input artifact IDs for the step.
-
-    Returns:
-        A cache key.
-    """
-    hash_ = hashlib.md5()
-
-    hash_.update(step.spec.source.encode())
-    # TODO: should this include the pipeline name? It does in tfx
-    # TODO: maybe this should be the ID instead? Or completely removed?
-    hash_.update(artifact_store.path.encode())
-
-    for name, artifact_id in input_artifact_ids.items():
-        hash_.update(name.encode())
-        hash_.update(artifact_id.bytes)
-
-    for name, output in step.config.outputs.items():
-        hash_.update(name.encode())
-        hash_.update(output.artifact_source.encode())
-        hash_.update(output.materializer_source.encode())
-
-    for key, value in sorted(step.config.parameters.items()):
-        hash_.update(key.encode())
-        hash_.update(str(value).encode())
-
-    for key, value in sorted(step.config.caching_parameters.items()):
-        hash_.update(key.encode())
-        hash_.update(str(value).encode())
-
-    return hash_.hexdigest()
 
 
 def generate_artifact_uri(
@@ -301,77 +251,6 @@ def prepare_output_artifacts(
     return output_artifacts
 
 
-def get_cached_step_run(cache_key: str) -> Optional[StepRunResponseModel]:
-    """If a given step can be cached, get the corresponding existing step run.
-
-    A step run can be cached if there is an existing step run in the same
-    project which has the same cache key and was successfully executed.
-
-    Args:
-        cache_key: The cache key of the step.
-
-    Returns:
-        The existing step run if the step can be cached, otherwise None.
-    """
-    cache_candidates = Client().zen_store.list_run_steps(
-        project_id=Client().active_project.id,
-        cache_key=cache_key,
-        status=ExecutionStatus.COMPLETED,
-    )
-    if cache_candidates:
-        cache_candidates.sort(key=lambda s: s.created)
-        return cache_candidates[-1]
-    return None
-
-
-def get_pipeline_run_status(
-    step_statuses: List[ExecutionStatus], num_steps: int
-) -> ExecutionStatus:
-    """Gets the pipeline run status for the given step statuses.
-
-    Args:
-        step_statuses: The status of steps in this run.
-        num_steps: The total amount of steps in this run.
-
-    Returns:
-        The run status.
-    """
-    if ExecutionStatus.FAILED in step_statuses:
-        return ExecutionStatus.FAILED
-    if (
-        ExecutionStatus.RUNNING in step_statuses
-        or len(step_statuses) < num_steps
-    ):
-        return ExecutionStatus.RUNNING
-
-    return ExecutionStatus.COMPLETED
-
-
-def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
-    """Updates the status of the current pipeline run.
-
-    Args:
-        pipeline_run: The model of the current pipeline run.
-    """
-    assert pipeline_run.num_steps is not None
-    steps_in_current_run = Client().zen_store.list_run_steps(
-        run_id=pipeline_run.id
-    )
-    new_status = get_pipeline_run_status(
-        step_statuses=[step_run.status for step_run in steps_in_current_run],
-        num_steps=pipeline_run.num_steps,
-    )
-
-    if new_status != pipeline_run.status:
-        run_update = PipelineRunUpdateModel(status=new_status)
-        if new_status in {ExecutionStatus.COMPLETED, ExecutionStatus.FAILED}:
-            run_update.end_time = datetime.now()
-
-        Client().zen_store.update_run(
-            run_id=pipeline_run.id, run_update=run_update
-        )
-
-
 class Launcher:
     """This class is responsible for launching a step of a ZenML pipeline.
 
@@ -414,20 +293,22 @@ class Launcher:
         logger.info(f"Step `{self._step_name}` has started.")
 
         pipeline_run = self._create_or_reuse_run()
-
-        step_run = StepRunRequestModel(
-            name=self._step_name,
-            pipeline_run_id=pipeline_run.id,
-            step=self._step,
-            status=ExecutionStatus.RUNNING,
-            start_time=datetime.now(),
-        )
         try:
+            step_run = StepRunRequestModel(
+                name=self._step_name,
+                pipeline_run_id=pipeline_run.id,
+                step=self._step,
+                status=ExecutionStatus.RUNNING,
+                start_time=datetime.now(),
+            )
             try:
                 execution_needed, step_run_response = self._prepare(
                     step_run=step_run
                 )
             except:  # noqa: E722
+                logger.error(
+                    f"Failed during preparation to run step `{self._step_name}`."
+                )
                 step_run.status = ExecutionStatus.FAILED
                 step_run.end_time = datetime.now()
                 Client().zen_store.create_run_step(step_run)
@@ -440,25 +321,14 @@ class Launcher:
                         step_run=step_run_response,
                     )
                 except:  # noqa: E722
-                    logger.error(f"Failed to execute step `{self._step_name}`.")
-                    Client().zen_store.update_run_step(
-                        step_run_id=step_run_response.id,
-                        step_run_update=StepRunUpdateModel(
-                            status=ExecutionStatus.FAILED,
-                            end_time=datetime.now(),
-                        ),
-                    )
+                    logger.error(f"Failed to run step `{self._step_name}`.")
+                    publish_utils.publish_failed_step_run(step_run_response.id)
                     raise
 
-            update_pipeline_run_status(pipeline_run=pipeline_run)
+            publish_utils.update_pipeline_run_status(pipeline_run=pipeline_run)
         except:  # noqa: E722
-            Client().zen_store.update_run(
-                run_id=pipeline_run.id,
-                run_update=PipelineRunUpdateModel(
-                    status=ExecutionStatus.FAILED,
-                    end_time=datetime.now(),
-                ),
-            )
+            logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
+            publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
 
     def _create_or_reuse_run(self) -> PipelineRunResponseModel:
@@ -513,7 +383,7 @@ class Launcher:
             step=self._step, run_id=step_run.pipeline_run_id
         )
 
-        cache_key = generate_cache_key(
+        cache_key = cache_utils.generate_cache_key(
             step=self._step,
             artifact_store=self._stack.artifact_store,
             input_artifact_ids=input_artifact_ids,
@@ -530,7 +400,9 @@ class Launcher:
 
         execution_needed = True
         if cache_enabled:
-            cached_step_run = get_cached_step_run(cache_key=cache_key)
+            cached_step_run = cache_utils.get_cached_step_run(
+                cache_key=cache_key
+            )
             if cached_step_run:
                 logger.info(f"Using cached version of `{self._step_name}`.")
                 execution_needed = False
