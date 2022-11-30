@@ -387,6 +387,7 @@ class Launcher:
             step=self._step,
             artifact_store=self._stack.artifact_store,
             input_artifact_ids=input_artifact_ids,
+            project_id=Client().active_project.id,
         )
 
         step_run.input_artifacts = input_artifact_ids

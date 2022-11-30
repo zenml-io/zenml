@@ -35,44 +35,60 @@ def generate_cache_key(
     step: "Step",
     artifact_store: "BaseArtifactStore",
     input_artifact_ids: Dict[str, "UUID"],
+    project_id: str,
 ) -> str:
     """Generates a cache key for a step run.
 
-    The cache key is a MD5 hash of the step name, the step parameters, and the
-    input artifacts.
-
     If the cache key is the same for two step runs, we conclude that the step
     runs are identical and can be cached.
+
+    The cache key is a MD5 hash of:
+    - the project ID,
+    - the artifact store path,
+    - the source code that defines the step,
+    - the parameters of the step,
+    - the names and IDs of the input artifacts of the step,
+    - the names and source codes of the output artifacts of the step,
+    - the source codes of the output materializers of the step.
+    - additional custom caching parameters of the step.
 
     Args:
         step: The step to generate the cache key for.
         artifact_store: The artifact store to use.
         input_artifact_ids: The input artifact IDs for the step.
+        project_id: The ID of the active project.
 
     Returns:
         A cache key.
     """
     hash_ = hashlib.md5()
 
-    hash_.update(step.spec.source.encode())
-    # TODO: should this include the pipeline name? It does in tfx
-    # TODO: do we need the project ID in here somewhere?
-    # TODO: maybe this should be the ID instead? Or completely removed?
+    # Project ID
+    hash_.update(project_id.bytes)
+
+    # Artifact store path
     hash_.update(artifact_store.path.encode())
 
+    # Step source code
+    hash_.update(step.spec.source.encode())
+
+    # Step parameters
+    for key, value in sorted(step.config.parameters.items()):
+        hash_.update(key.encode())
+        hash_.update(str(value).encode())
+
+    # Input artifacts
     for name, artifact_id in input_artifact_ids.items():
         hash_.update(name.encode())
         hash_.update(artifact_id.bytes)
 
+    # Output artifacts and materializers
     for name, output in step.config.outputs.items():
         hash_.update(name.encode())
         hash_.update(output.artifact_source.encode())
         hash_.update(output.materializer_source.encode())
 
-    for key, value in sorted(step.config.parameters.items()):
-        hash_.update(key.encode())
-        hash_.update(str(value).encode())
-
+    # Custom caching parameters
     for key, value in sorted(step.config.caching_parameters.items()):
         hash_.update(key.encode())
         hash_.update(str(value).encode())
