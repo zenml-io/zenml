@@ -108,7 +108,7 @@ team through the ZenML Server.
 
 ![ZenML with remote server and DB](../../assets/getting_started/Scenario3.2.png)
 
-Such a remote deployment unlocks ZenML to its full potential as the MLops hub 
+Such a remote deployment unlocks ZenML to its full potential as the MLOps hub 
 within your production stacks. The diagram below visualizes how a pipeline is 
 run through a deployed ZenML Server with a remote orchestrator, artifact store
 and container registry. 
