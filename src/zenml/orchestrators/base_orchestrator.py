@@ -19,7 +19,7 @@ from pydantic import root_validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.orchestrators.launcher import Launcher
+from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
@@ -166,7 +166,7 @@ class BaseOrchestrator(StackComponent, ABC):
             step: The step to run.
         """
         assert self._active_deployment
-        launcher = Launcher(
+        launcher = StepLauncher(
             deployment=self._active_deployment,
             step=step,
             orchestrator_run_id=self.get_orchestrator_run_id(),
