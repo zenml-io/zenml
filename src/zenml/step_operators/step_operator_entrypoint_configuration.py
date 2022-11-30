@@ -111,10 +111,13 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         )
 
         stack.prepare_step_run(info=step_run_info)
+        step_failed = False
         try:
             run_with_executor(execution_info=execution_info, executor=executor)
+        except Exception:
+            step_failed = True
         finally:
-            stack.cleanup_step_run(info=step_run_info)
+            stack.cleanup_step_run(info=step_run_info, step_failed=step_failed)
 
         return execution_info
 
