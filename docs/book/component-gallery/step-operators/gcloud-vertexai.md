@@ -43,9 +43,6 @@ your stack. This is needed so that both your orchestration environment and
 VertexAI can read and write step artifacts. Check out the documentation page 
 of the artifact store you want to use for more information on how to set that up
 and configure authentication for it.
-* A [local orchestrator](../orchestrators/local.md) as part of your stack. 
-This is a current limitation of the Vertex step operator which will be 
-resolved in an upcoming release.
 
 We can then register the step operator and use it in our active stack:
 ```shell
