@@ -58,13 +58,6 @@ print(zenml.__version__)
 If you would like to learn more about the current release, please visit our 
 [PyPi package page.](https://pypi.org/project/zenml)
 
-## Known installation issues for M1 Mac Users
-
-Since some of ZenML's dependencies are not compatible with the ARM64
-architecture, you need to install ZenML under Rosetta on M1 Macs.
-See the [Installation on M1 Macs](./m1-mac-installation.md) page for detailed 
-instructions.
-
 ## Running with Docker
 
 ### Python package
