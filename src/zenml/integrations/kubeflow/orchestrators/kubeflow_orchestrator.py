@@ -881,11 +881,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 f"`zenml orchestrator update {self.name} "
                 "--kubeflow_hostname=<MY_KUBEFLOW_HOST>`"
             )
-        try:
-            response = session.get(self.config.kubeflow_hostname)
-        except requests.exceptions.ConnectionError:
-            raise requests.exceptions.ConnectionError("...")
-
+        # try:
+        response = session.get(self.config.kubeflow_hostname)
+        # except requests.exceptions.ConnectionError:
+        #     raise requests.exceptions.ConnectionError("...")
+            
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
         }
