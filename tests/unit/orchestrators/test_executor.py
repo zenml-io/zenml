@@ -4,7 +4,7 @@ import pytest
 
 from zenml.artifacts.data_artifact import DataArtifact
 from zenml.artifacts.model_artifact import ModelArtifact
-from zenml.orchestrators.executor import register_output_artifacts
+from zenml.orchestrators.publish_utils import publish_output_artifacts
 
 
 def test_register_output_artifacts(clean_client):
@@ -25,15 +25,15 @@ def test_register_output_artifacts(clean_client):
         data_type="some model type",
     )
     assert len(clean_client.zen_store.list_artifacts()) == 0
-    return_val = register_output_artifacts({"output": artifact_1})
+    return_val = publish_output_artifacts({"output": artifact_1})
     assert len(clean_client.zen_store.list_artifacts()) == 1
     assert isinstance(return_val, dict)
     assert len(return_val) == 1
     assert isinstance(return_val["output"], UUID)
-    return_val = register_output_artifacts({})
+    return_val = publish_output_artifacts({})
     assert len(clean_client.zen_store.list_artifacts()) == 1
     assert return_val == {}
-    return_val = register_output_artifacts(
+    return_val = publish_output_artifacts(
         {
             "arias_data": artifact_2,
             "arias_model": artifact_3,
@@ -55,7 +55,7 @@ def test_register_output_artifacts_with_incomplete_artifacts(clean_client):
         materializer="some_materializer",
     )
     with pytest.raises(ValueError):
-        register_output_artifacts({"output": incomplete_artifact})
+        publish_output_artifacts({"output": incomplete_artifact})
 
     # materializer missing
     incomplete_artifact = DataArtifact(
@@ -63,4 +63,4 @@ def test_register_output_artifacts_with_incomplete_artifacts(clean_client):
         data_type="some_data_type",
     )
     with pytest.raises(ValueError):
-        register_output_artifacts({"output": incomplete_artifact})
+        publish_output_artifacts({"output": incomplete_artifact})
