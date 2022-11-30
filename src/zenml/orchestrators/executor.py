@@ -191,10 +191,15 @@ class StepExecutor:
             step_run_info=step_run_info,
         ):
             self._stack.prepare_step_run(info=step_run_info)
+            step_failed = False
             try:
                 return_values = step_entrypoint(**function_params)
+            except:  # noqa: E722
+                step_failed = True
             finally:
-                self._stack.cleanup_step_run(info=step_run_info)
+                self._stack.cleanup_step_run(
+                    info=step_run_info, step_failed=step_failed
+                )
 
         output_annotations = parse_return_type_annotations(spec.annotations)
         if len(output_annotations) > 0:

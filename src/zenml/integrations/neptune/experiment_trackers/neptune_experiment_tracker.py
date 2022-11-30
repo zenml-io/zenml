@@ -98,11 +98,12 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         self.run_state.run_name = info.run_name
         self.run_state.tags = list(settings.tags)
 
-    def cleanup_step_run(self, info: "StepRunInfo") -> None:
+    def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """If the current step is the last step of the pipeline, stop the Neptune run.
 
         Args:
             info: Info about the step that was executed.
+            step_failed: Whether the step failed or not.
         """
         if self._is_last_step(info):
             self.run_state.active_run.sync()
