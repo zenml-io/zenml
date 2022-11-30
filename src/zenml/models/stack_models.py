@@ -86,13 +86,10 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
         Returns:
             True if the stack is valid, False otherwise.
         """
-        if (
-            StackComponentType.ARTIFACT_STORE
-            and StackComponentType.ORCHESTRATOR in self.components.keys()
-        ):
-            return True
-        else:
-            return False
+        return (
+            StackComponentType.ARTIFACT_STORE in self.components
+            and StackComponentType.ORCHESTRATOR in self.components
+        )
 
     def to_yaml(self) -> Dict[str, Any]:
         """Create yaml representation of the Stack Model.
@@ -102,10 +99,12 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
         """
         component_data = {}
         for component_type, components_list in self.components.items():
-            component_dict = json.loads(components_list[0].json())
-            component_dict.pop("project")  # Not needed in the yaml repr
-            component_dict.pop("created")  # Not needed in the yaml repr
-            component_dict.pop("updated")  # Not needed in the yaml repr
+            component = components_list[0]
+            component_dict = json.loads(
+                component.json(
+                    include={"name", "type", "flavor", "configuration"}
+                )
+            )
             component_data[component_type.value] = component_dict
 
         # write zenml version and stack dict to YAML
@@ -153,13 +152,10 @@ class StackRequestModel(StackBaseModel, ShareableRequestModel):
         Returns:
             True if the stack is valid, False otherwise.
         """
-        if (
-            StackComponentType.ARTIFACT_STORE
-            and StackComponentType.ORCHESTRATOR in self.components.keys()
-        ):
-            return True
-        else:
-            return False
+        return (
+            StackComponentType.ARTIFACT_STORE in self.components
+            and StackComponentType.ORCHESTRATOR in self.components
+        )
 
 
 # ------ #

@@ -13,7 +13,7 @@
 [![Contributors][contributors-shield]][contributors-url]
 [![License][license-shield]][license-url]
 [![Build][build-shield]][build-url]
-[![Interrogate][interrogate-shield]][interrogate-url]
+<!-- [![Interrogate][interrogate-shield]][interrogate-url] -->
 <!-- [![CodeCov][codecov-shield]][codecov-url] -->
 
 <!-- MARKDOWN LINKS & IMAGES -->
@@ -222,10 +222,10 @@ By the end, you'll get a glimpse of how to use ZenML to register a stack:
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 
 # Register an Airflow orchestrator
-zenml airflow register airflow_orchestrator --flavor=airflow
+zenml orchestrator register airflow_orchestrator --flavor=airflow
 
 # Create a stack from the components
-zenml stack register my_stack -o airflow_orchestrator -a default -e mlflow_tracker
+zenml stack register airflow_stack -o airflow_orchestrator -a default -e mlflow_tracker
 ```
 
 And run a simple pipeline on Airflow (or an orchestrator of your choice) creating steps like this:
@@ -309,8 +309,6 @@ Apart from the infrastructure required to run ZenML itself, ZenML also boasts a 
 However, ZenML assumes that the stack infrastructure for these tools is already provisioned. If you do not have deployed infrastructure, and want to quickly spin up combinations of tools on the cloud, the [MLOps stack sister repository](https://github.com/zenml-io/mlops-stacks) contains a series of Terraform-based recipes to provision such stacks. These recipes can be used directly with ZenML:
 
 ```bash
-pip install "zenml[stacks]"
-
 zenml stack recipe deploy <NAME_OF_STACK_RECIPE> --import
 ```
 
