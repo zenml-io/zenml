@@ -881,13 +881,17 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 f"`zenml orchestrator update {self.name} "
                 "--kubeflow_hostname=<MY_KUBEFLOW_HOST>`"
             )
-        response = session.get(self.config.kubeflow_hostname)
+        try:
+            response = session.get(self.config.kubeflow_hostname)
+        except requests.exceptions.ConnectionError:
+            raise requests.exceptions.ConnectionError("...")
+
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
         }
         data = {"login": username, "password": password}
         session.post(response.url, headers=headers, data=data)
-        raw_cookie = session.cookies.get_dict()["authservice_session"]
+        raw_cookie = session.cookies.get_dict()
         return "authservice_session=" + raw_cookie
 
     def list_manual_setup_steps(

@@ -135,6 +135,23 @@ class KubeflowOrchestratorSettings(BaseSettings):
         ):
             raise client_creds_error
 
+        if values.get("kubeflow_hostname"):
+            if "/pipeline" not in values.get("kubeflow_hostname"):
+                logger.warning(
+                    "It looks like you have specified a kubeflow_hostname but it doesn't seem to "
+                    "end with `/pipeline`, which is not usual. Please ensure this is intended."
+                )
+
+            if (
+                values.get("client_username") is None
+                and values.get("client_password") is None
+                and values.get("client_args") is None
+            ):
+                logger.warning(
+                    "You seem to be using a multi-tenant kubeflow stack component but have none of "
+                    "`client_username`, `client_password`, or `client_args` specified. This configuration "
+                    "will most probably result in an error. Please make sure this is intended."
+                )
         return values
 
 
