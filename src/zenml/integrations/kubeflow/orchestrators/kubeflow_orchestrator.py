@@ -905,7 +905,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
             "Content-Type": "application/x-www-form-urlencoded",
         }
         data = {"login": username, "password": password}
-        session.post(response.url, headers=headers, data=data)
+        try:
+            response = session.post(response.url, headers=headers, data=data)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as errh:
+            raise RuntimeError(
+                f"Error while trying to fetch kubeflow cookie: {errh}"
+            )
         raw_cookie = session.cookies.get_dict()
         return "authservice_session=" + raw_cookie
 
