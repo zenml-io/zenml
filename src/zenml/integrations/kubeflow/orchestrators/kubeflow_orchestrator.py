@@ -35,6 +35,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
 import kfp
+import requests
 import urllib3
 from kfp import dsl
 from kfp.compiler import Compiler as KFPCompiler
@@ -780,6 +781,28 @@ class KubeflowOrchestrator(BaseOrchestrator):
         client_args["host"] = self.config.kubeflow_hostname
         client_args["namespace"] = self.config.kubeflow_namespace
 
+        # Handle username and password, ignore the case if one is passed and not the other
+        # Also do not attempt to get cookie if cookie is already passed in client_args
+        if (
+            settings.client_username is not None
+            and settings.client_password is not None
+        ):
+            # If cookie is already set, then ignore
+            if "cookie" in client_args:
+                logger.warning(
+                    "Cookie already set in `client_args` so ignoring `client_username` and `client_password`..."
+                )
+            else:
+                logger.info(
+                    f"Attempting to fetch session cookie from {self.config.kubeflow_hostname} with supplied username and password..."
+                )
+                session_cookie = self._get_session_cookie(
+                    username=settings.client_username,
+                    password=self.client_password,
+                )
+                logger.info(f"Session cookie fetched successfully!")
+                client_args["cookie"] = session_cookie
+
         return kfp.Client(**client_args)
 
     @property
@@ -843,6 +866,29 @@ class KubeflowOrchestrator(BaseOrchestrator):
             # port is occupied, fallback to a random open port
             port = networking_utils.find_available_port()
         return port
+
+    def _get_session_cookie(self, username: str, password: str) -> str:
+        session = requests.Session()
+        if (
+            self.config.kubeflow_hostname is None
+            or "/pipeline" not in self.config.kubeflow_hostname
+        ):
+            raise AssertionError(
+                "You must configure the Kubeflow orchestrator "
+                "with the `kubeflow_hostname` parameter which ends "
+                "with `/pipeline` (e.g. `https://mykubeflow.com/pipeline`). "
+                "Please update the current kubeflow orchestrator with: "
+                f"`zenml orchestrator update {self.name} "
+                "--kubeflow_hostname=<MY_KUBEFLOW_HOST>`"
+            )
+        response = session.get(self.config.kubeflow_hostname)
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+        data = {"login": username, "password": password}
+        session.post(response.url, headers=headers, data=data)
+        raw_cookie = session.cookies.get_dict()["authservice_session"]
+        return "authservice_session=" + raw_cookie
 
     def list_manual_setup_steps(
         self, container_registry_name: str, container_registry_path: str

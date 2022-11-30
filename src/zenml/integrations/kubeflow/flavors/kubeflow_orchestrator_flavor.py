@@ -22,6 +22,7 @@ from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
@@ -41,6 +42,8 @@ class KubeflowOrchestratorSettings(BaseSettings):
             specified on steps.
         timeout: How many seconds to wait for synchronous runs.
         client_args: Arguments to pass when initializing the KFP client.
+        client_username: Username to use for the kubeflow client. To be used together with `client_password`.
+        client_password: Password to use for the kubeflow_client. To be used together with `client_username`.
         user_namespace: The user namespace to use when creating experiments
             and runs.
         node_selectors: Deprecated: Node selectors to apply to KFP pods.
@@ -52,6 +55,8 @@ class KubeflowOrchestratorSettings(BaseSettings):
     timeout: int = 1200
 
     client_args: Dict[str, Any] = {}
+    client_username: Optional[str] = SecretField()
+    client_password: Optional[str] = SecretField()
     user_namespace: Optional[str] = None
     node_selectors: Dict[str, str] = {}
     node_affinity: Dict[str, List[str]] = {}
@@ -115,6 +120,20 @@ class KubeflowOrchestratorSettings(BaseSettings):
             values["pod_settings"] = pod_settings
             values["node_affinity"] = {}
             values["node_selectors"] = {}
+
+        client_creds_error = AssertionError(
+            "`client_username` and `client_password` both need to be set."
+        )
+        if (
+            values.get("client_username")
+            and values.get("client_password") is None
+        ):
+            raise client_creds_error
+        if (
+            values.get("client_password")
+            and values.get("client_username") is None
+        ):
+            raise client_creds_error
 
         return values
 
