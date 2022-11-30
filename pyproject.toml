@@ -200,10 +200,9 @@ follow_imports = "skip"
 
 # end of fix
 
-# import all tfx.proto.* and google files as `Any`
+# import all google and transformers files as `Any`
 [[tool.mypy.overrides]]
 module = [
-    "tfx.proto.*",
     "google.*" ,
     "transformers.*"  # https://github.com/huggingface/transformers/issues/13390
 ]
