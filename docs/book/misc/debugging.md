@@ -62,11 +62,12 @@ Tell us briefly:
 
 #### 3️⃣ How to reproduce the error?
 Walk us through how to reproduce the same error you had step-by-step, whenever possible.
-Use the forms you prefer write it in text or record a video, whichever lets you get the issue at hand across to us!
+Use the format you prefer. 
+Write it in text or record a video, whichever lets you get the issue at hand across to us!
 
 #### 4️⃣ Relevant log output
 As a general rule of thumb, always attach relevant log outputs and the full error traceback to help us understand what happened under the hood.
-If the full error traceback does not fit into a text message, attach a file or use a service like [Pastebin](https://pastebin.com/)
+If the full error traceback does not fit into a text message, attach a file or use a service like [Pastebin](https://pastebin.com/).
 
 Along with the error traceback, we recommend to always share the output of the following commands: 
 * `zenml status` 
@@ -74,7 +75,7 @@ Along with the error traceback, we recommend to always share the output of the f
 
 When applicable, also attach logs of the orchestrator. For example, if you're using the Kubeflow orchestrator, include the logs of the pod that was running the step that failed.
 
-Usually, the default log you see in your terminal is sufficient, in the event the default log output does not then it's useful to provide additional logs.
+Usually, the default log you see in your terminal is sufficient, in the event it's not, then it's useful to provide additional logs.
 Additional logs are not shown by default, you'll have to toggle an environment variable for it.
 Read the next section to find out how.
 
@@ -83,10 +84,9 @@ Read the next section to find out how.
 
 ### 🔷 When?
 The default log is not helpful, ambiguous, or does not point you to the root of the issue. 
-You can toggle the value of the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
 
 ### 🎯 How?
-
+You can toggle the value of the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
 The default value of `ZENML_LOGGING_VERBOSITY` environment variable is:
 
 ```shell
@@ -94,9 +94,14 @@ ZENML_LOGGING_VERBOSITY=INFO
 ```
 
 You can pick other values such as `WARN`, `ERROR`, `CRITICAL`, `DEBUG` to change what's shown in the logs.
-See [System Environment Variable](../guidelines/system-environmental-variables.md) for more information on other environment variables that affect the behavior of ZenML.
+And export the environment variable in your Linux/macOS terminal. 
+For example:
+```
+export ZENML_LOGGING_VERBOSITY=DEBUG
+```
 
 Read more about how to set environment variables [here](https://linuxize.com/post/how-to-set-and-list-environment-variables-in-linux/).
+See [System Environment Variable](../guidelines/system-environmental-variables.md) for more information on other environment variables that affect the behavior of ZenML.
 
 ## 📜 View client and server logs
 
