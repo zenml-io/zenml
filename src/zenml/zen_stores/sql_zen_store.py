@@ -2850,10 +2850,10 @@ class SqlZenStore(BaseZenStore):
 
     def list_runs(
         self,
+        name: Optional[str] = None,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[UUID] = None,
         component_id: Optional[UUID] = None,
-        run_name: Optional[str] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
@@ -2861,11 +2861,11 @@ class SqlZenStore(BaseZenStore):
         """Gets all pipeline runs.
 
         Args:
+            name: Run name if provided
             project_name_or_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
             component_id: Optionally filter for runs that used the
                           component
-            run_name: Run name if provided
             user_name_or_id: If provided, only return runs for this user.
             pipeline_id: If provided, only return runs for this pipeline.
             unlisted: If True, only return unlisted runs that are not
@@ -2890,8 +2890,8 @@ class SqlZenStore(BaseZenStore):
                     StackCompositionSchema.stack_id
                     == PipelineRunSchema.stack_id
                 ).where(StackCompositionSchema.component_id == component_id)
-            if run_name is not None:
-                query = query.where(PipelineRunSchema.name == run_name)
+            if name is not None:
+                query = query.where(PipelineRunSchema.name == name)
             if pipeline_id is not None:
                 query = query.where(
                     PipelineRunSchema.pipeline_id == pipeline_id

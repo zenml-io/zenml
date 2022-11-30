@@ -20,6 +20,7 @@ import torch
 from neuralprophet import NeuralProphet
 
 from zenml.artifacts import ModelArtifact
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 # TODO [ENG-794]: The integration consists of a simple materializer that uses the
@@ -46,9 +47,10 @@ class NeuralProphetMaterializer(BaseMaterializer):
             A loaded NeuralProphet model.
         """
         super().handle_input(data_type)
-        return torch.load(  # type: ignore[no-untyped-call]
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        )  # noqa
+        with fileio.open(
+            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
+        ) as f:
+            return torch.load(f)  # type: ignore[no-untyped-call]  # noqa
 
     def handle_return(self, model: NeuralProphet) -> None:
         """Writes a NeuralProphet model.
@@ -57,4 +59,7 @@ class NeuralProphetMaterializer(BaseMaterializer):
             model: A NeuralProphet model object.
         """
         super().handle_return(model)
-        torch.save(model, os.path.join(self.artifact.uri, DEFAULT_FILENAME))
+        with fileio.open(
+            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
+        ) as f:
+            torch.save(model, f)
