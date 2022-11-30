@@ -338,9 +338,10 @@ def get_pipeline_run_status(
     """
     if ExecutionStatus.FAILED in step_statuses:
         return ExecutionStatus.FAILED
-    if ExecutionStatus.RUNNING in step_statuses:
-        return ExecutionStatus.RUNNING
-    if len(step_statuses) < num_steps:
+    if (
+        ExecutionStatus.RUNNING in step_statuses
+        or len(step_statuses) < num_steps
+    ):
         return ExecutionStatus.RUNNING
 
     return ExecutionStatus.COMPLETED
@@ -356,18 +357,15 @@ def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
     steps_in_current_run = Client().zen_store.list_run_steps(
         run_id=pipeline_run.id
     )
-    run_status = get_pipeline_run_status(
+    new_status = get_pipeline_run_status(
         step_statuses=[step_run.status for step_run in steps_in_current_run],
         num_steps=pipeline_run.num_steps,
     )
 
-    if run_status != pipeline_run.status:
-        if run_status in {ExecutionStatus.COMPLETED, ExecutionStatus.FAILED}:
-            run_update = PipelineRunUpdateModel(
-                status=run_status, end_time=datetime.now()
-            )
-        else:
-            run_update = PipelineRunUpdateModel(status=run_status)
+    if new_status != pipeline_run.status:
+        run_update = PipelineRunUpdateModel(status=new_status)
+        if new_status in {ExecutionStatus.COMPLETED, ExecutionStatus.FAILED}:
+            run_update.end_time = datetime.now()
 
         Client().zen_store.update_run(
             run_id=pipeline_run.id, run_update=run_update
@@ -436,12 +434,22 @@ class Launcher:
                 raise
 
             if execution_needed:
-                self._run_step(
-                    pipeline_run=pipeline_run,
-                    step_run=step_run_response,
-                )
+                try:
+                    self._run_step(
+                        pipeline_run=pipeline_run,
+                        step_run=step_run_response,
+                    )
+                except:  # noqa: E722
+                    logger.error(f"Failed to execute step `{self._step_name}`.")
+                    Client().zen_store.update_run_step(
+                        step_run_id=step_run_response.id,
+                        step_run_update=StepRunUpdateModel(
+                            status=ExecutionStatus.FAILED,
+                            end_time=datetime.now(),
+                        ),
+                    )
+                    raise
 
-            # 8. Update the pipeline run status
             update_pipeline_run_status(pipeline_run=pipeline_run)
         except:  # noqa: E722
             Client().zen_store.update_run(
@@ -566,22 +574,16 @@ class Launcher:
             if self._step.config.step_operator:
                 self._run_step_with_step_operator(
                     step_operator_name=self._step.config.step_operator,
-                    step_run=step_run,
                     step_run_info=step_run_info,
                 )
             else:
-
                 self._run_step_without_step_operator(
-                    step_run=step_run,
+                    step_run_info=step_run_info,
                     input_artifacts=input_artifacts,
                     output_artifacts=output_artifacts,
-                    step_run_info=step_run_info,
                 )
         except:  # noqa: E722
-            self._cleanup_failed_run(
-                step_run=step_run,
-                artifacts=list(output_artifacts.values()),
-            )
+            remove_artifact_dirs(artifacts=list(output_artifacts.values()))
             raise
 
         duration = time.time() - start_time
@@ -593,14 +595,12 @@ class Launcher:
     def _run_step_with_step_operator(
         self,
         step_operator_name: str,
-        step_run: StepRunResponseModel,
         step_run_info: StepRunInfo,
     ) -> None:
         """Runs the current step with a step operator.
 
         Args:
             step_operator_name: The name of the step operator to use.
-            step_run: The model of the current step run.
             step_run_info: Additional information needed to run the step.
         """
         from zenml.step_operators.step_operator_entrypoint_configuration import (
@@ -615,7 +615,7 @@ class Launcher:
             StepOperatorEntrypointConfiguration.get_entrypoint_command()
             + StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=self._step_name,
-                step_run_id=str(step_run.id),
+                step_run_id=step_run_info.step_run_id,
             )
         )
         logger.info(
@@ -630,18 +630,16 @@ class Launcher:
 
     def _run_step_without_step_operator(
         self,
-        step_run: StepRunResponseModel,
+        step_run_info: StepRunInfo,
         input_artifacts: Dict[str, BaseArtifact],
         output_artifacts: Dict[str, BaseArtifact],
-        step_run_info: StepRunInfo,
     ) -> None:
         """Runs the current step without a step operator.
 
         Args:
-            step_run: The model of the current step run.
+            step_run_info: Additional information needed to run the step.
             input_artifacts: The input artifacts of the current step.
             output_artifacts: The output artifacts of the current step.
-            step_run_info: Additional information needed to run the step.
         """
         executor = StepExecutor(step=self._step, stack=self._stack)
         executor.execute(
@@ -649,28 +647,3 @@ class Launcher:
             output_artifacts=output_artifacts,
             step_run_info=step_run_info,
         )
-
-    def _cleanup_failed_run(
-        self,
-        step_run: StepRunResponseModel,
-        artifacts: Sequence[BaseArtifact],
-    ) -> None:
-        """Clean up a failed step run.
-
-        - Set both the step and pipeline run status to failed
-        - Delete all output artifacts
-
-        Args:
-            step_run: The step run.
-            artifacts: The output artifacts of the step.
-        """
-        logger.error(f"Failed to execute step `{self._step_name}`.")
-        Client().zen_store.update_run_step(
-            step_run_id=step_run.id,
-            step_run_update=StepRunUpdateModel(
-                status=ExecutionStatus.FAILED,
-                end_time=datetime.now(),
-            ),
-        )
-        remove_artifact_dirs(artifacts=artifacts)
-        logger.debug("Finished failed step execution cleanup.")
