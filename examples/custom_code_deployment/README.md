@@ -1,16 +1,35 @@
 # 🚀 Custom Deployment Example - Seldon Core and KServe 🚀
 
-Both pre and post-processing are very essential to the model deployment process since the majority of the models require a specific input format which requires transforming the data before it is passed to the model and after it is returned from the model. with ZenML 0.13 we can now ship the model with the pre-processing and post-processing code to run within the deployment environment.
-The custom code deployment is only supported for the KServe and Seldon Core model deployer integrations at the moment.
+Both pre- and post-processing are very essential to the model deployment 
+process since the majority of the models require a specific input format 
+which requires transforming the data before it is passed to the model, and 
+after it is returned from the model. with ZenML 0.13 we can now ship the model 
+with the pre-processing and post-processing code to run within the deployment 
+environment.  The custom code deployment is only supported for the KServe and 
+Seldon Core model deployer integrations at the moment.
 
-Note: As this example can be considered an advanced feature of the deployment process, it is recommended to go through the [KServe deployment example](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment) and/or the [Seldon Core deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment) before trying this example. Those examples are more focused on the deployment process and are easier to understand, while also providing a guide on how to install and setup each of the deployment integrations.
+Note: As this example can be considered an advanced feature of the deployment 
+process, it is recommended to go through the 
+[KServe deployment example](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment) 
+and/or the [Seldon Core deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment) 
+before trying this example. Those examples are more focused on the deployment 
+process and are easier to understand, while also providing a guide on how to 
+install and setup each of the deployment integrations.
+
 ## 🗺 Overview
 
-This is a quite extended example that uses the [digits dataset](https://keras.io/api/datasets/mnist/) 
-to train a classifier using both [TensorFlow](https://www.tensorflow.org/)
-and [PyTorch](https://pytorch.org/). Then it deploys each of the trained models with the additional pre-processing and post-processing code to both KServe and Seldon Core.
+This is a quite extended example that uses the 
+[digits dataset](https://keras.io/api/datasets/mnist/) to train a classifier 
+using both [TensorFlow](https://www.tensorflow.org/) and 
+[PyTorch](https://pytorch.org/). Then it deploys each of the trained models 
+with the additional pre-processing and post-processing code to both KServe 
+and Seldon Core.
 
-The example is split into four different folders and each folder contains a full code example of digits classification using a specific framework and model deployer integration. (e.g. if you want to run the TensorFlow pipeline within the KServe model deployer integration, you would run the following command: `python run_kserve_tensoflow.py --config deploy`)
+The example is split into four different folders and each folder contains a 
+full code example of digits classification using a specific framework and 
+model deployer integration. (e.g. if you want to run the TensorFlow pipeline 
+within the KServe model deployer integration, you would run the following 
+command: `python run_kserve_tensoflow.py --config deploy`)
 
 Each of these examples consists of two individual pipelines:
 
@@ -60,16 +79,17 @@ etc.).
 
 ## Seldon Core / KServe Setup 
 
-For custom code deployment to work, you need to have either a Seldon Core or KServe
-deployed in a Kubernetes cluster. ZenML provides two ways to setup these tools:
+For custom code deployment to work, you need to have either a Seldon Core or 
+KServe deployed in a Kubernetes cluster. ZenML provides two ways to set up 
+these tools:
 
-1. A step-by-step guide on how to setup and deploy a Seldon Core deployment can be found
-in the integration example.
+1. A step-by-step guide on how to set up and deploy a Seldon Core deployment 
+can be found in the integration example.
     * [KServe deployment guide](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment#installing-kserve-eg-in-an-gke-cluster)
     * [Seldon Core deployment guide](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment#installing-seldon-core-eg-in-an-eks-cluster).
 
-2. A Terraform-based recipe to provide all the required resources. More information can be found in the 
-[Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks).
+2. A Terraform-based recipe to provide all the required resources. More 
+information can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks).
 
 
 Once we have a ready deployment environment, we can start the example.
@@ -171,9 +191,9 @@ zenml container-registry register gcp_registry --flavor=gcp --uri=eu.gcr.io/cont
 zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d kserve_gke -c gcp_registry -x local --set
 ```
 
-The next sections cover how to setup the GCP Artifact Store credentials for the KServe model deployer. 
-Please look up the variables relevant to your use case in the
-[official KServe Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
+The next sections cover how to set up the GCP Artifact Store credentials 
+for the KServe model deployer. Please look up the variables relevant to your 
+use case in the [official KServe Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
 and set them accordingly for your ZenML secrets schemas already built for each storage_type.
 You can find the relevant variables in the [Kserve integration secret schemas docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kserve/#zenml.integrations.kserve.secret_schemas.secret_schemas).
 

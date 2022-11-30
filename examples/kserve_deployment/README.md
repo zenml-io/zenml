@@ -1,47 +1,74 @@
 # 🚀 KServe Deployment Example - TensorFlow and Pytorch Examples
 
-[KServe](https://kserve.github.io/website) is a Kubernetes-based model inference platform
-built for highly scalable deployment use cases. It provides a standardized inference protocol 
-across ML frameworks while supporting a serverless architecture with autoscaling including Scale to Zero on GPUs.
-KServe uses a simple and pluggable production serving architecture for production ML serving that includes 
-prediction, pre-/post-processing, monitoring and explainability.
+[KServe](https://kserve.github.io/website) is a Kubernetes-based model inference
+platform built for highly scalable deployment use cases. It provides a 
+standardized inference protocol across ML frameworks while supporting a 
+serverless architecture with autoscaling including Scale to Zero on GPUs.
+KServe uses a simple and pluggable production serving architecture for 
+production ML serving that includes prediction, pre-/post-processing, 
+monitoring and explainability.
 
-Following the model deployment story within ZenML, and to make it easier to deploy models with other serving tools, 
-we have created an Integration for KServe. But how does KServe differ from the already-integrated [Seldon Core](../seldon_deployment/)?
+Following the model deployment story within ZenML, and to make it easier to 
+deploy models with other serving tools, we have created an Integration for 
+KServe. But how does KServe differ from the already-integrated 
+[Seldon Core](../seldon_deployment)?
 
-* __**Supported frameworks**__: Standard ML frameworks like TensorFlow, PyTorch, Scikit-learn, XGBoost, Keras, MXNet, etc... are first-class citizens in KServe and can be fairly easily used. While Seldon Core has support for the majority of these ML frameworks, it lacks support for Pytorch even though it could be still used using the custom deployment, albeit with some extra upfront work.
-* __**Custom Deployment**__: Both Seldon Core and KServe have support for custom deployment.
-However Seldon Core offers an extra inference graph that includes custom [TRANSFORMER](https://docs.seldon.io/projects/seldon-core/en/latest/workflow/overview.html) and [ROUTER](https://docs.seldon.io/projects/seldon-core/en/latest/analytics/routers.html?highlight=routers#) which can be used to build more powerful inference graphs.
-* __**Autoscaling**__: KServe has more advanced autoscaling features than Seldon Core.
-With the Knative autoscaling, it is possible to scale up and down the number of replicas of the model deployment based on the number of requests received.
-* __**Predictions interfaces**__: Seldon Core and KServe have built-in support for HTTP-based protocols, However only Seldon Core has support for GRPC-based protocols. While it still can be configured for KServe it requires using manual, custom deployment.
+* __**Supported frameworks**__: Standard ML frameworks like TensorFlow, PyTorch,
+Scikit-learn, XGBoost, Keras, MXNet, etc... are first-class citizens in KServe 
+and can be fairly easily used. While Seldon Core has support for the majority 
+of these ML frameworks, it lacks support for Pytorch even though it could be 
+still used by using the custom deployment, albeit with some extra upfront work.
+* __**Custom Deployment**__: Both Seldon Core and KServe have support for 
+custom deployment. However, Seldon Core offers an extra inference graph that 
+includes custom [TRANSFORMER](https://docs.seldon.io/projects/seldon-core/en/latest/workflow/overview.html) 
+and [ROUTER](https://docs.seldon.io/projects/seldon-core/en/latest/analytics/routers.html?highlight=routers#) 
+which can be used to build more powerful inference graphs.
+* __**Autoscaling**__: KServe has more advanced autoscaling features than 
+Seldon Core. With the Knative autoscaling, it is possible to scale up and 
+down the number of replicas of the model deployment based on the number of 
+requests received.
+* __**Predictions interfaces**__: Seldon Core and KServe have built-in support 
+for HTTP-based protocols, However only Seldon Core has support for GRPC-based 
+protocols. While it still can be configured for KServe it requires using 
+manual, custom deployment.
 
-Now that we have a clear understanding of the different features of KServe compared to Seldon Core, we will go through the deployment process of the model with KServe and focus more on how to deploy the PyTorch model.
+Now that we have a clear understanding of the different features of KServe 
+compared to Seldon Core, we will go through the deployment process of the model 
+with KServe and focus more on how to deploy the PyTorch model.
+
 ## 🗺 Overview
 
 The example uses the [digits dataset](https://keras.io/api/datasets/mnist/) 
 to train a classifier using both [TensorFlow](https://www.tensorflow.org/)
-and [PyTorch](https://pytorch.org/).
-Different hyperparameter values (e.g. the number of epochs and learning rate) 
-can be supplied as command-line arguments to the `run.py` Python script. 
+and [PyTorch](https://pytorch.org/). Different hyperparameter values (e.g. 
+the number of epochs and learning rate) can be supplied as command-line 
+arguments to the `run.py` Python script. 
 
 The example contains three pipelines:
-* `pytorch_training_deployment_pipeline`: trains a classifier using TensorFlow and deploys it to KServe with the TFServing Runtime Server.
-* `pytorch_inference_pipeline`: run some predictions using the deployed PyTorch model.
-
-* `tensorflow_training_deployment_pipeline`: trains a classifier using PyTorch and deploys it to KServe with TorchServe Runtime Server.
-* `tensorflow_inference_pipeline`: runs predictions on the Tensorflow served models.
+* `pytorch_training_deployment_pipeline`: trains a classifier using TensorFlow 
+and deploys it to KServe with the TFServing Runtime Server.
+* `pytorch_inference_pipeline`: run some predictions using the deployed 
+PyTorch model.
+* `tensorflow_training_deployment_pipeline`: trains a classifier using 
+PyTorch and deploys it to KServe with TorchServe Runtime Server.
+* `tensorflow_inference_pipeline`: runs predictions on the Tensorflow served 
+models.
 
 Running the pipelines to train the classifiers and then deploying them to 
 KServe requires preparing them into an exact format that is expected 
-by the runtime server, then storing them into remote storage or a persistent volume 
-in the cluster and giving the path to KServe as the model URI with the right permissions to be able to retrieve the model artifacts. 
-By default, ZenML's KServe integration will try to handle that for you 
-by automatically loading, preparing and then saving files to the same active Artifact Store 
-within the ZenML stack. However, for some frameworks (e.g. PyTorch) you will still need 
-to provide some additional files that Runtime Server needs to be able to run the model.
+by the runtime server, then storing them into remote storage or a persistent 
+volume in the cluster and giving the path to KServe as the model URI with the 
+right permissions to be able to retrieve the model artifacts. By default, 
+ZenML's KServe integration will try to handle that for you by automatically 
+loading, preparing and then saving files to the same active Artifact Store 
+within the ZenML stack. However, for some frameworks (e.g. PyTorch) you will 
+still need to provide some additional files that Runtime Server needs to be 
+able to run the model.
 
-Note: Pytorch models are deployed with TorchServe Runtime Server. Read more about how to deploy Pytorch models with TorchServe Runtime Server [KServe Pytorch](https://kserve.github.io/website/0.9/modelserving/v1beta1/torchserve/) or in [TorchServe Official documentation](https://pytorch.org/serve/).
+Note: Pytorch models are deployed with TorchServe Runtime Server. Read more 
+about how to deploy Pytorch models with TorchServe Runtime Server 
+[KServe Pytorch](https://kserve.github.io/website/0.9/modelserving/v1beta1/torchserve/) 
+or in [TorchServe Official documentation](https://pytorch.org/serve/).
 
 The KServe deployment server is provisioned remotely as a Kubernetes
 resource that continues to run after the deployment pipeline run is complete.
@@ -56,7 +83,6 @@ deployment server so that the new model is being served instead of the old one.
 
 The inference pipeline loads the image from the local filesystem and performs 
 online predictions on the running KServe inference service.
-
 
 # 🖥 Cloud Stack
 
@@ -83,6 +109,7 @@ zenml up
 ```
 
 For the ZenML KServe deployer to work, these things are required:
+
 1. Access to a running [Kubernetes cluster](https://kubernetes.io/). The example accepts a `--kubernetes-context` command-line argument. This Kubernetes context needs to point to the Kubernetes cluster where KServe model servers will be deployed. If the context is not explicitly supplied to the example, it defaults to using the locally active context.
 
 2. KServe must be installed and running on the Kubernetes cluster (More information about how to install KServe can be found below or on the [KServe documentation](https://kserve.github.io/website/)).

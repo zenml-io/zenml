@@ -110,23 +110,6 @@ The flow to get started for this example can be the following:
     zenml stack set <STACK_NAME>
     ```
 
-5. You should now create a secret for the RDS MySQL instance that will allow ZenML to connect to it. Use the following command:
-
-    ```bash
-    zenml secret register aws_rds_secret \
-        --schema=mysql \
-        --user=<user> \
-        --password=<password>
-    ```
-
-    The values for the username and password can be obtained by running the following commands inside your recipe directory.
-
-    ```bash
-    terraform output metadata-db-username
-
-    terraform output metadata-db-password
-    ```
-
 You can now jump straight to the [section on running the pipeline](#computer-run-pipeline)!
 
 ### Setup and Register Kubernetes Orchestrator

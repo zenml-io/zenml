@@ -67,7 +67,8 @@ drift diagrams in your browser or within a Jupyter notebook:
 
 
 # ☁️ Run in Colab
-If you have a google account, you can get started directly with google colab - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/evidently_drift_detection/evidently.ipynb)
+If you have a Google account, you can get started directly with Google colab 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/evidently_drift_detection/evidently.ipynb)
 
 # 🖥 Run it locally
 

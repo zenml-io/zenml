@@ -3,7 +3,8 @@ Data logging and profiling is an important part of any production ML
 pipeline. [whylogs](https://whylabs.ai/whylogs) is an open source library
 that analyzes your data and creates statistical summaries called whylogs
 profiles. whylogs profiles can be visualized locally or uploaded to the
-[WhyLabs](https://whylabs.ai/) platform where more comprehensive analyses can be carried out.
+[WhyLabs](https://whylabs.ai/) platform where more comprehensive analysis 
+can be carried out.
 
 ## 🗺 Overview
 ZenML integrates seamlessly with whylogs and WhyLabs. This example shows
@@ -65,7 +66,9 @@ def data_loader() -> Output(data=pd.DataFrame, profile=DatasetProfileView,):
     return dataset, profile
 ```
 
-If you want to enable Whylabs logging when using the class-based API, simply configure your step as follows:
+If you want to enable Whylabs logging when using the class-based API, 
+simply configure your step as follows:
+
 ```python
 from zenml.steps import Output, BaseStep
 from whylogs.core import DatasetProfileView
@@ -101,13 +104,11 @@ from zenml.integrations.whylogs.steps import WhylogsProfilerParameters, whylogs_
 train_data_profiler = whylogs_profiler_step(
     step_name="train_data_profiler",
     params=WhylogsProfilerParameters(),
-    log_to_whylabs=True,
     dataset_id="model-2",
 )
 test_data_profiler = whylogs_profiler_step(
     step_name="test_data_profiler",
     params=WhylogsProfilerParameters(),
-    log_to_whylabs=True,
     dataset_id="model-3",
 )
 ```
@@ -121,7 +122,6 @@ dataset profiles generated in two different steps:
 
 ```python
 from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
-from zenml.logger import get_logger
 from zenml.post_execution import get_pipeline
 
 def visualize_statistics(
@@ -155,8 +155,8 @@ visualize_statistics("train_data_profiler", "test_data_profiler")
 ![whylogs visualizer](assets/whylogs-visualizer.png)
 
 Furthermore, all the generated profiles are uploaded to WhyLabs automatically
-for steps with whylabs logging enabled if the Whylabs
-credentials have been configured in the whylogs Data Validator stack component:
+for steps with Whylabs logging enabled if the Whylabs credentials have been 
+configured in the whylogs Data Validator stack component:
 
 
 The `dataset_id` tags set for the profiles are used to associate
@@ -166,7 +166,8 @@ the datasets models with the models in the WhyLabs platform.
 ![WhyLabs UI image 2](assets/whylabs-ui-02.png)
 
 # ☁️ Run in Colab
-If you have a google account, you can get started directly with google colab - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/whylogs_data_profiling/whylogs.ipynb)
+If you have a Google account, you can get started directly with 
+Google colab - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/whylogs_data_profiling/whylogs.ipynb)
 
 # 🖥 Run it locally
 

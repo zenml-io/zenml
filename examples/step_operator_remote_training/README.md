@@ -9,7 +9,7 @@ workloads.
 
 ## 🗺 Overview
 
-Here we train a simple sklearn classifier on the MNIST dataset using one of
+Here we train a simple sklearn classifier on the MNIST dataset using one of the 
 three step operators:
 
 - AWS Sagemaker
