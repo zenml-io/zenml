@@ -174,6 +174,7 @@ specify sensitive configurations for your [stack components](../../starter-guide
 
 Check out the corresponding [documentation page](../../advanced-guide/practical/secrets-management.md)
 for more information.
+
 ## Secret Scopes
 
 Examples of situations in which Secrets Manager scoping can be useful:
