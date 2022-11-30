@@ -3,27 +3,44 @@ description: A guide to debug common issues and get help.
 ---
 
 # Debugging Guide
-This page documents a series of how-tos for efficient debugging and getting help without losing any hair.
+This page documents a series of how-tos for efficient debugging and getting help without losing your hair.
 
-## 🔍 How to search Slack for answers
-Before posting on Slack it's a good idea to search in Slack and [GitHub issues](https://github.com/zenml-io/zenml/issues)
-to see if the issue you're facing already has a solution in place. Also, check out the [Common errors](#-common-errors) section below.
+## 💡 Introduction
+If you stumbled upon this page, chances are you're facing issues with using ZenML. First, thank you for your interest in ZenML!
+We want to make your journey with ZenML as easy and smooth as possible when faced with issues.
+This page documents suggestions and best practices to let you debug, get help, and solve issues quickly.
 
-We recommend that you [join our Slack channel]((https://zenml.io/meet)) and use the built-in Slack search function at the top of the page. 
+## 🔍 Getting help
+The most direct and quickest path to get help is on our Slack. 
+Join our Slack channel [here](https://zenml.io/slack-invte).
+
+### 🔷 When to get help?
+Before posting anything on Slack it's a good idea to first
+
+* Search on Slack using the built-in Slack search function at the top of the page. 
+![search](../assets/misc/slack_search_bar.png)
+* Search on [GitHub issues](https://github.com/zenml-io/zenml/issues).
+to see if the issue you're facing already has a solution in place. 
+* Search the [docs](https://docs.zenml.io) using the search bar in the top right corner of the page.
+![search](../assets/misc/doc_search_bar.png)
+* Also, check out the [Common errors](#-common-errors) section below.
+
 Chances are you'd find your answers there.
 
 Our current Slack plan only lets you search chat history within the past 90 days.
 If you'd like to view older chats, we recommend that you head to https://open.crowd.dev/zenml and type your query in the search bar.
+![search](../assets/misc/opendev_search_bar.png)
+
 It should surface chats older than 90 days from our channel.
 In most cases, it's not very relevant, but it's there if you'd like to peer further into the past.
 
-If you can't find any clue, then it's time to post it on Slack.
+If you can't find any clue, then it's time to post your questions on Slack.
 
-## 🎯 How to post on Slack
+### 🎯 How to post on Slack?
 When posting on Slack it's useful to provide the following information (when applicable) so that we get a 
 complete picture before jumping into solutions.
 
-### 1️⃣ System Information
+#### 1️⃣ System Information
 Let us know relevant information about your system.
 We recommend running the following in your terminal and attaching the output to your question.
 
@@ -43,37 +60,56 @@ Integrations: ['airflow', 'graphviz']
 System information provides more context to your issue and also eliminates the need for anyone to ask when they're trying to help.  
 This increases the chances of your question getting answered and saves time for everyone.
 
-### 2️⃣ What happened
+#### 2️⃣ What happened
 Tell us briefly:
 * What were you trying to achieve? 
 * What did you expect to happen?
 * What actually happened?
 
-### 3️⃣ How to reproduce the error
+#### 3️⃣ How to reproduce the error
 Walk us through how to reproduce the same error you had step-by-step, whenever possible.
+Use the forms you prefer write it in text or record a video, whichever lets you get the issue at hand across to us!
 
-### 4️⃣ Relevant log output
-Attach relevant log outputs to help us understand what happened under the hood.
-Usually, the default log you see in your terminal is sufficient.
+#### 4️⃣ Relevant log output
+As a general rule of thumb, always attach relevant log outputs and the full error traceback to help us understand what happened under the hood.
+If the full error traceback does not fit into a text message, attach a file or use a service like [Pastebin](https://pastebin.com/)
 
-Sometimes, the default log output does not help to shed light on the issue.
-In this case, it's useful to provide additional logs.
+Along with the error traceback, we recommend to always share the output of the following commands: 
+* `zenml status` 
+* `zenml stack describe`
+
+When applicable, also attach logs of the orchestrator. For example, if you're using the Kubeflow orchestrator, include the logs of the pod that was running the step that failed.
+
+Usually, the default log you see in your terminal is sufficient, in the event the default log output does not then it's useful to provide additional logs.
 Additional logs are not shown by default, you'll have to toggle an environment variable for it.
 Read the next section to find out how.
 
-## 🔄 How to toggle `ZENML_LOGGING_VERBOSITY` environment variable to show additional logs
-In the event that the default log is not helpful, you can toggle the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
 
-The default value is
+## 🔄 Toggle `ZENML_LOGGING_VERBOSITY` environment variable to show additional logs
+
+### 🔷 When?
+The default log is not helpful, ambiguous, or does not point you to the root of the issue. 
+You can toggle the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
+
+### 🎯 How?
+
+The default value of `ZENML_LOGGING_VERBOSITY` environment variable is:
+
 ```shell
 ZENML_LOGGING_VERBOSITY=INFO
 ```
+
 You can pick other values such as `WARN`, `ERROR`, `CRITICAL`, `DEBUG` to change what's shown in the logs.
 See [System Environment Variable](../guidelines/system-environmental-variables.md) for more information on other environment variables that affect the behavior of ZenML.
 
 Read more about how to set environment variables [here](https://linuxize.com/post/how-to-set-and-list-environment-variables-in-linux/).
 
-## 📜 How to see logs on the client and server
+## 📜 View client and server logs
+
+### 🔷 When?
+Facing a ZenML Server-related issue.
+
+### 🎯 How?
 To see the logs of the local ZenML Server deployment run:
 
 ```shell
@@ -86,7 +122,7 @@ To see the logs for ZenML Server deployed using Docker containers, first you hav
 docker ps
 ```
 
-and the view the logs from the container:
+and view the logs from the container:
 ```shell
 docker logs <ID>
 ```
@@ -121,7 +157,7 @@ INFO:asyncio:Syncing pipeline runs...
 ```
 
 ## ❌ Common errors
-This section documents frequently encountered issues and solutions among users in Slack.
+This section documents frequently encountered errors among users and solutions to each.
 
 ### 💢 Error initializing rest store
 
@@ -176,7 +212,7 @@ For example:
 AttributeError: 'NoneType' object has no attribute 'name'
 ```
 
-In the above error snippet, the `step` on line 24 expect an experiment tracker but could not find it on the stack.
+In the above error snippet, the `step` on line 24 expects an experiment tracker but could not find it on the stack.
 To solve it, register an experiment tracker of your choice on the stack. For example
 
 ```shell
