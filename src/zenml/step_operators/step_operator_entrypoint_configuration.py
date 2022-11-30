@@ -21,12 +21,12 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
-from zenml.orchestrators.executor import StepExecutor
-from zenml.orchestrators.launcher import (
+from zenml.orchestrators.step_launcher import (
     prepare_input_artifacts,
     prepare_output_artifacts,
     resolve_step_inputs,
 )
+from zenml.orchestrators.step_runner import StepRunner
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -101,8 +101,8 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             step_run=step_run, stack=stack, step=step
         )
 
-        executor = StepExecutor(step=step, stack=stack)
-        executor.execute(
+        executor = StepRunner(step=step, stack=stack)
+        executor.run(
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
             step_run_info=step_run_info,

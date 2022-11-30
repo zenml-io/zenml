@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""This module defines a generic Launcher for all ZenML steps."""
+"""Class to launch (run directly or using a step operator) steps."""
 
 import os
 import time
@@ -37,7 +37,7 @@ from zenml.models.step_run_models import (
 )
 from zenml.orchestrators import cache_utils, publish_utils
 from zenml.orchestrators import utils as orchestrator_utils
-from zenml.orchestrators.executor import StepExecutor
+from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
 from zenml.utils import source_utils, string_utils
 
@@ -156,7 +156,7 @@ def get_step_operator(
     """Fetches the step operator from the stack.
 
     Args:
-        stack: Stack on which the step is being executed.
+        stack: Stack on which the step is being run.
         step_operator_name: Name of the step operator to get.
 
     Returns:
@@ -251,7 +251,7 @@ def prepare_output_artifacts(
     return output_artifacts
 
 
-class Launcher:
+class StepLauncher:
     """This class is responsible for launching a step of a ZenML pipeline.
 
     It does the following:
@@ -259,7 +259,7 @@ class Launcher:
     2. Generate a cache key based on the step and its artifacts,
     3. Build a `StepRunModel` for the step run,
     4. Check if the step run can be cached, and if so, register it as cached.
-    5. If not cached, call the `StepExecutor` to execute the step, and register
+    5. If not cached, call the `StepRunner` to run the step, and register
         the step as running.
     6. If execution was successful, register the output artifacts with ZenML,
     7. If not cached, update the step run status,
@@ -513,8 +513,8 @@ class Launcher:
             input_artifacts: The input artifacts of the current step.
             output_artifacts: The output artifacts of the current step.
         """
-        executor = StepExecutor(step=self._step, stack=self._stack)
-        executor.execute(
+        executor = StepRunner(step=self._step, stack=self._stack)
+        executor.run(
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
             step_run_info=step_run_info,

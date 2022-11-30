@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-"""Classes and functions to execute ZenML steps."""
+"""Class to run steps."""
 
 import inspect
 from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Type
@@ -42,14 +42,14 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class StepExecutor:
-    """Class to execute ZenML steps."""
+class StepRunner:
+    """Class to run steps."""
 
     def __init__(self, step: "Step", stack: "Stack"):
-        """Initializes the step executor.
+        """Initializes the step runner.
 
         Args:
-            step: The step to execute.
+            step: The step to run.
             stack: The stack on which the step should run.
         """
         self._step = step
@@ -57,20 +57,20 @@ class StepExecutor:
 
     @property
     def configuration(self) -> StepConfiguration:
-        """Configuration of the step to execute.
+        """Configuration of the step to run.
 
         Returns:
             The step configuration.
         """
         return self._step.config
 
-    def execute(
+    def run(
         self,
         input_artifacts: Dict[str, BaseArtifact],
         output_artifacts: Dict[str, BaseArtifact],
         step_run_info: StepRunInfo,
     ) -> None:
-        """Executes the step.
+        """Runs the step.
 
         Args:
             input_artifacts: The input artifacts of the step.
