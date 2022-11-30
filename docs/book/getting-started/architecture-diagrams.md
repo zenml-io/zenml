@@ -23,10 +23,22 @@ step outputs/ cached data).
 ![Remote Stack](../assets/diagrams/RemoteServer.png)
 
 
+## Using Git Ops
+In many production settings it is undesirable to have all developers accessing 
+and running on the production environments. Instead, this is usually centralized
+through the means of git ops. This same principle can be easily used for 
+pipeline deployments using ZenML. [Here](https://github.com/zenml-io/zenml-gitflow)
+is an example repository that shows how. The following architecture diagram
+visualizes how a pipeline would be run through an automated action that is
+triggered when new code is pushed to the main code repository.
+
+![ZenML with Git Ops](../assets/diagrams/Remote_with_git_ops.png)
+
+
 ## Introducing a Secrets Manager
 In most production settings it is preferred to store/rotate secrets within one
 unified
-[secret manager](secrets-managers/secrets-managers.md).
+[secret manager](../component-gallery/secrets-managers/secrets-managers.md).
 The client machines as well as the orchestration 
 components (orchestrator/ step operator) can be separately authenticated with
 this secret manager (e.g. with CLI authentication). Now the component 
@@ -36,7 +48,7 @@ configurations and docker images no longer rely on baked in credentials.
 
 
 ## The Experiment Tracker
-The [experiment tracker](experiment-trackers/experiment-trackers.md) 
+The [experiment tracker](../component-gallery/experiment-trackers/experiment-trackers.md) 
 is a very popular component of the stack that helps log and compare the 
 metrics of different runs. This diagram shows how the experiment tracker
 fits into the overall architecture.
@@ -46,7 +58,7 @@ fits into the overall architecture.
 ## The Model Deployer
 At the end of a successful training pipeline, you might want to deploy your
 models as prediction endpoints. This can be easily accomplished using
-[model deployers](model-deployers/model-deployers.md).
+[model deployers](../component-gallery/model-deployers/model-deployers.md).
 
 
 ![Model Deployer](../assets/diagrams/Remote_with_deployer.png) 

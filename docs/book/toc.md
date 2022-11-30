@@ -11,6 +11,7 @@
   * [One Click Deployment using CLI](./getting-started/deploying-zenml/cli.md)
   * [Deploying with Docker](./getting-started/deploying-zenml/docker.md)
   * [Deploying with Helm](./getting-started/deploying-zenml/helm.md)
+* [Architecture Diagrams](getting-started/architecture-diagrams.md)
 * [Examples](./getting-started/examples.md)
 
 ## Starter Guide
@@ -52,7 +53,7 @@
 ## Component Gallery
 
 * [Categories of MLOps Tools](./component-gallery/categories.md)
-* [Architecture Diagrams](./component-gallery/architecture-diagrams.md)
+* [Architecture Diagrams](getting-started/architecture-diagrams.md)
 * [Integration Overview](./component-gallery/integrations.md)
 * [Orchestrators](./component-gallery/orchestrators/orchestrators.md)
   * [Local Orchestrator](./component-gallery/orchestrators/local.md)
