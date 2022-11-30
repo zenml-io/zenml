@@ -85,6 +85,7 @@ these tools:
 
 1. A step-by-step guide on how to set up and deploy a Seldon Core deployment 
 can be found in the integration example.
+
     * [KServe deployment guide](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment#installing-kserve-eg-in-an-gke-cluster)
     * [Seldon Core deployment guide](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment#installing-seldon-core-eg-in-an-eks-cluster).
 
@@ -137,7 +138,6 @@ This stack consists of the following components:
 
 * a GCP artifact store
 * the local orchestrator
-* the local metadata store
 * a KServe model deployer
 * a local secret manager used to store the credentials needed by KServe to
 access the GCP artifact store
@@ -358,7 +358,6 @@ This stack consists of the following components:
 
 * a GCP artifact store
 * the local orchestrator
-* the local metadata store
 * a Seldon Core model deployer
 * a local secrets manager used to store the credentials needed by Seldon Core to
 access the GCP artifact store

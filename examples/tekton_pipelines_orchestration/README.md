@@ -115,7 +115,7 @@ zenml stack register gcp_tekton_stack \
     -c gcr_registry \
     --set
 
-# Forward the Tekton pipelines UI and metadata store so we can access them locally
+# Forward the Tekton pipelines UI so we can access it locally
 zenml stack up
 ```
 

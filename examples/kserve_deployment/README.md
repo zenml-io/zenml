@@ -351,7 +351,6 @@ This stack consists of the following components:
 
 * a GCP artifact store
 * the local orchestrator
-* the local metadata store
 * a KServe model deployer
 * a local secret manager used to store the credentials needed by KServe to
 access the GCP artifact store

@@ -266,7 +266,7 @@ zenml stack register gcp_kubeflow_stack \
     -c gcr_registry \
     --set
 
-# Forward the Kubeflow pipelines UI and metadata store so we can access them locally
+# Forward the Kubeflow pipelines UI so we can access it locally
 zenml stack up
 ```
 
