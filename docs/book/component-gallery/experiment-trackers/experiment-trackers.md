@@ -44,6 +44,13 @@ You should add an Experiment Tracker to your ZenML stack and use it when you
 want to augment ZenML with the visual features provided by experiment tracking
 tools.
 
+## How they experiment trackers slot into the stack
+
+Here is an architecture diagram that shows how experiment trackers fit into the 
+overall story of a remote stack.
+
+![Experiment Tracker](../../assets/diagrams/Remote_with_exp_tracker.png)
+
 ### Experiment Tracker Flavors
 
 Experiment Trackers are optional stack components provided by integrations:
