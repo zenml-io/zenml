@@ -12,7 +12,7 @@ This page documents suggestions and best practices to let you debug, get help, a
 
 ## 🔍 Getting help
 The most direct and quickest path to get help is on our Slack. 
-Join our Slack channel [here](https://zenml.io/slack-invte).
+Join our Slack channel [here](https://zenml.io/slack).
 
 ### 🔷 When to get help?
 Before posting anything on Slack it's a good idea to first to search to see if the issue you're facing already has a solution in place.
