@@ -509,11 +509,12 @@ class StackComponent:
             info: Info about the step that will be executed.
         """
 
-    def cleanup_step_run(self, info: "StepRunInfo") -> None:
+    def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Cleans up resources after the step run is finished.
 
         Args:
             info: Info about the step that was executed.
+            step_failed: Whether the step failed.
         """
 
     @property
