@@ -407,6 +407,7 @@ class StepLauncher:
             if cached_step_run:
                 logger.info(f"Using cached version of `{self._step_name}`.")
                 execution_needed = False
+                step_run.original_step_run_id = cached_step_run.id
                 step_run.output_artifacts = cached_step_run.output_artifacts
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time

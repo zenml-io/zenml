@@ -38,6 +38,7 @@ class StepRunBaseModel(BaseModel):
     )
     step: Step
     pipeline_run_id: UUID
+    original_step_run_id: Optional[UUID] = None
     status: ExecutionStatus
     parent_step_ids: List[UUID] = []
     input_artifacts: Dict[str, UUID] = {}

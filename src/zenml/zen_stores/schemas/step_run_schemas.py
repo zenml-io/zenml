@@ -49,6 +49,15 @@ class StepRunSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
+    original_step_run_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=__tablename__,
+        source_column="original_step_run_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+
     enable_cache: Optional[bool] = Field(nullable=True)
     code_hash: Optional[str] = Field(nullable=True)
     cache_key: Optional[str] = Field(nullable=True)
@@ -56,7 +65,6 @@ class StepRunSchema(NamedSchema, table=True):
     end_time: Optional[datetime] = Field(nullable=True)
     status: ExecutionStatus
     entrypoint_name: str
-
     parameters: str = Field(sa_column=Column(TEXT, nullable=False))
     step_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     caching_parameters: Optional[str] = Field(
@@ -80,6 +88,7 @@ class StepRunSchema(NamedSchema, table=True):
         return cls(
             name=request.name,
             pipeline_run_id=request.pipeline_run_id,
+            original_step_run_id=request.original_step_run_id,
             enable_cache=step_config.enable_cache,
             code_hash=step_config.caching_parameters.get(
                 STEP_SOURCE_PARAMETER_NAME
@@ -122,6 +131,7 @@ class StepRunSchema(NamedSchema, table=True):
             id=self.id,
             name=self.name,
             pipeline_run_id=self.pipeline_run_id,
+            original_step_run_id=self.original_step_run_id,
             parent_step_ids=parent_step_ids,
             cache_key=self.cache_key,
             start_time=self.start_time,
