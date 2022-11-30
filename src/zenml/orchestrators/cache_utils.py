@@ -33,9 +33,9 @@ logger = get_logger(__name__)
 
 def generate_cache_key(
     step: "Step",
-    artifact_store: "BaseArtifactStore",
     input_artifact_ids: Dict[str, "UUID"],
-    project_id: str,
+    artifact_store: "BaseArtifactStore",
+    project_id: "UUID",
 ) -> str:
     """Generates a cache key for a step run.
 
@@ -44,7 +44,7 @@ def generate_cache_key(
 
     The cache key is a MD5 hash of:
     - the project ID,
-    - the artifact store path,
+    - the artifact store ID and path,
     - the source code that defines the step,
     - the parameters of the step,
     - the names and IDs of the input artifacts of the step,
@@ -54,8 +54,8 @@ def generate_cache_key(
 
     Args:
         step: The step to generate the cache key for.
-        artifact_store: The artifact store to use.
         input_artifact_ids: The input artifact IDs for the step.
+        artifact_store: The artifact store of the active stack.
         project_id: The ID of the active project.
 
     Returns:
@@ -66,7 +66,8 @@ def generate_cache_key(
     # Project ID
     hash_.update(project_id.bytes)
 
-    # Artifact store path
+    # Artifact store ID and path
+    hash_.update(artifact_store.id.bytes)
     hash_.update(artifact_store.path.encode())
 
     # Step source code

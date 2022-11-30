@@ -385,8 +385,8 @@ class StepLauncher:
 
         cache_key = cache_utils.generate_cache_key(
             step=self._step,
-            artifact_store=self._stack.artifact_store,
             input_artifact_ids=input_artifact_ids,
+            artifact_store=self._stack.artifact_store,
             project_id=Client().active_project.id,
         )
 
