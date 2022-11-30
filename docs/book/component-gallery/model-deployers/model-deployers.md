@@ -32,6 +32,13 @@ deploy models for real time inference use cases. With the model deployers and
 other stack components, you can build pipelines that are continuously trained 
 and deployed to a production.
 
+## How they experiment trackers slot into the stack
+
+Here is an architecture diagram that shows how model deployers fit into the 
+overall story of a remote stack. 
+
+![Experiment Tracker](../../assets/diagrams/Remote_with_exp_tracker.png)
+
 ### Model Deployers Flavors
 
 ZenML comes with a `local` MLflow model deployer which is a simple model 
