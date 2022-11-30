@@ -20,7 +20,7 @@ credentials) or you want to access secret values inside your pipeline steps.
 
 Here is an architecture diagram that shows how remote secrets managers fit into
 the overall story of a remote stack. As you can see the secrets manager is 
-accessed from the clientside as well as from the orchestrator/step operator. 
+accessed from the client-side as well as from the orchestrator/step operator. 
 On the client side the secret manager could be used to resolve credentials for 
 the orchestrator and container registry. Orchestrators and Step Operators can
 also query the secrets manager to get credentials for other stack components, 

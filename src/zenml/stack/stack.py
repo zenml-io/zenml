@@ -759,6 +759,7 @@ class Stack:
 
     def provision(self) -> None:
         """Provisions resources to run the stack locally."""
+        self.validate(fail_if_secrets_missing=True)
         logger.info("Provisioning resources for stack '%s'.", self.name)
         for component in self.components.values():
             if not component.is_provisioned:
