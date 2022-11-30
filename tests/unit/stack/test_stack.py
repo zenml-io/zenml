@@ -382,6 +382,7 @@ def test_stack_suspending_does_not_fail_if_not_implemented_in_any_component(
     with does_not_raise():
         stack_with_mock_components.suspend()
 
+
 def test_stack_provisioning_fails_if_stack_component_validation_fails(
     stack_with_mock_components, failing_stack_validator
 ):
