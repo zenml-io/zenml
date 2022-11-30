@@ -15,26 +15,20 @@ The most direct and quickest path to get help is on our Slack.
 Join our Slack channel [here](https://zenml.io/slack-invte).
 
 ### 🔷 When to get help?
-Before posting anything on Slack it's a good idea to first
+Before posting anything on Slack it's a good idea to first to search to see if the issue you're facing already has a solution in place.
 
+Here are a few places to start: 
 * Search on Slack using the built-in Slack search function at the top of the page. 
 ![search](../assets/misc/slack_search_bar.png)
 * Search on [GitHub issues](https://github.com/zenml-io/zenml/issues).
-to see if the issue you're facing already has a solution in place. 
 * Search the [docs](https://docs.zenml.io) using the search bar in the top right corner of the page.
 ![search](../assets/misc/doc_search_bar.png)
-* Also, check out the [Common errors](#-common-errors) section below.
-
-Chances are you'd find your answers there.
-
-Our current Slack plan only lets you search chat history within the past 90 days.
-If you'd like to view older chats, we recommend that you head to https://open.crowd.dev/zenml and type your query in the search bar.
+* Check out the [Common errors](#-common-errors) section below.
+* Search on https://open.crowd.dev/zenml for issues older than 90 days on our Slack channel.
 ![search](../assets/misc/opendev_search_bar.png)
 
-It should surface chats older than 90 days from our channel.
-In most cases, it's not very relevant, but it's there if you'd like to peer further into the past.
-
-If you can't find any clue, then it's time to post your questions on Slack.
+Chances are you'd find your answers there.
+If you can't find any clue, then it's time to post your question on Slack.
 
 ### 🎯 How to post on Slack?
 When posting on Slack it's useful to provide the following information (when applicable) so that we get a 
@@ -60,13 +54,13 @@ Integrations: ['airflow', 'graphviz']
 System information provides more context to your issue and also eliminates the need for anyone to ask when they're trying to help.  
 This increases the chances of your question getting answered and saves time for everyone.
 
-#### 2️⃣ What happened
+#### 2️⃣ What happened?
 Tell us briefly:
 * What were you trying to achieve? 
 * What did you expect to happen?
 * What actually happened?
 
-#### 3️⃣ How to reproduce the error
+#### 3️⃣ How to reproduce the error?
 Walk us through how to reproduce the same error you had step-by-step, whenever possible.
 Use the forms you prefer write it in text or record a video, whichever lets you get the issue at hand across to us!
 
@@ -85,11 +79,11 @@ Additional logs are not shown by default, you'll have to toggle an environment v
 Read the next section to find out how.
 
 
-## 🔄 Toggle `ZENML_LOGGING_VERBOSITY` environment variable to show additional logs
+## 🔄 Additional logs
 
 ### 🔷 When?
 The default log is not helpful, ambiguous, or does not point you to the root of the issue. 
-You can toggle the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
+You can toggle the value of the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
 
 ### 🎯 How?
 
