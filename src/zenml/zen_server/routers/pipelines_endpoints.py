@@ -157,7 +157,7 @@ def list_pipeline_runs(
     """
     return zen_store().list_runs(
         project_name_or_id=project_name_or_id,
-        run_name=run_name,
+        name=run_name,
         stack_id=stack_id,
         component_id=component_id,
         user_name_or_id=user_name_or_id,

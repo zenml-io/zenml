@@ -42,7 +42,7 @@ def get_run(name: str) -> "PipelineRunView":
     client = Client()
     active_project_id = client.active_project.id
     runs = client.zen_store.list_runs(
-        run_name=name,
+        name=name,
         project_name_or_id=active_project_id,
     )
 
