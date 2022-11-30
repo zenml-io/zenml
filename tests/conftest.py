@@ -18,6 +18,7 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, Union
 from uuid import uuid4
 
 import pytest
@@ -37,14 +38,23 @@ from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
 )
-from zenml.enums import ArtifactType, ExecutionStatus
+from zenml.enums import ArtifactType, ExecutionStatus, PermissionType
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models.pipeline_models import (
-    ArtifactModel,
-    PipelineRunModel,
-    StepRunModel,
+from zenml.models import (
+    ArtifactResponseModel,
+    PipelineRunResponseModel,
+    ProjectRequestModel,
+    ProjectResponseModel,
+    RoleRequestModel,
+    StepRunResponseModel,
+    TeamRequestModel,
+    UserRequestModel,
+    UserResponseModel,
 )
-from zenml.models.user_management_models import TeamModel
+from zenml.models.artifact_models import ArtifactRequestModel
+from zenml.models.base_models import BaseResponseModel
+from zenml.models.pipeline_run_models import PipelineRunRequestModel
+from zenml.models.step_run_models import StepRunRequestModel
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
@@ -203,7 +213,7 @@ def clean_client(
 
 
 @pytest.fixture
-def sql_store() -> BaseZenStore:
+def sql_store() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
     store = SqlZenStore(
         config=SqlZenStoreConfiguration(
@@ -223,7 +233,7 @@ def sql_store() -> BaseZenStore:
 
 
 @pytest.fixture
-def sql_store_with_run() -> BaseZenStore:
+def sql_store_with_run() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
 
     GlobalConfiguration().set_store(
@@ -265,7 +275,49 @@ def sql_store_with_run() -> BaseZenStore:
 
 
 @pytest.fixture
-def sql_store_with_team() -> BaseZenStore:
+def sql_store_with_runs() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
+    temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
+
+    GlobalConfiguration().set_store(
+        config=SqlZenStoreConfiguration(
+            url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
+        ),
+    )
+    store = GlobalConfiguration().zen_store
+
+    default_project = store.list_projects()[0]
+    default_stack = store.list_stacks()[0]
+    active_user = store.list_users()[0]
+
+    @step
+    def step_one() -> int:
+        return TEST_STEP_INPUT_INT
+
+    @step
+    def step_two(input: int) -> int:
+        return input + 1
+
+    @pipeline
+    def test_pipeline(step_one, step_two):
+        value = step_one()
+        step_two(value)
+
+    for _ in range(10):
+        test_pipeline(step_one=step_one(), step_two=step_two()).run()
+
+    pipeline_runs = store.list_runs()
+
+    yield {
+        "store": store,
+        "default_project": default_project,
+        "default_stack": default_stack,
+        "active_user": active_user,
+        "pipeline_runs": pipeline_runs,
+    }
+
+
+@pytest.fixture
+def sql_store_with_team() -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
     store = SqlZenStore(
         config=SqlZenStoreConfiguration(
@@ -273,7 +325,7 @@ def sql_store_with_team() -> BaseZenStore:
         ),
         track_analytics=False,
     )
-    new_team = TeamModel(name="arias_team")
+    new_team = TeamRequestModel(name="arias_team")
     store.create_team(new_team)
     default_project = store.list_projects()[0]
     default_stack = store.list_stacks()[0]
@@ -285,6 +337,42 @@ def sql_store_with_team() -> BaseZenStore:
         "default_stack": default_stack,
         "active_user": active_user,
         "default_team": default_team,
+    }
+
+
+@pytest.fixture
+def sql_store_with_user_team_role() -> Dict[
+    str, Union[BaseZenStore, BaseResponseModel]
+]:
+    temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
+
+    store = SqlZenStore(
+        config=SqlZenStoreConfiguration(
+            url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
+        ),
+        track_analytics=False,
+    )
+
+    new_team = TeamRequestModel(name="axls_team")
+    new_team = store.create_team(new_team)
+
+    new_role = RoleRequestModel(
+        name="axl_feeder", permissions={PermissionType.ME}
+    )
+    new_role = store.create_role(new_role)
+
+    new_user = UserRequestModel(name="axl")
+    new_user = store.create_user(new_user)
+
+    new_project = ProjectRequestModel(name="axl_prj")
+    new_project = store.create_project(new_project)
+
+    yield {
+        "store": store,
+        "user": new_user,
+        "team": new_team,
+        "role": new_role,
+        "project": new_project,
     }
 
 
@@ -555,9 +643,31 @@ def step_context_with_two_outputs():
 
 
 @pytest.fixture
-def sample_step_model() -> StepRunModel:
+def sample_user_model() -> UserResponseModel:
+    """Return a sample user model for testing purposes"""
+    return UserResponseModel(
+        id=uuid4(),
+        name="axl",
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def sample_project_model() -> ProjectResponseModel:
+    """Return a sample project model for testing purposes"""
+    return ProjectResponseModel(
+        id=uuid4(),
+        name="axl",
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def sample_step_model() -> StepRunResponseModel:
     """Return a sample step model for testing purposes"""
-    return StepRunModel(
+    return StepRunResponseModel(
         id=uuid4(),
         name="sample_step",
         parents_step_ids=[0],
@@ -569,6 +679,29 @@ def sample_step_model() -> StepRunModel:
         input_artifacts={},
         step_configuration={},
         status=ExecutionStatus.COMPLETED,
+        created=datetime.now(),
+        updated=datetime.now(),
+        docstring="",
+        mlmd_id=0,
+    )
+
+
+@pytest.fixture
+def sample_step_request_model() -> StepRunRequestModel:
+    """Return a sample step model for testing purposes"""
+    return StepRunRequestModel(
+        name="sample_step",
+        parents_step_ids=[0],
+        entrypoint_name="sample_entrypoint",
+        parameters={},
+        mlmd_parent_step_ids=[],
+        pipeline_run_id=uuid4(),
+        parent_step_ids=[],
+        input_artifacts={},
+        step_configuration={},
+        status=ExecutionStatus.COMPLETED,
+        docstring="",
+        mlmd_id=0,
     )
 
 
@@ -579,16 +712,35 @@ def sample_step_view(sample_step_model) -> StepView:
 
 
 @pytest.fixture
-def sample_pipeline_run_model() -> PipelineRunModel:
+def sample_pipeline_run_model(
+    sample_user_model: UserResponseModel,
+    sample_project_model: ProjectResponseModel,
+) -> PipelineRunResponseModel:
     """Return sample pipeline run view for testing purposes"""
-    return PipelineRunModel(
+    return PipelineRunResponseModel(
         id=uuid4(),
         name="sample_run_name",
-        user=uuid4(),
-        project=uuid4(),
         pipeline_configuration={},
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        project=sample_project_model,
+    )
+
+
+@pytest.fixture
+def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
+    """Return sample pipeline run view for testing purposes"""
+    return PipelineRunRequestModel(
+        id=uuid4(),
+        name="sample_run_name",
+        pipeline_configuration={},
+        num_steps=1,
+        status=ExecutionStatus.COMPLETED,
+        user=uuid4(),
+        project=uuid4(),
     )
 
 
@@ -607,10 +759,27 @@ def sample_pipeline_run_view(
 
 
 @pytest.fixture
-def sample_artifact_model() -> ArtifactModel:
+def sample_artifact_model() -> ArtifactResponseModel:
     """Return a sample artifact model for testing purposes"""
-    return ArtifactModel(
+    return ArtifactResponseModel(
         id=uuid4(),
+        name="sample_artifact",
+        uri="sample_uri",
+        type=ArtifactType.DATA,
+        materializer="sample_materializer",
+        data_type="sample_data_type",
+        parent_step_id=uuid4(),
+        producer_step_id=uuid4(),
+        is_cached=False,
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def sample_artifact_request_model() -> ArtifactRequestModel:
+    """Return a sample artifact model for testing purposes"""
+    return ArtifactRequestModel(
         name="sample_artifact",
         uri="sample_uri",
         type=ArtifactType.DATA,
@@ -744,5 +913,5 @@ def pytest_generate_tests(metafunc):
         if metafunc.config.getoption("on_kubeflow"):
             repos = ["clean_kubeflow_repo"]
         else:
-            repos = ["clean_base_repo"]
+            repos = ["clean_client"]
         metafunc.parametrize("repo_fixture_name", repos)

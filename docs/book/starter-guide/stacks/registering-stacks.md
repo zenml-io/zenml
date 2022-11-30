@@ -142,5 +142,5 @@ to delete each of the individual stack components.
 {% hint style="warning" %}
 If you provisioned infrastructure related to the stack, make sure to
 deprovision it using `zenml stack down --force` before unregistering the stack.
-See the [Managing Stack States](../advanced-usage/stack-state-management.md) section for more details.
+See the [Managing Stack States](../../advanced-guide/stacks/stack-state-management.md) section for more details.
 {% endhint %}

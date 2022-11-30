@@ -32,7 +32,6 @@ from zenml.enums import ServerProviderType, StoreType
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.utils.docker_utils import check_docker
 
 logger = get_logger(__name__)
 
@@ -158,6 +157,8 @@ def up(
     gc = GlobalConfiguration()
 
     if docker:
+        from zenml.utils.docker_utils import check_docker
+
         if not check_docker():
             cli_utils.error(
                 "Docker does not seem to be installed on your system. Please "
@@ -193,7 +194,7 @@ def up(
         config_attrs["image"] = image
     if port is not None:
         config_attrs["port"] = port
-    if ip_address is not None:
+    if ip_address is not None and provider == ServerProviderType.DOCKER:
         config_attrs["ip_address"] = ip_address
 
     from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
@@ -310,7 +311,11 @@ def down() -> None:
     "--provider",
     "-p",
     type=click.Choice(
-        [ServerProviderType.AWS.value, ServerProviderType.GCP.value],
+        [
+            ServerProviderType.AWS.value,
+            ServerProviderType.GCP.value,
+            ServerProviderType.AZURE.value,
+        ],
         case_sensitive=True,
     ),
     default=None,
@@ -414,7 +419,11 @@ def deploy(
         provider = click.prompt(
             "ZenML server provider",
             type=click.Choice(
-                [ServerProviderType.AWS.value, ServerProviderType.GCP.value],
+                [
+                    ServerProviderType.AWS.value,
+                    ServerProviderType.GCP.value,
+                    ServerProviderType.AZURE.value,
+                ],
                 case_sensitive=True,
             ),
             default=ServerProviderType.AWS.value,
@@ -422,11 +431,12 @@ def deploy(
     config_dict["provider"] = provider
 
     if provider == ServerProviderType.GCP.value:
-        if not gcp_project_id:
-            gcp_project_id = click.prompt(
-                "GCP project ID",
-            )
-        config_dict["project_id"] = gcp_project_id
+        if "project_id" not in config_dict:
+            if not gcp_project_id:
+                gcp_project_id = click.prompt(
+                    "GCP project ID",
+                )
+            config_dict["project_id"] = gcp_project_id
 
     if not username:
         username = click.prompt(
@@ -543,6 +553,7 @@ def status() -> None:
 
     store_cfg = gc.store
 
+    cli_utils.declare(f"Using configuration from: '{gc.config_directory}'")
     if client.root:
         cli_utils.declare(f"Active repository root: {client.root}")
     if store_cfg is not None:
@@ -554,7 +565,7 @@ def status() -> None:
     scope = "repository" if client.uses_local_configuration else "global"
     cli_utils.declare(f"The current user is: '{client.active_user.name}'")
     cli_utils.declare(
-        f"The active project is: '{client.active_project_name}' " f"({scope})"
+        f"The active project is: '{client.active_project.name}' " f"({scope})"
     )
     cli_utils.declare(
         f"The active stack is: '{client.active_stack_model.name}' ({scope})"
@@ -708,7 +719,7 @@ def connect(
             missing fields.
     """
     from zenml.config.store_config import StoreConfiguration
-    from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
     store_dict: Dict[str, Any] = {}
     verify_ssl = ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
@@ -757,18 +768,28 @@ def connect(
         url = click.prompt("ZenML server URL", type=str)
     else:
         cli_utils.declare(f"Connecting to: '{url}'...")
+    assert url is not None
+
     store_dict["url"] = url
     if not username:
         username = click.prompt("Username", type=str)
     store_dict["username"] = username
     if password is None:
         password = click.prompt(
-            f"Password for user {username}", hide_input=True
+            f"Password for user {username} (press ENTER for empty password)",
+            default="",
+            hide_input=True,
         )
     store_dict["password"] = password
-    store_dict["verify_ssl"] = verify_ssl
 
-    store_config = RestZenStoreConfiguration.parse_obj(store_dict)
+    store_type = BaseZenStore.get_store_type(url)
+    if store_type == StoreType.REST:
+        store_dict["verify_ssl"] = verify_ssl
+
+    store_config_class = BaseZenStore.get_store_config_class(store_type)
+    assert store_config_class is not None
+
+    store_config = store_config_class.parse_obj(store_dict)
     GlobalConfiguration().set_store(store_config)
 
     if project:
@@ -786,9 +807,22 @@ def connect(
 def disconnect_server() -> None:
     """Disconnect from a ZenML server."""
     from zenml.zen_server.deploy.deployer import ServerDeployer
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
-    deployer = ServerDeployer()
-    deployer.disconnect_from_server()
+    gc = GlobalConfiguration()
+
+    if gc.store is None:
+        cli_utils.warning("No ZenML server is currently connected.")
+        return
+
+    url = gc.store.url
+    store_type = BaseZenStore.get_store_type(url)
+    if store_type == StoreType.REST:
+        deployer = ServerDeployer()
+        deployer.disconnect_from_server()
+    else:
+        gc.set_default_store()
+        cli_utils.declare("Restored default store configuration.")
 
 
 @cli.command("logs", help="Show the logs for the local or cloud ZenML server.")

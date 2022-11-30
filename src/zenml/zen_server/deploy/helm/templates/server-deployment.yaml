@@ -1,0 +1,165 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zenml.fullname" . }}
+  labels:
+    {{- include "zenml.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.zenml.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "zenml.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/server-secret.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "zenml.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "zenml.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: {{ .Chart.Name }}-db-init
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.zenml.initImage.repository }}:{{ .Values.zenml.initImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.zenml.initImage.pullPolicy }}
+          command: ['zenml', 'init']
+          env:
+            {{- if .Values.zenml.debug }}
+            - name: ZENML_LOGGING_VERBOSITY
+              value: "DEBUG"
+            {{- end }}
+            - name: ANALYTICS_OPT_IN
+              value: "False"
+            - name: ZENML_DEFAULT_PROJECT_NAME
+              value: {{ .Values.zenml.defaultProject | quote }}
+            - name: ZENML_DEFAULT_USER_NAME
+              value: {{ .Values.zenml.defaultUsername | quote }}
+            {{- if .Values.zenml.database.url }}
+            - name: ZENML_STORE_TYPE
+              value: sql
+            - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
+              value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
+            {{- end }}
+          envFrom:
+          - secretRef:
+              name: {{ include "zenml.fullname" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
+          env:
+            {{- if .Values.zenml.debug }}
+            - name: ZENML_LOGGING_VERBOSITY
+              value: "DEBUG"
+            {{- end }}
+            - name: ANALYTICS_OPT_IN
+              value: "False"
+            - name: ZENML_AUTH_TYPE
+              value: {{ .Values.zenml.authType | quote }}
+            {{- if .Values.zenml.rootUrlPath }}
+            - name: ZENML_SERVER_ROOT_URL_PATH
+              value: {{ .Values.zenml.rootUrlPath | quote }}
+            {{- end }}
+            - name: ZENML_DEFAULT_PROJECT_NAME
+              value: {{ .Values.zenml.defaultProject | quote }}
+            - name: ZENML_DEFAULT_USER_NAME
+              value: {{ .Values.zenml.defaultUsername | quote }}
+            {{- if .Values.zenml.database.url }}
+            - name: ZENML_STORE_TYPE
+              value: sql
+            - name: DISABLE_DATABASE_MIGRATION
+              value: "True"
+            - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
+              value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
+            {{- end }}
+            - name: ZENML_SERVER_DEPLOYMENT_TYPE
+              value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
+            - name: ZENML_SERVER_METADATA_SYNC_PERIOD
+              value: {{ .Values.zenml.metadataSyncPeriod | default 30 | quote }}
+
+            {{- if and .Values.grpcMetadata.enabled .Values.zenml.database.url }}
+
+            {{-   if and .Values.grpcMetadata.ingress.enabled }}
+
+            - name: ZENML_STORE_GRPC_METADATA_HOST
+            {{-     if .Values.grpcMetadata.ingress.host }}
+              value: {{ .Values.grpcMetadata.ingress.host }}
+            {{-     else }}
+              value: {{ .Values.grpcMetadata.externalHostname }}
+            {{-     end }}
+            - name: ZENML_STORE_GRPC_METADATA_PORT
+              value: "443"
+
+            {{-   else }}
+
+            - name: ZENML_STORE_GRPC_METADATA_HOST
+              value: {{ .Values.grpcMetadata.externalHostname }}
+            - name: ZENML_STORE_GRPC_METADATA_PORT
+              value: {{ .Values.grpcMetadata.service.port | quote }}
+
+            {{-   end }}
+
+            {{-   if .Values.grpcMetadata.tls.enabled }}
+            - name: ZENML_STORE_GRPC_METADATA_SSL_CA
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.grpcMetadata.tls.clientSecretName }}
+                  key: ca.crt
+            - name: ZENML_STORE_GRPC_METADATA_SSL_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.grpcMetadata.tls.clientSecretName }}
+                  key: tls.crt
+            - name: ZENML_STORE_GRPC_METADATA_SSL_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.grpcMetadata.tls.clientSecretName }}
+                  key: tls.key
+            {{-   end }}
+
+
+            {{- end }}
+
+          envFrom:
+          - secretRef:
+              name: {{ include "zenml.fullname" . }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

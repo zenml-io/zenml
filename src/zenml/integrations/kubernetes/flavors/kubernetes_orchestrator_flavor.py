@@ -15,7 +15,9 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
@@ -24,7 +26,26 @@ if TYPE_CHECKING:
     )
 
 
-class KubernetesOrchestratorConfig(BaseOrchestratorConfig):
+class KubernetesOrchestratorSettings(BaseSettings):
+    """Settings for the Kubernetes orchestrator.
+
+    Attributes:
+        synchronous: If `True`, running a pipeline using this orchestrator will
+            block until all steps finished running on Kubernetes.
+        timeout: How many seconds to wait for synchronous runs. `0` means
+            to wait for an unlimited duration.
+        pod_settings: Pod settings to apply.
+    """
+
+    synchronous: bool = False
+    timeout: int = 0
+
+    pod_settings: Optional[KubernetesPodSettings] = None
+
+
+class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseOrchestratorConfig, KubernetesOrchestratorSettings
+):
     """Configuration for the Kubernetes orchestrator.
 
     Attributes:
@@ -34,16 +55,13 @@ class KubernetesOrchestratorConfig(BaseOrchestratorConfig):
             current-context`.
         kubernetes_namespace: Name of the Kubernetes namespace to be used.
             If not provided, `zenml` namespace will be used.
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on Kubernetes.
         skip_config_loading: If `True`, don't load the Kubernetes context and
             clients. This is only useful for unit testing.
     """
 
-    kubernetes_context: Optional[str] = None
+    kubernetes_context: Optional[str] = None  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
-    synchronous: bool = False
-    skip_config_loading: bool = False
+    skip_config_loading: bool = False  # TODO: Remove?
 
     @property
     def is_remote(self) -> bool:

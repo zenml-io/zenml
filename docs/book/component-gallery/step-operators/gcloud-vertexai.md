@@ -43,9 +43,6 @@ your stack. This is needed so that both your orchestration environment and
 VertexAI can read and write step artifacts. Check out the documentation page 
 of the artifact store you want to use for more information on how to set that up
 and configure authentication for it.
-* A [local orchestrator](../orchestrators/local.md) as part of your stack. 
-This is a current limitation of the Vertex step operator which will be 
-resolved in an upcoming release.
 
 We can then register the step operator and use it in our active stack:
 ```shell
@@ -79,11 +76,20 @@ which includes your code and use it to run your steps in Vertex AI. Check out
 learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
+### Additional configuration
+
+For additional configuration of the Vertex step operator, you can pass
+`VertexStepOperatorSettings` when defining or running your pipeline.
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex_step_operator_flavor.VertexStepOperatorSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
+
 A concrete example of using the Vertex step operator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training).
 
 For more information and a full list of configurable attributes of the Vertex 
-step operator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.step_operators.vertex_step_operator.VertexStepOperator).
+step operator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.step_operators.vertex_step_operator.VertexStepOperator).
 
 ### Enabling CUDA for GPU-backed hardware
 

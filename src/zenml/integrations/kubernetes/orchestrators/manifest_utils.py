@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 """Utility functions for building manifests for k8s pods."""
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional
 
 from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
+from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
 
 def build_pod_manifest(
@@ -25,7 +27,9 @@ def build_pod_manifest(
     image_name: str,
     command: List[str],
     args: List[str],
+    settings: KubernetesOrchestratorSettings,
     service_account_name: Optional[str] = None,
+    env: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -36,13 +40,40 @@ def build_pod_manifest(
         image_name: Name of the Docker image.
         command: Command to execute the entrypoint in the pod.
         args: Arguments provided to the entrypoint command.
+        settings: `KubernetesOrchestratorSettings` object
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
+        env: Environment variables to set.
 
     Returns:
         Pod manifest.
     """
+    env = env.copy() if env else {}
+    env.setdefault(ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, "False")
+
+    spec: Dict[str, Any] = {
+        "restartPolicy": "Never",
+        "containers": [
+            {
+                "name": "main",
+                "image": image_name,
+                "command": command,
+                "args": args,
+                "env": [
+                    {"name": name, "value": value}
+                    for name, value in env.items()
+                ],
+            }
+        ],
+    }
+
+    if service_account_name is not None:
+        spec["serviceAccountName"] = service_account_name
+
+    if settings.pod_settings:
+        spec.update(add_pod_settings(settings.pod_settings))
+
     manifest = {
         "apiVersion": "v1",
         "kind": "Pod",
@@ -53,28 +84,35 @@ def build_pod_manifest(
                 "pipeline": pipeline_name,
             },
         },
-        "spec": {
-            "restartPolicy": "Never",
-            "containers": [
-                {
-                    "name": "main",
-                    "image": image_name,
-                    "command": command,
-                    "args": args,
-                    "env": [
-                        {
-                            "name": ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
-                            "value": "False",
-                        }
-                    ],
-                }
-            ],
-        },
+        "spec": spec,
     }
-    if service_account_name is not None:
-        spec = cast(Dict[str, Any], manifest["spec"])  # mypy stupid
-        spec["serviceAccountName"] = service_account_name
+
     return manifest
+
+
+def add_pod_settings(
+    settings: KubernetesPodSettings,
+) -> Dict[str, Any]:
+    """Updates `spec` fields in pod if passed in orchestrator settings.
+
+    Args:
+        settings: Pod settings to apply.
+
+    Returns:
+        Dictionary with additional fields for the pod
+    """
+    spec: Dict[str, Any] = {}
+
+    if settings.node_selectors:
+        spec["nodeSelector"] = settings.node_selectors
+
+    if settings.affinity:
+        spec["affinity"] = settings.affinity
+
+    if settings.tolerations:
+        spec["tolerations"] = settings.tolerations
+
+    return spec
 
 
 def build_cron_job_manifest(
@@ -85,6 +123,7 @@ def build_cron_job_manifest(
     image_name: str,
     command: List[str],
     args: List[str],
+    settings: KubernetesOrchestratorSettings,
     service_account_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Create a manifest for launching a pod as scheduled CRON job.
@@ -97,6 +136,7 @@ def build_cron_job_manifest(
         image_name: Name of the Docker image.
         command: Command to execute the entrypoint in the pod.
         args: Arguments provided to the entrypoint command.
+        settings: `KubernetesOrchestratorSettings` object
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
@@ -111,6 +151,7 @@ def build_cron_job_manifest(
         image_name=image_name,
         command=command,
         args=args,
+        settings=settings,
         service_account_name=service_account_name,
     )
     return {

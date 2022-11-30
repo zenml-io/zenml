@@ -138,7 +138,7 @@ Experiment Tracker.
 {% endtabs %}
 
 For more, up-to-date information on the MLflow Experiment Tracker implementation
-and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker).
+and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker).
 
 ## How do you use it?
 
@@ -173,8 +173,10 @@ def tf_trainer(
     return model
 ```
 
+### Additional configuration
+
 For additional configuration of the MLflow experiment tracker, you can pass
-`MLflowExperimentTrackerSettings` to create nested runs or add additional tags
+`MLFlowExperimentTrackerSettings` to create nested runs or add additional tags
 to your MLflow runs:
 
 ```python
@@ -197,6 +199,11 @@ def step_one(
 ) -> np.ndarray:
     ...
 ```
+
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor.MLFlowExperimentTrackerSettings)
+for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
 
 You can also check out our examples pages for working examples that use the
 MLflow Experiment Tracker in their stacks:

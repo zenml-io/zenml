@@ -13,34 +13,18 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML AWS VM orchestrator."""
 
-import os
-import time
 from datetime import datetime, timedelta, timezone
 from operator import itemgetter
-from typing import TYPE_CHECKING, Any, ClassVar, List
+from typing import TYPE_CHECKING, ClassVar
 
 import boto3
-from google.protobuf import json_format
-from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.integrations.aws import AWS_VM_ORCHESTRATOR_FLAVOR
-from zenml.integrations.aws.orchestrators.aws_vm_entrypoint_configuration import (
-    PB2_PIPELINE_JSON_FILE_PATH,
-    RUN_NAME_OPTION,
-    AWSVMEntrypointConfiguration,
-)
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.repository import Repository
-from zenml.utils import yaml_utils
-from zenml.utils.docker_utils import get_image_digest
-from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
-    from zenml.pipelines.base_pipeline import BasePipeline
-    from zenml.config.pipeline_deployment import PipelineDeployment
-    from zenml.stack import Stack
-    from zenml.steps import BaseStep
+    pass
 
 logger = get_logger(__name__)
 
@@ -54,7 +38,7 @@ AWS_LOGS_GROUP_NAME = "/zenml/ec2/pipelines"
 
 def stream_logs(stream_name: str, seconds_before: int = 10) -> None:
     """Streams logs onto the logger.
-    
+
     Args:
         stream_name: Name of stream.
         seconds_before: How many seconds before to stream logs.
@@ -83,10 +67,10 @@ def stream_logs(stream_name: str, seconds_before: int = 10) -> None:
 
 def sanitize_aws_vm_name(bad_name: str) -> str:
     """Get a good name from a bad name.
-    
+
     Args:
         bad_name: Original name of VM.
-        
+
     Returns:
         A good name for the VM.
     """
@@ -141,7 +125,7 @@ def get_instance(
 
     Args:
         instance_id (str): ID of the instance.
-    
+
     Returns:
         Get instance type.
     """
@@ -221,7 +205,7 @@ def create_instance(
         max_count (str): temp.
         registry_name (str): temp.
         log_stream_name (str): temp.
-        
+
     Returns:
         Instance object.
     """
@@ -254,7 +238,7 @@ def create_instance(
 
 def setup_session() -> boto3.Session:
     """Sets up a boto3 session.
-    
+
     Returns:
         A boto session.
     """

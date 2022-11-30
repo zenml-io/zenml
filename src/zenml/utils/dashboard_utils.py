@@ -39,19 +39,22 @@ def get_run_url(
     # Connected to ZenML Server
     client = Client()
 
-    # Get the runs from the zen_store
-    runs = client.zen_store.list_runs(run_name=run_name)
+    if client.zen_store.type != StoreType.REST:
+        return ""
 
-    url = ""
-    # We should only do the log if runs exist
-    if runs and client.zen_store.type == StoreType.REST:
-        # For now, take the first index to get the latest run
-        run = runs[0]
-        url = client.zen_store.url
-        # Add this for unlisted runs
-        if pipeline_id:
-            url += f"/pipelines/{str(pipeline_id)}"
-        url += f"/runs/{run.id}/dag"
+    url = client.zen_store.url
+    runs = client.zen_store.list_runs(name=run_name)
+
+    if pipeline_id:
+        url += f"/pipelines/{str(pipeline_id)}/runs"
+    elif runs:
+        url += "/runs"
+    else:
+        url += "/pipelines/all-runs"
+
+    if runs:
+        url += f"/{runs[0].id}/dag"
+
     return url
 
 

@@ -20,12 +20,18 @@ from kubernetes import client as k8s_client
 
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
+from zenml.entrypoints.step_entrypoint_configuration import (
+    StepEntrypointConfiguration,
+)
+from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
+    KubernetesOrchestratorSettings,
+)
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.dag_runner import (
     ThreadedDagRunner,
 )
-from zenml.integrations.kubernetes.orchestrators.kubernetes_step_entrypoint_configuration import (
-    KubernetesStepEntrypointConfiguration,
+from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
+    ENV_ZENML_KUBERNETES_RUN_ID,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
@@ -49,32 +55,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def patch_run_name_for_cron_scheduling(run_name: str) -> str:
-    """Adjust run name according to the Kubernetes orchestrator pod name.
-
-    This is required for scheduling via CRON jobs, since each job would
-    otherwise have the same run name, which zenml does not support.
-
-    Args:
-        run_name: Initial run name.
-
-    Returns:
-        New unique run name.
-    """
-    # Get name of the orchestrator pod.
-    host_name = socket.gethostname()
-
-    # If we are not running as CRON job, we don't need to do anything.
-    if host_name == kube_utils.sanitize_pod_name(run_name):
-        return run_name
-
-    # Otherwise, define new run_name.
-    job_id = host_name.split("-")[-1]
-    run_name = f"{run_name}-{job_id}"
-
-    return run_name
-
-
 def main() -> None:
     """Entrypoint of the k8s master/orchestrator pod."""
     # Log to the container's stdout so it can be streamed by the client.
@@ -87,8 +67,7 @@ def main() -> None:
     kube_utils.load_kube_config()
     core_api = k8s_client.CoreV1Api()
 
-    # Patch run name (only needed for CRON scheduling)
-    run_name = patch_run_name_for_cron_scheduling(args.run_name)
+    orchestrator_run_id = socket.gethostname()
 
     config_dict = yaml_utils.read_yaml(DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE)
     deployment_config = PipelineDeployment.parse_obj(config_dict)
@@ -99,9 +78,7 @@ def main() -> None:
         step_name_to_pipeline_step_name[step.config.name] = name_in_pipeline
         pipeline_dag[step.config.name] = step.spec.upstream_steps
 
-    step_command = (
-        KubernetesStepEntrypointConfiguration.get_entrypoint_command()
-    )
+    step_command = StepEntrypointConfiguration.get_entrypoint_command()
 
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
@@ -110,24 +87,29 @@ def main() -> None:
             step_name: Name of the step.
         """
         # Define Kubernetes pod name.
-        pod_name = f"{run_name}-{step_name}"
+        pod_name = f"{orchestrator_run_id}-{step_name}"
         pod_name = kube_utils.sanitize_pod_name(pod_name)
 
         pipeline_step_name = step_name_to_pipeline_step_name[step_name]
-        step_args = (
-            KubernetesStepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=pipeline_step_name, run_name=run_name
-            )
+        step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
+            step_name=pipeline_step_name
+        )
+
+        step_config = deployment_config.steps[pipeline_step_name].config
+        settings = KubernetesOrchestratorSettings.parse_obj(
+            step_config.settings.get("orchestrator.kubernetes", {})
         )
 
         # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
-            run_name=run_name,
+            run_name=args.run_name,
             pipeline_name=deployment_config.pipeline.name,
             image_name=args.image_name,
             command=step_command,
             args=step_args,
+            env={ENV_ZENML_KUBERNETES_RUN_ID: orchestrator_run_id},
+            settings=settings,
         )
 
         # Create and run pod.

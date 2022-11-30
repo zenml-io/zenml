@@ -22,7 +22,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import TEKTON
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 TEKTON_ORCHESTRATOR_FLAVOR = "tekton"

@@ -117,9 +117,9 @@ The need for a central place to manage credentials, keys and passwords cannot be
 understated. Our examples show you how to access your secrets within steps of 
 your pipeline.
 
-- **[aws_secret_manager](../docs/book/mlops-stacks/secrets-managers/aws.md)** Access your secrets
+- **[aws_secret_manager](../docs/book/component-gallery/secrets-managers/aws.md)** Access your secrets
   manager from within a step using AWS's secrets manager.
-- **[google_secret_manager](../docs/book/mlops-stacks/secrets-managers/gcp.md)**
+- **[google_secret_manager](../docs/book/component-gallery/secrets-managers/gcp.md)**
   Access your secrets manager from within a step using Google Cloud secrets manager.
 
 ## 🗿 Miscellaneous Tools
@@ -149,7 +149,7 @@ For some of these examples, ZenML provides a handy CLI command to pull them
 directly into your local environment. First install `zenml` and spin up the dashboard:
 
 ```shell
-pip install zenml
+pip install zenml[server]
 
 # Start the ZenServer to enable dashboard access
 zenml up

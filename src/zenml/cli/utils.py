@@ -25,14 +25,12 @@ from typing import (
     List,
     NoReturn,
     Optional,
-    Sequence,
+    Set,
     Tuple,
     Type,
     TypeVar,
     Union,
-    cast,
 )
-from uuid import UUID
 
 import click
 from pydantic import BaseModel
@@ -46,6 +44,7 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.models.base_models import BaseResponseModel
 
 logger = get_logger(__name__)
 
@@ -57,16 +56,14 @@ if TYPE_CHECKING:
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
     from zenml.models import (
-        ComponentModel,
-        FlavorModel,
-        HydratedComponentModel,
-        HydratedStackModel,
-        PipelineRunModel,
-        StackModel,
+        ComponentResponseModel,
+        FlavorResponseModel,
+        PipelineRunResponseModel,
+        StackResponseModel,
     )
     from zenml.secret import BaseSecretSchema
     from zenml.services import BaseService, ServiceState
-    from zenml.zen_server.deploy.deployment import ServerDeployment
+    from zenml.zen_server.deploy import ServerDeployment
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
@@ -184,9 +181,9 @@ M = TypeVar("M", bound=BaseModel)
 
 
 def print_pydantic_models(
-    models: Sequence[M],
-    columns: Optional[Sequence[str]] = None,
-    exclude_columns: Sequence[str] = (),
+    models: List[M],
+    columns: Optional[List[str]] = None,
+    exclude_columns: Optional[List[str]] = None,
     is_active: Optional[Callable[[M], bool]] = None,
 ) -> None:
     """Prints the list of Pydantic models in a table.
@@ -200,6 +197,8 @@ def print_pydantic_models(
         is_active: Optional function that marks as row as active.
 
     """
+    if exclude_columns is None:
+        exclude_columns = list()
 
     def __dictify(model: M) -> Dict[str, str]:
         """Helper function to map over the list to turn Models into dicts.
@@ -210,15 +209,41 @@ def print_pydantic_models(
         Returns:
             Dict of model attributes.
         """
-        items = (
-            {
-                key: str(value)
-                for key, value in model.dict().items()
-                if key not in exclude_columns
-            }
-            if columns is None
-            else {key: str(model.dict()[key]) for key in columns}
-        )
+        # Explicitly defined columns take precedence over exclude columns
+        if not columns:
+            include_columns = [
+                k for k in model.dict().keys() if k not in exclude_columns  # type: ignore[operator]
+            ]
+        else:
+            include_columns = columns
+
+        items: Dict[str, Any] = {}
+
+        for k in include_columns:
+            value = getattr(model, k)
+            # In case the response model contains nested `BaseResponseModels`
+            #  we want to attempt to represent them by name, if they contain
+            #  such a field, else the id is used
+            if isinstance(value, BaseResponseModel):
+                if "name" in value.__fields__:
+                    items[k] = str(value.name)  # type: ignore[attr-defined]
+                else:
+                    items[k] = str(value.id)
+
+            # If it is a list of `BaseResponseModels` access each Model within
+            #  the list and extract either name or id
+            elif isinstance(value, list) and issubclass(
+                model.__fields__[k].type_, BaseResponseModel
+            ):
+                for v in value:
+                    if "name" in v.__fields__:
+                        items.setdefault(k, []).append(str(v.name))
+                    else:
+                        items.setdefault(k, []).append(str(v.id))
+            elif isinstance(value, Set) or isinstance(value, List):
+                items[k] = [str(v) for v in value]
+            else:
+                items[k] = str(value)
         # prepend an active marker if a function to mark active was passed
         marker = "active"
         if marker in items:
@@ -261,7 +286,7 @@ def format_integration_list(
 
 
 def print_stack_configuration(
-    stack: "HydratedStackModel", active: bool
+    stack: "StackResponseModel", active: bool
 ) -> None:
     """Prints the configuration options of a stack.
 
@@ -290,13 +315,13 @@ def print_stack_configuration(
     ]
     console.print(rich_table)
     declare(
-        f"Stack '{stack.name}' with id '{stack.id}' is owned by "
-        f"user '{stack.user.name}' and is "
+        f"Stack '{stack.name}' with id '{stack.id}' is "
+        f"{f'owned by user {stack.user.name} and is ' if stack.user else ''}"
         f"'{'shared' if stack.is_shared else 'private'}'."
     )
 
 
-def print_flavor_list(flavors: List["FlavorModel"]) -> None:
+def print_flavor_list(flavors: List["FlavorResponseModel"]) -> None:
     """Prints the list of flavors.
 
     Args:
@@ -316,7 +341,7 @@ def print_flavor_list(flavors: List["FlavorModel"]) -> None:
 
 
 def print_stack_component_configuration(
-    component: "HydratedComponentModel", active_status: bool
+    component: "ComponentResponseModel", active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component.
 
@@ -324,10 +349,15 @@ def print_stack_component_configuration(
         component: The stack component to print.
         active_status: Whether the stack component is active.
     """
+    if component.user:
+        user_name = component.user.name
+    else:
+        user_name = "[DELETED]"
+
     declare(
         f"{component.type.value.title()} '{component.name}' of flavor "
         f"'{component.flavor}' with id '{component.id}' is owned by "
-        f"user '{component.user.name}' and is "
+        f"user '{user_name}' and is "
         f"'{'shared' if component.is_shared else 'private'}'."
     )
 
@@ -387,11 +417,15 @@ def print_active_config() -> None:
         declare(f"Using the SQL database: '{gc.store.url}'.")
     elif gc.store.type == StoreType.REST:
         declare(f"Connected to the ZenML server: '{gc.store.url}'")
-    if gc.active_project_name:
-        scope = "repository" if client.uses_local_configuration else "global"
+    if client.uses_local_configuration:
         declare(
-            f"Running with active project: '{gc.active_project_name}' "
-            f"({scope})"
+            f"Running with active project: '{client.active_project.name}' "
+            "(repository)"
+        )
+    else:
+        declare(
+            f"Running with active project: '{gc.get_active_project_name()}' "
+            "(global)"
         )
 
 
@@ -828,110 +862,6 @@ def describe_pydantic_object(schema_json: str) -> None:
                 declare(f"  {prop_schema['description']}", width=80)
 
 
-def get_stack_by_id_or_name_or_prefix(
-    client: "Client",
-    id_or_name_or_prefix: str,
-) -> "StackModel":
-    """Fetches a stack within active project using the name, id or partial id.
-
-    Args:
-        client: Instance of the Repository singleton
-        id_or_name_or_prefix: The id, name or partial id of the stack to
-                              fetch.
-
-    Returns:
-        The stack with the given name.
-
-    Raises:
-        KeyError: If no stack with the given name exists.
-    """
-    # First interpret as full UUID
-    try:
-        stack_id = UUID(id_or_name_or_prefix)
-        return client.zen_store.get_stack(stack_id)
-    except ValueError:
-        pass
-
-    user_only_stacks = cast(
-        List["StackModel"],
-        client.zen_store.list_stacks(
-            project_name_or_id=client.active_project.name,
-            name=id_or_name_or_prefix,
-            user_name_or_id=client.active_user.name,
-            is_shared=False,
-        ),
-    )
-
-    shared_stacks = cast(
-        List["StackModel"],
-        client.zen_store.list_stacks(
-            project_name_or_id=client.active_project.name,
-            name=id_or_name_or_prefix,
-            is_shared=True,
-        ),
-    )
-
-    named_stacks = user_only_stacks + shared_stacks
-
-    if len(named_stacks) > 1:
-        hydrated_name_stacks = [s.to_hydrated_model() for s in named_stacks]
-        print_stacks_table(client=client, stacks=hydrated_name_stacks)
-        error(
-            f"Multiple stacks have been found for name "
-            f"'{id_or_name_or_prefix}'. The stacks listed above all share "
-            f"this name. Please specify the stack by full or partial id."
-        )
-
-    elif len(named_stacks) == 1:
-        return named_stacks[0]
-    else:
-        logger.debug(
-            f"No stack with name '{id_or_name_or_prefix}' "
-            f"exists. Trying to resolve as partial_id"
-        )
-
-        user_only_stacks = cast(
-            List["StackModel"],
-            client.zen_store.list_stacks(
-                project_name_or_id=client.active_project.name,
-                user_name_or_id=client.active_user.name,
-                is_shared=False,
-            ),
-        )
-
-        shared_stacks = cast(
-            List["StackModel"],
-            client.zen_store.list_stacks(
-                project_name_or_id=client.active_project.name,
-                is_shared=True,
-            ),
-        )
-
-        all_stacks = user_only_stacks + shared_stacks
-
-        filtered_stacks = [
-            stack
-            for stack in all_stacks
-            if str(stack.id).startswith(id_or_name_or_prefix)
-        ]
-        if len(filtered_stacks) > 1:
-            hydrated_all_stacks = [s.to_hydrated_model() for s in all_stacks]
-            print_stacks_table(client=client, stacks=hydrated_all_stacks)
-            error(
-                f"The stacks listed above all share the provided prefix "
-                f"'{id_or_name_or_prefix}' on their ids. Please provide more "
-                f"characters to uniquely identify only one stack."
-            )
-
-        elif len(filtered_stacks) == 1:
-            return filtered_stacks[0]
-        else:
-            raise KeyError(
-                f"No stack with name or id prefix "
-                f"'{id_or_name_or_prefix}' exists."
-            )
-
-
 def get_shared_emoji(is_shared: bool) -> str:
     """Returns the emoji for whether a stack is shared or not.
 
@@ -945,7 +875,7 @@ def get_shared_emoji(is_shared: bool) -> str:
 
 
 def print_stacks_table(
-    client: "Client", stacks: List["HydratedStackModel"]
+    client: "Client", stacks: List["StackResponseModel"]
 ) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
@@ -957,12 +887,18 @@ def print_stacks_table(
     active_stack_model_id = client.active_stack_model.id
     for stack in stacks:
         is_active = stack.id == active_stack_model_id
+
+        if stack.user:
+            user_name = stack.user.name
+        else:
+            user_name = "[DELETED]"
+
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack.name,
             "STACK ID": stack.id,
             "SHARED": get_shared_emoji(stack.is_shared),
-            "OWNER": stack.user.name,
+            "OWNER": user_name,
             **{
                 component_type.upper(): components[0].name
                 for component_type, components in stack.components.items()
@@ -976,7 +912,7 @@ def print_stacks_table(
 def print_components_table(
     client: "Client",
     component_type: StackComponentType,
-    components: List["HydratedComponentModel"],
+    components: List["ComponentResponseModel"],
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 
@@ -1009,11 +945,7 @@ def print_components_table(
             "COMPONENT ID": component.id,
             "FLAVOR": component.flavor,
             "SHARED": get_shared_emoji(component.is_shared),
-            "OWNER": component.user.name,
-            # **{
-            #     key.upper(): str(value)
-            #     for key, value in component.configuration.items()
-            # },
+            "OWNER": f"{component.user.name if component.user else 'DELETED!'}",
         }
         configurations.append(component_config)
     print_table(configurations)
@@ -1033,115 +965,6 @@ def _component_display_name(
     """
     name = component_type.plural if plural else component_type.value
     return name.replace("_", " ")
-
-
-def get_component_by_id_or_name_or_prefix(
-    client: "Client",
-    id_or_name_or_prefix: str,
-    component_type: StackComponentType,
-) -> "ComponentModel":
-    """Fetches a component of given type within active project using the name, id or partial id.
-
-    Args:
-        client: Instance of the Client singleton
-        id_or_name_or_prefix: The id, name or partial id of the component to
-                              fetch.
-        component_type: The type of the component to fetch.
-
-    Returns:
-        The component with the given name.
-
-    Raises:
-        KeyError: If no stack with the given name exists.
-    """
-    # First interpret as full UUID
-    try:
-        component_id = UUID(id_or_name_or_prefix)
-        return client.zen_store.get_stack_component(component_id)
-    except ValueError:
-        pass
-
-    user_only_components = client.zen_store.list_stack_components(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        type=component_type,
-        user_name_or_id=client.active_user.id,
-        is_shared=False,
-    )
-
-    shared_components = client.zen_store.list_stack_components(
-        project_name_or_id=client.active_project.name,
-        name=id_or_name_or_prefix,
-        type=component_type,
-        is_shared=True,
-    )
-
-    named_components = user_only_components + shared_components
-
-    if len(named_components) > 1:
-        hydrated_components = [c.to_hydrated_model() for c in named_components]
-        print_components_table(
-            client=client,
-            component_type=component_type,
-            components=hydrated_components,
-        )
-        error(
-            f"Multiple {component_type.value} components have been found for name "
-            f"'{id_or_name_or_prefix}'. The components listed above all share "
-            f"this name. Please specify the component by full or partial id."
-        )
-
-    elif len(named_components) == 1:
-        return named_components[0]
-    else:
-        logger.debug(
-            f"No component with name '{id_or_name_or_prefix}' "
-            f"exists. Trying to resolve as partial_id"
-        )
-
-        user_only_components = client.zen_store.list_stack_components(
-            project_name_or_id=client.active_project.name,
-            user_name_or_id=client.active_user.id,
-            type=component_type,
-            is_shared=False,
-        )
-
-        shared_components = client.zen_store.list_stack_components(
-            project_name_or_id=client.active_project.name,
-            type=component_type,
-            is_shared=True,
-        )
-
-        all_components = user_only_components + shared_components
-
-        filtered_comps = [
-            component
-            for component in all_components
-            if str(component.id).startswith(id_or_name_or_prefix)
-        ]
-        if len(filtered_comps) > 1:
-            hydrated_components = [
-                c.to_hydrated_model() for c in all_components
-            ]
-
-            print_components_table(
-                client=client,
-                component_type=component_type,
-                components=hydrated_components,
-            )
-            error(
-                f"The components listed above all share the provided prefix "
-                f"'{id_or_name_or_prefix}' on their ids. Please provide more "
-                f"characters to uniquely identify only one component."
-            )
-
-        elif len(filtered_comps) == 1:
-            return filtered_comps[0]
-        else:
-            raise KeyError(
-                f"No component of type `{component_type}` with name or id "
-                f"prefix '{id_or_name_or_prefix}' exists."
-            )
 
 
 def get_execution_status_emoji(status: "ExecutionStatus") -> str:
@@ -1170,27 +993,30 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
 
 def print_pipeline_runs_table(
-    client: "Client", pipeline_runs: List["PipelineRunModel"]
+    pipeline_runs: List["PipelineRunResponseModel"],
 ) -> None:
     """Print a prettified list of all pipeline runs supplied to this method.
 
     Args:
-        client: Repository instance
         pipeline_runs: List of pipeline runs
     """
     runs_dicts = []
     for pipeline_run in pipeline_runs:
-        if pipeline_run.pipeline_id is None:
+
+        if pipeline_run.user:
+            user_name = pipeline_run.user.name
+        else:
+            user_name = "[DELETED]"
+
+        if pipeline_run.pipeline is None:
             pipeline_name = "unlisted"
         else:
-            pipeline_name = client.zen_store.get_pipeline(
-                pipeline_run.pipeline_id
-            ).name
-        if pipeline_run.stack_id is None:
+            pipeline_name = pipeline_run.pipeline.name
+        if pipeline_run.stack is None:
             stack_name = "[DELETED]"
         else:
-            stack_name = client.zen_store.get_stack(pipeline_run.stack_id).name
-        status = client.zen_store.get_run(pipeline_run.id).status
+            stack_name = pipeline_run.stack.name
+        status = pipeline_run.status
         status_emoji = get_execution_status_emoji(status)
         run_dict = {
             "PIPELINE NAME": pipeline_name,
@@ -1198,7 +1024,17 @@ def print_pipeline_runs_table(
             "RUN ID": pipeline_run.id,
             "STATUS": status_emoji,
             "STACK": stack_name,
-            "OWNER": client.zen_store.get_user(pipeline_run.user).name,
+            "OWNER": user_name,
         }
         runs_dicts.append(run_dict)
     print_table(runs_dicts)
+
+
+def warn_unsupported_non_default_project() -> None:
+    """Warning for unsupported non-default project."""
+    warning(
+        "Currently the concept of `project` is not supported "
+        "within the Dashboard. The Project functionality will be "
+        "completed in the coming weeks. For the time being it "
+        "is recommended to stay within the `default` project."
+    )

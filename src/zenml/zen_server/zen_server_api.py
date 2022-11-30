@@ -31,8 +31,10 @@ from zenml.zen_server.routers import (
     auth_endpoints,
     flavors_endpoints,
     metadata_config_endpoints,
+    metadata_sync_endpoints,
     pipelines_endpoints,
     projects_endpoints,
+    role_assignments_endpoints,
     roles_endpoints,
     runs_endpoints,
     server_endpoints,
@@ -84,7 +86,21 @@ def initialize() -> None:
     # IMPORTANT: this needs to be done before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
-    sync_pipeline_runs()
+    sync_pipeline_runs_on_schedule()
+
+
+@app.on_event("startup")
+@repeat_every(
+    seconds=float(os.getenv(ENV_ZENML_SERVER_METADATA_SYNC_PERIOD, 30)),
+    wait_first=True,
+)
+def sync_pipeline_runs_on_schedule() -> None:
+    """Sync pipeline runs."""
+    logger.info("Syncing pipeline runs in server schedule...")
+    try:
+        zen_store()._sync_runs()
+    except Exception:
+        logger.exception("Failed to sync pipeline runs.")
 
 
 app.mount(
@@ -137,10 +153,12 @@ def dashboard(request: Request) -> Any:
 
 app.include_router(auth_endpoints.router)
 app.include_router(metadata_config_endpoints.router)
+app.include_router(metadata_sync_endpoints.router)
 app.include_router(pipelines_endpoints.router)
 app.include_router(projects_endpoints.router)
 app.include_router(flavors_endpoints.router)
 app.include_router(roles_endpoints.router)
+app.include_router(role_assignments_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(server_endpoints.router)
 app.include_router(stacks_endpoints.router)
@@ -152,20 +170,6 @@ app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(users_endpoints.activation_router)
-
-
-@app.on_event("startup")
-@repeat_every(
-    seconds=float(os.getenv(ENV_ZENML_SERVER_METADATA_SYNC_PERIOD, 10)),
-    wait_first=True,
-)
-def sync_pipeline_runs() -> None:
-    """Sync pipeline runs."""
-    logger.info("Syncing pipeline runs...")
-    try:
-        zen_store()._sync_runs()
-    except Exception:
-        logger.exception("Failed to sync pipeline runs.")
 
 
 def get_root_static_files() -> List[str]:

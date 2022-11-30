@@ -14,7 +14,6 @@
 """Implementation of the ZenML Stack class."""
 
 import os
-import time
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -32,8 +31,8 @@ from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
-from zenml.models.stack_models import HydratedStackModel, StackModel
-from zenml.utils import settings_utils, string_utils
+from zenml.models import StackResponseModel
+from zenml.utils import settings_utils
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
@@ -123,29 +122,8 @@ class Stack:
         self._annotator = annotator
         self._data_validator = data_validator
 
-    def to_model(self, user: UUID, project: UUID) -> "StackModel":
-        """Creates a StackModel from an actual Stack instance.
-
-        Args:
-            user: The user ID of the user who created the stack.
-            project: The project ID of the project the stack belongs to.
-
-        Returns:
-            A StackModel
-        """
-        return StackModel(
-            id=self.id,
-            name=self.name,
-            user=user,
-            project=project,
-            components={
-                type_: [component.to_model().id]
-                for type_, component in self.components.items()
-            },
-        )
-
     @classmethod
-    def from_model(cls, stack_model: HydratedStackModel) -> "Stack":
+    def from_model(cls, stack_model: StackResponseModel) -> "Stack":
         """Creates a Stack instance from a StackModel.
 
         Args:
@@ -696,22 +674,7 @@ class Stack:
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
         """
-        logger.info(
-            "Using stack `%s` to run pipeline `%s`...",
-            self.name,
-            deployment.pipeline.name,
-        )
-        start_time = time.time()
-        return_value = self.orchestrator.run(deployment=deployment, stack=self)
-
-        run_duration = time.time() - start_time
-        logger.info(
-            "Pipeline run `%s` has finished in %s.",
-            deployment.run_name,
-            string_utils.get_human_readable_time(run_duration),
-        )
-
-        return return_value
+        return self.orchestrator.run(deployment=deployment, stack=self)
 
     def _get_active_components_for_step(
         self, step_config: "StepConfiguration"
@@ -760,16 +723,17 @@ class Stack:
         ).values():
             component.prepare_step_run(info=info)
 
-    def cleanup_step_run(self, info: "StepRunInfo") -> None:
+    def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Cleans up resources after the step run is finished.
 
         Args:
             info: Info about the step that was executed.
+            step_failed: Whether the step failed.
         """
         for component in self._get_active_components_for_step(
             info.config
         ).values():
-            component.cleanup_step_run(info=info)
+            component.cleanup_step_run(info=info, step_failed=step_failed)
 
     @property
     def is_provisioned(self) -> bool:
@@ -795,6 +759,7 @@ class Stack:
 
     def provision(self) -> None:
         """Provisions resources to run the stack locally."""
+        self.validate(fail_if_secrets_missing=True)
         logger.info("Provisioning resources for stack '%s'.", self.name)
         for component in self.components.values():
             if not component.is_provisioned:

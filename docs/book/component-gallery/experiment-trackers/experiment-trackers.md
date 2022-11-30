@@ -44,6 +44,13 @@ You should add an Experiment Tracker to your ZenML stack and use it when you
 want to augment ZenML with the visual features provided by experiment tracking
 tools.
 
+## How they experiment trackers slot into the stack
+
+Here is an architecture diagram that shows how experiment trackers fit into the 
+overall story of a remote stack.
+
+![Experiment Tracker](../../assets/diagrams/Remote_with_exp_tracker.png)
+
 ### Experiment Tracker Flavors
 
 Experiment Trackers are optional stack components provided by integrations:
@@ -74,6 +81,9 @@ data) to the Experiment Tracker same as you would if you were using the tool
 independently of ZenML
 * finally, you can access the Experiment Tracker UI to browse and visualize the
 information logged during your pipeline runs
+
+Note: the Expirement Tracker will declare run as failed if the pipeline step
+fails.
 
 Consult the documentation for the particular [Experiment Tracker flavor](#experiment-tracker-flavors)
 that you plan on using or are using in your stack for detailed information about

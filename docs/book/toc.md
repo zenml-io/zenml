@@ -11,11 +11,13 @@
   * [One Click Deployment using CLI](./getting-started/deploying-zenml/cli.md)
   * [Deploying with Docker](./getting-started/deploying-zenml/docker.md)
   * [Deploying with Helm](./getting-started/deploying-zenml/helm.md)
+* [Architecture Diagrams](getting-started/architecture-diagrams.md)
 * [Examples](./getting-started/examples.md)
 
 ## Starter Guide
 
 * [Pipelines](./starter-guide/pipelines/pipelines.md)
+  * [Dashboard Overview](./starter-guide/pipelines/dashboard.md)
   * [Fetching Pipelines](./starter-guide/pipelines/fetching-pipelines.md)
   * [Step Parameterization and Caching](./starter-guide/pipelines/iterating.md)
 * [Stacks](./starter-guide/stacks/stacks.md)
@@ -24,6 +26,7 @@
 * [Collaboration](./starter-guide/collaborate/collaborate.md)
   * [Connecting to a Deployed ZenML](./starter-guide/collaborate/zenml-deployment.md)
   * [Inviting Users](./starter-guide/collaborate/users.md)
+  * [User Roles & Permissions](./starter-guide/collaborate/roles-and-permissions.md)
 
 ## Advanced Guide
 
@@ -50,6 +53,7 @@
 ## Component Gallery
 
 * [Categories of MLOps Tools](./component-gallery/categories.md)
+* [Architecture Diagrams](getting-started/architecture-diagrams.md)
 * [Integration Overview](./component-gallery/integrations.md)
 * [Orchestrators](./component-gallery/orchestrators/orchestrators.md)
   * [Local Orchestrator](./component-gallery/orchestrators/local.md)
@@ -97,6 +101,7 @@
   * [MLflow](./component-gallery/model-deployers/mlflow.md)
   * [Seldon](./component-gallery/model-deployers/seldon.md)
   * [KServe](./component-gallery/model-deployers/kserve.md)
+  * [BentoML](./component-gallery/model-deployers/bentoml.md)
   * [Develop a Custom Model Deployer](./component-gallery/model-deployers/custom.md)
 * [Step Operators](./component-gallery/step-operators/step-operators.md)
   * [Amazon SageMaker](./component-gallery/step-operators/amazon-sagemaker.md)

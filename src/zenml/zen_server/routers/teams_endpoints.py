@@ -15,33 +15,35 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Security
 
 from zenml.constants import API, ROLES, TEAMS, VERSION_1
-from zenml.models import TeamModel
-from zenml.models.user_management_models import RoleAssignmentModel
-from zenml.zen_server.auth import authorize
-from zenml.zen_server.models.user_management_models import (
-    CreateTeamRequest,
-    UpdateTeamRequest,
+from zenml.enums import PermissionType
+from zenml.models import (
+    RoleAssignmentResponseModel,
+    TeamRequestModel,
+    TeamResponseModel,
+    TeamUpdateModel,
 )
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + TEAMS,
     tags=["teams"],
-    dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
 
 
 @router.get(
     "",
-    response_model=List[TeamModel],
+    response_model=List[TeamResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_teams() -> List[TeamModel]:
+def list_teams(
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+) -> List[TeamResponseModel]:
     """Returns a list of all teams.
 
     Returns:
@@ -52,11 +54,14 @@ def list_teams() -> List[TeamModel]:
 
 @router.post(
     "",
-    response_model=TeamModel,
+    response_model=TeamResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_team(team: CreateTeamRequest) -> TeamModel:
+def create_team(
+    team: TeamRequestModel,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> TeamResponseModel:
     """Creates a team.
 
     # noqa: DAR401
@@ -67,16 +72,19 @@ def create_team(team: CreateTeamRequest) -> TeamModel:
     Returns:
         The created team.
     """
-    return zen_store().create_team(team=team.to_model())
+    return zen_store().create_team(team=team)
 
 
 @router.get(
     "/{team_name_or_id}",
-    response_model=TeamModel,
+    response_model=TeamResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_team(team_name_or_id: Union[str, UUID]) -> TeamModel:
+def get_team(
+    team_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> TeamResponseModel:
     """Returns a specific team.
 
     Args:
@@ -89,27 +97,28 @@ def get_team(team_name_or_id: Union[str, UUID]) -> TeamModel:
 
 
 @router.put(
-    "/{team_name_or_id}",
-    response_model=TeamModel,
+    "/{team_id}",
+    response_model=TeamResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_team(
-    team_name_or_id: Union[str, UUID], team_update: UpdateTeamRequest
-) -> TeamModel:
+    team_id: UUID,
+    team_update: TeamUpdateModel,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> TeamResponseModel:
     """Updates a team.
 
     # noqa: DAR401
 
     Args:
-        team_name_or_id: Name or ID of the team.
+        team_id: ID of the team to update.
         team_update: Team update.
 
     Returns:
         The created team.
     """
-    team_in_db = zen_store().get_team(team_name_or_id)
-    return zen_store().update_team(team=team_update.apply_to_model(team_in_db))
+    return zen_store().update_team(team_id=team_id, team_update=team_update)
 
 
 @router.delete(
@@ -117,7 +126,10 @@ def update_team(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_team(team_name_or_id: Union[str, UUID]) -> None:
+def delete_team(
+    team_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
     """Deletes a specific team.
 
     Args:
@@ -128,14 +140,15 @@ def delete_team(team_name_or_id: Union[str, UUID]) -> None:
 
 @router.get(
     "/{team_name_or_id}" + ROLES,
-    response_model=List[RoleAssignmentModel],
+    response_model=List[RoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_role_assignments_for_team(
     team_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
-) -> List[RoleAssignmentModel]:
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> List[RoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a team.
 
     Args:

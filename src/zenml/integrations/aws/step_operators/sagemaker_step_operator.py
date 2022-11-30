@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-from typing import TYPE_CHECKING, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, List, Optional, Tuple, Type, cast
 
 import sagemaker
 
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
     SagemakerStepOperatorConfig,
+    SagemakerStepOperatorSettings,
 )
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
@@ -27,6 +28,7 @@ from zenml.step_operators import BaseStepOperator
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_run_info import StepRunInfo
 
@@ -51,6 +53,15 @@ class SagemakerStepOperator(BaseStepOperator):
             The configuration.
         """
         return cast(SagemakerStepOperatorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the SageMaker step operator.
+
+        Returns:
+            The settings class.
+        """
+        return SagemakerStepOperatorSettings
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -145,13 +156,16 @@ class SagemakerStepOperator(BaseStepOperator):
         image_name = info.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY]
         environment = {_ENTRYPOINT_ENV_VARIABLE: " ".join(entrypoint_command)}
 
+        settings = cast(SagemakerStepOperatorSettings, self.get_settings(info))
+
         session = sagemaker.Session(default_bucket=self.config.bucket)
+        instance_type = settings.instance_type or "ml.m5.large"
         estimator = sagemaker.estimator.Estimator(
             image_name,
             self.config.role,
             environment=environment,
             instance_count=1,
-            instance_type=self.config.instance_type,
+            instance_type=instance_type,
             sagemaker_session=session,
         )
 
@@ -159,9 +173,9 @@ class SagemakerStepOperator(BaseStepOperator):
         sanitized_run_name = info.run_name.replace("_", "-")
 
         experiment_config = {}
-        if self.config.experiment_name:
+        if settings.experiment_name:
             experiment_config = {
-                "ExperimentName": self.config.experiment_name,
+                "ExperimentName": settings.experiment_name,
                 "TrialName": sanitized_run_name,
             }
 

@@ -55,7 +55,7 @@ STREAM_LOGS_POLLING_INTERVAL_SECS = 10
 
 class VMInstanceView(BaseModel):
     """VM instance view container."""
-    
+
     id: str
     name: str
     status: VMState
@@ -137,10 +137,10 @@ class BaseVMOrchestrator(BaseOrchestrator):
 
     def _output_logs(self, deployment: "PipelineDeployment") -> None:
         """Output logs to the logger.
-        
+
         Args:
             deployment: Deployment of the pipeline.
-            
+
         Raises:
             Exception: A general exception.
         """

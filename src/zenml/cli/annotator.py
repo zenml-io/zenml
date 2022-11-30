@@ -43,7 +43,6 @@ def register_annotator_subcommands() -> None:
             ctx: The click Context object.
         """
         from zenml.client import Client
-        from zenml.stack.stack_component import StackComponent
 
         annotator_models = Client().active_stack_model.components.get(
             StackComponentType.ANNOTATOR
@@ -54,6 +53,8 @@ def register_annotator_subcommands() -> None:
                 "first and add it to your stack."
             )
             return
+
+        from zenml.stack.stack_component import StackComponent
 
         ctx.obj = StackComponent.from_model(annotator_models[0])
 

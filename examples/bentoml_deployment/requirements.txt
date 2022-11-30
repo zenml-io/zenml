@@ -1,0 +1,3 @@
+torchvision
+torch
+zenml

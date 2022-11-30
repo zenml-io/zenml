@@ -21,7 +21,6 @@ from typing import List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import GITHUB
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 GITHUB_SECRET_MANAGER_FLAVOR = "github"

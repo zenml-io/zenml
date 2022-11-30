@@ -66,7 +66,7 @@ To run this example, you need to install and initialize ZenML:
 
 ```shell
 # install CLI
-pip install zenml
+pip install "zenml[server]"
 
 # install ZenML integrations
 zenml integration install pytorch tensorflow kserve
@@ -92,7 +92,7 @@ For the ZenML KServe deployer to work, these things are required:
  
 ### 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
 
-Yes! With [ZenML Stack Recipes](../../docs/book/stack-deployment-guide/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
+Yes! With [ZenML Stack Recipes](../../docs/book/advanced-guide/practical/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
 
 The flow to get started for this example can be the following:
 
@@ -467,6 +467,17 @@ The TensorFlow pipeline consists of the following steps:
 * evaluate - Evaluate the model using the test dataset.
 * deployment_trigger - Verify if the newly trained model exceeds the threshold and if so, deploy the model.
 * model_deployer - Deploy the TensorFlow model to the KServe model server using the TFServing runtime server. the model_deployer is a ZenML built-in step that takes care of the preparing of the model to the [right format](https://www.tensorflow.org/guide/saved_model) for the runtime servers. In this case, the ZenML will be saving a file with the name `tf.saved_model` in the artifact store which is the format that the runtime servers expect.
+
+Note: The ZenML built-in model deployer step has a set of parameters that can be used to define the type of kserve used server and used Kubernetes resources.
+Some of the parameters Within the `KServeDeploymentConfig` you can configure:
+   * `model_name`: the name of the model in the KServe cluster and in ZenML.
+   * `replicas`: the number of replicas with which to deploy the model
+   * `predictor`: the type of predictor to use for the model. The
+    predictor type can be one of the following: `tensorflow`, `pytorch`, `sklearn`, `xgboost`, `custom`.
+   * `resources`: This can be configured by passing a dictionary with the
+    `requests` and `limits` keys. The values for these keys can be a dictionary
+    with the `cpu` and `memory` keys. The values for these keys can be a string
+    with the amount of CPU and memory to be allocated to the model.
 
 ### 🏃️ Run the code
 To run the training/deployment TensorFlow pipeline:

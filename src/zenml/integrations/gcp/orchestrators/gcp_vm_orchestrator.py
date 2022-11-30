@@ -92,9 +92,9 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         timeout: int = 300,
     ) -> Any:
         """Wait for extended GCP operation.
-        
+
         # noqa: DAR401
-        
+
         This method will wait for the extended (long-running) operation to
         complete. If the operation is successful, it will return its result.
         If the operation ends with an error, an exception will be raised.
@@ -142,7 +142,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
     @staticmethod
     def sanitize_gcp_vm_name(bad_name: str) -> str:
         """Get a good name from a bad name.
-        
+
         Args:
             bad_name: Original name of VM.
 
@@ -160,7 +160,7 @@ class GCPVMOrchestrator(BaseVMOrchestrator, GoogleCredentialsMixin):
         auto_delete: bool = True,
     ) -> compute_v1.AttachedDisk:
         """Create an AttachedDisk object to be used in VM instance creation.
-        
+
         Uses an image as the source for the new disk.
 
         Args:

@@ -11,5 +11,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ include "zenml.fullname" . }}:{{ .Values.service.port }}']
+      args: ['{{ include "zenml.fullname" . }}:{{ .Values.zenml.service.port }}']
   restartPolicy: Never

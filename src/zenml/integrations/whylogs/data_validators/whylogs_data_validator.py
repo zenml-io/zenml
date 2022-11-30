@@ -84,25 +84,20 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
         Args:
             info: Info about the step that will be executed.
         """
-        settings = cast(
-            WhylogsDataValidatorSettings,
-            self.get_settings(info) or WhylogsDataValidatorSettings(),
-        )
+        settings = cast(WhylogsDataValidatorSettings, self.get_settings(info))
         if settings.enable_whylabs:
             os.environ[WHYLABS_LOGGING_ENABLED_ENV] = "true"
         if settings.dataset_id:
             os.environ[WHYLABS_DATASET_ID_ENV] = settings.dataset_id
 
-    def cleanup_step_run(self, info: "StepRunInfo") -> None:
+    def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Resets Whylabs configuration.
 
         Args:
             info: Info about the step that was executed.
+            step_failed: Whether the step failed.
         """
-        settings = cast(
-            WhylogsDataValidatorSettings,
-            self.get_settings(info) or WhylogsDataValidatorSettings(),
-        )
+        settings = cast(WhylogsDataValidatorSettings, self.get_settings(info))
         if settings.enable_whylabs:
             del os.environ[WHYLABS_LOGGING_ENABLED_ENV]
         if settings.dataset_id:

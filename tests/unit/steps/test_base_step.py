@@ -15,6 +15,7 @@ from contextlib import ExitStack as does_not_raise
 from typing import Dict, List, Optional
 
 import pytest
+from pydantic import BaseModel
 
 from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.environment import Environment
@@ -975,3 +976,27 @@ def test_upstream_step_computation():
     assert s1.upstream_steps == {"step_2"}
     assert not s2.upstream_steps
     assert s3.upstream_steps == {"step_1", "step_2"}
+
+
+def test_base_parameter_subclasses_as_attribute():
+    """Tests that parameter class attributes which are unset (for example due
+    to being set on a subclass) still get serialized so the params can be
+    reconstructed."""
+
+    class BaseClass(BaseModel):
+        key: str
+
+    class SubClass(BaseClass):
+        key: str = "value"
+
+    class Params(BaseParameters):
+        attribute: BaseClass = SubClass()
+
+    @step
+    def s_(params: Params) -> None:
+        pass
+
+    step_instance = s_(Params())
+    assert step_instance.configuration.parameters == {
+        "attribute": {"key": "value"}
+    }

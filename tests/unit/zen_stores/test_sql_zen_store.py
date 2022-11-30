@@ -14,28 +14,45 @@
 
 import uuid
 from contextlib import ExitStack as does_not_raise
+from typing import Dict, Union
 
 import pytest
 from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionStatus, PermissionType, StackComponentType
 from zenml.exceptions import (
     EntityExistsError,
+    IllegalOperationError,
     StackComponentExistsError,
     StackExistsError,
 )
 from zenml.models import (
-    ComponentModel,
-    FlavorModel,
-    ProjectModel,
-    RoleModel,
-    TeamModel,
-    UserModel,
+    ComponentRequestModel,
+    ComponentUpdateModel,
+    FlavorRequestModel,
+    PipelineRequestModel,
+    PipelineUpdateModel,
+    ProjectRequestModel,
+    ProjectUpdateModel,
+    RoleAssignmentRequestModel,
+    RoleRequestModel,
+    RoleUpdateModel,
+    StackRequestModel,
+    StackUpdateModel,
+    TeamRequestModel,
+    UserRequestModel,
+    UserUpdateModel,
 )
-from zenml.models.pipeline_models import PipelineModel
-from zenml.models.stack_models import StackModel
-from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.models.base_models import BaseResponseModel
+from zenml.models.team_models import TeamUpdateModel
+from zenml.zen_stores.base_zen_store import (
+    DEFAULT_ADMIN_ROLE,
+    DEFAULT_GUEST_ROLE,
+    DEFAULT_PROJECT_NAME,
+    DEFAULT_USERNAME,
+    BaseZenStore,
+)
 
 DEFAULT_NAME = "default"
 
@@ -44,60 +61,111 @@ DEFAULT_NAME = "default"
 # '---------
 
 
-def test_only_one_default_project(sql_store: BaseZenStore):
+def test_only_one_default_project_present(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests that only one default project can be created."""
     assert len(sql_store["store"].list_projects()) == 1
 
 
-def test_project_creation(sql_store: BaseZenStore):
+def test_project_creation_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests project creation."""
-    new_project = ProjectModel(name="arias_project")
+    assert len(sql_store["store"].list_projects()) == 1
+    new_project = ProjectRequestModel(name="arias_project")
     sql_store["store"].create_project(new_project)
     projects_list = sql_store["store"].list_projects()
     assert len(projects_list) == 2
-    assert projects_list[1].name == "arias_project"
+    assert "arias_project" in [p.name for p in projects_list]
 
 
-def test_getting_project(sql_store: BaseZenStore):
+def test_get_project_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests getting a project."""
-    assert sql_store["default_project"].name == DEFAULT_NAME
-    assert type(sql_store["default_project"].id) == uuid.UUID
+    assert sql_store["default_project"].name == DEFAULT_PROJECT_NAME
+    with does_not_raise():
+        sql_store["store"].get_project(DEFAULT_PROJECT_NAME)
+        sql_store["store"].get_project(sql_store["default_project"].id)
 
 
-def test_getting_nonexistent_project_raises_error(
-    sql_store: BaseZenStore,
+def test_getting_nonexistent_project_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting a nonexistent project raises an error."""
     with pytest.raises(KeyError):
         sql_store["store"].get_project("blupus_project")
 
 
-def test_updating_project(sql_store: BaseZenStore):
+def test_updating_default_project_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
+    """Tests updating the default project."""
+    default_project = sql_store["store"].get_project(DEFAULT_PROJECT_NAME)
+    assert default_project.name == DEFAULT_PROJECT_NAME
+    project_update = ProjectUpdateModel(
+        name="aria_project",
+        description="Aria has taken possession of this project.",
+    )
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].update_project(
+            project_id=default_project.id, project_update=project_update
+        )
+
+
+def test_updating_project_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests updating a project."""
-    default_project = sql_store["default_project"]
-    assert default_project.name == DEFAULT_NAME
-    default_project.name = "aria"
-    sql_store["store"].update_project(default_project)
-    assert sql_store["store"].list_projects()[0].name == "aria"
+    new_project = ProjectRequestModel(name="arias_project")
+    new_project = sql_store["store"].create_project(new_project)
+
+    new_name = "axls_project"
+    project_update = ProjectUpdateModel(
+        name=new_name, description="Axl has taken possession of this project."
+    )
+
+    with does_not_raise():
+        sql_store["store"].update_project(
+            project_id=new_project.id, project_update=project_update
+        )
+    with does_not_raise():
+        sql_store["store"].get_project(project_name_or_id=new_name)
 
 
 def test_updating_nonexisting_project_raises_error(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating a nonexistent project raises an error."""
-    new_project = ProjectModel(name="arias_project")
+    project_update = ProjectUpdateModel(name="arias_project")
     with pytest.raises(KeyError):
-        sql_store["store"].update_project(new_project)
+        sql_store["store"].update_project(
+            project_id=uuid.uuid4(), project_update=project_update
+        )
 
 
-def test_deleting_project_succeeds(sql_store: BaseZenStore):
+def test_deleting_project_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests deleting a project."""
-    sql_store["store"].delete_project(DEFAULT_NAME)
-    assert len(sql_store["store"].list_projects()) == 0
+    new_project = ProjectRequestModel(name="axls_project")
+    new_project = sql_store["store"].create_project(new_project)
+    with does_not_raise():
+        sql_store["store"].delete_project("axls_project")
+    assert len(sql_store["store"].list_projects()) == 1
+
+
+def test_deleting_default_project_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
+    """Tests deleting the default project."""
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].delete_project(DEFAULT_NAME)
 
 
 def test_deleting_nonexistent_project_raises_error(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests deleting a nonexistent project raises an error."""
     with pytest.raises(KeyError):
@@ -109,149 +177,161 @@ def test_deleting_nonexistent_project_raises_error(
 # '------
 
 
-def test_list_teams(sql_store: BaseZenStore):
+def test_list_teams(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests listing teams."""
-    assert len(sql_store["store"].teams) == 0
+    assert len(sql_store["store"].list_teams()) == 0
+    new_team = TeamRequestModel(name="arias_team")
+    with does_not_raise():
+        new_team = sql_store["store"].create_team(new_team)
+    assert len(sql_store["store"].list_teams()) == 1
 
 
-def test_create_team(sql_store: BaseZenStore):
+def test_create_team(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests creating a team."""
-    assert len(sql_store["store"].teams) == 0
-    new_team = TeamModel(name="arias_team")
-    sql_store["store"].create_team(new_team)
-    assert len(sql_store["store"].teams) == 1
-    assert sql_store["store"].teams[0].name == "arias_team"
+    new_team = TeamRequestModel(name="arias_team")
+    with does_not_raise():
+        new_team = sql_store["store"].create_team(new_team)
+    assert sql_store["store"].get_team(new_team.name)
 
 
-def test_get_team(sql_store: BaseZenStore):
+def test_get_team(sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]):
     """Tests getting a team."""
-    assert len(sql_store["store"].teams) == 0
-    new_team = TeamModel(name="arias_team")
+    new_team = TeamRequestModel(name="arias_team")
     sql_store["store"].create_team(new_team)
     assert sql_store["store"].get_team("arias_team").name == "arias_team"
 
 
-def test_get_nonexistent_team_raises_error(sql_store: BaseZenStore):
+def test_get_nonexistent_team_raises_error(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests getting a nonexistent team raises an error."""
     with pytest.raises(KeyError):
         sql_store["store"].get_team("blupus_team")
 
 
-def test_delete_team_works(sql_store: BaseZenStore):
+def test_delete_team_works(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests deleting a team."""
-    assert len(sql_store["store"].teams) == 0
-    new_team = TeamModel(name="arias_team")
-    sql_store["store"].create_team(new_team)
-    assert len(sql_store["store"].teams) == 1
-    new_team_id = sql_store["store"].get_team("arias_team").id
-    sql_store["store"].delete_team(new_team_id)
-    assert len(sql_store["store"].teams) == 0
+    team_name = "arias_team"
+    new_team = TeamRequestModel(name=team_name)
+    new_team = sql_store["store"].create_team(new_team)
+    assert new_team.name == team_name
+    with does_not_raise():
+        sql_store["store"].delete_team(new_team.id)
+    with pytest.raises(KeyError):
+        sql_store["store"].get_team(new_team.id)
 
 
-def test_nonexistent_team_raises_error(sql_store: BaseZenStore):
+def test_nonexistent_team_raises_error(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests deleting a nonexistent team raises an error."""
     with pytest.raises(KeyError):
         sql_store["store"].delete_team(uuid.uuid4())
 
 
-def test_adding_user_to_team(sql_store: BaseZenStore):
-    """Tests adding a user to a team."""
-    assert len(sql_store["store"].teams) == 0
-    team_name = "arias_team"
-    new_team = TeamModel(name=team_name)
-    sql_store["store"].create_team(new_team)
-    current_user_id = sql_store["active_user"].id
-    sql_store["store"].add_user_to_team(
-        user_name_or_id=DEFAULT_NAME, team_name_or_id=team_name
-    )
-    assert (
-        sql_store["store"].get_users_for_team(team_name)[0].id
-        == current_user_id
-    )
-
-
-def test_adding_nonexistent_user_to_nonexistent_team_raises_error(
-    sql_store: BaseZenStore,
+def test_adding_user_to_team(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests adding a nonexistent user to a team raises an error."""
-    with pytest.raises(KeyError):
-        sql_store["store"].add_user_to_team(uuid.uuid4(), uuid.uuid4())
+    """Tests adding a user to a team."""
+    team_name = "arias_team"
+    new_team = TeamRequestModel(name=team_name)
+    new_team = sql_store["store"].create_team(new_team)
+
+    current_user_id = sql_store["active_user"].id
+    team_update = TeamUpdateModel(users=[current_user_id])
+    team_update = sql_store["store"].update_team(
+        team_id=new_team.id, team_update=team_update
+    )
+
+    assert current_user_id in team_update.user_ids
+    # Make sure the team name has not been inadvertently changed
+    assert sql_store["store"].get_team(new_team.id).name == team_name
 
 
 def test_adding_nonexistent_user_to_real_team_raises_error(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests adding a nonexistent user to a team raises an error."""
-    new_team = TeamModel(name="arias_team")
-    sql_store["store"].create_team(new_team)
-    new_team_id = sql_store["store"].get_team("arias_team").id
+    new_team = TeamRequestModel(name="arias_team")
+    new_team = sql_store["store"].create_team(new_team)
+    nonexistent_id = uuid.uuid4()
+    team_update = TeamUpdateModel(users=[nonexistent_id])
     with pytest.raises(KeyError):
-        sql_store["store"].add_user_to_team(uuid.uuid4(), new_team_id)
+        sql_store["store"].update_team(
+            team_id=new_team.id, team_update=team_update
+        )
 
 
-def test_adding_real_user_to_nonexistent_team_raises_error(
-    sql_store: BaseZenStore,
+def test_update_nonexistent_team_raises_error(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests adding a nonexistent user to a team raises an error."""
-    current_user_id = sql_store["active_user"].id
+    team_update = TeamUpdateModel(name="axls_team")
     with pytest.raises(KeyError):
-        sql_store["store"].add_user_to_team(current_user_id, uuid.uuid4())
+        sql_store["store"].update_team(
+            team_id=uuid.uuid4(), team_update=team_update
+        )
 
 
-def test_removing_user_from_team_succeeds(sql_store: BaseZenStore):
+def test_removing_user_from_team_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests removing a user from a team."""
-    assert len(sql_store["store"].teams) == 0
-    new_team = TeamModel(name="arias_team")
-    sql_store["store"].create_team(new_team)
+    new_team = TeamRequestModel(name="arias_team")
+    new_team = sql_store["store"].create_team(new_team)
+
     current_user_id = sql_store["active_user"].id
-    new_team_id = sql_store["store"].get_team("arias_team").id
-    sql_store["store"].add_user_to_team(current_user_id, new_team_id)
-    assert len(sql_store["store"].get_users_for_team(new_team_id)) == 1
-    sql_store["store"].remove_user_from_team(current_user_id, new_team_id)
-    assert len(sql_store["store"].get_users_for_team(new_team_id)) == 0
+
+    team_update = TeamUpdateModel(users=[current_user_id])
+    updated_team = sql_store["store"].update_team(
+        team_id=new_team.id, team_update=team_update
+    )
+    assert current_user_id in updated_team.user_ids
+    team_update = TeamUpdateModel(users=[])
+    updated_team = sql_store["store"].update_team(
+        team_id=new_team.id, team_update=team_update
+    )
+    assert current_user_id not in updated_team.user_ids
 
 
-def test_removing_nonexistent_user_from_team_fails(
-    sql_store: BaseZenStore,
+def test_access_user_in_team_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests removing a nonexistent user from a team raises an error."""
-    new_team = TeamModel(name="arias_team")
-    sql_store["store"].create_team(new_team)
-    new_team_id = sql_store["store"].get_team("arias_team").id
-    with pytest.raises(KeyError):
-        sql_store["store"].remove_user_from_team(uuid.uuid4(), new_team_id)
-
-
-def test_getting_user_from_nonexistent_team_fails(
-    sql_store: BaseZenStore,
-):
-    """Tests getting a user from a nonexistent team raises an error."""
-    with pytest.raises(KeyError):
-        sql_store["store"].get_users_for_team(uuid.uuid4())
-
-
-def test_getting_user_for_team(sql_store: BaseZenStore):
     """Tests getting a user from a team."""
-    new_team = TeamModel(name="arias_team")
-    sql_store["store"].create_team(new_team)
     current_user_id = sql_store["active_user"].id
-    new_team_id = sql_store["store"].get_team("arias_team").id
-    sql_store["store"].add_user_to_team(current_user_id, new_team_id)
-    users_for_team = sql_store["store"].get_users_for_team(new_team_id)
-    assert len(users_for_team) == 1
-    assert users_for_team[0].id == current_user_id
+
+    new_team = TeamRequestModel(name="arias_team")
+    new_team = sql_store["store"].create_team(new_team)
+    assert len(new_team.users) == 0
+
+    team_update = TeamUpdateModel(users=[current_user_id])
+    team_update = sql_store["store"].update_team(
+        team_id=new_team.id, team_update=team_update
+    )
+
+    assert len(team_update.users) == 1
+    assert current_user_id in team_update.user_ids
 
 
-def test_getting_team_for_user(sql_store: BaseZenStore):
+def test_getting_team_for_user(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests getting a team for a user."""
-    new_team = TeamModel(name="arias_team")
+    new_team = TeamRequestModel(name="arias_team")
     sql_store["store"].create_team(new_team)
     current_user_id = sql_store["active_user"].id
-    new_team_id = sql_store["store"].get_team("arias_team").id
-    sql_store["store"].add_user_to_team(current_user_id, new_team_id)
-    teams_for_user = sql_store["store"].get_teams_for_user(current_user_id)
-    assert len(teams_for_user) == 1
-    assert teams_for_user[0].id == new_team_id
+    new_team = sql_store["store"].get_team("arias_team")
+    team_update = TeamUpdateModel(users=[current_user_id])
+    updated_team = sql_store["store"].update_team(
+        team_id=new_team.id, team_update=team_update
+    )
+    assert len(updated_team.users) == 1
 
 
 #  .------.
@@ -259,14 +339,18 @@ def test_getting_team_for_user(sql_store: BaseZenStore):
 # '-------'
 
 
-def test_active_user_property(sql_store: BaseZenStore):
+def test_active_user_property(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests the active user property."""
     active_user = sql_store["store"].active_user
     assert active_user is not None
     assert active_user == sql_store["active_user"]
 
 
-def test_active_user_name_property(sql_store: BaseZenStore):
+def test_active_user_name_property(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests the active user name property."""
     active_user_name = sql_store["store"].active_user_name
     assert active_user_name is not None
@@ -274,7 +358,9 @@ def test_active_user_name_property(sql_store: BaseZenStore):
     assert active_user_name == DEFAULT_NAME
 
 
-def test_users_property(sql_store: BaseZenStore):
+def test_users_property(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests the users property."""
     assert len(sql_store["store"].users) == 1
     assert sql_store["store"].users[0].name == DEFAULT_NAME
@@ -283,67 +369,96 @@ def test_users_property(sql_store: BaseZenStore):
     assert sql_store["store"].users[0] == sql_store["active_user"]
 
 
-def test_creating_user_succeeds(sql_store: BaseZenStore):
+def test_creating_user_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests creating a user."""
     assert len(sql_store["store"].users) == 1
-    new_user = UserModel(name="aria")
+    new_user = UserRequestModel(name="aria")
     sql_store["store"].create_user(new_user)
     assert len(sql_store["store"].users) == 2
     assert sql_store["store"].get_user("aria") is not None
 
 
 def test_creating_user_with_existing_name_fails(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests creating a user with an existing name fails."""
-    new_user = UserModel(name="aria")
+    new_user = UserRequestModel(name="aria")
     sql_store["store"].create_user(new_user)
     with pytest.raises(EntityExistsError):
         sql_store["store"].create_user(new_user)
 
 
-def test_getting_nonexistent_user_fails(sql_store: BaseZenStore):
+def test_getting_nonexistent_user_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests getting a nonexistent user fails."""
     with pytest.raises(KeyError):
         sql_store["store"].get_user("aria")
 
 
 def test_getting_user_by_name_and_id_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting a user by name and id."""
-    new_user = UserModel(name="aria")
-    sql_store["store"].create_user(new_user)
-    users = sql_store["store"].users
-    new_user_id = str(users[1].id)
+    new_user = UserRequestModel(name="aria")
+    new_user = sql_store["store"].create_user(new_user)
+    new_user_id = str(new_user.id)
     user_by_name = sql_store["store"].get_user("aria")
     user_by_id = sql_store["store"].get_user(new_user_id)
     assert user_by_id == user_by_name
-    assert len(users) == 2
+    assert len(sql_store["store"].users) == 2
 
 
-def test_updating_user_succeeds(sql_store: BaseZenStore):
+def test_updating_user_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests updating a user."""
-    new_user_model = UserModel(name="aria")
+    new_user_model = UserRequestModel(name="aria")
     sql_store["store"].create_user(new_user_model)
     new_user = sql_store["store"].get_user("aria")
-    new_user.name = "blupus"
-    sql_store["store"].update_user(new_user)
-    assert sql_store["store"].get_user("blupus") is not None
+
+    new_user_name = "blupus"
+    user_update = UserUpdateModel(name=new_user_name)
+    sql_store["store"].update_user(user_id=new_user.id, user_update=user_update)
+
+    assert sql_store["store"].get_user(new_user_name) is not None
     with pytest.raises(KeyError):
         sql_store["store"].get_user("aria")
 
 
-def test_updating_nonexistent_user_fails(sql_store: BaseZenStore):
+def test_updating_default_user_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
+    """Tests that updating the default user is prohibited."""
+    default_user = sql_store["store"].get_user(DEFAULT_USERNAME)
+    assert default_user
+    user_update = UserUpdateModel()
+    user_update.name = "axl"
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].update_user(
+            user_id=default_user.id, user_update=user_update
+        )
+
+
+def test_updating_nonexistent_user_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests updating a nonexistent user fails."""
-    new_user = UserModel(name="demonic_aria")
+    new_user = UserUpdateModel(name="demonic_aria")
+
     with pytest.raises(KeyError):
-        sql_store["store"].update_user(new_user)
+        sql_store["store"].update_user(
+            user_id=uuid.uuid4(), user_update=new_user
+        )
 
 
-def test_deleting_user_succeeds(sql_store: BaseZenStore):
+def test_deleting_user_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests deleting a user."""
-    new_user = UserModel(name="aria")
+    new_user = UserRequestModel(name="aria")
     sql_store["store"].create_user(new_user)
     new_user_id = sql_store["store"].get_user("aria").id
     assert len(sql_store["store"].users) == 2
@@ -351,63 +466,179 @@ def test_deleting_user_succeeds(sql_store: BaseZenStore):
     assert len(sql_store["store"].users) == 1
 
 
+def test_deleting_default_user_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
+    """Tests that deleting the default user is prohibited."""
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].delete_user("default")
+
+
 #  .------.
 # | ROLES |
 # '-------'
 
 
-def test_roles_property_with_fresh_store(sql_store: BaseZenStore):
+def test_roles_property_with_fresh_store(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests the roles property with a fresh ZenStore."""
-    assert len(sql_store["store"].roles) == 0
+    assert len(sql_store["store"].roles) == 2
 
 
-def test_creating_role(sql_store: BaseZenStore):
+def test_creating_role(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests creating a role."""
-    assert len(sql_store["store"].roles) == 0
-    new_role = RoleModel(name="admin")
-    sql_store["store"].create_role(new_role)
-    assert len(sql_store["store"].roles) == 1
-    assert sql_store["store"].get_role("admin") is not None
+    assert len(sql_store["store"].roles) == 2
+    roles_before = len(sql_store["store"].roles)
 
-
-def test_creating_existing_role_fails(sql_store: BaseZenStore):
-    """Tests creating an existing role fails."""
-    new_role = RoleModel(name="admin")
-    sql_store["store"].create_role(new_role)
+    new_role = RoleRequestModel(
+        name="admin",
+        permissions={
+            PermissionType.ME,
+            PermissionType.READ,
+            PermissionType.WRITE,
+        },
+    )
     with pytest.raises(EntityExistsError):
         sql_store["store"].create_role(new_role)
-    assert len(sql_store["store"].roles) == 1
 
-
-def test_getting_role_succeeds(sql_store: BaseZenStore):
-    """Tests getting a role."""
-    new_role = RoleModel(name="admin")
+    new_role = RoleRequestModel(
+        name="cat",
+        permissions={
+            PermissionType.ME,
+            PermissionType.READ,
+            PermissionType.WRITE,
+        },
+    )
     sql_store["store"].create_role(new_role)
+    assert len(sql_store["store"].roles) == roles_before + 1
     assert sql_store["store"].get_role("admin") is not None
 
 
-def test_getting_nonexistent_role_fails(sql_store: BaseZenStore):
+def test_creating_role_with_empty_permissions_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
+    """Tests creating a role."""
+    assert len(sql_store["store"].roles) == 2
+    roles_before = len(sql_store["store"].roles)
+
+    new_role = RoleRequestModel(name="cat", permissions=set())
+    sql_store["store"].create_role(new_role)
+    assert len(sql_store["store"].roles) == roles_before + 1
+    assert sql_store["store"].get_role("admin") is not None
+
+
+def test_creating_role_with_existing_name_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
+    """Tests creating a role that already exists."""
+    new_role = RoleRequestModel(
+        name="admin",
+        permissions={
+            PermissionType.ME,
+            PermissionType.READ,
+            PermissionType.WRITE,
+        },
+    )
+    with pytest.raises(EntityExistsError):
+        sql_store["store"].create_role(new_role)
+
+
+def test_creating_existing_role_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
+    """Tests creating an existing role fails."""
+    roles_before = len(sql_store["store"].roles)
+    new_role = RoleRequestModel(
+        name="admin",
+        permissions={
+            PermissionType.ME,
+            PermissionType.READ,
+            PermissionType.WRITE,
+        },
+    )
+    with pytest.raises(EntityExistsError):
+        sql_store["store"].create_role(new_role)
+    assert len(sql_store["store"].roles) == roles_before
+
+
+def test_getting_role_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
+    """Tests getting a role."""
+    new_role = RoleRequestModel(
+        name="cat_feeder",
+        permissions={
+            PermissionType.ME,
+            PermissionType.READ,
+            PermissionType.WRITE,
+        },
+    )
+
+    sql_store["store"].create_role(new_role)
+    assert sql_store["store"].get_role("cat_feeder") is not None
+
+
+def test_getting_nonexistent_role_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests getting a nonexistent role fails."""
     with pytest.raises(KeyError):
-        sql_store["store"].get_role("admin")
+        sql_store["store"].get_role("random_role_that_does_not_exist")
 
 
-def test_deleting_role_succeeds(sql_store: BaseZenStore):
+def test_deleting_role_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests deleting a role."""
-    new_role = RoleModel(name="admin")
+    roles_before = len(sql_store["store"].roles)
+
+    new_role = RoleRequestModel(
+        name="cat_feeder", permissions={PermissionType.ME}
+    )
     sql_store["store"].create_role(new_role)
-    assert len(sql_store["store"].roles) == 1
-    new_role_id = str(sql_store["store"].get_role("admin").id)
+    assert len(sql_store["store"].roles) == roles_before + 1
+    new_role_id = str(sql_store["store"].get_role("cat_feeder").id)
     sql_store["store"].delete_role(new_role_id)
-    assert len(sql_store["store"].roles) == 0
+    assert len(sql_store["store"].roles) == roles_before
     with pytest.raises(KeyError):
         sql_store["store"].get_role(new_role_id)
 
 
-def test_deleting_nonexistent_role_fails(sql_store: BaseZenStore):
+def test_deleting_nonexistent_role_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests deleting a nonexistent role fails."""
     with pytest.raises(KeyError):
         sql_store["store"].delete_role(uuid.uuid4())
+
+
+def test_deleting_builtin_role_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
+    """Tests deleting a built-in role fails."""
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].delete_role("admin")
+
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].delete_role("guest")
+
+
+def test_updating_builtin_role_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
+    """Tests updating a built-in role fails."""
+    role = sql_store["store"].get_role(DEFAULT_ADMIN_ROLE)
+    role_update = RoleUpdateModel(name="cat_feeder")
+
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].update_role(role_id=role.id, role_update=role_update)
+
+    role = sql_store["store"].get_role(DEFAULT_GUEST_ROLE)
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].update_role(role_id=role.id, role_update=role_update)
 
 
 #  .----------------
@@ -416,114 +647,131 @@ def test_deleting_nonexistent_role_fails(sql_store: BaseZenStore):
 
 
 def test_assigning_role_to_user_succeeds(
-    sql_store_with_team: BaseZenStore,
+    sql_store_with_user_team_role: Dict[
+        str, Union[BaseZenStore, BaseResponseModel]
+    ],
 ):
     """Tests assigning a role to a user."""
-    new_role = RoleModel(name="aria_feeder")
-    current_user_id = sql_store_with_team["active_user"].id
-
-    sql_store_with_team["store"].create_role(new_role)
-    new_role_id = sql_store_with_team["store"].get_role("aria_feeder").id
-    sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
-
-    assert len(sql_store_with_team["store"].roles) == 1
-    assert len(sql_store_with_team["store"].role_assignments) == 1
+    role_assignment = RoleAssignmentRequestModel(
+        role=sql_store_with_user_team_role["role"].id,
+        user=sql_store_with_user_team_role["user"].id,
+        is_user=True,
+        project=None,
+    )
+    with does_not_raise():
+        (
+            sql_store_with_user_team_role["store"].create_role_assignment(
+                role_assignment
+            )
+        )
 
 
 def test_assigning_role_to_team_succeeds(
-    sql_store_with_team: BaseZenStore,
+    sql_store_with_user_team_role: Dict[
+        str, Union[BaseZenStore, BaseResponseModel]
+    ],
 ):
     """Tests assigning a role to a team."""
-    team_id = sql_store_with_team["default_team"].id
-    new_role = RoleModel(name="blupus_friend")
-    sql_store_with_team["store"].create_role(new_role)
-    new_role_id = sql_store_with_team["store"].get_role("blupus_friend").id
-    sql_store_with_team["store"].assign_role(
-        new_role_id, team_id, is_user=False
+    role_assignment = RoleAssignmentRequestModel(
+        role=sql_store_with_user_team_role["role"].id,
+        team=sql_store_with_user_team_role["team"].id,
+        is_user=True,
+        project=None,
     )
-
-    assert len(sql_store_with_team["store"].roles) == 1
-    assert len(sql_store_with_team["store"].role_assignments) == 1
-    assert (
-        len(
-            sql_store_with_team["store"].list_role_assignments(
-                user_name_or_id=sql_store_with_team["active_user"].id
+    with does_not_raise():
+        (
+            sql_store_with_user_team_role["store"].create_role_assignment(
+                role_assignment
             )
         )
-        == 1
-    )
 
 
-def test_assigning_role_if_assignment_already_exists(
-    sql_store_with_team: BaseZenStore,
+def test_assigning_role_if_assignment_already_exists_fails(
+    sql_store_with_user_team_role: Dict[
+        str, Union[BaseZenStore, BaseResponseModel]
+    ],
 ):
     """Tests assigning a role to a user if the assignment already exists."""
-    new_role = RoleModel(name="aria_feeder")
-    current_user_id = sql_store_with_team["active_user"].id
-    sql_store_with_team["store"].create_role(new_role)
-    new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
-    sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
+    role_assignment = RoleAssignmentRequestModel(
+        role=sql_store_with_user_team_role["role"].id,
+        user=sql_store_with_user_team_role["user"].id,
+        is_user=True,
+        project=None,
+    )
+    with does_not_raise():
+        (
+            sql_store_with_user_team_role["store"].create_role_assignment(
+                role_assignment
+            )
+        )
     with pytest.raises(EntityExistsError):
-        sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
-
-    assert len(sql_store_with_team["store"].roles) == 1
-    assert len(sql_store_with_team["store"].role_assignments) == 1
+        (
+            sql_store_with_user_team_role["store"].create_role_assignment(
+                role_assignment
+            )
+        )
 
 
 def test_revoking_role_for_user_succeeds(
-    sql_store_with_team: BaseZenStore,
+    sql_store_with_user_team_role: Dict[
+        str, Union[BaseZenStore, BaseResponseModel]
+    ],
 ):
     """Tests revoking a role for a user."""
-    new_role = RoleModel(name="aria_feeder")
-    current_user_id = sql_store_with_team["active_user"].id
-    sql_store_with_team["store"].create_role(new_role)
-    new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
-    sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
-    sql_store_with_team["store"].revoke_role(new_role_id, current_user_id)
-
-    assert len(sql_store_with_team["store"].roles) == 1
-    assert len(sql_store_with_team["store"].role_assignments) == 0
+    role_assignment = RoleAssignmentRequestModel(
+        role=sql_store_with_user_team_role["role"].id,
+        user=sql_store_with_user_team_role["user"].id,
+        is_user=True,
+        project=None,
+    )
+    with does_not_raise():
+        role_assignment = sql_store_with_user_team_role[
+            "store"
+        ].create_role_assignment(role_assignment)
+        sql_store_with_user_team_role["store"].delete_role_assignment(
+            role_assignment_id=role_assignment.id
+        )
+    with pytest.raises(KeyError):
+        sql_store_with_user_team_role["store"].get_role_assignment(
+            role_assignment_id=role_assignment.id
+        )
 
 
 def test_revoking_role_for_team_succeeds(
-    sql_store_with_team: BaseZenStore,
+    sql_store_with_user_team_role: Dict[
+        str, Union[BaseZenStore, BaseResponseModel]
+    ],
 ):
     """Tests revoking a role for a team."""
-    team_id = sql_store_with_team["default_team"].id
-    new_role = RoleModel(name="blupus_friend")
-    sql_store_with_team["store"].create_role(new_role)
-    new_role_id = str(sql_store_with_team["store"].get_role("blupus_friend").id)
-    sql_store_with_team["store"].assign_role(
-        new_role_id, team_id, is_user=False
+    role_assignment = RoleAssignmentRequestModel(
+        role=sql_store_with_user_team_role["role"].id,
+        team=sql_store_with_user_team_role["team"].id,
+        is_user=True,
+        project=None,
     )
-    sql_store_with_team["store"].revoke_role(
-        new_role_id, team_id, is_user=False
-    )
-
-    assert len(sql_store_with_team["store"].roles) == 1
-    assert len(sql_store_with_team["store"].role_assignments) == 0
+    with does_not_raise():
+        role_assignment = sql_store_with_user_team_role[
+            "store"
+        ].create_role_assignment(role_assignment)
+        sql_store_with_user_team_role["store"].delete_role_assignment(
+            role_assignment_id=role_assignment.id
+        )
+    with pytest.raises(KeyError):
+        sql_store_with_user_team_role["store"].get_role_assignment(
+            role_assignment_id=role_assignment.id
+        )
 
 
 def test_revoking_nonexistent_role_fails(
-    sql_store_with_team: BaseZenStore,
+    sql_store_with_user_team_role: Dict[
+        str, Union[BaseZenStore, BaseResponseModel]
+    ],
 ):
     """Tests revoking a nonexistent role fails."""
-    current_user_id = sql_store_with_team["active_user"].id
     with pytest.raises(KeyError):
-        sql_store_with_team["store"].revoke_role(uuid.uuid4(), current_user_id)
-
-
-def test_revoking_role_for_nonexistent_user_fails(
-    sql_store_with_team: BaseZenStore,
-):
-    """Tests revoking a role for a nonexistent user fails."""
-    new_role = RoleModel(name="aria_feeder")
-    sql_store_with_team["store"].create_role(new_role)
-    new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
-    current_user_id = sql_store_with_team["active_user"].id
-    sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
-    with pytest.raises(KeyError):
-        sql_store_with_team["store"].revoke_role(new_role_id, uuid.uuid4())
+        sql_store_with_user_team_role["store"].delete_role_assignment(
+            role_assignment_id=uuid.uuid4()
+        )
 
 
 #  .----------------.
@@ -532,7 +780,7 @@ def test_revoking_role_for_nonexistent_user_fails(
 
 
 def test_get_metadata_config_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting metadata config."""
     metadata_config = sql_store["store"].get_metadata_config()
@@ -545,14 +793,14 @@ def test_get_metadata_config_succeeds(
 
 
 def test_list_stacks_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing stacks."""
     assert len(sql_store["store"].list_stacks()) == 1
 
 
 def test_list_stacks_fails_with_nonexistent_project(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing stacks fails with nonexistent project."""
     with pytest.raises(KeyError):
@@ -560,7 +808,7 @@ def test_list_stacks_fails_with_nonexistent_project(
 
 
 def test_get_stack_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting stack."""
     current_stack_id = sql_store["store"].list_stacks()[0].id
@@ -569,7 +817,7 @@ def test_get_stack_succeeds(
 
 
 def test_get_stack_fails_with_nonexistent_stack_id(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting stack fails with nonexistent stack id."""
     with pytest.raises(KeyError):
@@ -577,10 +825,10 @@ def test_get_stack_fails_with_nonexistent_stack_id(
 
 
 def test_register_stack_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests registering stack."""
-    new_stack = StackModel(
+    new_stack = StackRequestModel(
         name="arias_stack",
         components={},
         project=sql_store["default_project"].id,
@@ -596,10 +844,10 @@ def test_register_stack_succeeds(
 
 
 def test_register_stack_fails_when_stack_exists(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests registering stack fails when stack exists."""
-    new_stack = StackModel(
+    new_stack = StackRequestModel(
         name=DEFAULT_NAME,
         components={},
         project=sql_store["default_project"].id,
@@ -613,52 +861,93 @@ def test_register_stack_fails_when_stack_exists(
 
 
 def test_updating_stack_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating stack."""
-    current_stack_id = sql_store["default_stack"].id
-    new_stack = StackModel(
-        id=current_stack_id,
+    new_stack = StackRequestModel(
         name="arias_stack",
+        description="Aria likes her stacks.",
         components={},
         project=sql_store["default_project"].id,
         user=sql_store["active_user"].id,
     )
-    sql_store["store"].update_stack(new_stack)
-    assert sql_store["store"].get_stack(current_stack_id) is not None
-    assert sql_store["store"].get_stack(current_stack_id).name == "arias_stack"
+    new_stack = sql_store["store"].create_stack(
+        stack=new_stack,
+    )
+    new_stack_name = "axls_stack"
+    stack_update = StackUpdateModel(name=new_stack_name)
+    sql_store["store"].update_stack(
+        stack_id=new_stack.id, stack_update=stack_update
+    )
+    assert sql_store["store"].get_stack(new_stack.id) is not None
+    assert sql_store["store"].get_stack(new_stack.id).name == new_stack_name
+    # Ensure unset fields of the `UpdateModel` are not changed
+    assert (
+        sql_store["store"].get_stack(new_stack.id).description
+        == new_stack.description
+    )
+
+
+def test_updating_default_stack_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
+):
+    """Tests that updating the default stack is prohibited."""
+    default_stack_id = sql_store["default_stack"].id
+    default_stack = sql_store["store"].get_stack(default_stack_id)
+    new_stack_name = "axls_stack"
+    stack_update = StackUpdateModel(name=new_stack_name)
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].update_stack(
+            stack_id=default_stack.id, stack_update=stack_update
+        )
 
 
 def test_updating_nonexistent_stack_fails(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating nonexistent stack fails."""
     current_stack_id = sql_store["default_stack"].id
-    new_stack = StackModel(
+    new_stack_name = "axls_stack"
+    stack_update = StackUpdateModel(name=new_stack_name)
+    nonexistent_id = uuid.uuid4()
+    with pytest.raises(KeyError):
+        sql_store["store"].update_stack(
+            stack_id=nonexistent_id, stack_update=stack_update
+        )
+    with pytest.raises(KeyError):
+        sql_store["store"].get_stack(nonexistent_id)
+    assert sql_store["store"].get_stack(current_stack_id).name != "arias_stack"
+
+
+def test_deleting_stack_succeeds(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
+):
+    """Tests deleting stack."""
+    new_stack = StackRequestModel(
         name="arias_stack",
         components={},
         project=sql_store["default_project"].id,
         user=sql_store["active_user"].id,
     )
-    with pytest.raises(KeyError):
-        sql_store["store"].update_stack(new_stack)
+    new_stack = sql_store["store"].create_stack(
+        stack=new_stack,
+    )
+    sql_store["store"].delete_stack(new_stack.id)
     with pytest.raises(KeyError):
         sql_store["store"].get_stack(new_stack.id)
-    assert sql_store["store"].get_stack(current_stack_id).name != "arias_stack"
 
 
-def test_deleting_default_stack_succeeds(
-    sql_store: BaseZenStore,
+def test_deleting_default_stack_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests deleting stack."""
-    current_stack_id = sql_store["default_stack"].id
-    sql_store["store"].delete_stack(current_stack_id)
-    with pytest.raises(KeyError):
-        sql_store["store"].get_stack(current_stack_id)
+    """Tests that deleting the default stack is prohibited."""
+    default_stack_id = sql_store["default_stack"].id
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].delete_stack(default_stack_id)
 
 
 def test_deleting_nonexistent_stack_fails(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests deleting nonexistent stack fails."""
     non_existent_stack_id = uuid.uuid4()
@@ -667,11 +956,11 @@ def test_deleting_nonexistent_stack_fails(
 
 
 def test_deleting_a_stack_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests deleting stack."""
     # TODO: [server] inject user and project into stack as well
-    new_stack = StackModel(
+    new_stack = StackRequestModel(
         name="arias_stack",
         components={},
         project=sql_store["default_project"].id,
@@ -694,7 +983,7 @@ def test_deleting_a_stack_succeeds(
 
 
 def test_tfx_metadata_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests tfx metadata."""
     with does_not_raise():
@@ -709,13 +998,13 @@ def test_tfx_metadata_succeeds(
 
 
 def test_create_pipeline_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests creating pipeline."""
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
@@ -728,13 +1017,13 @@ def test_create_pipeline_succeeds(
 
 
 def test_creating_identical_pipeline_fails(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests creating identical pipeline fails."""
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
@@ -748,13 +1037,13 @@ def test_creating_identical_pipeline_fails(
 
 
 def test_get_pipeline_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting pipeline."""
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
@@ -768,53 +1057,21 @@ def test_get_pipeline_succeeds(
 
 
 def test_get_pipeline_fails_for_nonexistent_pipeline(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting pipeline fails for nonexistent pipeline."""
     with pytest.raises(KeyError):
         sql_store["store"].get_pipeline(uuid.uuid4())
 
 
-def test_get_pipeline_in_project_succeeds(
-    sql_store: BaseZenStore,
-):
-    """Tests getting pipeline in project."""
-    project_id = sql_store["default_project"].id
-    user_id = sql_store["active_user"].id
-    spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
-        name="arias_pipeline",
-        project=project_id,
-        user=user_id,
-        spec=spec,
-    )
-    sql_store["store"].create_pipeline(pipeline=new_pipeline)
-    pipeline = sql_store["store"].get_pipeline_in_project(
-        project_name_or_id=project_id, pipeline_name="arias_pipeline"
-    )
-    assert pipeline is not None
-    assert pipeline.name == "arias_pipeline"
-
-
-def test_get_pipeline_in_project_fails_when_pipeline_nonexistent(
-    sql_store: BaseZenStore,
-):
-    """Tests getting pipeline in project fails when pipeline nonexistent."""
-    project_id = sql_store["default_project"].id
-    with pytest.raises(KeyError):
-        sql_store["store"].get_pipeline_in_project(
-            project_name_or_id=project_id, pipeline_name="blupus_ka_pipeline"
-        )
-
-
 def test_list_pipelines_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing pipelines."""
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
@@ -827,58 +1084,59 @@ def test_list_pipelines_succeeds(
 
 
 def test_update_pipeline_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating pipeline."""
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
         spec=spec,
     )
-    sql_store["store"].create_pipeline(pipeline=new_pipeline)
-    pipeline_id = sql_store["store"].list_pipelines()[0].id
-    updated_pipeline = PipelineModel(
-        id=pipeline_id,
+    new_pipeline = sql_store["store"].create_pipeline(pipeline=new_pipeline)
+
+    pipeline_update = PipelineUpdateModel(
         name="blupus_ka_pipeline",
-        project=project_id,
-        user=user_id,
-        spec=spec,
     )
-    sql_store["store"].update_pipeline(updated_pipeline)
-    pipeline = sql_store["store"].get_pipeline(pipeline_id)
-    assert pipeline is not None
-    assert pipeline.name == "blupus_ka_pipeline"
+    with does_not_raise():
+        pipeline_update = sql_store["store"].update_pipeline(
+            pipeline_id=new_pipeline.id, pipeline_update=pipeline_update
+        )
+    assert pipeline_update is not None
+    assert pipeline_update.name == "blupus_ka_pipeline"
+    assert pipeline_update.spec == new_pipeline.spec
 
 
 def test_updating_nonexistent_pipeline_fails(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating nonexistent pipeline fails."""
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    updated_pipeline = PipelineModel(
+    pipeline_update = PipelineUpdateModel(
         name="blupus_ka_pipeline",
         project=project_id,
         user=user_id,
         spec=spec,
     )
     with pytest.raises(KeyError):
-        sql_store["store"].update_pipeline(pipeline=updated_pipeline)
+        sql_store["store"].update_pipeline(
+            pipeline_id=uuid.uuid4(), pipeline_update=pipeline_update
+        )
 
 
 def test_deleting_pipeline_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests deleting pipeline."""
     project_id = sql_store["default_project"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineModel(
+    new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
         project=project_id,
         user=user_id,
@@ -893,7 +1151,7 @@ def test_deleting_pipeline_succeeds(
 
 
 def test_deleting_nonexistent_pipeline_fails(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests deleting nonexistent pipeline fails."""
     with pytest.raises(KeyError):
@@ -911,13 +1169,13 @@ def test_getting_run_succeeds(
     """Tests getting run."""
     run_id = sql_store_with_run["pipeline_run"].id
     with does_not_raise():
-        run = sql_store_with_run["store"].get_run(run_id=run_id)
+        run = sql_store_with_run["store"].get_run(run_id)
         assert run is not None
         assert run.name == sql_store_with_run["pipeline_run"].name
 
 
 def test_getting_nonexistent_run_fails(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting nonexistent run fails."""
     with pytest.raises(KeyError):
@@ -936,7 +1194,7 @@ def test_list_runs_succeeds(
 
 
 def test_list_runs_returns_nothing_when_no_runs_exist(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing runs returns nothing when no runs exist."""
     runs = sql_store["store"].list_runs()
@@ -948,7 +1206,7 @@ def test_list_runs_returns_nothing_when_no_runs_exist(
     false_stack_runs = sql_store["store"].list_runs(stack_id=uuid.uuid4())
     assert len(false_stack_runs) == 0
 
-    false_run_name_runs = sql_store["store"].list_runs(run_name="not_arias_run")
+    false_run_name_runs = sql_store["store"].list_runs(name="not_arias_run")
     assert len(false_run_name_runs) == 0
 
     with pytest.raises(KeyError):
@@ -956,6 +1214,15 @@ def test_list_runs_returns_nothing_when_no_runs_exist(
 
     false_pipeline_runs = sql_store["store"].list_runs(pipeline_id=uuid.uuid4())
     assert len(false_pipeline_runs) == 0
+
+
+def test_list_runs_is_ordered(sql_store_with_runs):
+    """Tests listing runs returns ordered runs."""
+    runs = sql_store_with_runs["store"].list_runs()
+    assert len(runs) == 10
+    assert all(
+        runs[i].created <= runs[i + 1].created for i in range(len(runs) - 1)
+    )
 
 
 # ------------------
@@ -977,7 +1244,7 @@ def test_get_run_step_succeeds(
 
 
 def test_get_run_step_fails_when_step_does_not_exist(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting run step fails when step does not exist."""
     with pytest.raises(KeyError):
@@ -1007,7 +1274,7 @@ def test_get_run_step_inputs_succeeds(
 
 
 def test_get_run_step_inputs_fails_when_step_does_not_exist(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting run step inputs fails when step does not exist."""
     with pytest.raises(KeyError):
@@ -1046,11 +1313,11 @@ def test_list_run_steps_succeeds(
 
 
 def test_create_stack_component_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests creating stack component."""
     stack_component_name = "arias_cat_detection_orchestrator"
-    stack_component = ComponentModel(
+    stack_component = ComponentRequestModel(
         name=stack_component_name,
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
@@ -1059,19 +1326,18 @@ def test_create_stack_component_succeeds(
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
-        sql_store["store"].create_stack_component(component=stack_component)
-        created_stack_component = sql_store["store"].get_stack_component(
-            component_id=stack_component.id
+        created_component = sql_store["store"].create_stack_component(
+            component=stack_component
         )
-        assert created_stack_component.name == stack_component_name
+        assert created_component.name == stack_component_name
 
 
 def test_create_component_fails_when_same_name(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests creating component fails when same name."""
     stack_component_name = "nicto"
-    stack_component = ComponentModel(
+    stack_component = ComponentRequestModel(
         name=stack_component_name,
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
@@ -1085,17 +1351,17 @@ def test_create_component_fails_when_same_name(
 
 
 def test_get_stack_component(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting stack component."""
     components = sql_store["default_stack"].components
-    component_id = list(components.values())[0][0]
+    component_id = list(components.values())[0][0].id
     with does_not_raise():
         sql_store["store"].get_stack_component(component_id=component_id)
 
 
 def test_get_stack_component_fails_when_component_does_not_exist(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting stack component fails when component does not exist."""
     with pytest.raises(KeyError):
@@ -1103,7 +1369,7 @@ def test_get_stack_component_fails_when_component_does_not_exist(
 
 
 def test_list_stack_components_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing stack components."""
     stack_components = sql_store["store"].list_stack_components(
@@ -1116,7 +1382,7 @@ def test_list_stack_components_succeeds(
 
 
 def test_list_stack_components_fails_when_project_does_not_exist(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing stack components fails when project does not exist."""
     with pytest.raises(KeyError):
@@ -1126,7 +1392,7 @@ def test_list_stack_components_fails_when_project_does_not_exist(
 
 
 def test_list_stack_components_works_with_filters(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing stack components works with filters."""
     artifact_stores = sql_store["store"].list_stack_components(
@@ -1145,7 +1411,7 @@ def test_list_stack_components_works_with_filters(
 
 
 def test_list_stack_components_lists_nothing_for_nonexistent_filters(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing stack components lists nothing for nonexistent filters."""
     flavor_filtered = sql_store["store"].list_stack_components(
@@ -1168,28 +1434,68 @@ def test_list_stack_components_lists_nothing_for_nonexistent_filters(
 
 
 def test_update_stack_component_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating stack component."""
-    updated_orchestrator_name = "blupus"
-    orchestrator = sql_store["store"].list_stack_components(
+    stack_component_name = "aria"
+    stack_component = ComponentRequestModel(
+        name=stack_component_name,
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="default",
+        configuration={},
+        project=sql_store["default_project"].id,
+        user=sql_store["active_user"].id,
+    )
+    with does_not_raise():
+        orchestrator = sql_store["store"].create_stack_component(
+            component=stack_component
+        )
+
+    updated_orchestrator_name = "axl"
+    component_update = ComponentUpdateModel(name=updated_orchestrator_name)
+    with does_not_raise():
+        updated_component = sql_store["store"].update_stack_component(
+            component_id=orchestrator.id, component_update=component_update
+        )
+        assert updated_component.name == updated_orchestrator_name
+
+
+def test_update_default_stack_component_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
+    """Tests that updating default stack components fails."""
+    default_artifact_store = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        type=StackComponentType.ARTIFACT_STORE,
+        name="default",
+    )[0]
+
+    default_orchestrator = sql_store["store"].list_stack_components(
         project_name_or_id=sql_store["default_project"].name,
         type=StackComponentType.ORCHESTRATOR,
+        name="default",
     )[0]
-    orchestrator.name = updated_orchestrator_name
-    with does_not_raise():
-        sql_store["store"].update_stack_component(component=orchestrator)
-        updated_stack_component = sql_store["store"].get_stack_component(
-            component_id=orchestrator.id
+
+    component_update = ComponentUpdateModel(name="aria")
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].update_stack_component(
+            component_id=default_orchestrator.id,
+            component_update=component_update,
         )
-        assert updated_stack_component.name == updated_orchestrator_name
+
+    default_orchestrator.name = "axl"
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].update_stack_component(
+            component_id=default_artifact_store.id,
+            component_update=component_update,
+        )
 
 
 def test_update_stack_component_fails_when_component_does_not_exist(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating stack component fails when component does not exist."""
-    stack_component = ComponentModel(
+    stack_component = ComponentUpdateModel(
         name="nonexistent",
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
@@ -1198,15 +1504,17 @@ def test_update_stack_component_fails_when_component_does_not_exist(
         user=sql_store["active_user"].id,
     )
     with pytest.raises(KeyError):
-        sql_store["store"].update_stack_component(component=stack_component)
+        sql_store["store"].update_stack_component(
+            component_id=uuid.uuid4(), component_update=stack_component
+        )
 
 
 def test_delete_stack_component_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests deleting stack component."""
     stack_component_name = "arias_cat_detection_orchestrator"
-    stack_component = ComponentModel(
+    stack_component = ComponentRequestModel(
         name=stack_component_name,
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
@@ -1214,11 +1522,8 @@ def test_delete_stack_component_succeeds(
         project=sql_store["default_project"].id,
         user=sql_store["active_user"].id,
     )
-    sql_store["store"].create_stack_component(component=stack_component)
-    created_stack_component_id = (
-        sql_store["store"]
-        .get_stack_component(component_id=stack_component.id)
-        .id
+    created_component = sql_store["store"].create_stack_component(
+        component=stack_component
     )
     orchestrators = sql_store["store"].list_stack_components(
         project_name_or_id=sql_store["default_project"].name,
@@ -1227,21 +1532,44 @@ def test_delete_stack_component_succeeds(
     assert len(orchestrators) == 2
     with does_not_raise():
         sql_store["store"].delete_stack_component(
-            component_id=created_stack_component_id
+            component_id=created_component.id
         )
         orchestrators = sql_store["store"].list_stack_components(
             project_name_or_id=sql_store["default_project"].name,
             type=StackComponentType.ORCHESTRATOR,
         )
-        assert len(orchestrators) == 1
+    assert len(orchestrators) == 1
     with pytest.raises(KeyError):
-        assert sql_store["store"].get_stack_component(
-            component_id=stack_component.id
+        sql_store["store"].get_stack_component(
+            component_id=created_component.id
         )
 
 
+def test_delete_default_stack_component_fails(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
+):
+    """Tests that deleting default stack components is prohibited."""
+    default_artifact_store = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        type=StackComponentType.ARTIFACT_STORE,
+        name="default",
+    )[0]
+
+    default_orchestrator = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        type=StackComponentType.ORCHESTRATOR,
+        name="default",
+    )[0]
+
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].delete_stack_component(default_artifact_store.id)
+
+    with pytest.raises(IllegalOperationError):
+        sql_store["store"].delete_stack_component(default_orchestrator.id)
+
+
 def test_delete_stack_component_fails_when_component_does_not_exist(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests deleting stack component fails when component does not exist."""
     with pytest.raises(KeyError):
@@ -1254,11 +1582,11 @@ def test_delete_stack_component_fails_when_component_does_not_exist(
 
 
 def test_create_stack_component_flavor_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests creating stack component flavor."""
     flavor_name = "blupus"
-    blupus_flavor = FlavorModel(
+    blupus_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
         config_schema="default",
@@ -1284,11 +1612,11 @@ def test_create_stack_component_flavor_succeeds(
 
 
 def test_create_stack_component_fails_when_flavor_already_exists(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests creating stack component flavor fails when flavor already exists."""
     flavor_name = "scinda"
-    scinda_flavor = FlavorModel(
+    scinda_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
         config_schema="default",
@@ -1298,7 +1626,7 @@ def test_create_stack_component_fails_when_flavor_already_exists(
     )
     with does_not_raise():
         sql_store["store"].create_flavor(flavor=scinda_flavor)
-    scinda_copy_flavor = FlavorModel(
+    scinda_copy_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
         config_schema="default",
@@ -1311,11 +1639,11 @@ def test_create_stack_component_fails_when_flavor_already_exists(
 
 
 def test_get_flavor_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting stack component flavor."""
     flavor_name = "verata"
-    verata_flavor = FlavorModel(
+    verata_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ARTIFACT_STORE,
         config_schema="default",
@@ -1324,24 +1652,16 @@ def test_get_flavor_succeeds(
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
-        sql_store["store"].create_flavor(flavor=verata_flavor)
-        verata_flavor_id = (
-            sql_store["store"]
-            .list_flavors(
-                project_name_or_id=sql_store["default_project"].name,
-                component_type=StackComponentType.ARTIFACT_STORE,
-                name=flavor_name,
-            )[0]
-            .id
-        )
+        new_flavor = sql_store["store"].create_flavor(flavor=verata_flavor)
+
         assert (
-            sql_store["store"].get_flavor(flavor_id=verata_flavor_id).name
+            sql_store["store"].get_flavor(flavor_id=new_flavor.id).name
             == flavor_name
         )
 
 
 def test_get_flavor_fails_when_flavor_does_not_exist(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting stack component flavor fails when flavor does not exist."""
     with pytest.raises(KeyError):
@@ -1349,11 +1669,11 @@ def test_get_flavor_fails_when_flavor_does_not_exist(
 
 
 def test_list_flavors_succeeds(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing stack component flavors."""
     flavor_name = "verata"
-    verata_flavor = FlavorModel(
+    verata_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ARTIFACT_STORE,
         config_schema="default",
@@ -1368,7 +1688,7 @@ def test_list_flavors_succeeds(
 
 
 def test_list_flavors_fails_with_nonexistent_project(
-    sql_store: BaseZenStore,
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing stack component flavors fails with nonexistent project."""
     with pytest.raises(KeyError):

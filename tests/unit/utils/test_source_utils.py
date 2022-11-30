@@ -232,3 +232,31 @@ def test_import_python_file(clean_client, mocker, files_dir: Path):
     # Cleanup modules for future tests
     del sys.modules[MAIN_MODULE]
     del sys.modules[SOME_MODULE]
+
+
+def test_class_importing_by_path():
+    """Tests importing a class by path."""
+    from zenml.client import Client
+
+    imported_class = source_utils.import_class_by_path("zenml.client.Client")
+    assert Client is imported_class
+
+    with pytest.raises(ModuleNotFoundError):
+        source_utils.import_class_by_path("zenml.not_a_module.Class")
+
+    with pytest.raises(AttributeError):
+        source_utils.import_class_by_path("zenml.client.NotAClass")
+
+
+def test_internal_pin_removal():
+    """Tests that removing the internal pin removal works."""
+    assert (
+        source_utils.remove_internal_version_pin(
+            "zenml.client.Client@zenml_0.21.0"
+        )
+        == "zenml.client.Client"
+    )
+    assert (
+        source_utils.remove_internal_version_pin("zenml.client.Client")
+        == "zenml.client.Client"
+    )

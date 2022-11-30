@@ -40,11 +40,9 @@ your stack. This is needed so that both your orchestration environment
 and SageMaker can read and write step artifacts. Check out the documentation 
 page of the artifact store you want to use for more information on how to set 
 that up and configure authentication for it.
-* A [local orchestrator](../orchestrators/local.md) as part of your stack. 
-This is a current limitation of the SageMaker step operator which will be 
-resolved in an upcoming release.
-* The `aws` cli set up and authenticated. Make sure you have the permissions to 
-create and manage SageMaker runs.
+* If using a [local orchestrator](../orchestrators/local.md): The `aws` cli set up and authenticated. Make sure you have the permissions to create and manage SageMaker runs.
+* If using a remote orchestrator: The environment in which the orchestrator runs its containers needs to be able
+to assume the IAM role specified when registering the SageMaker step operator.
 * An instance type that we want to execute our steps on.
 See [here](https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html)
 for a list of available instance types.
@@ -85,12 +83,19 @@ if you want to learn more about how ZenML builds these images and
 how you can customize them.
 {% endhint %}
 
+### Additional configuration
+
+For additional configuration of the SageMaker step operator, you can pass
+`SagemakerStepOperatorSettings` when defining or running your pipeline.
+Check out the
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorSettings) for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+for more information on how to specify settings.
 
 A concrete example of using the SageMaker step operator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training).
 
 For more information and a full list of configurable attributes of the 
-SageMaker step operator, check out the [API Docs](https://apidocs.zenml.io/latest/api_docs/integration_code_docs/integrations-aws/#zenml.integrations.aws.step_operators.sagemaker_step_operator.SagemakerStepOperator).
+SageMaker step operator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.step_operators.sagemaker_step_operator.SagemakerStepOperator).
 
 ### Enabling CUDA for GPU-backed hardware
 
