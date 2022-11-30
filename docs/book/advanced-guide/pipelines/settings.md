@@ -55,6 +55,8 @@ Even though settings can be overridden at runtime, you can also specify *default
 
 This means that all pipelines that run using this experiment tracker use nested MLflow runs unless overridden by specifying settings for the pipeline at runtime.
 
+{% embed url="https://www.youtube.com/embed/AdwW6DlCWFE" %} Stack Component Config vs Settings in ZenML {% endembed %}
+
 #### Using objects or dicts
 
 Settings can be passed in directly as BaseSettings-subclassed objects, or a dict-representation of the object. For example, a Docker configuration can be passed in as follows:

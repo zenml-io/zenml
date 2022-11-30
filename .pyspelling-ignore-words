@@ -333,6 +333,7 @@ InitializationException
 Initializations
 IntegrationError
 Intitialization
+InvalidExperimentTrackerSelected
 InvalidKeyError
 Istio
 Itemwise
@@ -458,6 +459,7 @@ NOP
 NSJVO
 NUM
 NamedTemporaryFile
+NeptuneCallback
 NeuralProphet
 Ng
 NlNDr
@@ -557,6 +559,7 @@ RoleAssignment
 RoleBinding
 RoleModel
 Rollouts
+RunProvider
 Runtime
 RuntimeConfiguration
 RuntimeError
@@ -704,6 +707,7 @@ TorchServe's
 TorchServeParameters
 TorchVision
 TrainerConfig
+TrainerParameters
 TypeError
 UI
 UI's
