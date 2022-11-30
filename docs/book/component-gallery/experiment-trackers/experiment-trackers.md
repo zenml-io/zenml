@@ -75,6 +75,9 @@ independently of ZenML
 * finally, you can access the Experiment Tracker UI to browse and visualize the
 information logged during your pipeline runs
 
+Note: the Expirement Tracker will declare run as failed if the pipeline step
+fails.
+
 Consult the documentation for the particular [Experiment Tracker flavor](#experiment-tracker-flavors)
 that you plan on using or are using in your stack for detailed information about
 how to use it in your ZenML pipelines.
