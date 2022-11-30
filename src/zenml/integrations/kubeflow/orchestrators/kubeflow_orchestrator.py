@@ -800,7 +800,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     username=settings.client_username,
                     password=settings.client_password,
                 )
-                logger.info(f"Session cookie fetched successfully!")
+                logger.info("Session cookie fetched successfully!")
                 client_args["cookie"] = session_cookie
 
         return kfp.Client(**client_args)
