@@ -19,12 +19,12 @@ Before posting anything on Slack it's a good idea to first to search to see if t
 
 Here are a few places to start: 
 * Search on Slack using the built-in Slack search function at the top of the page. 
-![search](../assets/misc/slack_search_bar.png)
+![Searching on Slack.](../assets/misc/slack_search_bar.png)
 * Search on [GitHub issues](https://github.com/zenml-io/zenml/issues).
 * Search the [docs](https://docs.zenml.io) using the search bar in the top right corner of the page.
-![search](../assets/misc/doc_search_bar.png)
+![Searching on docs page.](../assets/misc/doc_search_bar.png)
 * Search on https://open.crowd.dev/zenml for issues older than 90 days on our Slack channel.
-![search](../assets/misc/opendev_search_bar.png)
+![Searching on crowd.dev.](../assets/misc/opendev_search_bar.png)
 * Check out the [Common errors](#-common-errors) section below.
 
 Chances are you'd find your answers there.

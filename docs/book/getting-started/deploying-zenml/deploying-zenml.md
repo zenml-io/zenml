@@ -43,7 +43,7 @@ Switching from Scenario 1 to Scenario 2 and back is as simple as running `zenml 
 
 ZenML natively supports running the HTTP server and dashboard either as a process running in the background or as a Docker container. By default, the `zenml up` command starts the HTTP server as a local daemon process that uses the same database configuration as your local client. A URL is provided where the ZenML Dashboard can be loaded to show your available stacks, pipeline runs and team settings among other things. If you need to use Docker containers instead, you can find out more about Docker deployments [here](./docker.md).
 
-![ZenML on with Local HTTP Server](../../assets/getting_started/Scenario2.png)
+![ZenML with Local HTTP Server](../../assets/getting_started/Scenario2.png)
 
 ## Deploying ZenML in the Cloud: Remote Deployment of the HTTP server and Database
 
