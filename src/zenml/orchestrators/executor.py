@@ -15,21 +15,17 @@
 """Classes and functions to execute ZenML steps."""
 
 import inspect
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Type
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
-from zenml.enums import ExecutionStatus
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models.artifact_models import ArtifactRequestModel
-from zenml.models.step_run_models import (
-    StepRunResponseModel,
-    StepRunUpdateModel,
+from zenml.orchestrators.publish_utils import (
+    publish_output_artifacts,
+    publish_successful_step_run,
 )
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
@@ -40,72 +36,10 @@ from zenml.steps.utils import (
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
     from zenml.config.step_configurations import Step
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
-
-
-def publish_output_artifacts(
-    output_artifacts: Dict[str, BaseArtifact]
-) -> Dict[str, "UUID"]:
-    """Publishes the given output artifacts.
-
-    Args:
-        output_artifacts: The output artifacts to register.
-
-    Returns:
-        The IDs of the registered output artifacts.
-
-    Raises:
-        ValueError: If an artifact doesn't have a materializer or data type.
-    """
-    output_artifact_ids = {}
-    for name, artifact_ in output_artifacts.items():
-        if artifact_.materializer is None:
-            raise ValueError(
-                f"Artifact {name} does not have a materializer. "
-                "Please set one before registering."
-            )
-        if artifact_.data_type is None:
-            raise ValueError(
-                f"Artifact {name} does not have a data type. "
-                "Please set one before registering."
-            )
-        artifact_model = ArtifactRequestModel(
-            name=name,
-            type=artifact_.TYPE_NAME,
-            uri=artifact_.uri,
-            materializer=artifact_.materializer,
-            data_type=artifact_.data_type,
-        )
-        artifact_response = Client().zen_store.create_artifact(artifact_model)
-        output_artifact_ids[name] = artifact_response.id
-    return output_artifact_ids
-
-
-def publish_successful_step_run(
-    step_run_id: "UUID", output_artifact_ids: Dict[str, "UUID"]
-) -> StepRunResponseModel:
-    """Publishes a successful step run.
-
-    Args:
-        step_run_id: The ID of the step run to update.
-        output_artifact_ids: The output artifact IDs for the step run.
-
-    Returns:
-        The updated step run.
-    """
-    return Client().zen_store.update_run_step(
-        step_run_id=step_run_id,
-        step_run_update=StepRunUpdateModel(
-            status=ExecutionStatus.COMPLETED,
-            end_time=datetime.now(),
-            output_artifacts=output_artifact_ids,
-        ),
-    )
 
 
 class StepExecutor:
