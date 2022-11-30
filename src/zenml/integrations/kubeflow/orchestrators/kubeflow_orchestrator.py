@@ -798,7 +798,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
                 session_cookie = self._get_session_cookie(
                     username=settings.client_username,
-                    password=self.client_password,
+                    password=settings.client_password,
                 )
                 logger.info(f"Session cookie fetched successfully!")
                 client_args["cookie"] = session_cookie
