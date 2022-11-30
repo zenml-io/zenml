@@ -56,7 +56,6 @@ class GoogleCredentialsMixin(StackComponent):
             A tuple containing the credentials and the project ID associated to
             the credentials.
         """
-        # TODO: Include necessary requirements in integration requirements
         from google.auth import default, load_credentials_from_file
 
         if self.config.service_account_path:
