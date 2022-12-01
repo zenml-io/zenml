@@ -9,14 +9,9 @@ This page documents a series of how-tos for efficient debugging and getting help
 If you stumbled upon this page, chances are you're facing issues with using ZenML.
 This page documents suggestions and best practices to let you debug, get help, and solve issues quickly.
 
-## 🔍 Getting help
-The most direct and quickest path to get help is on our Slack. 
-Join our Slack channel [here](https://zenml.io/slack).
+## 🔷 When to get help?
 
-### 🔷 When to get help?
-Before posting anything on Slack it's a good idea to first to search to see if the issue you're facing already has a solution in place.
-
-Here are a few places to start: 
+We suggest the following before asking for help: 
 * Search on Slack using the built-in Slack search function at the top of the page. 
 ![Searching on Slack.](../assets/misc/slack_search_bar.png)
 * Search on [GitHub issues](https://github.com/zenml-io/zenml/issues).
@@ -28,12 +23,14 @@ Here are a few places to start:
 
 Chances are you'd find your answers there.
 If you can't find any clue, then it's time to post your question on Slack.
+Join our Slack channel [here](https://zenml.io/slack).
 
-### 🎯 How to post on Slack?
+
+## 🎯 How to post on Slack?
 When posting on Slack it's useful to provide the following information (when applicable) so that we get a 
 complete picture before jumping into solutions.
 
-#### 1️⃣ System Information
+### 1️⃣ System Information
 Let us know relevant information about your system.
 We recommend running the following in your terminal and attaching the output to your question.
 
@@ -53,18 +50,18 @@ Integrations: ['airflow', 'graphviz']
 System information provides more context to your issue and also eliminates the need for anyone to ask when they're trying to help.  
 This increases the chances of your question getting answered and saves time for everyone.
 
-#### 2️⃣ What happened?
+### 2️⃣ What happened?
 Tell us briefly:
 * What were you trying to achieve? 
 * What did you expect to happen?
 * What actually happened?
 
-#### 3️⃣ How to reproduce the error?
+### 3️⃣ How to reproduce the error?
 Walk us through how to reproduce the same error you had step-by-step, whenever possible.
 Use the format you prefer. 
 Write it in text or record a video, whichever lets you get the issue at hand across to us!
 
-#### 4️⃣ Relevant log output
+### 4️⃣ Relevant log output
 As a general rule of thumb, always attach relevant log outputs and the full error traceback to help us understand what happened under the hood.
 If the full error traceback does not fit into a text message, attach a file or use a service like [Pastebin](https://pastebin.com/).
 
@@ -80,12 +77,7 @@ Read the next section to find out how.
 
 
 ## 🔄 Additional logs
-
-### 🔷 When?
-The default log is not helpful, ambiguous, or does not point you to the root of the issue. 
-
-### 🎯 How?
-You can toggle the value of the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
+When the default logs are not helpful, ambiguous, or does not point you to the root of the issue, you can toggle the value of the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
 The default value of `ZENML_LOGGING_VERBOSITY` environment variable is:
 
 ```shell
@@ -103,11 +95,8 @@ Read more about how to set environment variables [here](https://linuxize.com/pos
 See [System Environment Variable](../guidelines/system-environmental-variables.md) for more information on other environment variables that affect the behavior of ZenML.
 
 ## 📜 View client and server logs
+When facing a ZenML Server-related issue you can view the logs of the server to introspect deeper.
 
-### 🔷 When?
-Facing a ZenML Server-related issue.
-
-### 🎯 How?
 To see the logs of the local ZenML Server deployment run:
 
 ```shell
