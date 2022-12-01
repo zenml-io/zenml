@@ -253,7 +253,7 @@ def test_remove_attribute_component_non_existent_attributes_fail(
         remove_attribute_command,
         [
             "default",
-            "--something_that_is_not_an_existing_attribute",
+            "something_that_is_not_an_existing_attribute",
         ],
     )
     assert remove_attribute.exit_code != 0
@@ -272,7 +272,7 @@ def test_remove_attribute_component_nonexistent_component_fails(
         remove_attribute_command,
         [
             "some_nonexistent_aria_orchestrator",
-            "--cat-size",
+            "cat-size",
         ],
     )
     assert remove_attribute.exit_code != 0
