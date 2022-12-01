@@ -880,6 +880,21 @@ class KubeflowOrchestrator(BaseOrchestrator):
         logger.info("\n".join(kubeflow_commands))
 
     @property
+    def skip_ui_daemon_provisioning(self) -> bool:
+        """Whether the UI daemon provisioning should be skipped.
+
+        If a hostname is configured, the UI is already accessible using this
+        host and we don't need to port-forward the UI.
+
+        Returns:
+            Whether the UI daemon provisioning should be skipped.
+        """
+        if self.config.kubeflow_hostname:
+            return True
+
+        return self.config.skip_ui_daemon_provisioning
+
+    @property
     def is_provisioned(self) -> bool:
         """Returns if a local k3d cluster for this orchestrator exists.
 
@@ -889,7 +904,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         if not local_deployment_utils.check_prerequisites(
             skip_k3d=self.config.skip_cluster_provisioning or not self.is_local,
             skip_kubectl=self.config.skip_cluster_provisioning
-            and self.config.skip_ui_daemon_provisioning,
+            and self.skip_ui_daemon_provisioning,
         ):
             # if any prerequisites are missing there is certainly no
             # local deployment running
@@ -923,10 +938,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 self.config.skip_cluster_provisioning
                 or not self.is_cluster_running
             )
-            and (
-                self.config.skip_ui_daemon_provisioning
-                or not self.is_daemon_running
-            )
+            and (self.skip_ui_daemon_provisioning or not self.is_daemon_running)
         )
 
     @property
@@ -968,7 +980,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         Returns:
             True if the daemon is running, False otherwise.
         """
-        if self.config.skip_ui_daemon_provisioning:
+        if self.skip_ui_daemon_provisioning:
             return True
 
         if sys.platform != "win32":
@@ -1064,10 +1076,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         if self.config.skip_cluster_provisioning:
             return
 
-        if (
-            not self.config.skip_ui_daemon_provisioning
-            and self.is_daemon_running
-        ):
+        if not self.skip_ui_daemon_provisioning and self.is_daemon_running:
             local_deployment_utils.stop_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path
             )
@@ -1132,10 +1141,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             logger.info("Local kubeflow pipelines deployment not provisioned.")
             return
 
-        if (
-            not self.config.skip_ui_daemon_provisioning
-            and self.is_daemon_running
-        ):
+        if not self.skip_ui_daemon_provisioning and self.is_daemon_running:
             local_deployment_utils.stop_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path
             )
