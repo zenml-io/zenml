@@ -511,48 +511,6 @@ def list_project_pipelines(
     )
 
 
-@router.get(
-    "/{project_name_or_id}" + PIPELINES,
-    response_model=List[PipelineRunResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_runs(
-    project_name_or_id: Union[str, UUID],
-    stack_id: Optional[UUID] = None,
-    run_name: Optional[str] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    component_id: Optional[UUID] = None,
-    pipeline_id: Optional[UUID] = None,
-    unlisted: bool = False,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[PipelineRunResponseModel]:
-    """Get pipeline runs according to query filters.
-
-    Args:
-        project_name_or_id: Name or ID of the project for which to filter runs.
-        stack_id: ID of the stack for which to filter runs.
-        run_name: Filter by run name if provided
-        user_name_or_id: If provided, only return runs for this user.
-        component_id: Filter by ID of a component that was used in the run.
-        pipeline_id: ID of the pipeline for which to filter runs.
-        unlisted: If True, only return unlisted runs that are not
-            associated with any pipeline.
-
-    Returns:
-        The pipeline runs according to query filters.
-    """
-    return zen_store().list_runs(
-        project_name_or_id=project_name_or_id,
-        name=run_name,
-        stack_id=stack_id,
-        component_id=component_id,
-        user_name_or_id=user_name_or_id,
-        pipeline_id=pipeline_id,
-        unlisted=unlisted,
-    )
-
-
 @router.post(
     "/{project_name_or_id}" + PIPELINES,
     response_model=PipelineResponseModel,
@@ -595,6 +553,49 @@ def create_pipeline(
         )
 
     return zen_store().create_pipeline(pipeline=pipeline)
+
+
+
+@router.get(
+    "/{project_name_or_id}" + RUNS,
+    response_model=List[PipelineRunResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_runs(
+    project_name_or_id: Union[str, UUID],
+    stack_id: Optional[UUID] = None,
+    run_name: Optional[str] = None,
+    user_name_or_id: Optional[Union[str, UUID]] = None,
+    component_id: Optional[UUID] = None,
+    pipeline_id: Optional[UUID] = None,
+    unlisted: bool = False,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> List[PipelineRunResponseModel]:
+    """Get pipeline runs according to query filters.
+
+    Args:
+        project_name_or_id: Name or ID of the project for which to filter runs.
+        stack_id: ID of the stack for which to filter runs.
+        run_name: Filter by run name if provided
+        user_name_or_id: If provided, only return runs for this user.
+        component_id: Filter by ID of a component that was used in the run.
+        pipeline_id: ID of the pipeline for which to filter runs.
+        unlisted: If True, only return unlisted runs that are not
+            associated with any pipeline.
+
+    Returns:
+        The pipeline runs according to query filters.
+    """
+    return zen_store().list_runs(
+        project_name_or_id=project_name_or_id,
+        name=run_name,
+        stack_id=stack_id,
+        component_id=component_id,
+        user_name_or_id=user_name_or_id,
+        pipeline_id=pipeline_id,
+        unlisted=unlisted,
+    )
 
 
 @router.post(
