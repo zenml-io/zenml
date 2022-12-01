@@ -42,8 +42,10 @@ class KubeflowOrchestratorSettings(BaseSettings):
             specified on steps.
         timeout: How many seconds to wait for synchronous runs.
         client_args: Arguments to pass when initializing the KFP client.
-        client_username: Username to use for the kubeflow client. To be used together with `client_password`.
-        client_password: Password to use for the kubeflow_client. To be used together with `client_username`.
+        client_username: Username to generate a session cookie for the kubeflow client. Both `client_username`
+        and `client_password` need to be set together.
+        client_password: Password to generate a session cookie for the kubeflow client. Both `client_username`
+        and `client_password` need to be set together.
         user_namespace: The user namespace to use when creating experiments
             and runs.
         node_selectors: Deprecated: Node selectors to apply to KFP pods.
@@ -63,7 +65,17 @@ class KubeflowOrchestratorSettings(BaseSettings):
     pod_settings: Optional[KubernetesPodSettings] = None
 
     @root_validator
-    def _migrate_pod_settings(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_and_migrate_pod_settings(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Validates settings and migrates pod settings from older version.
+
+        Args:
+            values: Dict representing user-specified runtime settings.
+
+        Returns:
+            dict: Validated settings.
+        """
         has_pod_settings = bool(values.get("pod_settings"))
 
         node_selectors = cast(
@@ -121,37 +133,17 @@ class KubeflowOrchestratorSettings(BaseSettings):
             values["node_affinity"] = {}
             values["node_selectors"] = {}
 
+        # Validate username and password for auth cookie logic
+        username = values.get("client_username")
+        password = values.get("client_password")
         client_creds_error = ValueError(
-            "`client_username` and `client_password` both need to be set."
+            "`client_username` and `client_password` both need to be set together."
         )
-        if (
-            values.get("client_username")
-            and values.get("client_password") is None
-        ):
+        if username and password is None:
             raise client_creds_error
-        if (
-            values.get("client_password")
-            and values.get("client_username") is None
-        ):
+        if password and username is None:
             raise client_creds_error
 
-        if values.get("kubeflow_hostname"):
-            if "/pipeline" not in values.get("kubeflow_hostname"):
-                logger.warning(
-                    "It looks like you have specified a `kubeflow_hostname` but it doesn't seem to "
-                    "end with `/pipeline`, which is not usual. Please ensure this is intended."
-                )
-
-            if (
-                values.get("client_username") is None
-                and values.get("client_password") is None
-                and values.get("client_args") is None
-            ):
-                logger.warning(
-                    "You seem to be using a multi-tenant kubeflow stack component but have none of "
-                    "`client_username`, `client_password`, or `client_args` specified. This configuration "
-                    "will most probably result in an error. Please ensure this is intended."
-                )
         return values
 
 

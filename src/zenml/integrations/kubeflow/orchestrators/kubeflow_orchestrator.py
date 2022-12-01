@@ -783,24 +783,18 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         # Handle username and password, ignore the case if one is passed and not the other
         # Also do not attempt to get cookie if cookie is already passed in client_args
-        if (
-            settings.client_username is not None
-            and settings.client_password is not None
-        ):
+        if settings.client_username and settings.client_password:
             # If cookie is already set, then ignore
             if "cookie" in client_args:
                 logger.warning(
                     "Cookie already set in `client_args`, ignoring `client_username` and `client_password`..."
                 )
             else:
-                logger.info(
-                    f"Attempting to fetch session cookie from {self.config.kubeflow_hostname} with supplied username and password..."
-                )
                 session_cookie = self._get_session_cookie(
                     username=settings.client_username,
                     password=settings.client_password,
                 )
-                logger.info("Session cookie fetched successfully!")
+
                 client_args["cookie"] = session_cookie
 
         return kfp.Client(**client_args)
@@ -868,23 +862,47 @@ class KubeflowOrchestrator(BaseOrchestrator):
         return port
 
     def _get_session_cookie(self, username: str, password: str) -> str:
-        session = requests.Session()
-        if (
-            self.config.kubeflow_hostname is None
-            or "/pipeline" not in self.config.kubeflow_hostname
-        ):
+        """Gets session cookie from username and password.
+
+        Args:
+            username: Username for kubeflow host.
+            password: Password for kubeflow host.
+
+        Raises:
+            ValueError: Raised when trying to fetch cookie.
+            RuntimeError: Raised when trying to fetch cookie.
+            RuntimeError: Raised when trying to fetch cookie.
+            ProvisioningError: Raised when trying to fetch cookie.
+            ProvisioningError: Raised when trying to fetch cookie.
+
+        Returns:
+            str: Cookie with the prefix `authsession=`.
+        """
+        if self.config.kubeflow_hostname is None:
             raise ValueError(
                 "You must configure the Kubeflow orchestrator "
-                "with the `kubeflow_hostname` parameter which ends "
+                "with the `kubeflow_hostname` parameter which usually ends "
                 "with `/pipeline` (e.g. `https://mykubeflow.com/pipeline`). "
                 "Please update the current kubeflow orchestrator with: "
                 f"`zenml orchestrator update {self.name} "
                 "--kubeflow_hostname=<MY_KUBEFLOW_HOST>`"
             )
+
+        # Get cookie
+        logger.info(
+            f"Attempting to fetch session cookie from {self.config.kubeflow_hostname} "
+            "with supplied username and password..."
+        )
+        session = requests.Session()
         try:
             response = session.get(self.config.kubeflow_hostname)
             response.raise_for_status()
-        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout,  requests.exceptions.RequestException) as e:
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+        ) as e:
             raise RuntimeError(
                 f"Error while trying to fetch kubeflow cookie: {e}"
             )
@@ -900,8 +918,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
             raise RuntimeError(
                 f"Error while trying to fetch kubeflow cookie: {errh}"
             )
-        raw_cookie = session.cookies.get_dict()
-        return "authservice_session=" + raw_cookie
+        cookie_dict = session.cookies.get_dict()  # type: ignore[no-untyped-call]
+
+        logger.info("Session cookie fetched successfully!")
+
+        return "authservice_session=" + str(cookie_dict["authservice_session"])
 
     def list_manual_setup_steps(
         self, container_registry_name: str, container_registry_path: str
