@@ -10,7 +10,7 @@ If you stumbled upon this page, chances are you're facing issues with using ZenM
 This page documents suggestions and best practices to let you debug, get help, and solve issues quickly.
 
 ## 🔷 When to get help?
-We suggest the going through the following before asking for help: 
+We suggest going through the following before asking for help: 
 
 * Search on Slack using the built-in Slack search function at the top of the page. 
 ![Searching on Slack.](../assets/misc/slack_search_bar.png)
