@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Dict, List
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
-from zenml.logger import get_logger
 from zenml.models.artifact_models import ArtifactRequestModel
 from zenml.models.pipeline_run_models import (
     PipelineRunResponseModel,
@@ -32,9 +31,6 @@ from zenml.models.step_run_models import (
 
 if TYPE_CHECKING:
     from uuid import UUID
-
-
-logger = get_logger(__name__)
 
 
 def publish_output_artifacts(

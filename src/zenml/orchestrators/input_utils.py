@@ -20,9 +20,6 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
 
 
 def resolve_step_inputs(
