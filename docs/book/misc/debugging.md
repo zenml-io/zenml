@@ -6,8 +6,7 @@ description: A guide to debug common issues and get help.
 This page documents a series of how-tos for efficient debugging and getting help without losing your hair.
 
 ## 💡 Introduction
-If you stumbled upon this page, chances are you're facing issues with using ZenML. First, thank you for your interest in ZenML!
-We want to make your journey with ZenML as easy and smooth as possible when faced with issues.
+If you stumbled upon this page, chances are you're facing issues with using ZenML.
 This page documents suggestions and best practices to let you debug, get help, and solve issues quickly.
 
 ## 🔍 Getting help
