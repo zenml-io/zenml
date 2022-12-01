@@ -75,7 +75,7 @@ class KubeflowOrchestratorSettings(BaseSettings):
 
         Returns:
             Validated settings.
-            
+
         Raises:
             AssertionError: If old and new settings are used together.
             ValueError: If username and password are not specified together.
@@ -140,13 +140,11 @@ class KubeflowOrchestratorSettings(BaseSettings):
         # Validate username and password for auth cookie logic
         username = values.get("client_username")
         password = values.get("client_password")
-        client_creds_error = ValueError(
-            "`client_username` and `client_password` both need to be set together."
-        )
+        client_creds_error = "`client_username` and `client_password` both need to be set together."
         if username and password is None:
-            raise client_creds_error
+            raise ValueError(client_creds_error)
         if password and username is None:
-            raise client_creds_error
+            raise ValueError(client_creds_error)
 
         return values
 
