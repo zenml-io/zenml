@@ -873,7 +873,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             self.config.kubeflow_hostname is None
             or "/pipeline" not in self.config.kubeflow_hostname
         ):
-            raise AssertionError(
+            raise ValueError(
                 "You must configure the Kubeflow orchestrator "
                 "with the `kubeflow_hostname` parameter which ends "
                 "with `/pipeline` (e.g. `https://mykubeflow.com/pipeline`). "
