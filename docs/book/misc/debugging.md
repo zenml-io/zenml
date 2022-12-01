@@ -20,6 +20,7 @@ We suggest going through the following before asking for help:
 * Search on https://open.crowd.dev/zenml for issues older than 90 days on our Slack channel.
 ![Searching on crowd.dev.](../assets/misc/opendev_search_bar.png)
 * Check out the [Common errors](#-common-errors) section below.
+* Understand the problem by studying the [additional logs](#-additional-logs) and [client/server logs](#-view-client-and-server-logs).
 
 Chances are you'd find your answers there.
 If you can't find any clue, then it's time to post your question on Slack.
