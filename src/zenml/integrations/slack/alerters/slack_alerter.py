@@ -200,12 +200,12 @@ class SlackAlerter(BaseAlerter):
                     print(f"User {event['user']} approved on slack.")
                     nonlocal approved
                     approved = True
-                    rtm.stop()  # type: ignore
+                    rtm.stop()
 
                 # disapprove request (return False)
                 elif event["text"] in self._get_disapprove_msg_options(params):
                     print(f"User {event['user']} disapproved on slack.")
-                    rtm.stop()  # type:ignore
+                    rtm.stop()
 
         # start another thread until `rtm.stop()` is called in handle()
         rtm.start()

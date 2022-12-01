@@ -92,7 +92,7 @@ def load_model_from_metadata(model_uri: str) -> Any:
     try:
         import torch.nn as nn
 
-        if issubclass(model_class, nn.Module):  # type: ignore
+        if issubclass(model_class, nn.Module):
             model.eval()
     except ImportError:
         pass

@@ -56,7 +56,7 @@ class DeepchecksDataIntegrityCheckStepParameters(BaseParameters):
 class DeepchecksDataIntegrityCheckStep(BaseStep):
     """Deepchecks data integrity validator step."""
 
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         self,
         dataset: pd.DataFrame,
         params: DeepchecksDataIntegrityCheckStepParameters,

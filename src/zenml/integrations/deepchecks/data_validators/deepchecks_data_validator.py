@@ -37,7 +37,7 @@ from deepchecks.vision import Suite as VisionSuite
 from deepchecks.vision import VisionData
 from deepchecks.vision.suites import full_suite as full_vision_suite
 from sklearn.base import ClassifierMixin
-from torch.nn import Module  # type: ignore[attr-defined]
+from torch.nn import Module
 from torch.utils.data.dataloader import DataLoader
 
 from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor

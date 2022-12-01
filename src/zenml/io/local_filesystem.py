@@ -76,7 +76,7 @@ class LocalFilesystem(BaseFilesystem):
                 f"Destination file {str(dst)} already exists and argument "
                 f"`overwrite` is false."
             )
-        shutil.copyfile(src, dst)  # type: ignore[type-var, arg-type]
+        shutil.copyfile(src, dst)
 
     @staticmethod
     def exists(path: PathType) -> bool:

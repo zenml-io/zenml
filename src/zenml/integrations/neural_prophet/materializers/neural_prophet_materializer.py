@@ -50,7 +50,7 @@ class NeuralProphetMaterializer(BaseMaterializer):
         with fileio.open(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
         ) as f:
-            return torch.load(f)  # type: ignore[no-untyped-call]  # noqa
+            return torch.load(f)  # noqa
 
     def handle_return(self, model: NeuralProphet) -> None:
         """Writes a NeuralProphet model.
