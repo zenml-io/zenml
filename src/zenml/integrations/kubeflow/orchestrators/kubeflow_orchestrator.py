@@ -790,7 +790,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             # If cookie is already set, then ignore
             if "cookie" in client_args:
                 logger.warning(
-                    "Cookie already set in `client_args` so ignoring `client_username` and `client_password`..."
+                    "Cookie already set in `client_args`, ignoring `client_username` and `client_password`..."
                 )
             else:
                 logger.info(
