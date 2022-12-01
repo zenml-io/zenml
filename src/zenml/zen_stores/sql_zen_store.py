@@ -102,7 +102,7 @@ from zenml.models import (
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
-    StackFilterModel,
+    StackListModel,
 )
 from zenml.models.page_model import Page
 from zenml.models.base_models import BaseResponseModel
@@ -601,11 +601,11 @@ class SqlZenStore(BaseZenStore):
 
     @classmethod
     def filter_and_paginate(
-            cls,
-            session: Session,
-            query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
-            table: Type[AnySchema],
-            filters: Optional[ListBaseModel] = None,
+        cls,
+        session: Session,
+        query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
+        table: Type[AnySchema],
+        list_model: Optional[ListBaseModel] = None,
     ) -> Page[B]:
         """Given a query, select the range defined in params and return a
         Page instance with a list of Domain Models.
@@ -614,25 +614,22 @@ class SqlZenStore(BaseZenStore):
             session: The SQLModel Session
             query: The query to execute
             table: The table to select from
-            filters: The filters to use, including pagination and sorting
+            list_model: The filters to use, including pagination and sorting
 
         Returns:
             The Domain Model representation of the DB resource
         """
         # Filtering
-        for column, column_filter in filters.dict_of_filters.items():
-            column_filter = Filter.parse_obj(column_filter)
+        for column_filter in list_model.get_filters():
             query = query.where(
-                column_filter.generate_query_condition(
-                    table=table, column=column
-                )
+                column_filter.generate_query_condition(table=table)
             )
 
         # Sorting
-        query = query.order_by(getattr(table, filters.sort_by))
+        query = query.order_by(getattr(table, list_model.sort_by))
 
         # Pagination
-        raw_pagination_params = filters.get_pagination_params()
+        raw_pagination_params = list_model.get_pagination_params()
 
         # Get the total amount of items in the database for a given query
         total = session.scalar(
@@ -657,7 +654,7 @@ class SqlZenStore(BaseZenStore):
         # Convert this page of items from schemas to models
         items: List[B] = [i.to_model() for i in items]
 
-        return Page.create(items, total, total_pages, filters)
+        return Page.create(items, total, total_pages, list_model)
 
     # ====================================
     # ZenML Store interface implementation
@@ -899,12 +896,12 @@ class SqlZenStore(BaseZenStore):
 
     def list_stacks(
         self,
-        stack_filters: StackFilterModel
+        stack_list_model: StackListModel
     ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
-            stack_filters: All filter parameters including pagination params
+            stack_list_model: All filter parameters including pagination params
 
         Returns:
             A list of all stacks matching the filter criteria.
@@ -917,7 +914,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 query=query,
                 table=StackSchema,
-                filters=stack_filters
+                list_model=stack_list_model
             )
             # paged_stacks = Page.paginate(
             #     session=session, query=query, params=stack_filters

@@ -53,7 +53,7 @@ from zenml.models import (
     UserAuthModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, StackFilterModel,
+    UserUpdateModel, StackListModel,
 )
 from zenml.models.page_model import Page
 from zenml.models.filter_models import ListBaseModel
@@ -181,12 +181,12 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stacks(
         self,
-        stack_filters: StackFilterModel
+        stack_list_model: StackListModel
     ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
-            stack_filters: All filter parameters including pagination params
+            stack_list_model: All filter parameters including pagination params
 
 
 

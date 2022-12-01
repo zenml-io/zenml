@@ -116,7 +116,7 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 # ------ #
 
 
-class StackFilterModel(ListBaseModel):
+class StackListModel(ListBaseModel):
 
     is_shared: bool = Query(
         None, description="If the stack is shared or private"
