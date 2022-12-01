@@ -52,7 +52,7 @@ zenml up
 
 ### 🥞 Create the stack with the Neptune experiment tracker component
 
-In order to use an experiment tracking tool like Neptune, you need to create a new `StackCoomponent`,  and 
+In order to use an experiment tracking tool like Neptune, you need to create a new `StackComponent`,  and 
 subsequently a new `Stack` with the type `neptune`. The Neptune tracker stack component has the following options:
 
 * `api_token`: [API key token](https://docs.neptune.ai/setup/setting_api_token) of your Neptune account. If left blank, Neptune will
