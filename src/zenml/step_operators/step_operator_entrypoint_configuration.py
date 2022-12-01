@@ -21,11 +21,7 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
-from zenml.orchestrators.step_launcher import (
-    prepare_input_artifacts,
-    prepare_output_artifacts,
-    resolve_step_inputs,
-)
+from zenml.orchestrators import input_utils, output_utils
 from zenml.orchestrators.step_runner import StepRunner
 
 if TYPE_CHECKING:
@@ -91,13 +87,13 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         )
 
         stack = Client().active_stack
-        input_artifact_ids, _ = resolve_step_inputs(
+        input_artifact_ids, _ = input_utils.resolve_step_inputs(
             step=step, run_id=pipeline_run.id
         )
-        input_artifacts = prepare_input_artifacts(
+        input_artifacts = input_utils.prepare_input_artifacts(
             input_artifact_ids=input_artifact_ids
         )
-        output_artifacts = prepare_output_artifacts(
+        output_artifacts = output_utils.prepare_output_artifacts(
             step_run=step_run, stack=stack, step=step
         )
 

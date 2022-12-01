@@ -13,19 +13,15 @@
 #  permissions and limitations under the License.
 """Class to launch (run directly or using a step operator) steps."""
 
-import os
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple, Type
-from uuid import UUID
+from typing import TYPE_CHECKING, Dict, Tuple
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus
-from zenml.exceptions import InputResolutionError
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
@@ -35,21 +31,25 @@ from zenml.models.step_run_models import (
     StepRunRequestModel,
     StepRunResponseModel,
 )
-from zenml.orchestrators import cache_utils, publish_utils
+from zenml.orchestrators import (
+    cache_utils,
+    input_utils,
+    output_utils,
+    publish_utils,
+)
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
-from zenml.utils import source_utils, string_utils
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
 
 
-def get_step_name_in_pipeline(
+def _get_step_name_in_pipeline(
     step: "Step", deployment: "PipelineDeployment"
 ) -> str:
     """Gets the step name of a step inside a pipeline.
@@ -67,90 +67,7 @@ def get_step_name_in_pipeline(
     return step_name_mapping[step.config.name]
 
 
-def resolve_step_inputs(
-    step: "Step", run_id: UUID
-) -> Tuple[Dict[str, UUID], List[UUID]]:
-    """Resolves inputs for the current step.
-
-    Args:
-        step: The step for which to resolve the inputs.
-        run_id: The ID of the current pipeline run.
-
-    Raises:
-        InputResolutionError: If input resolving failed due to a missing
-            step or output.
-
-    Returns:
-        The IDs of the input artifacts and the IDs of parent steps of the
-        current step.
-    """
-    current_run_steps = {
-        run_step.step.config.name: run_step
-        for run_step in Client().zen_store.list_run_steps(run_id=run_id)
-    }
-
-    input_artifact_ids: Dict[str, UUID] = {}
-    for name, input_ in step.spec.inputs.items():
-        try:
-            step_run = current_run_steps[input_.step_name]
-        except KeyError:
-            raise InputResolutionError(
-                f"No step `{input_.step_name}` found in current run."
-            )
-
-        try:
-            artifact_id = step_run.output_artifacts[input_.output_name]
-        except KeyError:
-            raise InputResolutionError(
-                f"No output `{input_.output_name}` found for step "
-                f"`{input_.step_name}`."
-            )
-
-        input_artifact_ids[name] = artifact_id
-
-    parent_step_ids = [
-        current_run_steps[upstream_step].id
-        for upstream_step in step.spec.upstream_steps
-    ]
-
-    return input_artifact_ids, parent_step_ids
-
-
-def generate_artifact_uri(
-    artifact_store: "BaseArtifactStore",
-    step_run: "StepRunResponseModel",
-    output_name: str,
-) -> str:
-    """Generates a URI for an output artifact.
-
-    Args:
-        artifact_store: The artifact store on which the artifact will be stored.
-        step_run: The step run that created the artifact.
-        output_name: The name of the output in the step run for this artifact.
-
-    Returns:
-        The URI of the output artifact.
-    """
-    return os.path.join(
-        artifact_store.path,
-        step_run.step.config.name,
-        output_name,
-        str(step_run.id),
-    )
-
-
-def remove_artifact_dirs(artifacts: Sequence[BaseArtifact]) -> None:
-    """Removes the artifact directories.
-
-    Args:
-        artifacts: Artifacts for which to remove the directories.
-    """
-    for artifact in artifacts:
-        if fileio.isdir(artifact.uri):
-            fileio.rmtree(artifact.uri)
-
-
-def get_step_operator(
+def _get_step_operator(
     stack: "Stack", step_operator_name: str
 ) -> "BaseStepOperator":
     """Fetches the step operator from the stack.
@@ -181,74 +98,6 @@ def get_step_operator(
         )
 
     return step_operator
-
-
-def prepare_input_artifacts(
-    input_artifact_ids: Dict[str, UUID]
-) -> Dict[str, BaseArtifact]:
-    """Prepares the input artifacts to run the current step.
-
-    Args:
-        input_artifact_ids: IDs of all input artifacts for the step.
-
-    Returns:
-        The input artifacts.
-    """
-    input_artifacts: Dict[str, BaseArtifact] = {}
-    for name, artifact_id in input_artifact_ids.items():
-        artifact_model = Client().zen_store.get_artifact(
-            artifact_id=artifact_id
-        )
-        artifact_ = BaseArtifact(
-            uri=artifact_model.uri,
-            materializer=artifact_model.materializer,
-            data_type=artifact_model.data_type,
-            name=name,
-        )
-        input_artifacts[name] = artifact_
-
-    return input_artifacts
-
-
-def prepare_output_artifacts(
-    step_run: "StepRunResponseModel", stack: "Stack", step: "Step"
-) -> Dict[str, BaseArtifact]:
-    """Prepares the output artifacts to run the current step.
-
-    Args:
-        step_run: The step run for which to prepare the artifacts.
-        stack: The stack on which the pipeline is running.
-        step: The step configuration.
-
-    Raises:
-        RuntimeError: If the artifact URI already exists.
-
-    Returns:
-        The output artifacts.
-    """
-    output_artifacts: Dict[str, BaseArtifact] = {}
-    for name, artifact_config in step.config.outputs.items():
-        artifact_class: Type[
-            BaseArtifact
-        ] = source_utils.load_and_validate_class(
-            artifact_config.artifact_source, expected_class=BaseArtifact
-        )
-        artifact_uri = generate_artifact_uri(
-            artifact_store=stack.artifact_store,
-            step_run=step_run,
-            output_name=name,
-        )
-        if fileio.exists(artifact_uri):
-            raise RuntimeError("Artifact already exists")
-        fileio.makedirs(artifact_uri)
-
-        artifact_ = artifact_class(
-            name=name,
-            uri=artifact_uri,
-        )
-        output_artifacts[name] = artifact_
-
-    return output_artifacts
 
 
 class StepLauncher:
@@ -284,7 +133,7 @@ class StepLauncher:
         self._orchestrator_run_id = orchestrator_run_id
         stack_model = Client().get_stack(deployment.stack_id)
         self._stack = Stack.from_model(stack_model)
-        self._step_name = get_step_name_in_pipeline(
+        self._step_name = _get_step_name_in_pipeline(
             step=step, deployment=deployment
         )
 
@@ -379,7 +228,7 @@ class StepLauncher:
             Tuple that specifies whether the step needs to be executed as
             well as the response model of the registered step run.
         """
-        input_artifact_ids, parent_step_ids = resolve_step_inputs(
+        input_artifact_ids, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step, run_id=step_run.pipeline_run_id
         )
 
@@ -435,10 +284,10 @@ class StepLauncher:
             run_id=pipeline_run.id,
             step_run_id=step_run.id,
         )
-        input_artifacts = prepare_input_artifacts(
+        input_artifacts = input_utils.prepare_input_artifacts(
             input_artifact_ids=step_run.input_artifacts,
         )
-        output_artifacts = prepare_output_artifacts(
+        output_artifacts = output_utils.prepare_output_artifacts(
             step_run=step_run, stack=self._stack, step=self._step
         )
 
@@ -457,7 +306,9 @@ class StepLauncher:
                     output_artifacts=output_artifacts,
                 )
         except:  # noqa: E722
-            remove_artifact_dirs(artifacts=list(output_artifacts.values()))
+            output_utils.remove_artifact_dirs(
+                artifacts=list(output_artifacts.values())
+            )
             raise
 
         duration = time.time() - start_time
@@ -481,7 +332,7 @@ class StepLauncher:
             StepOperatorEntrypointConfiguration,
         )
 
-        step_operator = get_step_operator(
+        step_operator = _get_step_operator(
             stack=self._stack,
             step_operator_name=step_operator_name,
         )
