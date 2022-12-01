@@ -884,21 +884,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
         try:
             response = session.get(self.config.kubeflow_hostname)
             response.raise_for_status()
-        except requests.exceptions.HTTPError as errh:
+        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout,  requests.exceptions.RequestException) as e:
             raise RuntimeError(
-                f"Error while trying to fetch kubeflow cookie: {errh}"
-            )
-        except requests.exceptions.ConnectionError as errc:
-            raise RuntimeError(
-                f"Error while trying to fetch kubeflow cookie: {errc}"
-            )
-        except requests.exceptions.Timeout as errt:
-            raise RuntimeError(
-                f"Error while trying to fetch kubeflow cookie: {errt}"
-            )
-        except requests.exceptions.RequestException as err:
-            raise RuntimeError(
-                f"Error while trying to fetch kubeflow cookie: {err}"
+                f"Error while trying to fetch kubeflow cookie: {e}"
             )
 
         headers = {
