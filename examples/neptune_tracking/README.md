@@ -36,7 +36,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install "zenml[server]"
 
 # install ZenML integrations
-zenml integration install tensorflow sklearn neptune
+zenml integration install tensorflow neptune
 pip install neptune-client[tensorflow-keras]
 
 # pull example

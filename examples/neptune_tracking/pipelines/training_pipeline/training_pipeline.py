@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 
 from zenml.config import DockerSettings
-from zenml.integrations.constants import NEPTUNE, SKLEARN, TENSORFLOW
+from zenml.integrations.constants import TENSORFLOW
 from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(
-    required_integrations=[TENSORFLOW, SKLEARN, NEPTUNE],
+    required_integrations=[TENSORFLOW],
     requirements=["neptune-client[tensorflow-keras]"],
 )
 
