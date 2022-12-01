@@ -74,11 +74,11 @@ class KubeflowOrchestratorSettings(BaseSettings):
             values: Dict representing user-specified runtime settings.
 
         Returns:
-            dict: Validated settings.
+            Validated settings.
             
         Raises:
             AssertionError: If old and new settings are used together.
-            client_creds_error: If username and password are not specified together.
+            ValueError: If username and password are not specified together.
         """
         has_pod_settings = bool(values.get("pod_settings"))
 

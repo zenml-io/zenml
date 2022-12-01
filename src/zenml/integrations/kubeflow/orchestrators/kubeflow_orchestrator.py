@@ -876,17 +876,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
             password: Password for kubeflow host.
 
         Raises:
-            ValueError: Raised when trying to fetch cookie.
-            RuntimeError: Raised when trying to fetch cookie.
-            RuntimeError: Raised when trying to fetch cookie.
-            ProvisioningError: Raised when trying to fetch cookie.
-            ProvisioningError: Raised when trying to fetch cookie.
+            RuntimeError: If the cookie fetching failed.
 
         Returns:
-            str: Cookie with the prefix `authsession=`.
+            Cookie with the prefix `authsession=`.
         """
         if self.config.kubeflow_hostname is None:
-            raise ValueError(
+            raise RuntimeError(
                 "You must configure the Kubeflow orchestrator "
                 "with the `kubeflow_hostname` parameter which usually ends "
                 "with `/pipeline` (e.g. `https://mykubeflow.com/pipeline`). "
