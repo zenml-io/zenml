@@ -90,30 +90,30 @@ def create_role_assignment(
 
 
 @router.get(
-    "/{role_name_or_id}",
+    "/{role_assignment_id}",
     response_model=RoleAssignmentResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_role_assignment(
-    role_assignment_name_or_id: UUID,
+    role_assignment_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> RoleAssignmentResponseModel:
     """Returns a specific role assignment.
 
     Args:
-        role_assignment_name_or_id: Name or ID of the role assignment.
+        role_assignment_id: Name or ID of the role assignment.
 
     Returns:
         A specific role assignment.
     """
     return zen_store().get_role_assignment(
-        role_assignment_id=role_assignment_name_or_id
+        role_assignment_id=role_assignment_id
     )
 
 
 @router.delete(
-    "/{role_name_or_id}",
+    "/{role_assignment_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

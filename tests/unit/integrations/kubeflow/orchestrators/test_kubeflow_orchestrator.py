@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
+from typing import Optional
 from uuid import uuid4
 
 import pytest
@@ -26,12 +27,14 @@ from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.stack import Stack
 
 
-def _get_kubeflow_orchestrator() -> KubeflowOrchestrator:
+def _get_kubeflow_orchestrator(
+    config: Optional[KubeflowOrchestratorConfig] = None,
+) -> KubeflowOrchestrator:
     """Helper function to get a Kubernetes orchestrator."""
     return KubeflowOrchestrator(
         name="",
         id=uuid4(),
-        config=KubeflowOrchestratorConfig(),
+        config=config or KubeflowOrchestratorConfig(),
         flavor="kubeflow",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
@@ -71,3 +74,25 @@ def test_kubeflow_orchestrator_stack_validation(
             artifact_store=local_artifact_store,
             container_registry=local_container_registry,
         ).validate()
+
+
+@pytest.mark.parametrize(
+    "config,skip_ui_daemon_provisioning",
+    [
+        (KubeflowOrchestratorConfig(), False),
+        (
+            KubeflowOrchestratorConfig(
+                kubeflow_hostname="https://arias-kubeflow.com/pipeline"
+            ),
+            True,
+        ),
+        (KubeflowOrchestratorConfig(skip_ui_daemon_provisioning=True), True),
+    ],
+)
+def test_skip_ui_daemon_provisioning(config, skip_ui_daemon_provisioning):
+    """Tests that the UI daemon provisioning is skipped if either set explicitly
+    or when a hostname is specified."""
+    assert (
+        _get_kubeflow_orchestrator(config).skip_ui_daemon_provisioning
+        is skip_ui_daemon_provisioning
+    )
