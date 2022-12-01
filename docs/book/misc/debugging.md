@@ -91,7 +91,13 @@ For example:
 export ZENML_LOGGING_VERBOSITY=DEBUG
 ```
 
-Read more about how to set environment variables [here](https://linuxize.com/post/how-to-set-and-list-environment-variables-in-linux/).
+Read more about how to set environment variables:
+
+* For [Linux](https://linuxize.com/post/how-to-set-and-list-environment-variables-in-linux/).
+* For [macOS](https://youngstone89.medium.com/setting-up-environment-variables-in-mac-os-28e5941c771c).
+* For [Windows](https://www.computerhope.com/issues/ch000549.htm).
+
+
 See [System Environment Variable](../guidelines/system-environmental-variables.md) for more information on other environment variables that affect the behavior of ZenML.
 
 ## 📜 View client and server logs
