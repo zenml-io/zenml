@@ -10,8 +10,8 @@ If you stumbled upon this page, chances are you're facing issues with using ZenM
 This page documents suggestions and best practices to let you debug, get help, and solve issues quickly.
 
 ## 🔷 When to get help?
+We suggest the going through the following before asking for help: 
 
-We suggest the following before asking for help: 
 * Search on Slack using the built-in Slack search function at the top of the page. 
 ![Searching on Slack.](../assets/misc/slack_search_bar.png)
 * Search on [GitHub issues](https://github.com/zenml-io/zenml/issues).
@@ -24,7 +24,6 @@ We suggest the following before asking for help:
 Chances are you'd find your answers there.
 If you can't find any clue, then it's time to post your question on Slack.
 Join our Slack channel [here](https://zenml.io/slack).
-
 
 ## 🎯 How to post on Slack?
 When posting on Slack it's useful to provide the following information (when applicable) so that we get a 
