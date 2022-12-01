@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 import getpass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Callable, TYPE_CHECKING, \
+    Type
 from uuid import UUID
 
 import click
@@ -30,8 +31,12 @@ from zenml.exceptions import (
     ProvisioningError,
     StackExistsError,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.models import StackListModel
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
+
+if TYPE_CHECKING:
+    from zenml.models.filter_models import ListBaseModel
 
 
 # Stacks
@@ -634,21 +639,14 @@ def rename_stack(
 
 
 @stack.command("list")
-@click.option("--just-mine", "-m", is_flag=True, required=False)
-def list_stacks(just_mine: bool = False) -> None:
-    """List all available stacks.
-
-    Args:
-        just_mine: To list only the stacks that the current user has created.
-    """
+@StackListModel.click_list_options()
+def list_stacks(**kwargs) -> None:
+    """List all stacks that fulfill the filter requirements."""
     client = Client()
     with console.status("Listing stacks...\n"):
-        if just_mine:
-            stacks = client.list_stacks(user_name_or_id=client.active_user.id)
-        else:
-            stacks = client.list_stacks()
+        stacks = client.list_stacks(**kwargs)
 
-        print_stacks_table(client, stacks)
+        print_stacks_table(client, stacks.items)
 
 
 @stack.command(

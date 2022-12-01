@@ -14,6 +14,7 @@
 """Client implementation."""
 import os
 from abc import ABCMeta
+from datetime import datetime
 from functools import partial
 from pathlib import Path
 from typing import (
@@ -77,7 +78,7 @@ from zenml.models import (
     TeamUpdateModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, StackListModel,
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
@@ -1487,12 +1488,19 @@ class Client(metaclass=ClientMetaClass):
 
     def list_stacks(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_id: Optional[UUID] = None,
-        name: Optional[str] = None,
+        page: int,
+        size: int,
+        sort_by: str,
+        id: Optional[UUID] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
         is_shared: Optional[bool] = None,
-    ) -> List["StackResponseModel"]:
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        project_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        component_id: Optional[Union[str, UUID]] = None,
+    ) -> Page["StackResponseModel"]:
         """Lists all stacks.
 
         Args:
@@ -1505,16 +1513,21 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of stacks.
         """
-        return self.depaginate(
-            list_command=partial(
-                self.zen_store.list_stacks,
-                project_name_or_id=project_name_or_id or self.active_project.id,
-                user_name_or_id=user_name_or_id,
+        return self.zen_store.list_stacks(
+            StackListModel(
+                page=page,
+                size=size,
+                sort_by=sort_by,
+                project_id=project_id or self.active_project.id,
+                user_id=user_id,
                 component_id=component_id,
                 name=name,
                 is_shared=is_shared,
+                description=description,
+                id=id,
+                created=created,
+                updated=updated)
             )
-        )
 
     @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(self, stack_name_id_or_prefix: Union[str, UUID]) -> None:

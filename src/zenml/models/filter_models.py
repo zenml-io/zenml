@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Type, Dict, TypeVar, List
+from typing import Type, Dict, TypeVar, List, Callable
 from uuid import UUID
 
 from fastapi import Query
@@ -141,3 +141,20 @@ class ListBaseModel(BaseModel):
                         value=value
                     ))
         return values
+
+    @classmethod
+    def click_list_options(cls):
+        import click
+
+        options = list()
+        for k, v in cls.__fields__.items():
+            if k not in ["_list_of_filters"]:
+                options.append(click.option(
+                    f"--{k}", type=v.type_, default=v.default, required=False)
+                )
+
+        def wrapper(function):
+            for option in reversed(options):
+                function = option(function)
+            return function
+        return wrapper

@@ -29,7 +29,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
-    Union,
+    Union, Sequence,
 )
 
 import click
@@ -875,7 +875,7 @@ def get_shared_emoji(is_shared: bool) -> str:
 
 
 def print_stacks_table(
-    client: "Client", stacks: List["StackResponseModel"]
+    client: "Client", stacks: Sequence["StackResponseModel"]
 ) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
