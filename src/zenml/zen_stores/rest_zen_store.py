@@ -108,8 +108,8 @@ from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     ProjectScopedRequestModel,
-    ProjectScopedResponseModel, ListBaseModel,
-)
+    ProjectScopedResponseModel, )
+from zenml.models.filter_models import ListBaseModel
 from zenml.models.page_model import Page
 from zenml.models.server_models import ServerModel
 from zenml.models.team_models import TeamUpdateModel

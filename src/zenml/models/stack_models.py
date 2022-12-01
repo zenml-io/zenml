@@ -25,8 +25,8 @@ from zenml.enums import StackComponentType
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
-    update_model, filter_model, ListBaseModel, Filter,
-)
+    update_model, )
+from zenml.models.filter_models import ListBaseModel
 from zenml.models.component_models import ComponentResponseModel
 
 from zenml.utils.enum_utils import StrEnum

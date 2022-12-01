@@ -54,7 +54,8 @@ from sqlalchemy.orm import noload
 from sqlmodel import Session, func, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
-from zenml.models.base_models import BaseResponseModel, ListBaseModel
+from zenml.models.base_models import BaseResponseModel
+from zenml.models.filter_models import ListBaseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 T = TypeVar("T", bound=BaseSchema)

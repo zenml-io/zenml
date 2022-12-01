@@ -38,9 +38,10 @@ from uuid import UUID
 
 import pymysql
 from pydantic import root_validator
-from sqlalchemy import text
+from sqlalchemy import text, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound, OperationalError
+from sqlalchemy.orm import noload
 from sqlalchemy.sql.operators import is_
 from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
@@ -104,8 +105,8 @@ from zenml.models import (
     StackFilterModel,
 )
 from zenml.models.page_model import Page
-from zenml.models.base_models import ListBaseModel, BaseResponseModel, Filter, \
-    GenericFilterOps
+from zenml.models.base_models import BaseResponseModel
+from zenml.models.filter_models import Filter, ListBaseModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -598,6 +599,66 @@ class SqlZenStore(BaseZenStore):
             raise ValueError("Store not initialized")
         return self._alembic
 
+    @classmethod
+    def filter_and_paginate(
+            cls,
+            session: Session,
+            query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
+            table: Type[AnySchema],
+            filters: Optional[ListBaseModel] = None,
+    ) -> Page[B]:
+        """Given a query, select the range defined in params and return a
+        Page instance with a list of Domain Models.
+
+        Args:
+            session: The SQLModel Session
+            query: The query to execute
+            table: The table to select from
+            filters: The filters to use, including pagination and sorting
+
+        Returns:
+            The Domain Model representation of the DB resource
+        """
+        # Filtering
+        for column, column_filter in filters.dict_of_filters.items():
+            column_filter = Filter.parse_obj(column_filter)
+            query = query.where(
+                column_filter.generate_query_condition(
+                    table=table, column=column
+                )
+            )
+
+        # Sorting
+        query = query.order_by(getattr(table, filters.sort_by))
+
+        # Pagination
+        raw_pagination_params = filters.get_pagination_params()
+
+        # Get the total amount of items in the database for a given query
+        total = session.scalar(
+            select(func.count("*")).select_from(
+                query.order_by(None).options(noload("*")).subquery()
+            )
+        )
+
+        # Get the total amount of pages in the database for a given query
+        total_pages = math.ceil(total / raw_pagination_params.limit)
+
+        # Get a page of the actual data
+        items: List[AnySchema] = (
+            session.exec(
+                query.limit(raw_pagination_params.limit)
+                .offset(raw_pagination_params.offset)
+            )
+            .unique()
+            .all()
+        )
+
+        # Convert this page of items from schemas to models
+        items: List[B] = [i.to_model() for i in items]
+
+        return Page.create(items, total, total_pages, filters)
+
     # ====================================
     # ZenML Store interface implementation
     # ====================================
@@ -862,67 +923,6 @@ class SqlZenStore(BaseZenStore):
             #     session=session, query=query, params=stack_filters
             # )
             return paged_stacks
-
-    @classmethod
-    def filter_and_paginate(
-        cls,
-        session: Session,
-        query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
-        table: Type[AnySchema],
-        filters: Optional[ListBaseModel] = None,
-    ) -> Page[B]:
-        """Given a query, select the range defined in params and return a Page instance with a list of Domain Models.
-
-        Args:
-            session: The SQLModel Session
-            query: The query to execute
-            table: The table to select from
-            filters: The filters to use, including pagination and sorting
-
-        Returns:
-            The Domain Model representation of the DB resource
-        """
-        # Filtering
-        for column, filter in filters.dict_of_filters.items():
-            filter = Filter.parse_obj(filter)
-            if filter.operation == GenericFilterOps.EQUALS:
-                query = query.where(getattr(table, column) == filter.value)
-            elif filter.operation == GenericFilterOps.CONTAINS:
-                query = query.where(getattr(table, column).like(f'%{filter.value}%'))
-            elif filter.operation == GenericFilterOps.GTE:
-                query = query.where(getattr(table, column) >= filter.value)
-            elif filter.operation == GenericFilterOps.GT:
-                query = query.where(getattr(table, column) > filter.value)
-            elif filter.operation == GenericFilterOps.LTE:
-                query = query.where(getattr(table, column) <= filter.value)
-            elif filter.operation == GenericFilterOps.LT:
-                query = query.where(getattr(table, column) < filter.value)
-
-        # Sorting
-        query = query.order_by(getattr(table, filters.sort_by))
-
-        # Pagination
-        raw_pagination_params = filters.get_pagination_params()
-
-        total = session.scalar(
-            select(func.count("*")).select_from(
-                query.order_by(None).options(noload("*")).subquery()
-            )
-        )
-
-        total_pages = math.ceil(total / raw_pagination_params.limit)
-
-        items: List[AnySchema] = (
-            session.exec(
-                query.limit(raw_pagination_params.limit).offset(raw_pagination_params.offset)
-            )
-            .unique()
-            .all()
-        )
-
-        items: List[B] = [i.to_model() for i in items]
-
-        return Page.create(items, total, total_pages, filters)
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(

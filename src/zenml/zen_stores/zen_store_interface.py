@@ -56,7 +56,7 @@ from zenml.models import (
     UserUpdateModel, StackFilterModel,
 )
 from zenml.models.page_model import Page
-from zenml.models.base_models import ListBaseModel
+from zenml.models.filter_models import ListBaseModel
 from zenml.models.server_models import ServerModel
 
 

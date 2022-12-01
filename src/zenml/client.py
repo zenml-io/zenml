@@ -80,7 +80,8 @@ from zenml.models import (
     UserUpdateModel,
 )
 from zenml.models.artifact_models import ArtifactResponseModel
-from zenml.models.base_models import BaseResponseModel, ListBaseModel
+from zenml.models.base_models import BaseResponseModel
+from zenml.models.filter_models import ListBaseModel
 from zenml.models.page_model import Page
 from zenml.models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
