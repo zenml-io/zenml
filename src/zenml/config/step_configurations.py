@@ -83,12 +83,11 @@ class StepConfiguration(PartialStepConfiguration):
         return ResourceSettings.parse_obj(model_or_dict)
 
 
-# TODO: rename
-class OutputSpec(StrictBaseModel):
-    """Step output specification."""
+class InputSpec(StrictBaseModel):
+    """Step input specification."""
 
     step_name: str
-    output_name: str
+    output_name: str  # TODO: This means we can't change the output name anymore without changing the pipeline
 
 
 class StepSpec(StrictBaseModel):
@@ -96,7 +95,7 @@ class StepSpec(StrictBaseModel):
 
     source: str
     upstream_steps: List[str]
-    inputs: Dict[str, OutputSpec]
+    inputs: Dict[str, InputSpec]
 
     @property
     def module_name(self) -> str:

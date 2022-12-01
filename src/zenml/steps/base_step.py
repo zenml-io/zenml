@@ -39,6 +39,7 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.config.step_configurations import (
     ArtifactConfiguration,
+    InputSpec,
     PartialArtifactConfiguration,
     PartialStepConfiguration,
     StepConfiguration,
@@ -258,6 +259,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self.pipeline_parameter_name: Optional[str] = None
         self._has_been_called = False
         self._upstream_steps: Set[str] = set()
+        self._inputs: Dict[str, InputSpec] = {}
 
         kwargs = {**self.INSTANCE_CONFIGURATION, **kwargs}
         name = kwargs.pop(PARAM_STEP_NAME, None) or self.__class__.__name__
@@ -356,6 +358,27 @@ class BaseStep(metaclass=BaseStepMeta):
                 started.
         """
         self._upstream_steps.add(step.name)
+
+    @property
+    def inputs(self) -> Dict[str, InputSpec]:
+        """Step input specifications.
+
+        This depends on the upstream steps in a pipeline and can therefore
+        only be accessed once the step has been called in a pipeline.
+
+        Raises:
+            RuntimeError: If this property is accessed before the step was
+                called in a pipeline.
+
+        Returns:
+            The step input specifications.
+        """
+        if not self._has_been_called:
+            raise RuntimeError(
+                "Step inputs can only be accessed once a step has been called "
+                "inside a pipeline."
+            )
+        return self._inputs
 
     @property
     def caching_parameters(self) -> Dict[str, Any]:
@@ -573,12 +596,9 @@ class BaseStep(metaclass=BaseStepMeta):
             *artifacts, **kw_artifacts
         )
 
-        from zenml.config.step_configurations import OutputSpec
-
-        self._inputs = {}
         for name, input_ in input_artifacts.items():
             self._upstream_steps.add(input_.step_name)
-            self._inputs[name] = OutputSpec(
+            self._inputs[name] = InputSpec(
                 step_name=input_.step_name,
                 output_name=input_.name,
             )

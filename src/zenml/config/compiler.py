@@ -284,7 +284,7 @@ class Compiler:
         return StepSpec(
             source=source_utils.resolve_class(step.__class__),
             upstream_steps=sorted(step.upstream_steps),
-            inputs=step._inputs,
+            inputs=step.inputs,
         )
 
     def _compile_step(
