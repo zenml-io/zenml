@@ -936,10 +936,10 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_runs(
         self,
+        name: Optional[str] = None,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[UUID] = None,
         component_id: Optional[UUID] = None,
-        run_name: Optional[str] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
@@ -947,11 +947,11 @@ class ZenStoreInterface(ABC):
         """Gets all pipeline runs.
 
         Args:
+            name: Run name if provided
             project_name_or_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
             component_id: Optionally filter for runs that used the
                           component
-            run_name: Run name if provided
             user_name_or_id: If provided, only return runs for this user.
             pipeline_id: If provided, only return runs for this pipeline.
             unlisted: If True, only return unlisted runs that are not

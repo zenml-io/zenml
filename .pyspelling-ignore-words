@@ -252,6 +252,7 @@ FV
 FacetStatisticsVisualizer
 FastAPI
 FastaiLearnerMaterializer
+fastparquet
 FeastFeatureStore
 FeastFeatureStoreConfig
 FeastHistoricalFeaturesConfig
@@ -332,6 +333,7 @@ InitializationException
 Initializations
 IntegrationError
 Intitialization
+InvalidExperimentTrackerSelected
 InvalidKeyError
 Istio
 Itemwise
@@ -457,6 +459,7 @@ NOP
 NSJVO
 NUM
 NamedTemporaryFile
+NeptuneCallback
 NeuralProphet
 Ng
 NlNDr
@@ -544,6 +547,7 @@ RIL
 RL
 RedPill
 Reenable
+RemoteServer
 Reproducibility
 RequestSource
 ResourceConfiguration
@@ -556,6 +560,7 @@ RoleAssignment
 RoleBinding
 RoleModel
 Rollouts
+RunProvider
 Runtime
 RuntimeConfiguration
 RuntimeError
@@ -703,6 +708,7 @@ TorchServe's
 TorchServeParameters
 TorchVision
 TrainerConfig
+TrainerParameters
 TypeError
 UI
 UI's
@@ -1240,6 +1246,7 @@ normalizer
 normed
 notodo
 np
+npy
 npz
 ns
 nullable
@@ -1305,6 +1312,7 @@ proxied
 pv
 pwd
 py
+pyarrow
 pydantic
 pyenv
 pylint

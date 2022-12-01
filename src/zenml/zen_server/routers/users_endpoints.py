@@ -329,7 +329,7 @@ def email_opt_in_response(
 
 @router.get(
     "/{user_name_or_id}" + ROLES,
-    response_model=List[RoleAssignmentRequestModel],
+    response_model=List[RoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
