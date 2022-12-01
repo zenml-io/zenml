@@ -12,11 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.config import DockerSettings
+from zenml.integrations.constants import TENSORFLOW
 from zenml.pipelines import pipeline
+
+docker_settings = DockerSettings(
+    required_integrations=[TENSORFLOW],
+    requirements=["neptune-client[tensorflow-keras]"],
+)
 
 
 @pipeline(
     enable_cache=False,
+    settings={"docker": docker_settings},
 )
 def neptune_example_pipeline(
     importer,
