@@ -2488,7 +2488,9 @@ class Client(metaclass=ClientMetaClass):
             The component with the given name.
 
         Raises:
-            KeyError: If no stack with the given name exists.
+            KeyError: If no component with the given name exists.
+            ZenKeyError: If there is more than one component with that name
+                or id prefix.
         """
         # First interpret as full UUID
         if isinstance(name_id_or_prefix, UUID):
@@ -2573,6 +2575,8 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             KeyError: If no entity with the given name exists.
+            ZenKeyError: If there is more than one entity with that name
+                or id prefix.
         """
         # First interpret as full UUID
         if isinstance(name_id_or_prefix, UUID):
