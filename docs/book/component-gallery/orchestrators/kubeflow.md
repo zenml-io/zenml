@@ -291,7 +291,7 @@ zenml orchestrator register <NAME> \
     --kubeflow_hostname=<KUBEFLOW_HOSTNAME> # e.g. https://mykubeflow.example.com/pipeline
 ```
 
-Then, ensure that you use the pass the right settings before triggerling a pipeline run. The following snippet will prove useful:
+Then, ensure that you use the pass the right settings before triggering a pipeline run. The following snippet will prove useful:
 
 ```python
 import requests
