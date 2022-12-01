@@ -714,13 +714,19 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 logger.info(
                     "No schedule detected. Creating a one-off pipeline run.."
                 )
-                result = client.create_run_from_pipeline_package(
-                    pipeline_file_path,
-                    arguments={},
-                    run_name=run_name,
-                    enable_caching=False,
-                    namespace=user_namespace,
-                )
+                try:
+                    result = client.create_run_from_pipeline_package(
+                        pipeline_file_path,
+                        arguments={},
+                        run_name=run_name,
+                        enable_caching=False,
+                        namespace=user_namespace,
+                    )
+                except ApiException as e:
+                    raise RuntimeError(
+                        f"Failed to create {run_name} on kubeflow! Reason: {str(e)}"
+                    )
+
                 logger.info(
                     "Started one-off pipeline run with ID '%s'.", result.run_id
                 )
