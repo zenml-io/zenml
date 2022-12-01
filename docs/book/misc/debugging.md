@@ -77,7 +77,7 @@ Read the next section to find out how.
 
 
 ## 🔄 Additional logs
-When the default logs are not helpful, ambiguous, or does not point you to the root of the issue, you can toggle the value of the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
+When the default logs are not helpful, ambiguous, or do not point you to the root of the issue, you can toggle the value of the `ZENML_LOGGING_VERBOSITY` environment variable to change the type of logs shown.
 The default value of `ZENML_LOGGING_VERBOSITY` environment variable is:
 
 ```shell
