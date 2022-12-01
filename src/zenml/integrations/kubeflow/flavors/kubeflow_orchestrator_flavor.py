@@ -121,7 +121,7 @@ class KubeflowOrchestratorSettings(BaseSettings):
             values["node_affinity"] = {}
             values["node_selectors"] = {}
 
-        client_creds_error = AssertionError(
+        client_creds_error = ValueError(
             "`client_username` and `client_password` both need to be set."
         )
         if (
