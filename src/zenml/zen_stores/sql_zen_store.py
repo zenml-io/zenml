@@ -916,9 +916,6 @@ class SqlZenStore(BaseZenStore):
                 table=StackSchema,
                 list_model=stack_list_model
             )
-            # paged_stacks = Page.paginate(
-            #     session=session, query=query, params=stack_filters
-            # )
             return paged_stacks
 
     @track(AnalyticsEvent.UPDATED_STACK)

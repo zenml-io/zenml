@@ -41,7 +41,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_stacks(
-    filters: StackListModel = Depends(),
+    stack_list_model: StackListModel = Depends(),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -87,7 +87,7 @@ def list_stacks(
     #     )
     #     stacks += shared_stacks
 
-    return zen_store().list_stacks(stack_filters=filters)
+    return zen_store().list_stacks(stack_list_model=stack_list_model)
 
 
 @router.get(

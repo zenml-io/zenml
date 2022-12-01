@@ -125,7 +125,7 @@ class ListBaseModel(BaseModel):
                         values["_list_of_filters"].append(Filter(
                             operation=GenericFilterOps(split_value[0]),
                             column=key,
-                            value=value.lstrip(split_value[1])
+                            value=split_value[1]
                         ))
                     else:
                         #
