@@ -104,7 +104,8 @@ from zenml.models import (
     StackFilterModel,
 )
 from zenml.models.page_model import Page
-from zenml.models.base_models import ListBaseModel, BaseResponseModel, Filter
+from zenml.models.base_models import ListBaseModel, BaseResponseModel, Filter, \
+    GenericFilterOps
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -881,16 +882,21 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The Domain Model representation of the DB resource
         """
-        breakpoint()
         # Filtering
         for column, filter in filters.dict_of_filters.items():
             filter = Filter.parse_obj(filter)
-            if filter.operation == 'equals':
+            if filter.operation == GenericFilterOps.EQUALS:
                 query = query.where(getattr(table, column) == filter.value)
-                logger.warning(f"Filtering Stack by {column} == {filter.value}")
-            elif filter.operation == 'contains':
+            elif filter.operation == GenericFilterOps.CONTAINS:
                 query = query.where(getattr(table, column).like(f'%{filter.value}%'))
-                logger.warning(f"Filtering Stack by {column}.like({filter.value})")
+            elif filter.operation == GenericFilterOps.GTE:
+                query = query.where(getattr(table, column) >= filter.value)
+            elif filter.operation == GenericFilterOps.GT:
+                query = query.where(getattr(table, column) > filter.value)
+            elif filter.operation == GenericFilterOps.LTE:
+                query = query.where(getattr(table, column) <= filter.value)
+            elif filter.operation == GenericFilterOps.LT:
+                query = query.where(getattr(table, column) < filter.value)
 
         # Sorting
         query = query.order_by(getattr(table, filters.sort_by))
