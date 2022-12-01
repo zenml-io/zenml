@@ -372,13 +372,17 @@ class BaseOrchestrator(StackComponent, ABC):
             execution_info = self._execute_step(component_launcher)
         else:
             stack.prepare_step_run(info=step_run_info)
+            step_failed = False
             try:
                 execution_info = self._execute_step(component_launcher)
             except:  # noqa: E722
                 self._publish_failed_run(run_name_or_id=run_model.id)
+                step_failed = True
                 raise
             finally:
-                stack.cleanup_step_run(info=step_run_info)
+                stack.cleanup_step_run(
+                    info=step_run_info, step_failed=step_failed
+                )
 
         return execution_info
 
