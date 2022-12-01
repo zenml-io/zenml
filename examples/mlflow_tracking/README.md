@@ -22,7 +22,7 @@ for details.
 
 In the example script the [mlflow autologger for
 Keras](https://www.mlflow.org/docs/latest/tracking.html#tensorflow-and-keras) is
-used within the training step to directly hook into the TensorFlow training and
+used within the training step to directly hook into the TensorFlow training, and
 it will log out all relevant parameters, metrics and output files. Additionally,
 we explicitly log the test accuracy within the evaluation step.
 

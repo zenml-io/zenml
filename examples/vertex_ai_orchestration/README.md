@@ -9,17 +9,18 @@ for standby compute.
 ## 📄 Pre-requisites
 
 In order to run on Vertex AI you will need to do quite a bit of configuration
-within GCP to create all the required resources. In total, you will need to have 
-a:
+within GCP to create all the required resources. In total, you will need to 
+have:
+
 - [GCP container registry](https://cloud.google.com/container-registry/docs)
 - [GCP bucket](https://cloud.google.com/storage/docs/creating-buckets)
 - [CloudSQL database](https://cloud.google.com/sql/docs/mysql/create-instance)
-- [GCP Secret Manager](https://cloud.google.com/secret-manager). 
+- [GCP Secret Manager](https://cloud.google.com/secret-manager).
 
 Additionally, the [Vertex AI API](https://cloud.google.com/vertex-ai/?hl=en_GB&_ga=2.241201409.-205697788.1651483076)
 needs to be enabled.
 
-On top of having these resources you will also need to do some permission
+On top of having these resources, you will also need to do some permission
 tuning.
 
 First, you will need to authenticate yourself using the
@@ -48,11 +49,11 @@ to use the service account.
 
 ![Grant user access to Service Account](assets/GCP_Service1.png)
 
-## 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
-
-[TODO]
-
 ## 🥞 Create a GCP Kubeflow Pipelines stack
+
+Before registering the stack, you need to deploy a remote ZenML server 
+on GCP. See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml) 
+for more information.
 
 Once everything is done on the GCP side, we will need to configure a
 stack with all of these components.

@@ -39,9 +39,6 @@ cd zenml_examples/tekton_pipelines_orchestration
 
 # Initialize a ZenML repository
 zenml init
-
-# Start the ZenServer to enable dashboard access
-zenml up
 ```
 
 ## 🏃 Run the pipeline **without** tekton pipelines
@@ -68,8 +65,11 @@ python run.py --epochs=10
 
 Now with all the installation and initialization out of the way, all that's left
 to do is configuring our ZenML [stack](https://docs.zenml.io/getting-started/core-concepts). For
-this example, we will use GCP, but any other cloud provider of choice can  be used instead. We require the following infrastructure set up:
+this example, we will use GCP, but any other cloud provider of choice can be used instead. We require the following infrastructure set up:
 
+* A remote ZenML server deployed to the cloud. See the 
+[deployment guide](https://docs.zenml.io/getting-started/deploying-zenml) for
+more information.
 * An existing [GCP container registry](https://cloud.google.com/container-registry/docs).
 * An existing [GCP bucket](https://cloud.google.com/storage/docs/creating-buckets).
 * [Tekton Pipelines](https://tekton.dev/docs/pipelines/install/#installing-tekton-pipelines-on-kubernetes) deployed to a Google 

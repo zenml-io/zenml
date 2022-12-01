@@ -3,9 +3,9 @@
 Both pre- and post-processing are very essential to the model deployment 
 process since the majority of the models require a specific input format 
 which requires transforming the data before it is passed to the model, and 
-after it is returned from the model. with ZenML 0.13 we can now ship the model 
+after it is returned from the model. With ZenML, we can now ship the model 
 with the pre-processing and post-processing code to run within the deployment 
-environment.  The custom code deployment is only supported for the KServe and 
+environment. The custom code deployment is only supported for the KServe and 
 Seldon Core model deployer integrations at the moment.
 
 Note: As this example can be considered an advanced feature of the deployment 
@@ -18,10 +18,9 @@ install and setup each of the deployment integrations.
 
 ## 🗺 Overview
 
-This is a quite extended example that uses the 
-[digits dataset](https://keras.io/api/datasets/mnist/) to train a classifier 
-using both [TensorFlow](https://www.tensorflow.org/) and 
-[PyTorch](https://pytorch.org/). Then it deploys each of the trained models 
+This is a quite extended example that uses the [digits dataset](https://keras.io/api/datasets/mnist/) 
+to train a classifier using both [TensorFlow](https://www.tensorflow.org/) and 
+[PyTorch](https://pytorch.org/). Then, it deploys each of the trained models 
 with the additional pre-processing and post-processing code to both KServe 
 and Seldon Core.
 
@@ -36,7 +35,7 @@ Each of these examples consists of two individual pipelines:
   * a deployment pipeline that implements a deployment workflow. It
   ingests and processes input data, trains a model and then (re)deploys the
   model with extra code to a prediction server that serves the model if it 
-  meets some evaluation criteria
+  meets some evaluation criteria.
   * an inference pipeline that interacts with the prediction server deployed
   by the deployment pipeline to get online predictions based on an image we 
   provide.

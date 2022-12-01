@@ -42,15 +42,27 @@ cd zenml_examples/airflow_orchestration
 
 # Initialize ZenML repo
 zenml init
+```
 
-# Start the ZenServer to enable dashboard access
+
+## 🖥 Run it locally
+
+First, let's begin by spinning up a local ZenServer to enable dashboard access:
+
+```bash
+# Start a local ZenServer
 zenml up
 ```
 
 ### 🥞 Create a new Airflow Stack
 
+Next step is to create the local airflow stack:
+
 ```bash
+# Register the local airflow orchestrator
 zenml orchestrator register local_airflow --flavor=airflow
+
+# Register the stack
 zenml stack register local_airflow \
     -o local_airflow \
     -a default \

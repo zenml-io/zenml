@@ -43,9 +43,9 @@ you have to install Spark following the instructions
 [here](https://spark.apache.org/downloads.html).
 
 #### Recommended versions
+
 - `spark` = 3.2.1
 - `hadoop` = 3.2
-
 
 # Remote ZenML Server
 

@@ -12,8 +12,10 @@ persists the trained `NeuralProphet` model to and from the artifact store.
 Here, we utilize this materializer to train a model to predict the electricity 
 consumption of a hospital.
 
-The data used in this example is available [here](https://colab.research.google.com/github/ourownstory/neural_prophet/blob/main/tutorials/application-example/energy_hospital_load.ipynb#scrollTo=0VKninwPyGl9)
-and the pipeline is loosely based on this [guide](https://neuralprophet.com/notebooks/energy_hospital_load.html) 
+The data used in this example is available 
+[here](https://colab.research.google.com/github/ourownstory/neural_prophet/blob/main/tutorials/application-example/energy_hospital_load.ipynb#scrollTo=0VKninwPyGl9)
+and the pipeline is loosely based on this 
+[guide](https://neuralprophet.com/notebooks/energy_hospital_load.html) 
 from the NeuralProphet documentation.
 
 ## 🖥 Run it locally

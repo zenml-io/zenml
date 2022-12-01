@@ -29,10 +29,12 @@ experiments in `wandb`.
 ### 📄 Prerequisites 
 
 ### Set up a free Weights & Biases account
+
 To get this example running, you need to set up a Weights & Biases account. 
 You can do this for free [here](https://wandb.ai/login?signup=true).
 
 ### Pre-requisites
+
 In order to run this example, you need to install and initialize ZenML:
 
 ```shell
@@ -85,6 +87,7 @@ zenml stack register wandb_stack \
 ```
 
 ### ▶ Run the project
+
 Now we're ready. Execute:
 
 ```shell
@@ -92,11 +95,15 @@ python run.py
 ```
 
 ### 🔮 See results
+
 The results should be available at the URL: https://wandb.ai/{ENTITY_NAME}/{PROJECT_NAME}/runs/
 
-Every step should yield an additional wandb run in the UI. The naming convention of each run is `{pipeline_run_name}_{step_name}` (e.g. `wandb_example_pipeline-25_Apr_22-20_06_33_535737_tf_evaluator`)
+Every step should yield an additional wandb run in the UI. The naming 
+convention of each run is `{pipeline_run_name}_{step_name}` 
+(e.g. `wandb_example_pipeline-25_Apr_22-20_06_33_535737_tf_evaluator`)
 
-Each run in wandb will be tagged with two things: `pipeline_name` and `pipeline_run_name`, which the user can use to group together and filter. 
+Each run in wandb will be tagged with two things: `pipeline_name` and 
+`pipeline_run_name`, which the user can use to group together and filter. 
 
 For example, here are the runs 'raw' and ungrouped:
 
@@ -138,7 +145,8 @@ def my_step(
     ...
 ```
 
-If you want to enable Wandb tracking when using the class-based API, simply configure your step as follows:
+If you want to enable Wandb tracking when using the class-based API, 
+simply configure your step as follows:
 
 ```python
 class MyStep(BaseStep):

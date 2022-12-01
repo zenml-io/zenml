@@ -9,15 +9,12 @@ workloads.
 
 ## 🗺 Overview
 
-Here we train a simple sklearn classifier on the MNIST dataset using one of the 
-three step operators:
+Here, we train a simple sklearn classifier on the MNIST dataset using one of 
+these three step operators:
 
 - AWS Sagemaker
 - GCP Vertex AI
 - Microsoft AzureML
-
-Currently, step operators only work with a local orchestrator but support for
-cloud orchestrators is on the way soon!
 
 # 🖥 Run it locally
 
@@ -41,10 +38,11 @@ cd zenml_examples/step_operator_remote_training
 
 # initialize
 zenml init
-
-# Start the ZenServer to enable dashboard access
-zenml up
 ```
+
+Additionally, you require a remote ZenML server deployed to the cloud. See the 
+[deployment guide](https://docs.zenml.io/getting-started/deploying-zenml) for
+more information.
 
 Each type of step operator has their own prerequisites.
 
@@ -52,8 +50,8 @@ Before running this example, you must set up the individual cloud providers in a
 certain way. The complete guide can be found in
 the [docs](https://docs.zenml.io/component-gallery/step-operators/step-operators).
 
-Please jump to the section applicable to
-the step operator you would like to use:
+Please jump to the section applicable to the step operator you would like to 
+use:
 
 ### 🌿 Sagemaker
 

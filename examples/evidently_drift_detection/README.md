@@ -9,12 +9,14 @@ This example uses [`evidently`](https://github.com/evidentlyai/evidently), a
 useful open-source library to painlessly check for data drift (among other
 features). At its core, Evidently's drift detection takes in a reference data
 set and compares it against another comparison dataset. These are both input in
-the form of a `pandas` dataframe, though CSV inputs are also possible. You can receive these results in the form of a standard dictionary object containing all the relevant information, or as a visualization. We support both outputs.
+the form of a `pandas` dataframe, though CSV inputs are also possible. You can 
+receive these results in the form of a standard dictionary object containing 
+all the relevant information, or as a visualization. We support both outputs.
 
-ZenML implements this functionality in the form of a standard `EvidentlyProfileStep` step.
-You select which of the profile sections you want to use in your step by passing
-a string into the `EvidentlyProfileConfig`. Possible options supported by
-Evidently are:
+ZenML implements this functionality in the form of a standard 
+`EvidentlyProfileStep` step. You select which of the profile sections you want 
+to use in your step by passing a string into the `EvidentlyProfileConfig`. 
+Possible options supported by Evidently are:
 
 - "datadrift"
 - "categoricaltargetdrift"
@@ -96,9 +98,9 @@ zenml up
 
 ### 🥞 Set up your stack for Evidently
 
-You need to have an Evidently Data Validator component to your stack to be able to
-use Evidently data profiling in your ZenML pipelines. Creating such a stack is
-easily accomplished:
+You need to have an Evidently Data Validator component to your stack to be able
+to use Evidently data profiling in your ZenML pipelines. Creating such a stack 
+is easily accomplished:
 
 ```shell
 zenml data-validator register evidently -f evidently

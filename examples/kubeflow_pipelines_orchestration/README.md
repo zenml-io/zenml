@@ -8,8 +8,6 @@ robust environment.
 
 You can also watch a video of this example [here](https://www.youtube.com/watch?v=b5TXRYkdL3w).
 
-# 🖥 Run it locally
-
 ## ⏩ SuperQuick `kubeflow` run
 
 If you're really in a hurry and just want to see this example pipeline run
@@ -20,8 +18,12 @@ configuration steps, just run the following:
 zenml example run kubeflow_pipelines_orchestration
 ```
 
+# 🖥 Run it locally
+
 ## 👣 Step-by-Step
+
 ### 📄 Prerequisites
+
 In order to run this example, we have to install a few tools that allow ZenML to
 spin up a local Kubeflow Pipelines 
 setup:
@@ -221,27 +223,6 @@ in Kubeflow Pipelines. We need to configure it with the right kubernetes
 * Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) 
 your GCP Kubernetes cluster.
 
-### 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
-
-Yes! With [ZenML Stack Recipes](../../docs/book/advanced-guide/practical/stack-recipes.md), 
-you can now provision all the infrastructure you need to run your ZenML 
-pipelines with just a few simple commands. In order to start the flow for 
-this example, you can pull the `gcp-kubeflow-kserve` recipe to your local 
-system through our CLI and deploy it. Learn more about what this recipe does 
-[here](https://github.com/zenml-io/mlops-stacks/tree/main/gcp-kubeflow-kserve).
-
-```shell
-zenml stack recipe pull gcp-kubeflow-kserve
-zenml stack recipe deploy gcp-kubeflow-kserve
-```
-
-You'll notice that a ZenML stack configuration file gets created 🤯! You can 
-run the following command to import the resources as a ZenML stack, manually.
-
-```shell
-zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
-zenml stack set <STACK_NAME>
-```
 
 ### Manually setting up the stack
 
@@ -269,8 +250,6 @@ zenml stack register gcp_kubeflow_stack \
 # Forward the Kubeflow pipelines UI so we can access it locally
 zenml stack up
 ```
-
-
 
 ### ▶️ Run the pipeline
 
