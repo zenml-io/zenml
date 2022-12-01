@@ -722,9 +722,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
                         enable_caching=False,
                         namespace=user_namespace,
                     )
-                except ApiException as e:
+                except ApiException:
                     raise RuntimeError(
-                        f"Failed to create {run_name} on kubeflow! Reason: {str(e)}"
+                        f"Failed to create {run_name} on kubeflow! "
+                        "Please check stack component settings and configuration!"
                     )
 
                 logger.info(
@@ -801,7 +802,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     password=settings.client_password,
                 )
 
-                client_args["cookie"] = session_cookie
+                client_args["cookies"] = session_cookie
 
         return kfp.Client(**client_args)
 
@@ -925,6 +926,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 f"Error while trying to fetch kubeflow cookie: {errh}"
             )
         cookie_dict = session.cookies.get_dict()  # type: ignore[no-untyped-call]
+
+        if "authservice_session" not in cookie_dict:
+            raise RuntimeError("Invalid username and/or password!")
 
         logger.info("Session cookie fetched successfully!")
 
