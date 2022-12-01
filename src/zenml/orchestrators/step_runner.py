@@ -130,6 +130,7 @@ class StepRunner:
                 return_values = step_entrypoint(**function_params)
             except:  # noqa: E722
                 step_failed = True
+                raise
             finally:
                 self._stack.cleanup_step_run(
                     info=step_run_info, step_failed=step_failed
