@@ -263,7 +263,6 @@ def walk(
 
 
 def find_files(dir_path: "PathType", pattern: str) -> Iterable[str]:
-    # TODO [ENG-189]: correct docstring since 'None' is never returned
     """Find files in a directory that match pattern.
 
     Args:
@@ -271,9 +270,9 @@ def find_files(dir_path: "PathType", pattern: str) -> Iterable[str]:
         pattern: pattern like *.png.
 
     Yields:
-         All matching filenames if found, else None.
+         All matching filenames in the directory.
     """
-    for root, dirs, files in walk(dir_path):
+    for root, _, files in walk(dir_path):
         for basename in files:
             if fnmatch.fnmatch(convert_to_str(basename), pattern):
                 filename = os.path.join(
