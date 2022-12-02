@@ -123,15 +123,20 @@ class RunProvider(metaclass=SingletonMetaClass):
         Returns:
             Neptune run object
         """
-        run = neptune.init_run(
-            project=self.project,
-            api_token=self.token,
-            custom_run_id=md5(self.run_name.encode()).hexdigest(),  # type: ignore
-            tags=self.tags,
-        )
-        run[_INTEGRATION_VERSION_KEY] = zenml.__version__
-        self._active_run = run
+        if self._active_run is None:
+            run = neptune.init_run(
+                project=self.project,
+                api_token=self.token,
+                custom_run_id=md5(self.run_name.encode()).hexdigest(),  # type: ignore
+                tags=self.tags,
+            )
+            run[_INTEGRATION_VERSION_KEY] = zenml.__version__
+            self._active_run = run
         return self._active_run
+
+    def reset_active_run(self) -> None:
+        """Resets the active run state to None."""
+        self._active_run = None
 
 
 def get_neptune_run() -> neptune.metadata_containers.Run:

@@ -15,7 +15,6 @@
 
 from typing import TYPE_CHECKING, Any, Optional, Type, cast
 
-from zenml.client import Client
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
@@ -42,26 +41,6 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         """
         super().__init__(*args, **kwargs)
         self.run_state: RunProvider = RunProvider()
-
-    @staticmethod
-    def _is_last_step(info: "StepRunInfo") -> bool:
-        """Check whether the current step is the last step of the pipeline.
-
-        Args:
-            info: Info about the step that was executed.
-
-        Returns:
-            flag whether the current step is the last one in the pipeline
-        """
-        pipeline_name = info.pipeline.name
-        step_name = info.config.name
-        client = Client()
-
-        current_pipeline = client.get_pipeline(pipeline_name)
-        last_step = current_pipeline.spec.steps[-1]
-        last_step_name = last_step.source.split(".")[-1]
-
-        return step_name == last_step_name
 
     @property
     def config(self) -> NeptuneExperimentTrackerConfig:
@@ -99,7 +78,7 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         self.run_state.tags = list(settings.tags)
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
-        """stop the Neptune run.
+        """Stop the Neptune run.
 
         Args:
             info: Info about the step that was executed.
@@ -107,3 +86,4 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         """
         self.run_state.active_run.sync()
         self.run_state.active_run.stop()
+        self.run_state.reset_active_run()
