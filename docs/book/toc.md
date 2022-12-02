@@ -96,6 +96,7 @@
 * [Experiment Trackers](./component-gallery/experiment-trackers/experiment-trackers.md)
   * [MLflow](./component-gallery/experiment-trackers/mlflow.md)
   * [Weights & Biases](./component-gallery/experiment-trackers/wandb.md)
+  * [Neptune](./component-gallery/experiment-trackers/neptune.md)
   * [Develop a Custom Experiment Tracker](./component-gallery/experiment-trackers/custom.md)
 * [Model Deployers](./component-gallery/model-deployers/model-deployers.md)
   * [MLflow](./component-gallery/model-deployers/mlflow.md)
