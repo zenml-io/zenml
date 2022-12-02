@@ -42,8 +42,8 @@ from sqlalchemy import text, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound, OperationalError
 from sqlalchemy.orm import noload
-from sqlalchemy.sql.operators import is_
-from sqlmodel import Session, create_engine, or_, select
+from sqlalchemy.sql.operators import is_, isnot
+from sqlmodel import Session, create_engine, or_, select, and_
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.config.global_config import GlobalConfiguration
@@ -605,7 +605,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
         table: Type[AnySchema],
-        list_model: Optional[ListBaseModel] = None,
+        list_model: ListBaseModel,
     ) -> Page[B]:
         """Given a query, select the range defined in params and return a
         Page instance with a list of Domain Models.
@@ -614,16 +614,13 @@ class SqlZenStore(BaseZenStore):
             session: The SQLModel Session
             query: The query to execute
             table: The table to select from
-            list_model: The filters to use, including pagination and sorting
+            list_model: The filter to use, including pagination and sorting
 
         Returns:
             The Domain Model representation of the DB resource
         """
         # Filtering
-        for column_filter in list_model.get_filters():
-            query = query.where(
-                column_filter.generate_query_condition(table=table)
-            )
+        query = query.where(*list_model.generate_filter(table=table))
 
         # Sorting
         query = query.order_by(getattr(table, list_model.sort_by))
@@ -910,11 +907,12 @@ class SqlZenStore(BaseZenStore):
             # Manually create the query and add any custom clauses
             query = select(StackSchema)
 
+
             paged_stacks = self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=StackSchema,
-                list_model=stack_list_model
+                list_model=stack_list_model,
             )
             return paged_stacks
 

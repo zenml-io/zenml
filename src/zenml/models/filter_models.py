@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Type, Dict, TypeVar, List, Callable
+from typing import Type, Dict, TypeVar, List, Callable, Optional
 from uuid import UUID
 
 from fastapi import Query
@@ -40,7 +40,7 @@ class Filter(BaseModel):
     column: str
     value: str
 
-    def generate_query_condition(
+    def generate_query_conditions(
         self,
         table: Type[SQLModel],
     ):
@@ -77,6 +77,7 @@ class ListBaseModel(BaseModel):
     ```
     """
     _list_of_filters: List[Filter] = []
+
     sort_by: str = Query("created")
 
     page: int = Query(1, ge=1, description="Page number")
@@ -85,15 +86,6 @@ class ListBaseModel(BaseModel):
     id: UUID = Query(None, description="Id for this resource")
     created: datetime = Query(None, description="Created")
     updated: datetime = Query(None, description="Updated")
-
-    def get_pagination_params(self) -> RawParams:
-        return RawParams(
-            limit=self.size,
-            offset=self.size * (self.page - 1),
-        )
-
-    def get_filters(self) -> List[Filter]:
-        return self._list_of_filters
 
     @validator("sort_by", pre=True)
     def sort_column(cls, v):
@@ -138,9 +130,23 @@ class ListBaseModel(BaseModel):
                     values["_list_of_filters"].append(Filter(
                         operation=GenericFilterOps("equals"),
                         column=key,
-                        value=value
+                        value=str(value)
                     ))
         return values
+
+    def get_pagination_params(self) -> RawParams:
+        return RawParams(
+            limit=self.size,
+            offset=self.size * (self.page - 1),
+        )
+
+    def generate_filter(self, table: Type[SQLModel]):
+        ands = []
+        for column_filter in self._list_of_filters:
+            ands.append(column_filter.generate_query_conditions(table=table))
+
+        return ands
+
 
     @classmethod
     def click_list_options(cls):
