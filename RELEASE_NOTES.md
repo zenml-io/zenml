@@ -1,4 +1,11 @@
 <!-- markdown-link-check-disable -->
+# 0.30.0rc0
+
+This pre-release removes the `ml-pipeline-sdk` dependency and adds support for Python 3.10 as well as M1 macs.
+
+**Note**: Installing and using this will migrate your ZenML metadata database
+tables without any way of downgrading to previous releases. Use at your own risk.
+
 # 0.23.0
 
 This release comes with a brand-new Neptune integration to track your ML experiments
