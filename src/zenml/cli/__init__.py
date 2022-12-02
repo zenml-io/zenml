@@ -697,7 +697,7 @@ If you wish to remove an attribute (or multiple attributes) from a stack
 component, use the following command:
 
 ```shell
-zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME --ATTRIBUTE_NAME [--OTHER_ATTRIBUTE_NAME]
+zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME ATTRIBUTE_NAME [OTHER_ATTRIBUTE_NAME]
 ```
 
 Note that you can only remove optional attributes.

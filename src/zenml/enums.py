@@ -116,6 +116,7 @@ class AnnotationTasks(StrEnum):
 
     IMAGE_CLASSIFICATION = "image_classification"
     OBJECT_DETECTION_BOUNDING_BOXES = "object_detection_bounding_boxes"
+    OCR = "optical_character_recognition"
 
 
 class SecretValidationLevel(StrEnum):

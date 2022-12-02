@@ -261,3 +261,23 @@ class SettingsResolvingError(ZenMLBaseException):
 
 class InputResolutionError(ZenMLBaseException):
     """Raised when step input resolving failed."""
+
+
+class ZenKeyError(KeyError):
+    """Specialized key error which allows error messages with line breaks."""
+
+    def __init__(self, message: str) -> None:
+        """Initialization.
+
+        Args:
+            message:str, the error message
+        """
+        self.message = message
+
+    def __str__(self) -> str:
+        """String function.
+
+        Returns:
+            the error message
+        """
+        return self.message

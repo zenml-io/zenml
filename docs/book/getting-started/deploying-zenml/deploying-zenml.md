@@ -66,7 +66,7 @@ the ZenML Dashboard can be loaded to show your available stacks, pipeline runs
 and team settings among other things. If you need to use Docker containers 
 instead, you can find out more about Docker deployments [here](./docker.md).
 
-![ZenML on with Local HTTP Server](../../assets/getting_started/Scenario2.png)
+![ZenML with Local HTTP Server](../../assets/getting_started/Scenario2.png)
 
 ## Deploying ZenML in the Cloud: Remote Deployment of the HTTP server and Database
 
