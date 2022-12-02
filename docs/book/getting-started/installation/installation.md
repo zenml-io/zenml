@@ -21,12 +21,6 @@ ZenML comes bundled with a React-based dashboard that lives inside a [sister rep
 pip install "zenml[server]"
 ```
 
-If you do not have deployed infrastructure, and want to quickly spin up combinations of tools on the cloud, the [MLOps stack sister repository](https://github.com/zenml-io/mlops-stacks) contains a series of Terraform-based recipes to provision such stacks. These recipes can be used directly with ZenML:
-
-```shell
-pip install "zenml[stacks]"
-```
-
 ## Virtual Environments
 
 We highly encourage you to install ZenML in a virtual environment.
