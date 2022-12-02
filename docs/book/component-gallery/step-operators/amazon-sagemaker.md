@@ -40,11 +40,9 @@ your stack. This is needed so that both your orchestration environment
 and SageMaker can read and write step artifacts. Check out the documentation 
 page of the artifact store you want to use for more information on how to set 
 that up and configure authentication for it.
-* A [local orchestrator](../orchestrators/local.md) as part of your stack. 
-This is a current limitation of the SageMaker step operator which will be 
-resolved in an upcoming release.
-* The `aws` cli set up and authenticated. Make sure you have the permissions to 
-create and manage SageMaker runs.
+* If using a [local orchestrator](../orchestrators/local.md): The `aws` cli set up and authenticated. Make sure you have the permissions to create and manage SageMaker runs.
+* If using a remote orchestrator: The environment in which the orchestrator runs its containers needs to be able
+to assume the IAM role specified when registering the SageMaker step operator.
 * An instance type that we want to execute our steps on.
 See [here](https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html)
 for a list of available instance types.

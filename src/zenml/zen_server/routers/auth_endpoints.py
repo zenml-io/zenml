@@ -97,12 +97,15 @@ def token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
     role_assignments = zen_store().list_role_assignments(
         user_name_or_id=auth_context.user.id, project_name_or_id=None
     )
+
     permissions = set().union(
-        *[zen_store().get_role(ra.role).permissions for ra in role_assignments]
+        *[
+            zen_store().get_role(ra.role.id).permissions
+            for ra in role_assignments
+        ]
     )
 
     access_token = auth_context.user.generate_access_token(

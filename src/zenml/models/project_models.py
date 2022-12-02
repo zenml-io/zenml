@@ -11,26 +11,28 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Model definitions for code projects."""
+"""Models representing projects."""
 
 from typing import ClassVar, List
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
-from zenml.models.base_models import DomainModel
+from zenml.models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    update_model,
+)
 from zenml.models.constants import (
     MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,
 )
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class ProjectModel(DomainModel, AnalyticsTrackedModelMixin):
-    """Domain model for projects."""
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "id",
-    ]
+# ---- #
+# BASE #
+# ---- #
+class ProjectBaseModel(BaseModel):
+    """Base model for projects."""
 
     name: str = Field(
         title="The unique name of the project.",
@@ -41,3 +43,33 @@ class ProjectModel(DomainModel, AnalyticsTrackedModelMixin):
         title="The description of the project.",
         max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
+
+
+# -------- #
+# RESPONSE #
+# -------- #
+
+
+class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
+    """Response model for projects."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
+
+
+# ------- #
+# REQUEST #
+# ------- #
+
+
+class ProjectRequestModel(ProjectBaseModel, BaseRequestModel):
+    """Request model for projects."""
+
+
+# ------ #
+# UPDATE #
+# ------ #
+
+
+@update_model
+class ProjectUpdateModel(ProjectRequestModel):
+    """Update model for projects."""

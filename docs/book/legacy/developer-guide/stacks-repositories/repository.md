@@ -224,7 +224,7 @@ stack = Stack(
 )
 
 # Register the new stack
-client.register_stack(stack)
+client.create_stack(stack)
 
 # Set the stack as the active stack of the repository
 client.activate_stack(stack.name)

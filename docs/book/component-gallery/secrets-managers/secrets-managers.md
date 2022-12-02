@@ -15,6 +15,19 @@ You should include a secrets manager in your ZenML stack if any other component
 of your stack requires confidential information (such as authentication 
 credentials) or you want to access secret values inside your pipeline steps.
 
+
+## How they secret managers slot into the stack
+
+Here is an architecture diagram that shows how remote secrets managers fit into
+the overall story of a remote stack. As you can see the secrets manager is 
+accessed from the client-side as well as from the orchestrator/step operator. 
+On the client side the secret manager could be used to resolve credentials for 
+the orchestrator and container registry. Orchestrators and Step Operators can
+also query the secrets manager to get credentials for other stack components, 
+data sources, or other environments.
+
+![Secret Manager](../../assets/diagrams/Remote_with_secrets_manager.png)
+
 ## Secrets Manager Flavors
 
 Out of the box, ZenML comes with a `local` secrets manager that stores secrets 
@@ -162,6 +175,7 @@ specify sensitive configurations for your [stack components](../../starter-guide
 
 Check out the corresponding [documentation page](../../advanced-guide/practical/secrets-management.md)
 for more information.
+
 ## Secret Scopes
 
 Examples of situations in which Secrets Manager scoping can be useful:

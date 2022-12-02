@@ -43,7 +43,7 @@ def get_run_url(
         return ""
 
     url = client.zen_store.url
-    runs = client.zen_store.list_runs(run_name=run_name)
+    runs = client.zen_store.list_runs(name=run_name)
 
     if pipeline_id:
         url += f"/pipelines/{str(pipeline_id)}/runs"

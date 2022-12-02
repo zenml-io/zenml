@@ -76,7 +76,11 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import PipelineRunModel
+from zenml.models import (
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
+    PipelineRunUpdateModel,
+)
 from zenml.orchestrators.utils import get_cache_status
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.utils import proto_utils, source_utils, string_utils, uuid_utils
@@ -368,13 +372,17 @@ class BaseOrchestrator(StackComponent, ABC):
             execution_info = self._execute_step(component_launcher)
         else:
             stack.prepare_step_run(info=step_run_info)
+            step_failed = False
             try:
                 execution_info = self._execute_step(component_launcher)
             except:  # noqa: E722
-                self._publish_failed_run(run_name_or_id=run_model.name)
+                self._publish_failed_run(run_name_or_id=run_model.id)
+                step_failed = True
                 raise
             finally:
-                stack.cleanup_step_run(info=step_run_info)
+                stack.cleanup_step_run(
+                    info=step_run_info, step_failed=step_failed
+                )
 
         return execution_info
 
@@ -433,7 +441,7 @@ class BaseOrchestrator(StackComponent, ABC):
         run_id_seed = f"{self.id}-{orchestrator_run_id}"
         return uuid_utils.generate_uuid_from_string(run_id_seed)
 
-    def _create_or_reuse_run(self) -> PipelineRunModel:
+    def _create_or_reuse_run(self) -> PipelineRunResponseModel:
         """Creates a run or reuses an existing one.
 
         Returns:
@@ -451,14 +459,14 @@ class BaseOrchestrator(StackComponent, ABC):
         logger.debug("Creating run with ID: %s, name: %s", run_id, run_name)
 
         client = Client()
-        run_model = PipelineRunModel(
+        run_model = PipelineRunRequestModel(
             id=run_id,
             name=run_name,
             orchestrator_run_id=orchestrator_run_id,
             user=client.active_user.id,
             project=client.active_project.id,
-            stack_id=self._active_deployment.stack_id,
-            pipeline_id=self._active_deployment.pipeline_id,
+            stack=self._active_deployment.stack_id,
+            pipeline=self._active_deployment.pipeline_id,
             status=ExecutionStatus.RUNNING,
             pipeline_configuration=self._active_deployment.pipeline.dict(),
             num_steps=len(self._active_deployment.steps),
@@ -476,7 +484,10 @@ class BaseOrchestrator(StackComponent, ABC):
         client = Client()
         run = client.zen_store.get_run(run_name_or_id)
         run.status = ExecutionStatus.FAILED
-        client.zen_store.update_run(run)
+        client.zen_store.update_run(
+            run_id=run.id,
+            run_update=PipelineRunUpdateModel(status=ExecutionStatus.FAILED),
+        )
 
     @staticmethod
     def _ensure_artifact_classes_loaded(

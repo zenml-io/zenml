@@ -50,7 +50,7 @@ def test_initializing_a_stack_from_components(
 def test_initializing_a_stack_with_missing_components():
     """Tests that initializing a stack with missing components fails."""
     with pytest.raises(TypeError):
-        Stack.from_components(name="", components={}).validate()
+        Stack.from_components(id=uuid4(), name="", components={}).validate()
 
 
 def test_initializing_a_stack_with_wrong_components(local_orchestrator):
@@ -63,7 +63,9 @@ def test_initializing_a_stack_with_wrong_components(local_orchestrator):
     }
 
     with pytest.raises(TypeError):
-        Stack.from_components(name="", components=components).validate()
+        Stack.from_components(
+            id=uuid4(), name="", components=components
+        ).validate()
 
 
 def test_stack_returns_all_its_components(
@@ -379,3 +381,18 @@ def test_stack_suspending_does_not_fail_if_not_implemented_in_any_component(
 
     with does_not_raise():
         stack_with_mock_components.suspend()
+
+
+def test_stack_provisioning_fails_if_stack_component_validation_fails(
+    stack_with_mock_components, failing_stack_validator
+):
+    """Tests that stack provisioning fails if the `validate()` method of a
+    stack component is failing."""
+    stack_with_mock_components.orchestrator.validator = failing_stack_validator
+    stack_with_mock_components.artifact_store.validator = None
+
+    for component in stack_with_mock_components.components.values():
+        component.is_provisioned = False
+
+    with pytest.raises(StackValidationError):
+        stack_with_mock_components.provision()

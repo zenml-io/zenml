@@ -18,7 +18,6 @@ import pytest
 
 from zenml.client import Client
 from zenml.enums import StackComponentType
-from zenml.models.component_model import ComponentModel
 from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack import StackComponent
@@ -113,15 +112,12 @@ def get_secrets_manager(
         raise RuntimeError(
             f"Secrets manager flavor {flavor} not covered in unit tests"
         )
-    secrets_manager_model = ComponentModel(
+    secrets_manager_model = client.create_stack_component(
         name=name,
-        type=StackComponentType.SECRETS_MANAGER,
+        component_type=StackComponentType.SECRETS_MANAGER,
         flavor=flavor,
         configuration=configuration,
-        user=client.active_user.id,
-        project=client.active_project.id,
     )
-
     return cast(
         BaseSecretsManager,
         StackComponent.from_model(secrets_manager_model),
