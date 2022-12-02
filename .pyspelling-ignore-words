@@ -110,7 +110,6 @@ BentoMLDeploymentService
 BentoMLModelDeployer
 BentoMlDeploymentConfig
 Bentos
-behaviour
 Bing
 Bitbucket
 BluePill
@@ -131,8 +130,8 @@ CheckResult
 CheckpointResult
 ClassVar
 ClassifierMixin
-ClickException
 CliRunner
+ClickException
 CloudSQL
 ClusterRole
 ClusterRoleBinding
@@ -252,7 +251,6 @@ FV
 FacetStatisticsVisualizer
 FastAPI
 FastaiLearnerMaterializer
-fastparquet
 FeastFeatureStore
 FeastFeatureStoreConfig
 FeastHistoricalFeaturesConfig
@@ -332,6 +330,7 @@ Initialization
 InitializationException
 Initializations
 IntegrationError
+IntegrityError
 Intitialization
 InvalidExperimentTrackerSelected
 InvalidKeyError
@@ -599,7 +598,6 @@ SecretSchemas
 SecretsManager
 SecretsManagerReadWrite
 SecretsManagerScope
-selectable
 Seldon
 SeldonClient
 SeldonClientError
@@ -694,6 +692,7 @@ TLS
 TODO
 TPU
 Tekton
+TektonOrchestrator
 TempPathFactory
 TensorBoard
 TensorBoardInfo
@@ -860,6 +859,7 @@ baseclass
 basename
 baz
 bdb
+behaviour
 bento
 bentoctl
 bentoml
@@ -947,6 +947,7 @@ datetime
 dbc
 dct
 de
+debian
 dec
 decodable
 deepchecks
@@ -972,10 +973,12 @@ dir
 dirmatch
 dirs
 distilbert
+distro
 dkr
 dl
 dlerror
 dmatrix
+dnth
 dockerfile
 dockerfiles
 dockerhub
@@ -1014,6 +1017,7 @@ enums
 env
 envSecretRefName
 environ
+envs
 eu
 europe
 eval
@@ -1027,6 +1031,7 @@ fSDFfjklsdfj
 faq
 fastai
 fastapi
+fastparquet
 fc
 fcdb
 fce
@@ -1190,6 +1195,7 @@ logfile
 lr
 luna
 lwm
+macOS
 machinelearning
 macos
 mailto
@@ -1259,6 +1265,7 @@ observability
 odbc
 ondelete
 onerror
+opendev
 openssl
 orch
 orchestr
@@ -1317,6 +1324,7 @@ pyarrow
 pydantic
 pyenv
 pylint
+pymysql
 pypi
 pytest
 pythonic
@@ -1369,6 +1377,7 @@ sdk
 secretmanager
 seldon
 seldonio
+selectable
 sepc
 serializable
 serverCaCert
@@ -1398,6 +1407,7 @@ spmatrix
 sql
 sqladmin
 sqlalche
+sqlalchemy
 sqlite
 sqlmodel
 src
@@ -1465,6 +1475,7 @@ tolist
 topdown
 torch-model-archiver
 torchvision
+tos
 touchpoint
 trac
 traceback
@@ -1472,6 +1483,7 @@ tsv
 ttl
 txt
 uXeJo
+ubuntu
 ui
 uncomment
 unconfigured
@@ -1541,18 +1553,7 @@ zenconfig
 zenfiles
 zenml
 zenmldocker
+zenmlexample
 zenmlregistry
 zenmlserver
 zenserver
-IntegrityError
-debian
-distro
-dnth
-envs
-macOS
-opendev
-pymysql
-sqlalchemy
-tos
-ubuntu
-zenmlexample
