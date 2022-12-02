@@ -768,6 +768,7 @@ ZenBytes
 ZenFiles
 ZenFormatter
 ZenHacks
+ZenKeyError
 ZenML
 ZenML's
 ZenMLCLI
@@ -1543,3 +1544,15 @@ zenmldocker
 zenmlregistry
 zenmlserver
 zenserver
+IntegrityError
+debian
+distro
+dnth
+envs
+macOS
+opendev
+pymysql
+sqlalchemy
+tos
+ubuntu
+zenmlexample
