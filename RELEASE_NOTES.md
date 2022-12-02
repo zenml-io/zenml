@@ -1,7 +1,90 @@
 <!-- markdown-link-check-disable -->
+# 0.23.0
+
+This release comes with a brand-new Neptune integration to track your ML experiments
+as well as lots of performance improvements!
+
+## Neptune integration
+
+The new [Neptune integration](https://github.com/zenml-io/zenml/tree/main/examples/neptune_tracking)
+includes a Neptune experiment tracker component that allows you to track your machine learning experiments
+using Neptune.
+
+## Performance Optimization
+
+The 0.20.0 release introduced our new server but brought with it a few performance and scalability issues.
+Since then we've made many improvements to it, and this release is the final and biggest boost in performance. We reduced the amount of server calls needed for almost all CLI commands and greatly improved the speed of the dashboard as well.
+
+## PyArrow dependency removal
+
+We've removed PyArrow as a dependency of the `zenml` python package.
+As a consequence of that, our NumPy and Pandas materializer no
+longer read and write their artifacts using PyArrow but instead use
+native formats instead. If you still want to use PyArrow to serialize
+your NumPy arrays and Pandas dataframes, you'll need to install it manually
+like this: `pip install pyarrow`
+
+In future releases we'll get rid of other unnecessary dependencies to
+further slim down the `zenml` package.
+
+## Breaking Changes
+
+The following changes introduces with this release mey require some manual
+intervention to update your current installations:
+
+- If your code calls some methods of our `Client` class, it might need to be
+updated to the new model classes introduced by the performance optimization changes
+explained above
+- The CLI command to remove an attribute from a stack component now takes no more dashes
+in front of the attribute names:
+`zenml stack-component remove-attribute <COMPONENT_NAME> <ATTRIBUTE_NAME>`
+- If you're using a custom stack component and have overridden the `cleanup_step_run` method,
+you'll need to update the method signature to include a `step_failed` parameter.
+
+## What's Changed
+* Docs regarding roles and permissions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1081
+* Add global config dir to `zenml status` by @schustmi in https://github.com/zenml-io/zenml/pull/1084
+* Remove  source pins and ignore source pins during step spec comparisons by @schustmi in https://github.com/zenml-io/zenml/pull/1083
+* Docs/links for roles permissions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1091
+* Bugfix/eng 1485 fix api docs build by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1089
+* fix bento builder step parameters to match bentoml by @safoinme in https://github.com/zenml-io/zenml/pull/1096
+* Add bentoctl to BentoML docs and example by @safoinme in https://github.com/zenml-io/zenml/pull/1094
+* Fix BaseParameters sample code in docs by @jcarlosgarcia in https://github.com/zenml-io/zenml/pull/1098
+* zenml <stack-component> logs defaults to active stack without name_or_id by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1101
+* Fixed evidently docs by @htahir1 in https://github.com/zenml-io/zenml/pull/1111
+* Update sagemaker default instance type by @schustmi in https://github.com/zenml-io/zenml/pull/1112
+* The ultimate optimization for performance by @bcdurak in https://github.com/zenml-io/zenml/pull/1077
+* Update stack exporting and importing by @schustmi in https://github.com/zenml-io/zenml/pull/1114
+* Fix readme by @schustmi in https://github.com/zenml-io/zenml/pull/1116
+* Remove Pyarrow dependency by @safoinme in https://github.com/zenml-io/zenml/pull/1109
+* Bugfix for listing the runs filtered by a name by @bcdurak in https://github.com/zenml-io/zenml/pull/1118
+* Neptune.ai integration by @AleksanderWWW in https://github.com/zenml-io/zenml/pull/1082
+* Add YouTube video explaining Stack Components Settings vs Config by @dnth in https://github.com/zenml-io/zenml/pull/1120
+* Add failed Status to component when step fails by @safoinme in https://github.com/zenml-io/zenml/pull/1115
+* Add architecture diagrams to docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1119
+* Remove local orchestrator restriction from step operator docs by @schustmi in https://github.com/zenml-io/zenml/pull/1122
+* Validate Stack Before Provision by @safoinme in https://github.com/zenml-io/zenml/pull/1110
+* Bugfix/fix endpoints for dashboard development by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1125
+* Skip kubeflow UI daemon provisioning if a hostname is configured by @schustmi in https://github.com/zenml-io/zenml/pull/1126
+* Update Neptune Example by @safoinme in https://github.com/zenml-io/zenml/pull/1124
+* Add debugging guide to docs by @dnth in https://github.com/zenml-io/zenml/pull/1097
+* Fix stack component attribute removal CLI command by @schustmi in https://github.com/zenml-io/zenml/pull/1127
+* Improving error messages when fetching entitites by @bcdurak in https://github.com/zenml-io/zenml/pull/1117
+* Introduce username and password to kubeflow for more native multi-tenant support by @htahir1 in https://github.com/zenml-io/zenml/pull/1123
+* Add support for Label Studio OCR config generation by @shivalikasingh95 in https://github.com/zenml-io/zenml/pull/1062
+* Misc doc updates by @schustmi in https://github.com/zenml-io/zenml/pull/1131
+* Fix Neptune run cleanup by @safoinme in https://github.com/zenml-io/zenml/pull/1130
+
+## New Contributors
+* @jcarlosgarcia made their first contribution in https://github.com/zenml-io/zenml/pull/1098
+* @AleksanderWWW made their first contribution in https://github.com/zenml-io/zenml/pull/1082
+* @shivalikasingh95 made their first contribution in https://github.com/zenml-io/zenml/pull/1062
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.22.0...0.23.0
+
 # 0.22.0
 
-This 0.22.0 release comes with a new BentoML integration as well as a reworked
+The 0.22.0 release comes with a new BentoML integration as well as a reworked
 Airflow orchestrator. Additionally, it greatly improves the server performance
 as well as other small fixes and updates to our docs!
 
