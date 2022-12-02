@@ -22,6 +22,7 @@ from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
@@ -41,6 +42,10 @@ class KubeflowOrchestratorSettings(BaseSettings):
             specified on steps.
         timeout: How many seconds to wait for synchronous runs.
         client_args: Arguments to pass when initializing the KFP client.
+        client_username: Username to generate a session cookie for the kubeflow client. Both `client_username`
+        and `client_password` need to be set together.
+        client_password: Password to generate a session cookie for the kubeflow client. Both `client_username`
+        and `client_password` need to be set together.
         user_namespace: The user namespace to use when creating experiments
             and runs.
         node_selectors: Deprecated: Node selectors to apply to KFP pods.
@@ -52,13 +57,29 @@ class KubeflowOrchestratorSettings(BaseSettings):
     timeout: int = 1200
 
     client_args: Dict[str, Any] = {}
+    client_username: Optional[str] = SecretField()
+    client_password: Optional[str] = SecretField()
     user_namespace: Optional[str] = None
     node_selectors: Dict[str, str] = {}
     node_affinity: Dict[str, List[str]] = {}
     pod_settings: Optional[KubernetesPodSettings] = None
 
     @root_validator
-    def _migrate_pod_settings(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_and_migrate_pod_settings(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Validates settings and migrates pod settings from older version.
+
+        Args:
+            values: Dict representing user-specified runtime settings.
+
+        Returns:
+            Validated settings.
+
+        Raises:
+            AssertionError: If old and new settings are used together.
+            ValueError: If username and password are not specified together.
+        """
         has_pod_settings = bool(values.get("pod_settings"))
 
         node_selectors = cast(
@@ -115,6 +136,15 @@ class KubeflowOrchestratorSettings(BaseSettings):
             values["pod_settings"] = pod_settings
             values["node_affinity"] = {}
             values["node_selectors"] = {}
+
+        # Validate username and password for auth cookie logic
+        username = values.get("client_username")
+        password = values.get("client_password")
+        client_creds_error = "`client_username` and `client_password` both need to be set together."
+        if username and password is None:
+            raise ValueError(client_creds_error)
+        if password and username is None:
+            raise ValueError(client_creds_error)
 
         return values
 
