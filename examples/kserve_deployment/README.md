@@ -45,14 +45,14 @@ the number of epochs and learning rate) can be supplied as command-line
 arguments to the `run.py` Python script. 
 
 The example contains four pipelines:
-* `pytorch_training_deployment_pipeline`: trains a classifier using TensorFlow 
+* `tensorflow_training_deployment_pipeline`: trains a classifier using TensorFlow 
 and deploys it to KServe with the TFServing Runtime Server.
+* `tensorflow_inference_pipeline`: runs predictions on the Tensorflow-served 
+models.
+* `pytorch_training_deployment_pipeline`: trains a classifier using 
+PyTorch and deploys it to KServe with TorchServe Runtime Server.
 * `pytorch_inference_pipeline`: run some predictions using the deployed 
 PyTorch model.
-* `tensorflow_training_deployment_pipeline`: trains a classifier using 
-PyTorch and deploys it to KServe with TorchServe Runtime Server.
-* `tensorflow_inference_pipeline`: runs predictions on the Tensorflow served 
-models.
 
 Running the pipelines to train the classifiers and then deploying them to 
 KServe requires preparing them into an exact format that is expected 
