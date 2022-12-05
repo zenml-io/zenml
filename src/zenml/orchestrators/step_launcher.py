@@ -366,8 +366,8 @@ class StepLauncher:
             input_artifacts: The input artifacts of the current step.
             output_artifacts: The output artifacts of the current step.
         """
-        executor = StepRunner(step=self._step, stack=self._stack)
-        executor.run(
+        runner = StepRunner(step=self._step, stack=self._stack)
+        runner.run(
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
             step_run_info=step_run_info,
