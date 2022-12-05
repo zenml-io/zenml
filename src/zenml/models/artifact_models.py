@@ -49,6 +49,8 @@ class ArtifactBaseModel(BaseModel):
 class ArtifactResponseModel(ArtifactBaseModel, BaseResponseModel):
     """Response model for artifacts."""
 
+    producer_step_run_id: Optional[UUID]
+
 
 # ------- #
 # REQUEST #

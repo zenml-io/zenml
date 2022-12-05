@@ -1108,22 +1108,3 @@ class ZenStoreInterface(ABC):
         Returns:
             A list of all artifacts.
         """
-
-    # ------------------------
-    # Internal utility methods
-    # ------------------------
-    @abstractmethod
-    def get_artifact_producer_step(
-        self, artifact_id: UUID
-    ) -> StepRunResponseModel:
-        """Gets the producer step for an artifact.
-
-        Args:
-            artifact_id: The ID of the artifact to get the producer step for.
-
-        Returns:
-            The step run that produced the artifact.
-
-        Raises:
-            KeyError: if the artifact doesn't exist or doesn't have a producer.
-        """

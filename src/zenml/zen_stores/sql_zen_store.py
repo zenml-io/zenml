@@ -3215,8 +3215,8 @@ class SqlZenStore(BaseZenStore):
                 .where(StepRunInputArtifactSchema.step_run_id == step_run_id)
             ).all()
             return {
-                input_artifact[1]: input_artifact[0].to_model()
-                for input_artifact in input_artifacts
+                input_name: self._artifact_schema_to_model(artifact)
+                for (artifact, input_name) in input_artifacts
             }
 
     def get_run_step_output_artifacts(
@@ -3253,8 +3253,8 @@ class SqlZenStore(BaseZenStore):
                 .where(StepRunOutputArtifactSchema.step_run_id == step_run_id)
             ).all()
             return {
-                output_artifact[1]: output_artifact[0].to_model()
-                for output_artifact in output_artifacts
+                output_name: self._artifact_schema_to_model(artifact)
+                for (artifact, output_name) in output_artifacts
             }
 
     # ---------
@@ -3276,7 +3276,37 @@ class SqlZenStore(BaseZenStore):
             artifact_schema = ArtifactSchema.from_request(artifact)
             session.add(artifact_schema)
             session.commit()
-            return artifact_schema.to_model()
+            return self._artifact_schema_to_model(artifact_schema)
+
+    def _artifact_schema_to_model(
+        self, artifact_schema: ArtifactSchema
+    ) -> ArtifactResponseModel:
+        """Converts an artifact schema to a model.
+
+        Args:
+            artifact_schema: The artifact schema to convert.
+
+        Returns:
+            The converted artifact model.
+        """
+        # Find the producer step run ID.
+        with Session(self.engine) as session:
+            producer_step_run_id = session.exec(
+                select(StepRunOutputArtifactSchema.step_run_id)
+                .where(
+                    StepRunOutputArtifactSchema.artifact_id
+                    == artifact_schema.id
+                )
+                .where(
+                    StepRunOutputArtifactSchema.step_run_id == StepRunSchema.id
+                )
+                .where(StepRunSchema.status != ExecutionStatus.CACHED)
+            ).first()
+
+            # Convert the artifact schema to a model.
+            return artifact_schema.to_model(
+                producer_step_run_id=producer_step_run_id
+            )
 
     def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
         """Gets an artifact.
@@ -3299,7 +3329,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get artifact with ID {artifact_id}: "
                     f"No artifact with this ID found."
                 )
-            return artifact.to_model()
+            return self._artifact_schema_to_model(artifact)
 
     def list_artifacts(
         self,
@@ -3319,37 +3349,10 @@ class SqlZenStore(BaseZenStore):
             if artifact_uri is not None:
                 query = query.where(ArtifactSchema.uri == artifact_uri)
             artifacts = session.exec(query).all()
-            return [artifact.to_model() for artifact in artifacts]
-
-    def get_artifact_producer_step(
-        self, artifact_id: UUID
-    ) -> StepRunResponseModel:
-        """Gets the producer step for an artifact.
-
-        Args:
-            artifact_id: The ID of the artifact to get the producer step for.
-
-        Returns:
-            The step run that produced the artifact.
-
-        Raises:
-            KeyError: if the artifact doesn't exist or doesn't have a producer.
-        """
-        with Session(self.engine) as session:
-            output_artifact = session.exec(
-                select(StepRunOutputArtifactSchema)
-                .where(StepRunOutputArtifactSchema.artifact_id == artifact_id)
-                .where(
-                    StepRunOutputArtifactSchema.step_run_id == StepRunSchema.id
-                )
-                .where(StepRunSchema.status != ExecutionStatus.CACHED)
-            ).first()
-            if output_artifact is None:
-                raise KeyError(
-                    f"No producer step found for artifact with ID "
-                    f"{artifact_id}."
-                )
-            return self.get_run_step(output_artifact.step_run_id)
+            return [
+                self._artifact_schema_to_model(artifact)
+                for artifact in artifacts
+            ]
 
     # =======================
     # Internal helper methods

@@ -47,7 +47,6 @@ from zenml.constants import (
     LOGIN,
     OUTPUTS,
     PIPELINES,
-    PRODUCER_STEP,
     PROJECTS,
     ROLE_ASSIGNMENTS,
     ROLES,
@@ -1459,27 +1458,6 @@ class RestZenStore(BaseZenStore):
             response_model=ArtifactResponseModel,
             **filters,
         )
-
-    def get_artifact_producer_step(
-        self, artifact_id: UUID
-    ) -> StepRunResponseModel:
-        """Gets the producer step for an artifact.
-
-        Args:
-            artifact_id: The ID of the artifact to get the producer step for.
-
-        Returns:
-            The step run that produced the artifact.
-
-        Raises:
-            ValueError: if the response from the API is not a dict.
-        """
-        body = self.get(f"{ARTIFACTS}/{str(artifact_id)}{PRODUCER_STEP}")
-        if not isinstance(body, dict):
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
-        return StepRunResponseModel.parse_obj(body)
 
     # =======================
     # Internal helper methods

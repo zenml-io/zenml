@@ -69,8 +69,14 @@ class ArtifactSchema(NamedSchema, table=True):
             data_type=artifact_request.data_type,
         )
 
-    def to_model(self) -> ArtifactResponseModel:
+    def to_model(
+        self, producer_step_run_id: Optional[UUID]
+    ) -> ArtifactResponseModel:
         """Convert an `ArtifactSchema` to an `ArtifactModel`.
+
+        Args:
+            producer_step_run_id: The ID of the step run that produced this
+                artifact.
 
         Returns:
             The created `ArtifactModel`.
@@ -85,4 +91,5 @@ class ArtifactSchema(NamedSchema, table=True):
             data_type=self.data_type,
             created=self.created,
             updated=self.updated,
+            producer_step_run_id=producer_step_run_id,
         )
