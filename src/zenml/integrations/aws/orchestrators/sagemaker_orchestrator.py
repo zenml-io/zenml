@@ -11,3 +11,30 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the SageMaker orchestrator."""
+
+from typing import TYPE_CHECKING, Any
+
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+
+if TYPE_CHECKING:
+    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.stack import Stack
+
+
+class SageMakerOrchestrator(BaseOrchestrator):
+    """Orchestrator responsible for running pipelines on Sagemaker."""
+
+    def prepare_or_run_pipeline(
+        self, deployment: "PipelineDeployment", stack: "Stack"
+    ) -> Any:
+        """Prepares or runs a pipeline on Sagemaker.
+
+        Args:
+            deployment: The deployment to prepare or run.
+            stack: The stack to run on.
+
+        Returns:
+            The result of the pipeline run.
+        """
+        raise NotImplementedError
