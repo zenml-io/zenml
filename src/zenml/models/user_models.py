@@ -29,7 +29,11 @@ from zenml.models.base_models import (
     BaseResponseModel,
     update_model,
 )
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.models.constants import (
+    MODEL_NAME_FIELD_MAX_LENGTH,
+    USER_ACTIVATION_TOKEN_LENGTH,
+    USER_PASSWORD_MAX_LENGTH,
+)
 from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
@@ -430,8 +434,14 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
 
-    password: Optional[str] = Field(default=None)
-    activation_token: Optional[str] = Field(default=None)
+    password: Optional[str] = Field(
+        default=None,
+        title="A password for the user.",
+        max_length=USER_PASSWORD_MAX_LENGTH,
+    )
+    activation_token: Optional[str] = Field(
+        default=None, max_length=USER_ACTIVATION_TOKEN_LENGTH
+    )
 
     class Config:
         """Pydantic configuration class."""

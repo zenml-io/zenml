@@ -16,13 +16,18 @@
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from zenml.enums import ArtifactType
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     update_model,
+)
+from zenml.models.constants import (
+    MODEL_METADATA_FIELD_MAX_LENGTH,
+    MODEL_NAME_FIELD_MAX_LENGTH,
+    MODEL_URI_FIELD_MAX_LENGTH,
 )
 
 # ---- #
@@ -33,15 +38,26 @@ from zenml.models.base_models import (
 class ArtifactBaseModel(BaseModel):
     """Base model for artifacts."""
 
-    name: str  # Name of the output in the parent step
+    name: str = Field(
+        title="Name of the output in the parent step.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
 
     parent_step_id: UUID
     producer_step_id: UUID
 
     type: ArtifactType
-    uri: str
-    materializer: str
-    data_type: str
+    uri: str = Field(
+        title="URI of the artifact.", max_length=MODEL_URI_FIELD_MAX_LENGTH
+    )
+    materializer: str = Field(
+        title="Materializer class to use for this artifact.",
+        max_length=MODEL_METADATA_FIELD_MAX_LENGTH,
+    )
+    data_type: str = Field(
+        title="Data type of the artifact.",
+        max_length=MODEL_METADATA_FIELD_MAX_LENGTH,
+    )
     is_cached: bool
 
     # IDs in MLMD - needed for some metadata store methods

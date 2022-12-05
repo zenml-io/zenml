@@ -24,7 +24,10 @@ from zenml.models.base_models import (
     BaseResponseModel,
     update_model,
 )
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.models.constants import (
+    MODEL_DOCSTRING_FIELD_MAX_LENGTH,
+    MODEL_NAME_FIELD_MAX_LENGTH,
+)
 
 # ---- #
 # BASE #
@@ -43,10 +46,16 @@ class StepRunBaseModel(BaseModel):
     input_artifacts: Dict[str, UUID]
     status: ExecutionStatus
 
-    entrypoint_name: str
+    entrypoint_name: str = Field(
+        title="The entrypoint name of the step.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
     parameters: Dict[str, str]
     step_configuration: Dict[str, Any]
-    docstring: Optional[str]
+    docstring: Optional[str] = Field(
+        title="The docstring of the step run.",
+        max_length=MODEL_DOCSTRING_FIELD_MAX_LENGTH,
+    )
     num_outputs: Optional[int]
 
     # IDs in MLMD - needed for some metadata store methods
