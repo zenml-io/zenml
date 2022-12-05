@@ -663,6 +663,8 @@ class Stack:
 
         Raises:
             StackValidationError: If the stack component is not running.
+            RuntimeError: If trying to deploy a pipeline that requires a remote
+                ZenML server with a local one.
         """
         self.validate(fail_if_secrets_missing=True)
 
