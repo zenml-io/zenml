@@ -331,13 +331,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         else:
             self._pipeline_root = self.config.pipeline_root
 
-        if deployment.schedule:
-            logger.warning(
-                "Pipeline scheduling configuration was provided, but Vertex "
-                "AI Pipelines does not support scheduling yet. Creating "
-                "a one-time run instead."
-            )
-
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         def _construct_kfp_pipeline() -> None:
@@ -429,15 +422,46 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             VertexOrchestratorSettings, self.get_settings(deployment)
         )
 
-        # Using the Google Cloud AIPlatform client, upload and execute the
-        # pipeline
-        # on the Vertex AI Pipelines service.
-        self._upload_and_run_pipeline(
-            pipeline_name=deployment.pipeline.name,
-            pipeline_file_path=pipeline_file_path,
-            run_name=orchestrator_run_name,
-            settings=settings,
-        )
+        if deployment.schedule:
+            logger.info("Scheduling job using Google Cloud Scheduler...")
+
+            # Create a google cloud function
+            # Create a scheduler
+            from zenml.integrations.gcp.google_cloud_function import (
+                create_cloud_function,
+            )
+            from zenml.integrations.gcp.google_cloud_scheduler import (
+                create_scheduler_job,
+            )
+            from zenml.integrations.gcp.orchestrators import vertex_scheduler
+
+            directory_path = vertex_scheduler.__path__[0]
+
+            function_uri = create_cloud_function(
+                project=self.config.project,
+                location=self.config.location,
+                function_name=f"{deployment.pipeline.name}",
+                directory_path=directory_path,
+            )
+            create_scheduler_job(
+                project=self.config.project,
+                region=self.config.location,
+                http_uri=function_uri,
+                body=body,
+                schedule=deployment.schedule.cron_expression,
+            )
+
+        else:
+            logger.info("No schedule detected. Creating one-off vertex job...")
+            # Using the Google Cloud AIPlatform client, upload and execute the
+            # pipeline
+            # on the Vertex AI Pipelines service.
+            self._upload_and_run_pipeline(
+                pipeline_name=deployment.pipeline.name,
+                pipeline_file_path=pipeline_file_path,
+                run_name=orchestrator_run_name,
+                settings=settings,
+            )
 
     def _upload_and_run_pipeline(
         self,
