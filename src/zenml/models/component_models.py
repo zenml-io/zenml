@@ -25,7 +25,6 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import (
-    MODEL_CONFIG_SCHEMA_MAX_LENGTH,
     MODEL_METADATA_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,
 )
@@ -55,7 +54,6 @@ class ComponentBaseModel(BaseModel):
 
     configuration: Dict[str, Any] = Field(
         title="The stack component configuration.",
-        max_length=MODEL_CONFIG_SCHEMA_MAX_LENGTH,
     )
 
 
