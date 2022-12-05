@@ -101,9 +101,17 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     multiple=True,
     help="List of integrations to ignore explicitly.",
 )
+@click.option(
+    "--output-file",
+    "-o",
+    "output_file",
+    type=str,
+    required=False,
+)
 def export_requirements(
     integrations: Tuple[str],
     ignore_integration: Tuple[str],
+    output_file: Optional[str] = None,
 ) -> None:
     """Exports integration requirements so they can be installed using pip.
 
@@ -111,6 +119,7 @@ def export_requirements(
         integrations: The name of the integration to install the requirements
             for.
         ignore_integration: List of integrations to ignore explicitly.
+        output_file: Optional path to the requirements output file.
     """
     from zenml.integrations.registry import integration_registry
 
@@ -137,7 +146,11 @@ def export_requirements(
         except KeyError:
             error(f"Unable to find integration '{integration_name}'.")
 
-    click.echo(" ".join(requirements), nl=False)
+    if output_file:
+        with open(output_file, "x") as f:
+            f.write("\n".join(requirements))
+    else:
+        click.echo(" ".join(requirements), nl=False)
 
 
 @integration.command(
