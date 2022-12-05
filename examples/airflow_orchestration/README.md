@@ -137,7 +137,7 @@ In the remote case, the Airflow orchestrator works different than other ZenML or
 Calling `python run.py` will not actually run the pipeline, but instead will create a
 `.zip` file containing an Airflow representation of your ZenML pipeline.
 In one additional step, you need to make sure this zip file ends up in the
-[DAGs directoy](https://airflow.apache.org/docs/apache-airflow/stable/concepts/overview.html#architecture-overview)
+[DAGs directory](https://airflow.apache.org/docs/apache-airflow/stable/concepts/overview.html#architecture-overview)
 of your Airflow deployment.
 
 # 📜 Learn more
