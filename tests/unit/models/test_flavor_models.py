@@ -14,8 +14,6 @@
 
 
 import pytest
-from hypothesis import given
-from hypothesis.strategies import text
 from pydantic import ValidationError
 
 from zenml.enums import StackComponentType
@@ -28,12 +26,12 @@ from zenml.models.constants import (
 from zenml.models.flavor_models import FlavorBaseModel
 
 
-@given(text(min_size=MODEL_NAME_FIELD_MAX_LENGTH + 1))
-def test_flavor_base_model_fails_with_long_name(generated_name):
+def test_flavor_base_model_fails_with_long_name():
     """Test that the flavor base model fails with long names."""
+    long_name = "a" * (MODEL_NAME_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
         FlavorBaseModel(
-            name=generated_name,
+            name=long_name,
             type=StackComponentType.ANNOTATOR,
             config_schema="",
             source="",

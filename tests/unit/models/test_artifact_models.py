@@ -15,8 +15,6 @@
 from uuid import UUID
 
 import pytest
-from hypothesis import given
-from hypothesis.strategies import text
 from pydantic import ValidationError
 
 from zenml.enums import ArtifactType
@@ -30,12 +28,12 @@ from zenml.models.constants import (
 UUID_BASE_STRING = "00000000-0000-0000-0000-000000000000"
 
 
-@given(text(min_size=MODEL_NAME_FIELD_MAX_LENGTH + 1))
-def test_artifact_base_model_fails_with_long_name(artifact_name):
+def test_artifact_base_model_fails_with_long_name():
     """Test that the artifact base model fails with long strings."""
     with pytest.raises(ValidationError):
+        long_name = "a" * (MODEL_NAME_FIELD_MAX_LENGTH + 1)
         ArtifactBaseModel(
-            name=artifact_name,
+            name=long_name,
             parent_step_id=UUID(UUID_BASE_STRING),
             producer_step_id=UUID(UUID_BASE_STRING),
             type=ArtifactType.DATA,
@@ -62,26 +60,26 @@ def test_artifact_base_model_fails_with_long_uri():
         )
 
 
-@given(text(min_size=MODEL_METADATA_FIELD_MAX_LENGTH + 1))
-def test_artifact_base_model_fails_with_long_materializer(materializer_string):
+def test_artifact_base_model_fails_with_long_materializer():
     """Test that the artifact base model fails with long materializer strings."""
     with pytest.raises(ValidationError):
+        long_materializer = "a" * (MODEL_METADATA_FIELD_MAX_LENGTH + 1)
         ArtifactBaseModel(
             name="abc",
             parent_step_id=UUID(UUID_BASE_STRING),
             producer_step_id=UUID(UUID_BASE_STRING),
             type=ArtifactType.DATA,
             uri="abc",
-            materializer=materializer_string,
+            materializer=long_materializer,
             data_type="abc",
             is_cached=False,
         )
 
 
-@given(text(min_size=MODEL_METADATA_FIELD_MAX_LENGTH + 1))
-def test_artifact_base_model_fails_with_long_data_type(data_type):
+def test_artifact_base_model_fails_with_long_data_type():
     """Test that the artifact base model fails with long data type strings."""
     with pytest.raises(ValidationError):
+        long_data_type = "a" * (MODEL_METADATA_FIELD_MAX_LENGTH + 1)
         ArtifactBaseModel(
             name="abc",
             parent_step_id=UUID(UUID_BASE_STRING),
@@ -89,6 +87,6 @@ def test_artifact_base_model_fails_with_long_data_type(data_type):
             type=ArtifactType.DATA,
             uri="abc",
             materializer="abc",
-            data_type=data_type,
+            data_type=long_data_type,
             is_cached=False,
         )
