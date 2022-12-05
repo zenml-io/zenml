@@ -378,8 +378,6 @@ def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
 
         return analytics.identify(traits=user_metadata)
 
-    return False
-
 
 def identify_group(
     group: Union[str, AnalyticsGroup],
@@ -399,8 +397,6 @@ def identify_group(
     with AnalyticsContext() as analytics:
         return analytics.group(group, group_id, traits=group_metadata)
 
-    return False
-
 
 def track_event(
     event: Union[str, AnalyticsEvent],
@@ -417,8 +413,6 @@ def track_event(
     """
     with AnalyticsContext() as analytics:
         return analytics.track(event, metadata)
-
-    return False
 
 
 def parametrized(
@@ -553,7 +547,6 @@ def track(
         Decorated function.
     """
     event_name = event or func.__name__  # default to name of function
-    metadata: Dict[str, Any] = {}
 
     def inner_func(*args: Any, **kwargs: Any) -> Any:
         """Inner decorator function.
@@ -565,24 +558,53 @@ def track(
         Returns:
             Result of the function.
         """
-        result = func(*args, **kwargs)
-        try:
-            tracker: Optional[AnalyticsTrackerMixin] = None
-            if len(args) and isinstance(args[0], AnalyticsTrackerMixin):
-                tracker = args[0]
-            for obj in [result] + list(args) + list(kwargs.values()):
-                if isinstance(obj, AnalyticsTrackedModelMixin):
-                    obj.track_event(event_name, tracker=tracker)
-                    break
-            else:
-                if tracker:
-                    tracker.track_event(event_name, metadata)
-                else:
-                    track_event(event_name, metadata)
+        with event_handler(event_name) as handler:
+            result = func(*args, **kwargs)
+            try:
+                handler.tracker = None
+                if len(args) and isinstance(args[0], AnalyticsTrackerMixin):
+                    handler.tracker = args[0]
+                for obj in [result] + list(args) + list(kwargs.values()):
+                    if isinstance(obj, AnalyticsTrackedModelMixin):
+                        handler.metadata = obj.get_analytics_metadata()
+                        break
+            except Exception as e:
+                logger.debug(f"Analytics tracking failure for {func}: {e}")
 
-        except Exception as e:
-            logger.debug(f"Analytics tracking failure for {func}: {e}")
+            return result
 
-        return result
-
+    inner_func.__doc__ = func.__doc__
     return inner_func
+
+
+
+class event_handler(object):
+    """Context handler to enable tracking the success status of an event."""
+    def __init__(self, event: AnalyticsEvent):
+        """Initialization of the context manager."""
+        self.event: AnalyticsEvent = event
+        self.metadata: Dict[str, Any] = {}
+        self.tracker: Optional[AnalyticsTrackerMixin] = None
+
+    def __enter__(self):
+        """Enter function of the event handler.
+
+        Returns:
+            the handler instance.
+        """
+        return self
+
+    def __exit__(self, type, value, traceback):
+        """Exit function of the event handler.
+
+        Checks whether there was a traceback and updates the metadata
+        accordingly. Following the check, it calls the function to track the
+        event.
+        """
+
+        self.metadata.update({'success': traceback is None})
+
+        if self.tracker:
+            self.tracker.track_event(self.event, self.metadata)
+        else:
+            track_event(self.event, self.metadata)
