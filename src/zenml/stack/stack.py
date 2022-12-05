@@ -542,7 +542,8 @@ class Stack:
             If the stack requires a remote ZenServer to run.
         """
         return self.orchestrator.config.is_remote or (
-            self.step_operator and self.step_operator.config.is_remote
+            self.step_operator is not None
+            and self.step_operator.config.is_remote
         )
 
     def _validate_secrets(self, raise_exception: bool) -> None:
