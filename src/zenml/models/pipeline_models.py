@@ -25,8 +25,8 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import (
-    MODEL_DOCSTRING_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,
+    MODEL_TEXT_FIELD_MAX_LENGTH,
 )
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
@@ -45,7 +45,7 @@ class PipelineBaseModel(BaseModel):
 
     docstring: Optional[str] = Field(
         title="The docstring of the pipeline.",
-        max_length=MODEL_DOCSTRING_FIELD_MAX_LENGTH,
+        max_length=MODEL_TEXT_FIELD_MAX_LENGTH,
     )
     spec: PipelineSpec
 

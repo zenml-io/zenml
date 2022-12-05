@@ -25,8 +25,8 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import (
-    MODEL_DOCSTRING_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,
+    MODEL_TEXT_FIELD_MAX_LENGTH,
 )
 
 # ---- #
@@ -54,7 +54,7 @@ class StepRunBaseModel(BaseModel):
     step_configuration: Dict[str, Any]
     docstring: Optional[str] = Field(
         title="The docstring of the step run.",
-        max_length=MODEL_DOCSTRING_FIELD_MAX_LENGTH,
+        max_length=MODEL_TEXT_FIELD_MAX_LENGTH,
     )
     num_outputs: Optional[int]
 
