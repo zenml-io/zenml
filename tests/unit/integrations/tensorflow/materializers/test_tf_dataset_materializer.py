@@ -28,6 +28,7 @@ def test_tensorflow_tf_dataset_materializer(clean_client):
     with does_not_raise():
         dataset = _test_materializer(
             step_output=tf.data.Dataset.from_tensor_slices([1, 2, 3]),
+            step_output_type=tf.data.Dataset,
             materializer_class=TensorflowDatasetMaterializer,
         )
 

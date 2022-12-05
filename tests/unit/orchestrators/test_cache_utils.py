@@ -79,12 +79,16 @@ def test_generate_cache_key_considers_artifact_store_id(
 
 
 def test_generate_cache_key_considers_artifact_store_path(
-    generate_cache_key_kwargs,
+    generate_cache_key_kwargs, mocker
 ):
     """Check that the cache key changes if the artifact store path changes."""
     key_1 = generate_cache_key(**generate_cache_key_kwargs)
     mock_path = mock.PropertyMock(return_value="new/path")
-    type(generate_cache_key_kwargs["artifact_store"]).path = mock_path
+    mocker.patch.object(
+        type(generate_cache_key_kwargs["artifact_store"]),
+        "path",
+        new_callable=mock_path,
+    )
     key_2 = generate_cache_key(**generate_cache_key_kwargs)
     assert key_1 != key_2
 
