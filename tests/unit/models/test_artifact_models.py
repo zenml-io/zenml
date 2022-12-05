@@ -46,16 +46,16 @@ def test_artifact_base_model_fails_with_long_name(artifact_name):
         )
 
 
-@given(text(min_size=MODEL_URI_FIELD_MAX_LENGTH + 1))
-def test_artifact_base_model_fails_with_long_uri(uri_string):
+def test_artifact_base_model_fails_with_long_uri():
     """Test that the artifact base model fails with long URIs."""
+    long_uri = "a" * (MODEL_URI_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
         ArtifactBaseModel(
             name="abc",
             parent_step_id=UUID(UUID_BASE_STRING),
             producer_step_id=UUID(UUID_BASE_STRING),
             type=ArtifactType.DATA,
-            uri=uri_string,
+            uri=long_uri,
             materializer="abc",
             data_type="abc",
             is_cached=False,

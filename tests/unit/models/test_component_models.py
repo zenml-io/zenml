@@ -25,7 +25,7 @@ from zenml.models.constants import MODEL_METADATA_FIELD_MAX_LENGTH
 
 @given(text(min_size=MODEL_METADATA_FIELD_MAX_LENGTH + 1))
 def test_component_base_model_fails_with_long_flavor(flavor_string):
-    """Test that the artifact base model fails with long flavor strings."""
+    """Test that the component base model fails with long flavor strings."""
     with pytest.raises(ValidationError):
         ComponentBaseModel(
             name="abc",
