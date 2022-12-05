@@ -67,12 +67,6 @@ configuration parameters pertaining to [authentication](#authentication-methods)
 or [pass advanced configuration parameters](#advanced-configuration) to match
 your S3 compatible service or deployment scenario.
 
-{% hint style="info" %}
-Configuring an S3 Artifact Store in can be a complex and error-prone process,
-especially if you plan on using it alongside other stack components running in
-the AWS cloud.
-{% endhint %}
-
 ### Authentication Methods
 
 Integrating and using an S3 compatible Artifact Store in your pipelines is not
