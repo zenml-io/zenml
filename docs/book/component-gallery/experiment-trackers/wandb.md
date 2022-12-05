@@ -112,6 +112,8 @@ zenml experiment-tracker register wandb_tracker \
 {% hint style="info" %}
 Read more about [Secrets Manager](../secrets-managers/secrets-managers.md) and
 [Secrets](../secrets-managers/secrets.md) in the ZenML documentation.
+For more practical examples of how to use the Secrets Manager, check out the
+[Secrets management practical guide](../../advanced-guide/practical/secrets-management.md).
 {% endhint %}
 {% endtab %}
 {% endtabs %}
