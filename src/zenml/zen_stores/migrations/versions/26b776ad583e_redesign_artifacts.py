@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 # revision identifiers, used by Alembic.
 revision = "26b776ad583e"
-down_revision = "0.22.0"
+down_revision = "0.23.0"
 branch_labels = None
 depends_on = None
 
