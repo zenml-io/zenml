@@ -93,6 +93,53 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
             warning("zenml integration install EXAMPLE_NAME")
 
 
+@integration.command
+@click.argument("integrations", nargs=-1, required=False)
+@click.option(
+    "--ignore-integration",
+    "-i",
+    multiple=True,
+    help="List of integrations to ignore explicitly.",
+)
+def export_requirements(
+    integrations: Tuple[str],
+    ignore_integration: Tuple[str],
+) -> None:
+    """Exports integration requirements so they can be installed using pip.
+
+    Args:
+        integrations: The name of the integration to install the requirements
+            for.
+        ignore_integration: List of integrations to ignore explicitly.
+    """
+    from zenml.integrations.registry import integration_registry
+
+    if not integrations:
+        # no integrations specified, use all registered integrations
+        integrations = set(integration_registry.integrations.keys())
+        for i in ignore_integration:
+            try:
+                integrations.remove(i)
+            except KeyError:
+                error(
+                    f"Integration {i} does not exist. Available integrations: "
+                    f"{list(integration_registry.integrations.keys())}"
+                )
+
+    requirements = []
+    for integration_name in integrations:
+        try:
+            requirements += (
+                integration_registry.select_integration_requirements(
+                    integration_name
+                )
+            )
+        except KeyError:
+            error(f"Unable to find integration '{integration_name}'.")
+
+    click.echo(" ".join(requirements), nl=False)
+
+
 @integration.command(
     help="Install the required packages for the integration of choice."
 )
