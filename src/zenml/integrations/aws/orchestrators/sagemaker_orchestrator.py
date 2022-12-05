@@ -13,8 +13,13 @@
 #  permissions and limitations under the License.
 """Implementation of the SageMaker orchestrator."""
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
+import sagemaker
+
+from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
+    SagemakerOrchestratorConfig,
+)
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 if TYPE_CHECKING:
@@ -24,6 +29,15 @@ if TYPE_CHECKING:
 
 class SageMakerOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines on Sagemaker."""
+
+    @property
+    def config(self) -> SagemakerOrchestratorConfig:
+        """Returns the `SagemakerOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast(SagemakerOrchestratorConfig, self._config)
 
     def prepare_or_run_pipeline(
         self, deployment: "PipelineDeployment", stack: "Stack"
@@ -37,4 +51,8 @@ class SageMakerOrchestrator(BaseOrchestrator):
         Returns:
             The result of the pipeline run.
         """
-        raise NotImplementedError
+        session = sagemaker.Session(default_bucket=self.config.bucket)
+        for step in deployment.steps.values():
+            self.run_step(
+                step=step,
+            )

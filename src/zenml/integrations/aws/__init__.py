@@ -46,8 +46,8 @@ class AWSIntegration(Integration):
         from zenml.integrations.aws.flavors import (
             AWSContainerRegistryFlavor,
             AWSSecretsManagerFlavor,
-            SagemakerStepOperatorFlavor,
             SagemakerOrchestratorFlavor,
+            SagemakerStepOperatorFlavor,
         )
 
         return [
