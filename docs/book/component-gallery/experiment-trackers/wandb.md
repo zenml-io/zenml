@@ -80,17 +80,40 @@ zenml stack register custom_stack -e wandb_experiment_tracker ... --set
 ```
 {% endtab %}
 
+
 {% tab title="Secrets Manager (Recommended)" %}
 
 This method requires you to include a [Secrets Manager](../secrets-managers/secrets-managers.md)
-in your stack and configure a ZenML secret to store the Weights & Biases
-credentials securely.
+in your stack and configure a ZenML secret to store the Weights & Biases 
+tracking service credentials securely.
 
-{% hint style="warning" %}
-**This method is not yet supported!**
+You can register the secret using the `zenml secret register` command:
 
-We are actively working on adding Secrets Manager support to the Weights & Biases
-Experiment Tracker.
+```shell 
+zenml secrets-manager secret register wandb_secret \
+    --entity=<ENTITY> \
+    --project_name=<PROJECT_NAME>
+    --api_key=<API_KEY>
+```
+
+Once the secret is registered, you can use it to configure the wandb Experiment
+Tracker:
+
+```shell
+# Reference the entity, project and api-key in our experiment tracker component
+zenml experiment-tracker register wandb_tracker \
+    --flavor=wandb \
+    --entity={{wandb_secret.entity}} \
+    --project_name={{wandb_secret.project_name}} \
+    --api_key={{wandb_secret.api_key}}
+    ...
+```
+
+{% hint style="info" %}
+Read more about [Secrets Manager](../secrets-managers/secrets-managers.md) and
+[Secrets](../secrets-managers/secrets.md) in the ZenML documentation.
+For more practical examples of how to use the Secrets Manager, check out the
+[Secrets management practical guide](../../advanced-guide/practical/secrets-management.md).
 {% endhint %}
 {% endtab %}
 {% endtabs %}

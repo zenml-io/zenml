@@ -11,6 +11,7 @@
   * [One Click Deployment using CLI](./getting-started/deploying-zenml/cli.md)
   * [Deploying with Docker](./getting-started/deploying-zenml/docker.md)
   * [Deploying with Helm](./getting-started/deploying-zenml/helm.md)
+* [Architecture Diagrams](getting-started/architecture-diagrams.md)
 * [Examples](./getting-started/examples.md)
 
 ## Starter Guide
@@ -52,6 +53,7 @@
 ## Component Gallery
 
 * [Categories of MLOps Tools](./component-gallery/categories.md)
+* [Architecture Diagrams](getting-started/architecture-diagrams.md)
 * [Integration Overview](./component-gallery/integrations.md)
 * [Orchestrators](./component-gallery/orchestrators/orchestrators.md)
   * [Local Orchestrator](./component-gallery/orchestrators/local.md)
@@ -60,8 +62,8 @@
   * [Kubernetes Orchestrator](./component-gallery/orchestrators/kubernetes.md)
   * [Google Cloud VertexAI Orchestrator](./component-gallery/orchestrators/gcloud-vertexai.md)
   * [Tekton Orchestrator](./component-gallery/orchestrators/tekton.md)
-  * [GitHub Actions Orchestrator](./component-gallery/orchestrators/github-actions.md)
   * [Airflow Orchestrator](./component-gallery/orchestrators/airflow.md)
+  * [GitHub Actions Orchestrator](./component-gallery/orchestrators/github-actions.md)
   * [Develop a Custom Orchestrator](./component-gallery/orchestrators/custom.md)
 * [Artifact Stores](./component-gallery/artifact-stores/artifact-stores.md)
   * [Local Artifact Store](./component-gallery/artifact-stores/local.md)
@@ -94,6 +96,7 @@
 * [Experiment Trackers](./component-gallery/experiment-trackers/experiment-trackers.md)
   * [MLflow](./component-gallery/experiment-trackers/mlflow.md)
   * [Weights & Biases](./component-gallery/experiment-trackers/wandb.md)
+  * [Neptune](./component-gallery/experiment-trackers/neptune.md)
   * [Develop a Custom Experiment Tracker](./component-gallery/experiment-trackers/custom.md)
 * [Model Deployers](./component-gallery/model-deployers/model-deployers.md)
   * [MLflow](./component-gallery/model-deployers/mlflow.md)
@@ -127,6 +130,7 @@
 ## Misc
 
 * [Contribution Guide](misc/contributing.md)
+* [Debugging Guide](misc/debugging.md)
 * [External Integration Guide](misc/integrating.md)
 * [Usage Analytics](misc/usage-analytics.md)
 
