@@ -17,7 +17,6 @@ import subprocess
 from typing import Any, Dict, List, Optional, Union
 
 import click
-import numpy as np
 
 from zenml.logger import get_logger
 from zenml.utils.source_utils import import_class_by_path
@@ -27,7 +26,13 @@ logger = get_logger(__name__)
 DEFAULT_MODEL_NAME = "model"
 DEFAULT_LOCAL_MODEL_DIR = "/mnt/models"
 
-Array_Like = Union[np.ndarray, List[Any], str, bytes, Dict[str, Any]]
+try:
+    # only add numpy if its installed
+    import numpy as np
+
+    Array_Like = Union[np.ndarray, List[Any], str, bytes, Dict[str, Any]]
+except ImportError:
+    Array_Like = Union[List[Any], str, bytes, Dict[str, Any]]
 
 
 class ZenMLCustomModel:
