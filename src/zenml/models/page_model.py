@@ -99,6 +99,9 @@ class Page(GenericModel, Generic[B]):
     total: conint(ge=0)  # type: ignore
     items: Sequence[B]
 
+    class Config:
+        extra = "allow"
+
     __params_type__ = ListBaseModel
 
     @classmethod
@@ -139,7 +142,7 @@ class Page(GenericModel, Generic[B]):
             The Domain Model representation of the DB resource
         """
         params = resolve_params(params)
-        raw_params = params.get_pagination_params()
+        raw_params = params.to_raw_params()
 
         if not isinstance(query, (Select, SelectOfScalar)):
             query = select(query)
@@ -163,4 +166,3 @@ class Page(GenericModel, Generic[B]):
         items: List[B] = [i.to_model() for i in items]
 
         return cls.create(items, total, total_pages, params)
-

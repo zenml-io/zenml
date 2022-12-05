@@ -49,10 +49,10 @@ from zenml.models.role_models import (
     RoleUpdateModel,
 )
 from zenml.models.stack_models import (
+    StackListModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
-    StackListModel
 )
 from zenml.models.step_run_models import (
     StepRunRequestModel,

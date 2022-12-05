@@ -47,6 +47,9 @@ class BaseResponseModel(AnalyticsTrackedModelMixin):
     created: datetime = Field(title="Time when this resource was created.")
     updated: datetime = Field(title="Time when this resource was last updated.")
 
+    class Config:
+        extra = "allow"
+
     def __hash__(self) -> int:
         """Implementation of hash magic method.
 
@@ -248,4 +251,3 @@ def update_model(_cls: Type[T]) -> Type[T]:
         value.allow_none = True
 
     return _cls
-

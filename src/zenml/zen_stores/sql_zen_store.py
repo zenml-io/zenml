@@ -43,7 +43,7 @@ from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound, OperationalError
 from sqlalchemy.orm import noload
 from sqlalchemy.sql.operators import is_, isnot
-from sqlmodel import Session, create_engine, or_, select, and_
+from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.config.global_config import GlobalConfiguration
@@ -89,6 +89,7 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    StackListModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -102,11 +103,10 @@ from zenml.models import (
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
-    StackListModel,
 )
-from zenml.models.page_model import Page
 from zenml.models.base_models import BaseResponseModel
-from zenml.models.filter_models import Filter, ListBaseModel
+from zenml.models.filter_models import ListBaseModel
+from zenml.models.page_model import Page
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -619,8 +619,12 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The Domain Model representation of the DB resource
         """
+
         # Filtering
-        query = query.where(*list_model.generate_filter(table=table))
+        filters = list_model.generate_filter(table=table)
+
+        if filters:
+            query = query.where(*filters)
 
         # Sorting
         query = query.order_by(getattr(table, list_model.sort_by))
@@ -641,8 +645,9 @@ class SqlZenStore(BaseZenStore):
         # Get a page of the actual data
         items: List[AnySchema] = (
             session.exec(
-                query.limit(raw_pagination_params.limit)
-                .offset(raw_pagination_params.offset)
+                query.limit(raw_pagination_params.limit).offset(
+                    raw_pagination_params.offset
+                )
             )
             .unique()
             .all()
@@ -892,8 +897,7 @@ class SqlZenStore(BaseZenStore):
             return stack.to_model()
 
     def list_stacks(
-        self,
-        stack_list_model: StackListModel
+        self, stack_list_model: StackListModel
     ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
@@ -906,7 +910,6 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Manually create the query and add any custom clauses
             query = select(StackSchema)
-
 
             paged_stacks = self.filter_and_paginate(
                 session=session,
@@ -2204,7 +2207,7 @@ class SqlZenStore(BaseZenStore):
         #     role_name_or_id=role_name_or_id,
         #     params=params,
         # )
-        return user_role_assignments # + team_role_assignments
+        return user_role_assignments  # + team_role_assignments
 
     def _assign_role_to_user(
         self,

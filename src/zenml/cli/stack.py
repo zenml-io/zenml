@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 import getpass
-from typing import Any, Dict, List, Optional, Union, Callable, TYPE_CHECKING, \
-    Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
 import click
@@ -22,7 +21,11 @@ import click
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import _component_display_name, print_stacks_table
+from zenml.cli.utils import (
+    _component_display_name,
+    print_page_info,
+    print_stacks_table,
+)
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
@@ -36,7 +39,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
-    from zenml.models.filter_models import ListBaseModel
+    pass
 
 
 # Stacks
@@ -646,6 +649,7 @@ def list_stacks(**kwargs) -> None:
     with console.status("Listing stacks...\n"):
         stacks = client.list_stacks(**kwargs)
 
+        print_page_info(stacks)
         print_stacks_table(client, stacks.items)
 
 

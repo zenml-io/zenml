@@ -25,11 +25,12 @@ from typing import (
     List,
     NoReturn,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Type,
     TypeVar,
-    Union, Sequence,
+    Union,
 )
 
 import click
@@ -41,10 +42,11 @@ from rich.style import Style
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
-from zenml.constants import IS_DEBUG_ENV, LIMIT_DEFAULT
+from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.page_model import Page
 
 logger = get_logger(__name__)
 
@@ -1046,4 +1048,17 @@ def warn_unsupported_non_default_project() -> None:
             "within the Dashboard. The Project functionality will be "
             "completed in the coming weeks. For the time being it "
             "is recommended to stay within the `default` project."
+        )
+
+
+def print_page_info(page: Page):
+    """Print all information pertaining to a page to show the amount of items and pages"""
+    if page.total_pages > 1:
+        declare(
+            f"A total of `{page.total}` items were found "
+            f"matching the specified filters. Either narrow your "
+            f"search with more precise filters or use the "
+            f"`--page` and `--size` values to leaf through all "
+            f"the items. At `{page.size}` items per page, a total "
+            f"of `{page.total_pages}` pages exist."
         )

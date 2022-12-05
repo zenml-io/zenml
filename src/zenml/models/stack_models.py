@@ -14,23 +14,20 @@
 """Models representing stacks."""
 
 import json
-from datetime import datetime
-from typing import Any, ClassVar, Dict, List, Union, Optional, Type, \
-    TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Type
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, PrivateAttr
 
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
-    update_model, )
-from zenml.models.filter_models import ListBaseModel
+    update_model,
+)
 from zenml.models.component_models import ComponentResponseModel
-
-from zenml.utils.enum_utils import StrEnum
+from zenml.models.filter_models import ListBaseModel
 
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 if TYPE_CHECKING:
@@ -121,39 +118,41 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 
 
 class StackListModel(ListBaseModel):
-    _scope_user: Optional[UUID] = None
+    _scope_user: UUID = PrivateAttr(None)
 
     is_shared: bool = Query(
         None, description="If the stack is shared or private"
     )
-    name: str = Query(None, description="Name of the stack", )
-    description: str = Query(
-        None, description="Description of the stack"
+    name: str = Query(
+        None,
+        description="Name of the stack",
     )
-    project_id: UUID = Query(
-        None, description="Project of the stack")
-    user_id: UUID = Query(
-        None, description="User of the stack")
-    component_id: UUID = Query(
-        None, description="Component in the stack")
+    description: str = Query(None, description="Description of the stack")
+    project_id: UUID = Query(None, description="Project of the stack")
+    user_id: UUID = Query(None, description="User of the stack")
+    component_id: UUID = Query(None, description="Component in the stack")
 
     def set_scope_user(self, user_id: UUID):
         self._scope_user = user_id
 
     def generate_filter(self, table: Type["SQLModel"]):
         from sqlmodel import or_
+
         ands = []
-        for column_filter in self._list_of_filters:
+        for column_filter in self.filter_ops:
             ands.append(column_filter.generate_query_conditions(table=table))
 
         if self._scope_user:
-            scope_filter = or_(
-                getattr(table, "user_id") == self._scope_user,
-                getattr(table, "is_shared") == True
+            ands.append(
+                or_(
+                    getattr(table, "user_id") == self._scope_user,
+                    getattr(table, "is_shared") == True,
+                )
             )
-            return ands.append(scope_filter)
+            return ands
         else:
             return ands
+
 
 # ------- #
 # REQUEST #

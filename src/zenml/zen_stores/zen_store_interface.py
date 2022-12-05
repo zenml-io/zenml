@@ -41,6 +41,7 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    StackListModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -53,10 +54,10 @@ from zenml.models import (
     UserAuthModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, StackListModel,
+    UserUpdateModel,
 )
-from zenml.models.page_model import Page
 from zenml.models.filter_models import ListBaseModel
+from zenml.models.page_model import Page
 from zenml.models.server_models import ServerModel
 
 
@@ -180,8 +181,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_stacks(
-        self,
-        stack_list_model: StackListModel
+        self, stack_list_model: StackListModel
     ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 

@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Type, Dict, TypeVar, List, Callable, Optional
+from typing import Any, Type
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, validator, root_validator
+from pydantic import BaseModel, validator
 from sqlmodel import SQLModel
 
 from zenml.utils.enum_utils import StrEnum
-
 
 # ------------------ #
 # QUERY PARAM MODELS #
@@ -38,7 +36,7 @@ class GenericFilterOps(StrEnum):
 class Filter(BaseModel):
     operation: GenericFilterOps
     column: str
-    value: str
+    value: Any
 
     def generate_query_conditions(
         self,
@@ -47,7 +45,7 @@ class Filter(BaseModel):
         if self.operation == GenericFilterOps.EQUALS:
             return getattr(table, self.column) == self.value
         elif self.operation == GenericFilterOps.CONTAINS:
-            return getattr(table, self.column).like(f'%{self.value}%')
+            return getattr(table, self.column).like(f"%{self.value}%")
         elif self.operation == GenericFilterOps.GTE:
             return getattr(table, self.column) >= self.value
         elif self.operation == GenericFilterOps.GT:
@@ -76,7 +74,6 @@ class ListBaseModel(BaseModel):
     )
     ```
     """
-    _list_of_filters: List[Filter] = []
 
     sort_by: str = Query("created")
 
@@ -100,39 +97,47 @@ class ListBaseModel(BaseModel):
                 "You can only sort by valid fields of this resource"
             )
 
-    @root_validator()
-    def interpret_filter_operations(cls, values):
-        values["_list_of_filters"] = []
+    @property
+    def filter_ops(self):
+        list_of_filters = []
 
-        for key, value in values.items():
-            # These 4 fields do not represent filter fields
-            if key in ["sort_by", "_list_of_filters", "page", "size"]:
-                pass
-            elif value:
+        # These 3 fields do not represent filter fields
+        exclude_fields = {"sort_by", "page", "size"}
+        for key, value in self.dict(exclude=exclude_fields).items():
+            if value:
                 if isinstance(value, str):
-                    split_value = value.split(':', 1)
-                    if (len(split_value) == 2
-                            and split_value[0] in GenericFilterOps.values()):
+                    split_value = value.split(":", 1)
+                    if (
+                        len(split_value) == 2
+                        and split_value[0] in GenericFilterOps.values()
+                    ):
                         # Parse out the operation from the input string
-                        values["_list_of_filters"].append(Filter(
-                            operation=GenericFilterOps(split_value[0]),
-                            column=key,
-                            value=split_value[1]
-                        ))
+                        # TODO: actually convert the value into the correct
+                        #  datatype
+                        list_of_filters.append(
+                            Filter(
+                                operation=GenericFilterOps(split_value[0]),
+                                column=key,
+                                value=split_value[1],
+                            )
+                        )
                     else:
-                        #
-                        values["_list_of_filters"].append(Filter(
+                        list_of_filters.append(
+                            Filter(
+                                operation=GenericFilterOps("equals"),
+                                column=key,
+                                value=value,
+                            )
+                        )
+                else:
+                    list_of_filters.append(
+                        Filter(
                             operation=GenericFilterOps("equals"),
                             column=key,
-                            value=value
-                        ))
-                else:
-                    values["_list_of_filters"].append(Filter(
-                        operation=GenericFilterOps("equals"),
-                        column=key,
-                        value=str(value)
-                    ))
-        return values
+                            value=value,
+                        )
+                    )
+        return list_of_filters
 
     def get_pagination_params(self) -> RawParams:
         return RawParams(
@@ -142,11 +147,10 @@ class ListBaseModel(BaseModel):
 
     def generate_filter(self, table: Type[SQLModel]):
         ands = []
-        for column_filter in self._list_of_filters:
+        for column_filter in self.filter_ops:
             ands.append(column_filter.generate_query_conditions(table=table))
 
         return ands
-
 
     @classmethod
     def click_list_options(cls):
@@ -155,12 +159,18 @@ class ListBaseModel(BaseModel):
         options = list()
         for k, v in cls.__fields__.items():
             if k not in ["_list_of_filters"]:
-                options.append(click.option(
-                    f"--{k}", type=v.type_, default=v.default, required=False)
+                options.append(
+                    click.option(
+                        f"--{k}",
+                        type=v.type_,
+                        default=v.default,
+                        required=False,
+                    )
                 )
 
         def wrapper(function):
             for option in reversed(options):
                 function = option(function)
             return function
+
         return wrapper

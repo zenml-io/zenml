@@ -39,7 +39,7 @@ from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
     REPOSITORY_DIRECTORY_NAME,
-    handle_bool_env_var, LIMIT_DEFAULT,
+    handle_bool_env_var,
 )
 from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.exceptions import (
@@ -69,6 +69,7 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    StackListModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -78,7 +79,7 @@ from zenml.models import (
     TeamUpdateModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, StackListModel,
+    UserUpdateModel,
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
@@ -630,10 +631,7 @@ class Client(metaclass=ClientMetaClass):
             The User
         """
         return self.depaginate(
-            list_command=partial(
-                self.zen_store.list_users,
-                name=name
-            )
+            list_command=partial(self.zen_store.list_users, name=name)
         )
 
     def delete_user(self, user_name_or_id: str) -> None:
@@ -715,10 +713,7 @@ class Client(metaclass=ClientMetaClass):
             The Team
         """
         return self.depaginate(
-            list_command=partial(
-                self.zen_store.list_teams,
-                name=name
-            )
+            list_command=partial(self.zen_store.list_teams, name=name)
         )
 
     def create_team(
@@ -852,10 +847,7 @@ class Client(metaclass=ClientMetaClass):
             The list of roles.
         """
         return self.depaginate(
-            list_command=partial(
-                self.zen_store.list_roles,
-                name=name
-            )
+            list_command=partial(self.zen_store.list_roles, name=name)
         )
 
     def create_role(
@@ -1094,7 +1086,7 @@ class Client(metaclass=ClientMetaClass):
                 role_name_or_id=role_name_or_id,
                 user_name_or_id=user_name_or_id,
                 team_name_or_id=team_name_or_id,
-                project_name_or_id=project_name_or_id
+                project_name_or_id=project_name_or_id,
             )
         )
 
@@ -1488,9 +1480,9 @@ class Client(metaclass=ClientMetaClass):
 
     def list_stacks(
         self,
-        page: int,
-        size: int,
         sort_by: str,
+        page: int = 1,
+        size: int = 50,
         id: Optional[UUID] = None,
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
@@ -1504,8 +1496,15 @@ class Client(metaclass=ClientMetaClass):
         """Lists all stacks.
 
         Args:
-            project_name_or_id: The name or id of the project to filter by.
-            user_name_or_id: The name or id of the user to filter by.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            description: Use the stack description for filtering
+            project_id: The name or id of the project to filter by.
+            user_id: The name or id of the user to filter by.
             component_id: The id of the component to filter by.
             name: The name of the stack to filter by.
             is_shared: The shared status of the stack to filter by.
@@ -1526,8 +1525,9 @@ class Client(metaclass=ClientMetaClass):
                 description=description,
                 id=id,
                 created=created,
-                updated=updated)
+                updated=updated,
             )
+        )
 
     @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(self, stack_name_id_or_prefix: Union[str, UUID]) -> None:
@@ -2477,7 +2477,7 @@ class Client(metaclass=ClientMetaClass):
         )
         display_name = component_type.value.replace("_", " ")
 
-        if len(components) > 1:
+        if len(components.items) > 1:
             component_list = "\n".join(
                 [f"{c.name} ({c.id})" for c in components]
             )
@@ -2486,8 +2486,8 @@ class Client(metaclass=ClientMetaClass):
                 f"name '{name_id_or_prefix}':\n{component_list}.\n"
                 f"Please specify by full or partial id."
             )
-        elif len(components) == 1:
-            return components[0]
+        elif len(components.items) == 1:
+            return components.items[0]
 
         logger.debug(
             f"No {display_name} instance with name '{name_id_or_prefix}' "
@@ -2631,8 +2631,8 @@ class Client(metaclass=ClientMetaClass):
                 )
 
     def depaginate(
-            self,
-            list_command: Callable,
+        self,
+        list_command: Callable,
     ) -> List[AnyResponseModel]:
         params = ListBaseModel(page=1)
         first_page: Page[BaseResponseModel] = list_command(params=params)

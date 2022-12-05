@@ -37,10 +37,11 @@ from zenml.models import (
     RoleAssignmentRequestModel,
     RoleRequestModel,
     RoleResponseModel,
+    StackListModel,
     StackRequestModel,
     StackResponseModel,
     UserRequestModel,
-    UserResponseModel, StackListModel,
+    UserResponseModel,
 )
 from zenml.models.server_models import (
     ServerDatabaseType,
@@ -245,7 +246,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             default_user = self._default_user
         except KeyError:
             default_user = self._create_default_user()
-        #try:
+        # try:
         self._get_default_stack(
             project_name_or_id=default_project.id,
             user_name_or_id=default_user.id,
@@ -496,7 +497,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             StackListModel(
                 project=project_name_or_id,
                 user=user_name_or_id,
-                name=DEFAULT_STACK_NAME
+                name=DEFAULT_STACK_NAME,
             )
         )
         if default_stacks.total == 0:

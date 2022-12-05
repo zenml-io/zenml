@@ -36,8 +36,8 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
-from zenml.models.page_model import Page
 from zenml.models.filter_models import ListBaseModel
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,

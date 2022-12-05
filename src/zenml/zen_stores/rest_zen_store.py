@@ -92,6 +92,7 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    StackListModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -108,7 +109,8 @@ from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     ProjectScopedRequestModel,
-    ProjectScopedResponseModel, )
+    ProjectScopedResponseModel,
+)
 from zenml.models.filter_models import ListBaseModel
 from zenml.models.page_model import Page
 from zenml.models.server_models import ServerModel
@@ -396,34 +398,23 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_stacks(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
+        self, stack_list_model: StackListModel
     ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
-            project_name_or_id: ID or name of the Project containing the stack
-            user_name_or_id: Optionally filter stacks by their owner
-            component_id: Optionally filter for stacks that contain the
-                          component
-            name: Optionally filter stacks by their name
-            is_shared: Optionally filter out stacks by whether they are shared
-                or not
-            params: Parameters for pagination (page and size)
+            stack_list_model: All filter parameters including pagination params
+
 
         Returns:
-            A list of all stacks matching the filter criteria.
+            A page of all stacks matching the filter criteria.
         """
         filters = locals()
         filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=STACKS,
             response_model=StackResponseModel,
-            **filters,
+            list_model=stack_list_model,
         )
 
     @track(AnalyticsEvent.UPDATED_STACK)
@@ -1876,14 +1867,15 @@ class RestZenStore(BaseZenStore):
     def _list_paginated_resources(
         self,
         route: str,
-        **filters: Any,
+        response_model: Type[AnyResponseModel],
+        list_model: ListBaseModel,
     ) -> Page[AnyResponseModel]:
         """Retrieve a list of resources filtered by some criteria.
 
         Args:
             route: The resource REST API route to use.
-            resource_model: Model to use to serialize the response body.
-            filters: Filter parameters to use in the query.
+            response_model: Model to use to serialize the response body.
+            list_model: The list model to use for the list query.
 
         Returns:
             List of retrieved resources matching the filter criteria.
@@ -1892,13 +1884,19 @@ class RestZenStore(BaseZenStore):
             ValueError: If the value returned by the server is not a list.
         """
         # leave out filter params that are not supplied
-        params = dict(filter(lambda x: x[1] is not None, filters.items()))
-        body = self.get(f"{route}", params=params)
-        if not isinstance(body, list):
+        body = self.get(f"{route}", params=list_model.dict(exclude_none=True))
+        if not isinstance(body, dict):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return Page.parse_obj(body)
+        # The initial page of items will be of type BaseResponseModel
+        page_of_items = Page.parse_obj(body)
+        # So these items will be parsed into their correct types like here
+        page_of_items.items = [
+            response_model.parse_obj(generic_item)
+            for generic_item in page_of_items.items
+        ]
+        return page_of_items
 
     def _list_resources(
         self,
