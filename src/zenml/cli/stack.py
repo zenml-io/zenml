@@ -30,7 +30,7 @@ from zenml.exceptions import (
     ProvisioningError,
     StackExistsError,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 
@@ -784,6 +784,7 @@ def down_stack(force: bool = False) -> None:
 @stack.command("export", help="Exports a stack to a YAML file.")
 @click.argument("stack_name_or_id", type=str, required=False)
 @click.argument("filename", type=str, required=False)
+@track(AnalyticsEvent.EXPORT_STACK)
 def export_stack(
     stack_name_or_id: Optional[str] = None,
     filename: Optional[str] = None,
@@ -794,7 +795,6 @@ def export_stack(
         stack_name_or_id: The name of the stack to export.
         filename: The filename to export the stack to.
     """
-    track_event(AnalyticsEvent.EXPORT_STACK)
 
     # Get configuration of given stack
     client = Client()
@@ -870,6 +870,7 @@ def _import_stack_component(
     help="Import stack components even if the installed version of ZenML "
     "is different from the one specified in the stack YAML file",
 )
+@track(AnalyticsEvent.IMPORT_STACK)
 def import_stack(
     stack_name: str,
     filename: Optional[str],
@@ -884,7 +885,6 @@ def import_stack(
             the installed version of ZenML is different from the
             one specified in the stack YAML file.
     """
-    track_event(AnalyticsEvent.IMPORT_STACK)
 
     # handle 'zenml stack import file.yaml' calls
     if stack_name.endswith(".yaml") and filename is None:
@@ -956,6 +956,7 @@ def import_stack(
     help="Use this flag to share this stack with other users.",
     type=click.BOOL,
 )
+@track(AnalyticsEvent.COPIED_STACK)
 def copy_stack(
     source_stack_name_or_id: str, target_stack: str, share: bool = False
 ) -> None:
@@ -966,7 +967,6 @@ def copy_stack(
         target_stack: Name of the copied stack.
         share: Share the stack with other users.
     """
-    track_event(AnalyticsEvent.COPIED_STACK)
 
     client = Client()
 

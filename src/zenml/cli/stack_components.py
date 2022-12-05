@@ -32,7 +32,7 @@ from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import IllegalOperationError
 from zenml.io import fileio
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 
 def generate_stack_component_get_command(
@@ -481,6 +481,7 @@ def generate_stack_component_copy_command(
         "source_component_name_id_or_prefix", type=str, required=True
     )
     @click.argument("target_component", type=str, required=True)
+    @track(AnalyticsEvent.COPIED_STACK_COMPONENT)
     def copy_stack_component_command(
         source_component_name_id_or_prefix: str,
         target_component: str,
@@ -492,7 +493,6 @@ def generate_stack_component_copy_command(
                                          component to copy.
             target_component: Name of the copied component.
         """
-        track_event(AnalyticsEvent.COPIED_STACK_COMPONENT)
 
         client = Client()
 
