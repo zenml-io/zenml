@@ -495,8 +495,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         """
         default_stacks = self.list_stacks(
             StackListModel(
-                project=project_name_or_id,
-                user=user_name_or_id,
+                project_id=project_name_or_id,
+                user_id=user_name_or_id,
                 name=DEFAULT_STACK_NAME,
             )
         )

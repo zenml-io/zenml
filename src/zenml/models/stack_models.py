@@ -21,6 +21,7 @@ from fastapi import Query
 from pydantic import BaseModel, Field, PrivateAttr
 
 from zenml.enums import StackComponentType
+from zenml.logger import get_logger
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
@@ -139,7 +140,7 @@ class StackListModel(ListBaseModel):
         from sqlmodel import or_
 
         ands = []
-        for column_filter in self.filter_ops:
+        for column_filter in self.list_of_filters:
             ands.append(column_filter.generate_query_conditions(table=table))
 
         if self._scope_user:

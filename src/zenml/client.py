@@ -1512,8 +1512,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of stacks.
         """
-        return self.zen_store.list_stacks(
-            StackListModel(
+        list_stack_model = StackListModel(
                 page=page,
                 size=size,
                 sort_by=sort_by,
@@ -1527,7 +1526,7 @@ class Client(metaclass=ClientMetaClass):
                 created=created,
                 updated=updated,
             )
-        )
+        return self.zen_store.list_stacks(list_stack_model)
 
     @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(self, stack_name_id_or_prefix: Union[str, UUID]) -> None:

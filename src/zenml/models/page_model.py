@@ -129,7 +129,7 @@ class Page(GenericModel, Generic[B]):
         cls,
         session: Session,
         query: Union[T, Select[T], SelectOfScalar[T]],
-        params: Optional[Params] = None,
+        params: Optional[ListBaseModel] = None,
     ) -> Page[B]:
         """Given a query, select the range defined in params and return a Page instance with a list of Domain Models.
 
@@ -141,8 +141,7 @@ class Page(GenericModel, Generic[B]):
         Returns:
             The Domain Model representation of the DB resource
         """
-        params = resolve_params(params)
-        raw_params = params.to_raw_params()
+        raw_params = params.get_pagination_params()
 
         if not isinstance(query, (Select, SelectOfScalar)):
             query = select(query)
