@@ -27,6 +27,7 @@ from typing import (
 )
 from uuid import UUID
 
+from zenml.client import Client
 from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
@@ -530,6 +531,20 @@ class Stack:
                 setting_classes[key] = component.settings_class
         return setting_classes
 
+    @property
+    def requires_remote_server(self) -> bool:
+        """If the stack requires a remote ZenServer to run.
+
+        This is the case if any code is getting executed remotely. This is the
+        case for both remote orchestrators as well as remote step operators.
+
+        Returns:
+            If the stack requires a remote ZenServer to run.
+        """
+        return self.orchestrator.config.is_remote or (
+            self.step_operator and self.step_operator.config.is_remote
+        )
+
     def _validate_secrets(self, raise_exception: bool) -> None:
         """Validates that all secrets of the stack exists.
 
@@ -659,6 +674,15 @@ class Stack:
                     f"command to provision and start the component:\n\n"
                     f"    `zenml stack up`\n"
                 )
+
+        if self.requires_remote_server and Client().zen_store.is_local_store():
+            raise RuntimeError(
+                "Remote orchestrators and step operators require a remote "
+                "ZenML server. To run a pipeline with this stack you need to "
+                "connect to a remote ZenML server first. Check out "
+                "https://docs.zenml.io/getting-started/deploying-zenml for "
+                "more information on how to deploy ZenML."
+            )
 
         for component in self.components.values():
             component.prepare_pipeline_deployment(
