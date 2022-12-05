@@ -680,7 +680,8 @@ class Stack:
 
         if self.requires_remote_server and Client().zen_store.is_local_store():
             raise RuntimeError(
-                "Remote orchestrators and step operators require a remote "
+                "Stacks with remote components such as remote orchestrators "
+                "and step operators require a remote "
                 "ZenML server. To run a pipeline with this stack you need to "
                 "connect to a remote ZenML server first. Check out "
                 "https://docs.zenml.io/getting-started/deploying-zenml for "
