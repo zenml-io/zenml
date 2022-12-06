@@ -21,7 +21,6 @@ from fastapi import Query
 from pydantic import BaseModel, Field, PrivateAttr
 
 from zenml.enums import StackComponentType
-from zenml.logger import get_logger
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
@@ -126,6 +125,7 @@ class StackFilterModel(FilterBaseModel):
     `generate_filter()` method of the baseclass is overwritten to include the
     scoping.
     """
+
     _scope_user: UUID = PrivateAttr(None)
 
     is_shared: Union[bool, str] = Query(
@@ -135,21 +135,13 @@ class StackFilterModel(FilterBaseModel):
         None,
         description="Name of the stack",
     )
-    description: str = Query(
-        None,
-        description="Description of the stack"
-    )
+    description: str = Query(None, description="Description of the stack")
     project_id: Union[UUID, str] = Query(
-        None,
-        description="Project of the stack"
+        None, description="Project of the stack"
     )
-    user_id: Union[UUID, str] = Query(
-        None,
-        description="User of the stack"
-    )
+    user_id: Union[UUID, str] = Query(None, description="User of the stack")
     component_id: Union[UUID, str] = Query(
-        None,
-        description="Component in the stack"
+        None, description="Component in the stack"
     )
 
     def set_scope_user(self, user_id: UUID):

@@ -17,11 +17,14 @@ from typing import List, Optional
 
 import click
 
+from zenml.cli import print_page_info
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
+from zenml.models import UserFilterModel
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -70,25 +73,29 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 
 
 @user.command("list")
-def list_users() -> None:
+@UserFilterModel.click_list_options()
+def list_users(**kwargs) -> None:
     """List all users."""
     cli_utils.print_active_config()
-    users = Client().list_users()
-    if not users:
-        cli_utils.declare("No users registered.")
-        return
+    client = Client()
+    with console.status("Listing stacks...\n"):
+        users = client.list_users(**kwargs)
+        if not users:
+            cli_utils.declare("No users found for the given filters.")
+            return
 
-    cli_utils.print_pydantic_models(
-        users,
-        exclude_columns=[
-            "created",
-            "updated",
-            "email",
-            "email_opted_in",
-            "activation_token",
-        ],
-        is_active=lambda u: u.name == Client().active_user.name,
-    )
+        cli_utils.print_pydantic_models(
+            users,
+            exclude_columns=[
+                "created",
+                "updated",
+                "email",
+                "email_opted_in",
+                "activation_token",
+            ],
+            is_active=lambda u: u.name == Client().active_user.name,
+        )
+        print_page_info(users)
 
 
 @user.command(

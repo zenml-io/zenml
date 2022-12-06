@@ -51,7 +51,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
-    LIMIT_DEFAULT,
+    PAGE_SIZE_DEFAULT,
 )
 from zenml.enums import (
     ExecutionStatus,
@@ -73,6 +73,7 @@ from zenml.models import (
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
+    FilterBaseModel,
     FlavorRequestModel,
     FlavorResponseModel,
     PipelineRequestModel,
@@ -100,12 +101,12 @@ from zenml.models import (
     TeamResponseModel,
     TeamUpdateModel,
     UserAuthModel,
+    UserFilterModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
-from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
@@ -1178,7 +1179,9 @@ class SqlZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
@@ -1522,7 +1525,9 @@ class SqlZenStore(BaseZenStore):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
@@ -1681,28 +1686,27 @@ class SqlZenStore(BaseZenStore):
             )
 
     def list_users(
-        self,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        self, user_filter_model: UserFilterModel
     ) -> Page[UserResponseModel]:
         """List all users.
 
         Args:
-            name: Optionally filter by name
-            params: Parameters for pagination (page and size)
+            user_filter_model: All filter parameters including pagination params
 
         Returns:
             A list of all users.
         """
         with Session(self.engine) as session:
+            # Manually create the query and add any custom clauses
             query = select(UserSchema)
-            if name:
-                query = query.where(UserSchema.name == name)
 
-            query.order_by(PipelineSchema.created)
-            users = Page.paginate(session, query, params)
-
-        return users
+            paged_user = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=UserSchema,
+                list_model=user_filter_model,
+            )
+            return paged_user
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
@@ -1819,7 +1823,9 @@ class SqlZenStore(BaseZenStore):
     def list_teams(
         self,
         name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[TeamResponseModel]:
         """List all teams.
 
@@ -1953,7 +1959,9 @@ class SqlZenStore(BaseZenStore):
     def list_roles(
         self,
         name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[RoleResponseModel]:
         """List all roles.
 
@@ -2099,7 +2107,9 @@ class SqlZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         role_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[RoleAssignmentResponseModel]:
         """List all user role assignments.
 
@@ -2138,7 +2148,9 @@ class SqlZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         role_name_or_id: Optional[Union[str, UUID]] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[RoleAssignmentResponseModel]:
         """List all team role assignments.
 
@@ -2178,7 +2190,9 @@ class SqlZenStore(BaseZenStore):
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[RoleAssignmentResponseModel]:
         """List all role assignments.
 
@@ -2481,7 +2495,9 @@ class SqlZenStore(BaseZenStore):
     def list_projects(
         self,
         name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[ProjectResponseModel]:
         """List all projects.
 
@@ -2648,7 +2664,9 @@ class SqlZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[PipelineResponseModel]:
         """List all pipelines in the project.
 
@@ -2891,7 +2909,9 @@ class SqlZenStore(BaseZenStore):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[PipelineRunResponseModel]:
         """Gets all pipeline runs.
 

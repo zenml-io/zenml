@@ -31,12 +31,13 @@ from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.models import (
+    FilterBaseModel,
+    RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
 )
-from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import (
     AuthContext,

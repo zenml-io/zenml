@@ -38,6 +38,8 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
+    PAGE_SIZE_DEFAULT,
+    PAGINATION_STARTING_PAGE,
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
@@ -56,6 +58,7 @@ from zenml.models import (
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
+    FilterBaseModel,
     FlavorRequestModel,
     FlavorResponseModel,
     PipelineRequestModel,
@@ -76,6 +79,7 @@ from zenml.models import (
     StepRunResponseModel,
     TeamRequestModel,
     TeamResponseModel,
+    UserFilterModel,
     TeamUpdateModel,
     UserRequestModel,
     UserResponseModel,
@@ -83,7 +87,6 @@ from zenml.models import (
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
-from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
@@ -621,17 +624,52 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
+    def list_users(
+        self,
+        sort_by: str,
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        full_name: Optional[str] = None,
+        email: Optional[str] = None,
+        active: Optional[bool] = None,
+        email_opted_in: Optional[bool] = None,
+    ) -> Page[UserResponseModel]:
         """List all users.
 
         Args:
-            name: The name to filter by
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: Use the user name for filtering
+            full_name: Use the user full name for filtering
+            email: Use the user email for filtering
+            active: User the user active status for filtering
+            email_opted_in: Use the user opt in status for filtering
 
         Returns:
             The User
         """
-        return self.depaginate(
-            list_command=partial(self.zen_store.list_users, name=name)
+        return self.zen_store.list_users(
+            UserFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+                full_name=full_name,
+                email=email,
+                active=active,
+                email_opted_in=email_opted_in,
+            )
         )
 
     def delete_user(self, user_name_or_id: str) -> None:
@@ -1481,8 +1519,8 @@ class Client(metaclass=ClientMetaClass):
     def list_stacks(
         self,
         sort_by: str,
-        page: int = 1,
-        size: int = 50,
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
         id: Optional[Union[UUID, str]] = None,
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
@@ -1512,7 +1550,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of stacks.
         """
-        list_stack_model = StackFilterModel(
+        return self.zen_store.list_stacks(
+            StackFilterModel(
                 page=page,
                 size=size,
                 sort_by=sort_by,
@@ -1526,7 +1565,7 @@ class Client(metaclass=ClientMetaClass):
                 created=created,
                 updated=updated,
             )
-        return self.zen_store.list_stacks(list_stack_model)
+        )
 
     @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(self, stack_name_id_or_prefix: Union[str, UUID]) -> None:

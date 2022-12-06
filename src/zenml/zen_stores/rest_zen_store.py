@@ -45,7 +45,6 @@ from zenml.constants import (
     FLAVORS,
     INFO,
     INPUTS,
-    LIMIT_DEFAULT,
     LOGIN,
     PIPELINES,
     PROJECTS,
@@ -76,6 +75,7 @@ from zenml.models import (
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
+    FilterBaseModel,
     FlavorRequestModel,
     FlavorResponseModel,
     PipelineRequestModel,
@@ -101,6 +101,7 @@ from zenml.models import (
     StepRunUpdateModel,
     TeamRequestModel,
     TeamResponseModel,
+    UserFilterModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
@@ -111,7 +112,6 @@ from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.models.server_models import ServerModel
 from zenml.models.team_models import TeamUpdateModel
@@ -409,8 +409,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             A page of all stacks matching the filter criteria.
         """
-        filters = locals()
-        filters.pop("self")
         return self._list_paginated_resources(
             route=STACKS,
             response_model=StackResponseModel,
@@ -489,7 +487,9 @@ class RestZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
@@ -598,7 +598,9 @@ class RestZenStore(BaseZenStore):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
@@ -703,25 +705,20 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_users(
-        self,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        self, user_filter_model: UserFilterModel
     ) -> Page[UserResponseModel]:
         """List all users.
 
         Args:
-            name: Optionally filter by name
-            params: Parameters for pagination (page and size)
+            user_filter_model: All filter parameters including pagination params
 
         Returns:
             A list of all users.
         """
-        filters = locals()
-        filters.pop("self")
         return self._list_paginated_resources(
             route=USERS,
             response_model=UserResponseModel,
-            **filters,
+            list_model=user_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATED_USER)
@@ -794,7 +791,9 @@ class RestZenStore(BaseZenStore):
     def list_teams(
         self,
         name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[TeamResponseModel]:
         """List all teams.
 
@@ -883,7 +882,9 @@ class RestZenStore(BaseZenStore):
     def list_roles(
         self,
         name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[RoleResponseModel]:
         """List all roles.
 
@@ -944,7 +945,9 @@ class RestZenStore(BaseZenStore):
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[RoleAssignmentResponseModel]:
         """List all role assignments.
 
@@ -1058,7 +1061,9 @@ class RestZenStore(BaseZenStore):
     def list_projects(
         self,
         name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[ProjectResponseModel]:
         """List all projects.
 
@@ -1151,7 +1156,9 @@ class RestZenStore(BaseZenStore):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[PipelineResponseModel]:
         """List all pipelines in the project.
 
@@ -1273,7 +1280,9 @@ class RestZenStore(BaseZenStore):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[PipelineRunResponseModel]:
         """Gets all pipeline runs.
 

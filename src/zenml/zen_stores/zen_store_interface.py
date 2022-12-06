@@ -16,8 +16,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 from uuid import UUID
 
-
-from zenml.constants import LIMIT_DEFAULT
+from zenml.constants import PAGE_SIZE_DEFAULT
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import (
     ArtifactRequestModel,
@@ -25,6 +24,7 @@ from zenml.models import (
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
+    FilterBaseModel,
     FlavorRequestModel,
     FlavorResponseModel,
     PipelineRequestModel,
@@ -52,11 +52,11 @@ from zenml.models import (
     TeamResponseModel,
     TeamUpdateModel,
     UserAuthModel,
+    UserFilterModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
 )
-from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.models.server_models import ServerModel
 
@@ -249,7 +249,9 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stack_components(
         self,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
@@ -366,7 +368,9 @@ class ZenStoreInterface(ABC):
         component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
@@ -448,15 +452,12 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_users(
-        self,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        self, user_filter_model: UserFilterModel
     ) -> Page[UserResponseModel]:
         """List all users.
 
         Args:
-            name: Optionally filter by name
-            params: Parameters for pagination (page and size)
+            user_filter_model: All filter parameters including pagination params
 
         Returns:
             A list of all users.
@@ -523,7 +524,9 @@ class ZenStoreInterface(ABC):
     def list_teams(
         self,
         name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[TeamResponseModel]:
         """List all teams.
 
@@ -599,7 +602,9 @@ class ZenStoreInterface(ABC):
     def list_roles(
         self,
         name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[RoleResponseModel]:
         """List all roles.
 
@@ -686,7 +691,9 @@ class ZenStoreInterface(ABC):
         role_name_or_id: Optional[Union[str, UUID]] = None,
         team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[RoleAssignmentResponseModel]:
         """List all role assignments.
 
@@ -745,7 +752,9 @@ class ZenStoreInterface(ABC):
     def list_projects(
         self,
         name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[ProjectResponseModel]:
         """List all projects.
 
@@ -826,7 +835,9 @@ class ZenStoreInterface(ABC):
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[PipelineResponseModel]:
         """List all pipelines in the project.
 
@@ -937,7 +948,9 @@ class ZenStoreInterface(ABC):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
-        params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+        params: FilterBaseModel = FilterBaseModel(
+            page=1, size=PAGE_SIZE_DEFAULT
+        ),
     ) -> Page[PipelineRunResponseModel]:
         """Gets all pipeline runs.
 

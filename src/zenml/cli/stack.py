@@ -648,6 +648,9 @@ def list_stacks(**kwargs) -> None:
     client = Client()
     with console.status("Listing stacks...\n"):
         stacks = client.list_stacks(**kwargs)
+        if not stacks:
+            cli_utils.declare("No stacks found for the given filters.")
+            return
 
         print_stacks_table(client, stacks.items)
         print_page_info(stacks)

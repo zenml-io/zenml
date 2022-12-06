@@ -1,15 +1,20 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Type, Union, List, ClassVar, get_args
+from typing import Any, ClassVar, List, Type, Union, get_args
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, validator, root_validator, Field
+from pydantic import BaseModel, Field, root_validator, validator
 from sqlmodel import SQLModel
 
+from zenml.constants import (
+    PAGE_SIZE_DEFAULT,
+    PAGE_SIZE_MAXIMUM,
+    PAGINATION_STARTING_PAGE,
+)
 from zenml.enums import GenericFilterOps
 from zenml.logger import get_logger
 
@@ -28,8 +33,8 @@ class Filter(BaseModel, ABC):
 
     @abstractmethod
     def generate_query_conditions(
-            self,
-            table: Type[SQLModel],
+        self,
+        table: Type[SQLModel],
     ):
         """Generate the query conditions for the database.
 
@@ -39,7 +44,6 @@ class Filter(BaseModel, ABC):
         Returns:
             A list of conditions that will be combined using the `and` operation
         """
-        pass
 
 
 class BoolFilter(Filter):
@@ -48,8 +52,8 @@ class BoolFilter(Filter):
     ]
 
     def generate_query_conditions(
-            self,
-            table: Type[SQLModel],
+        self,
+        table: Type[SQLModel],
     ):
         """Generate the query conditions for the database.
 
@@ -72,8 +76,8 @@ class StrFilter(Filter):
     ]
 
     def generate_query_conditions(
-            self,
-            table: Type[SQLModel],
+        self,
+        table: Type[SQLModel],
     ):
         """Generate the query conditions for the database.
 
@@ -102,8 +106,8 @@ class UUIDFilter(Filter):
     ]
 
     def generate_query_conditions(
-            self,
-            table: Type[SQLModel],
+        self,
+        table: Type[SQLModel],
     ):
         """Generate the query conditions for the database.
 
@@ -113,20 +117,23 @@ class UUIDFilter(Filter):
         Returns:
             A list of conditions that will be combined using the `and` operation
         """
-        from sqlalchemy_utils.functions import cast_if
         import sqlalchemy
+        from sqlalchemy_utils.functions import cast_if
 
         if self.operation == GenericFilterOps.EQUALS:
             return getattr(table, self.column) == self.value
         elif self.operation == GenericFilterOps.CONTAINS:
-            return (cast_if(getattr(table, self.column), sqlalchemy.String)
-                    .like(f"%{self.value}%"))
+            return cast_if(getattr(table, self.column), sqlalchemy.String).like(
+                f"%{self.value}%"
+            )
         elif self.operation == GenericFilterOps.STARTSWITH:
-            return (cast_if(getattr(table, self.column), sqlalchemy.String)
-                    .startswith(f"%{self.value}%"))
+            return cast_if(
+                getattr(table, self.column), sqlalchemy.String
+            ).startswith(f"%{self.value}%")
         elif self.operation == GenericFilterOps.CONTAINS:
-            return (cast_if(getattr(table, self.column), sqlalchemy.String)
-                    .endswith(f"%{self.value}%"))
+            return cast_if(
+                getattr(table, self.column), sqlalchemy.String
+            ).endswith(f"%{self.value}%")
 
 
 class NumericFilter(Filter):
@@ -139,8 +146,8 @@ class NumericFilter(Filter):
     ]
 
     def generate_query_conditions(
-            self,
-            table: Type[SQLModel],
+        self,
+        table: Type[SQLModel],
     ):
         """Generate the query conditions for the database.
 
@@ -161,6 +168,7 @@ class NumericFilter(Filter):
         elif self.operation == GenericFilterOps.LT:
             return getattr(table, self.column) < self.value
 
+
 # ---------------- #
 # PAGINATION PARAM #
 # -----------------#
@@ -169,6 +177,7 @@ class NumericFilter(Filter):
 @dataclass
 class RawParams:
     """Raw pagination params used for generating the pagination query."""
+
     limit: int
     offset: int
 
@@ -191,12 +200,15 @@ class FilterBaseModel(BaseModel):
     )
     ```
     """
+
     list_of_filters: List["Filter"] = Field(None, exclude=True)
 
     sort_by: str = Query("created")
 
-    page: int = Query(1, ge=1, description="Page number")
-    size: int = Query(50, ge=1, le=100, description="Page size")
+    page: int = Query(PAGINATION_STARTING_PAGE, ge=1, description="Page number")
+    size: int = Query(
+        PAGE_SIZE_DEFAULT, ge=1, le=PAGE_SIZE_MAXIMUM, description="Page size"
+    )
 
     id: Union[UUID, str] = Query(None, description="Id for this resource")
     created: Union[datetime, str] = Query(None, description="Created")
@@ -204,7 +216,7 @@ class FilterBaseModel(BaseModel):
 
     class Config:
         extras = False
-        fields = {'list_of_filters': {'exclude': True}}
+        fields = {"list_of_filters": {"exclude": True}}
 
     @validator("sort_by", pre=True)
     def sort_column(cls, v):
@@ -244,14 +256,16 @@ class FilterBaseModel(BaseModel):
 
                 if issubclass(datetime, get_args(cls.__fields__[key].type_)):
                     try:
-                        supported_format = '%y-%m-%d %H:%M:%S'
-                        datetime_value = datetime.strptime(value,
-                                                           supported_format)
+                        supported_format = "%y-%m-%d %H:%M:%S"
+                        datetime_value = datetime.strptime(
+                            value, supported_format
+                        )
                     except ValueError as e:
-                        raise ValueError("The datetime filter only works with "
-                                         "value in the following format is "
-                                         "expected: `{supported_format}`"
-                                         ) from e
+                        raise ValueError(
+                            "The datetime filter only works with "
+                            "value in the following format is "
+                            "expected: `{supported_format}`"
+                        ) from e
 
                     list_of_filters.append(
                         NumericFilter(
@@ -261,13 +275,16 @@ class FilterBaseModel(BaseModel):
                         )
                     )
                 elif issubclass(UUID, get_args(cls.__fields__[key].type_)):
-                    if (operator == GenericFilterOps.EQUALS
-                            and not isinstance(value, UUID)):
+                    if operator == GenericFilterOps.EQUALS and not isinstance(
+                        value, UUID
+                    ):
                         try:
                             value = UUID(value)
-                        except ValueError as e:
-                            raise ValueError("Invalid value passed as UUID as "
-                                             "query parameter.") from 3
+                        except ValueError:
+                            raise ValueError(
+                                "Invalid value passed as UUID as "
+                                "query parameter."
+                            ) from 3
                     elif operator != GenericFilterOps.EQUALS:
                         value = str(value)
 
@@ -294,8 +311,10 @@ class FilterBaseModel(BaseModel):
                             value=bool(value),
                         )
                     )
-                elif (issubclass(str, get_args(cls.__fields__[key].type_))
-                        or cls.__fields__[key].type_ == str):
+                elif (
+                    issubclass(str, get_args(cls.__fields__[key].type_))
+                    or cls.__fields__[key].type_ == str
+                ):
                     list_of_filters.append(
                         StrFilter(
                             operation=GenericFilterOps(operator),
@@ -304,9 +323,11 @@ class FilterBaseModel(BaseModel):
                         )
                     )
                 else:
-                    logger.warning("The Datatype "
-                                   "cls.__fields__[key].type_ might "
-                                   "not be supported for filtering ")
+                    logger.warning(
+                        "The Datatype "
+                        "cls.__fields__[key].type_ might "
+                        "not be supported for filtering "
+                    )
                     list_of_filters.append(
                         StrFilter(
                             operation=GenericFilterOps(operator),

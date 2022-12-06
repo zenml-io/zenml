@@ -207,8 +207,10 @@ DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE = ".zenml_deployment_config.yaml"
 ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"
 
 # Pagination defaults
-OFFSET = 0
-LIMIT_DEFAULT: int = handle_int_env_var(
+PAGINATION_STARTING_PAGE: int = 1
+PAGE_SIZE_DEFAULT: int = handle_int_env_var(
     ENV_ZENML_PAGINATION_DEFAULT_LIMIT, default=50
 )
-LIMIT_MAX = 500
+PAGE_SIZE_MAXIMUM: int = handle_int_env_var(
+    ENV_ZENML_PAGINATION_DEFAULT_LIMIT, default=10000
+)

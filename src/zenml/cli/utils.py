@@ -183,7 +183,7 @@ M = TypeVar("M", bound=BaseModel)
 
 
 def print_pydantic_models(
-    models: List[M],
+    models: Page[M],
     columns: Optional[List[str]] = None,
     exclude_columns: Optional[List[str]] = None,
     is_active: Optional[Callable[[M], bool]] = None,
@@ -256,7 +256,7 @@ def print_pydantic_models(
             else items
         )
 
-    print_table([__dictify(model) for model in models])
+    print_table([__dictify(model) for model in models.items])
 
 
 def format_integration_list(
@@ -1053,6 +1053,7 @@ def warn_unsupported_non_default_project() -> None:
 
 def print_page_info(page: Page):
     """Print all information pertaining to a page to show the amount of items and pages"""
-    declare(f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
-            f"found for the applied filters.")
-
+    declare(
+        f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
+        f"found for the applied filters."
+    )

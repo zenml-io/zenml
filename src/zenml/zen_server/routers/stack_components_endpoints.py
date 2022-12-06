@@ -19,8 +19,11 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
-from zenml.models import ComponentResponseModel, ComponentUpdateModel
-from zenml.models import FilterBaseModel
+from zenml.models import (
+    ComponentResponseModel,
+    ComponentUpdateModel,
+    FilterBaseModel,
+)
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store

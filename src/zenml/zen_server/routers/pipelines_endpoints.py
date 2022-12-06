@@ -21,11 +21,11 @@ from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
+    FilterBaseModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
     PipelineUpdateModel,
 )
-from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store

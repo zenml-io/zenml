@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """Pydantic models for the various concepts in ZenML."""
 
-from zenml.models.filter_models import FilterBaseModel
-
 from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
@@ -25,6 +23,7 @@ from zenml.models.component_models import (
     ComponentResponseModel,
     ComponentUpdateModel,
 )
+from zenml.models.filter_models import Filter, FilterBaseModel
 from zenml.models.flavor_models import FlavorRequestModel, FlavorResponseModel
 from zenml.models.pipeline_models import (
     PipelineRequestModel,
@@ -68,6 +67,7 @@ from zenml.models.team_models import (
 )
 from zenml.models.user_models import (
     UserAuthModel,
+    UserFilterModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
@@ -159,5 +159,6 @@ __all__ = [
     "UserRequestModel",
     "UserResponseModel",
     "UserUpdateModel",
+    "UserFilterModel",
     "UserAuthModel",
 ]

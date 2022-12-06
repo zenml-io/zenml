@@ -20,12 +20,12 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, ROLES, TEAMS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
+    FilterBaseModel,
     RoleAssignmentResponseModel,
     TeamRequestModel,
     TeamResponseModel,
     TeamUpdateModel,
 )
-from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store

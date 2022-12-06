@@ -19,8 +19,12 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ROLES, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import RoleRequestModel, RoleResponseModel, RoleUpdateModel
-from zenml.models import FilterBaseModel
+from zenml.models import (
+    FilterBaseModel,
+    RoleRequestModel,
+    RoleResponseModel,
+    RoleUpdateModel,
+)
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store

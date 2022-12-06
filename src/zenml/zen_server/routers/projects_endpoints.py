@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import (
     API,
     FLAVORS,
-    LIMIT_DEFAULT,
+    PAGE_SIZE_DEFAULT,
     PIPELINES,
     PROJECTS,
     ROLES,
@@ -35,6 +35,7 @@ from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ComponentRequestModel,
     ComponentResponseModel,
+    FilterBaseModel,
     FlavorRequestModel,
     FlavorResponseModel,
     PipelineRequestModel,
@@ -48,7 +49,6 @@ from zenml.models import (
     StackRequestModel,
     StackResponseModel,
 )
-from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -214,7 +214,7 @@ def get_role_assignments_for_project(
 @handle_exceptions
 def list_project_stacks(
     project_name_or_id: Union[str, UUID],
-    params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+    params: FilterBaseModel = FilterBaseModel(page=1, size=PAGE_SIZE_DEFAULT),
     user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[UUID] = None,
     name: Optional[str] = None,
@@ -313,7 +313,7 @@ def create_stack(
 @handle_exceptions
 def list_project_stack_components(
     project_name_or_id: Union[str, UUID],
-    params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
+    params: FilterBaseModel = FilterBaseModel(page=1, size=PAGE_SIZE_DEFAULT),
     user_name_or_id: Optional[Union[str, UUID]] = None,
     type: Optional[str] = None,
     name: Optional[str] = None,

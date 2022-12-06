@@ -29,11 +29,11 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
+    FilterBaseModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     StepRunResponseModel,
 )
-from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
 from zenml.zen_server.auth import AuthContext, authorize

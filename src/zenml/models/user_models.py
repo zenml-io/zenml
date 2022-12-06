@@ -16,15 +16,26 @@
 import re
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Union,
+    cast,
+)
 from uuid import UUID
 
+from fastapi import Query
 from pydantic import BaseModel, Field, SecretStr, root_validator
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.models import RoleResponseModel
+from zenml.models import FilterBaseModel
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
@@ -407,6 +418,42 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
             token_hash = user.get_hashed_activation_token()
         pwd_context = cls._get_crypt_context()
         return cast(bool, pwd_context.verify(activation_token, token_hash))
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class UserFilterModel(FilterBaseModel):
+    """Model to enable advanced filtering of all StackModels.
+
+    The Stack Model needs additional scoping. As such the `_scope_user` field
+    can be set to the user that is doing the filtering. The
+    `generate_filter()` method of the baseclass is overwritten to include the
+    scoping.
+    """
+
+    name: str = Query(
+        None,
+        description="Name of the user",
+    )
+    full_name: str = Query(
+        None,
+        description="Full Name of the user",
+    )
+    email: str = Query(
+        None,
+        description="Full Name of the user",
+    )
+    active: Union[bool, str] = Query(
+        None,
+        description="Full Name of the user",
+    )
+    email_opted_in: Union[bool, str] = Query(
+        None,
+        description="Full Name of the user",
+    )
 
 
 # ------- #
