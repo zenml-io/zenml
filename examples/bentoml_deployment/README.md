@@ -1,9 +1,9 @@
 # 🚀 Local model deployment with BentoML deployments
 
-BentoML is an open source framework for serving, managing, and deploying machine learning models. 
-It provides a high-level API for defining models and model servers, and supports 
-all major machine learning frameworks, including Tensorflow, Keras, PyTorch, 
-XGBoost, scikit-learn, and etc.
+BentoML is an open source framework for serving, managing, and deploying machine 
+learning models. It provides a high-level API for defining models and model 
+servers, and supports all major machine learning frameworks, including 
+Tensorflow, Keras, PyTorch, XGBoost, scikit-learn, and etc.
 
 This example demonstrates how you can use BentoML to serve your models locally
 with ZenML. While the integration offers a way to deploy your models locally,
@@ -19,9 +19,14 @@ train a classifier using [PyTorch](https://pytorch.org/).
 In order to show how a project can use a model deployer such as BentoML, this
 example contains two pipelines:
 
-  * `train_fashion_mnist` - this pipeline loads the Fashion-MNIST dataset, trains a classifier, and uses the built-in bento_builder and bentoml_deployer steps to build and deploy the model.
+* `train_fashion_mnist` - this pipeline loads the Fashion-MNIST dataset, 
+trains a classifier, and uses the built-in bento_builder and bentoml_deployer 
+steps to build and deploy the model.
  
-  * `inference_fashion_mnist` - this pipeline loads samples of images stored in a folder within the repo, calls the prediction service to get the prediction url, and then calls the prediction url to make predictions. 
+* `inference_fashion_mnist` - this pipeline loads samples of images stored 
+in a folder within the repo, calls the prediction service to get the 
+prediction url, and then calls the prediction url to make predictions. 
+
 ## 🧰 How the example is implemented
 This example contains two very important aspects that should be highlighted.
 
@@ -89,7 +94,8 @@ bento_builder = bento_builder_step(
 )
 ```
 
-For more information about the `bento_builder` step parameters, please refer to the [bento builder step]()
+For more information about the `bento_builder` step parameters, please refer 
+to the [bento builder step]()
 
 ### ↩️ BentoML Deployer step
 
@@ -112,7 +118,9 @@ bentoml_model_deployer = bentoml_model_deployer_step(
     )
 )
 ```
-For more information about the `bentoml_deployer` step parameters, please refer to the [bentoml deployer step]()
+For more information about the `bentoml_deployer` step parameters, please refer 
+to the [bentoml deployer step]()
+
 # 🖥 Run it locally
 
 ## ⏩ SuperQuick `bentoml` run
@@ -168,14 +176,15 @@ To run the deployment pipeline:
 python run.py --config deploy
 ```
 
-The inference pipeline will use the currently running BentoML http deployment server
-to perform an online prediction. To run the inference pipeline:
+The inference pipeline will use the currently running BentoML http deployment 
+server to perform an online prediction. To run the inference pipeline:
 
 ```shell
 python run.py --config predict
 ```
 
-The `zenml model-deployer models list` CLI command can be run to list the active model servers:
+The `zenml model-deployer models list` CLI command can be run to list the 
+active model servers:
 
 ```
 $ zenml model-deployer models list
@@ -186,8 +195,8 @@ $ zenml model-deployer models list
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━┛
 ```
 
-To get more information about a specific model server, such as the prediction URL,
-the `zenml model-deployer models describe <uuid>` CLI command can be run:
+To get more information about a specific model server, such as the prediction 
+URL, the `zenml model-deployer models describe <uuid>` CLI command can be run:
 
 ```
 $ zenml model-deployer models describe cd38d6e6-467b-46e0-be13-3112c6e65d0e
@@ -236,8 +245,8 @@ $ zenml model-deployer models get-url cd38d6e6-467b-46e0-be13-3112c6e65d0e
   http://localhost:3001/
 ```
 
-Finally, a model server can be deleted with the `zenml model-deployer models delete <uuid>`
-CLI command:
+Finally, a model server can be deleted with the 
+`zenml model-deployer models delete <uuid>` CLI command:
 
 ```shell
 $ zenml model-deployer models delete cd38d6e6-467b-46e0-be13-3112c6e65d0e
@@ -255,8 +264,9 @@ which is a CLI tool for managing BentoML deployments on cloud providers.
 
 To use Bentoctl, you need : 
 
-1. An account with a cloud provider. Currently, Bentoctl supports AWS, GCP, and Azure. 
-You will also need to have the corresponding CLI tools installed on your machine. 
+1. An account with a cloud provider. Currently, Bentoctl supports AWS, GCP, 
+and Azure. You will also need to have the corresponding CLI tools installed 
+on your machine. 
 2. Docker installed on your machine.
 3. Terraform installed on your machine.
 
@@ -356,7 +366,8 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the BentoML deployment integration can be found [here](https://docs.zenml.io/component-gallery/model-deployers/bentoml).
+Our docs regarding the BentoML deployment integration can be found 
+[here](https://docs.zenml.io/component-gallery/model-deployers/bentoml).
 
 If you want to learn more about deployment in ZenML in general or about how to 
 build your own deployer steps in ZenML check out our 

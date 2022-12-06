@@ -5,8 +5,9 @@ tool that tracks and visualizes experiment runs with their many parameters,
 metrics and output files.
 
 ## 🗺 Overview
-This example showcases how easily mlflow tracking can be integrated into a ZenML pipeline with just a few simple lines
-of code.
+
+This example showcases how easily mlflow tracking can be integrated into a 
+ZenML pipeline with just a few simple lines of code.
 
 We'll be using the
 [MNIST-digits](https://keras.io/api/datasets/mnist/) dataset and
@@ -21,7 +22,7 @@ for details.
 
 In the example script the [mlflow autologger for
 Keras](https://www.mlflow.org/docs/latest/tracking.html#tensorflow-and-keras) is
-used within the training step to directly hook into the TensorFlow training and
+used within the training step to directly hook into the TensorFlow training, and
 it will log out all relevant parameters, metrics and output files. Additionally,
 we explicitly log the test accuracy within the evaluation step.
 
@@ -31,8 +32,8 @@ documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflo
 for details.
 
 ## 🧰 How the example is implemented
-Adding MLflow tracking to a step is a enabling the experiment tracker for a step. Now you're free to log anything from within 
-the step to mlflow. 
+Adding MLflow tracking to a step is enabling the experiment tracker for a step. 
+Now you're free to log anything from within the step to mlflow. 
 
 ZenML ties all the logs from all steps within a pipeline run together into one mlflow run so that you can see everything
 in one place.
@@ -83,7 +84,8 @@ def tf_trainer(
     
     return model
 ```
-If you want to enable MLflow tracking when using the class-based API, simply configure your step as follows:
+If you want to enable MLflow tracking when using the class-based API, simply 
+configure your step as follows:
 
 ```python
 class TFTrainer(BaseStep):
@@ -101,6 +103,7 @@ step_instance.configure(experiment_tracker="<NAME_OF_EXPERIMENT_TRACKER>")
 # 🖥 Run it locally
 
 ## ⏩ SuperQuick `mlflow_tracking` run
+
 If you're really in a hurry and just want to see this example pipeline run
 without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
@@ -178,8 +181,10 @@ rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 
 # 📜 Learn more
 
-Our docs regarding the MLflow experiment tracker integration can be found [here](https://docs.zenml.io/component-gallery/experiment-trackers/mlflow).
+Our docs regarding the MLflow experiment tracker integration can be found 
+[here](https://docs.zenml.io/component-gallery/experiment-trackers/mlflow).
 
 
-If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in ZenML
-check out our [docs](https://docs.zenml.io/component-gallery/experiment-trackers/custom).
+If you want to learn more about experiment trackers in general or about how to 
+build your own experiment trackers in ZenML check out our 
+[docs](https://docs.zenml.io/component-gallery/experiment-trackers/custom).
