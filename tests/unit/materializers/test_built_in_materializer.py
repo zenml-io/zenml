@@ -51,7 +51,6 @@ def test_empty_dict_list_tuple_materialization():
 
 def test_simple_dict_list_tuple_materialization(tmp_path):
     """Test materialization for `dict`, `list`, `tuple` with data."""
-    artifact_uri = str(tmp_path)
 
     def _validate_single_file(artifact_uri: str) -> None:
         files = os.listdir(artifact_uri)
@@ -65,7 +64,6 @@ def test_simple_dict_list_tuple_materialization(tmp_path):
         result = _test_materializer(
             step_output_type=type_,
             step_output=example,
-            artifact_uri=artifact_uri,
             validation_function=_validate_single_file,
         )
         assert result == example

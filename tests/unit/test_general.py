@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-import shutil
+from tempfile import TemporaryDirectory
 from typing import Any, Callable, Optional, Type
 
 from zenml.artifacts.data_artifact import DataArtifact
@@ -33,7 +33,6 @@ def _test_materializer(
     step_output: Any,
     step_output_type: Optional[Type[Any]] = None,
     materializer_class: Optional[Type[BaseMaterializer]] = None,
-    artifact_uri: Optional[str] = None,
     validation_function: Optional[Callable[[str], Any]] = None,
 ) -> Any:
     """Test whether the materialization of a given step output works.
@@ -49,8 +48,6 @@ def _test_materializer(
             `type(step_output)` will be used.
         materializer_class: The materializer class. If not provided, we query
             the default materializer registry using `step_output_type`.
-        artifact_uri: An optional URI to assign to the artifact that will be
-            materialized.
         validation_function: An optional function to call on the absolute path
             to `artifact_uri`. Can be used, e.g., to check whether a certain
             file exists or a certain number of files were written.
@@ -64,11 +61,10 @@ def _test_materializer(
     if materializer_class is None:
         materializer_class = default_materializer_registry[step_output_type]
 
-    artifact_uri = os.path.abspath(artifact_uri or "")
-    mock_artifact = DataArtifact(uri=artifact_uri)
-    materializer = materializer_class(mock_artifact)
-    existing_files = os.listdir(artifact_uri)
-    try:
+    with TemporaryDirectory() as artifact_uri:
+        mock_artifact = DataArtifact(uri=artifact_uri)
+        materializer = materializer_class(mock_artifact)
+        existing_files = os.listdir(artifact_uri)
         materializer.handle_return(step_output)
         new_files = os.listdir(artifact_uri)
         assert len(new_files) > len(existing_files)  # something was written
@@ -77,14 +73,3 @@ def _test_materializer(
         if validation_function:
             validation_function(artifact_uri)
         return loaded_data
-    finally:
-        new_files = os.listdir(artifact_uri)
-        created_files = [
-            filename for filename in new_files if filename not in existing_files
-        ]
-        for filename in created_files:
-            full_path = os.path.join(artifact_uri, filename)
-            if os.path.isdir(full_path):
-                shutil.rmtree(full_path)
-            else:
-                os.remove(full_path)
