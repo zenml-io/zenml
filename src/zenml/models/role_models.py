@@ -15,9 +15,11 @@
 
 from typing import Set
 
+from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.enums import PermissionType
+from zenml.models.filter_models import FilterBaseModel
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
@@ -47,6 +49,20 @@ class RoleBaseModel(BaseModel):
 
 class RoleResponseModel(RoleBaseModel, BaseResponseModel):
     """Response model for roles."""
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class RoleFilterModel(FilterBaseModel):
+    """Model to enable advanced filtering of all Users."""
+
+    name: str = Query(
+        None,
+        description="Name of the role",
+    )
 
 
 # ------- #

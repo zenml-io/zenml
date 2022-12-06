@@ -16,8 +16,10 @@
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
+from fastapi import Query
 from pydantic import BaseModel, Field
 
+from zenml.models.filter_models import FilterBaseModel
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
@@ -79,6 +81,19 @@ class TeamResponseModel(TeamBaseModel, BaseResponseModel):
         else:
             return []
 
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class TeamFilterModel(FilterBaseModel):
+    """Model to enable advanced filtering of all Teams."""
+
+    name: str = Query(
+        None,
+        description="Name of the team",
+    )
 
 # ------- #
 # REQUEST #

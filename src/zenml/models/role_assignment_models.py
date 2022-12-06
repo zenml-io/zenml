@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """Models representing role assignments."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
+from fastapi import Query
 from pydantic import BaseModel, Field, root_validator
 
+from zenml.models import FilterBaseModel
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 
 if TYPE_CHECKING:
@@ -73,6 +75,26 @@ class RoleAssignmentResponseModel(RoleAssignmentBaseModel, BaseResponseModel):
     )
     role: "RoleResponseModel" = Field(
         title="The team the role is assigned to.", default=None
+    )
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class RoleAssignmentFilterModel(FilterBaseModel):
+    """Model to enable advanced filtering of all Role Assignments."""
+
+    project_id: Union[UUID, str] = Query(
+        None, description="Project of the RoleAssignment"
+    )
+    user_id: Union[UUID, str] = Query(
+        None,
+        description="User in the RoleAssignment"
+    )
+    role_id: Union[UUID, str] = Query(
+        None, description="Role in the RoleAssignment"
     )
 
 

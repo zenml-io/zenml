@@ -13,12 +13,15 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import List, Optional
+from typing import ClassVar, List, Optional, Union
+from uuid import UUID
 
+from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ExecutionStatus
+from zenml.models import FilterBaseModel
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
@@ -61,6 +64,29 @@ class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
     status: Optional[List[ExecutionStatus]] = Field(
         title="The status of the last x Pipeline Runs."
     )
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class PipelineFilterModel(FilterBaseModel):
+    """Model to enable advanced filtering of all Projects."""
+
+    name: str = Query(
+        None,
+        description="Name of the Pipeline",
+    )
+    docstring: str = Query(
+        None,
+        description="Docstring of the Pipeline",
+    )
+
+    project_id: Union[UUID, str] = Query(
+        None, description="Project of the Pipeline"
+    )
+    user_id: Union[UUID, str] = Query(None, description="User of the Pipeline")
 
 
 # ------- #

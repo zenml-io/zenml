@@ -34,6 +34,7 @@ from zenml.models.pipeline_models import (
     PipelineRequestModel,
     PipelineResponseModel,
     PipelineUpdateModel,
+    PipelineFilterModel,
 )
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
@@ -44,15 +45,18 @@ from zenml.models.project_models import (
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
+    ProjectFilterModel,
 )
 from zenml.models.role_assignment_models import (
     RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
+    RoleAssignmentFilterModel,
 )
 from zenml.models.role_models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    RoleFilterModel,
 )
 from zenml.models.stack_models import (
     StackFilterModel,
@@ -69,6 +73,7 @@ from zenml.models.team_models import (
     TeamRequestModel,
     TeamResponseModel,
     TeamUpdateModel,
+    TeamFilterModel,
 )
 from zenml.models.user_models import (
     UserAuthModel,
@@ -134,6 +139,7 @@ __all__ = [
     "ComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",
+    "ComponentFilterModel",
     "FlavorRequestModel",
     "FlavorResponseModel",
     "FlavorFilterModel",
@@ -141,17 +147,21 @@ __all__ = [
     "PipelineRequestModel",
     "PipelineResponseModel",
     "PipelineUpdateModel",
+    "PipelineFilterModel",
     "PipelineRunRequestModel",
     "PipelineRunResponseModel",
     "PipelineRunUpdateModel",
     "ProjectRequestModel",
     "ProjectResponseModel",
     "ProjectUpdateModel",
+    "ProjectFilterModel",
     "RoleAssignmentRequestModel",
     "RoleAssignmentResponseModel",
+    "RoleAssignmentFilterModel",
     "RoleRequestModel",
     "RoleResponseModel",
     "RoleUpdateModel",
+    "RoleFilterModel",
     "StackRequestModel",
     "StackResponseModel",
     "StackUpdateModel",
@@ -162,6 +172,7 @@ __all__ = [
     "TeamRequestModel",
     "TeamResponseModel",
     "TeamUpdateModel",
+    "TeamFilterModel",
     "UserRequestModel",
     "UserResponseModel",
     "UserUpdateModel",
