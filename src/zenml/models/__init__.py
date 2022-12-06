@@ -74,10 +74,12 @@ ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     ProjectResponseModel=ProjectResponseModel,
 )
+
 StackResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     ProjectResponseModel=ProjectResponseModel,
 )
+
 FlavorResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     ProjectResponseModel=ProjectResponseModel,
@@ -105,10 +107,16 @@ PipelineRunResponseModel.update_forward_refs(
     PipelineResponseModel=PipelineResponseModel,
     StackResponseModel=StackResponseModel,
 )
+
 StepRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     ProjectResponseModel=ProjectResponseModel,
     ArtifactResponseModel=ArtifactResponseModel,
+)
+
+ArtifactResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel,
 )
 
 __all__ = [

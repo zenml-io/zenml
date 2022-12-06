@@ -143,12 +143,15 @@ class StepLauncher:
 
         pipeline_run = self._create_or_reuse_run()
         try:
+            client = Client()
             step_run = StepRunRequestModel(
                 name=self._step_name,
                 pipeline_run_id=pipeline_run.id,
                 step=self._step,
                 status=ExecutionStatus.RUNNING,
                 start_time=datetime.now(),
+                user=client.active_user.id,
+                project=client.active_project.id,
             )
             try:
                 execution_needed, step_run_response = self._prepare(
