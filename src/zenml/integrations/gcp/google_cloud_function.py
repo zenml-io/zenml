@@ -123,6 +123,9 @@ def create_cloud_function(
 
     Returns:
         str: URI of the created cloud function.
+
+    Raises:
+        TimeoutError: If function times out.
     """
     sanitized_function_name = function_name.replace("_", "-")
 
@@ -160,9 +163,7 @@ def create_cloud_function(
     )
 
     start_time = time.time()
-    while (state == Function.State.DEPLOYING) and (
-        time.time() - start_time < timeout
-    ):
+    while state == Function.State.DEPLOYING:
         response = get_cloud_functions_api(
             credentials=credentials
         ).get_function(
@@ -173,6 +174,9 @@ def create_cloud_function(
         state = response.state
         logger.info("Still creating... sleeping for 5 seconds...")
         time.sleep(5)
+
+        if time.time() - start_time > timeout:
+            raise TimeoutError("Timed out waiting for function to deploy!")
 
     logger.info(f"Done! Function available at {response.service_config.uri}")
     return response.service_config.uri
