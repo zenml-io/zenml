@@ -23,7 +23,6 @@ from google.cloud import aiplatform
 TEMPLATE_PATH = "template_path"
 JOB_ID = "job_id"
 PIPELINE_ROOT = "pipeline_root"
-PIPELINE_SPEC_URI = "pipeline_spec_uri"
 PARAMETER_VALUES = "parameter_values"
 ENABLE_CACHING = "enable_caching"
 ENCRYPTION_SPEC_KEY_NAME = "encryption_spec_key_name"
@@ -51,7 +50,7 @@ def trigger_vertex_job(request: Request) -> Response:
 
     run = aiplatform.PipelineJob(
         display_name=display_name,
-        template_path=request_json[PIPELINE_SPEC_URI],
+        template_path=request_json[TEMPLATE_PATH],
         job_id=request_json[JOB_ID],
         pipeline_root=request_json[PIPELINE_ROOT],
         parameter_values=request_json[PARAMETER_VALUES],

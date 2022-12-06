@@ -47,7 +47,7 @@ class GcpIntegration(Integration):
         "google-cloud-secret-manager",
         "google-cloud-aiplatform>=1.11.0",
         "google-cloud-scheduler>=2.7.3",
-        "google-cloud-pubsub>=2.13.11",
+        "google-cloud-functions>=1.8.3",
     ]
 
     @classmethod

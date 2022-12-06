@@ -15,12 +15,16 @@
 
 import os
 import zipfile
-from tempfile import TemporaryFile
 from typing import TYPE_CHECKING, Optional
 
-import googleapiclient.discovery
 import requests
-from googleapiclient.discovery import Resource
+from google.cloud import functions_v2
+from google.cloud.functions_v2.types import (
+    BuildConfig,
+    CreateFunctionRequest,
+    Function,
+    Source,
+)
 
 from zenml.logger import get_logger
 
@@ -32,17 +36,13 @@ if TYPE_CHECKING:
 
 def get_cloud_functions_api(
     credentials: Optional["Credentials"] = None,
-) -> Resource:
+) -> functions_v2.FunctionServiceClient:
     """Gets the cloud functions API resource client.
 
     Returns:
-        Cloud Functions V2 Resource.
+        Cloud Functions V2 Client.
     """
-    service = googleapiclient.discovery.build(
-        "cloudfunctions", "v2", credentials=credentials
-    )
-    cloud_functions_api = service.projects().locations().functions()
-    return cloud_functions_api
+    return functions_v2.FunctionServiceClient(credentials=credentials)
 
 
 def zipdir(path: str, ziph: zipfile.ZipFile) -> None:
@@ -58,34 +58,51 @@ def zipdir(path: str, ziph: zipfile.ZipFile) -> None:
                 ziph.write(os.path.join(root, file), file)
 
 
-def upload_directory(parent: str, directory_path: str) -> dict:
+def upload_directory(
+    parent: str,
+    directory_path: str,
+    credentials: Optional["Credentials"] = None,
+) -> dict:
     """Creates an upload URL from a provided parent.
 
     Args:
         parent: Path that looks like projects/{PROJECT}/locations/{REGION}.
         directory_path: Local path of directory to upload.
+        credentials: Credentials to use for GCP services.
 
     Returns:
         Storage source as dict (https://cloud.google.com/functions/docs/reference/rest/v2/projects.locations.functions#StorageSource).
     """
-    upload_url = (
-        get_cloud_functions_api()
-        .generateUploadUrl(parent=parent, body={})
-        .execute()["uploadUrl"]
+    request = functions_v2.GenerateUploadUrlRequest(
+        parent=parent,
     )
-    logger.debug("Create Upload URL", upload_url)
+    response = get_cloud_functions_api(
+        credentials=credentials
+    ).generate_upload_url(request=request)
+    logger.debug(f"Create Upload URL response: {response}")
 
-    with TemporaryFile() as data:
+    upload_url = response.upload_url
+
+    with open("temp.zip", "wb") as data:
         with zipfile.ZipFile(data, "w", zipfile.ZIP_DEFLATED) as archive:
             zipdir(directory_path, archive)
         data.seek(0)
-        headers = {
-            "content-type": "application/zip",
-            "x-goog-content-length-range": "0,104857600",
-        }
-        res = requests.put(upload_url, headers=headers, data=data)
-    logger.debug(f"Uploaded function directory. Response: {res}")
-    return res["storageSource"]
+
+    headers = {
+        "content-type": "application/zip",
+        "x-goog-content-length-range": "0,104857600",
+    }
+    with open("temp.zip", "rb") as data:
+        res = requests.post(upload_url, headers=headers, data=data)
+    logger.debug(f"Uploaded function directory. Response: {res.text}")
+
+    from zenml.io import fileio
+
+    fileio.copy("temp.zip", "gs://ing-store/temp.zip", overwrite=True)
+    response.storage_source.bucket = "ing-store"
+    response.storage_source.object_ = "temp.zip"
+
+    return response.storage_source
 
 
 def create_cloud_function(
@@ -107,22 +124,37 @@ def create_cloud_function(
     Returns:
         str: URI of the created cloud function.
     """
+    sanitized_function_name = function_name.replace("_", "-")
+
     parent = "projects/{}/locations/{}".format(project, location)
-
-    storage_source = upload_directory(parent, directory_path)
-    config = {
-        "name": parent + "/functions/" + function_name,
-        "buildConfig": {
-            "entryPoint": "trigger_vertex_job",
-            "runtime": "python37",
-            "availableMemoryMb": 128,
-            "source": {"storageSource": storage_source},
-        },
-    }
-
-    logger.debug(f"Creating function with config: {config}")
-    res = (
-        get_cloud_functions_api().create(location=parent, body=config).execute()
+    logger.info(
+        f"Creating Google Cloud Function: {parent}/functions/{function_name}"
     )
-    logger.debug(f"Function {function_name} created. Response: {res}")
+
+    storage_source = upload_directory(
+        parent, directory_path, credentials=credentials
+    )
+
+    # Make the request
+    operation = get_cloud_functions_api(
+        credentials=credentials
+    ).create_function(
+        #  parent=parent + "/functions/" + function_name,
+        request=CreateFunctionRequest(
+            parent=parent,
+            function_id=sanitized_function_name,
+            function=Function(
+                name=parent + "/functions/" + sanitized_function_name,
+                # environment=Environment(value=2),
+                build_config=BuildConfig(
+                    entry_point="trigger_vertex_job",
+                    runtime="python38",
+                    source=Source(storage_source=storage_source),
+                ),
+            ),
+        )
+    )
+
+    # response = operation.result()
+
     return f"https://{location}-{project}.cloudfunctions.net/{function_name}"

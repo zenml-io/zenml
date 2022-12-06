@@ -13,10 +13,18 @@
 #  permissions and limitations under the License.
 """Utils for the Google Cloud Scheduler API."""
 
+import json
 import logging
 from typing import TYPE_CHECKING, Optional
 
 from google.cloud import scheduler
+from google.cloud.scheduler_v1.types import (
+    CreateJobRequest,
+    HttpMethod,
+    HttpTarget,
+    Job,
+    OidcToken,
+)
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
@@ -53,19 +61,24 @@ def create_scheduler_job(
     # Construct the fully qualified location path.
     parent = f"projects/{project}/locations/{region}"
 
-    # Construct the request body.
-    job = {
-        "httpTarget": {
-            "uri": http_uri,
-            "body": body,
-        },
-        "httpMethod": "POST",
-        "schedule": schedule,
-        "time_zone": time_zone,
-    }
-
     # Use the client to send the job creation request.
-    response = client.create_job(request={"parent": parent, "job": job})
+    response = client.create_job(
+        request=CreateJobRequest(
+            parent=parent,
+            job=Job(
+                http_target=HttpTarget(
+                    uri=http_uri,
+                    body=json.dumps(body).encode(),
+                    http_method=HttpMethod.POST,
+                    oidc_token=OidcToken(
+                        service_account_email=credentials.signer_email
+                    ),
+                ),
+                schedule=schedule,
+                time_zone=time_zone,
+            ),
+        )
+    )
 
-    logging.debug("Created scheduler job: {}".format(response.name))
+    logging.debug(f"Created scheduler job. Response: {response}")
     return response

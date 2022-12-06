@@ -56,6 +56,17 @@ from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
 from zenml.integrations.gcp.orchestrators import vertex_scheduler
+from zenml.integrations.gcp.orchestrators.vertex_scheduler.main import (
+    ENABLE_CACHING,
+    ENCRYPTION_SPEC_KEY_NAME,
+    JOB_ID,
+    LABELS,
+    LOCATION,
+    PARAMETER_VALUES,
+    PIPELINE_ROOT,
+    PROJECT,
+    TEMPLATE_PATH,
+)
 from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -63,7 +74,6 @@ from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils.io_utils import get_global_config_directory
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -216,9 +226,12 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             deployment: The pipeline deployment configuration.
             stack: The stack on which the pipeline will be deployed.
         """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_and_push_docker_image(
-            deployment=deployment, stack=stack
+        # docker_image_builder = PipelineDockerImageBuilder()
+        # repo_digest = docker_image_builder.build_and_push_docker_image(
+        #     deployment=deployment, stack=stack
+        # )
+        repo_digest = (
+            "eu.gcr.io/zenml-demos/zenml:hamzas_example_pipeline@26722cf017a6"
         )
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
@@ -428,7 +441,9 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         )
 
         if deployment.schedule:
-            logger.info("Scheduling job using Google Cloud Scheduler...")
+            logger.info(
+                "Scheduling job using Google Cloud Scheduler and Google Cloud Functions..."
+            )
 
             # First, do some validation
             artifact_store = stack.artifact_store
@@ -445,8 +460,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             fileio.copy(pipeline_file_path, artifact_store_pipeline_uri)
             logger.info(
                 "The scheduled pipeline representation has been "
-                "automatically copied on a path of the `GCPArtifactStore` ",
-                artifact_store_pipeline_uri,
+                "automatically copied to this path of the `GCPArtifactStore`: "
+                f"{artifact_store_pipeline_uri}",
             )
 
             # Get the credentials that would be used to create resources.
@@ -469,24 +484,22 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             function_uri = create_cloud_function(
                 project=project_id,
                 location=self.config.location,
-                function_name=f"{deployment.pipeline.name}",
+                function_name=orchestrator_run_name,
                 directory_path=vertex_scheduler.__path__[0],  # fixed path
                 credentials=credentials,
             )
 
             # Create the scheduler job
             body = {
-                vertex_scheduler.TEMPLATE_PATH: artifact_store_pipeline_uri,
-                vertex_scheduler.JOB_ID: _clean_pipeline_name(
-                    deployment.pipeline.name
-                ),
-                vertex_scheduler.PIPELINE_ROOT: self._pipeline_root,
-                vertex_scheduler.PARAMETER_VALUES: None,
-                vertex_scheduler.ENABLE_CACHING: False,
-                vertex_scheduler.ENCRYPTION_SPEC_KEY_NAME: self.config.encryption_spec_key_name,
-                vertex_scheduler.LABELS: settings.labels,
-                vertex_scheduler.PROJECT: project_id,
-                vertex_scheduler.LOCATION: self.config.location,
+                TEMPLATE_PATH: artifact_store_pipeline_uri,
+                JOB_ID: _clean_pipeline_name(deployment.pipeline.name),
+                PIPELINE_ROOT: self._pipeline_root,
+                PARAMETER_VALUES: None,
+                ENABLE_CACHING: False,
+                ENCRYPTION_SPEC_KEY_NAME: self.config.encryption_spec_key_name,
+                LABELS: settings.labels,
+                PROJECT: project_id,
+                LOCATION: self.config.location,
             }
 
             create_scheduler_job(
