@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Entrypoint for the scheduled vertex job."""
 import json
+import logging
 import random
 
 from flask import Request, Response
@@ -29,16 +30,18 @@ ENCRYPTION_SPEC_KEY_NAME = "encryption_spec_key_name"
 LABELS = "labels"
 PROJECT = "project"
 LOCATION = "location"
+WORKLOAD_SERVICE_ACCOUNT = "workload_service_account"
+NETWORK = "network"
 
 
 def trigger_vertex_job(request: Request) -> Response:
     """Processes the incoming HTTP request.
 
     Args:
-            request: HTTP request object.
+        request: HTTP request object.
 
     Returns:
-            The response text or any set of values that can be turned into a Response.
+        The response text or any set of values that can be turned into a Response.
     """
     # decode http request payload and translate into JSON object
     request_str = request.data.decode("utf-8")
@@ -58,5 +61,26 @@ def trigger_vertex_job(request: Request) -> Response:
         project=request_json[PROJECT],
         location=request_json[LOCATION],
     )
-    run.submit()
+
+    workload_service_account = request_json[WORKLOAD_SERVICE_ACCOUNT]
+    network = request_json[NETWORK]
+
+    if workload_service_account:
+        logging.info(
+            "The Vertex AI Pipelines job workload will be executed "
+            "using `%s` "
+            "service account.",
+            workload_service_account,
+        )
+
+    if network:
+        logging.info(
+            "The Vertex AI Pipelines job will be peered with `%s` " "network.",
+            network,
+        )
+
+    run.submit(
+        service_account=workload_service_account,
+        network=network,
+    )
     return f"{display_name} submitted!"

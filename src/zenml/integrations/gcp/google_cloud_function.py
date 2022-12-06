@@ -43,11 +43,11 @@ def get_cloud_functions_api(
 ) -> functions_v2.FunctionServiceClient:
     """Gets the cloud functions API resource client.
 
-    Args
-            credentials: Google cloud credentials.
+    Args:
+        credentials: Google cloud credentials.
 
-        Returns:
-            Cloud Functions V2 Client.
+    Returns:
+        Cloud Functions V2 Client.
     """
     return functions_v2.FunctionServiceClient(credentials=credentials)
 

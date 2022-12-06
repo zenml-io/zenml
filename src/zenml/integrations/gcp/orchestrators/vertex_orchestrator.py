@@ -62,10 +62,12 @@ from zenml.integrations.gcp.orchestrators.vertex_scheduler.main import (
     JOB_ID,
     LABELS,
     LOCATION,
+    NETWORK,
     PARAMETER_VALUES,
     PIPELINE_ROOT,
     PROJECT,
     TEMPLATE_PATH,
+    WORKLOAD_SERVICE_ACCOUNT,
 )
 from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
@@ -530,6 +532,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 LABELS: settings.labels,
                 PROJECT: project_id,
                 LOCATION: self.config.location,
+                WORKLOAD_SERVICE_ACCOUNT: self.config.workload_service_account,
+                NETWORK: self.config.network,
             }
 
             create_scheduler_job(
