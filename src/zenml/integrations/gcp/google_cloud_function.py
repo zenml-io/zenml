@@ -108,6 +108,7 @@ def create_cloud_function(
     location: str,
     function_name: str,
     credentials: Optional["Credentials"] = None,
+    timeout: int = 1800,
 ) -> str:
     """Create google cloud function from specified directory path.
 
@@ -118,6 +119,7 @@ def create_cloud_function(
         location: GCP location name.
         function_name: Name of the function to create.
         credentials: Credentials to use for GCP services.
+        timeout: Timeout in seconds.
 
     Returns:
         str: URI of the created cloud function.
@@ -156,7 +158,11 @@ def create_cloud_function(
         "Creating function... This might take a few minutes. "
         "Please do not exit the program at this point..."
     )
-    while state == Function.State.DEPLOYING:
+
+    start_time = time.time()
+    while (state == Function.State.DEPLOYING) and (
+        time.time() - start_time < timeout
+    ):
         response = get_cloud_functions_api(
             credentials=credentials
         ).get_function(
