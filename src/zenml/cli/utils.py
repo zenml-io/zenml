@@ -1053,12 +1053,6 @@ def warn_unsupported_non_default_project() -> None:
 
 def print_page_info(page: Page):
     """Print all information pertaining to a page to show the amount of items and pages"""
-    if page.total_pages > 1:
-        declare(
-            f"A total of `{page.total}` items were found "
-            f"matching the specified filters. Either narrow your "
-            f"search with more precise filters or use the "
-            f"`--page` and `--size` values to leaf through all "
-            f"the items. At `{page.size}` items per page, a total "
-            f"of `{page.total_pages}` pages exist."
-        )
+    declare(f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
+            f"found for the applied filters.")
+

@@ -48,7 +48,7 @@ from zenml.models import (
     StackRequestModel,
     StackResponseModel,
 )
-from zenml.models.filter_models import ListBaseModel
+from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -67,7 +67,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_projects(
-    params: ListBaseModel = Depends(),
+    params: FilterBaseModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[ProjectResponseModel]:
     """Lists all projects in the organization.
@@ -182,7 +182,7 @@ def get_role_assignments_for_project(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     team_name_or_id: Optional[Union[str, UUID]] = None,
-    params: ListBaseModel = Depends(),
+    params: FilterBaseModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[RoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a team.
@@ -214,7 +214,7 @@ def get_role_assignments_for_project(
 @handle_exceptions
 def list_project_stacks(
     project_name_or_id: Union[str, UUID],
-    params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
+    params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
     user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[UUID] = None,
     name: Optional[str] = None,
@@ -313,7 +313,7 @@ def create_stack(
 @handle_exceptions
 def list_project_stack_components(
     project_name_or_id: Union[str, UUID],
-    params: ListBaseModel = ListBaseModel(page=1, size=LIMIT_DEFAULT),
+    params: FilterBaseModel = FilterBaseModel(page=1, size=LIMIT_DEFAULT),
     user_name_or_id: Optional[Union[str, UUID]] = None,
     type: Optional[str] = None,
     name: Optional[str] = None,
@@ -422,7 +422,7 @@ def list_project_flavors(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    params: ListBaseModel = Depends(),
+    params: FilterBaseModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[FlavorResponseModel]:
     """List stack components flavors of a certain type that are part of a project.
@@ -509,7 +509,7 @@ def list_project_pipelines(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
-    params: ListBaseModel = Depends(),
+    params: FilterBaseModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineResponseModel]:
     """Gets pipelines defined for a specific project.

@@ -25,7 +25,7 @@ from zenml.models import (
     PipelineRunResponseModel,
     PipelineUpdateModel,
 )
-from zenml.models.filter_models import ListBaseModel
+from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -48,7 +48,7 @@ def list_pipelines(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-    params: ListBaseModel = Depends(),
+    params: FilterBaseModel = Depends(),
 ) -> Page[PipelineResponseModel]:
     """Gets a list of pipelines.
 

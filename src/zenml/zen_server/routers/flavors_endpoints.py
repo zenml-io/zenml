@@ -21,7 +21,7 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
 from zenml.models import FlavorResponseModel
-from zenml.models.filter_models import ListBaseModel
+from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -45,7 +45,7 @@ def list_flavors(
     user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    params: ListBaseModel = Depends(),
+    params: FilterBaseModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[FlavorResponseModel]:
     """Returns all flavors.

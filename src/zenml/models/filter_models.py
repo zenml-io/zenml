@@ -3,40 +3,22 @@ from abc import ABC, abstractmethod
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Type, Union, List, Optional, ClassVar, get_args
+from typing import Any, Type, Union, List, ClassVar, get_args
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, validator, root_validator, PrivateAttr, Field
+from pydantic import BaseModel, validator, root_validator, Field
 from sqlmodel import SQLModel
 
-from zenml.utils.enum_utils import StrEnum
+from zenml.enums import GenericFilterOps
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-# ------------------ #
-# QUERY PARAM MODELS #
-# ------------------ #
 
-
-@dataclass
-class RawParams:
-    limit: int
-    offset: int
-
-
-class GenericFilterOps(StrEnum):
-    """Ops for all filters for string values on list methods"""
-
-    EQUALS = "equals"
-    CONTAINS = "contains"
-    STARTSWITH = "startswith"
-    ENDSWITH = "endswith"
-    GTE = "gte"
-    GT = "gt"
-    LTE = "lte"
-    LT = "lt"
+# -------------- #
+# FILTER CLASSES #
+# ---------------#
 
 
 class Filter(BaseModel, ABC):
@@ -46,8 +28,8 @@ class Filter(BaseModel, ABC):
 
     @abstractmethod
     def generate_query_conditions(
-        self,
-        table: Type[SQLModel],
+            self,
+            table: Type[SQLModel],
     ):
         """Generate the query conditions for the database.
 
@@ -64,9 +46,10 @@ class BoolFilter(Filter):
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
     ]
+
     def generate_query_conditions(
-        self,
-        table: Type[SQLModel],
+            self,
+            table: Type[SQLModel],
     ):
         """Generate the query conditions for the database.
 
@@ -89,8 +72,8 @@ class StrFilter(Filter):
     ]
 
     def generate_query_conditions(
-        self,
-        table: Type[SQLModel],
+            self,
+            table: Type[SQLModel],
     ):
         """Generate the query conditions for the database.
 
@@ -117,9 +100,10 @@ class UUIDFilter(Filter):
         GenericFilterOps.CONTAINS,
         GenericFilterOps.ENDSWITH,
     ]
+
     def generate_query_conditions(
-        self,
-        table: Type[SQLModel],
+            self,
+            table: Type[SQLModel],
     ):
         """Generate the query conditions for the database.
 
@@ -153,9 +137,10 @@ class NumericFilter(Filter):
         GenericFilterOps.LT,
         GenericFilterOps.LTE,
     ]
+
     def generate_query_conditions(
-        self,
-        table: Type[SQLModel],
+            self,
+            table: Type[SQLModel],
     ):
         """Generate the query conditions for the database.
 
@@ -176,8 +161,19 @@ class NumericFilter(Filter):
         elif self.operation == GenericFilterOps.LT:
             return getattr(table, self.column) < self.value
 
+# ---------------- #
+# PAGINATION PARAM #
+# -----------------#
 
-class ListBaseModel(BaseModel):
+
+@dataclass
+class RawParams:
+    """Raw pagination params used for generating the pagination query."""
+    limit: int
+    offset: int
+
+
+class FilterBaseModel(BaseModel):
     """Class to unify all filter, paginate and sort request parameters in one place.
 
     This Model allows fine-grained filtering, sorting and pagination of
@@ -195,7 +191,7 @@ class ListBaseModel(BaseModel):
     )
     ```
     """
-    list_of_filters: List[Filter] = Field(None, exclude=True)
+    list_of_filters: List["Filter"] = Field(None, exclude=True)
 
     sort_by: str = Query("created")
 

@@ -69,7 +69,7 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
-    StackListModel,
+    StackFilterModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -83,7 +83,7 @@ from zenml.models import (
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
-from zenml.models.filter_models import ListBaseModel
+from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
@@ -1512,7 +1512,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of stacks.
         """
-        list_stack_model = StackListModel(
+        list_stack_model = StackFilterModel(
                 page=page,
                 size=size,
                 sort_by=sort_by,
@@ -2633,12 +2633,12 @@ class Client(metaclass=ClientMetaClass):
         self,
         list_command: Callable,
     ) -> List[AnyResponseModel]:
-        params = ListBaseModel(page=1)
+        params = FilterBaseModel(page=1)
         first_page: Page[BaseResponseModel] = list_command(params=params)
         list_of_entities = list(first_page.items)
         if first_page.total_pages < 1:
             for page in [1, first_page.total_pages]:
-                params = ListBaseModel(page=page)
+                params = FilterBaseModel(page=page)
                 list_of_entities.append(list_command(params))
 
         return list_of_entities

@@ -25,7 +25,7 @@ from zenml.models import (
     TeamResponseModel,
     TeamUpdateModel,
 )
-from zenml.models.filter_models import ListBaseModel
+from zenml.models import FilterBaseModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -44,7 +44,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_teams(
-    params: ListBaseModel = Depends(),
+    params: FilterBaseModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[TeamResponseModel]:
     """Returns a list of all teams.
@@ -153,7 +153,7 @@ def delete_team(
 def get_role_assignments_for_team(
     team_name_or_id: Union[str, UUID],
     project_name_or_id: Optional[Union[str, UUID]] = None,
-    params: ListBaseModel = Depends(),
+    params: FilterBaseModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[RoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a team.

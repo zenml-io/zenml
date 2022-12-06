@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import StackListModel, StackResponseModel, StackUpdateModel
+from zenml.models import StackFilterModel, StackResponseModel, StackUpdateModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -38,7 +38,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_stacks(
-    stack_list_model: StackListModel = Depends(),
+    stack_list_model: StackFilterModel = Depends(),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),

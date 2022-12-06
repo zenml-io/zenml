@@ -37,7 +37,7 @@ from zenml.models import (
     RoleAssignmentRequestModel,
     RoleRequestModel,
     RoleResponseModel,
-    StackListModel,
+    StackFilterModel,
     StackRequestModel,
     StackResponseModel,
     UserRequestModel,
@@ -494,7 +494,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             KeyError: if the project or default stack doesn't exist.
         """
         default_stacks = self.list_stacks(
-            StackListModel(
+            StackFilterModel(
                 project_id=project_name_or_id,
                 user_id=user_name_or_id,
                 name=DEFAULT_STACK_NAME,

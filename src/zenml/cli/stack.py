@@ -34,7 +34,7 @@ from zenml.exceptions import (
     ProvisioningError,
     StackExistsError,
 )
-from zenml.models import StackListModel
+from zenml.models import StackFilterModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -642,15 +642,15 @@ def rename_stack(
 
 
 @stack.command("list")
-@StackListModel.click_list_options()
+@StackFilterModel.click_list_options()
 def list_stacks(**kwargs) -> None:
     """List all stacks that fulfill the filter requirements."""
     client = Client()
     with console.status("Listing stacks...\n"):
         stacks = client.list_stacks(**kwargs)
 
-        print_page_info(stacks)
         print_stacks_table(client, stacks.items)
+        print_page_info(stacks)
 
 
 @stack.command(

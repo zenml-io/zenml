@@ -38,7 +38,6 @@
 The code contained within this file has been heavily inspired by the
 fastapi-pagination library: https://github.com/uriyyo/fastapi-pagination
 """
-
 from __future__ import annotations
 
 import math
@@ -55,7 +54,7 @@ from sqlmodel import Session, func, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.models.base_models import BaseResponseModel
-from zenml.models.filter_models import ListBaseModel
+from zenml.models.filter_models import FilterBaseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 T = TypeVar("T", bound=BaseSchema)
@@ -102,7 +101,7 @@ class Page(GenericModel, Generic[B]):
     class Config:
         extra = "allow"
 
-    __params_type__ = ListBaseModel
+    __params_type__ = FilterBaseModel
 
     @classmethod
     def create(
@@ -110,10 +109,10 @@ class Page(GenericModel, Generic[B]):
         items: Sequence[B],
         total: int,
         total_pages: int,
-        params: ListBaseModel,
+        params: FilterBaseModel,
     ) -> Page[B]:
 
-        if not isinstance(params, ListBaseModel):
+        if not isinstance(params, FilterBaseModel):
             raise ValueError("Page should be used with Params")
 
         return cls(
@@ -129,7 +128,7 @@ class Page(GenericModel, Generic[B]):
         cls,
         session: Session,
         query: Union[T, Select[T], SelectOfScalar[T]],
-        params: Optional[ListBaseModel] = None,
+        params: Optional[FilterBaseModel] = None,
     ) -> Page[B]:
         """Given a query, select the range defined in params and return a Page instance with a list of Domain Models.
 

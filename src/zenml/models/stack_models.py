@@ -28,7 +28,7 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.component_models import ComponentResponseModel
-from zenml.models.filter_models import ListBaseModel
+from zenml.models.filter_models import FilterBaseModel
 
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 if TYPE_CHECKING:
@@ -118,7 +118,14 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 # ------ #
 
 
-class StackListModel(ListBaseModel):
+class StackFilterModel(FilterBaseModel):
+    """Model to enable advanced filtering of all StackModels.
+
+    The Stack Model needs additional scoping. As such the `_scope_user` field
+    can be set to the user that is doing the filtering. The
+    `generate_filter()` method of the baseclass is overwritten to include the
+    scoping.
+    """
     _scope_user: UUID = PrivateAttr(None)
 
     is_shared: Union[bool, str] = Query(
@@ -128,15 +135,39 @@ class StackListModel(ListBaseModel):
         None,
         description="Name of the stack",
     )
-    description: str = Query(None, description="Description of the stack")
-    project_id: Union[UUID, str] = Query(None, description="Project of the stack")
-    user_id: Union[UUID, str] = Query(None, description="User of the stack")
-    component_id: Union[UUID, str] = Query(None, description="Component in the stack")
+    description: str = Query(
+        None,
+        description="Description of the stack"
+    )
+    project_id: Union[UUID, str] = Query(
+        None,
+        description="Project of the stack"
+    )
+    user_id: Union[UUID, str] = Query(
+        None,
+        description="User of the stack"
+    )
+    component_id: Union[UUID, str] = Query(
+        None,
+        description="Component in the stack"
+    )
 
     def set_scope_user(self, user_id: UUID):
+        """Set the user that is performing the filtering to scope the response."""
         self._scope_user = user_id
 
     def generate_filter(self, table: Type["SQLModel"]):
+        """A User is only allowed to list the stacks that either belong to them or that are shared.
+
+        The resulting filter from this method will be the union of the scoping
+        filter (owned by user OR shared) with the user provided filters.
+
+        Args:
+            table: The Table that is being queried from.
+
+        Returns:
+            A list of all filters to use for the query
+        """
         from sqlmodel import or_
 
         ands = []
@@ -147,7 +178,7 @@ class StackListModel(ListBaseModel):
             ands.append(
                 or_(
                     getattr(table, "user_id") == self._scope_user,
-                    getattr(table, "is_shared") == True,
+                    getattr(table, "is_shared") is True,
                 )
             )
             return ands

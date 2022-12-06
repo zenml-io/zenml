@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML enums."""
+from __future__ import annotations
 
 import logging
 from enum import Enum
@@ -151,3 +152,16 @@ class PermissionType(StrEnum):
     WRITE = "write"  # allows the user to create, update, delete everything
     READ = "read"  # allows the user to read everything
     ME = "me"  # allows the user to self administrate (change name, password...)
+
+
+class GenericFilterOps(StrEnum):
+    """Ops for all filters for string values on list methods"""
+
+    EQUALS = "equals"
+    CONTAINS = "contains"
+    STARTSWITH = "startswith"
+    ENDSWITH = "endswith"
+    GTE = "gte"
+    GT = "gt"
+    LTE = "lte"
+    LT = "lt"
