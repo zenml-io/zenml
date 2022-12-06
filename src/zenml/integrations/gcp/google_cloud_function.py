@@ -137,9 +137,7 @@ def create_cloud_function(
     storage_source = upload_directory(directory_path, upload_path)
 
     # Make the request
-    get_cloud_functions_api(
-        credentials=credentials
-    ).create_function(
+    get_cloud_functions_api(credentials=credentials).create_function(
         #  parent=parent + "/functions/" + function_name,
         request=CreateFunctionRequest(
             parent=parent,
