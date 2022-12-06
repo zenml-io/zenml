@@ -104,7 +104,7 @@ from zenml.models import (
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, ComponentFilterModel, FlavorFilterModel,
 )
 from zenml.models.base_models import (
     BaseRequestModel,
@@ -486,30 +486,12 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_stack_components(
-        self,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        type: Optional[str] = None,
-        flavor_name: Optional[str] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
+        self, component_list_model: ComponentFilterModel
     ) -> Page[ComponentResponseModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
-            params: Parameters for pagination (page and size)
-            project_name_or_id: The ID or name of the Project to which the stack
-                components belong
-            type: Optionally filter by type of stack component
-            flavor_name: Optionally filter by flavor
-            user_name_or_id: Optionally filter stack components by the owner
-            name: Optionally filter stack component by name
-            is_shared: Optionally filter out stack component by whether they are
-                shared or not
-            params: Parameters for pagination (page and size)
+            component_list_model: All filter parameters including pagination params
 
         Returns:
             A list of all stack components matching the filter criteria.
@@ -592,37 +574,21 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_flavors(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_type: Optional[StackComponentType] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, flavor_list_model: FlavorFilterModel
     ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            project_name_or_id: Optionally filter by the Project to which the
-                component flavors belong
-            user_name_or_id: Optionally filter by the owner
-            component_type: Optionally filter by type of stack component
-            name: Optionally filter flavors by name
-            is_shared: Optionally filter out flavors by whether they are
-                shared or not
-            params: Parameters for pagination (page and size)
+            flavor_list_model: All filter parameters including pagination params
+
 
         Returns:
             List of all the stack component flavors matching the given criteria.
         """
-        filters = locals()
-        filters.pop("self")
         return self._list_paginated_resources(
             route=FLAVORS,
             response_model=FlavorResponseModel,
-            **filters,
+            list_model=flavor_list_model,
         )
 
     @track(AnalyticsEvent.DELETED_FLAVOR)

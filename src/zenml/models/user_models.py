@@ -426,13 +426,7 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
 
 
 class UserFilterModel(FilterBaseModel):
-    """Model to enable advanced filtering of all StackModels.
-
-    The Stack Model needs additional scoping. As such the `_scope_user` field
-    can be set to the user that is doing the filtering. The
-    `generate_filter()` method of the baseclass is overwritten to include the
-    scoping.
-    """
+    """Model to enable advanced filtering of all Users."""
 
     name: str = Query(
         None,

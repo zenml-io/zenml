@@ -13,11 +13,14 @@
 #  permissions and limitations under the License.
 """Models representing stack component flavors."""
 
-from typing import ClassVar, List, Optional
+from typing import ClassVar, List, Optional, Union
+from uuid import UUID
 
+from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
+from zenml.models.filter_models import FilterBaseModel
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
@@ -64,6 +67,32 @@ class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
         "type",
         "integration",
     ]
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class FlavorFilterModel(FilterBaseModel):
+    """Model to enable advanced filtering of all Flavors."""
+
+    name: str = Query(
+        None,
+        description="Name of the flavor",
+    )
+    type: str = Query(
+        None,
+        description="Stack Component Type of the stack flavor",
+    )
+    integration: str = Query(
+        None,
+        description="Integration associated with the flavor",
+    )
+    project_id: Union[UUID, str] = Query(
+        None, description="Project of the stack"
+    )
+    user_id: Union[UUID, str] = Query(None, description="User of the stack")
 
 
 # ------- #

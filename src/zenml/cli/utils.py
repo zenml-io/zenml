@@ -914,7 +914,7 @@ def print_stacks_table(
 def print_components_table(
     client: "Client",
     component_type: StackComponentType,
-    components: List["ComponentResponseModel"],
+    components: Sequence["ComponentResponseModel"],
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 

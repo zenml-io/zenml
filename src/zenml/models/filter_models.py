@@ -200,6 +200,12 @@ class FilterBaseModel(BaseModel):
     )
     ```
     """
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        "sort_by", "list_of_filters", "page", "size"
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        "list_of_filters",
+    ]
 
     list_of_filters: List["Filter"] = Field(None, exclude=True)
 
@@ -220,7 +226,7 @@ class FilterBaseModel(BaseModel):
 
     @validator("sort_by", pre=True)
     def sort_column(cls, v):
-        if v in ["sort_by", "_list_of_filters", "page", "size"]:
+        if v in cls.FILTER_EXCLUDE_FIELDS:
             raise ValueError(
                 f"This resource can not be sorted by this field: '{v}'"
             )
@@ -236,11 +242,8 @@ class FilterBaseModel(BaseModel):
         """Parse incoming filters to extract the operations on each value."""
         list_of_filters = []
 
-        # These 3 fields do not represent filter fields
-        exclude_fields = {"sort_by", "page", "size"}
-
         for key, value in values.items():
-            if key in exclude_fields:
+            if key in cls.FILTER_EXCLUDE_FIELDS:
                 pass
             elif value:
                 operator = GenericFilterOps.EQUALS
@@ -358,7 +361,7 @@ class FilterBaseModel(BaseModel):
 
         options = list()
         for k, v in cls.__fields__.items():
-            if k not in ["list_of_filters"]:
+            if k not in cls.CLI_EXCLUDE_FIELDS:
                 options.append(
                     click.option(
                         f"--{k}",

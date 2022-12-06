@@ -104,7 +104,7 @@ from zenml.models import (
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, ComponentFilterModel, FlavorFilterModel,
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
@@ -912,13 +912,12 @@ class SqlZenStore(BaseZenStore):
             # Manually create the query and add any custom clauses
             query = select(StackSchema)
 
-            paged_stacks = self.filter_and_paginate(
+            return self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=StackSchema,
                 list_model=stack_list_model,
             )
-            return paged_stacks
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
@@ -1178,61 +1177,27 @@ class SqlZenStore(BaseZenStore):
             return stack_component.to_model()
 
     def list_stack_components(
-        self,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        type: Optional[str] = None,
-        flavor_name: Optional[str] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
+        self, component_list_model: ComponentFilterModel
     ) -> Page[ComponentResponseModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
-            params: Parameters for pagination (page and size)
-            project_name_or_id: The ID or name of the Project to which the stack
-                components belong
-            user_name_or_id: Optionally filter stack components by the owner
-            type: Optionally filter by type of stack component
-            flavor_name: Optionally filter by flavor
-            name: Optionally filter stack component by name
-            is_shared: Optionally filter out stack component by whether they are
-                shared or not
+            component_list_model: All filter parameters including pagination params
 
         Returns:
             A list of all stack components matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Get a list of all stacks
+            # Manually create the query and add any custom clauses
             query = select(StackComponentSchema)
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(
-                    StackComponentSchema.project_id == project.id
-                )
-            if user_name_or_id:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(StackComponentSchema.user_id == user.id)
-            if type:
-                query = query.where(StackComponentSchema.type == type)
-            if flavor_name:
-                query = query.where(StackComponentSchema.flavor == flavor_name)
-            if name:
-                query = query.where(StackComponentSchema.name == name)
-            if is_shared is not None:
-                query = query.where(StackComponentSchema.is_shared == is_shared)
 
-            query = query.order_by(StackComponentSchema.created)
-            paged_components = Page.paginate(
-                session=session, query=query, params=params
+            paged_components = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StackComponentSchema,
+                list_model=component_list_model,
             )
-
-        return paged_components
+            return paged_components
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
@@ -1519,51 +1484,27 @@ class SqlZenStore(BaseZenStore):
             return flavor_in_db.to_model()
 
     def list_flavors(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_type: Optional[StackComponentType] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, flavor_list_model: FlavorFilterModel
     ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            project_name_or_id: Optionally filter by the Project to which the
-                component flavors belong
-            component_type: Optionally filter by type of stack component
-            user_name_or_id: Optionally filter by the owner
-            component_type: Optionally filter by type of stack component
-            name: Optionally filter flavors by name
-            is_shared: Optionally filter out flavors by whether they are
-                shared or not
-            params: Parameters for pagination (page and size)
+            flavor_list_model: All filter parameters including pagination params
+
 
         Returns:
-            List of all the stack component flavors matching the given criteria
+            List of all the stack component flavors matching the given criteria.
         """
         with Session(self.engine) as session:
+            # Manually create the query and add any custom clauses
             query = select(FlavorSchema)
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(FlavorSchema.project_id == project.id)
-            if component_type:
-                query = query.where(FlavorSchema.type == component_type)
-            if name:
-                query = query.where(FlavorSchema.name == name)
-            if user_name_or_id:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(FlavorSchema.user_id == user.id)
 
-            query.order_by(FlavorSchema.created)
-            flavors = Page.paginate(session, query, params)
-
-        return flavors
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=FlavorSchema,
+                list_model=flavor_list_model,
+            )
 
     @track(AnalyticsEvent.DELETED_FLAVOR)
     def delete_flavor(self, flavor_id: UUID) -> None:

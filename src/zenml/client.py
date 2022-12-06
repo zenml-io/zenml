@@ -83,7 +83,7 @@ from zenml.models import (
     TeamUpdateModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, ComponentFilterModel, FlavorFilterModel,
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
@@ -1704,35 +1704,52 @@ class Client(metaclass=ClientMetaClass):
 
     def list_stack_components(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_type: Optional[str] = None,
-        flavor_name: Optional[str] = None,
-        name: Optional[str] = None,
+        sort_by: str,
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
         is_shared: Optional[bool] = None,
-    ) -> List["ComponentResponseModel"]:
+        name: Optional[str] = None,
+        flavor: Optional[str] = None,
+        type: Optional[str] = None,
+        project_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+    ) -> Page["ComponentResponseModel"]:
         """Lists all registered stack components.
 
         Args:
-            project_name_or_id: The name or id of the project to filter by.
-            user_name_or_id: The name or id of the user to filter by.
-            component_type: The type of the component to filter by.
-            flavor_name: The name of the flavor to filter by.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            id: Use the id of component to filter by.
+            created: Use to component by time of creation
+            updated: Use the last updated date for filtering
+            flavor: Use the component flavor for filtering
+            type: Use the component type for filtering
+            project_id: The name or id of the project to filter by.
+            user_id: The name or id of the user to filter by.
             name: The name of the component to filter by.
             is_shared: The shared status of the component to filter by.
 
         Returns:
             A list of stack components.
         """
-        return self.depaginate(
-            list_command=partial(
-                self.zen_store.list_stack_components,
-                project_name_or_id=project_name_or_id or self.active_project.id,
-                user_name_or_id=user_name_or_id,
-                type=component_type,
-                flavor_name=flavor_name,
+        return self.zen_store.list_stack_components(
+            ComponentFilterModel(
+                page=page,
+                size=size,
+                sort_by=sort_by,
+                project_id=project_id or self.active_project.id,
+                user_id=user_id,
                 name=name,
                 is_shared=is_shared,
+                flavor=flavor,
+                type=type,
+                id=id,
+                created=created,
+                updated=updated,
             )
         )
 
@@ -1996,29 +2013,53 @@ class Client(metaclass=ClientMetaClass):
 
         logger.info(f"Deleted flavor '{flavor.name}' of type '{flavor.type}'.")
 
-    def list_flavors(
+    def list_custom_flavors(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List["FlavorResponseModel"]:
+        sort_by: str,
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        type: Optional[str] = None,
+        integration: Optional[str] = None,
+        project_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+    ) -> Page["FlavorResponseModel"]:
         """Fetches all the flavor models.
 
         Args:
-            project_name_or_id: The name or id of the project to filter by.
-            user_name_or_id: The name or id of the user to filter by.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            id: Use the id of flavors to filter by.
+            created: Use to flavors by time of creation
+            updated: Use the last updated date for filtering
+            project_id: The name or id of the project to filter by.
+            user_id: The name or id of the user to filter by.
+            name: The name of the flavor to filter by.
+            type: The type of the flavor to filter by.
+            integration: The integration of the flavor to filter by.
 
         Returns:
             A list of all the flavor models.
         """
-        from zenml.stack.flavor_registry import flavor_registry
-
-        zenml_flavors = flavor_registry.flavors
-        custom_flavors = self.depaginate(
-            list_command=partial(
-                self.zen_store.list_flavors,
+        return self.zen_store.list_flavors(
+            FlavorFilterModel(
+                page=page,
+                size=size,
+                sort_by=sort_by,
+                project_id=project_id or self.active_project.id,
+                user_id=user_id,
+                name=name,
+                type=type,
+                integration=integration,
+                id=id,
+                created=created,
+                updated=updated,
             )
         )
-        return zenml_flavors + custom_flavors
 
     def get_flavors_by_type(
         self, component_type: "StackComponentType"

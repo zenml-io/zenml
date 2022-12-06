@@ -26,12 +26,13 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.feature import register_feature_store_subcommands
 from zenml.cli.model import register_model_deployer_subcommands
 from zenml.cli.secret import register_secrets_manager_subcommands
-from zenml.cli.utils import _component_display_name
+from zenml.cli.utils import _component_display_name, print_page_info
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import IllegalOperationError
 from zenml.io import fileio
+from zenml.models import ComponentFilterModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 
@@ -129,20 +130,25 @@ def generate_stack_component_list_command(
         A function that can be used as a `click` command.
     """
 
-    def list_stack_components_command() -> None:
+    @ComponentFilterModel.click_list_options()
+    def list_stack_components_command(**kwargs) -> None:
         """Prints a table of stack components."""
         client = Client()
-
         with console.status(f"Listing {component_type.plural}..."):
+
             components = client.list_stack_components(
-                component_type=component_type
+                type=component_type, **kwargs
             )
+            if not components:
+                cli_utils.declare("No components found for the given filters.")
+                return
 
             cli_utils.print_components_table(
                 client=client,
                 component_type=component_type,
-                components=components,
+                components=components.items,
             )
+            print_page_info(components)
 
     return list_stack_components_command
 
