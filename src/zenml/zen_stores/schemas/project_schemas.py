@@ -26,11 +26,13 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
+        ArtifactSchema,
         FlavorSchema,
         PipelineRunSchema,
         PipelineSchema,
         StackComponentSchema,
         StackSchema,
+        StepRunSchema,
         TeamRoleAssignmentSchema,
         UserRoleAssignmentSchema,
     )
@@ -63,6 +65,12 @@ class ProjectSchema(NamedSchema, table=True):
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
     runs: List["PipelineRunSchema"] = Relationship(
+        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    step_runs: List["StepRunSchema"] = Relationship(
+        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    artifacts: List["ArtifactSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
 

@@ -22,9 +22,9 @@ migration.
 
 The actual automatic update of the tables in handled by the 
 `sql_zen_store.migrate_database()` method. This is called during instantiation 
-of the sql_zen_store, after the MLMD tables have been created. This means,
-anyone using zenml in a fresh environment gets all migration scripts executed in
-historical  order to create the initial state of their database.
+of the `SQLZenStore`. This means, anyone using ZenML in a fresh environment 
+gets all migration scripts executed in historical order to create the initial 
+state of their database.
 
 ## Create a revision
 

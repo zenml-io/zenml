@@ -95,7 +95,7 @@ def bentoml_model_deployer_step(
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
-    run_id = step_env.pipeline_run_id
+    run_name = step_env.run_name
     step_name = step_env.step_name
 
     # fetch existing services with same pipeline name, step name and model name
@@ -130,7 +130,7 @@ def bentoml_model_deployer_step(
         working_dir=params.working_dir or source_utils.get_source_root_path(),
         port=params.port,
         pipeline_name=pipeline_name,
-        pipeline_run_id=run_id,
+        pipeline_run_id=run_name,
         pipeline_step_name=step_name,
         ssl_parameters=SSLBentoMLParametersConfig(
             ssl_certfile=params.ssl_certfile,

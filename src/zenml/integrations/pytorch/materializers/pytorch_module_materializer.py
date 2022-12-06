@@ -14,10 +14,10 @@
 """Implementation of the PyTorch Module materializer."""
 
 import os
-from typing import Any, Type
+from typing import Any, Type, cast
 
 import torch
-from torch.nn import Module  # type: ignore[attr-defined]
+from torch.nn import Module
 
 from zenml.artifacts import ModelArtifact
 from zenml.io import fileio
@@ -52,7 +52,7 @@ class PyTorchModuleMaterializer(BaseMaterializer):
         with fileio.open(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
         ) as f:
-            return torch.load(f)  # type: ignore[no-untyped-call]  # noqa
+            return cast(Module, torch.load(f))
 
     def handle_return(self, model: Module) -> None:
         """Writes a PyTorch model, as a model and a checkpoint.
