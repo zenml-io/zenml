@@ -13,12 +13,15 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Any
+from tempfile import TemporaryDirectory
+from typing import Any, Callable, Optional, Type
 
+from zenml.artifacts.data_artifact import DataArtifact
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.pipelines import pipeline
-from zenml.steps import step
+from zenml.materializers.default_materializer_registry import (
+    default_materializer_registry,
+)
 
 
 def test_handle_int_env_var():
@@ -27,24 +30,46 @@ def test_handle_int_env_var():
 
 
 def _test_materializer(
-    step_output: Any, materializer: "BaseMaterializer"
-) -> None:
-    """Helper function to simplify materializer testing.
+    step_output: Any,
+    step_output_type: Optional[Type[Any]] = None,
+    materializer_class: Optional[Type[BaseMaterializer]] = None,
+    validation_function: Optional[Callable[[str], Any]] = None,
+) -> Any:
+    """Test whether the materialization of a given step output works.
+
+    To do so, we first materialize the output to disk, then read it again with
+    the same materializer and ensure that:
+    - `materializer.handle_return()` did write something to disk
+    - `materializer.handle_input()` did load the original data type again
 
     Args:
         step_output: The output artifact we want to materialize.
-        materializer: The materializer object.
+        step_output_type: The type of the output artifact. If not provided,
+            `type(step_output)` will be used.
+        materializer_class: The materializer class. If not provided, we query
+            the default materializer registry using `step_output_type`.
+        validation_function: An optional function to call on the absolute path
+            to `artifact_uri`. Can be used, e.g., to check whether a certain
+            file exists or a certain number of files were written.
+
+    Returns:
+        The result of materializing `step_output` to disk and loading it again.
     """
-    step_output_type = type(step_output)
+    if step_output_type is None:
+        step_output_type = type(step_output)
 
-    @step
-    def read_step() -> step_output_type:
-        return step_output
+    if materializer_class is None:
+        materializer_class = default_materializer_registry[step_output_type]
 
-    @pipeline
-    def test_pipeline(read_step) -> None:
-        read_step()
-
-    test_pipeline(
-        read_step=read_step().with_return_materializers(materializer)
-    ).run()
+    with TemporaryDirectory() as artifact_uri:
+        mock_artifact = DataArtifact(uri=artifact_uri)
+        materializer = materializer_class(mock_artifact)
+        existing_files = os.listdir(artifact_uri)
+        materializer.handle_return(step_output)
+        new_files = os.listdir(artifact_uri)
+        assert len(new_files) > len(existing_files)  # something was written
+        loaded_data = materializer.handle_input(step_output_type)
+        assert isinstance(loaded_data, step_output_type)  # correct type
+        if validation_function:
+            validation_function(artifact_uri)
+        return loaded_data

@@ -14,7 +14,7 @@
 """Implementation of the ZenML NumPy materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Any, Type, cast
 
 import numpy as np
 
@@ -61,7 +61,12 @@ class NumpyMaterializer(BaseMaterializer):
 
         if fileio.exists(numpy_file):
             with fileio.open(numpy_file, "rb") as f:
-                return np.load(f, allow_pickle=True)  # type: ignore
+                # This function is untyped for numpy versions supporting python
+                # 3.7, but typed for numpy versions installed on python 3.8+.
+                # We need to cast it to any here so that numpy doesn't complain
+                # about either an untyped function call or an unused ignore
+                # statement
+                return cast(Any, np.load)(f, allow_pickle=True)
         elif fileio.exists(os.path.join(self.artifact.uri, DATA_FILENAME)):
             logger.warning(
                 "A legacy artifact was found. "
@@ -106,4 +111,9 @@ class NumpyMaterializer(BaseMaterializer):
         with fileio.open(
             os.path.join(self.artifact.uri, NUMPY_FILENAME), "wb"
         ) as f:
-            np.save(f, arr)  # type: ignore
+            # This function is untyped for numpy versions supporting python
+            # 3.7, but typed for numpy versions installed on python 3.8+.
+            # We need to cast it to any here so that numpy doesn't complain
+            # about either an untyped function call or an unused ignore
+            # statement
+            cast(Any, np.save)(f, arr)
