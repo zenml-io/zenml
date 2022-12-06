@@ -44,14 +44,12 @@ def trigger_vertex_job(request: Request) -> Response:
     request_str = request.data.decode("utf-8")
     request_json = json.loads(request_str)
 
-    display_name = (
-        f"{request_json[JOB_ID]}_{random.Random().getrandbits(32):08x}"
-    )
+    display_name = f"{request_json[JOB_ID]}_scheduled_{random.Random().getrandbits(32):08x}"
 
     run = aiplatform.PipelineJob(
         display_name=display_name,
         template_path=request_json[TEMPLATE_PATH],
-        job_id=request_json[JOB_ID],
+        job_id=display_name,
         pipeline_root=request_json[PIPELINE_ROOT],
         parameter_values=request_json[PARAMETER_VALUES],
         enable_caching=request_json[ENABLE_CACHING],
