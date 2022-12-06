@@ -290,10 +290,9 @@ class StepView:
             # we already fetched inputs, no need to do anything
             return
 
-        inputs = Client().zen_store.get_run_step_input_artifacts(self.id)
         self._inputs = {
             name: ArtifactView(artifact_model)
-            for name, artifact_model in inputs.items()
+            for name, artifact_model in self._model.input_artifacts.items()
         }
 
     def _ensure_outputs_fetched(self) -> None:
@@ -302,10 +301,9 @@ class StepView:
             # we already fetched outputs, no need to do anything
             return
 
-        outputs = Client().zen_store.get_run_step_output_artifacts(self.id)
         self._outputs = {
             name: ArtifactView(artifact_model)
-            for name, artifact_model in outputs.items()
+            for name, artifact_model in self._model.output_artifacts.items()
         }
 
     def __repr__(self) -> str:

@@ -60,14 +60,17 @@ def publish_output_artifacts(
                 f"Artifact {name} does not have a data type. "
                 "Please set one before registering."
             )
+        client = Client()
         artifact_model = ArtifactRequestModel(
             name=name,
             type=artifact_.TYPE_NAME,
             uri=artifact_.uri,
             materializer=artifact_.materializer,
             data_type=artifact_.data_type,
+            user=client.active_user.id,
+            project=client.active_project.id,
         )
-        artifact_response = Client().zen_store.create_artifact(artifact_model)
+        artifact_response = client.zen_store.create_artifact(artifact_model)
         output_artifact_ids[name] = artifact_response.id
     return output_artifact_ids
 

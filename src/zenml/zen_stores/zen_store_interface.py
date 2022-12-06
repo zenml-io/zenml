@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Union
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus, StackComponentType
@@ -1028,38 +1028,6 @@ class ZenStoreInterface(ABC):
             KeyError: if the step run doesn't exist.
         """
 
-    @abstractmethod
-    def get_run_step_input_artifacts(
-        self, step_run_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get the input artifacts for a step run.
-
-        Args:
-            step_run_id: The ID of the step run to get the input artifacts for.
-
-        Returns:
-            A dictionary mapping input names to artifact models.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
-        """
-
-    @abstractmethod
-    def get_run_step_output_artifacts(
-        self, step_run_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get the output artifacts for a step run.
-
-        Args:
-            step_run_id: The ID of the step run to get the output artifacts for.
-
-        Returns:
-            A dictionary mapping output names to artifact models.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
-        """
-
     # ---------
     # Artifacts
     # ---------
@@ -1104,23 +1072,4 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A list of all artifacts.
-        """
-
-    # ------------------------
-    # Internal utility methods
-    # ------------------------
-    @abstractmethod
-    def get_artifact_producer_step(
-        self, artifact_id: UUID
-    ) -> StepRunResponseModel:
-        """Gets the producer step for an artifact.
-
-        Args:
-            artifact_id: The ID of the artifact to get the producer step for.
-
-        Returns:
-            The step run that produced the artifact.
-
-        Raises:
-            KeyError: if the artifact doesn't exist or doesn't have a producer.
         """

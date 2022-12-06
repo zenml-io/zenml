@@ -145,12 +145,15 @@ class StepLauncher:
 
         pipeline_run = self._create_or_reuse_run()
         try:
+            client = Client()
             step_run = StepRunRequestModel(
                 name=self._step_name,
                 pipeline_run_id=pipeline_run.id,
                 step=self._step,
                 status=ExecutionStatus.RUNNING,
                 start_time=datetime.now(),
+                user=client.active_user.id,
+                project=client.active_project.id,
             )
             try:
                 execution_needed, step_run_response = self._prepare(
@@ -230,9 +233,13 @@ class StepLauncher:
             Tuple that specifies whether the step needs to be executed as
             well as the response model of the registered step run.
         """
-        input_artifact_ids, parent_step_ids = input_utils.resolve_step_inputs(
+        input_artifacts, parent_step_ids = input_utils.resolve_step_inputs(
             step=self._step, run_id=step_run.pipeline_run_id
         )
+        input_artifact_ids = {
+            input_name: artifact.id
+            for input_name, artifact in input_artifacts.items()
+        }
 
         cache_key = cache_utils.generate_cache_key(
             step=self._step,
@@ -258,8 +265,12 @@ class StepLauncher:
             if cached_step_run:
                 logger.info(f"Using cached version of `{self._step_name}`.")
                 execution_needed = False
+                cached_outputs = cached_step_run.output_artifacts
                 step_run.original_step_run_id = cached_step_run.id
-                step_run.output_artifacts = cached_step_run.output_artifacts
+                step_run.output_artifacts = {
+                    output_name: artifact.id
+                    for output_name, artifact in cached_outputs.items()
+                }
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
 
@@ -287,7 +298,7 @@ class StepLauncher:
             step_run_id=step_run.id,
         )
         input_artifacts = input_utils.prepare_input_artifacts(
-            input_artifact_ids=step_run.input_artifacts,
+            input_artifact_models=step_run.input_artifacts,
         )
         output_artifacts = output_utils.prepare_output_artifacts(
             step_run=step_run, stack=self._stack, step=self._step

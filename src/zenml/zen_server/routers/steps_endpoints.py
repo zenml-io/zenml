@@ -18,18 +18,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Security
 
-from zenml.constants import (
-    API,
-    INPUTS,
-    OUTPUTS,
-    STATUS,
-    STEP_CONFIGURATION,
-    STEPS,
-    VERSION_1,
-)
+from zenml.constants import API, STATUS, STEP_CONFIGURATION, STEPS, VERSION_1
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
-    ArtifactResponseModel,
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
@@ -141,48 +132,6 @@ def update_step(
     return zen_store().update_run_step(
         step_run_id=step_id, step_run_update=step_model
     )
-
-
-@router.get(
-    "/{step_id}" + OUTPUTS,
-    response_model=Dict[str, ArtifactResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_step_outputs(
-    step_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Dict[str, ArtifactResponseModel]:
-    """Get the outputs of a specific step.
-
-    Args:
-        step_id: ID of the step for which to get the outputs.
-
-    Returns:
-        All outputs of the step, mapping from output name to artifact model.
-    """
-    return zen_store().get_run_step_output_artifacts(step_id)
-
-
-@router.get(
-    "/{step_id}" + INPUTS,
-    response_model=Dict[str, ArtifactResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_step_inputs(
-    step_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Dict[str, ArtifactResponseModel]:
-    """Get the inputs of a specific step.
-
-    Args:
-        step_id: ID of the step for which to get the inputs.
-
-    Returns:
-        All inputs of the step, mapping from input name to artifact model.
-    """
-    return zen_store().get_run_step_input_artifacts(step_id)
 
 
 @router.get(

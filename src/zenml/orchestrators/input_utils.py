@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utilities for inputs."""
 
-from typing import Dict, List, Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple
 from uuid import UUID
 
 from zenml.artifacts.base_artifact import BaseArtifact
@@ -21,10 +21,13 @@ from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
 
+if TYPE_CHECKING:
+    from zenml.models.artifact_models import ArtifactResponseModel
+
 
 def resolve_step_inputs(
     step: "Step", run_id: UUID
-) -> Tuple[Dict[str, UUID], List[UUID]]:
+) -> Tuple[Dict[str, "ArtifactResponseModel"], List[UUID]]:
     """Resolves inputs for the current step.
 
     Args:
@@ -44,7 +47,7 @@ def resolve_step_inputs(
         for run_step in Client().zen_store.list_run_steps(run_id=run_id)
     }
 
-    input_artifact_ids: Dict[str, UUID] = {}
+    input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
     for name, input_ in step.spec.inputs.items():
         try:
             step_run = current_run_steps[input_.step_name]
@@ -54,39 +57,36 @@ def resolve_step_inputs(
             )
 
         try:
-            artifact_id = step_run.output_artifacts[input_.output_name]
+            artifact = step_run.output_artifacts[input_.output_name]
         except KeyError:
             raise InputResolutionError(
                 f"No output `{input_.output_name}` found for step "
                 f"`{input_.step_name}`."
             )
 
-        input_artifact_ids[name] = artifact_id
+        input_artifacts[name] = artifact
 
     parent_step_ids = [
         current_run_steps[upstream_step].id
         for upstream_step in step.spec.upstream_steps
     ]
 
-    return input_artifact_ids, parent_step_ids
+    return input_artifacts, parent_step_ids
 
 
 def prepare_input_artifacts(
-    input_artifact_ids: Dict[str, UUID]
+    input_artifact_models: Dict[str, "ArtifactResponseModel"]
 ) -> Dict[str, BaseArtifact]:
     """Prepares the input artifacts to run the current step.
 
     Args:
-        input_artifact_ids: IDs of all input artifacts for the step.
+        input_artifact_models: models of the input artifacts for the step.
 
     Returns:
         The input artifacts.
     """
     input_artifacts: Dict[str, BaseArtifact] = {}
-    for name, artifact_id in input_artifact_ids.items():
-        artifact_model = Client().zen_store.get_artifact(
-            artifact_id=artifact_id
-        )
+    for name, artifact_model in input_artifact_models.items():
         artifact_ = BaseArtifact(
             uri=artifact_model.uri,
             materializer=artifact_model.materializer,

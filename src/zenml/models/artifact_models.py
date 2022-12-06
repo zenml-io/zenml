@@ -20,8 +20,8 @@ from pydantic import BaseModel
 
 from zenml.enums import ArtifactType
 from zenml.models.base_models import (
-    BaseRequestModel,
-    BaseResponseModel,
+    ProjectScopedRequestModel,
+    ProjectScopedResponseModel,
     update_model,
 )
 
@@ -46,8 +46,10 @@ class ArtifactBaseModel(BaseModel):
 # -------- #
 
 
-class ArtifactResponseModel(ArtifactBaseModel, BaseResponseModel):
+class ArtifactResponseModel(ArtifactBaseModel, ProjectScopedResponseModel):
     """Response model for artifacts."""
+
+    producer_step_run_id: Optional[UUID]
 
 
 # ------- #
@@ -55,7 +57,7 @@ class ArtifactResponseModel(ArtifactBaseModel, BaseResponseModel):
 # ------- #
 
 
-class ArtifactRequestModel(ArtifactBaseModel, BaseRequestModel):
+class ArtifactRequestModel(ArtifactBaseModel, ProjectScopedRequestModel):
     """Request model for artifacts."""
 
 

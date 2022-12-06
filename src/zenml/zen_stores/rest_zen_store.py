@@ -43,11 +43,8 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
     INFO,
-    INPUTS,
     LOGIN,
-    OUTPUTS,
     PIPELINES,
-    PRODUCER_STEP,
     PROJECTS,
     ROLE_ASSIGNMENTS,
     ROLES,
@@ -1354,54 +1351,6 @@ class RestZenStore(BaseZenStore):
             route=STEPS,
         )
 
-    def get_run_step_input_artifacts(
-        self, step_run_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get a list of inputs for a specific step run.
-
-        Args:
-            step_run_id: The ID of the step run to get the input artifacts for.
-
-        Returns:
-            A dictionary mapping input names to artifact models.
-
-        Raises:
-            ValueError: if the response from the API is not a dict.
-        """
-        body = self.get(f"{STEPS}/{str(step_run_id)}{INPUTS}")
-        if not isinstance(body, dict):
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
-        return {
-            name: ArtifactResponseModel.parse_obj(entry)
-            for name, entry in body.items()
-        }
-
-    def get_run_step_output_artifacts(
-        self, step_run_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get the output artifacts for a step run.
-
-        Args:
-            step_run_id: The ID of the step run to get the output artifacts for.
-
-        Returns:
-            A dictionary mapping output names to artifact models.
-
-        Raises:
-            ValueError: if the response from the API is not a dict.
-        """
-        body = self.get(f"{STEPS}/{str(step_run_id)}{OUTPUTS}")
-        if not isinstance(body, dict):
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
-        return {
-            name: ArtifactResponseModel.parse_obj(entry)
-            for name, entry in body.items()
-        }
-
     # ---------
     # Artifacts
     # ---------
@@ -1459,27 +1408,6 @@ class RestZenStore(BaseZenStore):
             response_model=ArtifactResponseModel,
             **filters,
         )
-
-    def get_artifact_producer_step(
-        self, artifact_id: UUID
-    ) -> StepRunResponseModel:
-        """Gets the producer step for an artifact.
-
-        Args:
-            artifact_id: The ID of the artifact to get the producer step for.
-
-        Returns:
-            The step run that produced the artifact.
-
-        Raises:
-            ValueError: if the response from the API is not a dict.
-        """
-        body = self.get(f"{ARTIFACTS}/{str(artifact_id)}{PRODUCER_STEP}")
-        if not isinstance(body, dict):
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
-        return StepRunResponseModel.parse_obj(body)
 
     # =======================
     # Internal helper methods

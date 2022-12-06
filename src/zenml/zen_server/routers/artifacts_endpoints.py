@@ -19,10 +19,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Security
 
-from zenml.constants import API, ARTIFACTS, PRODUCER_STEP, VERSION_1
+from zenml.constants import API, ARTIFACTS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
-from zenml.models.step_run_models import StepRunResponseModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -103,24 +102,3 @@ def get_artifact(
         The artifact with the given ID.
     """
     return zen_store().get_artifact(artifact_id)
-
-
-@router.get(
-    "/{artifact_id}" + PRODUCER_STEP,
-    response_model=StepRunResponseModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_artifact_producer_step_id(
-    artifact_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> StepRunResponseModel:
-    """Gets the producer step for an artifact.
-
-    Args:
-        artifact_id: The ID of the artifact to get the producer step for.
-
-    Returns:
-        The step run that produced the artifact.
-    """
-    return zen_store().get_artifact_producer_step(artifact_id)

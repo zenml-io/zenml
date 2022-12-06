@@ -179,8 +179,6 @@ STEP_CONFIGURATION = "/step-configuration"
 GRAPH = "/graph"
 STEPS = "/steps"
 ARTIFACTS = "/artifacts"
-INPUTS = "/inputs"
-OUTPUTS = "/outputs"
 COMPONENT_TYPES = "/component-types"
 COMPONENT_SIDE_EFFECTS = "/component-side-effects"
 REPOSITORIES = "/repositories"
@@ -190,7 +188,6 @@ ACTIVATE = "/activate"
 INFO = "/info"
 VERSION_1 = "/v1"
 STATUS = "/status"
-PRODUCER_STEP = "/producer-step"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]

@@ -15,16 +15,18 @@
 
 import os
 import tempfile
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models import ArtifactResponseModel
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
+
+if TYPE_CHECKING:
+    from zenml.models import ArtifactResponseModel
 
 logger = get_logger(__name__)
 
@@ -32,7 +34,7 @@ METADATA_DATATYPE = "datatype"
 METADATA_MATERIALIZER = "materializer"
 
 
-def save_model_metadata(model_artifact: ArtifactResponseModel) -> str:
+def save_model_metadata(model_artifact: "ArtifactResponseModel") -> str:
     """Save a zenml model artifact metadata to a YAML file.
 
     This function is used to extract and save information from a zenml model artifact

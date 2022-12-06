@@ -678,7 +678,9 @@ def sample_project_model() -> ProjectResponseModel:
 
 
 @pytest.fixture
-def sample_step_model() -> StepRunResponseModel:
+def sample_step_model(
+    sample_project_model, sample_user_model
+) -> StepRunResponseModel:
     """Return a sample step model for testing purposes"""
     step = Step.parse_obj(
         {
@@ -695,6 +697,8 @@ def sample_step_model() -> StepRunResponseModel:
         status=ExecutionStatus.COMPLETED,
         created=datetime.now(),
         updated=datetime.now(),
+        project=sample_project_model,
+        user=sample_user_model,
     )
 
 
@@ -714,6 +718,8 @@ def sample_step_request_model() -> StepRunRequestModel:
         pipeline_run_id=uuid4(),
         status=ExecutionStatus.COMPLETED,
         step=step,
+        project=uuid4(),
+        user=uuid4(),
     )
 
 
@@ -771,7 +777,9 @@ def sample_pipeline_run_view(
 
 
 @pytest.fixture
-def sample_artifact_model() -> ArtifactResponseModel:
+def sample_artifact_model(
+    sample_project_model, sample_user_model
+) -> ArtifactResponseModel:
     """Return a sample artifact model for testing purposes"""
     return ArtifactResponseModel(
         id=uuid4(),
@@ -785,6 +793,8 @@ def sample_artifact_model() -> ArtifactResponseModel:
         is_cached=False,
         created=datetime.now(),
         updated=datetime.now(),
+        project=sample_project_model,
+        user=sample_user_model,
     )
 
 
@@ -800,6 +810,8 @@ def sample_artifact_request_model() -> ArtifactRequestModel:
         parent_step_id=uuid4(),
         producer_step_id=uuid4(),
         is_cached=False,
+        project=uuid4(),
+        user=uuid4(),
     )
 
 

@@ -23,7 +23,9 @@ from zenml.enums import ArtifactType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class ArtifactSchema(NamedSchema, table=True):
@@ -42,6 +44,26 @@ class ArtifactSchema(NamedSchema, table=True):
     artifact_store: "StackComponentSchema" = Relationship(
         back_populates="artifacts"
     )
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: "UserSchema" = Relationship(back_populates="artifacts")
+
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    project: "ProjectSchema" = Relationship(back_populates="artifacts")
 
     type: ArtifactType
     uri: str
@@ -63,14 +85,22 @@ class ArtifactSchema(NamedSchema, table=True):
         return cls(
             name=artifact_request.name,
             artifact_store_id=artifact_request.artifact_store_id,
+            project_id=artifact_request.project,
+            user_id=artifact_request.user,
             type=artifact_request.type,
             uri=artifact_request.uri,
             materializer=artifact_request.materializer,
             data_type=artifact_request.data_type,
         )
 
-    def to_model(self) -> ArtifactResponseModel:
+    def to_model(
+        self, producer_step_run_id: Optional[UUID]
+    ) -> ArtifactResponseModel:
         """Convert an `ArtifactSchema` to an `ArtifactModel`.
+
+        Args:
+            producer_step_run_id: The ID of the step run that produced this
+                artifact.
 
         Returns:
             The created `ArtifactModel`.
@@ -79,10 +109,13 @@ class ArtifactSchema(NamedSchema, table=True):
             id=self.id,
             name=self.name,
             artifact_store_id=self.artifact_store_id,
+            user=self.user.to_model(),
+            project=self.project.to_model(),
             type=self.type,
             uri=self.uri,
             materializer=self.materializer,
             data_type=self.data_type,
             created=self.created,
             updated=self.updated,
+            producer_step_run_id=producer_step_run_id,
         )
