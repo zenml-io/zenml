@@ -33,7 +33,7 @@ from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 logger = get_logger(__name__)
 
@@ -184,43 +184,43 @@ class LocalExample:
             FileNotFoundError: If the example runner script is not found.
             subprocess.CalledProcessError: If the example runner script fails.
         """
-        if all(map(fileio.exists, example_runner)):
-            call = (
-                example_runner
-                + ["--executable", self.executable_python_example]
-                + ["-y"] * force
-                + ["--no-stack-setup"] * prevent_stack_setup
-            )
-            try:
-                # TODO [ENG-271]: Catch errors that might be thrown
-                #  in subprocess
-                subprocess.check_call(
-                    call,
-                    cwd=str(self.path),
-                    shell=click._compat.WIN,
-                    env=os.environ.copy(),
+        with event_handler(AnalyticsEvent.RUN_EXAMPLE) as handler:
+            handler.metadata = {"example_name": self.name}
+            if all(map(fileio.exists, example_runner)):
+                call = (
+                    example_runner
+                    + ["--executable", self.executable_python_example]
+                    + ["-y"] * force
+                    + ["--no-stack-setup"] * prevent_stack_setup
                 )
-            except RuntimeError:
-                raise NotImplementedError(
-                    f"Currently the example {self.name} "
-                    "has no implementation for the "
-                    "run method"
-                )
-            except subprocess.CalledProcessError as e:
-                if e.returncode == 38:
+                try:
+                    # TODO [ENG-271]: Catch errors that might be thrown
+                    #  in subprocess
+                    subprocess.check_call(
+                        call,
+                        cwd=str(self.path),
+                        shell=click._compat.WIN,
+                        env=os.environ.copy(),
+                    )
+                except RuntimeError:
                     raise NotImplementedError(
                         f"Currently the example {self.name} "
                         "has no implementation for the "
                         "run method"
                     )
-                raise
-        else:
-            raise FileNotFoundError(
-                "Bash File(s) to run Examples not found at" f"{example_runner}"
-            )
-
-        # Telemetry
-        track_event(AnalyticsEvent.RUN_EXAMPLE, {"example_name": self.name})
+                except subprocess.CalledProcessError as e:
+                    if e.returncode == 38:
+                        raise NotImplementedError(
+                            f"Currently the example {self.name} "
+                            "has no implementation for the "
+                            "run method"
+                        )
+                    raise
+            else:
+                raise FileNotFoundError(
+                    "Bash File(s) to run Examples not found at"
+                    f"{example_runner}"
+                )
 
 
 class Example:
@@ -779,28 +779,27 @@ def pull(
 
     else:
         for example_ in examples:
-            destination_dir = os.path.join(os.getcwd(), path, example_.name)
-            if LocalExample(
-                name=example_.name, path=Path(destination_dir)
-            ).is_present():
-                if force or confirmation(
-                    f"Example {example_.name} is already pulled. "
-                    "Do you wish to overwrite the directory at "
-                    f"{destination_dir}?"
-                ):
-                    fileio.rmtree(destination_dir)
-                else:
-                    warning(f"Example {example_.name} not overwritten.")
-                    continue
+            with event_handler(AnalyticsEvent.PULL_EXAMPLE) as handler:
+                handler.metadata = {"example_name": example_.name}
+                destination_dir = os.path.join(os.getcwd(), path, example_.name)
+                if LocalExample(
+                    name=example_.name, path=Path(destination_dir)
+                ).is_present():
+                    if force or confirmation(
+                        f"Example {example_.name} is already pulled. "
+                        "Do you wish to overwrite the directory at "
+                        f"{destination_dir}?"
+                    ):
+                        fileio.rmtree(destination_dir)
+                    else:
+                        warning(f"Example {example_.name} not overwritten.")
+                        continue
 
-            declare(f"Pulling example {example_.name}...")
+                declare(f"Pulling example {example_.name}...")
 
-            io_utils.create_dir_if_not_exists(destination_dir)
-            git_examples_handler.copy_example(example_, destination_dir)
-            declare(f"Example pulled in directory: {destination_dir}")
-            track_event(
-                AnalyticsEvent.PULL_EXAMPLE, {"example_name": example_.name}
-            )
+                io_utils.create_dir_if_not_exists(destination_dir)
+                git_examples_handler.copy_example(example_, destination_dir)
+                declare(f"Example pulled in directory: {destination_dir}")
 
 
 @example.command(

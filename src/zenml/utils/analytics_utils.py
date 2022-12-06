@@ -372,11 +372,12 @@ def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
         True if event is sent successfully, False is not.
     """
     with AnalyticsContext() as analytics:
-
         if user_metadata is None:
             return False
 
         return analytics.identify(traits=user_metadata)
+
+    return False
 
 
 def identify_group(
@@ -397,6 +398,8 @@ def identify_group(
     with AnalyticsContext() as analytics:
         return analytics.group(group, group_id, traits=group_metadata)
 
+    return False
+
 
 def track_event(
     event: Union[str, AnalyticsEvent],
@@ -413,6 +416,8 @@ def track_event(
     """
     with AnalyticsContext() as analytics:
         return analytics.track(event, metadata)
+
+    return False
 
 
 def parametrized(
@@ -505,28 +510,11 @@ class AnalyticsTrackedModelMixin(BaseModel):
             metadata[field_name] = getattr(self, field_name, None)
         return metadata
 
-    def track_event(
-        self,
-        event: Union[str, AnalyticsEvent],
-        tracker: Optional[AnalyticsTrackerMixin] = None,
-    ) -> None:
-        """Track an event for the model.
-
-        Args:
-            event: Event to track.
-            tracker: Optional tracker to use for analytics.
-        """
-        metadata = self.get_analytics_metadata()
-        if tracker:
-            tracker.track_event(event, metadata)
-        else:
-            track_event(event, metadata)
-
 
 @parametrized
 def track(
     func: Callable[..., Any],
-    event: Optional[Union[str, AnalyticsEvent]] = None,
+    event: AnalyticsEvent,
 ) -> Callable[..., Any]:
     """Decorator to track event.
 
@@ -546,7 +534,6 @@ def track(
     Returns:
         Decorated function.
     """
-    event_name = event or func.__name__  # default to name of function
 
     def inner_func(*args: Any, **kwargs: Any) -> Any:
         """Inner decorator function.
@@ -558,16 +545,24 @@ def track(
         Returns:
             Result of the function.
         """
-        with event_handler(event_name) as handler:
-            result = func(*args, **kwargs)
+        with event_handler(event) as handler:
+
             try:
-                handler.tracker = None
                 if len(args) and isinstance(args[0], AnalyticsTrackerMixin):
                     handler.tracker = args[0]
-                for obj in [result] + list(args) + list(kwargs.values()):
+
+                for obj in list(args) + list(kwargs.values()):
                     if isinstance(obj, AnalyticsTrackedModelMixin):
                         handler.metadata = obj.get_analytics_metadata()
                         break
+            except Exception as e:
+                logger.debug(f"Analytics tracking failure for {func}: {e}")
+
+            result = func(*args, **kwargs)
+
+            try:
+                if isinstance(result, AnalyticsTrackedModelMixin):
+                    handler.metadata = result.get_analytics_metadata()
             except Exception as e:
                 logger.debug(f"Analytics tracking failure for {func}: {e}")
 
@@ -577,16 +572,16 @@ def track(
     return inner_func
 
 
-
 class event_handler(object):
     """Context handler to enable tracking the success status of an event."""
+
     def __init__(self, event: AnalyticsEvent):
         """Initialization of the context manager."""
         self.event: AnalyticsEvent = event
         self.metadata: Dict[str, Any] = {}
         self.tracker: Optional[AnalyticsTrackerMixin] = None
 
-    def __enter__(self):
+    def __enter__(self) -> "event_handler":
         """Enter function of the event handler.
 
         Returns:
@@ -594,7 +589,12 @@ class event_handler(object):
         """
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(
+        self,
+        type_: Optional[Any],
+        value: Optional[Any],
+        traceback: Optional[Any],
+    ) -> Any:
         """Exit function of the event handler.
 
         Checks whether there was a traceback and updates the metadata
@@ -602,9 +602,20 @@ class event_handler(object):
         event.
         """
 
-        self.metadata.update({'success': traceback is None})
-
-        if self.tracker:
-            self.tracker.track_event(self.event, self.metadata)
+        if traceback is not None and type_ is not None:
+            self.metadata.update(
+                {
+                    "event_success": False,
+                    "event_error_type": type_.__name__,
+                }
+            )
         else:
-            track_event(self.event, self.metadata)
+            self.metadata.update({"event_success": True})
+
+        try:
+            if self.tracker:
+                self.tracker.track_event(self.event, self.metadata)
+            else:
+                track_event(self.event, self.metadata)
+        except Exception as e:
+            logger.debug(f"Analytics tracking failure: {e}")

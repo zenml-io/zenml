@@ -59,7 +59,7 @@ from zenml.utils import (
     settings_utils,
     yaml_utils,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
@@ -362,16 +362,19 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise NotImplementedError
 
-    def _track_pipeline_deployment(
+    def _track_pipeline_metadata(
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
-    ) -> None:
-        """Tracks the pipeline deployment as an analytics event.
+    ) -> Dict[str, Any]:
+        """Returns the pipeline deployment metadata.
 
         Args:
             deployment: The pipeline deployment to track.
             stack: The stack on which the pipeline will be deployed.
+
+        Returns:
+            the metadata about the pipeline deployment
         """
         custom_materializer = False
         custom_artifact = False
@@ -386,17 +389,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
             component_type.value: component.flavor
             for component_type, component in stack.components.items()
         }
-        track_event(
-            event=AnalyticsEvent.RUN_PIPELINE,
-            metadata={
-                "store_type": Client().zen_store.type.value,
-                **stack_metadata,
-                "total_steps": len(self.steps),
-                "schedule": bool(deployment.schedule),
-                "custom_materializer": custom_materializer,
-                "custom_artifact": custom_artifact,
-            },
-        )
+        return {
+            "store_type": Client().zen_store.type.value,
+            **stack_metadata,
+            "total_steps": len(self.steps),
+            "schedule": bool(deployment.schedule),
+            "custom_materializer": custom_materializer,
+            "custom_artifact": custom_artifact,
+        }
 
     def run(
         self,
@@ -432,107 +432,110 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Returns:
             The result of the pipeline.
         """
-        if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
-            # An environment variable was set to stop the execution of
-            # pipelines. This is done to prevent execution of module-level
-            # pipeline.run() calls inside docker containers which should only
-            # run a single step.
+        with event_handler(AnalyticsEvent.RUN_PIPELINE) as handler:
+            if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
+                # An environment variable was set to stop the execution of
+                # pipelines. This is done to prevent execution of module-level
+                # pipeline.run() calls inside docker containers which should only
+                # run a single step.
+                logger.info(
+                    "Preventing execution of pipeline '%s'. If this is not "
+                    "intended behavior, make sure to unset the environment "
+                    "variable '%s'.",
+                    self.name,
+                    constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
+                )
+                return
+
+            stack = Client().active_stack
+
+            # Activating the built-in integrations through lazy loading
+            from zenml.integrations.registry import integration_registry
+
+            integration_registry.activate_integrations()
+
+            if config_path:
+                config_dict = yaml_utils.read_yaml(config_path)
+                run_config = PipelineRunConfiguration.parse_obj(config_dict)
+            else:
+                run_config = PipelineRunConfiguration()
+
+            new_values = dict_utils.remove_none_values(
+                {
+                    "run_name": run_name,
+                    "enable_cache": enable_cache,
+                    "steps": step_configurations,
+                    "settings": settings,
+                    "schedule": schedule,
+                    "extra": extra,
+                }
+            )
+
+            # Update with the values in code so they take precedence
+            run_config = pydantic_utils.update_model(
+                run_config, update=new_values
+            )
+            from zenml.config.compiler import Compiler
+
+            pipeline_deployment = Compiler().compile(
+                pipeline=self, stack=stack, run_configuration=run_config
+            )
+
+            skip_pipeline_registration = constants.handle_bool_env_var(
+                constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
+            )
+
+            register_pipeline = not (skip_pipeline_registration or unlisted)
+
+            pipeline_id = None
+            if register_pipeline:
+                step_specs = [
+                    step.spec for step in pipeline_deployment.steps.values()
+                ]
+                pipeline_spec = PipelineSpec(steps=step_specs)
+
+                pipeline_id = Client().create_pipeline(
+                    pipeline_name=pipeline_deployment.pipeline.name,
+                    pipeline_spec=pipeline_spec,
+                    pipeline_docstring=self.__doc__,
+                )
+                pipeline_deployment = pipeline_deployment.copy(
+                    update={"pipeline_id": pipeline_id}
+                )
+
+            handler.metadata = self._track_pipeline_metadata(
+                deployment=pipeline_deployment, stack=stack
+            )
+            caching_status = (
+                "enabled"
+                if pipeline_deployment.pipeline.enable_cache
+                else "disabled"
+            )
             logger.info(
-                "Preventing execution of pipeline '%s'. If this is not "
-                "intended behavior, make sure to unset the environment "
-                "variable '%s'.",
-                self.name,
-                constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
+                "%s %s on stack `%s` (caching %s)",
+                "Scheduling" if pipeline_deployment.schedule else "Running",
+                f"pipeline `{pipeline_deployment.pipeline.name}`"
+                if register_pipeline
+                else "unlisted pipeline",
+                stack.name,
+                caching_status,
             )
-            return
+            stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
 
-        stack = Client().active_stack
+            # Prevent execution of nested pipelines which might lead to unexpected
+            # behavior
+            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+            try:
+                return_value = stack.deploy_pipeline(pipeline_deployment)
+            finally:
+                constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-        # Activating the built-in integrations through lazy loading
-        from zenml.integrations.registry import integration_registry
-
-        integration_registry.activate_integrations()
-
-        if config_path:
-            config_dict = yaml_utils.read_yaml(config_path)
-            run_config = PipelineRunConfiguration.parse_obj(config_dict)
-        else:
-            run_config = PipelineRunConfiguration()
-
-        new_values = dict_utils.remove_none_values(
-            {
-                "run_name": run_name,
-                "enable_cache": enable_cache,
-                "steps": step_configurations,
-                "settings": settings,
-                "schedule": schedule,
-                "extra": extra,
-            }
-        )
-
-        # Update with the values in code so they take precedence
-        run_config = pydantic_utils.update_model(run_config, update=new_values)
-        from zenml.config.compiler import Compiler
-
-        pipeline_deployment = Compiler().compile(
-            pipeline=self, stack=stack, run_configuration=run_config
-        )
-
-        skip_pipeline_registration = constants.handle_bool_env_var(
-            constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
-        )
-
-        register_pipeline = not (skip_pipeline_registration or unlisted)
-
-        pipeline_id = None
-        if register_pipeline:
-            step_specs = [
-                step.spec for step in pipeline_deployment.steps.values()
-            ]
-            pipeline_spec = PipelineSpec(steps=step_specs)
-
-            pipeline_id = Client().create_pipeline(
-                pipeline_name=pipeline_deployment.pipeline.name,
-                pipeline_spec=pipeline_spec,
-                pipeline_docstring=self.__doc__,
-            )
-            pipeline_deployment = pipeline_deployment.copy(
-                update={"pipeline_id": pipeline_id}
+            # Log the dashboard URL
+            dashboard_utils.print_run_url(
+                run_name=pipeline_deployment.run_name, pipeline_id=pipeline_id
             )
 
-        self._track_pipeline_deployment(
-            deployment=pipeline_deployment, stack=stack
-        )
-        caching_status = (
-            "enabled"
-            if pipeline_deployment.pipeline.enable_cache
-            else "disabled"
-        )
-        logger.info(
-            "%s %s on stack `%s` (caching %s)",
-            "Scheduling" if pipeline_deployment.schedule else "Running",
-            f"pipeline `{pipeline_deployment.pipeline.name}`"
-            if register_pipeline
-            else "unlisted pipeline",
-            stack.name,
-            caching_status,
-        )
-        stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
-
-        # Prevent execution of nested pipelines which might lead to unexpected
-        # behavior
-        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
-        try:
-            return_value = stack.deploy_pipeline(pipeline_deployment)
-        finally:
-            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
-
-        # Log the dashboard URL
-        dashboard_utils.print_run_url(
-            run_name=pipeline_deployment.run_name, pipeline_id=pipeline_id
-        )
-
-        return return_value
+            return return_value
 
     def _apply_configuration(
         self,
