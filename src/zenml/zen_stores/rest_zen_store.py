@@ -161,7 +161,6 @@ class RestZenStoreConfiguration(StoreConfiguration):
         """Validates the credentials provided in the values dictionary.
 
         Args:
-            cls: The class that this validator is being applied to.
             values: A dictionary containing the values to be validated.
 
         Raises:
