@@ -268,8 +268,8 @@ CUDA for the GPU to give its full acceleration.
 ## Important Note for Multi-Tenancy Deployments
 
 Kubeflow has a notion of [multi-tenancy](https://www.kubeflow.org/docs/components/multi-tenancy/overview/) 
-built into its deployment. Kubeflow’s multi-user isolation simplifies user 
-operations because each user only views and edited\s the Kubeflow components 
+built into its deployment. Kubeflow's multi-user isolation simplifies user
+operations because each user only views and edited\s the Kubeflow components
 and model artifacts defined in their configuration.
 
 Using the ZenML Kubeflow orchestrator on a multi-tenant deployment without any settings will result in the following error:

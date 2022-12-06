@@ -333,13 +333,13 @@ Now we can rerun the inference step, though using a different set of data
 python run.py aws --inference --rerun
 ```
 
-Once we've rerun this step, we can inspect the predictions our newly finetuned
+Once we've rerun this step, we can inspect the predictions our newly fine-tuned
 model made within Label Studio.
 
 ## CLI Commands for the Label Studio Integration
 
-Once you've run the pipeline for the first time, you'll be able to use some of
-the ZenML CLI commands to interact with your Label Studio annotations and the
+Once you've run the pipeline for the first time, you'll be able to use some 
+ZenML CLI commands to interact with your Label Studio annotations and the
 dataset:
 
 ```shell
