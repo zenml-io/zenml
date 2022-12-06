@@ -45,13 +45,6 @@ def trigger_vertex_job(request: Request) -> Response:
     request_str = request.data.decode("utf-8")
     request_json = json.loads(request_str)
 
-    # job = aiplatform.PipelineJob(
-    #     display_name=f"hello-world-cloud-function-pipeline",
-    #     template_path=pipeline_spec_uri,
-    #     pipeline_root=PIPELINE_ROOT,
-    #     enable_caching=False,
-    #     parameter_values=parameter_values,
-    # )
     display_name = (
         f"{request_json[JOB_ID]}_{random.Random().getrandbits(32):08x}"
     )

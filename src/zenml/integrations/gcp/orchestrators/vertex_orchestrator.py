@@ -56,17 +56,6 @@ from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
 from zenml.integrations.gcp.orchestrators import vertex_scheduler
-from zenml.integrations.gcp.orchestrators.vertex_scheduler import (
-    ENABLE_CACHING,
-    ENCRYPTION_SPEC_KEY_NAME,
-    JOB_ID,
-    LABELS,
-    LOCATION,
-    PARAMETER_VALUES,
-    PIPELINE_ROOT,
-    PROJECT,
-    TEMPLATE_PATH,
-)
 from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -487,15 +476,17 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
             # Create the scheduler job
             body = {
-                TEMPLATE_PATH: artifact_store_pipeline_uri,
-                JOB_ID: _clean_pipeline_name(deployment.pipeline.name),
-                PIPELINE_ROOT: self._pipeline_root,
-                PARAMETER_VALUES: None,
-                ENABLE_CACHING: False,
-                ENCRYPTION_SPEC_KEY_NAME: self.config.encryption_spec_key_name,
-                LABELS: settings.labels,
-                PROJECT: project_id,
-                LOCATION: self.config.location,
+                vertex_scheduler.TEMPLATE_PATH: artifact_store_pipeline_uri,
+                vertex_scheduler.JOB_ID: _clean_pipeline_name(
+                    deployment.pipeline.name
+                ),
+                vertex_scheduler.PIPELINE_ROOT: self._pipeline_root,
+                vertex_scheduler.PARAMETER_VALUES: None,
+                vertex_scheduler.ENABLE_CACHING: False,
+                vertex_scheduler.ENCRYPTION_SPEC_KEY_NAME: self.config.encryption_spec_key_name,
+                vertex_scheduler.LABELS: settings.labels,
+                vertex_scheduler.PROJECT: project_id,
+                vertex_scheduler.LOCATION: self.config.location,
             }
 
             create_scheduler_job(
