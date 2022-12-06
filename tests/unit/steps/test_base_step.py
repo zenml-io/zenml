@@ -647,21 +647,24 @@ def wrong_int_output_step_3() -> Output(out1=int, out2=int):
     return 1, "not_an_int"
 
 
+@pytest.mark.parametrize(
+    "step_class",
+    [
+        wrong_int_output_step_1,
+        wrong_int_output_step_2,
+        wrong_int_output_step_3,
+    ],
+)
 def test_returning_an_object_of_the_wrong_type_raises_an_error(
+    step_class,
     one_step_pipeline,
 ):
     """Tests that returning an object of a type that wasn't specified (either
     directly or as part of the `Output` tuple annotation) raises an error."""
+    pipeline_ = one_step_pipeline(step_class())
 
-    for step_function in [
-        wrong_int_output_step_1,
-        wrong_int_output_step_2,
-        wrong_int_output_step_3,
-    ]:
-        pipeline_ = one_step_pipeline(step_function())
-
-        with pytest.raises(StepInterfaceError):
-            pipeline_.run(unlisted=True)
+    with pytest.raises(StepInterfaceError):
+        pipeline_.run(unlisted=True)
 
 
 @step
@@ -699,11 +702,9 @@ def wrong_num_outputs_step_7() -> Output(a=list, b=int):
     return [2, 1]
 
 
-def test_returning_wrong_amount_of_objects_raises_an_error(one_step_pipeline):
-    """Tests that returning a different amount of objects than defined (either
-    directly or as part of the `Output` tuple annotation) raises an error."""
-
-    steps = [
+@pytest.mark.parametrize(
+    "step_class",
+    [
         wrong_num_outputs_step_1,
         wrong_num_outputs_step_2,
         wrong_num_outputs_step_3,
@@ -711,13 +712,18 @@ def test_returning_wrong_amount_of_objects_raises_an_error(one_step_pipeline):
         wrong_num_outputs_step_5,
         wrong_num_outputs_step_6,
         wrong_num_outputs_step_7,
-    ]
+    ],
+)
+def test_returning_wrong_amount_of_objects_raises_an_error(
+    step_class, one_step_pipeline
+):
+    """Tests that returning a different amount of objects than defined (either
+    directly or as part of the `Output` tuple annotation) raises an error."""
 
-    for step_function in steps:
-        pipeline_ = one_step_pipeline(step_function())
+    pipeline_ = one_step_pipeline(step_class())
 
-        with pytest.raises(StepInterfaceError):
-            pipeline_.run(unlisted=True)
+    with pytest.raises(StepInterfaceError):
+        pipeline_.run(unlisted=True)
 
 
 @step
