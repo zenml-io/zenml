@@ -77,6 +77,8 @@ from zenml.utils.io_utils import get_global_config_directory
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
+    from google.auth.credentials import Credentials
+
     from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
@@ -216,6 +218,30 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         """
         return os.path.join(self.root_directory, "pipelines")
 
+    def _get_authentication(self) -> Tuple["Credentials", str]:
+        """Get GCP credentials and the project ID associated with the credentials.
+
+        This function is the same as the super function except that it also checks
+        against the value of the `config` class of this orchestrator.
+
+        Returns:
+            A tuple containing the credentials and the project ID associated to
+            the credentials.
+        """
+        credentials, project_id = super()._get_authentication()
+        if self.config.project and self.config.project != project_id:
+            logger.warning(
+                "Authenticated with project `%s`, but this orchestrator is "
+                "configured to use the project `%s`.",
+                project_id,
+                self.config.project,
+            )
+
+        # If the project was set in the configuration, use it. Otherwise, use
+        # the project that was used to authenticate.
+        project_id = self.config.project if self.config.project else project_id
+        return credentials, project_id
+
     def prepare_pipeline_deployment(
         self,
         deployment: "PipelineDeployment",
@@ -226,7 +252,22 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         Args:
             deployment: The pipeline deployment configuration.
             stack: The stack on which the pipeline will be deployed.
+
+        Raises:
+            ValueError: If `cron_expression` is not in passed Schedule.
         """
+        if deployment.schedule:
+            logger.warning(
+                "Vertex orchestrator only uses schedules with the "
+                "`cron_expression` property. All other properties "
+                "are ignored."
+            )
+            if deployment.schedule.cron_expression is None:
+                raise ValueError(
+                    "Property `cron_expression` must be set when passing "
+                    "schedule to a vertex orchestrator."
+                )
+
         docker_image_builder = PipelineDockerImageBuilder()
         repo_digest = docker_image_builder.build_and_push_docker_image(
             deployment=deployment, stack=stack
@@ -467,19 +508,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
             # Get the credentials that would be used to create resources.
             credentials, project_id = self._get_authentication()
-            if self.config.project and self.config.project != project_id:
-                logger.warning(
-                    "Authenticated with project `%s`, but this orchestrator is "
-                    "configured to use the project `%s`.",
-                    project_id,
-                    self.config.project,
-                )
-
-            # If the project was set in the configuration, use it. Otherwise, use
-            # the project that was used to authenticate.
-            project_id = (
-                self.config.project if self.config.project else project_id
-            )
 
             # Create cloud function
             function_uri = create_cloud_function(
@@ -550,17 +578,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         # Pipelines
         # job.
         credentials, project_id = self._get_authentication()
-        if self.config.project and self.config.project != project_id:
-            logger.warning(
-                "Authenticated with project `%s`, but this orchestrator is "
-                "configured to use the project `%s`.",
-                project_id,
-                self.config.project,
-            )
-
-        # If the project was set in the configuration, use it. Otherwise, use
-        # the project that was used to authenticate.
-        project_id = self.config.project if self.config.project else project_id
 
         # Instantiate the Vertex AI Pipelines job
         run = aiplatform.PipelineJob(
@@ -573,7 +590,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             encryption_spec_key_name=self.config.encryption_spec_key_name,
             labels=settings.labels,
             credentials=credentials,
-            project=self.config.project,
+            project=project_id,
             location=self.config.location,
         )
 

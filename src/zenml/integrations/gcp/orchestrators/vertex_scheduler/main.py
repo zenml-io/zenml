@@ -35,10 +35,10 @@ def trigger_vertex_job(request: Request) -> Response:
     """Processes the incoming HTTP request.
 
     Args:
-      request: HTTP request object.
+            request: HTTP request object.
 
     Returns:
-      The response text or any set of values that can be turned into a Response.
+            The response text or any set of values that can be turned into a Response.
     """
     # decode http request payload and translate into JSON object
     request_str = request.data.decode("utf-8")
@@ -59,4 +59,4 @@ def trigger_vertex_job(request: Request) -> Response:
         location=request_json[LOCATION],
     )
     run.submit()
-    return "Job submitted"
+    return f"{display_name} submitted!"
