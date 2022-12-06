@@ -96,7 +96,6 @@ def list_users(
 @handle_exceptions
 def create_user(
     user: UserRequestModel,
-    assign_default_role: bool = True,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> UserResponseModel:
     """Creates a user.
@@ -123,15 +122,6 @@ def create_user(
     else:
         user.active = True
     new_user = zen_store().create_user(user)
-
-    # For the time being all users are implicitly assigned the admin role
-    if assign_default_role:
-        zen_store().create_role_assignment(
-            RoleAssignmentRequestModel(
-                role=zen_store()._admin_role.id,
-                user=new_user.id,
-            )
-        )
 
     # add back the original unhashed activation token, if generated, to
     # send it back to the client
