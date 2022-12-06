@@ -19,16 +19,7 @@ database connection.
 """
 
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Union,
-)
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 from alembic.config import Config
 from alembic.runtime.environment import EnvironmentContext
@@ -41,9 +32,6 @@ from sqlalchemy.sql.schema import MetaData
 from sqlmodel import SQLModel
 
 from zenml.zen_stores import schemas
-
-if TYPE_CHECKING:
-    pass
 
 ZENML_ALEMBIC_START_REVISION = "alembic_start"
 

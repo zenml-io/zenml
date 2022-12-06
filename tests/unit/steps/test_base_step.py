@@ -736,14 +736,19 @@ def list_output_step() -> List:
     return []
 
 
-def test_step_can_output_generic_types(one_step_pipeline):
+@pytest.mark.parametrize(
+    "step_class",
+    [
+        dict_output_step,
+        list_output_step,
+    ],
+)
+def test_step_can_output_generic_types(step_class, one_step_pipeline):
     """Tests that a step can output generic typing classes."""
+    pipeline_ = one_step_pipeline(step_class())
 
-    for step_function in [dict_output_step, list_output_step]:
-        pipeline_ = one_step_pipeline(step_function())
-
-        with does_not_raise():
-            pipeline_.run(unlisted=True)
+    with does_not_raise():
+        pipeline_.run(unlisted=True)
 
 
 @step
@@ -758,14 +763,21 @@ def dict_of_str_output_step() -> Output(
     return "", {}
 
 
-def test_step_can_output_subscripted_generic_types(one_step_pipeline):
+@pytest.mark.parametrize(
+    "step_class",
+    [
+        list_of_str_output_step,
+        dict_of_str_output_step,
+    ],
+)
+def test_step_can_output_subscripted_generic_types(
+    step_class, one_step_pipeline
+):
     """Tests that a step can output subscripted generic types."""
+    pipeline_ = one_step_pipeline(step_class())
 
-    for step_function in [list_of_str_output_step, dict_of_str_output_step]:
-        pipeline_ = one_step_pipeline(step_function())
-
-        with does_not_raise():
-            pipeline_.run(unlisted=True)
+    with does_not_raise():
+        pipeline_.run(unlisted=True)
 
 
 @step
@@ -915,3 +927,18 @@ def test_base_parameter_subclasses_as_attribute():
     assert step_instance.configuration.parameters == {
         "attribute": {"key": "value"}
     }
+
+
+@step
+def step_with_two_letter_string_output() -> Output(a=str, b=str):
+    return "ab"
+
+
+def test_string_outputs_do_not_get_split(one_step_pipeline):
+    """Tests that a step which outputs a N-character string is not allowed if
+    the output annotations require N string outputs.
+    """
+    pipeline_ = one_step_pipeline(step_with_two_letter_string_output())
+
+    with pytest.raises(StepInterfaceError):
+        pipeline_.run(unlisted=True)
