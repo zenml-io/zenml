@@ -31,8 +31,13 @@ import re
 from threading import Lock
 from typing import TYPE_CHECKING, Dict, Type
 
+from zenml.logger import get_logger
+
 if TYPE_CHECKING:
     from zenml.io.filesystem import BaseFilesystem, PathType
+
+
+logger = get_logger(__name__)
 
 
 class FileIORegistry:
@@ -53,9 +58,14 @@ class FileIORegistry:
             for scheme in filesystem_cls.SUPPORTED_SCHEMES:
                 current_preferred = self._filesystems.get(scheme)
                 if current_preferred is not None:
-                    # TODO: [LOW] Decide what to do here. Do we overwrite,
-                    #   give out a warning or do we fail?
-                    pass
+                    logger.debug(
+                        "Overwriting previously registered filesystem for "
+                        "scheme `%s`. Old class: %s, new class: %s",
+                        scheme,
+                        current_preferred.__name__,
+                        filesystem_cls.__name__,
+                    )
+
                 self._filesystems[scheme] = filesystem_cls
 
     def get_filesystem_for_scheme(

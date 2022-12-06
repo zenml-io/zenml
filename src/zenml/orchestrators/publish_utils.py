@@ -51,8 +51,9 @@ def publish_output_artifacts(
     for name, artifact_ in output_artifacts.items():
         if artifact_.materializer is None:
             raise ValueError(
-                f"Artifact {name} does not have a materializer. "
-                "Please set one before registering."
+                f"No materializer found for Artifact `{name}` of type `{artifact_.data_type}`. "
+                "Please specify a materializer for this artifact "
+                "or implement a materializer for this datatype."
             )
         if artifact_.data_type is None:
             raise ValueError(

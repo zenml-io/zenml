@@ -3167,15 +3167,13 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_step_run)
 
             # Update the output artifacts.
-            outputs = step_run_update.output_artifacts
-            if outputs is not None:
-                for (output_name, artifact_id) in outputs.items():
-                    self._set_run_step_output_artifact(
-                        step_run_id=step_run_id,
-                        artifact_id=artifact_id,
-                        name=output_name,
-                        session=session,
-                    )
+            for name, artifact_id in step_run_update.output_artifacts.items():
+                self._set_run_step_output_artifact(
+                    step_run_id=step_run_id,
+                    artifact_id=artifact_id,
+                    name=name,
+                    session=session,
+                )
 
             # Input artifacts and parent steps cannot be updated after the
             # step has been created.

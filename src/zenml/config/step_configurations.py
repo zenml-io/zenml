@@ -87,7 +87,7 @@ class InputSpec(StrictBaseModel):
     """Step input specification."""
 
     step_name: str
-    output_name: str  # TODO: This means we can't change the output name anymore without changing the pipeline
+    output_name: str
 
 
 class StepSpec(StrictBaseModel):
@@ -136,8 +136,12 @@ class StepSpec(StrictBaseModel):
             if self.upstream_steps != other.upstream_steps:
                 return False
 
-            if self.inputs != other.inputs:
-                return False
+            # TODO: rethink this once we have pipeline versioning
+            # for now we don't compare the inputs because that would force
+            # users to re-register their pipeline if they change an output or
+            # input name
+            # if self.inputs != other.inputs:
+            #     return False
 
             # Remove internal version pin from older sources for backwards
             # compatibility

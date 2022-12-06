@@ -52,7 +52,6 @@
 ## Component Gallery
 
 * [Categories of MLOps Tools](./component-gallery/categories.md)
-* [Architecture Diagrams](getting-started/architecture-diagrams.md)
 * [Integration Overview](./component-gallery/integrations.md)
 * [Orchestrators](./component-gallery/orchestrators/orchestrators.md)
   * [Local Orchestrator](./component-gallery/orchestrators/local.md)

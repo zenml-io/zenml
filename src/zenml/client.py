@@ -70,6 +70,7 @@ from zenml.models import (
     StackResponseModel,
     StackUpdateModel,
     StepRunRequestModel,
+    StepRunResponseModel,
     TeamRequestModel,
     TeamResponseModel,
     UserRequestModel,
@@ -2150,7 +2151,7 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
     # -----------------
-    # - PIPELINE RUNS -
+    # - PIPELINE/STEP RUNS -
     # -----------------
 
     def export_pipeline_runs(self, filename: str) -> None:
@@ -2295,6 +2296,35 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.zen_store.list_runs,
             name_id_or_prefix=name_id_or_prefix,
         )
+
+    def list_run_steps(
+        self,
+        pipeline_run_id: Optional[UUID] = None,
+        project_id: Optional[UUID] = None,
+    ) -> List[StepRunResponseModel]:
+        """Get all step runs.
+
+        Args:
+            pipeline_run_id: If provided, only return steps for this pipeline run.
+            project_id: If provided, only return step runs in this project.
+
+        Returns:
+            A list of step runs.
+        """
+        return self.zen_store.list_run_steps(
+            run_id=pipeline_run_id, project_id=project_id
+        )
+
+    def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
+        """Get a step run by ID.
+
+        Args:
+            step_run_id: The ID of the step run to get.
+
+        Returns:
+            The step run.
+        """
+        return self.zen_store.get_run_step(step_run_id)
 
     # ---- utility prefix matching get functions -----
 

@@ -36,7 +36,9 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           source $VENV
-          pip install $(zenml integration export-requirements --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration bentoml --ignore-integration tekton --ignore-integration airflow)
+          zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration bentoml --ignore-integration tekton --ignore-integration airflow
+          pip install -r requirements.txt
+          rm requirements.txt
           pip install click~=8.0.3
         
       - name: Lint
