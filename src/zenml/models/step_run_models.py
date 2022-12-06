@@ -13,18 +13,22 @@
 #  permissions and limitations under the License.
 """Models representing steps of pipeline runs."""
 
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
-    BaseRequestModel,
-    BaseResponseModel,
-    update_model,
+    ProjectScopedRequestModel,
+    ProjectScopedResponseModel,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+
+if TYPE_CHECKING:
+    from zenml.models import ArtifactResponseModel
 
 # ---- #
 # BASE #
@@ -38,20 +42,14 @@ class StepRunBaseModel(BaseModel):
         title="The name of the pipeline run step.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
+    step: Step
     pipeline_run_id: UUID
-    parent_step_ids: List[UUID]
-    input_artifacts: Dict[str, UUID]
+    original_step_run_id: Optional[UUID] = None
     status: ExecutionStatus
-
-    entrypoint_name: str
-    parameters: Dict[str, str]
-    step_configuration: Dict[str, Any]
-    docstring: Optional[str]
-    num_outputs: Optional[int]
-
-    # IDs in MLMD - needed for some metadata store methods
-    mlmd_id: Optional[int]
-    mlmd_parent_step_ids: List[int]
+    parent_step_ids: List[UUID] = []
+    cache_key: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
 
 
 # -------- #
@@ -59,8 +57,11 @@ class StepRunBaseModel(BaseModel):
 # -------- #
 
 
-class StepRunResponseModel(StepRunBaseModel, BaseResponseModel):
+class StepRunResponseModel(StepRunBaseModel, ProjectScopedResponseModel):
     """Response model for step runs."""
+
+    input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
+    output_artifacts: Dict[str, "ArtifactResponseModel"] = {}
 
 
 # ------- #
@@ -68,13 +69,21 @@ class StepRunResponseModel(StepRunBaseModel, BaseResponseModel):
 # ------- #
 
 
-class StepRunRequestModel(StepRunBaseModel, BaseRequestModel):
+class StepRunRequestModel(StepRunBaseModel, ProjectScopedRequestModel):
     """Request model for step runs."""
+
+    input_artifacts: Dict[str, UUID] = {}
+    output_artifacts: Dict[str, UUID] = {}
 
 
 # ------ #
 # UPDATE #
 # ------ #
-@update_model
-class StepRunUpdateModel(StepRunRequestModel):
+
+
+class StepRunUpdateModel(BaseModel):
     """Update model for step runs."""
+
+    output_artifacts: Dict[str, UUID] = {}
+    status: Optional[ExecutionStatus] = None
+    end_time: Optional[datetime] = None

@@ -101,13 +101,13 @@ def mlflow_model_deployer_step(
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
-    run_id = step_env.pipeline_run_id
+    run_name = step_env.run_name
     step_name = step_env.step_name
 
     client = MlflowClient()
     mlflow_run_id = experiment_tracker.get_run_id(
         experiment_name=params.experiment_name or pipeline_name,
-        run_name=params.run_name or run_id,
+        run_name=params.run_name or run_name,
     )
 
     model_uri = ""
@@ -132,7 +132,7 @@ def mlflow_model_deployer_step(
         workers=params.workers,
         mlserver=params.mlserver,
         pipeline_name=pipeline_name,
-        pipeline_run_id=run_id,
+        pipeline_run_id=run_name,
         pipeline_step_name=step_name,
     )
 

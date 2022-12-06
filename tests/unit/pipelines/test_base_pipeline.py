@@ -280,8 +280,8 @@ def test_calling_a_pipeline_twice_raises_no_exception(
     pipeline_instance = one_step_pipeline(empty_step())
 
     with does_not_raise():
-        pipeline_instance.run()
-        pipeline_instance.run()
+        pipeline_instance.run(unlisted=True)
+        pipeline_instance.run(unlisted=True)
 
 
 def test_pipeline_run_fails_when_required_step_operator_is_missing(
@@ -296,4 +296,4 @@ def test_pipeline_run_fails_when_required_step_operator_is_missing(
 
     assert not Client().active_stack.step_operator
     with pytest.raises(StackValidationError):
-        one_step_pipeline(step_that_requires_step_operator()).run()
+        one_step_pipeline(step_that_requires_step_operator()).run(unlisted=True)

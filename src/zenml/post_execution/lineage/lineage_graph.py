@@ -17,6 +17,7 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel
 
+from zenml.enums import ExecutionStatus
 from zenml.post_execution.lineage.edge import Edge
 from zenml.post_execution.lineage.node import (
     ArtifactNode,
@@ -47,7 +48,7 @@ class LineageGraph(BaseModel):
         step_id = STEP_PREFIX + str(step.id)
         if self.root_step_id is None:
             self.root_step_id = step_id
-        step_config = step.step_configuration.get("config", {})
+        step_config = step.step_configuration.dict()
         if step_config:
             step_config = {
                 key: value
@@ -79,10 +80,10 @@ class LineageGraph(BaseModel):
                         execution_id=str(artifact.id),
                         name=artifact_name,
                         status=step.status,
-                        is_cached=artifact.is_cached,
+                        is_cached=step.status == ExecutionStatus.CACHED,
                         artifact_type=artifact.type,
                         artifact_data_type=artifact.data_type,
-                        parent_step_id=str(artifact.parent_step_id),
+                        parent_step_id=str(step.id),
                         producer_step_id=str(artifact.producer_step_id),
                         uri=artifact.uri,
                     ),

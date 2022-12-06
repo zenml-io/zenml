@@ -49,8 +49,8 @@ include = [
 zenml = "zenml.cli.cli:cli"
 
 [tool.poetry.dependencies]
-python = ">=3.7.1,<3.10"
-ml-pipelines-sdk = "1.8.0"
+python = ">=3.7.1,<3.11"
+docker = "~6.0.0"
 pandas = "^1.1.5"
 pyyaml = "^5.4.1"
 python-dateutil = "^2.8.1"
@@ -84,7 +84,7 @@ server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-util
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
 pytest = "^6.2.4"
-mypy = "^0.931"
+mypy = "^0.991"
 flake8 = "^3.9.2"
 interrogate = "^1.4.0"
 coverage = { extras = ["toml"], version = "^5.5" }
@@ -200,10 +200,9 @@ follow_imports = "skip"
 
 # end of fix
 
-# import all tfx.proto.* and google files as `Any`
+# import all google and transformers files as `Any`
 [[tool.mypy.overrides]]
 module = [
-    "tfx.proto.*",
     "google.*" ,
     "transformers.*"  # https://github.com/huggingface/transformers/issues/13390
 ]

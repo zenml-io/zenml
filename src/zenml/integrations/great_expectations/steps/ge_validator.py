@@ -53,7 +53,7 @@ class GreatExpectationsValidatorStep(BaseStep):
     existing Expectation Suite on an input dataset [as covered in the official GE documentation](https://docs.greatexpectations.io/docs/guides/validation/how_to_validate_data_by_running_a_checkpoint).
     """
 
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         self,
         dataset: pd.DataFrame,
         condition: bool,
