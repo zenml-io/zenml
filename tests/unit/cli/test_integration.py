@@ -205,9 +205,7 @@ def test_integration_uninstall_all(mocker: MockFixture) -> None:
     mock_uninstall_package.assert_called()
 
 
-def test_integration_requirements_exporting(
-    mocker: MockFixture, tmp_path
-) -> None:
+def test_integration_requirements_exporting(tmp_path) -> None:
     """Tests requirements exporting to stdout and to a file."""
     from zenml.integrations.airflow import AirflowIntegration
     from zenml.integrations.kubeflow import KubeflowIntegration

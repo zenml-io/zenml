@@ -93,7 +93,9 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
             warning("zenml integration install EXAMPLE_NAME")
 
 
-@integration.command
+@integration.command(
+    name="export-requirements", help="Export the integration requirements."
+)
 @click.argument("integrations", nargs=-1, required=False)
 @click.option(
     "--ignore-integration",
@@ -107,6 +109,8 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     "output_file",
     type=str,
     required=False,
+    help="File to which to export the integration requirements. If not "
+    "provided, the requirements will be printed to stdout instead.",
 )
 def export_requirements(
     integrations: Tuple[str],
