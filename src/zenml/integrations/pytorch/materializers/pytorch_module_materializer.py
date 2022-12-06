@@ -52,7 +52,7 @@ class PyTorchModuleMaterializer(BaseMaterializer):
         with fileio.open(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
         ) as f:
-            return cast(Module, torch.load(f))  # noqa
+            return cast(Module, torch.load(f))
 
     def handle_return(self, model: Module) -> None:
         """Writes a PyTorch model, as a model and a checkpoint.

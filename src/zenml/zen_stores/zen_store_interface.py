@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus, StackComponentType
@@ -54,9 +54,6 @@ from zenml.models import (
     UserUpdateModel,
 )
 from zenml.models.server_models import ServerModel
-
-if TYPE_CHECKING:
-    pass
 
 
 class ZenStoreInterface(ABC):

@@ -103,16 +103,18 @@ def _get_step_operator(
 class StepLauncher:
     """This class is responsible for launching a step of a ZenML pipeline.
 
-    It does the following:
-    1. Query ZenML to resolve the input artifacts of the step,
-    2. Generate a cache key based on the step and its artifacts,
-    3. Build a `StepRunModel` for the step run,
-    4. Check if the step run can be cached, and if so, register it as cached.
-    5. If not cached, call the `StepRunner` to run the step, and register
-        the step as running.
-    6. If execution was successful, register the output artifacts with ZenML,
-    7. If not cached, update the step run status,
-    8. Update the pipeline run status.
+    This class follows these steps to launch and publish a ZenML step:
+    1. Publish or reuse a `PipelineRun`
+    2. Resolve the input artifacts of the step
+    3. Generate a cache key for the step
+    4. Check if the step can be cached or not
+    5. Publish a new `StepRun`
+    6. If the step can't be cached, the step will be executed in one of these
+    two ways depending on its configuration:
+        - Calling a `step operator` to run the step in a different environment
+        - Calling a `step runner` to run the step in the current environment
+    7. Update the status of the previously published `StepRun`
+    8. Update the status of the `PipelineRun`
     """
 
     def __init__(
