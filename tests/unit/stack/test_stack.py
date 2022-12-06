@@ -430,7 +430,6 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         run_name="",
         stack_id=uuid4(),
         pipeline={"name": "", "enable_cache": True},
-        proto_pipeline="",
     )
 
     ######### Remote server #########
