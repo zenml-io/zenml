@@ -15,7 +15,7 @@
 """Class to run steps."""
 
 import inspect
-from typing import TYPE_CHECKING, Any, Callable, Dict, Sequence, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, Type
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.step_configurations import StepConfiguration
@@ -143,13 +143,13 @@ class StepRunner:
             # return value as the return for that output
             if len(output_annotations) == 1:
                 return_values = [return_values]
-            elif not isinstance(return_values, Sequence):
+            elif not isinstance(return_values, (list, tuple)):
                 # if the user defined multiple outputs, the return value must
-                # be a sequence
+                # be a list or tuple
                 raise StepInterfaceError(
                     f"Wrong step function output type for step '{step_name}: "
                     f"Expected multiple outputs ({output_annotations}) but "
-                    f"the function did not return a sequence-like object "
+                    f"the function did not return a list or tuple "
                     f"(actual return value: {return_values})."
                 )
             elif len(output_annotations) != len(return_values):
