@@ -18,18 +18,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Security
 
-from zenml.constants import (
-    API,
-    INPUTS,
-    OUTPUTS,
-    STATUS,
-    STEP_CONFIGURATION,
-    STEPS,
-    VERSION_1,
-)
+from zenml.constants import API, STATUS, STEP_CONFIGURATION, STEPS, VERSION_1
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
-    ArtifactResponseModel,
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
@@ -52,17 +43,28 @@ router = APIRouter(
 @handle_exceptions
 def list_run_steps(
     run_id: Optional[UUID] = None,
+    project_id: Optional[UUID] = None,
+    cache_key: Optional[str] = None,
+    status: Optional[ExecutionStatus] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[StepRunResponseModel]:
     """Get run steps according to query filters.
 
     Args:
-        run_id: The URI of the pipeline run by which to filter.
+        run_id: The ID of the pipeline run by which to filter.
+        project_id: The ID of the project by which to filter.
+        cache_key: The cache key by which to filter.
+        status: The status by which to filter.
 
     Returns:
         The run steps according to query filters.
     """
-    return zen_store().list_run_steps(run_id=run_id)
+    return zen_store().list_run_steps(
+        run_id=run_id,
+        project_id=project_id,
+        cache_key=cache_key,
+        status=status,
+    )
 
 
 @router.post(
@@ -83,7 +85,7 @@ def create_run_step(
     Returns:
         The created run step.
     """
-    return zen_store().create_run_step(step=step)
+    return zen_store().create_run_step(step_run=step)
 
 
 @router.get(
@@ -127,52 +129,9 @@ def update_step(
     Returns:
         The updated step model.
     """
-    return zen_store().update_run_step(step_id=step_id, step_update=step_model)
-
-
-@router.get(
-    "/{step_id}" + OUTPUTS,
-    response_model=Dict[str, ArtifactResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_step_outputs(
-    step_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Dict[str, ArtifactResponseModel]:
-    """Get the outputs of a specific step.
-
-    Args:
-        step_id: ID of the step for which to get the outputs.
-
-    Returns:
-        All outputs of the step, mapping from output name to artifact model.
-    """
-    return {
-        artifact.name: artifact
-        for artifact in zen_store().list_artifacts(parent_step_id=step_id)
-    }
-
-
-@router.get(
-    "/{step_id}" + INPUTS,
-    response_model=Dict[str, ArtifactResponseModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_step_inputs(
-    step_id: UUID,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Dict[str, ArtifactResponseModel]:
-    """Get the inputs of a specific step.
-
-    Args:
-        step_id: ID of the step for which to get the inputs.
-
-    Returns:
-        All inputs of the step, mapping from input name to artifact model.
-    """
-    return zen_store().get_run_step_inputs(step_id)
+    return zen_store().update_run_step(
+        step_run_id=step_id, step_run_update=step_model
+    )
 
 
 @router.get(
@@ -193,7 +152,7 @@ def get_step_configuration(
     Returns:
         The step configuration.
     """
-    return zen_store().get_run_step(step_id).step_configuration
+    return zen_store().get_run_step(step_id).step.dict()
 
 
 @router.get(

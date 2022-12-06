@@ -49,12 +49,10 @@ Eager to get started? We recommend the following to start using **ZenML** right 
 
 - See the [Integrations](../component-gallery/integrations.md) into popular ML tools.
 - Read about [Categories of MLOps tools](../component-gallery/categories.md).
-- Read how to [connect popular ML tools](../popular-stack-guides/overview.md) in various ways with ZenML.
 
 ### **Need help deploying infrastructure?**
 
 - Read about how to [deploy ZenML](../getting-started/deploying-zenml/deploying-zenml.md) on any cloud provider.
-- Read about how to [deploy popular MLOps stacks](../popular-stack-guides/overview.md).
 - [Standard integrations](../component-gallery/integrations.md) have stack components that come with their own deployment guide.
 
 ### **Community** - Be Part of the ZenML Family

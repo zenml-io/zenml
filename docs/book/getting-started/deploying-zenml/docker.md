@@ -60,29 +60,6 @@ The following environment variables can be passed to the container:
     or:
 
         mysql://username:password@host:port/database
-
-{% hint style="warning" %}
-The SQLite database backend option currently has one major limitation:
-the server will store incomplete information about pipeline runs and
-thus the pipeline runs will only be partially available in the ZenML UI. This
-comes from the requirement that the ZenML clients and orchestrators still need
-direct access to the server database to store this information.
-
-This limitation will be corrected in a future release that removes the
-dependency on the ml-metadata library for pipeline run tracking.
-
-This situation will be signalled by a warning message in the ZenML client and
-pipeline logs that looks like this:
-
-    The ZenML server is using a SQLite database at /zenml/.zenconfig/local_stores/default_zen_store/zenml.db
-    that is not available locally. Using the default local SQLite database
-    instead.
-
-In the meantime, it is recommended to configure the ZenML server to connect to a
-MySQL database service that is also reachable from the client and orchestrators.
-This is covered in the next sections.
-{% endhint %}
-
 - **ZENML_STORE_SSL_CA**:
     This can be set to a custom server CA certificate in use by the MySQL
     database service. Only valid when `ZENML_STORE_URL` points to a MySQL

@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional, cast
+from typing import List, Optional
 
 import click
 from rich.text import Text
@@ -177,7 +177,7 @@ class StackRecipeRepo:
 
         try:
             self.repo = Repo(self.cloning_path)
-        except NoSuchPathError or InvalidGitRepositoryError:
+        except (NoSuchPathError, InvalidGitRepositoryError):
             self.repo = None  # type: ignore
             logger.debug(
                 f"`Cloning_path`: {self.cloning_path} was empty, "
@@ -197,12 +197,11 @@ class StackRecipeRepo:
             The active version of the repository.
         """
         for branch in self.repo.heads:
-            branch_name = cast(str, branch.name)
             if (
-                branch_name.startswith("release/")
+                branch.name.startswith("release/")
                 and branch.commit == self.repo.head.commit
             ):
-                return branch_name[len("release/") :]
+                return branch.name[len("release/") :]
 
         return None
 
@@ -217,7 +216,7 @@ class StackRecipeRepo:
 
         tags = sorted(
             self.repo.tags,
-            key=lambda t: t.commit.committed_datetime,  # type: ignore
+            key=lambda t: t.commit.committed_datetime,
         )
 
         if not tags:
