@@ -1,17 +1,3 @@
-# Copyright 2020 Google LLC. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,46 +37,6 @@ from zenml.stack import Flavor, StackComponent, StackComponentConfig
 from zenml.utils import io_utils
 
 PathType = Union[bytes, str]
-
-
-def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
-    """Utility decorator used for catching a `FileNotFoundError`.
-
-    Error is converted to a `NotFoundError` in order to deal with the TFX
-    exception handling.
-
-    Args:
-        _func: The function to decorate.
-
-    Returns:
-        The decorated function.
-    """
-
-    def inner_function(*args: Any, **kwargs: Any) -> Any:
-        """Inner function for the decorator.
-
-        It attempts to run the function
-        wrapped by the decorator and catches the FileNotFoundError if it is
-        thrown. In that case, the tfx.NotFoundError is raised instead.
-
-        Args:
-            *args: The positional arguments to pass to the function.
-            **kwargs: The keyword arguments to pass to the function.
-
-        Returns:
-            The inner function.
-
-        Raises:
-            NotFoundError: If the function throws a FileNotFoundError.
-        """
-        try:
-            return _func(*args, **kwargs)
-        except FileNotFoundError as e:
-            from tfx.dsl.io.fileio import NotFoundError
-
-            raise NotFoundError() from e
-
-    return inner_function
 
 
 def _sanitize_potential_path(potential_path: Any) -> Any:
@@ -386,57 +332,38 @@ class BaseArtifactStore(StackComponent):
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
         self._register()
 
-    def _register(self, priority: int = 5) -> None:
-        """Create and register a filesystem within the TFX registry.
+    def _register(self) -> None:
+        """Create and register a filesystem within the filesystem registry."""
+        from zenml.io.filesystem import BaseFilesystem
+        from zenml.io.filesystem_registry import default_filesystem_registry
+        from zenml.io.local_filesystem import LocalFilesystem
 
-        Args:
-            priority: The priority of the filesystem.
-        """
-        from tfx.dsl.io.filesystem import Filesystem
-        from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
+        # Local filesystem is always registered, no point in doing it again.
+        if isinstance(self, LocalFilesystem):
+            return
 
         filesystem_class = type(
             self.__class__.__name__,
-            (Filesystem,),
+            (BaseFilesystem,),
             {
                 "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
-                "open": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.open))
-                ),
-                "copy": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.copyfile))
-                ),
+                "open": staticmethod(_sanitize_paths(self.open)),
+                "copy": staticmethod(_sanitize_paths(self.copyfile)),
                 "exists": staticmethod(_sanitize_paths(self.exists)),
                 "glob": staticmethod(_sanitize_paths(self.glob)),
                 "isdir": staticmethod(_sanitize_paths(self.isdir)),
-                "listdir": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.listdir))
-                ),
+                "listdir": staticmethod(_sanitize_paths(self.listdir)),
                 "makedirs": staticmethod(_sanitize_paths(self.makedirs)),
-                "mkdir": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.mkdir))
-                ),
-                "remove": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.remove))
-                ),
-                "rename": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.rename))
-                ),
-                "rmtree": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.rmtree))
-                ),
-                "stat": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.stat))
-                ),
-                "walk": staticmethod(
-                    _sanitize_paths(_catch_not_found_error(self.walk))
-                ),
+                "mkdir": staticmethod(_sanitize_paths(self.mkdir)),
+                "remove": staticmethod(_sanitize_paths(self.remove)),
+                "rename": staticmethod(_sanitize_paths(self.rename)),
+                "rmtree": staticmethod(_sanitize_paths(self.rmtree)),
+                "stat": staticmethod(_sanitize_paths(self.stat)),
+                "walk": staticmethod(_sanitize_paths(self.walk)),
             },
         )
 
-        DEFAULT_FILESYSTEM_REGISTRY.register(
-            filesystem_class, priority=priority
-        )
+        default_filesystem_registry.register(filesystem_class)
 
 
 class BaseArtifactStoreFlavor(Flavor):

@@ -36,7 +36,7 @@ class DeepchecksIntegration(Integration):
     """Definition of [Deepchecks](https://github.com/deepchecks/deepchecks) integration for ZenML."""
 
     NAME = DEEPCHECKS
-    REQUIREMENTS = ["deepchecks[vision]==0.8.0", "torchvision==0.11.2"]
+    REQUIREMENTS = ["deepchecks[vision]==0.8.0", "torchvision==0.14.0"]
     APT_PACKAGES = ["ffmpeg", "libsm6", "libxext6"]
 
     @staticmethod

@@ -46,7 +46,7 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
         with fileio.open(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
         ) as f:
-            return cast(DataLoader[Any], torch.load(f))  # type: ignore[no-untyped-call]  # noqa
+            return cast(DataLoader[Any], torch.load(f))
 
     def handle_return(self, dataloader: DataLoader[Any]) -> None:
         """Writes a PyTorch dataloader.

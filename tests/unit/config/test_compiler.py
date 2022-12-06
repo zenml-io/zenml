@@ -18,6 +18,9 @@ from zenml.steps.base_step import BaseStep
 
 
 def _compile_step(step: BaseStep):
+    # Call the step here to finalize the configuration
+    step()
+
     compiler = Compiler()
     return compiler._compile_step(
         step=step,
