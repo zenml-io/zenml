@@ -43,6 +43,12 @@ your stack.
 as part of your stack.
 * The GCP project ID and location in which you want to run your Vertex 
 AI pipelines.
+* The pipeline runner environment needs permissions to create a job in Vertex Pipelines,
+e.g. the `Vertex AI User` role: https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.user
+* To run on a schedule, the runner environment also needs permissions to create a Google Cloud
+Function (e.g. with the [cloudfunctions.serviceAgent Role](https://cloud.google.com/functions/docs/concepts/iam))
+and to create a Google Cloud Scheduler (e.g. with the
+[Cloud Scheduler Job Runner Role](https://cloud.google.com/iam/docs/understanding-roles)).
 
 We can then register the orchestrator and use it in our active stack:
 ```shell
@@ -67,6 +73,44 @@ You can now run any ZenML pipeline using the Vertex orchestrator:
 ```shell
 python file_that_runs_a_zenml_pipeline.py
 ```
+
+### Run pipelines on a schedule
+
+The Vertex Pipelines orchestrator supports running pipelines on a schedule, using
+logic resembling the [official approach recommended by GCP](https://cloud.google.com/vertex-ai/docs/pipelines/schedule-cloud-scheduler).
+
+ZenML utilizes the [Cloud Scheduler](https://cloud.google.com/scheduler) and
+[Cloud Functions](https://cloud.google.com/functions) services to enable scheduling
+on Vertex Pipelines. The following is the sequence of events that happen when running
+a pipeline on Vertex with a schedule:
+
+* Docker image is created and pushed (see above [containerization](../../advanced-guide/pipelines/containerization.md)).
+* Cloud Function created that creates the Vertex Pipeline job when triggered.
+* Cloud Scheduler job is created that triggers the Cloud Function on the defined schedule.
+
+Therefore, to run on a schedule, the runner environment needs permissions to create a Google Cloud
+Function (e.g. with the [cloudfunctions.serviceAgent Role](https://cloud.google.com/functions/docs/concepts/iam))
+and to create a Google Cloud Scheduler (e.g. with the
+[Cloud Scheduler Job Runner Role](https://cloud.google.com/iam/docs/understanding-roles)).
+
+Here is how to create a scheduled pipeline in ZenML:
+
+```python
+from zenml.config.schedule import Schedule
+
+# Run a pipeline every 5th minute
+# Cron expression generated on `https://crontab.guru`
+pipeline_instance.run(
+    schedule=Schedule(
+        cron_expression="*/5 * * * *"
+    )
+)
+```
+
+{% hint style="warning" %}
+The Vertex orchestrator only supports the `cron_expression` parameter in the `Schedule` object,
+and will ignore all other parameters supplied to define the schedule.
+{% endhint %}
 
 ### Additional configuration
 
