@@ -339,22 +339,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         """
         return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
 
-    @staticmethod
-    def get_local_path(url: str) -> Optional[str]:
-        """Get a local path from the given URL.
-
-        Args:
-            url: The sql url.
-
-        Returns:
-            The path if the URL refers to a SQLite database, None otherwise.
-        """
-        sqlite_prefix = "sqlite:///"
-        if not url.startswith(sqlite_prefix):
-            return None
-        path = url[len(sqlite_prefix) :]
-        return path
-
     @classmethod
     def supports_url_scheme(cls, url: str) -> bool:
         """Check if a URL scheme is supported by this store.
@@ -573,9 +557,12 @@ class SqlZenStore(BaseZenStore):
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will
         # automatically create the database.
-        local_path = self.config.get_local_path(url)
-        if local_path and not fileio.exists(local_path):
-            fileio.makedirs(os.path.dirname(local_path))
+        if (
+            self.config.driver == SQLDatabaseDriver.SQLITE
+            and self.config.database
+            and not fileio.exists(self.config.database)
+        ):
+            fileio.makedirs(os.path.dirname(self.config.database))
 
         # MySQL: We might need to create the database manually.
         # To do so, we create a new engine that connects to the `mysql` database
