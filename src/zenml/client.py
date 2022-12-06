@@ -1483,7 +1483,7 @@ class Client(metaclass=ClientMetaClass):
         sort_by: str,
         page: int = 1,
         size: int = 50,
-        id: Optional[UUID] = None,
+        id: Optional[Union[UUID, str]] = None,
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
         is_shared: Optional[bool] = None,

@@ -14,7 +14,7 @@
 """Models representing stacks."""
 
 import json
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Type, Union
 from uuid import UUID
 
 from fastapi import Query
@@ -121,7 +121,7 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 class StackListModel(ListBaseModel):
     _scope_user: UUID = PrivateAttr(None)
 
-    is_shared: bool = Query(
+    is_shared: Union[bool, str] = Query(
         None, description="If the stack is shared or private"
     )
     name: str = Query(
@@ -129,9 +129,9 @@ class StackListModel(ListBaseModel):
         description="Name of the stack",
     )
     description: str = Query(None, description="Description of the stack")
-    project_id: UUID = Query(None, description="Project of the stack")
-    user_id: UUID = Query(None, description="User of the stack")
-    component_id: UUID = Query(None, description="Component in the stack")
+    project_id: Union[UUID, str] = Query(None, description="Project of the stack")
+    user_id: Union[UUID, str] = Query(None, description="User of the stack")
+    component_id: Union[UUID, str] = Query(None, description="Component in the stack")
 
     def set_scope_user(self, user_id: UUID):
         self._scope_user = user_id

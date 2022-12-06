@@ -1,4 +1,5 @@
 from __future__ import annotations
+from abc import ABC, abstractmethod
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -30,25 +31,142 @@ class GenericFilterOps(StrEnum):
 
     EQUALS = "equals"
     CONTAINS = "contains"
+    STARTSWITH = "startswith"
+    ENDSWITH = "endswith"
     GTE = "gte"
     GT = "gt"
     LTE = "lte"
     LT = "lt"
 
 
-class Filter(BaseModel):
+class Filter(BaseModel, ABC):
     operation: GenericFilterOps
     column: str
     value: Any
+
+    @abstractmethod
+    def generate_query_conditions(
+        self,
+        table: Type[SQLModel],
+    ):
+        """Generate the query conditions for the database.
+
+        Args:
+            table: The SQLModel table to use for the query creation
+
+        Returns:
+            A list of conditions that will be combined using the `and` operation
+        """
+        pass
+
+
+class BoolFilter(Filter):
+    ALLOWED_OPS: ClassVar[List[str]] = [
+        GenericFilterOps.EQUALS,
+    ]
+    def generate_query_conditions(
+        self,
+        table: Type[SQLModel],
+    ):
+        """Generate the query conditions for the database.
+
+        Args:
+            table: The SQLModel table to use for the query creation
+
+        Returns:
+            A list of conditions that will be combined using the `and` operation
+        """
+        if self.operation == GenericFilterOps.EQUALS:
+            return getattr(table, self.column) == self.value
+
+
+class StrFilter(Filter):
+    ALLOWED_OPS: ClassVar[List[str]] = [
+        GenericFilterOps.EQUALS,
+        GenericFilterOps.STARTSWITH,
+        GenericFilterOps.CONTAINS,
+        GenericFilterOps.ENDSWITH,
+    ]
 
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
     ):
+        """Generate the query conditions for the database.
+
+        Args:
+            table: The SQLModel table to use for the query creation
+
+        Returns:
+            A list of conditions that will be combined using the `and` operation
+        """
         if self.operation == GenericFilterOps.EQUALS:
             return getattr(table, self.column) == self.value
         elif self.operation == GenericFilterOps.CONTAINS:
             return getattr(table, self.column).like(f"%{self.value}%")
+        elif self.operation == GenericFilterOps.STARTSWITH:
+            return getattr(table, self.column).startswith(f"%{self.value}%")
+        elif self.operation == GenericFilterOps.CONTAINS:
+            return getattr(table, self.column).endswith(f"%{self.value}%")
+
+
+class UUIDFilter(Filter):
+    ALLOWED_OPS: ClassVar[List[str]] = [
+        GenericFilterOps.EQUALS,
+        GenericFilterOps.STARTSWITH,
+        GenericFilterOps.CONTAINS,
+        GenericFilterOps.ENDSWITH,
+    ]
+    def generate_query_conditions(
+        self,
+        table: Type[SQLModel],
+    ):
+        """Generate the query conditions for the database.
+
+        Args:
+            table: The SQLModel table to use for the query creation
+
+        Returns:
+            A list of conditions that will be combined using the `and` operation
+        """
+        from sqlalchemy_utils.functions import cast_if
+        import sqlalchemy
+
+        if self.operation == GenericFilterOps.EQUALS:
+            return getattr(table, self.column) == self.value
+        elif self.operation == GenericFilterOps.CONTAINS:
+            return (cast_if(getattr(table, self.column), sqlalchemy.String)
+                    .like(f"%{self.value}%"))
+        elif self.operation == GenericFilterOps.STARTSWITH:
+            return (cast_if(getattr(table, self.column), sqlalchemy.String)
+                    .startswith(f"%{self.value}%"))
+        elif self.operation == GenericFilterOps.CONTAINS:
+            return (cast_if(getattr(table, self.column), sqlalchemy.String)
+                    .endswith(f"%{self.value}%"))
+
+
+class NumericFilter(Filter):
+    ALLOWED_OPS: ClassVar[List[str]] = [
+        GenericFilterOps.EQUALS,
+        GenericFilterOps.GT,
+        GenericFilterOps.GTE,
+        GenericFilterOps.LT,
+        GenericFilterOps.LTE,
+    ]
+    def generate_query_conditions(
+        self,
+        table: Type[SQLModel],
+    ):
+        """Generate the query conditions for the database.
+
+        Args:
+            table: The SQLModel table to use for the query creation
+
+        Returns:
+            A list of conditions that will be combined using the `and` operation
+        """
+        if self.operation == GenericFilterOps.EQUALS:
+            return getattr(table, self.column) == self.value
         elif self.operation == GenericFilterOps.GTE:
             return getattr(table, self.column) >= self.value
         elif self.operation == GenericFilterOps.GT:
@@ -84,9 +202,9 @@ class ListBaseModel(BaseModel):
     page: int = Query(1, ge=1, description="Page number")
     size: int = Query(50, ge=1, le=100, description="Page size")
 
-    id: UUID = Query(None, description="Id for this resource")
+    id: Union[UUID, str] = Query(None, description="Id for this resource")
     created: Union[datetime, str] = Query(None, description="Created")
-    updated: datetime = Query(None, description="Updated")
+    updated: Union[datetime, str] = Query(None, description="Updated")
 
     class Config:
         extras = False
@@ -107,6 +225,7 @@ class ListBaseModel(BaseModel):
 
     @root_validator(pre=True)
     def filter_ops(cls, values):
+        """Parse incoming filters to extract the operations on each value."""
         list_of_filters = []
 
         # These 3 fields do not represent filter fields
@@ -116,55 +235,90 @@ class ListBaseModel(BaseModel):
             if key in exclude_fields:
                 pass
             elif value:
+                operator = GenericFilterOps.EQUALS
+
                 if isinstance(value, str):
                     split_value = value.split(":", 1)
                     if (
                         len(split_value) == 2
                         and split_value[0] in GenericFilterOps.values()
                     ):
-                        # Parse out the operation from the input string
-                        if issubclass(datetime, get_args(cls.__fields__[key].type_)):
-                            typed_value = datetime.strptime(split_value[1],
-                                                            '%y-%m-%d %H:%M:%S')
-                        elif issubclass(UUID, get_args(cls.__fields__[key].type_)):
-                            typed_value = UUID(split_value[1])
-                        elif issubclass(str, get_args(cls.__fields__[key].type_)):
-                            typed_value = split_value[1]
-                        elif issubclass(int, get_args(cls.__fields__[key].type_)):
-                            typed_value = int(split_value[1])
-                        elif issubclass(bool, get_args(cls.__fields__[key].type_)):
-                            typed_value = bool(split_value[1])
-                        else:
-                            logger.warning("The Datatype "
-                                           "cls.__fields__[key].type_ might "
-                                           "not be supported for filtering ")
-                            typed_value = str(split_value[1])
+                        value = split_value[1]
+                        operator = GenericFilterOps(split_value[0])
 
-                        # TODO: actually convert the value into the correct
-                        #  datatype
-                        list_of_filters.append(
-                            Filter(
-                                operation=GenericFilterOps(split_value[0]),
-                                column=key,
-                                value=typed_value,
-                            )
-                        )
-                    else:
-                        list_of_filters.append(
-                            Filter(
-                                operation=GenericFilterOps("equals"),
-                                column=key,
-                                value=value,
-                            )
-                        )
-                else:
+                if issubclass(datetime, get_args(cls.__fields__[key].type_)):
+                    try:
+                        supported_format = '%y-%m-%d %H:%M:%S'
+                        datetime_value = datetime.strptime(value,
+                                                           supported_format)
+                    except ValueError as e:
+                        raise ValueError("The datetime filter only works with "
+                                         "value in the following format is "
+                                         "expected: `{supported_format}`"
+                                         ) from e
+
                     list_of_filters.append(
-                        Filter(
-                            operation=GenericFilterOps("equals"),
+                        NumericFilter(
+                            operation=GenericFilterOps(operator),
+                            column=key,
+                            value=datetime_value,
+                        )
+                    )
+                elif issubclass(UUID, get_args(cls.__fields__[key].type_)):
+                    if (operator == GenericFilterOps.EQUALS
+                            and not isinstance(value, UUID)):
+                        try:
+                            value = UUID(value)
+                        except ValueError as e:
+                            raise ValueError("Invalid value passed as UUID as "
+                                             "query parameter.") from 3
+                    elif operator != GenericFilterOps.EQUALS:
+                        value = str(value)
+
+                    list_of_filters.append(
+                        UUIDFilter(
+                            operation=GenericFilterOps(operator),
                             column=key,
                             value=value,
                         )
                     )
+                elif issubclass(int, get_args(cls.__fields__[key].type_)):
+                    list_of_filters.append(
+                        NumericFilter(
+                            operation=GenericFilterOps(operator),
+                            column=key,
+                            value=int(value),
+                        )
+                    )
+                elif issubclass(bool, get_args(cls.__fields__[key].type_)):
+                    list_of_filters.append(
+                        BoolFilter(
+                            operation=GenericFilterOps(operator),
+                            column=key,
+                            value=bool(value),
+                        )
+                    )
+                elif (issubclass(str, get_args(cls.__fields__[key].type_))
+                        or cls.__fields__[key].type_ == str):
+                    list_of_filters.append(
+                        StrFilter(
+                            operation=GenericFilterOps(operator),
+                            column=key,
+                            value=value,
+                        )
+                    )
+                else:
+                    logger.warning("The Datatype "
+                                   "cls.__fields__[key].type_ might "
+                                   "not be supported for filtering ")
+                    list_of_filters.append(
+                        StrFilter(
+                            operation=GenericFilterOps(operator),
+                            column=key,
+                            value=str(value),
+                        )
+                    )
+
         values["list_of_filters"] = list_of_filters
         return values
 
