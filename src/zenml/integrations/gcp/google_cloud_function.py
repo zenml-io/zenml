@@ -14,18 +14,22 @@
 """Utils for the Google Cloud Functions API."""
 
 import os
+import tempfile
+import time
 import zipfile
 from typing import TYPE_CHECKING, Optional
 
-import requests
 from google.cloud import functions_v2
 from google.cloud.functions_v2.types import (
     BuildConfig,
     CreateFunctionRequest,
     Function,
+    GetFunctionRequest,
     Source,
+    StorageSource,
 )
 
+from zenml.io import fileio
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -59,54 +63,44 @@ def zipdir(path: str, ziph: zipfile.ZipFile) -> None:
 
 
 def upload_directory(
-    parent: str,
     directory_path: str,
-    credentials: Optional["Credentials"] = None,
+    upload_path: str,
 ) -> dict:
-    """Creates an upload URL from a provided parent.
+    """Uploads local directory to remote one.
 
     Args:
-        parent: Path that looks like projects/{PROJECT}/locations/{REGION}.
+        upload_path: GCS path where to upload the zipped function code.
         directory_path: Local path of directory to upload.
-        credentials: Credentials to use for GCP services.
 
     Returns:
-        Storage source as dict (https://cloud.google.com/functions/docs/reference/rest/v2/projects.locations.functions#StorageSource).
+        Storage source (https://cloud.google.com/functions/docs/reference/rest/v2/projects.locations.functions#StorageSource).
     """
-    request = functions_v2.GenerateUploadUrlRequest(
-        parent=parent,
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        with open(f.name, "wb") as data:
+            with zipfile.ZipFile(data, "w", zipfile.ZIP_DEFLATED) as archive:
+                zipdir(directory_path, archive)
+            data.seek(0)
+
+    # Copy and remove
+    fileio.copy(f.name, upload_path, overwrite=True)
+    fileio.remove(f.name)
+
+    # Split the path by "/" character
+    parts = upload_path.replace("gs://", "").split("/")
+
+    # The first part will be the bucket, and the rest will be the object path
+    bucket = parts[0]
+    object_path = "/".join(parts[1:])
+
+    return StorageSource(
+        bucket=bucket,
+        object_=object_path,
     )
-    response = get_cloud_functions_api(
-        credentials=credentials
-    ).generate_upload_url(request=request)
-    logger.debug(f"Create Upload URL response: {response}")
-
-    upload_url = response.upload_url
-
-    with open("temp.zip", "wb") as data:
-        with zipfile.ZipFile(data, "w", zipfile.ZIP_DEFLATED) as archive:
-            zipdir(directory_path, archive)
-        data.seek(0)
-
-    headers = {
-        "content-type": "application/zip",
-        "x-goog-content-length-range": "0,104857600",
-    }
-    with open("temp.zip", "rb") as data:
-        res = requests.post(upload_url, headers=headers, data=data)
-    logger.debug(f"Uploaded function directory. Response: {res.text}")
-
-    from zenml.io import fileio
-
-    fileio.copy("temp.zip", "gs://ing-store/temp.zip", overwrite=True)
-    response.storage_source.bucket = "ing-store"
-    response.storage_source.object_ = "temp.zip"
-
-    return response.storage_source
 
 
 def create_cloud_function(
     directory_path: str,
+    upload_path: str,
     project: str,
     location: str,
     function_name: str,
@@ -116,6 +110,7 @@ def create_cloud_function(
 
     Args:
         directory_path: Local path to directory where function code resides.
+        upload_path: GCS path where to upload the function code.
         project: GCP project ID.
         location: GCP location name.
         function_name: Name of the function to create.
@@ -131,9 +126,7 @@ def create_cloud_function(
         f"Creating Google Cloud Function: {parent}/functions/{function_name}"
     )
 
-    storage_source = upload_directory(
-        parent, directory_path, credentials=credentials
-    )
+    storage_source = upload_directory(directory_path, upload_path)
 
     # Make the request
     operation = get_cloud_functions_api(
@@ -155,6 +148,22 @@ def create_cloud_function(
         )
     )
 
-    # response = operation.result()
+    state = Function.State.DEPLOYING
+    logger.info(
+        "Creating function... This might take a few minutes. "
+        "Please do not exit the program at this point..."
+    )
+    while state == Function.State.DEPLOYING:
+        response = get_cloud_functions_api(
+            credentials=credentials
+        ).get_function(
+            request=GetFunctionRequest(
+                name=parent + "/functions/" + sanitized_function_name
+            )
+        )
+        state = response.state
+        logger.info("Still creating... sleeping for 5 seconds...")
+        time.sleep(5)
 
-    return f"https://{location}-{project}.cloudfunctions.net/{function_name}"
+    logger.info(f"Done! Function available at {response.service_config.uri}")
+    return response.service_config.uri

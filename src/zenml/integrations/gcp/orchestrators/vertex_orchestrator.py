@@ -74,6 +74,7 @@ from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils.io_utils import get_global_config_directory
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -226,12 +227,9 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             deployment: The pipeline deployment configuration.
             stack: The stack on which the pipeline will be deployed.
         """
-        # docker_image_builder = PipelineDockerImageBuilder()
-        # repo_digest = docker_image_builder.build_and_push_docker_image(
-        #     deployment=deployment, stack=stack
-        # )
-        repo_digest = (
-            "eu.gcr.io/zenml-demos/zenml:hamzas_example_pipeline@26722cf017a6"
+        docker_image_builder = PipelineDockerImageBuilder()
+        repo_digest = docker_image_builder.build_and_push_docker_image(
+            deployment=deployment, stack=stack
         )
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
@@ -456,7 +454,10 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 )
 
             # Copy over the scheduled pipeline to the artifact store
-            artifact_store_pipeline_uri = f"{artifact_store.path.rstrip('/')}/vertex_scheduled_pipelines/{deployment.pipeline.name}/{orchestrator_run_name}.json"
+            artifact_store_base_uri = f"{artifact_store.path.rstrip('/')}/vertex_scheduled_pipelines/{deployment.pipeline.name}/{orchestrator_run_name}"
+            artifact_store_pipeline_uri = (
+                f"{artifact_store_base_uri}/vertex_pipeline.json"
+            )
             fileio.copy(pipeline_file_path, artifact_store_pipeline_uri)
             logger.info(
                 "The scheduled pipeline representation has been "
@@ -482,10 +483,11 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
             # Create cloud function
             function_uri = create_cloud_function(
+                directory_path=vertex_scheduler.__path__[0],  # fixed path
+                upload_path=f"{artifact_store_base_uri}/code.zip",
                 project=project_id,
                 location=self.config.location,
                 function_name=orchestrator_run_name,
-                directory_path=vertex_scheduler.__path__[0],  # fixed path
                 credentials=credentials,
             )
 
