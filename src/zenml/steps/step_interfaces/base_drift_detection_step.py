@@ -28,7 +28,7 @@ class BaseDriftDetectionStep(BaseStep):
     """Base step implementation for any drift detection step implementation."""
 
     @abstractmethod
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         self,
         reference_dataset: DataArtifact,
         comparison_dataset: DataArtifact,

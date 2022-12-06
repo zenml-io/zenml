@@ -27,9 +27,6 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
     KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import kube_utils
-from zenml.integrations.kubernetes.orchestrators.dag_runner import (
-    ThreadedDagRunner,
-)
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     ENV_ZENML_KUBERNETES_RUN_ID,
 )
@@ -37,6 +34,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
 from zenml.logger import get_logger
+from zenml.orchestrators.dag_runner import ThreadedDagRunner
 from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)

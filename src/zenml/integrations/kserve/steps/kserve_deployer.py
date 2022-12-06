@@ -249,12 +249,12 @@ def kserve_model_deployer_step(
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
-    pipeline_run_id = step_env.pipeline_run_id
+    run_name = step_env.run_name
     step_name = step_env.step_name
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = pipeline_run_id
+    params.service_config.pipeline_run_id = run_name
     params.service_config.pipeline_step_name = step_name
 
     # fetch existing services with same pipeline name, step name and
@@ -367,12 +367,12 @@ def kserve_custom_model_deployer_step(
     # get pipeline name, step name, run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
-    pipeline_run_id = step_env.pipeline_run_id
+    run_name = step_env.run_name
     step_name = step_env.step_name
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = pipeline_run_id
+    params.service_config.pipeline_run_id = run_name
     params.service_config.pipeline_step_name = step_name
 
     # fetch existing services with same pipeline name, step name and

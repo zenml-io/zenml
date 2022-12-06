@@ -138,7 +138,7 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
             dbc.icons.BOOTSTRAP,
         ]
         if magic:
-            if Environment.in_notebook:
+            if Environment.in_notebook():
                 # Only import jupyter_dash in this case
                 from jupyter_dash import JupyterDash  # noqa
 
