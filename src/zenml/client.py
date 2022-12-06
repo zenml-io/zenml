@@ -29,7 +29,7 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -56,7 +56,6 @@ from zenml.models import (
     FlavorRequestModel,
     PipelineRequestModel,
     PipelineResponseModel,
-    PipelineRunRequestModel,
     PipelineRunResponseModel,
     ProjectRequestModel,
     ProjectResponseModel,
@@ -69,7 +68,6 @@ from zenml.models import (
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
-    StepRunRequestModel,
     StepRunResponseModel,
     TeamRequestModel,
     TeamResponseModel,
@@ -77,7 +75,6 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
-from zenml.models.artifact_models import ArtifactRequestModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
@@ -2153,94 +2150,6 @@ class Client(metaclass=ClientMetaClass):
     # -----------------
     # - PIPELINE/STEP RUNS -
     # -----------------
-
-    def export_pipeline_runs(self, filename: str) -> None:
-        """Export all pipeline runs to a YAML file.
-
-        Args:
-            filename: The filename to export the pipeline runs to.
-        """
-        import json
-
-        from zenml.utils.yaml_utils import write_yaml
-
-        pipeline_runs = self.zen_store.list_runs(
-            project_name_or_id=self.active_project.id
-        )
-        if not pipeline_runs:
-            logger.warning("No pipeline runs found. Nothing to export.")
-            return
-
-        yaml_data: Dict[str, List[Dict[str, Any]]] = {
-            "artifacts": [],
-            "runs": [],
-        }
-
-        # First write all artifacts.
-        artifacts = self.zen_store.list_artifacts()
-        for artifact in sorted(artifacts, key=lambda x: x.created):
-            artifact_dict = json.loads(artifact.json())
-            yaml_data["artifacts"].append(artifact_dict)
-
-        # Then write all pipeline runs.
-        for pipeline_run in pipeline_runs:
-            run_dict = json.loads(pipeline_run.json())
-            run_dict["steps"] = []
-            steps = self.zen_store.list_run_steps(run_id=pipeline_run.id)
-            for step in steps:
-                step_dict = json.loads(step.json())
-                run_dict["steps"].append(step_dict)
-            yaml_data["runs"].append(run_dict)
-
-        write_yaml(filename, yaml_data)
-        logger.info(
-            f"Exported {len(pipeline_runs)} pipeline runs to {filename}."
-        )
-
-    def import_pipeline_runs(self, filename: str) -> None:
-        """Import pipeline runs from a YAML file.
-
-        Args:
-            filename: The filename from which to import the pipeline runs.
-        """
-        from zenml.utils.yaml_utils import read_yaml
-
-        step_id_mapping: Dict[str, UUID] = {}
-        artifact_id_mapping: Dict[str, UUID] = {}
-        yaml_data = read_yaml(filename)
-
-        # First import all artifacts.
-        for artifact_dict in yaml_data["artifacts"]:
-            artifact_id = artifact_dict.pop("id")
-            artifact = ArtifactRequestModel.parse_obj(artifact_dict)
-            artifact_response = self.zen_store.create_artifact(artifact)
-            artifact_id_mapping[str(artifact_id)] = artifact_response.id
-
-        # Then import all pipeline runs.
-        for pipeline_run_dict in yaml_data["runs"]:
-            steps = pipeline_run_dict.pop("steps")
-            pipeline_run_dict["id"] = uuid4()
-            pipeline_run_dict["user"] = self.active_user.id
-            pipeline_run_dict["project"] = self.active_project.id
-            pipeline_run_dict["stack"] = None
-            pipeline_run_dict["pipeline"] = None
-            pipeline_run = PipelineRunRequestModel.parse_obj(pipeline_run_dict)
-            pipeline_run_response = self.zen_store.create_run(pipeline_run)
-            for step_dict in steps:
-                step_id = step_dict.pop("id")
-                step = StepRunRequestModel.parse_obj(step_dict)
-                step.pipeline_run_id = pipeline_run_response.id
-                step.parent_step_ids = [
-                    step_id_mapping[str(parent_step_id)]
-                    for parent_step_id in step.parent_step_ids
-                ]
-                step.input_artifacts = {
-                    input_name: artifact_id_mapping[str(artifact_id)]
-                    for input_name, artifact_id in step.input_artifacts.items()
-                }
-                step_response = self.zen_store.create_run_step(step)
-                step_id_mapping[str(step_id)] = step_response.id
-        logger.info(f"Imported {len(yaml_data)} pipeline runs from {filename}.")
 
     def list_runs(
         self,
