@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
@@ -34,6 +34,9 @@ from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+
+if TYPE_CHECKING:
+    from zenml.models import ArtifactResponseModel
 
 
 class StepRunSchema(NamedSchema, table=True):
@@ -114,8 +117,8 @@ class StepRunSchema(NamedSchema, table=True):
     def to_model(
         self,
         parent_step_ids: List[UUID],
-        input_artifacts: Dict[str, UUID],
-        output_artifacts: Dict[str, UUID],
+        input_artifacts: Dict[str, "ArtifactResponseModel"],
+        output_artifacts: Dict[str, "ArtifactResponseModel"],
     ) -> StepRunResponseModel:
         """Convert a `StepRunSchema` to a `StepRunModel`.
 

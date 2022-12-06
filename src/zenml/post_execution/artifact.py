@@ -17,11 +17,12 @@ from typing import TYPE_CHECKING, Any, Optional, Type
 from uuid import UUID
 
 from zenml.logger import get_logger
-from zenml.models import ArtifactResponseModel
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
+    from zenml.models import ArtifactResponseModel
+
 
 logger = get_logger(__name__)
 
@@ -33,7 +34,7 @@ class ArtifactView:
     execution.
     """
 
-    def __init__(self, model: ArtifactResponseModel):
+    def __init__(self, model: "ArtifactResponseModel"):
         """Initializes a post-execution artifact object.
 
         In most cases `ArtifactView` objects should not be created manually but

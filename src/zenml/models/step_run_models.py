@@ -14,7 +14,7 @@
 """Models representing steps of pipeline runs."""
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -23,6 +23,9 @@ from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+
+if TYPE_CHECKING:
+    from zenml.models import ArtifactResponseModel
 
 # ---- #
 # BASE #
@@ -41,8 +44,6 @@ class StepRunBaseModel(BaseModel):
     original_step_run_id: Optional[UUID] = None
     status: ExecutionStatus
     parent_step_ids: List[UUID] = []
-    input_artifacts: Dict[str, UUID] = {}
-    output_artifacts: Dict[str, UUID] = {}
     cache_key: Optional[str] = None
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
@@ -56,6 +57,9 @@ class StepRunBaseModel(BaseModel):
 class StepRunResponseModel(StepRunBaseModel, BaseResponseModel):
     """Response model for step runs."""
 
+    input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
+    output_artifacts: Dict[str, "ArtifactResponseModel"] = {}
+
 
 # ------- #
 # REQUEST #
@@ -64,6 +68,9 @@ class StepRunResponseModel(StepRunBaseModel, BaseResponseModel):
 
 class StepRunRequestModel(StepRunBaseModel, BaseRequestModel):
     """Request model for step runs."""
+
+    input_artifacts: Dict[str, UUID] = {}
+    output_artifacts: Dict[str, UUID] = {}
 
 
 # ------ #

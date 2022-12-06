@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus, StackComponentType
@@ -1026,38 +1026,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The updated step run.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
-        """
-
-    @abstractmethod
-    def get_run_step_input_artifacts(
-        self, step_run_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get the input artifacts for a step run.
-
-        Args:
-            step_run_id: The ID of the step run to get the input artifacts for.
-
-        Returns:
-            A dictionary mapping input names to artifact models.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
-        """
-
-    @abstractmethod
-    def get_run_step_output_artifacts(
-        self, step_run_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get the output artifacts for a step run.
-
-        Args:
-            step_run_id: The ID of the step run to get the output artifacts for.
-
-        Returns:
-            A dictionary mapping output names to artifact models.
 
         Raises:
             KeyError: if the step run doesn't exist.

@@ -1242,15 +1242,6 @@ def test_get_run_step_inputs_succeeds(
     assert len(run_step_inputs) == 1
 
 
-def test_get_run_step_inputs_fails_when_step_does_not_exist(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-):
-    """Tests getting run step inputs fails when step does not exist."""
-    store = sql_store["store"]
-    with pytest.raises(KeyError):
-        store.get_run_step_input_artifacts(step_run_id=uuid.uuid4())
-
-
 def test_get_run_step_status_succeeds(
     sql_store_with_run: BaseZenStore,
 ):

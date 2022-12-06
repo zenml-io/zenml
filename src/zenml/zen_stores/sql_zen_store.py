@@ -2863,11 +2863,7 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-            return step_schema.to_model(
-                parent_step_ids=step_run.parent_step_ids,
-                input_artifacts=step_run.input_artifacts,
-                output_artifacts=step_run.output_artifacts,
-            )
+            return self._run_step_schema_to_model(step_schema)
 
     def _set_run_step_parent_step(
         self, child_id: UUID, parent_id: UUID, session: Session
@@ -3068,25 +3064,33 @@ class SqlZenStore(BaseZenStore):
             # Get input artifacts.
             input_artifact_list = session.exec(
                 select(
-                    StepRunInputArtifactSchema.artifact_id,
+                    ArtifactSchema,
                     StepRunInputArtifactSchema.name,
-                ).where(StepRunInputArtifactSchema.step_run_id == step_run.id)
+                )
+                .where(
+                    ArtifactSchema.id == StepRunInputArtifactSchema.artifact_id
+                )
+                .where(StepRunInputArtifactSchema.step_run_id == step_run.id)
             ).all()
             input_artifacts = {
-                input_artifact[1]: input_artifact[0]
-                for input_artifact in input_artifact_list
+                input_name: self._artifact_schema_to_model(artifact)
+                for (artifact, input_name) in input_artifact_list
             }
 
             # Get output artifacts.
             output_artifact_list = session.exec(
                 select(
-                    StepRunOutputArtifactSchema.artifact_id,
+                    ArtifactSchema,
                     StepRunOutputArtifactSchema.name,
-                ).where(StepRunOutputArtifactSchema.step_run_id == step_run.id)
+                )
+                .where(
+                    ArtifactSchema.id == StepRunOutputArtifactSchema.artifact_id
+                )
+                .where(StepRunOutputArtifactSchema.step_run_id == step_run.id)
             ).all()
             output_artifacts = {
-                output_artifact[1]: output_artifact[0]
-                for output_artifact in output_artifact_list
+                output_name: self._artifact_schema_to_model(artifact)
+                for (artifact, output_name) in output_artifact_list
             }
 
             # Convert to model.
@@ -3180,82 +3184,6 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_step_run)
 
             return self._run_step_schema_to_model(existing_step_run)
-
-    def get_run_step_input_artifacts(
-        self, step_run_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get the input artifacts for a step run.
-
-        Args:
-            step_run_id: The ID of the step run to get the input artifacts for.
-
-        Returns:
-            A dictionary mapping artifact names to artifact models.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
-        """
-        with Session(self.engine) as session:
-            step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
-            ).first()
-            if step_run is None:
-                raise KeyError(
-                    f"Unable to get step run with ID {step_run_id}: No step "
-                    "run with this ID found."
-                )
-            input_artifacts = session.exec(
-                select(
-                    ArtifactSchema,
-                    StepRunInputArtifactSchema.name,
-                )
-                .where(
-                    ArtifactSchema.id == StepRunInputArtifactSchema.artifact_id
-                )
-                .where(StepRunInputArtifactSchema.step_run_id == step_run_id)
-            ).all()
-            return {
-                input_name: self._artifact_schema_to_model(artifact)
-                for (artifact, input_name) in input_artifacts
-            }
-
-    def get_run_step_output_artifacts(
-        self, step_run_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get the output artifacts for a step run.
-
-        Args:
-            step_run_id: The ID of the step run to get the output artifacts for.
-
-        Returns:
-            A dictionary mapping artifact names to artifact models.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
-        """
-        with Session(self.engine) as session:
-            step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
-            ).first()
-            if step_run is None:
-                raise KeyError(
-                    f"Unable to get step run with ID {step_run_id}: No step "
-                    "run with this ID found."
-                )
-            output_artifacts = session.exec(
-                select(
-                    ArtifactSchema,
-                    StepRunOutputArtifactSchema.name,
-                )
-                .where(
-                    ArtifactSchema.id == StepRunOutputArtifactSchema.artifact_id
-                )
-                .where(StepRunOutputArtifactSchema.step_run_id == step_run_id)
-            ).all()
-            return {
-                output_name: self._artifact_schema_to_model(artifact)
-                for (artifact, output_name) in output_artifacts
-            }
 
     # ---------
     # Artifacts
