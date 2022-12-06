@@ -14,8 +14,12 @@
 """Utils for the Google Cloud Scheduler API."""
 
 import logging
+from typing import TYPE_CHECKING, Optional
 
 from google.cloud import scheduler
+
+if TYPE_CHECKING:
+    from google.auth.credentials import Credentials
 
 
 def create_scheduler_job(
@@ -23,25 +27,28 @@ def create_scheduler_job(
     region: str,
     http_uri: str,
     body: dict,
+    credentials: Optional["Credentials"] = None,
     schedule: str = "* * * * *",
     time_zone: str = "America/Los_Angeles",
 ) -> dict:
-    """Creates a Google Cloud Scheduler job that hits a HTTP URI on a schedule.
+    """Creates a Google Cloud Scheduler job.
+
+    Job periodically sends POST request to the specified HTTP URI on a schedule.
 
     Args:
         project: GCP project ID.
         region: GCP region.
-        http_uri (str): _description_
-        body (dict): _description_
-        schedule (str, optional): _description_. Defaults to "* * * * *".
-        time_zone (str, optional): _description_. Defaults to "America/Los_Angeles".
+        http_uri: HTTP URI of the cloud function to call.
+        body: The body of values to send to the cloud function in the POST call.
+        schedule: Cron expression of the schedule. Defaults to "* * * * *".
+        time_zone: Time zone of the schedule. Defaults to "America/Los_Angeles".
+        credentials: Credentials to use for GCP services.
 
     Returns:
         dict: Response from create_job scheduler API.
     """
-
     # Create a client.
-    client = scheduler.CloudSchedulerClient()
+    client = scheduler.CloudSchedulerClient(credentials=credentials)
 
     # Construct the fully qualified location path.
     parent = f"projects/{project}/locations/{region}"

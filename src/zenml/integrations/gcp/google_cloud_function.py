@@ -16,6 +16,7 @@
 import os
 import zipfile
 from tempfile import TemporaryFile
+from typing import TYPE_CHECKING, Optional
 
 import googleapiclient.discovery
 import requests
@@ -25,14 +26,21 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
+if TYPE_CHECKING:
+    from google.auth.credentials import Credentials
 
-def get_cloud_functions_api() -> Resource:
+
+def get_cloud_functions_api(
+    credentials: Optional["Credentials"] = None,
+) -> Resource:
     """Gets the cloud functions API resource client.
 
     Returns:
         Cloud Functions V2 Resource.
     """
-    service = googleapiclient.discovery.build("cloudfunctions", "v2")
+    service = googleapiclient.discovery.build(
+        "cloudfunctions", "v2", credentials=credentials
+    )
     cloud_functions_api = service.projects().locations().functions()
     return cloud_functions_api
 
@@ -85,6 +93,7 @@ def create_cloud_function(
     project: str,
     location: str,
     function_name: str,
+    credentials: Optional["Credentials"] = None,
 ) -> str:
     """Create google cloud function from specified directory path.
 
@@ -93,7 +102,7 @@ def create_cloud_function(
         project: GCP project ID.
         location: GCP location name.
         function_name: Name of the function to create.
-        timeout: Timeout seconds while creaing functions. Defaults to 200 seconds.
+        credentials: Credentials to use for GCP services.
 
     Returns:
         str: URI of the created cloud function.
