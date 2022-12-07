@@ -37,7 +37,7 @@ def create_scheduler_job(
     body: Dict[str, Union[Dict[str, str], bool, str, None]],
     credentials: Optional["Credentials"] = None,
     schedule: str = "* * * * *",
-    time_zone: str = "America/Los_Angeles",
+    time_zone: str = "Etc/UTC",
 ) -> None:
     """Creates a Google Cloud Scheduler job.
 
