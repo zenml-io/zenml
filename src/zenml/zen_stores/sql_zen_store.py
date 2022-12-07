@@ -213,6 +213,33 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_size: int = 20
     max_overflow: int = 20
 
+    @root_validator(pre=True)
+    def _remove_grpc_attributes(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Removes old GRPC attributes.
+
+        Args:
+            values: All model attribute values.
+
+        Returns:
+            The model attribute values
+        """
+        grpc_attribute_keys = [
+            "grpc_metadata_host",
+            "grpc_metadata_port",
+            "grpc_metadata_ssl_ca",
+            "grpc_metadata_ssl_key",
+            "grpc_metadata_ssl_cert",
+        ]
+        grpc_values = [values.pop(key, None) for key in grpc_attribute_keys]
+        if any(grpc_values):
+            logger.warning(
+                "The GRPC attributes %s are unused and will be removed soon. "
+                "Please remove them from SQLZenStore configuration. This will "
+                "become an error in future versions of ZenML."
+            )
+
+        return values
+
     @root_validator
     def _validate_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate the SQL URL.
