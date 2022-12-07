@@ -86,6 +86,7 @@ class LineageGraph(BaseModel):
                         parent_step_id=str(step.id),
                         producer_step_id=str(artifact.producer_step_id),
                         uri=artifact.uri,
+                        metadata=artifact.metadata,
                     ),
                 )
             )

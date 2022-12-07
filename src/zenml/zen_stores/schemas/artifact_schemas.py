@@ -14,10 +14,12 @@
 """SQLModel implementation of artifact tables."""
 
 
+import json
 from typing import Optional
 from uuid import UUID
 
-from sqlmodel import Relationship
+from sqlalchemy import TEXT, Column
+from sqlmodel import Field, Relationship
 
 from zenml.enums import ArtifactType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
@@ -69,6 +71,7 @@ class ArtifactSchema(NamedSchema, table=True):
     uri: str
     materializer: str
     data_type: str
+    artifact_metadata: str = Field(sa_column=Column(TEXT, nullable=False))
 
     @classmethod
     def from_request(
@@ -91,6 +94,7 @@ class ArtifactSchema(NamedSchema, table=True):
             uri=artifact_request.uri,
             materializer=artifact_request.materializer,
             data_type=artifact_request.data_type,
+            artifact_metadata=json.dumps(artifact_request.metadata),
         )
 
     def to_model(
@@ -118,4 +122,5 @@ class ArtifactSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             producer_step_run_id=producer_step_run_id,
+            metadata=json.loads(self.artifact_metadata),
         )

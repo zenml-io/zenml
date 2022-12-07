@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing artifacts."""
 
-from typing import Optional
+from typing import Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -39,6 +39,7 @@ class ArtifactBaseModel(BaseModel):
     uri: str
     materializer: str
     data_type: str
+    metadata: Dict[str, str] = {}  # TODO: str -> Any?
 
 
 # -------- #

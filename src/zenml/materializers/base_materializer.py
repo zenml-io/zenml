@@ -152,3 +152,26 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"Unable to write {data_type}. {self.__class__.__name__} "
                 f"can only write the following types: {self.ASSOCIATED_TYPES}."
             )
+
+    def extract_metadata(self, data: Any) -> Dict[str, str]:
+        """Extract metadata from the given data.
+
+        This metadata will be tracked and displayed alongside the artifact.
+
+        Args:
+            data: The data to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+
+        Raises:
+            TypeError: If the data is not of the correct type.
+        """
+        data_type = type(data)
+        if not self._can_handle_type(data_type):
+            raise TypeError(
+                f"Unable to extract metadata from {data_type}. "
+                f"{self.__class__.__name__} can only write the following "
+                f"types: {self.ASSOCIATED_TYPES}."
+            )
+        return {}

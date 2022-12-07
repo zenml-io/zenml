@@ -14,7 +14,7 @@
 """Implementation of the ZenML NumPy materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Type, cast
 
 import numpy as np
 
@@ -117,3 +117,22 @@ class NumpyMaterializer(BaseMaterializer):
             # about either an untyped function call or an unused ignore
             # statement
             cast(Any, np.save)(f, arr)
+
+    def extract_metadata(self, arr: "NDArray[Any]") -> Dict[str, str]:
+        """Extract metadata from the given numpy array.
+
+        Args:
+            arr: The numpy array to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(arr)
+        return {
+            "shape": str(arr.shape),
+            "dtype": str(arr.dtype),
+            "mean": str(np.mean(arr)),
+            "std": str(np.std(arr)),
+            "min": str(np.min(arr)),
+            "max": str(np.max(arr)),
+        }

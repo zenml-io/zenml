@@ -329,6 +329,10 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
                         "uri",
                     ]:
                         text += f"**{item}**: {data[item]}" + "\n\n"
+                    if data["metadata"]:
+                        text += "#### Metadata:" + "\n\n"
+                        for k, v in data["metadata"].items():
+                            text += f"**{k}**: {v}" + "\n\n"
                 elif data["type"] == "step":
                     text += f"### Step '{data['name']}'" + "\n\n"
                     text += "#### Attributes:" + "\n\n"

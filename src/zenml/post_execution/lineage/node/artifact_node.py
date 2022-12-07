@@ -14,7 +14,7 @@
 """Class for all lineage artifact nodes."""
 
 
-from typing import Optional
+from typing import Dict, Optional
 
 from zenml.post_execution.lineage.node.base_node import (
     BaseNode,
@@ -31,6 +31,7 @@ class ArtifactNodeDetails(BaseNodeDetails):
     parent_step_id: str
     producer_step_id: Optional[str]
     uri: str
+    metadata: Dict[str, str]
 
 
 class ArtifactNode(BaseNode):

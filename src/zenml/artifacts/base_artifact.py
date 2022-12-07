@@ -14,7 +14,7 @@
 """Base class for ZenML artifacts."""
 
 
-from typing import Optional
+from typing import Dict, Optional
 
 
 class BaseArtifact:
@@ -32,6 +32,7 @@ class BaseArtifact:
         materializer: Optional[str] = None,
         data_type: Optional[str] = None,
         name: Optional[str] = None,
+        metadata: Optional[Dict[str, str]] = None,
     ) -> None:
         """Init method for BaseArtifact.
 
@@ -40,8 +41,10 @@ class BaseArtifact:
             materializer: The materializer of the artifact.
             data_type: The data type of the artifact.
             name: The name of the artifact.
+            metadata: The metadata of the artifact defined by the materializer.
         """
         self.uri = uri
         self.materializer = materializer
         self.data_type = data_type
         self.name = name
+        self.metadata = metadata or {}

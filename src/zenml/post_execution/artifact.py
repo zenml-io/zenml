@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Initialization for the post-execution artifact class."""
 
-from typing import TYPE_CHECKING, Any, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 from uuid import UUID
 
 from zenml.logger import get_logger
@@ -98,6 +98,15 @@ class ArtifactView:
             The materializer that was used to write this artifact.
         """
         return self._model.materializer
+
+    @property
+    def metadata(self) -> Dict[str, str]:
+        """Returns the metadata of the artifact.
+
+        Returns:
+            The metadata of the artifact.
+        """
+        return self._model.metadata
 
     @property
     def producer_step_id(self) -> Optional[UUID]:

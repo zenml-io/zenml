@@ -69,6 +69,7 @@ def publish_output_artifacts(
             data_type=artifact_.data_type,
             user=client.active_user.id,
             project=client.active_project.id,
+            metadata=artifact_.metadata,
         )
         artifact_response = client.zen_store.create_artifact(artifact_model)
         output_artifact_ids[name] = artifact_response.id
