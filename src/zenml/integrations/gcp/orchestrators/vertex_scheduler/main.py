@@ -15,9 +15,13 @@
 import json
 import logging
 import random
+from typing import TYPE_CHECKING
 
-from flask import Request, Response
 from google.cloud import aiplatform
+
+if TYPE_CHECKING:
+    from flask import Request, Response
+
 
 # Constants for the scheduler
 
@@ -34,7 +38,7 @@ WORKLOAD_SERVICE_ACCOUNT = "workload_service_account"
 NETWORK = "network"
 
 
-def trigger_vertex_job(request: Request) -> Response:
+def trigger_vertex_job(request: "Request") -> "Response":
     """Processes the incoming HTTP request.
 
     Args:

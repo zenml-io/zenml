@@ -15,7 +15,7 @@
 
 import json
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Dict, Optional, Union
 
 from google.cloud import scheduler
 from google.cloud.scheduler_v1.types import (
@@ -34,11 +34,11 @@ def create_scheduler_job(
     project: str,
     region: str,
     http_uri: str,
-    body: dict,
+    body: Dict[str, Union[Dict[str, str], bool, str, None]],
     credentials: Optional["Credentials"] = None,
     schedule: str = "* * * * *",
     time_zone: str = "America/Los_Angeles",
-) -> dict:
+) -> None:
     """Creates a Google Cloud Scheduler job.
 
     Job periodically sends POST request to the specified HTTP URI on a schedule.
@@ -51,9 +51,6 @@ def create_scheduler_job(
         schedule: Cron expression of the schedule. Defaults to "* * * * *".
         time_zone: Time zone of the schedule. Defaults to "America/Los_Angeles".
         credentials: Credentials to use for GCP services.
-
-    Returns:
-        dict: Response from create_job scheduler API.
     """
     # Create a client.
     client = scheduler.CloudSchedulerClient(credentials=credentials)
@@ -62,7 +59,7 @@ def create_scheduler_job(
     parent = f"projects/{project}/locations/{region}"
 
     # Use the client to send the job creation request.
-    response = client.create_job(
+    job = client.create_job(
         request=CreateJobRequest(
             parent=parent,
             job=Job(
@@ -72,6 +69,8 @@ def create_scheduler_job(
                     http_method=HttpMethod.POST,
                     oidc_token=OidcToken(
                         service_account_email=credentials.signer_email
+                        if credentials
+                        else None
                     ),
                 ),
                 schedule=schedule,
@@ -80,5 +79,4 @@ def create_scheduler_job(
         )
     )
 
-    logging.debug(f"Created scheduler job. Response: {response}")
-    return response
+    logging.debug(f"Created scheduler job. Response: {job}")

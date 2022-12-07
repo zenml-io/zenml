@@ -541,7 +541,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 region=self.config.location,
                 http_uri=function_uri,
                 body=body,
-                schedule=deployment.schedule.cron_expression,
+                schedule=str(deployment.schedule.cron_expression),
                 credentials=credentials,
             )
 

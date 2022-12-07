@@ -68,7 +68,7 @@ def zipdir(path: str, ziph: zipfile.ZipFile) -> None:
 def upload_directory(
     directory_path: str,
     upload_path: str,
-) -> dict:
+) -> StorageSource:
     """Uploads local directory to remote one.
 
     Args:
@@ -177,4 +177,4 @@ def create_cloud_function(
             raise TimeoutError("Timed out waiting for function to deploy!")
 
     logger.info(f"Done! Function available at {response.service_config.uri}")
-    return response.service_config.uri
+    return str(response.service_config.uri)
