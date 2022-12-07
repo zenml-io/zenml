@@ -260,11 +260,11 @@ class StepRunner:
         # Skip materialization for `BaseArtifact` and its subtypes.
         if issubclass(data_type, BaseArtifact):
             logger.warning(
-                f"Skipping materialization by specifying a subclass of "
-                f"`BaseArtifact` as output data type is deprecated and will be "
-                f"removed in a future release. Please type your output as "
-                f"`zenml.models.ArtifactResponseModel` instead to skip "
-                f"materialization."
+                "Skipping materialization by specifying a subclass of "
+                "`BaseArtifact` as output data type is deprecated and will be "
+                "removed in a future release. Please type your output as "
+                "`zenml.models.ArtifactResponseModel` instead to skip "
+                "materialization."
             )
             return artifact
 
