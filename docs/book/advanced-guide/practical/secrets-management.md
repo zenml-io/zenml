@@ -16,7 +16,6 @@ To register a secret, you'll need a [secrets manager](../../component-gallery/se
 in your active stack.
 {% endhint %}
 
-
 To register a secret with name `<SECRET_NAME>` and a key-value pair, you
 can then run the following CLI command:
 ```shell
