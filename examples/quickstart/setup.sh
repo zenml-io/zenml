@@ -8,7 +8,8 @@ setup_stack () {
     msg "${WARNING}Reusing preexisting model deployer ${NOFORMAT}mlflow_deployer"
   zenml experiment-tracker register mlflow_tracker  --flavor=mlflow || \
     msg "${WARNING}Reusing preexisting experiment tracker ${NOFORMAT}mlflow_tracker"
-  zenml data-validator register evidently_validator --flavor=evidently
+  zenml data-validator register evidently_validator --flavor=evidently || \
+    msg "${WARNING}Reusing preexisting data validator ${NOFORMAT}evidently_validator"
   zenml stack register quickstart_stack \
       -a default \
       -o default \

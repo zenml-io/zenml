@@ -5,7 +5,6 @@
 * [Introduction](./getting-started/introduction.md)
 * [Core Concepts](./getting-started/core-concepts.md)
 * [Installation](./getting-started/installation/installation.md)
-  * [Installation on M1 Macs](./getting-started/installation/m1-mac-installation.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 * [Deploying ZenML](./getting-started/deploying-zenml/deploying-zenml.md)
   * [One Click Deployment using CLI](./getting-started/deploying-zenml/cli.md)
@@ -53,7 +52,6 @@
 ## Component Gallery
 
 * [Categories of MLOps Tools](./component-gallery/categories.md)
-* [Architecture Diagrams](getting-started/architecture-diagrams.md)
 * [Integration Overview](./component-gallery/integrations.md)
 * [Orchestrators](./component-gallery/orchestrators/orchestrators.md)
   * [Local Orchestrator](./component-gallery/orchestrators/local.md)
@@ -96,6 +94,7 @@
 * [Experiment Trackers](./component-gallery/experiment-trackers/experiment-trackers.md)
   * [MLflow](./component-gallery/experiment-trackers/mlflow.md)
   * [Weights & Biases](./component-gallery/experiment-trackers/wandb.md)
+  * [Neptune](./component-gallery/experiment-trackers/neptune.md)
   * [Develop a Custom Experiment Tracker](./component-gallery/experiment-trackers/custom.md)
 * [Model Deployers](./component-gallery/model-deployers/model-deployers.md)
   * [MLflow](./component-gallery/model-deployers/mlflow.md)

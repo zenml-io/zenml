@@ -13,17 +13,13 @@
 #  permissions and limitations under the License.
 """Base Step for ZenML."""
 
-import collections
 import inspect
-import json
-import random
 from abc import abstractmethod
 from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Counter,
     Dict,
     List,
     Mapping,
@@ -38,17 +34,18 @@ from typing import (
 )
 
 from pydantic import ValidationError
-from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.config.step_configurations import (
     ArtifactConfiguration,
+    InputSpec,
     PartialArtifactConfiguration,
     PartialStepConfiguration,
     StepConfiguration,
     StepConfigurationUpdate,
 )
+from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -59,18 +56,15 @@ from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
-    INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
-    PARAM_PIPELINE_PARAMETER_NAME,
     PARAM_SETTINGS,
     PARAM_STEP_NAME,
     PARAM_STEP_OPERATOR,
-    create_component_class,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -78,8 +72,6 @@ from zenml.utils import dict_utils, pydantic_utils, settings_utils, source_utils
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
-    from tfx.dsl.component.experimental.decorators import _SimpleComponent
-
     from zenml.config.base_settings import SettingsOrDict
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
@@ -213,25 +205,6 @@ class BaseStepMeta(type):
             step_function_signature.annotations,
         )
 
-        # Raise an exception if input and output names of a step overlap as
-        # tfx requires them to be unique
-        # TODO [ENG-155]: Can we prefix inputs and outputs to avoid this
-        #  restriction?
-        counter: Counter[str] = collections.Counter()
-        counter.update(list(cls.INPUT_SIGNATURE))
-        counter.update(list(cls.OUTPUT_SIGNATURE))
-        if cls.PARAMETERS_CLASS:
-            counter.update(list(cls.PARAMETERS_CLASS.__fields__.keys()))
-
-        shared_keys = {k for k in counter.elements() if counter[k] > 1}
-        if shared_keys:
-            raise StepInterfaceError(
-                f"The following keys are overlapping in the input, output and "
-                f"config parameter names of step '{name}': {shared_keys}. "
-                f"Please make sure that your input, output and config "
-                f"parameter names are unique."
-            )
-
         return cls
 
 
@@ -264,14 +237,17 @@ class BaseStep(metaclass=BaseStepMeta):
         steps can finalize their configuration.
 
         Attributes:
-            channel: TFX channel that defines the artifact class and id of the
-                step that produced the output.
+            name: Name of the output.
+            step_name: Name of the step that produced this output.
             materializer_source: The source of the materializer used to
                 write the output.
+            artifact_source: The source of the artifact class of the output.
         """
 
-        channel: Channel
+        name: str
+        step_name: str
         materializer_source: str
+        artifact_source: str
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes a step.
@@ -281,9 +257,9 @@ class BaseStep(metaclass=BaseStepMeta):
             **kwargs: Keyword arguments passed to the step.
         """
         self.pipeline_parameter_name: Optional[str] = None
-        self._component: Optional["_SimpleComponent"] = None
         self._has_been_called = False
         self._upstream_steps: Set[str] = set()
+        self._inputs: Dict[str, InputSpec] = {}
 
         kwargs = {**self.INSTANCE_CONFIGURATION, **kwargs}
         name = kwargs.pop(PARAM_STEP_NAME, None) or self.__class__.__name__
@@ -315,8 +291,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
         self._configuration = PartialStepConfiguration(
-            name=name,
-            enable_cache=enable_cache,
+            name=name, enable_cache=enable_cache, docstring=self.__doc__
         )
         self._apply_class_configuration(kwargs)
         self._verify_and_apply_init_params(*args, **kwargs)
@@ -385,50 +360,55 @@ class BaseStep(metaclass=BaseStepMeta):
         self._upstream_steps.add(step.name)
 
     @property
-    def _internal_execution_parameters(self) -> Dict[str, Any]:
-        """Internal ZenML execution parameters for this step.
+    def inputs(self) -> Dict[str, InputSpec]:
+        """Step input specifications.
+
+        This depends on the upstream steps in a pipeline and can therefore
+        only be accessed once the step has been called in a pipeline.
+
+        Raises:
+            RuntimeError: If this property is accessed before the step was
+                called in a pipeline.
 
         Returns:
-            A dictionary containing the ZenML internal execution parameters
+            The step input specifications.
         """
-        parameters = {
-            PARAM_PIPELINE_PARAMETER_NAME: self.pipeline_parameter_name,
-        }
-
-        if self.enable_cache:
-            # Caching is enabled so we compute a hash of the step function code
-            # and materializers to catch changes in the step behavior
-
-            # If the step was defined using the functional api, only track
-            # changes to the entrypoint function. Otherwise track changes to
-            # the entire step class.
-            source_object = (
-                self.entrypoint
-                if self._created_by_functional_api()
-                else self.__class__
+        if not self._has_been_called:
+            raise RuntimeError(
+                "Step inputs can only be accessed once a step has been called "
+                "inside a pipeline."
             )
-            parameters["step_source"] = source_utils.get_hashed_source(
-                source_object
-            )
+        return self._inputs
 
-            for name, output in self.configuration.outputs.items():
-                if output.materializer_source:
-                    key = f"{name}_materializer_source"
-                    materializer_class = source_utils.load_source_path_class(
-                        output.materializer_source
-                    )
-                    parameters[key] = source_utils.get_hashed_source(
-                        materializer_class
-                    )
-        else:
-            # Add a random string to the execution properties to disable caching
-            random_string = f"{random.getrandbits(128):032x}"
-            parameters["disable_cache"] = random_string
+    @property
+    def caching_parameters(self) -> Dict[str, Any]:
+        """Caching parameters for this step.
 
-        return {
-            INTERNAL_EXECUTION_PARAMETER_PREFIX + key: value
-            for key, value in parameters.items()
-        }
+        Returns:
+            A dictionary containing the caching parameters
+        """
+        parameters = {}
+
+        source_object = (
+            self.entrypoint
+            if self._created_by_functional_api()
+            else self.__class__
+        )
+        parameters[STEP_SOURCE_PARAMETER_NAME] = source_utils.get_hashed_source(
+            source_object
+        )
+
+        for name, output in self.configuration.outputs.items():
+            if output.materializer_source:
+                key = f"{name}_materializer_source"
+                materializer_class = source_utils.load_source_path_class(
+                    output.materializer_source
+                )
+                parameters[key] = source_utils.get_hashed_source(
+                    materializer_class
+                )
+
+        return parameters
 
     def _apply_class_configuration(self, options: Dict[str, Any]) -> None:
         """Applies the configurations specified on the step class.
@@ -590,7 +570,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def __call__(
         self, *artifacts: _OutputArtifact, **kw_artifacts: _OutputArtifact
     ) -> Union[_OutputArtifact, List[_OutputArtifact]]:
-        """Generates a component when called.
+        """Finalizes the step input and output configuration.
 
         Args:
             *artifacts: Positional input artifacts passed to
@@ -615,43 +595,26 @@ class BaseStep(metaclass=BaseStepMeta):
         input_artifacts = self._validate_input_artifacts(
             *artifacts, **kw_artifacts
         )
-        input_channels = {
-            name: artifact.channel for name, artifact in input_artifacts.items()
-        }
-        for input_ in input_artifacts.values():
-            self._upstream_steps.add(input_.channel.producer_component_id)
+
+        for name, input_ in input_artifacts.items():
+            self._upstream_steps.add(input_.step_name)
+            self._inputs[name] = InputSpec(
+                step_name=input_.step_name,
+                output_name=input_.name,
+            )
 
         config = self._finalize_configuration(input_artifacts=input_artifacts)
-
-        execution_parameters = {
-            **self.configuration.parameters,
-            **self._internal_execution_parameters,
-        }
-
-        # Convert execution parameter values to strings
-        try:
-            execution_parameters = {
-                k: json.dumps(v) for k, v in execution_parameters.items()
-            }
-        except TypeError as e:
-            raise StepInterfaceError(
-                f"Failed to serialize execution parameters for step "
-                f"'{self.name}'. Please make sure to only use "
-                f"json serializable parameter values."
-            ) from e
-
-        component_class = create_component_class(step=self)
-        self._component = component_class(
-            **input_channels, **execution_parameters
-        )
 
         # Resolve the returns in the right order.
         returns = []
         for key in self.OUTPUT_SIGNATURE:
             materializer_source = config.outputs[key].materializer_source
+            artifact_source = config.outputs[key].artifact_source
             output_artifact = BaseStep._OutputArtifact(
-                channel=cast(Channel, self.component.outputs[key]),
+                name=key,
+                step_name=self.name,
                 materializer_source=materializer_source,
+                artifact_source=artifact_source,
             )
             returns.append(output_artifact)
 
@@ -660,24 +623,6 @@ class BaseStep(metaclass=BaseStepMeta):
             return returns[0]
         else:
             return returns
-
-    @property
-    def component(self) -> "_SimpleComponent":
-        """Returns a TFX component.
-
-        Returns:
-            A TFX component.
-
-        Raises:
-            StepInterfaceError: If you are trying to access the step component
-                before creating it.
-        """
-        if not self._component:
-            raise StepInterfaceError(
-                "Trying to access the step component "
-                "before creating it via calling the step."
-            )
-        return self._component
 
     def with_return_materializers(
         self: T,
@@ -1085,15 +1030,17 @@ class BaseStep(metaclass=BaseStepMeta):
 
         inputs = {}
         for input_name, artifact in input_artifacts.items():
-            artifact_source = source_utils.resolve_class(artifact.channel.type)
             inputs[input_name] = ArtifactConfiguration(
-                artifact_source=artifact_source,
+                artifact_source=artifact.artifact_source,
                 materializer_source=artifact.materializer_source,
             )
         self._validate_inputs(inputs)
 
         self._configuration = self._configuration.copy(
-            update={"inputs": inputs}
+            update={
+                "inputs": inputs,
+                "caching_parameters": self.caching_parameters,
+            }
         )
 
         complete_configuration = StepConfiguration.parse_obj(

@@ -15,7 +15,6 @@
 
 import logging
 from enum import Enum
-from typing import List
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -39,22 +38,6 @@ class ExecutionStatus(StrEnum):
     COMPLETED = "completed"
     RUNNING = "running"
     CACHED = "cached"
-
-    @staticmethod
-    def run_status(step_statuses: List["ExecutionStatus"]) -> "ExecutionStatus":
-        """Returns the overall run status based on the list of step statuses.
-
-        Args:
-            step_statuses: A list of step statuses.
-
-        Returns:
-            The overall run status.
-        """
-        if ExecutionStatus.FAILED in step_statuses:
-            return ExecutionStatus.FAILED
-        if ExecutionStatus.RUNNING in step_statuses:
-            return ExecutionStatus.RUNNING
-        return ExecutionStatus.COMPLETED
 
 
 class LoggingLevels(Enum):
@@ -133,6 +116,7 @@ class AnnotationTasks(StrEnum):
 
     IMAGE_CLASSIFICATION = "image_classification"
     OBJECT_DETECTION_BOUNDING_BOXES = "object_detection_bounding_boxes"
+    OCR = "optical_character_recognition"
 
 
 class SecretValidationLevel(StrEnum):

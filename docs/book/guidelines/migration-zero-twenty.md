@@ -137,6 +137,14 @@ usability.
 
 ### 👣 How to migrate pipeline runs from your old metadata stores
 
+{% hint style="info" %}
+The `zenml pipeline runs migrate` CLI command is only available under ZenML 
+versions [0.21.0, 0.21.1, 0.22.0]. If you want to migrate your existing ZenML
+runs from `zenml<0.20.0` to `zenml>0.22.0`, please first upgrade to 
+`zenml==0.22.0` and migrate your runs as shown below, then upgrade to the newer
+version.
+{% endhint %}
+
 To migrate the pipeline run information already stored in an existing metadata 
 store to the new ZenML paradigm, you can use the `zenml pipeline runs migrate`
 CLI command.
