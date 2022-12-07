@@ -39,39 +39,35 @@ can see the implementation of the abstract base class `BaseMaterializer`, which
 defines the interface of all materializers:
 
 ```python
-from typing import Type, Any
-from zenml.materializers.base_materializer import BaseMaterializerMeta
-
-
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
-    ASSOCIATED_ARTIFACT_TYPES = ()
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.BASE
     ASSOCIATED_TYPES = ()
 
-    def __init__(self, artifact: "BaseArtifact"):
-        """Initializes a materializer with the given artifact."""
-        self.artifact = artifact
+    def __init__(self, uri: str):
+        """Initializes a materializer with the given URI."""
+        self.uri = uri
 
     def load(self, data_type: Type[Any]) -> Any:
-        """Write logic here to handle input of the step function.
+        """Write logic here to load the data of an artifact.
 
         Args:
-            data_type: What type the input should be materialized as.
+            data_type: What type the artifact data should be loaded as.
+
         Returns:
-            Any object that is to be passed into the relevant artifact in the
-            step.
+            The data of the artifact.
         """
-        # read from self.artifact.uri
+        # read from self.uri
         ...
 
     def save(self, data: Any) -> None:
-        """Write logic here to handle return of the step function.
+        """Write logic here to save the data of an artifact.
 
         Args:
-            data: Any object that is specified as an input artifact of the step.
+            data: The data of the artifact to save.
         """
-        # write `data` to self.artifact.uri
+        # write `data` to self.uri
         ...
 ```
 
@@ -86,25 +82,20 @@ link the materializer to that data type.
 
 ### What Type of Artifact to Generate
 
-Each materializer also has an `ASSOCIATED_ARTIFACT_TYPES` attribute, which
-defines what types of artifacts are being stored.
+Each materializer also has an `ASSOCIATED_ARTIFACT_TYPE` attribute, which
+defines which `zenml.enums.ArtifactType` is assigned to this data.
 
-In most cases, you should choose either `DataArtifact` or `ModelArtifact` here.
-If you are unsure, just use `DataArtifact`. The exact choice is not too 
-important, as the artifact type is only used as a tag in the visualization tools of some certain integrations like Facets.
-
-{% hint style="info" %} 
-You can find a full list of available artifact types in the 
-[API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-artifacts/).
-{% endhint %}
+In most cases, you should choose either `ArtifactType.DATA` or 
+`ArtifactType.MODEL` here. 
+If you are unsure, just use `ArtifactType.DATA`. The exact choice is not too 
+important, as the artifact type is only used as a tag in some of ZenML's
+visualizations.
 
 ### Where to Store the Artifact
 
-Each materializer has an `artifact` object. The most important property of an
-`artifact` object is the `uri`. The `uri` is automatically created by ZenML
-whenever you run a pipeline and points to the directory of a file system where
-the artifact is stored (location in the artifact store). This should not be
-modified.
+Each materializer has a `uri` attribute, which is automatically created by 
+ZenML whenever you run a pipeline and points to the directory of a file system 
+where the respective artifact is stored (some location in the artifact store).
 
 ### How to Store and Retrieve the Artifact
 
@@ -114,11 +105,9 @@ of artifacts.
 - `load()` defines how data is read from the artifact store and deserialized,
 - `save()` defines how data is serialized and saved to the artifact store.
 
-These methods you will need to overwrite according to how you plan to serialize
+You will need to overwrite these methods according to how you plan to serialize
 your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`,
-then you might want to use `torch.save()` and `torch.load()` here. For example,
-have a look at the materializer in the
-[Neural Prophet integration](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/neural_prophet/materializers/neural_prophet_materializer.py).
+then you might want to use `torch.save()` and `torch.load()` here.
 
 ## Using a Custom Materializer
 
@@ -247,25 +236,26 @@ import os
 from typing import Type
 
 from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 
 class MyMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (MyObj,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""
         super().load(data_type)
-        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'r') as f:
+        with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
         """Write to artifact store"""
         super().save(my_obj)
-        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'w') as f:
+        with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 ```
 
@@ -319,6 +309,7 @@ from zenml.steps import step
 from zenml.pipelines import pipeline
 
 from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -330,19 +321,19 @@ class MyObj:
 
 class MyMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (MyObj,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""
         super().load(data_type)
-        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'r') as f:
+        with fileio.open(os.path.join(self.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
         """Write to artifact store"""
         super().save(my_obj)
-        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'w') as f:
+        with fileio.open(os.path.join(self.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 
 
@@ -376,7 +367,7 @@ first_pipeline(
 ## Skipping Materialization
 
 {% hint style="warning" %}
-Using artifacts directly might have unintended consequences for downstream
+Skipping materialization might have unintended consequences for downstream
 tasks that rely on materialized artifacts. Only skip materialization if there
 is no other way to do what you want to do.
 {% endhint %}
@@ -386,34 +377,20 @@ returned and consumed from pipeline steps, you might sometimes need to have a
 completely non-materialized artifact in a step, e.g., if you need to know the
 exact path to where your artifact is stored.
 
-A non-materialized artifact is a `BaseArtifact` (or any of its subclasses) and
-has a property `uri` that points to the unique path in the artifact store where
-the artifact is stored. One can use a non-materialized artifact by 
-specifying it as the type in the step:
+A non-materialized artifact is a `zenml.model.ArtifactResponseModel`. 
+Among others, it has a property `uri` that points to the unique path in the 
+artifact store where the artifact is persisted. One can use a non-materialized 
+artifact by specifying `ArtifactResponseModel` as the type in the step:
 
 ```python
-from zenml.artifacts import DataArtifact
+from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.steps import step
 
 
 @step
-def my_step(my_artifact: DataArtifact):  # rather than pd.DataFrame
+def my_step(my_artifact: ArtifactResponseModel):  # rather than pd.DataFrame
     pass
 ```
-
-When using artifacts directly, one must be aware of which type they are by 
-looking at the previous step's materializer: if the previous step produces a 
-`ModelArtifact` then you should specify `ModelArtifact` in a non-materialized
-step.
-
-{% hint style="info" %} 
-Materializers link pythonic types to artifact types implicitly. E.g., a
-`keras.model` or `torch.nn.Module` are pythonic types that are both linked to 
-`ModelArtifact` implicitly via their materializers.
-
-You can find a full list of available artifact types in the 
-[API Docs](https://apidocs.zenml.io/latest/core_code_docs/core-artifacts/).
-{% endhint %}
 
 ### Example
 
@@ -433,7 +410,7 @@ counterparts.
 ```python
 from typing import Dict, List
 
-from zenml.artifacts import DataArtifact, ModelArtifact
+from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.pipelines import pipeline
 from zenml.steps import Output, step
 
@@ -455,7 +432,7 @@ def step_3(dict_: Dict, list_: List) -> None:
 
 
 @step
-def step_4(dict_: DataArtifact, list_: ModelArtifact) -> None:
+def step_4(dict_: ArtifactResponseModel, list_: ArtifactResponseModel) -> None:
     assert hasattr(dict_, "uri")
     assert hasattr(list_, "uri")
 

@@ -28,6 +28,7 @@ from typing import Type
 import os
 
 from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.steps import step
 from zenml.pipelines import pipeline
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -41,19 +42,19 @@ class MyObj:
 
 class MyMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (MyObj,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""
         super().load(data_type)
-        with fileio.open(os.path.join(self.artifact.uri, "data.txt"), "r") as f:
+        with fileio.open(os.path.join(self.uri, "data.txt"), "r") as f:
             name = f.read()
         return MyObj(name=name)
 
     def save(self, my_obj: MyObj) -> None:
         """Write to artifact store"""
         super().save(my_obj)
-        with fileio.open(os.path.join(self.artifact.uri, "data.txt"), "w") as f:
+        with fileio.open(os.path.join(self.uri, "data.txt"), "w") as f:
             f.write(my_obj.name)
 
 
