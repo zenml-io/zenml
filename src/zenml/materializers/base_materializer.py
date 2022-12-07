@@ -141,6 +141,9 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Args:
             uri: The URI where the artifact data is stored.
             artifact: Deprecated; will be removed in a future release.
+
+        Raises:
+            ValueError: If neither a URI nor an artifact is provided.
         """
         if isinstance(uri, BaseArtifact):
             artifact = uri
