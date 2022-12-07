@@ -15,12 +15,12 @@
 
 from typing import TYPE_CHECKING, Any, cast
 
-import sagemaker
-
+from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
 )
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -51,8 +51,24 @@ class SageMakerOrchestrator(BaseOrchestrator):
         Returns:
             The result of the pipeline run.
         """
-        session = sagemaker.Session(default_bucket=self.config.bucket)
-        for step in deployment.steps.values():
-            self.run_step(
-                step=step,
-            )
+        # session = sagemaker.Session(default_bucket=self.config.bucket)
+        # for step in deployment.steps.values():
+        #     self.run_step(
+        #         step=step,
+        #     )
+        raise NotImplementedError
+
+    def prepare_pipeline_deployment(
+        self, deployment: "PipelineDeployment", stack: "Stack"
+    ) -> None:
+        """Build a Docker image and push it to the container registry.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
+        """
+        docker_image_builder = PipelineDockerImageBuilder()
+        repo_digest = docker_image_builder.build_and_push_docker_image(
+            deployment=deployment, stack=stack
+        )
+        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
