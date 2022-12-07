@@ -12,12 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pytest
+
 from tests.integration.examples.utils import run_example
 from zenml.client import Client
 from zenml.post_execution.pipeline import get_pipeline
 
 
-def test_example() -> None:
+def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the airflow_orchestration example."""
     import mlflow
     from mlflow.tracking import MlflowClient
@@ -27,6 +29,7 @@ def test_example() -> None:
     )
 
     with run_example(
+        request=request,
         name="mlflow_tracking",
         pipeline_name="mlflow_example_pipeline",
         run_count=2,

@@ -12,16 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pytest
+
 from tests.integration.examples.utils import run_example
 
 
-def test_example() -> None:
+def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the kubeflow_pipelines_orchestration example.
 
     Args:
         tmp_path_factory: Factory to generate temporary test paths.
     """
     with run_example(
+        request=request,
         name="kubeflow_pipelines_orchestration",
         pipeline_name="mnist_pipeline",
         step_count=4,
@@ -30,5 +33,9 @@ def test_example() -> None:
         pass
 
     # Cleanup the tensorboard daemon
-    with run_example("kubeflow_pipelines_orchestration", "--stop-tensorboard"):
+    with run_example(
+        request,
+        "kubeflow_pipelines_orchestration",
+        "--stop-tensorboard",
+    ):
         pass

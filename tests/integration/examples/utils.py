@@ -20,6 +20,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Generator, List, Optional, Tuple
 
+import pytest
+
 from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.enums import ExecutionStatus
 from zenml.post_execution.pipeline import get_pipeline
@@ -58,6 +60,7 @@ def example_runner(examples_dir):
 
 @contextmanager
 def run_example(
+    request: pytest.FixtureRequest,
     name: str,
     *args: str,
     pipeline_name: Optional[str] = None,
@@ -67,6 +70,7 @@ def run_example(
     """Runs the given examples and validates they ran correctly.
 
     Args:
+        request: The pytest request object.
         name: The name (=directory name) of the example.
         *args: Additional arguments to pass to the example
         pipeline_name: Validate that a pipeline with this name was registered.
@@ -102,6 +106,36 @@ def run_example(
         )
 
     yield example, runs
+
+    cleanup_docker = request.config.getoption("cleanup_docker", False)
+
+    if cleanup_docker:
+        # Clean up more expensive resources like docker containers, volumes and
+        # images, if any were created.
+
+        try:
+            from docker.client import DockerClient
+            from docker.errors import ImageNotFound
+
+            # Try to ping Docker, to see if it's installed and running
+            docker_client = DockerClient.from_env()
+            docker_client.ping()
+        except Exception:
+            # Docker is not installed or running
+            pass
+        else:
+            docker_client.containers.prune()
+            docker_client.volumes.prune()
+            try:
+                pipeline_image = docker_client.images.get(
+                    f"zenml:{pipeline_name}"
+                )
+                logging.debug(f"Removing Docker image {pipeline_name}")
+                docker_client.images.remove(pipeline_image.id)
+            except ImageNotFound:
+                pass
+
+            docker_client.images.prune()
 
 
 def wait_and_validate_pipeline_run(

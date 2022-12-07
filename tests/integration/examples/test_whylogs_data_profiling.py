@@ -12,14 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pytest
+
 from tests.integration.examples.utils import run_example
 
 
-def test_example() -> None:
+def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the whylogs_data_profiling example."""
     from whylogs.core import DatasetProfileView  # type: ignore
 
     with run_example(
+        request=request,
         name="whylogs_data_profiling",
         pipeline_name="data_profiling_pipeline",
         step_count=4,

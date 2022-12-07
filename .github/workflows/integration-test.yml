@@ -121,6 +121,8 @@ jobs:
         run: |
           brew install docker colima
           colima start
+          # This is required for the Docker Python SDK to work
+          ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
 
       - name: Install K3D and kubectl
         run: |

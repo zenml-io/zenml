@@ -12,12 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pytest
+
 from tests.integration.examples.utils import run_example
 
 
-def test_example() -> None:
+def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the xgboost example."""
     with run_example(
+        request=request,
         name="xgboost",
         pipeline_name="xgboost_pipeline",
         step_count=3,

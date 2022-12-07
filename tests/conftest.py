@@ -87,6 +87,14 @@ def pytest_addoption(parser):
         help="Do not provision the test environment before running tests "
         "(assumes it is already provisioned).",
     )
+    parser.addoption(
+        "--cleanup-docker",
+        action="store_true",
+        default=False,
+        help="Clean up unused Docker container images, containers and volumes "
+        "after tests have run. This is useful if you are running the examples "
+        "integration tests using a Docker based orchestrator.",
+    )
 
 
 @pytest.fixture(scope="session", autouse=True)

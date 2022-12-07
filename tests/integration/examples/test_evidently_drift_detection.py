@@ -12,16 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pytest
+
 from tests.integration.examples.utils import run_example
 from zenml.post_execution.pipeline import get_pipeline
 
 
-def test_example() -> None:
+def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the evidently_drift_detection example."""
 
     from evidently.model_profile import Profile  # type: ignore[import]
 
     with run_example(
+        request=request,
         name="evidently_drift_detection",
         pipeline_name="drift_detection_pipeline",
         step_count=4,
