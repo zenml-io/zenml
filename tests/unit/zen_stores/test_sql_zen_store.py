@@ -17,7 +17,6 @@ from contextlib import ExitStack as does_not_raise
 from typing import Dict, Union
 
 import pytest
-from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ExecutionStatus, PermissionType, StackComponentType
@@ -774,19 +773,6 @@ def test_revoking_nonexistent_role_fails(
         )
 
 
-#  .----------------.
-# | METADATA_CONFIG |
-# '-----------------'
-
-
-def test_get_metadata_config_succeeds(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-):
-    """Tests getting metadata config."""
-    metadata_config = sql_store["store"].get_metadata_config()
-    assert metadata_config is not None
-
-
 #  .-------.
 # | STACKS |
 # '--------'
@@ -975,21 +961,6 @@ def test_deleting_a_stack_succeeds(
     sql_store["store"].delete_stack(new_stack.id)
     with pytest.raises(KeyError):
         sql_store["store"].get_stack(new_stack.id)
-
-
-# ------------
-# TFX Metadata
-# ------------
-
-
-def test_tfx_metadata_succeeds(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-):
-    """Tests tfx metadata."""
-    with does_not_raise():
-        config = sql_store["store"].get_metadata_config()
-        assert config is not None
-        assert type(config) == ConnectionConfig
 
 
 # ---------
@@ -1236,7 +1207,7 @@ def test_get_run_step_succeeds(
     """Tests getting run step."""
     pipeline_step = sql_store_with_run["step"]
     run_step = sql_store_with_run["store"].get_run_step(
-        step_id=pipeline_step.id
+        step_run_id=pipeline_step.id
     )
     assert run_step is not None
     assert run_step.id == pipeline_step.id
@@ -1248,7 +1219,7 @@ def test_get_run_step_fails_when_step_does_not_exist(
 ):
     """Tests getting run step fails when step does not exist."""
     with pytest.raises(KeyError):
-        sql_store["store"].get_run_step(step_id=uuid.uuid4())
+        sql_store["store"].get_run_step(step_run_id=uuid.uuid4())
 
 
 def test_get_run_step_outputs_succeeds(
@@ -1256,9 +1227,8 @@ def test_get_run_step_outputs_succeeds(
 ):
     """Tests getting run step outputs."""
     pipeline_step = sql_store_with_run["step"]
-    run_step_outputs = sql_store_with_run["store"].list_artifacts(
-        parent_step_id=pipeline_step.id
-    )
+    store = sql_store_with_run["store"]
+    run_step_outputs = store.get_run_step(pipeline_step.id).output_artifacts
     assert len(run_step_outputs) == 1
 
 
@@ -1267,18 +1237,9 @@ def test_get_run_step_inputs_succeeds(
 ):
     """Tests getting run step inputs."""
     pipeline_step = sql_store_with_run["step"]
-    run_step_inputs = sql_store_with_run["store"].get_run_step_inputs(
-        step_id=pipeline_step.id
-    )
+    store = sql_store_with_run["store"]
+    run_step_inputs = store.get_run_step(pipeline_step.id).input_artifacts
     assert len(run_step_inputs) == 1
-
-
-def test_get_run_step_inputs_fails_when_step_does_not_exist(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-):
-    """Tests getting run step inputs fails when step does not exist."""
-    with pytest.raises(KeyError):
-        sql_store["store"].get_run_step_inputs(step_id=uuid.uuid4())
 
 
 def test_get_run_step_status_succeeds(
@@ -1288,7 +1249,7 @@ def test_get_run_step_status_succeeds(
     pipeline_step = sql_store_with_run["step"]
     run_step_status = (
         sql_store_with_run["store"]
-        .get_run_step(step_id=pipeline_step.id)
+        .get_run_step(step_run_id=pipeline_step.id)
         .status
     )
     assert run_step_status is not None

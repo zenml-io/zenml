@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import List, Optional, Union
 from uuid import UUID
 
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
@@ -54,12 +54,6 @@ from zenml.models import (
     UserUpdateModel,
 )
 from zenml.models.server_models import ServerModel
-
-if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import (
-        ConnectionConfig,
-        MetadataStoreClientConfig,
-    )
 
 
 class ZenStoreInterface(ABC):
@@ -145,24 +139,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             Information about the store.
-        """
-
-    # ------------
-    # TFX Metadata
-    # ------------
-
-    @abstractmethod
-    def get_metadata_config(
-        self, expand_certs: bool = False
-    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Args:
-            expand_certs: Whether to expand the certificate paths in the
-                connection config to their value.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
         """
 
     # ------
@@ -984,78 +960,72 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def create_run_step(
-        self, step: StepRunRequestModel
+        self, step_run: StepRunRequestModel
     ) -> StepRunResponseModel:
-        """Creates a step.
+        """Creates a step run.
 
         Args:
-            step: The step to create.
+            step_run: The step run to create.
 
         Returns:
-            The created step.
+            The created step run.
 
         Raises:
-            EntityExistsError: if the step already exists.
+            EntityExistsError: if the step run already exists.
             KeyError: if the pipeline run doesn't exist.
         """
 
     @abstractmethod
-    def get_run_step(self, step_id: UUID) -> StepRunResponseModel:
-        """Get a step by ID.
+    def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
+        """Get a step run by ID.
 
         Args:
-            step_id: The ID of the step to get.
+            step_run_id: The ID of the step run to get.
 
         Returns:
-            The step.
+            The step run.
 
         Raises:
-            KeyError: if the step doesn't exist.
-        """
-
-    @abstractmethod
-    def get_run_step_inputs(
-        self, step_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get a list of inputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get inputs for.
-
-        Returns:
-            A dict mapping artifact names to the input artifacts for the step.
+            KeyError: if the step run doesn't exist.
         """
 
     @abstractmethod
     def list_run_steps(
-        self, run_id: Optional[UUID] = None
+        self,
+        run_id: Optional[UUID] = None,
+        project_id: Optional[UUID] = None,
+        cache_key: Optional[str] = None,
+        status: Optional[ExecutionStatus] = None,
     ) -> List[StepRunResponseModel]:
-        """Gets all steps in a pipeline run.
+        """Get all step runs.
 
         Args:
-            run_id: The ID of the pipeline run for which to list runs.
+            run_id: If provided, only return steps for this pipeline run.
+            project_id: If provided, only return step runs in this project.
+            cache_key: If provided, only return steps with this cache key.
+            status: If provided, only return steps with this status.
 
         Returns:
-            A list of all run steps.
+            A list of step runs.
         """
 
     @abstractmethod
     def update_run_step(
         self,
-        step_id: UUID,
-        step_update: StepRunUpdateModel,
+        step_run_id: UUID,
+        step_run_update: StepRunUpdateModel,
     ) -> StepRunResponseModel:
-        """Updates a step.
+        """Updates a step run.
 
         Args:
-            step_id: The ID of the step to update.
-            step_update: The update to be applied to the step.
+            step_run_id: The ID of the step to update.
+            step_run_update: The update to be applied to the step.
 
         Returns:
-            The updated step.
+            The updated step run.
 
         Raises:
-            KeyError: if the step doesn't exist.
+            KeyError: if the step run doesn't exist.
         """
 
     # ---------
@@ -1073,32 +1043,33 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The created artifact.
+        """
+
+    @abstractmethod
+    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
+        """Gets an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to get.
+
+        Returns:
+            The artifact.
 
         Raises:
-            KeyError: if the parent step doesn't exist.
+            KeyError: if the artifact doesn't exist.
         """
 
     @abstractmethod
     def list_artifacts(
         self,
         artifact_uri: Optional[str] = None,
-        parent_step_id: Optional[UUID] = None,
     ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
-            parent_step_id: If specified, only artifacts for the given step run
-                will be returned.
 
         Returns:
             A list of all artifacts.
         """
-
-    # ------------------------
-    # Internal utility methods
-    # ------------------------
-    @abstractmethod
-    def _sync_runs(self) -> None:
-        """Syncs runs from MLMD."""
