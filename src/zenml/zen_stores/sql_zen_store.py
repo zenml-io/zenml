@@ -593,7 +593,11 @@ class SqlZenStore(BaseZenStore):
     # --------------------------------
 
     def _initialize(self) -> None:
-        """Initialize the SQL store."""
+        """Initialize the SQL store.
+        
+        Raises:
+            OperationalError: If connecting to the database failed.
+        """
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
 
         url, connect_args, engine_args = self.config.get_sqlmodel_config()
