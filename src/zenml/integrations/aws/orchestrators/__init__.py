@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """AWS Sagemaker orchestrator."""
 from zenml.integrations.aws.orchestrators.sagemaker_orchestrator import (
-    SageMakerOrchestrator,
+    SagemakerOrchestrator,
 )
 
 __all__ = [
-    "SageMakerOrchestrator",
+    "SagemakerOrchestrator",
 ]

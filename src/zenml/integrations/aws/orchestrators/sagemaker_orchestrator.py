@@ -15,7 +15,10 @@
 
 from typing import TYPE_CHECKING, Any, cast
 
+import sagemaker
+
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
 )
@@ -27,7 +30,7 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 
-class SageMakerOrchestrator(BaseOrchestrator):
+class SagemakerOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines on Sagemaker."""
 
     @property
@@ -38,6 +41,32 @@ class SageMakerOrchestrator(BaseOrchestrator):
             The configuration.
         """
         return cast(SagemakerOrchestratorConfig, self._config)
+
+    def get_orchestrator_run_id(self) -> str:
+        """Returns the run id of the active orchestrator run.
+
+        Important: This needs to be a unique ID and return the same value for
+        all steps of a pipeline run.
+
+        Returns:
+            The orchestrator run id.
+        """
+        return "sagemaker"
+
+    def prepare_pipeline_deployment(
+        self, deployment: "PipelineDeployment", stack: "Stack"
+    ) -> None:
+        """Build a Docker image and push it to the container registry.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
+        """
+        docker_image_builder = PipelineDockerImageBuilder()
+        repo_digest = docker_image_builder.build_and_push_docker_image(
+            deployment=deployment, stack=stack
+        )
+        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     def prepare_or_run_pipeline(
         self, deployment: "PipelineDeployment", stack: "Stack"
@@ -56,19 +85,27 @@ class SageMakerOrchestrator(BaseOrchestrator):
         #     self.run_step(
         #         step=step,
         #     )
-        raise NotImplementedError
+        sagemaker_steps = []
+        for step_name, step in deployment.steps.items():
+            command = StepEntrypointConfiguration.get_entrypoint_command()
+            arguments = {
+                StepEntrypointConfiguration.get_entrypoint_arguments(
+                    step_name=step_name
+                )
+            }
+            breakpoint()
+            sagemaker_step = sagemaker.processing.ProcessingStep(
+                name=step_name,
+                processor=sagemaker.processing.Processor(
+                    image_uri=deployment.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY],
+                    role=self.config.role,
+                    instance_count=1,
+                    instance_type="ml.m5.xlarge",
+                ),
+                job_arguments=arguments,
+                command=command,
+            )
+            sagemaker_steps.append(sagemaker_step)
 
-    def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeployment", stack: "Stack"
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_and_push_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
+        pipeline = sagemaker.Pipeline()
+        pipeline.start()
