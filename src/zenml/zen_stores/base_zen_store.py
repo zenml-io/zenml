@@ -34,7 +34,8 @@ from zenml.models import (
     ComponentRequestModel,
     ProjectRequestModel,
     ProjectResponseModel,
-    RoleAssignmentRequestModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
     StackFilterModel,
@@ -614,8 +615,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                 password=user_password,
             )
         )
-        self.create_role_assignment(
-            RoleAssignmentRequestModel(
+        self.create_user_role_assignment(
+            UserRoleAssignmentRequestModel(
                 role=self._admin_role.id,
                 user=new_user.id,
                 project=None,

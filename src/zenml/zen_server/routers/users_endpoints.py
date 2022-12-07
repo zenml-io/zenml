@@ -32,8 +32,8 @@ from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.models import (
     FilterBaseModel,
-    RoleAssignmentRequestModel,
-    RoleAssignmentResponseModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
@@ -323,7 +323,7 @@ def email_opt_in_response(
 
 @router.get(
     "/{user_name_or_id}" + ROLES,
-    response_model=Page[RoleAssignmentResponseModel],
+    response_model=Page[UserRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -333,7 +333,7 @@ def list_role_assignments_for_user(
     role_name_or_id: Optional[Union[str, UUID]] = None,
     params: FilterBaseModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[RoleAssignmentResponseModel]:
+) -> Page[UserRoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a user.
 
     Args:
@@ -347,7 +347,7 @@ def list_role_assignments_for_user(
     Returns:
         A list of all roles that are assigned to a user.
     """
-    return zen_store().list_role_assignments(
+    return zen_store().list_user_role_assignments(
         user_name_or_id=user_name_or_id,
         project_name_or_id=project_name_or_id,
         role_name_or_id=role_name_or_id,

@@ -36,8 +36,8 @@ from zenml.models import (
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
-    RoleAssignmentRequestModel,
-    RoleAssignmentResponseModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
@@ -55,7 +55,9 @@ from zenml.models import (
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, ComponentFilterModel, FlavorFilterModel,
+    UserUpdateModel, ComponentFilterModel, FlavorFilterModel, RoleFilterModel,
+    UserRoleAssignmentFilterModel, ProjectFilterModel, PipelineFilterModel,
+    PipelineRunFilterModel, StepRunFilterModel, ArtifactFilterModel,
 )
 from zenml.models.page_model import Page
 from zenml.models.server_models import ServerModel
@@ -181,18 +183,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_stacks(
-        self, stack_list_model: StackFilterModel
+        self, stack_filter_model: StackFilterModel
     ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
-            stack_list_model: All filter parameters including pagination params
+            stack_filter_model: All filter parameters including pagination
+                                params
 
         Returns:
             A list of all stacks matching the filter criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
 
     @abstractmethod
@@ -246,12 +246,13 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_stack_components(
-        self, component_list_model: ComponentFilterModel
+        self, component_filter_model: ComponentFilterModel
     ) -> Page[ComponentResponseModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
-            component_list_model: All filter parameters including pagination params
+            component_filter_model: All filter parameters including
+                                    pagination params
 
         Returns:
             A list of all stack components matching the filter criteria.
@@ -340,12 +341,13 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_flavors(
-        self, flavor_list_model: FlavorFilterModel
+        self, flavor_filter_model: FlavorFilterModel
     ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            flavor_list_model: All filter parameters including pagination params
+            flavor_filter_model: All filter parameters including pagination
+                                 params
 
 
         Returns:
@@ -483,20 +485,15 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_teams(
-        self,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, team_filter_model: StackFilterModel
     ) -> Page[TeamResponseModel]:
-        """List all teams.
+        """List all teams matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
-            params: Parameters for pagination (page and size)
+            team_filter_model: All filter parameters including pagination params
 
         Returns:
-            A list of all teams.
+            A list of all teams matching the filter criteria.
         """
 
     @abstractmethod
@@ -561,20 +558,15 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_roles(
-        self,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, role_filter_model: RoleFilterModel
     ) -> Page[RoleResponseModel]:
-        """List all roles.
+        """List all roles matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
-            params: Parameters for pagination (page and size)
+            role_filter_model: All filter parameters including pagination params
 
         Returns:
-            A list of all roles.
+            A list of all roles matching the filter criteria.
         """
 
     @abstractmethod
@@ -609,26 +601,26 @@ class ZenStoreInterface(ABC):
     # Role assignments
     # ----------------
     @abstractmethod
-    def create_role_assignment(
-        self, role_assignment: RoleAssignmentRequestModel
-    ) -> RoleAssignmentResponseModel:
+    def create_user_role_assignment(
+        self, user_role_assignment: UserRoleAssignmentRequestModel
+    ) -> UserRoleAssignmentResponseModel:
         """Creates a new role assignment.
 
         Args:
-            role_assignment: The role assignment model to create.
+            user_role_assignment: The role assignment model to create.
 
         Returns:
             The newly created role assignment.
         """
 
     @abstractmethod
-    def get_role_assignment(
-        self, role_assignment_id: UUID
-    ) -> RoleAssignmentResponseModel:
+    def get_user_role_assignment(
+        self, user_role_assignment_id: UUID
+    ) -> UserRoleAssignmentResponseModel:
         """Gets a specific role assignment.
 
         Args:
-            role_assignment_id: ID of the role assignment to get.
+            user_role_assignment_id: ID of the role assignment to get.
 
         Returns:
             The requested role assignment.
@@ -638,39 +630,26 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def delete_role_assignment(self, role_assignment_id: UUID) -> None:
+    def delete_user_role_assignment(self, user_role_assignment_id: UUID) -> None:
+
         """Delete a specific role assignment.
 
         Args:
-            role_assignment_id: The ID of the specific role assignment
+            user_role_assignment_id: The ID of the specific role assignment
         """
 
     @abstractmethod
-    def list_role_assignments(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        role_name_or_id: Optional[Union[str, UUID]] = None,
-        team_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
-    ) -> Page[RoleAssignmentResponseModel]:
-        """List all role assignments.
+    def list_user_role_assignments(
+        self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel
+    ) -> Page[UserRoleAssignmentResponseModel]:
+        """List all roles assignments matching the given filter criteria.
 
         Args:
-            project_name_or_id: If provided, only list assignments for the given
-                project
-            role_name_or_id: If provided, only list assignments of the given
-                role
-            team_name_or_id: If provided, only list assignments for the given
-                team
-            user_name_or_id: If provided, only list assignments for the given
-                user
-            params: Parameters for pagination (page and size)
+            user_role_assignment_filter_model: All filter parameters including
+                                          pagination params
 
         Returns:
-            A list of all role assignments.
+            A list of all roles assignments matching the filter criteria.
         """
 
     # --------
@@ -711,20 +690,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_projects(
-        self,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, project_filter_model: ProjectFilterModel
     ) -> Page[ProjectResponseModel]:
-        """List all projects.
+        """List all project matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
-            params: Parameters for pagination (page and size)
+            project_filter_model: All filter parameters including pagination
+                                  params
 
         Returns:
-            A list of all projects.
+            A list of all project matching the filter criteria.
         """
 
     @abstractmethod
@@ -792,28 +767,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_pipelines(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, pipeline_filter_model: PipelineFilterModel
     ) -> Page[PipelineResponseModel]:
-        """List all pipelines in the project.
+        """List all pipelines matching the given filter criteria.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this
-                project.
-            user_name_or_id: If provided, only list pipelines from this user.
-            name: If provided, only list pipelines with this name.
-            params: Parameters for pagination (page and size)
+            pipeline_filter_model: All filter parameters including pagination
+                                   params
 
         Returns:
-            A list of pipelines.
-
-        Raises:
-            KeyError: if the project does not exist.
+            A list of all pipelines matching the filter criteria.
         """
 
     @abstractmethod
@@ -901,34 +864,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_runs(
-        self,
-        name: Optional[str] = None,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[UUID] = None,
-        component_id: Optional[UUID] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[UUID] = None,
-        unlisted: bool = False,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, runs_filter_model: PipelineRunFilterModel
     ) -> Page[PipelineRunResponseModel]:
-        """Gets all pipeline runs.
+        """List all pipeline runs matching the given filter criteria.
 
         Args:
-            name: Run name if provided
-            project_name_or_id: If provided, only return runs for this project.
-            stack_id: If provided, only return runs for this stack.
-            component_id: Optionally filter for runs that used the
-                          component
-            user_name_or_id: If provided, only return runs for this user.
-            pipeline_id: If provided, only return runs for this pipeline.
-            unlisted: If True, only return unlisted runs that are not
-                associated with any pipeline (filter by `pipeline_id==None`).
-            params: Parameters for pagination (page and size)
+            runs_filter_model: All filter parameters including pagination
+                               params
 
         Returns:
-            A list of all pipeline runs.
+            A list of all pipeline runs matching the filter criteria.
         """
 
     @abstractmethod
@@ -996,22 +941,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_run_steps(
-        self,
-        run_id: Optional[UUID] = None,
-        project_id: Optional[UUID] = None,
-        cache_key: Optional[str] = None,
-        status: Optional[ExecutionStatus] = None,
+        self, step_run_filter_model: StepRunFilterModel
     ) -> Page[StepRunResponseModel]:
-        """Get all step runs.
+        """List all step runs matching the given filter criteria.
 
         Args:
-            run_id: If provided, only return steps for this pipeline run.
-            project_id: If provided, only return step runs in this project.
-            cache_key: If provided, only return steps with this cache key.
-            status: If provided, only return steps with this status.
+            step_run_filter_model: All filter parameters including pagination
+                                params
 
         Returns:
-            A list of step runs.
+            A list of all step runs matching the filter criteria.
         """
 
     @abstractmethod
@@ -1066,24 +1005,16 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_artifacts(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        artifact_uri: Optional[str] = None,
+        self, artifact_filter_model: ArtifactFilterModel
     ) -> Page[ArtifactResponseModel]:
-        """Lists all artifacts.
+        """List all artifacts matching the given filter criteria.
 
         Args:
-            project_name_or_id: If specified, only artifacts from the given
-                project will be returned.
-            artifact_uri: If specified, only artifacts with the given URI will
-                be returned.
-            artifact_store_id: If specified, only artifacts from the given
-                artifact store will be returned.
-            only_unused: If True, only return artifacts that are not used in
-                any runs.
+            artifact_filter_model: All filter parameters including pagination
+                                params
 
         Returns:
-            A list of all artifacts.
+            A list of all artifacts matching the filter criteria.
         """
 
     @abstractmethod

@@ -41,7 +41,7 @@ from zenml.models import (
     PipelineUpdateModel,
     ProjectRequestModel,
     ProjectUpdateModel,
-    RoleAssignmentRequestModel,
+    UserRoleAssignmentRequestModel,
     RoleRequestModel,
     RoleUpdateModel,
     StackRequestModel,
@@ -649,7 +649,7 @@ def test_assigning_role_to_user_succeeds(
     ],
 ):
     """Tests assigning a role to a user."""
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = UserRoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
         user=sql_store_with_user_team_role["user"].id,
         is_user=True,
@@ -657,7 +657,7 @@ def test_assigning_role_to_user_succeeds(
     )
     with does_not_raise():
         (
-            sql_store_with_user_team_role["store"].create_role_assignment(
+            sql_store_with_user_team_role["store"].create_user_role_assignment(
                 role_assignment
             )
         )
@@ -669,7 +669,7 @@ def test_assigning_role_to_team_succeeds(
     ],
 ):
     """Tests assigning a role to a team."""
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = UserRoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
         team=sql_store_with_user_team_role["team"].id,
         is_user=True,
@@ -677,7 +677,7 @@ def test_assigning_role_to_team_succeeds(
     )
     with does_not_raise():
         (
-            sql_store_with_user_team_role["store"].create_role_assignment(
+            sql_store_with_user_team_role["store"].create_user_role_assignment(
                 role_assignment
             )
         )
@@ -689,7 +689,7 @@ def test_assigning_role_if_assignment_already_exists_fails(
     ],
 ):
     """Tests assigning a role to a user if the assignment already exists."""
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = UserRoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
         user=sql_store_with_user_team_role["user"].id,
         is_user=True,
@@ -697,13 +697,13 @@ def test_assigning_role_if_assignment_already_exists_fails(
     )
     with does_not_raise():
         (
-            sql_store_with_user_team_role["store"].create_role_assignment(
+            sql_store_with_user_team_role["store"].create_user_role_assignment(
                 role_assignment
             )
         )
     with pytest.raises(EntityExistsError):
         (
-            sql_store_with_user_team_role["store"].create_role_assignment(
+            sql_store_with_user_team_role["store"].create_user_role_assignment(
                 role_assignment
             )
         )
@@ -715,7 +715,7 @@ def test_revoking_role_for_user_succeeds(
     ],
 ):
     """Tests revoking a role for a user."""
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = UserRoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
         user=sql_store_with_user_team_role["user"].id,
         is_user=True,
@@ -724,13 +724,13 @@ def test_revoking_role_for_user_succeeds(
     with does_not_raise():
         role_assignment = sql_store_with_user_team_role[
             "store"
-        ].create_role_assignment(role_assignment)
-        sql_store_with_user_team_role["store"].delete_role_assignment(
-            role_assignment_id=role_assignment.id
+        ].create_user_role_assignment(role_assignment)
+        sql_store_with_user_team_role["store"].delete_user_role_assignment(
+            user_role_assignment_id=role_assignment.id
         )
     with pytest.raises(KeyError):
-        sql_store_with_user_team_role["store"].get_role_assignment(
-            role_assignment_id=role_assignment.id
+        sql_store_with_user_team_role["store"].get_user_role_assignment(
+            user_role_assignment_id=role_assignment.id
         )
 
 
@@ -740,7 +740,7 @@ def test_revoking_role_for_team_succeeds(
     ],
 ):
     """Tests revoking a role for a team."""
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = UserRoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
         team=sql_store_with_user_team_role["team"].id,
         is_user=True,
@@ -749,13 +749,13 @@ def test_revoking_role_for_team_succeeds(
     with does_not_raise():
         role_assignment = sql_store_with_user_team_role[
             "store"
-        ].create_role_assignment(role_assignment)
-        sql_store_with_user_team_role["store"].delete_role_assignment(
-            role_assignment_id=role_assignment.id
+        ].create_user_role_assignment(role_assignment)
+        sql_store_with_user_team_role["store"].delete_user_role_assignment(
+            user_role_assignment_id=role_assignment.id
         )
     with pytest.raises(KeyError):
-        sql_store_with_user_team_role["store"].get_role_assignment(
-            role_assignment_id=role_assignment.id
+        sql_store_with_user_team_role["store"].get_user_role_assignment(
+            user_role_assignment_id=role_assignment.id
         )
 
 
@@ -766,8 +766,8 @@ def test_revoking_nonexistent_role_fails(
 ):
     """Tests revoking a nonexistent role fails."""
     with pytest.raises(KeyError):
-        sql_store_with_user_team_role["store"].delete_role_assignment(
-            role_assignment_id=uuid.uuid4()
+        sql_store_with_user_team_role["store"].delete_user_role_assignment(
+            user_role_assignment_id=uuid.uuid4()
         )
 
 

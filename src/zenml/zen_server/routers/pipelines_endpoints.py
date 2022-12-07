@@ -24,7 +24,7 @@ from zenml.models import (
     FilterBaseModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
-    PipelineUpdateModel,
+    PipelineUpdateModel, PipelineFilterModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -44,29 +44,20 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_pipelines(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    name: Optional[str] = None,
+    pipeline_filter_model: PipelineFilterModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-    params: FilterBaseModel = Depends(),
 ) -> Page[PipelineResponseModel]:
     """Gets a list of pipelines.
 
     Args:
-        project_name_or_id: Name or ID of the project to get pipelines for.
-        user_name_or_id: Optionally filter by name or ID of the user.
-        name: Optionally filter by pipeline name
-        params: Parameters for pagination (page and size)
+        pipeline_filter_model: Filter model used for pagination, sorting,
+                               filtering
 
     Returns:
         List of pipeline objects.
     """
     return zen_store().list_pipelines(
-        project_name_or_id=project_name_or_id,
-        user_name_or_id=user_name_or_id,
-        name=name,
-        params=params,
-    )
+        pipeline_filter_model=pipeline_filter_model)
 
 
 @router.get(

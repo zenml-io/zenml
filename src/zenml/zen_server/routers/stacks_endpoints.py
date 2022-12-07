@@ -38,7 +38,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_stacks(
-    stack_list_model: StackFilterModel = Depends(),
+    stack_filter_model: StackFilterModel = Depends(),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -46,15 +46,15 @@ def list_stacks(
     """Returns all stacks.
 
     Args:
-        stack_list_model: Name or ID of the project
+        stack_filter_model: Filter model used for pagination, sorting, filtering
         auth_context: Authentication Context
 
     Returns:
         All stacks.
     """
-    stack_list_model.set_scope_user(user_id=auth_context.user.id)
+    stack_filter_model.set_scope_user(user_id=auth_context.user.id)
 
-    return zen_store().list_stacks(stack_list_model=stack_list_model)
+    return zen_store().list_stacks(stack_filter_model=stack_filter_model)
 
 
 @router.get(

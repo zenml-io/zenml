@@ -20,10 +20,10 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, ROLES, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
-    FilterBaseModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    RoleFilterModel
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -43,20 +43,19 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_roles(
-    name: Optional[str] = None,
+    role_filter_model: RoleFilterModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-    params: FilterBaseModel = Depends(),
 ) -> Page[RoleResponseModel]:
     """Returns a list of all roles.
 
     Args:
-        name: Optional name of the role to filter by.
-        params: Parameters for pagination (page and size)
+        role_filter_model: Filter model used for pagination, sorting, filtering
+
 
     Returns:
         List of all roles.
     """
-    return zen_store().list_roles(name=name, params=params)
+    return zen_store().list_roles(role_filter_model=role_filter_model)
 
 
 @router.post(

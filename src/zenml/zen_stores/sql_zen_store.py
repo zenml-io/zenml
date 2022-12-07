@@ -85,8 +85,8 @@ from zenml.models import (
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
-    RoleAssignmentRequestModel,
-    RoleAssignmentResponseModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
@@ -104,7 +104,9 @@ from zenml.models import (
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, ComponentFilterModel, FlavorFilterModel,
+    UserUpdateModel, ComponentFilterModel, FlavorFilterModel, RoleFilterModel,
+    UserRoleAssignmentFilterModel, ProjectFilterModel, PipelineFilterModel,
+    PipelineRunFilterModel, StepRunFilterModel, ArtifactFilterModel,
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
@@ -602,11 +604,11 @@ class SqlZenStore(BaseZenStore):
 
     @classmethod
     def filter_and_paginate(
-        cls,
-        session: Session,
-        query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
-        table: Type[AnySchema],
-        list_model: FilterBaseModel,
+            cls,
+            session: Session,
+            query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
+            table: Type[AnySchema],
+            filter_model: FilterBaseModel,
     ) -> Page[B]:
         """Given a query, select the range defined in params and return a
         Page instance with a list of Domain Models.
@@ -615,23 +617,23 @@ class SqlZenStore(BaseZenStore):
             session: The SQLModel Session
             query: The query to execute
             table: The table to select from
-            list_model: The filter to use, including pagination and sorting
+            filter_model: The filter to use, including pagination and sorting
 
         Returns:
             The Domain Model representation of the DB resource
         """
 
         # Filtering
-        filters = list_model.generate_filter(table=table)
+        filters = filter_model.generate_filter(table=table)
 
         if filters:
             query = query.where(*filters)
 
         # Sorting
-        query = query.order_by(getattr(table, list_model.sort_by))
+        query = query.order_by(getattr(table, filter_model.sort_by))
 
         # Pagination
-        raw_pagination_params = list_model.get_pagination_params()
+        raw_pagination_params = filter_model.get_pagination_params()
 
         # Get the total amount of items in the database for a given query
         total = session.scalar(
@@ -657,7 +659,7 @@ class SqlZenStore(BaseZenStore):
         # Convert this page of items from schemas to models
         items: List[B] = [i.to_model() for i in items]
 
-        return Page.create(items, total, total_pages, list_model)
+        return Page.create(items, total, total_pages, filter_model)
 
     # ====================================
     # ZenML Store interface implementation
@@ -898,12 +900,13 @@ class SqlZenStore(BaseZenStore):
             return stack.to_model()
 
     def list_stacks(
-        self, stack_list_model: StackFilterModel
+        self, stack_filter_model: StackFilterModel
     ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
-            stack_list_model: All filter parameters including pagination params
+            stack_filter_model: All filter parameters including pagination
+                                params
 
         Returns:
             A list of all stacks matching the filter criteria.
@@ -916,7 +919,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 query=query,
                 table=StackSchema,
-                list_model=stack_list_model,
+                filter_model=stack_filter_model,
             )
 
     @track(AnalyticsEvent.UPDATED_STACK)
@@ -1177,12 +1180,13 @@ class SqlZenStore(BaseZenStore):
             return stack_component.to_model()
 
     def list_stack_components(
-        self, component_list_model: ComponentFilterModel
+        self, component_filter_model: ComponentFilterModel
     ) -> Page[ComponentResponseModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
-            component_list_model: All filter parameters including pagination params
+            component_filter_model: All filter parameters including
+                                    pagination params
 
         Returns:
             A list of all stack components matching the filter criteria.
@@ -1195,7 +1199,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 query=query,
                 table=StackComponentSchema,
-                list_model=component_list_model,
+                filter_model=component_filter_model,
             )
             return paged_components
 
@@ -1484,12 +1488,13 @@ class SqlZenStore(BaseZenStore):
             return flavor_in_db.to_model()
 
     def list_flavors(
-        self, flavor_list_model: FlavorFilterModel
+        self, flavor_filter_model: FlavorFilterModel
     ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            flavor_list_model: All filter parameters including pagination params
+            flavor_filter_model: All filter parameters including pagination
+            params
 
 
         Returns:
@@ -1503,7 +1508,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 query=query,
                 table=FlavorSchema,
-                list_model=flavor_list_model,
+                filter_model=flavor_filter_model,
             )
 
     @track(AnalyticsEvent.DELETED_FLAVOR)
@@ -1645,7 +1650,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 query=query,
                 table=UserSchema,
-                list_model=user_filter_model,
+                filter_model=user_filter_model,
             )
             return paged_user
 
@@ -1762,29 +1767,26 @@ class SqlZenStore(BaseZenStore):
             return team.to_model()
 
     def list_teams(
-        self,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, team_filter_model: StackFilterModel
     ) -> Page[TeamResponseModel]:
-        """List all teams.
+        """List all teams matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
-            params: Parameters for pagination (page and size)
+            team_filter_model: All filter parameters including pagination params
 
         Returns:
-            A list of all teams.
+            A list of all teams matching the filter criteria.
         """
-        # TODO sorting missing
         with Session(self.engine) as session:
+            # Manually create the query and add any custom clauses
             query = select(TeamSchema)
-            if name:
-                query = query.where(TeamSchema.name == name)
-            query = query.order_by(TeamSchema.created)
-            teams = Page.paginate(session, query, params)
-            return teams
+
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TeamSchema,
+                filter_model=team_filter_model,
+            )
 
     @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
@@ -1898,30 +1900,26 @@ class SqlZenStore(BaseZenStore):
             return role.to_model()
 
     def list_roles(
-        self,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, role_filter_model: RoleFilterModel
     ) -> Page[RoleResponseModel]:
-        """List all roles.
+        """List all roles matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
-            params: Parameters for pagination (page and size)
+            role_filter_model: All filter parameters including pagination params
 
         Returns:
-            A list of all roles.
+            A list of all roles matching the filter criteria.
         """
         with Session(self.engine) as session:
+            # Manually create the query and add any custom clauses
             query = select(RoleSchema)
-            if name:
-                query = query.where(RoleSchema.name == name)
 
-            query.order_by(RoleSchema.created)
-            roles = Page.paginate(session, query, params)
-
-            return roles
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=RoleSchema,
+                filter_model=role_filter_model,
+            )
 
     @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(
@@ -2051,7 +2049,7 @@ class SqlZenStore(BaseZenStore):
         params: FilterBaseModel = FilterBaseModel(
             page=1, size=PAGE_SIZE_DEFAULT
         ),
-    ) -> Page[RoleAssignmentResponseModel]:
+    ) -> Page[UserRoleAssignmentResponseModel]:
         """List all user role assignments.
 
         Args:
@@ -2092,7 +2090,7 @@ class SqlZenStore(BaseZenStore):
         params: FilterBaseModel = FilterBaseModel(
             page=1, size=PAGE_SIZE_DEFAULT
         ),
-    ) -> Page[RoleAssignmentResponseModel]:
+    ) -> Page[UserRoleAssignmentResponseModel]:
         """List all team role assignments.
 
         Args:
@@ -2125,51 +2123,35 @@ class SqlZenStore(BaseZenStore):
             assignments = Page.paginate(session, query, params)
             return assignments
 
-    def list_role_assignments(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        role_name_or_id: Optional[Union[str, UUID]] = None,
-        team_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
-    ) -> Page[RoleAssignmentResponseModel]:
-        """List all role assignments.
+    def list_user_role_assignments(
+        self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel
+    ) -> Page[UserRoleAssignmentResponseModel]:
+        """List all roles assignments matching the given filter criteria.
 
         Args:
-            project_name_or_id: If provided, only return role assignments for
-                this project.
-            role_name_or_id: If provided, only list assignments of the given
-                role
-            team_name_or_id: If provided, only list assignments for this team.
-            user_name_or_id: If provided, only list assignments for this user.
-            params: Parameters for pagination (page and size)
+            user_role_assignment_filter_model: All filter parameters including
+                                          pagination params
 
         Returns:
-            A list of all role assignments.
+            A list of all roles assignments matching the filter criteria.
         """
-        # TODO - this current solution will return twice the pagination limit
-        user_role_assignments = self._list_user_role_assignments(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id,
-            role_name_or_id=role_name_or_id,
-            params=params,
-        )
-        # team_role_assignments = self._list_team_role_assignments(
-        #     project_name_or_id=project_name_or_id,
-        #     team_name_or_id=team_name_or_id,
-        #     role_name_or_id=role_name_or_id,
-        #     params=params,
-        # )
-        return user_role_assignments  # + team_role_assignments
+        with Session(self.engine) as session:
+            # Manually create the query and add any custom clauses
+            query = select(UserRoleAssignmentSchema)
+
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=UserRoleAssignmentSchema,
+                filter_model=user_role_assignment_filter_model,
+            )
 
     def _assign_role_to_user(
         self,
         role_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
         project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> RoleAssignmentResponseModel:
+    ) -> UserRoleAssignmentResponseModel:
         """Assigns a role to a user, potentially scoped to a specific project.
 
         Args:
@@ -2224,7 +2206,7 @@ class SqlZenStore(BaseZenStore):
         role_name_or_id: Union[str, UUID],
         team_name_or_id: Union[str, UUID],
         project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> RoleAssignmentResponseModel:
+    ) -> UserRoleAssignmentResponseModel:
         """Assigns a role to a team, potentially scoped to a specific project.
 
         Args:
@@ -2275,13 +2257,13 @@ class SqlZenStore(BaseZenStore):
 
             return role_assignment.to_model()
 
-    def create_role_assignment(
-        self, role_assignment: RoleAssignmentRequestModel
-    ) -> RoleAssignmentResponseModel:
+    def create_user_role_assignment(
+        self, user_role_assignment: UserRoleAssignmentRequestModel
+    ) -> UserRoleAssignmentResponseModel:
         """Assigns a role to a user or team, scoped to a specific project.
 
         Args:
-            role_assignment: The role assignment to create.
+            user_role_assignment: The role assignment to create.
 
         Returns:
             The created role assignment.
@@ -2289,29 +2271,29 @@ class SqlZenStore(BaseZenStore):
         Raises:
             ValueError: If neither a user nor a team is specified.
         """
-        if role_assignment.user:
+        if user_role_assignment.user:
             return self._assign_role_to_user(
-                role_name_or_id=role_assignment.role,
-                user_name_or_id=role_assignment.user,
-                project_name_or_id=role_assignment.project,
+                role_name_or_id=user_role_assignment.role,
+                user_name_or_id=user_role_assignment.user,
+                project_name_or_id=user_role_assignment.project,
             )
-        if role_assignment.team:
+        if user_role_assignment.team:
             return self._assign_role_to_team(
-                role_name_or_id=role_assignment.role,
-                team_name_or_id=role_assignment.team,
-                project_name_or_id=role_assignment.project,
+                role_name_or_id=user_role_assignment.role,
+                team_name_or_id=user_role_assignment.team,
+                project_name_or_id=user_role_assignment.project,
             )
         raise ValueError(
             "Role assignment must be assigned to either a user or a team."
         )
 
-    def get_role_assignment(
-        self, role_assignment_id: UUID
-    ) -> RoleAssignmentResponseModel:
+    def get_user_role_assignment(
+        self, user_role_assignment_id: UUID
+    ) -> UserRoleAssignmentResponseModel:
         """Gets a role assignment by ID.
 
         Args:
-            role_assignment_id: ID of the role assignment to get.
+            user_role_assignment_id: ID of the role assignment to get.
 
         Returns:
             The role assignment.
@@ -2322,7 +2304,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             user_role = session.exec(
                 select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.id == role_assignment_id
+                    UserRoleAssignmentSchema.id == user_role_assignment_id
                 )
             ).one_or_none()
 
@@ -2331,7 +2313,7 @@ class SqlZenStore(BaseZenStore):
 
             team_role = session.exec(
                 select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.id == role_assignment_id
+                    TeamRoleAssignmentSchema.id == user_role_assignment_id
                 )
             ).one_or_none()
 
@@ -2339,14 +2321,14 @@ class SqlZenStore(BaseZenStore):
                 return team_role.to_model()
 
             raise KeyError(
-                f"RoleAssignment with ID {role_assignment_id} not found."
+                f"RoleAssignment with ID {user_role_assignment_id} not found."
             )
 
-    def delete_role_assignment(self, role_assignment_id: UUID) -> None:
+    def delete_user_role_assignment(self, user_role_assignment_id: UUID) -> None:
         """Delete a specific role assignment.
 
         Args:
-            role_assignment_id: The ID of the specific role assignment.
+            user_role_assignment_id: The ID of the specific role assignment.
 
         Raises:
             KeyError: If the role assignment does not exist.
@@ -2354,7 +2336,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             user_role = session.exec(
                 select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.id == role_assignment_id
+                    UserRoleAssignmentSchema.id == user_role_assignment_id
                 )
             ).one_or_none()
             if user_role:
@@ -2362,7 +2344,7 @@ class SqlZenStore(BaseZenStore):
 
             team_role = session.exec(
                 select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.id == role_assignment_id
+                    TeamRoleAssignmentSchema.id == user_role_assignment_id
                 )
             ).one_or_none()
 
@@ -2371,7 +2353,7 @@ class SqlZenStore(BaseZenStore):
 
             if user_role is None and team_role is None:
                 raise KeyError(
-                    f"RoleAssignment with ID {role_assignment_id} not found."
+                    f"RoleAssignment with ID {user_role_assignment_id} not found."
                 )
             else:
                 session.commit()
@@ -2434,29 +2416,27 @@ class SqlZenStore(BaseZenStore):
         return project.to_model()
 
     def list_projects(
-        self,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, project_filter_model: ProjectFilterModel
     ) -> Page[ProjectResponseModel]:
-        """List all projects.
+        """List all project matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
-            params: Parameters for pagination (page and size)
+            project_filter_model: All filter parameters including pagination
+                                  params
 
         Returns:
-            A list of all projects.
+            A list of all project matching the filter criteria.
         """
         with Session(self.engine) as session:
+            # Manually create the query and add any custom clauses
             query = select(ProjectSchema)
-            if name:
-                query = query.where(ProjectSchema.name == name)
-            query.order_by(ProjectSchema.created)
-            projects = Page.paginate(session, query, params)
 
-        return projects
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ProjectSchema,
+                filter_model=project_filter_model,
+            )
 
     @track(AnalyticsEvent.UPDATED_PROJECT)
     def update_project(
@@ -2601,46 +2581,27 @@ class SqlZenStore(BaseZenStore):
             return pipeline.to_model()
 
     def list_pipelines(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, pipeline_filter_model: PipelineFilterModel
     ) -> Page[PipelineResponseModel]:
-        """List all pipelines in the project.
+        """List all pipelines matching the given filter criteria.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this
-                project.
-            user_name_or_id: If provided, only list pipelines from this user.
-            name: If provided, only list pipelines with this name.
-            params: Parameters for pagination (page and size)
+            pipeline_filter_model: All filter parameters including pagination
+                                   params
 
         Returns:
-            A list of pipelines.
+            A list of all pipelines matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Check if project with the given name exists
+            # Manually create the query and add any custom clauses
             query = select(PipelineSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(PipelineSchema.project_id == project.id)
 
-            if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(PipelineSchema.user_id == user.id)
-
-            if name:
-                query = query.where(PipelineSchema.name == name)
-
-            # Get all pipelines in the project
-            query.order_by(PipelineSchema.created)
-            pipelines = Page.paginate(session, query, params)
-            return pipelines
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineSchema,
+                filter_model=pipeline_filter_model,
+            )
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
@@ -2842,63 +2803,27 @@ class SqlZenStore(BaseZenStore):
                 return self.get_run(pipeline_run.name)
 
     def list_runs(
-        self,
-        name: Optional[str] = None,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[UUID] = None,
-        component_id: Optional[UUID] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[UUID] = None,
-        unlisted: bool = False,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, runs_filter_model: PipelineRunFilterModel
     ) -> Page[PipelineRunResponseModel]:
-        """Gets all pipeline runs.
+        """List all pipeline runs matching the given filter criteria.
 
         Args:
-            name: Run name if provided
-            project_name_or_id: If provided, only return runs for this project.
-            stack_id: If provided, only return runs for this stack.
-            component_id: Optionally filter for runs that used the
-                          component
-            user_name_or_id: If provided, only return runs for this user.
-            pipeline_id: If provided, only return runs for this pipeline.
-            unlisted: If True, only return unlisted runs that are not
-                associated with any pipeline (filter by pipeline_id==None).
-            params: Parameters for pagination (page and size)
+            runs_filter_model: All filter parameters including pagination
+                               params
 
         Returns:
-            A list of all pipeline runs.
+            A list of all pipeline runs matching the filter criteria.
         """
         with Session(self.engine) as session:
+            # Manually create the query and add any custom clauses
             query = select(PipelineRunSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(PipelineRunSchema.project_id == project.id)
-            if stack_id is not None:
-                query = query.where(PipelineRunSchema.stack_id == stack_id)
-            if component_id:
-                query = query.where(
-                    StackCompositionSchema.stack_id
-                    == PipelineRunSchema.stack_id
-                ).where(StackCompositionSchema.component_id == component_id)
-            if name is not None:
-                query = query.where(PipelineRunSchema.name == name)
-            if pipeline_id is not None:
-                query = query.where(
-                    PipelineRunSchema.pipeline_id == pipeline_id
-                )
-            elif unlisted:
-                query = query.where(is_(PipelineRunSchema.pipeline_id, None))
-            if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(PipelineRunSchema.user_id == user.id)
-            query = query.order_by(PipelineRunSchema.created)
-            runs = Page.paginate(session, query, params)
-        return runs
+
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineRunSchema,
+                filter_model=runs_filter_model,
+            )
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdateModel
@@ -3276,37 +3201,27 @@ class SqlZenStore(BaseZenStore):
             )
 
     def list_run_steps(
-        self,
-        run_id: Optional[UUID] = None,
-        project_id: Optional[UUID] = None,
-        cache_key: Optional[str] = None,
-        status: Optional[ExecutionStatus] = None,
-    ) -> List[StepRunResponseModel]:
-        """Get all step runs.
+        self, step_run_filter_model: StepRunFilterModel
+    ) -> Page[StepRunResponseModel]:
+        """List all step runs matching the given filter criteria.
 
         Args:
-            run_id: If provided, only return steps for this pipeline run.
-            project_id: If provided, only return step runs in this project.
-            cache_key: If provided, only return steps with this cache key.
-            status: If provided, only return steps with this status.
+            step_run_filter_model: All filter parameters including pagination
+                                params
 
         Returns:
-            A list of step runs.
+            A list of all step runs matching the filter criteria.
         """
-        query = select(StepRunSchema)
-        if run_id is not None:
-            query = query.where(StepRunSchema.pipeline_run_id == run_id)
-        elif project_id is not None:
-            query = query.where(
-                StepRunSchema.pipeline_run_id == PipelineRunSchema.id
-            ).where(PipelineRunSchema.project_id == project_id)
-        if cache_key is not None:
-            query = query.where(StepRunSchema.cache_key == cache_key)
-        if status is not None:
-            query = query.where(StepRunSchema.status == status)
         with Session(self.engine) as session:
-            steps = session.exec(query).all()
-            return [self._run_step_schema_to_model(step) for step in steps]
+            # Manually create the query and add any custom clauses
+            query = select(StepRunSchema)
+
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StepRunSchema,
+                filter_model=step_run_filter_model,
+            )
 
     def update_run_step(
         self,
@@ -3431,56 +3346,28 @@ class SqlZenStore(BaseZenStore):
             return self._artifact_schema_to_model(artifact)
 
     def list_artifacts(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        artifact_uri: Optional[str] = None,
-        artifact_store_id: Optional[UUID] = None,
-        only_unused: bool = False,
-    ) -> List[ArtifactResponseModel]:
-        """Lists all artifacts.
+        self, artifact_filter_model: ArtifactFilterModel
+    ) -> Page[ArtifactResponseModel]:
+        """List all artifacts matching the given filter criteria.
 
         Args:
-            project_name_or_id: If specified, only artifacts from the given
-                project will be returned.
-            artifact_uri: If specified, only artifacts with the given URI will
-                be returned.
-            artifact_store_id: If specified, only artifacts from the given
-                artifact store will be returned.
-            only_unused: If True, only return artifacts that are not used in
-                any runs.
+            artifact_filter_model: All filter parameters including pagination
+                                params
 
         Returns:
-            A list of all artifacts.
+            A list of all artifacts matching the filter criteria.
         """
         with Session(self.engine) as session:
+            # Manually create the query and add any custom clauses
             query = select(ArtifactSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(ArtifactSchema.project_id == project.id)
-            if artifact_uri is not None:
-                query = query.where(ArtifactSchema.uri == artifact_uri)
-            if artifact_store_id is not None:
-                query = query.where(
-                    ArtifactSchema.artifact_store_id == artifact_store_id
-                )
-            if only_unused:
-                query = query.where(
-                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
-                        select(StepRunOutputArtifactSchema.artifact_id)
-                    )
-                )
-                query = query.where(
-                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
-                        select(StepRunInputArtifactSchema.artifact_id)
-                    )
-                )
-            artifacts = session.exec(query).all()
-            return [
-                self._artifact_schema_to_model(artifact)
-                for artifact in artifacts
-            ]
+
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ArtifactSchema,
+                filter_model=artifact_filter_model,
+            )
+
 
     def delete_artifact(self, artifact_id: UUID) -> None:
         """Deletes an artifact.

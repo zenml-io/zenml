@@ -13,12 +13,14 @@
 #  permissions and limitations under the License.
 """Models representing artifacts."""
 
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
 
+from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.enums import ArtifactType
+from zenml.models.filter_models import FilterBaseModel
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
@@ -64,6 +66,43 @@ class ArtifactResponseModel(ArtifactBaseModel, ProjectScopedResponseModel):
 
     producer_step_run_id: Optional[UUID]
 
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class ArtifactFilterModel(FilterBaseModel):
+    """Model to enable advanced filtering of all Artifacts."""
+
+    name: str = Query(
+        None,
+        description="Name of the artifact",
+    )
+    uri: str = Query(
+        None,
+        description="Uri of the artifact",
+    )
+    materializer: str = Query(
+        None,
+        description="Materializer used to produce the artifact",
+    )
+    type: str = Query(
+        None,
+        description="Type of the artifact",
+    )
+    data_type: str = Query(
+        None,
+        description="Datatype of the artifact",
+    )
+    artifact_store_id: Union[UUID, str] = Query(
+        None, description="Artifact store for this artifact"
+    )
+    project_id: Union[UUID, str] = Query(
+        None, description="Project for this artifact"
+    )
+    user_id: Union[UUID, str] = Query(
+        None, description="User that produced this artifact")
 
 # ------- #
 # REQUEST #

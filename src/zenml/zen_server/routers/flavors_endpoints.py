@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, FLAVORS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
-from zenml.models import FilterBaseModel, FlavorResponseModel
+from zenml.models import FilterBaseModel, FlavorResponseModel, FlavorFilterModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -39,35 +39,20 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_flavors(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    component_type: Optional[StackComponentType] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    name: Optional[str] = None,
-    is_shared: Optional[bool] = None,
-    params: FilterBaseModel = Depends(),
+    flavor_filter_model: FlavorFilterModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[FlavorResponseModel]:
     """Returns all flavors.
 
     Args:
-        project_name_or_id: Name or ID of the project.
-        component_type: Optionally filter by component type.
-        user_name_or_id: Optionally filter by name or ID of the user.
-        name: Optionally filter by flavor name.
-        is_shared: Optionally filter by shared status of the flavor.
-        params: Parameters for pagination (page and size)
+        flavor_filter_model: Filter model used for pagination, sorting,
+                             filtering
+
 
     Returns:
         All flavors.
     """
-    return zen_store().list_flavors(
-        project_name_or_id=project_name_or_id,
-        component_type=component_type,
-        user_name_or_id=user_name_or_id,
-        is_shared=is_shared,
-        name=name,
-        params=params,
-    )
+    return zen_store().list_flavors(flavor_filter_model=flavor_filter_model)
 
 
 @router.get(

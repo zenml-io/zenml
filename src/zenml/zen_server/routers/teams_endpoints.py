@@ -21,7 +21,7 @@ from zenml.constants import API, ROLES, TEAMS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
     FilterBaseModel,
-    RoleAssignmentResponseModel,
+    UserRoleAssignmentResponseModel,
     TeamRequestModel,
     TeamResponseModel,
     TeamUpdateModel,
@@ -146,7 +146,7 @@ def delete_team(
 
 @router.get(
     "/{team_name_or_id}" + ROLES,
-    response_model=Page[RoleAssignmentResponseModel],
+    response_model=Page[UserRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -155,7 +155,7 @@ def get_role_assignments_for_team(
     project_name_or_id: Optional[Union[str, UUID]] = None,
     params: FilterBaseModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[RoleAssignmentResponseModel]:
+) -> Page[UserRoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a team.
 
     Args:
@@ -167,7 +167,7 @@ def get_role_assignments_for_team(
     Returns:
         A list of all roles that are assigned to a team.
     """
-    return zen_store().list_role_assignments(
+    return zen_store().list_user_role_assignments(
         team_name_or_id=team_name_or_id,
         project_name_or_id=project_name_or_id,
         params=params,

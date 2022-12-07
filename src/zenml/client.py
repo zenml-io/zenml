@@ -67,8 +67,8 @@ from zenml.models import (
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
-    RoleAssignmentRequestModel,
-    RoleAssignmentResponseModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
@@ -994,7 +994,7 @@ class Client(metaclass=ClientMetaClass):
         user_or_team_name_or_id: str,
         is_user: bool,
         project_name_or_id: Optional[str] = None,
-    ) -> RoleAssignmentResponseModel:
+    ) -> UserRoleAssignmentResponseModel:
         """Get a role assignment.
 
         Args:
@@ -1011,13 +1011,13 @@ class Client(metaclass=ClientMetaClass):
             RuntimeError: If the role assignment does not exist.
         """
         if is_user:
-            role_assignments = self.zen_store.list_role_assignments(
+            role_assignments = self.zen_store.list_user_role_assignments(
                 project_name_or_id=project_name_or_id,
                 user_name_or_id=user_or_team_name_or_id,
                 role_name_or_id=role_name_or_id,
             )
         else:
-            role_assignments = self.zen_store.list_role_assignments(
+            role_assignments = self.zen_store.list_user_role_assignments(
                 project_name_or_id=project_name_or_id,
                 user_name_or_id=user_or_team_name_or_id,
                 role_name_or_id=role_name_or_id,
@@ -1039,7 +1039,7 @@ class Client(metaclass=ClientMetaClass):
         user_or_team_name_or_id: Union[str, UUID],
         is_user: bool,
         project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> RoleAssignmentResponseModel:
+    ) -> UserRoleAssignmentResponseModel:
         """Create a role assignment.
 
         Args:
@@ -1059,21 +1059,21 @@ class Client(metaclass=ClientMetaClass):
             project = self.get_project(name_id_or_prefix=project_name_or_id)
         if is_user:
             user = self.get_user(name_id_or_prefix=user_or_team_name_or_id)
-            role_assignment = RoleAssignmentRequestModel(
+            role_assignment = UserRoleAssignmentRequestModel(
                 role=role.id,
                 user=user.id,
                 project=project,
             )
         else:
             team = self.get_team(name_id_or_prefix=user_or_team_name_or_id)
-            role_assignment = RoleAssignmentRequestModel(
+            role_assignment = UserRoleAssignmentRequestModel(
                 role=role.id,
                 team=team.id,
                 project=project,
             )
 
-        return self.zen_store.create_role_assignment(
-            role_assignment=role_assignment
+        return self.zen_store.create_user_role_assignment(
+            user_role_assignment=role_assignment
         )
 
     def delete_role_assignment(
@@ -1098,7 +1098,7 @@ class Client(metaclass=ClientMetaClass):
             is_user=is_user,
             project_name_or_id=project_name_or_id,
         )
-        self.zen_store.delete_role_assignment(role_assignment.id)
+        self.zen_store.delete_user_role_assignment(role_assignment.id)
 
     def list_role_assignment(
         self,
@@ -1106,7 +1106,7 @@ class Client(metaclass=ClientMetaClass):
         user_name_or_id: Optional[str] = None,
         team_name_or_id: Optional[str] = None,
         project_name_or_id: Optional[str] = None,
-    ) -> List[RoleAssignmentResponseModel]:
+    ) -> List[UserRoleAssignmentResponseModel]:
         """List role assignments.
 
         Args:
@@ -1120,7 +1120,7 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.depaginate(
             list_command=partial(
-                self.zen_store.list_role_assignments,
+                self.zen_store.list_user_role_assignments,
                 role_name_or_id=role_name_or_id,
                 user_name_or_id=user_name_or_id,
                 team_name_or_id=team_name_or_id,

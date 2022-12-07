@@ -17,6 +17,7 @@ from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
     ArtifactUpdateModel,
+    ArtifactFilterModel,
 )
 from zenml.models.component_models import (
     ComponentRequestModel,
@@ -40,6 +41,7 @@ from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
+    PipelineRunFilterModel
 )
 from zenml.models.project_models import (
     ProjectRequestModel,
@@ -48,9 +50,9 @@ from zenml.models.project_models import (
     ProjectFilterModel,
 )
 from zenml.models.role_assignment_models import (
-    RoleAssignmentRequestModel,
-    RoleAssignmentResponseModel,
-    RoleAssignmentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
+    UserRoleAssignmentFilterModel,
 )
 from zenml.models.role_models import (
     RoleRequestModel,
@@ -68,6 +70,7 @@ from zenml.models.step_run_models import (
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
+    StepRunFilterModel,
 )
 from zenml.models.team_models import (
     TeamRequestModel,
@@ -102,7 +105,7 @@ UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
 
 TeamResponseModel.update_forward_refs(UserResponseModel=UserResponseModel)
 
-RoleAssignmentResponseModel.update_forward_refs(
+UserRoleAssignmentResponseModel.update_forward_refs(
     RoleResponseModel=RoleResponseModel,
     TeamResponseModel=TeamResponseModel,
     UserResponseModel=UserResponseModel,
@@ -136,6 +139,7 @@ __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
     "ArtifactUpdateModel",
+    "ArtifactFilterModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",
@@ -151,13 +155,14 @@ __all__ = [
     "PipelineRunRequestModel",
     "PipelineRunResponseModel",
     "PipelineRunUpdateModel",
+    "PipelineRunFilterModel",
     "ProjectRequestModel",
     "ProjectResponseModel",
     "ProjectUpdateModel",
     "ProjectFilterModel",
-    "RoleAssignmentRequestModel",
-    "RoleAssignmentResponseModel",
-    "RoleAssignmentFilterModel",
+    "UserRoleAssignmentRequestModel",
+    "UserRoleAssignmentResponseModel",
+    "UserRoleAssignmentFilterModel",
     "RoleRequestModel",
     "RoleResponseModel",
     "RoleUpdateModel",
@@ -169,6 +174,7 @@ __all__ = [
     "StepRunRequestModel",
     "StepRunResponseModel",
     "StepRunUpdateModel",
+    "StepRunFilterModel",
     "TeamRequestModel",
     "TeamResponseModel",
     "TeamUpdateModel",

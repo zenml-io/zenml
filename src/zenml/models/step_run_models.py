@@ -14,9 +14,10 @@
 """Models representing steps of pipeline runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 from uuid import UUID
 
+from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.config.step_configurations import Step
@@ -26,9 +27,11 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import FilterBaseModel
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
+
 
 # ---- #
 # BASE #
@@ -66,6 +69,55 @@ class StepRunResponseModel(StepRunBaseModel, ProjectScopedResponseModel):
 
     input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
     output_artifacts: Dict[str, "ArtifactResponseModel"] = {}
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class StepRunFilterModel(FilterBaseModel):
+    """Model to enable advanced filtering of all Artifacts."""
+
+    name: str = Query(
+        None,
+        description="Name of the step run",
+    )
+    entrypoint_name: str = Query(
+        None,
+        description="Entrypoint name of the step run",
+    )
+    code_hash: str = Query(
+        None,
+        description="Code hash for this step run",
+    )
+    cache_key: str = Query(
+        None,
+        description="Cache key for this step run",
+    )
+    status: str = Query(
+        None,
+        description="Status of the Step Run",
+    )
+    start_time: Union[datetime, str] = Query(
+        None, description="Start time for this run")
+    end_time: Union[datetime, str] = Query(
+        None, description="End time for this run")
+    pipeline_run_id: Union[UUID, str] = Query(
+        None, description="Pipeline run of this step run"
+    )
+    original_step_run_id: Union[UUID, str] = Query(
+        None, description="Original id for this step run"
+    )
+    user_id: Union[UUID, str] = Query(
+        None, description="User that produced this step run")
+    project_id: Union[UUID, str] = Query(
+        None, description="Project of this step run"
+    )
+    num_outputs: int = Query(
+        None,
+        description="Amount of outputs for this Step Run",
+    )
 
 
 # ------- #

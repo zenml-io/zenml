@@ -87,8 +87,8 @@ from zenml.models import (
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
-    RoleAssignmentRequestModel,
-    RoleAssignmentResponseModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
@@ -104,7 +104,9 @@ from zenml.models import (
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, ComponentFilterModel, FlavorFilterModel,
+    UserUpdateModel, ComponentFilterModel, FlavorFilterModel, RoleFilterModel,
+    UserRoleAssignmentFilterModel, ProjectFilterModel, PipelineFilterModel,
+    PipelineRunFilterModel, StepRunFilterModel, ArtifactFilterModel,
 )
 from zenml.models.base_models import (
     BaseRequestModel,
@@ -398,21 +400,21 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_stacks(
-        self, stack_list_model: StackFilterModel
+        self, stack_filter_model: StackFilterModel
     ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
-            stack_list_model: All filter parameters including pagination params
-
+            stack_filter_model: All filter parameters including pagination
+                                params
 
         Returns:
-            A page of all stacks matching the filter criteria.
+            A list of all stacks matching the filter criteria.
         """
         return self._list_paginated_resources(
             route=STACKS,
             response_model=StackResponseModel,
-            list_model=stack_list_model,
+            list_model=stack_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATED_STACK)
@@ -486,12 +488,13 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_stack_components(
-        self, component_list_model: ComponentFilterModel
+        self, component_filter_model: ComponentFilterModel
     ) -> Page[ComponentResponseModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
-            component_list_model: All filter parameters including pagination params
+            component_filter_model: All filter parameters including
+                                    pagination params
 
         Returns:
             A list of all stack components matching the filter criteria.
@@ -574,12 +577,13 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_flavors(
-        self, flavor_list_model: FlavorFilterModel
+        self, flavor_filter_model: FlavorFilterModel
     ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            flavor_list_model: All filter parameters including pagination params
+            flavor_filter_model: All filter parameters including pagination
+            params
 
 
         Returns:
@@ -588,7 +592,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=FLAVORS,
             response_model=FlavorResponseModel,
-            list_model=flavor_list_model,
+            list_model=flavor_filter_model,
         )
 
     @track(AnalyticsEvent.DELETED_FLAVOR)
@@ -755,27 +759,20 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_teams(
-        self,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, team_filter_model: StackFilterModel
     ) -> Page[TeamResponseModel]:
-        """List all teams.
+        """List all teams matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
-            params: Parameters for pagination (page and size)
+            team_filter_model: All filter parameters including pagination params
 
         Returns:
-            A list of all teams.
+            A list of all teams matching the filter criteria.
         """
-        filters = locals()
-        filters.pop("self")
         return self._list_paginated_resources(
             route=TEAMS,
             response_model=TeamResponseModel,
-            **filters,
+            list_model=team_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATED_TEAM)
@@ -846,28 +843,22 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_roles(
-        self,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, role_filter_model: RoleFilterModel
     ) -> Page[RoleResponseModel]:
-        """List all roles.
+        """List all roles matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
-            params: Parameters for pagination (page and size)
+            role_filter_model: All filter parameters including pagination params
 
         Returns:
-            A list of all roles.
+            A list of all roles matching the filter criteria.
         """
-        filters = locals()
-        filters.pop("self")
         return self._list_paginated_resources(
             route=ROLES,
             response_model=RoleResponseModel,
-            **filters,
+            list_model=role_filter_model,
         )
+
 
     @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(
@@ -905,84 +896,67 @@ class RestZenStore(BaseZenStore):
     # Role assignments
     # ----------------
 
-    def list_role_assignments(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        role_name_or_id: Optional[Union[str, UUID]] = None,
-        team_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
-    ) -> Page[RoleAssignmentResponseModel]:
-        """List all role assignments.
+    def list_user_role_assignments(
+        self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel
+    ) -> Page[UserRoleAssignmentResponseModel]:
+        """List all roles assignments matching the given filter criteria.
 
         Args:
-            project_name_or_id: If provided, only list assignments for the given
-                project
-            role_name_or_id: If provided, only list assignments of the given
-                role
-            team_name_or_id: If provided, only list assignments for the given
-                team
-            user_name_or_id: If provided, only list assignments for the given
-                user
-            params: Parameters for pagination (page and size)
+            user_role_assignment_filter_model: All filter parameters including
+                                          pagination params
 
         Returns:
-            A list of all role assignments.
+            A list of all roles assignments matching the filter criteria.
         """
-        return self._list_resources(
-            route=f"{ROLE_ASSIGNMENTS}",
-            project_name_or_id=project_name_or_id,
-            role_name_or_id=role_name_or_id,
-            team_name_or_id=team_name_or_id,
-            user_name_or_id=user_name_or_id,
-            response_model=RoleAssignmentResponseModel,
+        return self._list_paginated_resources(
+            route=ROLE_ASSIGNMENTS,
+            response_model=UserRoleAssignmentResponseModel,
+            list_model=user_role_assignment_filter_model,
         )
 
-    def get_role_assignment(
-        self, role_assignment_id: UUID
-    ) -> RoleAssignmentResponseModel:
+    def get_user_role_assignment(
+        self, user_role_assignment_id: UUID
+    ) -> UserRoleAssignmentResponseModel:
         """Get an existing role assignment by name or ID.
 
         Args:
-            role_assignment_id: Name or ID of the role assignment to get.
+            user_role_assignment_id: Name or ID of the role assignment to get.
 
         Returns:
             The requested project.
         """
         return self._get_resource(
-            resource_id=role_assignment_id,
+            resource_id=user_role_assignment_id,
             route=ROLE_ASSIGNMENTS,
-            response_model=RoleAssignmentResponseModel,
+            response_model=UserRoleAssignmentResponseModel,
         )
 
-    def delete_role_assignment(self, role_assignment_id: UUID) -> None:
+    def delete_user_role_assignment(self, user_role_assignment_id: UUID) -> None:
         """Delete a specific role assignment.
 
         Args:
-            role_assignment_id: The ID of the specific role assignment
+            user_role_assignment_id: The ID of the specific role assignment
         """
         self._delete_resource(
-            resource_id=role_assignment_id,
+            resource_id=user_role_assignment_id,
             route=ROLE_ASSIGNMENTS,
         )
 
-    def create_role_assignment(
-        self, role_assignment: RoleAssignmentRequestModel
-    ) -> RoleAssignmentResponseModel:
+    def create_user_role_assignment(
+        self, user_role_assignment: UserRoleAssignmentRequestModel
+    ) -> UserRoleAssignmentResponseModel:
         """Creates a new role assignment.
 
         Args:
-            role_assignment: The role assignment to create.
+            user_role_assignment: The role assignment to create.
 
         Returns:
             The newly created project.
         """
         return self._create_resource(
-            resource=role_assignment,
+            resource=user_role_assignment,
             route=ROLE_ASSIGNMENTS,
-            response_model=RoleAssignmentResponseModel,
+            response_model=UserRoleAssignmentResponseModel,
         )
 
     # --------
@@ -1025,27 +999,21 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_projects(
-        self,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, project_filter_model: ProjectFilterModel
     ) -> Page[ProjectResponseModel]:
-        """List all projects.
+        """List all project matching the given filter criteria.
 
         Args:
-            params: Parameters for pagination (page and size)
-            name: Optionally filter by name
+            project_filter_model: All filter parameters including pagination
+                                  params
 
         Returns:
-            A list of all projects.
+            A list of all project matching the filter criteria.
         """
-        filters = locals()
-        filters.pop("self")
         return self._list_paginated_resources(
             route=PROJECTS,
             response_model=ProjectResponseModel,
-            **filters,
+            list_model=project_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATED_PROJECT)
@@ -1118,32 +1086,21 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_pipelines(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        name: Optional[str] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, pipeline_filter_model: PipelineFilterModel
     ) -> Page[PipelineResponseModel]:
-        """List all pipelines in the project.
+        """List all pipelines matching the given filter criteria.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this
-                project.
-            user_name_or_id: If provided, only list pipelines from this user.
-            name: If provided, only list pipelines with this name.
-            params: Parameters for pagination (page and size)
+            pipeline_filter_model: All filter parameters including pagination
+                                   params
 
         Returns:
-            A list of pipelines.
+            A list of all pipelines matching the filter criteria.
         """
-        filters = locals()
-        filters.pop("self")
         return self._list_paginated_resources(
             route=PIPELINES,
             response_model=PipelineResponseModel,
-            **filters,
+            list_model=pipeline_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
@@ -1238,41 +1195,21 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_runs(
-        self,
-        name: Optional[str] = None,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[UUID] = None,
-        component_id: Optional[UUID] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[UUID] = None,
-        unlisted: bool = False,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
+        self, runs_filter_model: PipelineRunFilterModel
     ) -> Page[PipelineRunResponseModel]:
-        """Gets all pipeline runs.
+        """List all pipeline runs matching the given filter criteria.
 
         Args:
-            project_name_or_id: If provided, only return runs for this project.
-            stack_id: If provided, only return runs for this stack.
-            component_id: Optionally filter for runs that used the
-                          component
-            name: Run name if provided
-            user_name_or_id: If provided, only return runs for this user.
-            pipeline_id: If provided, only return runs for this pipeline.
-            unlisted: If True, only return unlisted runs that are not
-                associated with any pipeline (filter by `pipeline_id==None`).
-            params: Parameters for pagination (page and size)
+            runs_filter_model: All filter parameters including pagination
+                               params
 
         Returns:
-            A list of all pipeline runs.
+            A list of all pipeline runs matching the filter criteria.
         """
-        filters = locals()
-        filters.pop("self")
         return self._list_paginated_resources(
             route=RUNS,
             response_model=PipelineRunResponseModel,
-            **filters,
+            list_model=runs_filter_model,
         )
 
     def update_run(
@@ -1343,30 +1280,21 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_run_steps(
-        self,
-        run_id: Optional[UUID] = None,
-        project_id: Optional[UUID] = None,
-        cache_key: Optional[str] = None,
-        status: Optional[ExecutionStatus] = None,
-    ) -> List[StepRunResponseModel]:
-        """Get all step runs.
+        self, step_run_filter_model: StepRunFilterModel
+    ) -> Page[StepRunResponseModel]:
+        """List all step runs matching the given filter criteria.
 
         Args:
-            run_id: If provided, only return steps for this pipeline run.
-            project_id: If provided, only return step runs in this project.
-            cache_key: If provided, only return steps with this cache key.
-            status: If provided, only return steps with this status.
+            step_run_filter_model: All filter parameters including pagination
+                                params
 
         Returns:
-            A list of step runs.
+            A list of all step runs matching the filter criteria.
         """
-        filters = locals()
-        filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=STEPS,
-            resource_model=StepRunResponseModel,
             response_model=StepRunResponseModel,
-            **filters,
+            list_model=step_run_filter_model,
         )
 
     def update_run_step(
@@ -1427,34 +1355,21 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_artifacts(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        artifact_uri: Optional[str] = None,
-        artifact_store_id: Optional[UUID] = None,
-        only_unused: bool = False,
-    ) -> List[ArtifactResponseModel]:
-        """Lists all artifacts.
+        self, artifact_filter_model: ArtifactFilterModel
+    ) -> Page[ArtifactResponseModel]:
+        """List all artifacts matching the given filter criteria.
 
         Args:
-            project_name_or_id: If specified, only artifacts from the given
-                project will be returned.
-            artifact_uri: If specified, only artifacts with the given URI will
-                be returned.
-            artifact_store_id: If specified, only artifacts from the given
-                artifact store will be returned.
-            only_unused: If True, only return artifacts that are not used in
-                any runs.
+            artifact_filter_model: All filter parameters including pagination
+                                params
 
         Returns:
-            A list of all artifacts.
+            A list of all artifacts matching the filter criteria.
         """
-        filters = locals()
-        filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=ARTIFACTS,
-            resource_model=ArtifactResponseModel,
             response_model=ArtifactResponseModel,
-            **filters,
+            list_model=artifact_filter_model,
         )
 
     def delete_artifact(self, artifact_id: UUID) -> None:

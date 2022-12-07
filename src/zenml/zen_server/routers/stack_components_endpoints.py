@@ -22,7 +22,7 @@ from zenml.enums import PermissionType, StackComponentType
 from zenml.models import (
     ComponentResponseModel,
     ComponentUpdateModel,
-    FilterBaseModel,
+    ComponentFilterModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -48,13 +48,7 @@ types_router = APIRouter(
 )
 @handle_exceptions
 def list_stack_components(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    type: Optional[str] = None,
-    name: Optional[str] = None,
-    flavor_name: Optional[str] = None,
-    is_shared: Optional[bool] = None,
-    params: FilterBaseModel = Depends(),
+    component_filter_model: ComponentFilterModel = Depends(),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -62,50 +56,16 @@ def list_stack_components(
     """Get a list of all stack components for a specific type.
 
     Args:
-        project_name_or_id: Name or ID of the project
-        user_name_or_id: Optionally filter by name or ID of the user.
-        name: Optionally filter by component name
-        type: Optionally filter by component type
-        flavor_name: Optionally filter by flavor
-        is_shared: Defines whether to return shared stack components or the
-            private stack components of the user. If not set, both are returned.
-        params: Parameters for pagination (page and size)
+        component_filter_model: Filter model used for pagination, sorting,
+                                filtering
         auth_context: Authentication Context
 
     Returns:
         List of stack components for a specific type.
     """
-    # TODO: Implement a sensible filtering mechanism on the sql zen_store side
-
-    components: Page[ComponentResponseModel] = []
-
-    # Get private stack components unless `is_shared` is set to True
-    if is_shared is None or not is_shared:
-        own_components = zen_store().list_stack_components(
-            name=name,
-            user_name_or_id=user_name_or_id or auth_context.user.id,
-            project_name_or_id=project_name_or_id,
-            flavor_name=flavor_name,
-            type=type,
-            is_shared=False,
-            params=params,
-        )
-        components += own_components
-
-    # Get shared stacks unless `is_shared` is set to False
-    if is_shared is None or is_shared:
-        shared_components = zen_store().list_stack_components(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id,
-            flavor_name=flavor_name,
-            name=name,
-            type=type,
-            is_shared=True,
-            params=params,
-        )
-        components += shared_components
-
-    return components
+    component_filter_model.set_scope_user(user_id=auth_context.user.id)
+    return zen_store().list_stack_components(
+        component_filter_model=component_filter_model)
 
 
 @router.get(
